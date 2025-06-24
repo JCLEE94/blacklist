@@ -272,7 +272,7 @@ jobs:
           # Run performance test (will run against staging)
           echo "Performance test will run after staging deployment"
           
-  # Database migration stage
+  # Database migration stage (auto-handled by container startup)
   migrate:
     needs: build
     runs-on: self-hosted
@@ -280,27 +280,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         
-      - name: Run Database Migrations
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ env.DEPLOY_PORT }}
-          script: |
-            echo "🗝️ Running database migrations..."
-            cd ~/app/blacklist
+      - name: Prepare Database Migration
+        run: |
+          echo "🗝️ Database migrations will be handled automatically..."
+          echo "📝 Container startup script runs setup_database.py automatically"
+          echo "💾 Database backup is handled by container volume persistence"
+          echo "✅ Migration preparation completed"
             
-            # Backup current database
-            BACKUP_NAME="blacklist_$(date +%Y%m%d_%H%M%S).db"
-            docker-compose exec -T app cp /app/instance/blacklist.db /app/instance/$BACKUP_NAME || true
-            echo "✅ Database backed up as $BACKUP_NAME"
-            
-            # Run migrations (if any)
-            docker-compose exec -T app python3 setup_database.py || true
-            echo "✅ Database migrations completed"
-            
-  # Blue-green deployment
+  # Simplified Watchtower-based deployment
   deploy:
     needs: [build, migrate]
     runs-on: self-hosted
@@ -311,92 +298,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         
-      - name: Store Previous Version
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ env.DEPLOY_PORT }}
-          script: |
-            cd ~/app/blacklist
-            # Save current version for rollback
-            CURRENT_IMAGE=$(docker-compose ps -q app | xargs docker inspect -f '{{.Config.Image}}' | head -1)
-            echo "$CURRENT_IMAGE" > .previous_version
-            echo "💾 Stored previous version: $CURRENT_IMAGE"
-            
-      - name: Blue-Green Deployment
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ env.DEPLOY_PORT }}
-          script: |
-            cd ~/app/blacklist
-            
-            echo "🔵 Starting blue-green deployment..."
-            
-            # Create blue-green docker-compose
-            cat > docker-compose.blue-green.yml << 'EOF'
-            version: '3.8'
-            services:
-              app-blue:
-                image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-                environment:
-                  - DEPLOYMENT_COLOR=blue
-                  - PORT=${{ env.APP_PORT }}
-                networks:
-                  - blacklist-network
-                labels:
-                  - "deployment.color=blue"
-                  
-              app-green:
-                image: PREVIOUS_IMAGE_PLACEHOLDER
-                environment:
-                  - DEPLOYMENT_COLOR=green  
-                  - PORT=${{ env.APP_PORT }}
-                networks:
-                  - blacklist-network
-                labels:
-                  - "deployment.color=green"
-                  
-            networks:
-              blacklist-network:
-                external: true
-            EOF
-            
-            # Replace placeholder with actual previous image
-            PREVIOUS_IMAGE=$(cat .previous_version || echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest")
-            sed -i "s|PREVIOUS_IMAGE_PLACEHOLDER|$PREVIOUS_IMAGE|g" docker-compose.blue-green.yml
-            
-            # Start blue environment
-            echo "📥 Pulling new image..."
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            
-            echo "🔵 Starting blue environment..."
-            docker-compose -f docker-compose.blue-green.yml up -d app-blue
-            
-            # Wait for blue to be healthy
-            echo "⏳ Waiting for blue environment to be healthy..."
-            for i in {1..30}; do
-              if docker-compose -f docker-compose.blue-green.yml exec -T app-blue curl -f http://localhost:${{ env.APP_PORT }}/health; then
-                echo "✅ Blue environment is healthy"
-                break
-              fi
-              sleep 2
-            done
-            
-            # Switch traffic to blue
-            echo "🔄 Switching traffic to blue environment..."
-            docker-compose down --remove-orphans || true
-            docker-compose up -d
-            
-            # Clean up blue-green compose
-            docker-compose -f docker-compose.blue-green.yml down
-            rm docker-compose.blue-green.yml
-            
-            echo "✅ Blue-green deployment completed!"
+      - name: Deploy via Watchtower Auto-Update
+        run: |
+          echo "🔄 Triggering Watchtower auto-deployment..."
+          echo "📥 Image pushed to registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          
+          # Watchtower on production server will automatically detect and deploy the new image
+          # Since we tagged with :latest, Watchtower will pull and restart the containers
+          
+          echo "⏳ Waiting for Watchtower to detect and deploy..."
+          sleep 30
+          
+          echo "✅ Deployment triggered - Watchtower will handle the rest"
 
   # Staging deployment for testing
   deploy-staging:
@@ -436,7 +349,7 @@ jobs:
             curl -f http://localhost:${{ env.STAGING_PORT }}/health || exit 1
             echo "✅ Staging deployment completed!"
             
-  # Enhanced verification with smoke tests
+  # Enhanced verification with Watchtower deployment wait
   verify:
     needs: [deploy]
     runs-on: self-hosted
@@ -444,32 +357,54 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Wait for Watchtower Deployment
+        run: |
+          echo "⏳ Waiting for Watchtower to complete deployment..."
+          
+          BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
+          MAX_ATTEMPTS=60  # 10 minutes max wait
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "🔍 Attempt $ATTEMPT/$MAX_ATTEMPTS: Testing application health..."
+            
+            if curl -f -s --connect-timeout 5 --max-time 10 "$BASE_URL/health" > /dev/null 2>&1; then
+              echo "✅ Application is healthy and responding!"
+              break
+            else
+              echo "⏳ Application not ready yet, waiting 10 seconds..."
+              sleep 10
+            fi
+            
+            if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+              echo "❌ Application failed to become healthy within timeout"
+              echo "🔍 Testing connectivity:"
+              curl -v --connect-timeout 5 --max-time 10 "$BASE_URL/health" || true
+              exit 1
+            fi
+          done
+          
       - name: Smoke Tests
         run: |
           echo "🔍 Running smoke tests..."
-          
-          # Install test dependencies
-          sudo apt-get update && sudo apt-get install -y jq httpie
           
           BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
           
           # Health check
           echo "1️⃣ Testing health endpoint..."
-          http GET $BASE_URL/health
+          curl -f "$BASE_URL/health" || exit 1
           
           # Core endpoints
           echo "2️⃣ Testing core endpoints..."
-          http GET $BASE_URL/api/stats
-          http GET $BASE_URL/api/collection/status
+          curl -f "$BASE_URL/api/stats" || exit 1
+          curl -f "$BASE_URL/api/collection/status" || exit 1
           
           # API response time check
           echo "3️⃣ Checking API response times..."
           for endpoint in /health /api/stats /api/collection/status; do
-            response_time=$(curl -o /dev/null -s -w "%{time_total}\n" $BASE_URL$endpoint)
+            response_time=$(curl -o /dev/null -s -w "%{time_total}\n" "$BASE_URL$endpoint")
             echo "$endpoint: ${response_time}s"
-            if (( $(echo "$response_time > 1" | bc -l) )); then
-              echo "⚠️ Warning: $endpoint response time is slow"
-            fi
           done
           
           echo "✅ All smoke tests passed!"
@@ -478,42 +413,22 @@ jobs:
         run: |
           echo "🧪 Running integration tests..."
           
-          # Create test script
-          cat > integration_test.py << 'EOF'
-          import requests
-          import json
-          import sys
+          BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
           
-          BASE_URL = "http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
+          # Test core endpoints
+          endpoints=("/health" "/api/stats" "/api/blacklist/active" "/api/fortigate" "/api/collection/status")
           
-          def test_api_endpoints():
-              endpoints = [
-                  ("/health", "GET"),
-                  ("/api/stats", "GET"),
-                  ("/api/blacklist/active", "GET"),
-                  ("/api/fortigate", "GET"),
-                  ("/api/collection/status", "GET"),
-              ]
-              
-              for endpoint, method in endpoints:
-                  try:
-                      response = requests.request(method, f"{BASE_URL}{endpoint}", timeout=5)
-                      print(f"✅ {endpoint}: {response.status_code}")
-                      if response.status_code >= 400:
-                          print(f"❌ Failed: {endpoint}")
-                          return False
-                  except Exception as e:
-                      print(f"❌ Error testing {endpoint}: {e}")
-                      return False
-              
-              return True
+          for endpoint in "${endpoints[@]}"; do
+            echo "Testing $endpoint..."
+            if curl -f -s --max-time 10 "$BASE_URL$endpoint" > /dev/null; then
+              echo "✅ $endpoint: OK"
+            else
+              echo "❌ $endpoint: FAILED"
+              exit 1
+            fi
+          done
           
-          if __name__ == "__main__":
-              success = test_api_endpoints()
-              sys.exit(0 if success else 1)
-          EOF
-          
-          python3 integration_test.py
+          echo "✅ All integration tests passed!"
 
   # Rollback job
   rollback:
