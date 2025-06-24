@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: 192.168.50.215:1234/blacklist:latest
+    image: registry.jclee.me/blacklist:latest
     container_name: blacklist-app
     ports:
       - "2541:2541"
@@ -11,13 +11,11 @@ services:
       - TZ=Asia/Seoul
       - FLASK_ENV=production
       - REDIS_URL=redis://redis:6379/0
-      - REGTECH_USERNAME=nextrade
-      - REGTECH_PASSWORD=Sprtmxm1@3
-      - SECUDIUM_USERNAME=nextrade
-      - SECUDIUM_PASSWORD=Sprtmxm1@3
-      - SECRET_KEY=your-secret-key-here
-      - JWT_SECRET_KEY=your-jwt-secret-here
-      - API_SECRET_KEY=your-api-secret-here
+      - REGTECH_USERNAME=${REGTECH_USERNAME}
+      - REGTECH_PASSWORD=${REGTECH_PASSWORD}
+      - SECUDIUM_USERNAME=${SECUDIUM_USERNAME}
+      - SECUDIUM_PASSWORD=${SECUDIUM_PASSWORD}
+
     volumes:
       - ./instance:/app/instance
       - ./data:/app/data
@@ -25,6 +23,8 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - blacklist-network
     healthcheck:
@@ -43,6 +43,8 @@ services:
     networks:
       - blacklist-network
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
