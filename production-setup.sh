@@ -23,6 +23,7 @@ services:
       - "2541:2541"
     environment:
       - PORT=2541
+      - HOST=0.0.0.0
       - TZ=Asia/Seoul
       - FLASK_ENV=production
       - REDIS_URL=redis://redis:6379/0
