@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  blacklist-app:
+    image: registry.jclee.me/blacklist-management:latest
+    container_name: blacklist-app
+    restart: unless-stopped
+    ports:
+      - "2541:8541"
+    environment:
+      - PORT=8541
+      - REDIS_URL=redis://blacklist-redis:6379/0
+      - REGTECH_USERNAME=nextrade
+      - REGTECH_PASSWORD=Sprtmxm1@3
+      - SECUDIUM_USERNAME=nextrade
+      - SECUDIUM_PASSWORD=Sprtmxm1@3
+      - FLASK_ENV=production
+      - TZ=Asia/Seoul
+    volumes:
+      - ../instance:/app/instance
+      - ../logs:/app/logs
+    networks:
+      - blacklist-net
+    depends_on:
+      - blacklist-redis
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.monitor-only=false"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8541/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  blacklist-redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - blacklist-net
+    volumes:
+      - redis-data:/data
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../config/watchtower-config.json:/config.json:ro
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300  # 5분마다 체크
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_ROLLING_RESTART=true
+      - WATCHTOWER_TIMEOUT=120s
+      - WATCHTOWER_NOTIFICATIONS_LEVEL=info
+      - WATCHTOWER_NO_PULL=false
+      - DOCKER_CONFIG=/config.json
+      - TZ=Asia/Seoul
+    command: --interval 300 --label-enable --cleanup
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+
+networks:
+  blacklist-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

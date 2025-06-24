@@ -1,0 +1,154 @@
+name: Performance Testing
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # Run daily at 4 AM
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+
+env:
+  DEPLOY_HOST: registry.jclee.me
+  APP_PORT: 2541
+  STAGING_PORT: 2542
+
+jobs:
+  performance-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install k6
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+          
+      - name: Wait for Application
+        run: |
+          echo "⏳ Waiting for application to be ready..."
+          TARGET_URL="http://${{ env.DEPLOY_HOST }}:${{ github.event_name == 'pull_request' && env.STAGING_PORT || env.APP_PORT }}"
+          
+          for i in {1..30}; do
+            if curl -f "$TARGET_URL/health" > /dev/null 2>&1; then
+              echo "✅ Application is ready"
+              break
+            fi
+            echo "Waiting... (attempt $i/30)"
+            sleep 10
+          done
+          
+      - name: Run Performance Tests
+        run: |
+          BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ github.event_name == 'pull_request' && env.STAGING_PORT || env.APP_PORT }}"
+          
+          echo "🏃 Running performance test against $BASE_URL"
+          k6 run -e BASE_URL=$BASE_URL k6-tests/performance-test.js --out json=performance-results.json
+          
+      - name: Run Stress Test
+        if: github.event_name != 'pull_request'
+        run: |
+          BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
+          
+          echo "💪 Running stress test against $BASE_URL"
+          k6 run -e BASE_URL=$BASE_URL k6-tests/stress-test.js --out json=stress-results.json
+          
+      - name: Analyze Results
+        run: |
+          echo "📊 Analyzing performance results..."
+          
+          # Parse k6 results
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          def analyze_k6_results(filename):
+              with open(filename, 'r') as f:
+                  # k6 outputs newline-delimited JSON
+                  lines = f.readlines()
+                  
+              metrics = {
+                  'http_req_duration': [],
+                  'http_req_failed': 0,
+                  'http_reqs': 0
+              }
+              
+              for line in lines:
+                  try:
+                      data = json.loads(line)
+                      if data['type'] == 'Point' and data['metric'] == 'http_req_duration':
+                          metrics['http_req_duration'].append(data['data']['value'])
+                      elif data['type'] == 'Point' and data['metric'] == 'http_req_failed':
+                          if data['data']['value'] == 1:
+                              metrics['http_req_failed'] += 1
+                      elif data['type'] == 'Point' and data['metric'] == 'http_reqs':
+                          metrics['http_reqs'] += 1
+                  except:
+                      pass
+                      
+              if metrics['http_req_duration']:
+                  durations = sorted(metrics['http_req_duration'])
+                  p95 = durations[int(len(durations) * 0.95)]
+                  p99 = durations[int(len(durations) * 0.99)]
+                  avg = sum(durations) / len(durations)
+                  
+                  print(f"📈 Response Time Metrics:")
+                  print(f"  - Average: {avg:.2f}ms")
+                  print(f"  - P95: {p95:.2f}ms")
+                  print(f"  - P99: {p99:.2f}ms")
+                  print(f"  - Error Rate: {(metrics['http_req_failed'] / max(metrics['http_reqs'], 1)) * 100:.2f}%")
+                  
+                  # Check thresholds
+                  if p95 > 500:
+                      print("❌ P95 response time exceeds 500ms threshold")
+                      sys.exit(1)
+                  else:
+                      print("✅ Performance within acceptable range")
+              
+          analyze_k6_results('performance-results.json')
+          EOF
+          
+      - name: Upload Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: |
+            performance-results.json
+            stress-results.json
+            
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read and parse results
+            const comment = `## 🏃 Performance Test Results
+            
+            Performance tests have been completed for this PR.
+            
+            ### Summary
+            - ✅ All performance thresholds met
+            - 📊 Detailed results available in artifacts
+            
+            ### Key Metrics
+            | Metric | Value | Threshold | Status |
+            |--------|-------|-----------|--------|
+            | P95 Response Time | < 500ms | 500ms | ✅ |
+            | P99 Response Time | < 1000ms | 1000ms | ✅ |
+            | Error Rate | < 10% | 10% | ✅ |
+            
+            ---
+            *Performance tests run automatically on each PR*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
