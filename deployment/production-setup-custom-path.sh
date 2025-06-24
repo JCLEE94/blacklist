@@ -56,11 +56,15 @@ services:
       - REGTECH_PASSWORD=Sprtmxm1@3
       - SECUDIUM_USERNAME=nextrade
       - SECUDIUM_PASSWORD=Sprtmxm1@3
+      - BLACKLIST_USERNAME=admin
+      - BLACKLIST_PASSWORD=blacklist2025!
+      - ADMIN_PASSWORD=admin2025!
       - FLASK_ENV=production
       - TZ=Asia/Seoul
       - SECRET_KEY=blacklist-prod-secret-key-2025
       - JWT_SECRET_KEY=blacklist-jwt-secret-key-2025
       - API_SECRET_KEY=blacklist-api-secret-key-2025
+      - FORCE_HTTPS=false
     volumes:
       - ./instance:/app/instance
       - ./logs:/app/logs
