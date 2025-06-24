@@ -27,7 +27,7 @@ beautifulsoup4==4.12.2
 # Data processing (temporarily disabled due to numpy compatibility)
 pandas==1.5.3
 openpyxl==3.1.2  # Excel 파일 읽기용
-lxml==4.9.3
+lxml==5.4.0
 
 # Background tasks
 APScheduler==3.10.4
