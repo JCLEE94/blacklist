@@ -175,7 +175,7 @@ jobs:
             network=host
           config-inline: |
             [registry."registry.jclee.me"]
-              http = false
+              http = true
               insecure = true
         
       - name: Login to Docker Hub
