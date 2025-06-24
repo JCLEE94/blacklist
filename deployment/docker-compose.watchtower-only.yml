@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./watchtower-config.json:/config.json:ro
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_LABEL_ENABLE=false
+      - WATCHTOWER_ROLLING_RESTART=true
+      - WATCHTOWER_TIMEOUT=120s
+      - WATCHTOWER_NOTIFICATIONS_LEVEL=info
+      - WATCHTOWER_NO_PULL=false
+      - DOCKER_CONFIG=/config.json
+      - TZ=Asia/Seoul
+      - WATCHTOWER_SCOPE=registry.jclee.me
+    command: --interval 300 --cleanup --scope registry.jclee.me

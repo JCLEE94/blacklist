@@ -5,7 +5,7 @@ Flask-Compress==1.13  # Response compression
 Flask-Limiter==3.11.0  # Rate limiting
 
 # Database
-SQLAlchemy==2.0.21
+SQLAlchemy==2.0.41
 Flask-SQLAlchemy==3.0.5
 psycopg2-binary==2.9.7  # PostgreSQL adapter (optional)
 
@@ -15,7 +15,7 @@ flask-caching==2.1.0
 
 # Performance monitoring
 psutil==5.9.5  # System monitoring
-gunicorn==21.2.0  # Production WSGI server
+gunicorn==23.0.0  # Production WSGI server
 
 # HTTP client (for external API calls)
 httpx==0.24.1  # Async HTTP client

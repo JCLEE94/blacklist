@@ -51,6 +51,10 @@ test:
     REDIS_URL: "redis://redis:6379/0"
     FLASK_ENV: "testing"
     PORT: "2541"
+    REGTECH_USERNAME: "test_user"
+    REGTECH_PASSWORD: "test_pass"
+    SECUDIUM_USERNAME: "test_user"
+    SECUDIUM_PASSWORD: "test_pass"
   script:
     - echo "🧪 Starting application tests..."
     - python3 -c "import src.core.minimal_app; print('✅ Module import test passed')"
@@ -67,6 +71,26 @@ test:
       result = cursor.fetchone()
       conn.close()
       print('✅ Database operations test passed')
+      "
+    - echo "🚀 Testing full application startup..."
+    - python3 -c "
+      from src.core.app_compact import create_compact_app
+      try:
+          app = create_compact_app()
+          print('✅ App compact creation test passed')
+      except Exception as e:
+          print(f'❌ App creation failed: {e}')
+          exit(1)
+      "
+    - echo "🔍 Testing configuration validation..."
+    - python3 -c "
+      from src.config.factory import get_config
+      try:
+          config = get_config('production')
+          print('✅ Production config validation passed')
+      except Exception as e:
+          print(f'❌ Config validation failed: {e}')
+          exit(1)
       "
     - echo "✅ All tests completed successfully"
   only:

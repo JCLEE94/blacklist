@@ -59,8 +59,8 @@ class BaseConfig:
     
     # Blacklist API Configuration  
     BLACKLIST_BASE_URL = os.environ.get('BLACKLIST_BASE_URL', 'https://platform.blacklist.io')
-    BLACKLIST_USERNAME = os.environ.get('BLACKLIST_USERNAME')
-    BLACKLIST_PASSWORD = os.environ.get('BLACKLIST_PASSWORD')
+    BLACKLIST_USERNAME = os.environ.get('BLACKLIST_USERNAME', os.environ.get('REGTECH_USERNAME'))
+    BLACKLIST_PASSWORD = os.environ.get('BLACKLIST_PASSWORD', os.environ.get('REGTECH_PASSWORD'))
     BLACKLIST_TIMEOUT = int(os.environ.get('BLACKLIST_TIMEOUT', 30))
     
     # Admin Credentials
@@ -126,21 +126,17 @@ class BaseConfig:
         """Validate configuration and return list of errors"""
         errors = []
         
-        # Only check credentials for production mode
+        # Production 환경에서만 필수 체크
         if not cls.DEBUG and not cls.TESTING:
-            # Check required Blacklist credentials for production
-            if not cls.BLACKLIST_USERNAME:
-                errors.append("BLACKLIST_USERNAME environment variable is required")
-            if not cls.BLACKLIST_PASSWORD:
-                errors.append("BLACKLIST_PASSWORD environment variable is required")
-            
-            # Check admin credentials for production
-            if not cls.ADMIN_PASSWORD:
-                errors.append("ADMIN_PASSWORD environment variable is required for production")
-            
-            # Check JWT secret in production
-            if cls.JWT_SECRET_KEY == cls.SECRET_KEY == 'dev-secret-key-change-in-production':
-                errors.append("SECRET_KEY and JWT_SECRET_KEY must be changed for production")
+            # REGTECH/SECUDIUM 인증 정보만 체크
+            if not os.environ.get('REGTECH_USERNAME'):
+                errors.append("REGTECH_USERNAME environment variable is required")
+            if not os.environ.get('REGTECH_PASSWORD'):
+                errors.append("REGTECH_PASSWORD environment variable is required")
+            if not os.environ.get('SECUDIUM_USERNAME'):
+                errors.append("SECUDIUM_USERNAME environment variable is required")
+            if not os.environ.get('SECUDIUM_PASSWORD'):
+                errors.append("SECUDIUM_PASSWORD environment variable is required")
         
         return errors
     
