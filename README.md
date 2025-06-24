@@ -160,4 +160,4 @@ tail -f logs/updater.log
 
 **현재 버전**: Compact v2.1  
 **마지막 업데이트**: 2025.06.04  
-**라이선스**: MIT
+**라이선스**: MIT# CI/CD Pipeline Trigger
