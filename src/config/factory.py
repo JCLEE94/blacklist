@@ -37,10 +37,7 @@ def get_config(config_name: str = None) -> Type[BaseConfig]:
     
     # Validate configuration
     errors = config_class.validate()
-    if errors and config_name.lower() in [ENV_PRODUCTION, 'prod']:
-        # Only raise errors for production, warn for others
-        raise ValueError(f"Configuration validation failed: {'; '.join(errors)}")
-    elif errors:
+    if errors:
         import logging
         logger = logging.getLogger(__name__)
         logger.warning(f"Configuration warnings: {'; '.join(errors)}")
