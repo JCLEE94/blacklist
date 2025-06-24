@@ -1,0 +1,169 @@
+"""
+API 인증 및 보안 유틸리티
+
+통합된 인증 시스템을 제공합니다:
+- AuthManager: JWT 토큰 및 API 키 관리
+- RateLimiter: Rate limiting 구현
+- 데코레이터는 unified_decorators 모듈 사용
+"""
+import os
+import jwt
+import time
+import hashlib
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any
+import logging
+
+# Note: unified decorators imported when needed to avoid circular imports
+
+logger = logging.getLogger(__name__)
+
+
+class AuthManager:
+    """JWT 기반 인증 관리자"""
+    
+    def __init__(self, secret_key: Optional[str] = None, algorithm: str = "HS256", 
+                 token_expiry: int = 3600):
+        self.secret_key = secret_key or os.environ.get('JWT_SECRET_KEY', 'default-secret-key')
+        self.algorithm = algorithm
+        self.token_expiry = token_expiry
+        
+        # API 키 관리 (환경 변수에서 로드)
+        self.api_keys = {}
+        for key, value in os.environ.items():
+            if key.startswith('API_KEY_'):
+                client_name = key.replace('API_KEY_', '').lower()
+                self.api_keys[value] = client_name
+    
+    def generate_token(self, user_id: str, client_name: str = None, 
+                      additional_claims: Dict[str, Any] = None) -> str:
+        """JWT 토큰 생성"""
+        payload = {
+            'user_id': user_id,
+            'client_name': client_name,
+            'iat': datetime.utcnow(),
+            'exp': datetime.utcnow() + timedelta(seconds=self.token_expiry)
+        }
+        
+        if additional_claims:
+            payload.update(additional_claims)
+        
+        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        return token
+    
+    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """JWT 토큰 검증"""
+        try:
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            return payload
+        except jwt.ExpiredSignatureError:
+            logger.warning("Token expired")
+            return None
+        except jwt.InvalidTokenError as e:
+            logger.warning(f"Invalid token: {e}")
+            return None
+    
+    def verify_api_key(self, api_key: str) -> Optional[str]:
+        """API 키 검증"""
+        return self.api_keys.get(api_key)
+    
+    def hash_password(self, password: str, salt: Optional[str] = None) -> tuple:
+        """비밀번호 해싱"""
+        if not salt:
+            salt = os.urandom(32).hex()
+        
+        pwdhash = hashlib.pbkdf2_hmac(
+            'sha256',
+            password.encode('utf-8'),
+            salt.encode('utf-8'),
+            100000
+        ).hex()
+        
+        return pwdhash, salt
+    
+    def verify_password(self, password: str, pwdhash: str, salt: str) -> bool:
+        """비밀번호 검증"""
+        new_hash, _ = self.hash_password(password, salt)
+        return new_hash == pwdhash
+
+
+class RateLimiter:
+    """Rate Limiting 구현"""
+    
+    def __init__(self, cache_manager=None, default_limit: int = 100, 
+                 window_seconds: int = 60):
+        self.cache = cache_manager
+        self.default_limit = default_limit
+        self.window_seconds = window_seconds
+    
+    def check_rate_limit(self, identifier: str, limit: Optional[int] = None) -> tuple:
+        """Rate limit 확인"""
+        if not self.cache:
+            return True, limit or self.default_limit, limit or self.default_limit
+        
+        limit = limit or self.default_limit
+        key = f"ratelimit:{identifier}"
+        
+        # 현재 카운트 조회
+        data = self.cache.get(key)
+        if not data:
+            # 첫 요청
+            self.cache.set(key, {"count": 1, "reset": time.time() + self.window_seconds}, 
+                          ttl=self.window_seconds)
+            return True, limit, limit - 1
+        
+        # 카운트 확인
+        if data["count"] >= limit:
+            return False, limit, 0
+        
+        # 카운트 증가
+        data["count"] += 1
+        remaining = limit - data["count"]
+        self.cache.set(key, data, ttl=int(data["reset"] - time.time()))
+        
+        return True, limit, remaining
+
+
+# Backward compatibility functions
+def check_ip_whitelist(whitelist: list) -> bool:
+    """
+    IP 화이트리스트 확인
+    
+    Deprecated: Use unified_auth decorator with ip_whitelist parameter instead
+    """
+    import warnings
+    warnings.warn(
+        "check_ip_whitelist is deprecated. Use unified_auth with ip_whitelist parameter",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
+    if not whitelist:
+        return True
+    
+    from flask import request
+    client_ip = request.remote_addr
+    
+    # X-Forwarded-For 헤더 확인 (프록시 환경)
+    if request.headers.get('X-Forwarded-For'):
+        client_ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    
+    return client_ip in whitelist
+
+
+def require_ip_whitelist(whitelist: list):
+    """
+    IP 화이트리스트 요구 데코레이터
+    
+    Deprecated: Use unified_auth decorator with ip_whitelist parameter instead
+    """
+    import warnings
+    warnings.warn(
+        "require_ip_whitelist is deprecated. Use unified_auth with ip_whitelist parameter",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
+    # Import here to avoid circular imports
+    from .unified_decorators import unified_auth
+    return unified_auth(required=False, ip_whitelist=whitelist)

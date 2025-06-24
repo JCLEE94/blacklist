@@ -1,0 +1,706 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드 - Nextrade Black List Deny System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Dashboard Styles */
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        height: 100%;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+    }
+    
+    .stat-card.primary::before { background: var(--gradient-primary); }
+    .stat-card.success::before { background: var(--gradient-success); }
+    .stat-card.info::before { background: var(--gradient-info); }
+    .stat-card.warning::before { background: var(--gradient-danger); }
+    
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-icon.primary { background: rgba(80, 70, 229, 0.1); color: #5046e5; }
+    .stat-icon.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .stat-icon.info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .stat-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    
+    .chart-container {
+        position: relative;
+        height: 350px;
+        padding: 1rem;
+    }
+    
+    .modern-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .modern-card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+        
+        .stat-card {
+            padding: 1rem;
+        }
+        
+        .stat-card h2 {
+            font-size: 1.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h3 mb-1">시스템 대시보드</h1>
+                <p class="mb-0 opacity-75">Nextrade Black List Management System</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end">
+                    <span class="badge bg-success me-2">
+                        <i class="bi bi-circle-fill animate-pulse"></i> 실시간 모니터링
+                    </span>
+                    <small class="opacity-75">{{ last_update }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card primary h-100">
+                <div class="stat-icon primary">
+                    <i class="bi bi-database-fill"></i>
+                </div>
+                <h2 class="fw-bold mb-1">{{ "{:,}".format(total_ips) }}</h2>
+                <p class="text-muted mb-0">전체 블랙리스트 IP</p>
+                <div class="mt-3">
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up"></i> 12% 증가
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card success h-100">
+                <div class="stat-icon success">
+                    <i class="bi bi-shield-fill-check"></i>
+                </div>
+                <h2 class="fw-bold mb-1">{{ "{:,}".format(active_ips) }}</h2>
+                <p class="text-muted mb-0">활성 차단 IP</p>
+                <div class="mt-3">
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up"></i> 8% 증가
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card info h-100">
+                <div class="stat-icon info">
+                    <i class="bi bi-cpu-fill"></i>
+                </div>
+                <h2 class="fw-bold mb-1">정상</h2>
+                <p class="text-muted mb-0">시스템 상태</p>
+                <div class="mt-3">
+                    <small class="text-info">
+                        <i class="bi bi-check-circle"></i> 모든 서비스 정상
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card warning h-100">
+                <div class="stat-icon warning">
+                    <i class="bi bi-collection-fill"></i>
+                </div>
+                <h2 class="fw-bold mb-1">3개</h2>
+                <p class="text-muted mb-0">활성 데이터 소스</p>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        REGTECH • SECUDIUM • Public
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="bi bi-graph-up text-primary"></i> 월별 블랙리스트 추이
+                        </h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary active">3개월</button>
+                            <button type="button" class="btn btn-outline-primary">6개월</button>
+                            <button type="button" class="btn btn-outline-primary">1년</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-pie-chart-fill text-info"></i> 소스별 분포
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="sourceChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">REGTECH Blacklist IP</span>
+                            <span class="fw-semibold">45%</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">SECUDIUM Blacklist IP</span>
+                            <span class="fw-semibold">30%</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Public Sources</span>
+                            <span class="fw-semibold">25%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & System Info -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="modern-card h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-lightning-fill text-warning"></i> 빠른 작업
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <button class="action-button d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('web.blacklist_search') }}'">
+                            <i class="bi bi-search me-2"></i> IP 검색
+                        </button>
+                        <button class="action-button d-flex align-items-center justify-content-center" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise me-2"></i> 데이터 새로고침
+                        </button>
+                        <button class="action-button d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('web.data_management') }}'">
+                            <i class="bi bi-database me-2"></i> 데이터 관리
+                        </button>
+                        <button class="action-button d-flex align-items-center justify-content-center" onclick="exportData()">
+                            <i class="bi bi-download me-2"></i> 데이터 내보내기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="modern-card h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-info-circle-fill text-info"></i> 시스템 정보
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">운영 포트</span>
+                            <span class="badge bg-primary">2541</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">개발 포트</span>
+                            <span class="badge bg-secondary">1541</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">데이터 보관 기간</span>
+                            <span class="fw-semibold">3개월</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">업데이트 주기</span>
+                            <span class="fw-semibold">1시간</span>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-3">리소스 사용률</h6>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">CPU</small>
+                            <small>23%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: 23%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">메모리</small>
+                            <small>45%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">디스크</small>
+                            <small>67%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning" style="width: 67%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 시스템 모니터링 위젯 -->
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div id="system-monitor-container"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Chart.js global configuration
+Chart.defaults.font.family = 'Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+
+// Monthly trend chart
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyData = {{ monthly_data | tojson }} || [];
+
+const gradient = monthlyCtx.createLinearGradient(0, 0, 0, 400);
+gradient.addColorStop(0, 'rgba(80, 70, 229, 0.2)');
+gradient.addColorStop(1, 'rgba(80, 70, 229, 0)');
+
+new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: monthlyData.map(d => d.month),
+        datasets: [{
+            label: '차단 IP 수',
+            data: monthlyData.map(d => d.count),
+            borderColor: '#5046e5',
+            backgroundColor: gradient,
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            pointBackgroundColor: '#5046e5',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#5046e5',
+            pointHoverBorderWidth: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                cornerRadius: 8,
+                titleFont: {
+                    size: 14,
+                    weight: '600'
+                },
+                bodyFont: {
+                    size: 14
+                },
+                callbacks: {
+                    label: function(context) {
+                        return '차단 IP: ' + context.parsed.y.toLocaleString() + '개';
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.05)',
+                    drawBorder: false
+                },
+                ticks: {
+                    font: {
+                        size: 12
+                    },
+                    callback: function(value) {
+                        return value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Source distribution chart
+const sourceCtx = document.getElementById('sourceChart').getContext('2d');
+new Chart(sourceCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['REGTECH Blacklist IP', 'SECUDIUM Blacklist IP', 'Public Sources'],
+        datasets: [{
+            data: [45, 30, 25],
+            backgroundColor: [
+                '#5046e5',
+                '#10b981',
+                '#f59e0b'
+            ],
+            borderWidth: 0,
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                    label: function(context) {
+                        return context.label + ': ' + context.parsed + '%';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Refresh data function with animation
+function refreshData() {
+    const cards = document.querySelectorAll('.stat-card');
+    cards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.transform = 'scale(0.95)';
+            card.style.opacity = '0.6';
+            
+            setTimeout(() => {
+                card.style.transform = 'scale(1)';
+                card.style.opacity = '1';
+            }, 300);
+        }, index * 100);
+    });
+    
+    // Show success message
+    setTimeout(() => {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-5';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            <i class="bi bi-check-circle me-2"></i>
+            데이터가 성공적으로 새로고침되었습니다.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }, 1000);
+}
+
+// Export data function
+function exportData() {
+    window.location.href = '/api/export/json';
+}
+
+// Real-time updates
+let realtimeInterval;
+
+function startRealtimeUpdates() {
+    // Update stats every 10 seconds
+    realtimeInterval = setInterval(() => {
+        fetch('/api/realtime/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update stats
+                    updateStatCards(data.stats);
+                    updateSystemInfo(data.stats);
+                    updateLastUpdate();
+                }
+            })
+            .catch(error => console.log('Realtime update error:', error));
+    }, 10000);
+    
+    // Add real-time feed updates every 5 seconds
+    setInterval(() => {
+        fetch('/api/realtime/feed')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.event) {
+                    addRealtimeEvent(data.event);
+                }
+            })
+            .catch(error => console.log('Feed update error:', error));
+    }, 5000);
+}
+
+function updateStatCards(stats) {
+    const totalElement = document.getElementById('total-ips');
+    const activeElement = document.getElementById('active-ips');
+    
+    if (totalElement) {
+        animateNumber(totalElement, stats.total_ips);
+    }
+    if (activeElement) {
+        animateNumber(activeElement, stats.active_ips);
+    }
+}
+
+function updateSystemInfo(stats) {
+    // Update progress bars
+    const cpuBar = document.querySelector('.progress-bar.bg-success');
+    const memoryBar = document.querySelector('.progress-bar.bg-info');
+    const diskBar = document.querySelector('.progress-bar.bg-warning');
+    
+    if (cpuBar) {
+        cpuBar.style.width = stats.cpu_usage + '%';
+        cpuBar.parentElement.previousElementSibling.lastElementChild.textContent = stats.cpu_usage + '%';
+    }
+    if (memoryBar) {
+        memoryBar.style.width = stats.memory_usage + '%';
+        memoryBar.parentElement.previousElementSibling.lastElementChild.textContent = stats.memory_usage + '%';
+    }
+    if (diskBar) {
+        diskBar.style.width = stats.disk_usage + '%';
+        diskBar.parentElement.previousElementSibling.lastElementChild.textContent = stats.disk_usage + '%';
+    }
+}
+
+function animateNumber(element, newValue) {
+    const currentValue = parseInt(element.textContent.replace(/,/g, '')) || 0;
+    const increment = (newValue - currentValue) / 20;
+    
+    let counter = 0;
+    const timer = setInterval(() => {
+        counter++;
+        const value = Math.round(currentValue + (increment * counter));
+        element.textContent = value.toLocaleString();
+        
+        if (counter >= 20) {
+            clearInterval(timer);
+            element.textContent = newValue.toLocaleString();
+        }
+    }, 50);
+}
+
+function addRealtimeEvent(event) {
+    // Create a simulated real-time feed area if not exists
+    let feedArea = document.getElementById('realtime-activity');
+    if (!feedArea) {
+        // Add to system info card
+        const systemCard = document.querySelector('.col-lg-6:last-child .modern-card .card-body');
+        if (systemCard) {
+            const feedDiv = document.createElement('div');
+            feedDiv.innerHTML = `
+                <hr class="my-4">
+                <h6 class="mb-3">실시간 활동</h6>
+                <div id="realtime-activity" class="border rounded p-2" style="height: 150px; overflow-y: auto; font-size: 0.875rem; background: rgba(248, 249, 250, 0.5);">
+                </div>
+            `;
+            systemCard.appendChild(feedDiv);
+            feedArea = document.getElementById('realtime-activity');
+        }
+    }
+    
+    if (feedArea) {
+        const eventElement = document.createElement('div');
+        eventElement.className = 'mb-2 animate-fade-in';
+        eventElement.innerHTML = `
+            <small class="text-muted">${event.timestamp}</small>
+            <span class="ms-2"><i class="bi ${event.icon} text-${event.type === 'success' ? 'success' : event.type === 'warning' ? 'warning' : 'info'}"></i> ${event.message}</span>
+        `;
+        
+        feedArea.insertBefore(eventElement, feedArea.firstChild);
+        
+        // Keep only last 10 items
+        while (feedArea.children.length > 10) {
+            feedArea.removeChild(feedArea.lastChild);
+        }
+    }
+}
+
+function updateLastUpdate() {
+    const lastUpdateElement = document.getElementById('last-update');
+    if (lastUpdateElement) {
+        const now = new Date();
+        lastUpdateElement.textContent = now.toLocaleString('ko-KR');
+    }
+}
+
+// Add fade-in animation to elements
+document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('.stat-card, .modern-card');
+    elements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            el.style.transition = 'all 0.5s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Start real-time updates
+    startRealtimeUpdates();
+    
+    // Initialize new UI components
+    
+    // 실시간 대시보드 초기화
+    if (typeof initializeRealtimeDashboard === 'function') {
+        const dashboard = initializeRealtimeDashboard({
+            updateInterval: 5000,
+            enableNotifications: true
+        });
+    }
+    
+    // 시스템 모니터 위젯 생성
+    if (typeof createSystemMonitor === 'function') {
+        const monitor = createSystemMonitor('system-monitor-container', {
+            updateInterval: 10000,
+            showCPU: true,
+            showMemory: true,
+            showDisk: true,
+            showNetwork: true,
+            showServices: true,
+            compact: false
+        });
+    }
+    
+    // 토스트 알림 테스트
+    if (typeof toast === 'object') {
+        // 페이지 로드 완료 알림
+        toast.success('대시보드가 성공적으로 로드되었습니다.', {
+            duration: 3000
+        });
+    }
+});
+
+// Stop real-time updates when page is hidden
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        if (realtimeInterval) {
+            clearInterval(realtimeInterval);
+        }
+    } else {
+        startRealtimeUpdates();
+    }
+});
+</script>
+{% endblock %}

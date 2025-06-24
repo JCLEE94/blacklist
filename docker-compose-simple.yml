@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  blacklist:
+    image: blacklist:latest
+    container_name: blacklist-prod
+    restart: unless-stopped
+    ports:
+      - "2541:2541"
+    environment:
+      # Application settings
+      - FLASK_ENV=development
+      - PORT=2541
+      - SECRET_KEY=blacklist-secret-key
+      - FORCE_HTTPS=false
+      
+      # Authentication
+      - BLACKLIST_USERNAME=admin
+      - BLACKLIST_PASSWORD=admin123
+      - ADMIN_PASSWORD=admin123
+      
+      # Collector credentials
+      - REGTECH_USERNAME=nextrade
+      - REGTECH_PASSWORD=Sprtmxm1@3
+      - SECUDIUM_USERNAME=nextrade
+      - SECUDIUM_PASSWORD=Sprtmxm1@3
+      
+      # Disable Redis for now
+      - REDIS_URL=
+      
+    volumes:
+      - ./data:/app/data
+      - ./instance:/app/instance
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

@@ -1,0 +1,96 @@
+{
+  "sources": {
+    "primary_source": {
+      "enabled": true,
+      "priority": 1,
+      "update_interval": 3600,
+      "description": "Primary blacklist source",
+      "settings": {
+        "username": "${BLACKLIST_USERNAME}",
+        "password": "${BLACKLIST_PASSWORD}"
+      }
+    },
+    "regtech_fsec": {
+      "enabled": true,
+      "priority": 2,
+      "update_interval": 3600,
+      "description": "금융보안원 레그테크 포털 요주의 IP (https://regtech.fsec.or.kr)",
+      "settings": {
+        "username": "${BLACKLIST_USERNAME}",
+        "password": "${BLACKLIST_PASSWORD}",
+        "max_pages": 5,
+        "timeout": 30
+      }
+    },
+    "example_file": {
+      "enabled": false,
+      "priority": 5,
+      "update_interval": 7200,
+      "description": "로컬 파일에서 IP 리스트 읽기",
+      "settings": {
+        "file_path": "/path/to/blacklist.txt",
+        "format": "txt",
+        "category": "blacklist"
+      }
+    },
+    "example_url": {
+      "enabled": false,
+      "priority": 3,
+      "update_interval": 1800,
+      "description": "외부 URL에서 IP 리스트 다운로드",
+      "settings": {
+        "url": "https://example.com/blacklist.txt",
+        "format": "txt",
+        "category": "blacklist",
+        "timeout": 30,
+        "headers": {
+          "User-Agent": "Nextrade-BlackList-System/2.1"
+        }
+      }
+    },
+    "malware_domains": {
+      "enabled": false,
+      "priority": 4,
+      "update_interval": 21600,
+      "description": "악성 도메인 IP 리스트",
+      "settings": {
+        "url": "https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt",
+        "format": "txt",
+        "category": "malware",
+        "timeout": 30
+      }
+    },
+    "tor_exit_nodes": {
+      "enabled": false,
+      "priority": 6,
+      "update_interval": 3600,
+      "description": "Tor 출구 노드 IP 리스트",
+      "settings": {
+        "url": "https://check.torproject.org/torbulkexitlist",
+        "format": "txt", 
+        "category": "tor",
+        "timeout": 30
+      }
+    },
+    "custom_csv": {
+      "enabled": false,
+      "priority": 7,
+      "update_interval": 86400,
+      "description": "CSV 형식 IP 리스트",
+      "settings": {
+        "file_path": "/path/to/custom_ips.csv",
+        "format": "csv",
+        "delimiter": ",",
+        "ip_column": 0,
+        "category": "custom"
+      }
+    }
+  },
+  "global_settings": {
+    "max_concurrent_updates": 5,
+    "default_timeout": 30,
+    "retry_attempts": 3,
+    "retry_delay": 5,
+    "log_level": "INFO"
+  }
+}

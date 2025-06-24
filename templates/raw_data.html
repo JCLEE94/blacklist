@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}RAW Data Viewer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    
+    .data-table {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .table-responsive {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .table th {
+        background: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        font-size: 0.875rem;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .table td {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+    
+    .ip-code {
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 3px;
+        font-size: 0.75rem;
+    }
+    
+    .date-text {
+        font-family: monospace;
+        font-size: 0.75rem;
+    }
+    
+    .stats-row {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 통계 요약 -->
+    <div class="stats-row">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h4 id="totalRows">{{ total_ips|default('48,132') }}</h4>
+                <small>Total Records</small>
+            </div>
+            <div class="col-md-3">
+                <h4 id="filteredRows">-</h4>
+                <small>Filtered Results</small>
+            </div>
+            <div class="col-md-3">
+                <h4>{{ date_range_start|default('2025-06-16') }} ~ {{ date_range_end|default('2025-06-17') }}</h4>
+                <small>Date Range</small>
+            </div>
+            <div class="col-md-3">
+                <h4>2</h4>
+                <small>Sources (REGTECH, SECUDIUM)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 필터 -->
+    <div class="filter-card">
+        <div class="row">
+            <div class="col-md-2">
+                <label class="form-label">Date</label>
+                <select class="form-select form-select-sm" id="dateFilter">
+                    <option value="">All Dates</option>
+                    <option value="2025-06-17">2025-06-17</option>
+                    <option value="2025-06-16">2025-06-16</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Source</label>
+                <select class="form-select form-select-sm" id="sourceFilter">
+                    <option value="">All Sources</option>
+                    <option value="REGTECH">REGTECH</option>
+                    <option value="SECUDIUM">SECUDIUM</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Attack Type</label>
+                <select class="form-select form-select-sm" id="attackTypeFilter">
+                    <option value="">All Types</option>
+                    <option value="Security Advisory">Security Advisory</option>
+                    <option value="Malware Distribution">Malware Distribution</option>
+                    <option value="Botnet Activity">Botnet Activity</option>
+                    <option value="Network Scanning">Network Scanning</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Page Size</label>
+                <select class="form-select form-select-sm" id="pageSizeSelect">
+                    <option value="50">50 per page</option>
+                    <option value="100" selected>100 per page</option>
+                    <option value="200">200 per page</option>
+                    <option value="500">500 per page</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">IP Search</label>
+                <input type="text" class="form-control form-control-sm" id="ipSearch" placeholder="IP address...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button class="btn btn-primary btn-sm" onclick="applyFilters()">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 데이터 테이블 -->
+    <div class="data-table">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">IP Address</th>
+                        <th style="width: 80px;">Source</th>
+                        <th style="width: 130px;">Attack Type</th>
+                        <th style="width: 70px;">Country</th>
+                        <th style="width: 90px;">Detection Date</th>
+                        <th style="width: 110px;">Created At</th>
+                        <th>Metadata</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <tr>
+                        <td colspan="7" class="loading">
+                            <div class="spinner-border spinner-border-sm text-primary"></div>
+                            Loading RAW data...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 페이지네이션 -->
+        <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+            <div>
+                <small class="text-muted">
+                    Showing <span id="showingStart">0</span>-<span id="showingEnd">0</span> 
+                    of <span id="totalFiltered">0</span> entries
+                </small>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary" id="prevBtn" onclick="previousPage()" disabled>
+                    <i class="bi bi-chevron-left"></i> Previous
+                </button>
+                <span class="mx-3">Page <span id="currentPageNum">1</span> of <span id="totalPages">1</span></span>
+                <button class="btn btn-sm btn-outline-secondary" id="nextBtn" onclick="nextPage()">
+                    Next <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let pageSize = 100;
+let totalRecords = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadRawData();
+});
+
+function loadRawData(page = 1) {
+    const filters = getFilters();
+    const params = new URLSearchParams({
+        page: page,
+        limit: pageSize,
+        ...filters
+    });
+    
+    showLoading();
+    
+    fetch(`/api/raw-data?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateTable(data.data);
+                updatePagination(page, data.total);
+                updateStats(data.total);
+            } else {
+                showError(data.error || 'Failed to load data');
+            }
+        })
+        .catch(error => {
+            console.error('Failed to load raw data:', error);
+            showError('Network error occurred');
+        });
+}
+
+function getFilters() {
+    return {
+        date: document.getElementById('dateFilter').value,
+        source: document.getElementById('sourceFilter').value,
+        attack_type: document.getElementById('attackTypeFilter').value,
+        ip: document.getElementById('ipSearch').value
+    };
+}
+
+function updateTable(data) {
+    const tbody = document.getElementById('dataTableBody');
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="7" class="text-center text-muted py-4">
+                <i class="bi bi-info-circle"></i> No data found with current filters
+            </td></tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(item => `
+        <tr>
+            <td><code class="ip-code">${item.ip}</code></td>
+            <td><span class="badge ${getSourceBadgeClass(item.source)}">${item.source}</span></td>
+            <td><span class="badge bg-secondary">${item.attack_type || 'N/A'}</span></td>
+            <td>${item.country || 'N/A'}</td>
+            <td class="date-text">${formatDate(item.detection_date)}</td>
+            <td class="date-text">${formatDateTime(item.created_at)}</td>
+            <td><small>${item.metadata ? JSON.stringify(JSON.parse(item.metadata)).substring(0, 50) + '...' : 'N/A'}</small></td>
+        </tr>
+    `).join('');
+}
+
+function updatePagination(page, total) {
+    currentPage = page;
+    totalRecords = total;
+    totalPages = Math.ceil(total / pageSize);
+    
+    const start = (page - 1) * pageSize + 1;
+    const end = Math.min(page * pageSize, total);
+    
+    document.getElementById('currentPageNum').textContent = page;
+    document.getElementById('totalPages').textContent = totalPages;
+    document.getElementById('showingStart').textContent = start;
+    document.getElementById('showingEnd').textContent = end;
+    document.getElementById('totalFiltered').textContent = total.toLocaleString();
+    
+    document.getElementById('prevBtn').disabled = page <= 1;
+    document.getElementById('nextBtn').disabled = page >= totalPages;
+}
+
+function updateStats(filtered) {
+    document.getElementById('filteredRows').textContent = filtered.toLocaleString();
+}
+
+function showLoading() {
+    document.getElementById('dataTableBody').innerHTML = `
+        <tr><td colspan="7" class="loading">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+            Loading RAW data...
+        </td></tr>
+    `;
+}
+
+function showError(message) {
+    document.getElementById('dataTableBody').innerHTML = `
+        <tr><td colspan="7" class="text-center text-danger py-4">
+            <i class="bi bi-exclamation-triangle"></i> ${message}
+        </td></tr>
+    `;
+}
+
+function getSourceBadgeClass(source) {
+    if (source === 'REGTECH') return 'bg-success';
+    if (source === 'SECUDIUM') return 'bg-warning';
+    return 'bg-primary';
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    return dateStr.substring(0, 10);
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return 'N/A';
+    return dateStr.substring(0, 19).replace('T', ' ');
+}
+
+function applyFilters() {
+    currentPage = 1;
+    pageSize = parseInt(document.getElementById('pageSizeSelect').value);
+    loadRawData(1);
+}
+
+function resetFilters() {
+    document.getElementById('dateFilter').value = '';
+    document.getElementById('sourceFilter').value = '';
+    document.getElementById('attackTypeFilter').value = '';
+    document.getElementById('ipSearch').value = '';
+    document.getElementById('pageSizeSelect').value = '100';
+    applyFilters();
+}
+
+function previousPage() {
+    if (currentPage > 1) {
+        loadRawData(currentPage - 1);
+    }
+}
+
+function nextPage() {
+    if (currentPage < totalPages) {
+        loadRawData(currentPage + 1);
+    }
+}
+
+// Enter key support for IP search
+document.getElementById('ipSearch').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        applyFilters();
+    }
+});
+</script>
+{% endblock %}

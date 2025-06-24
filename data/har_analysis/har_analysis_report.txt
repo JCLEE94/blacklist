@@ -1,0 +1,64 @@
+================================================================================
+🔍 REGTECH HAR 파일 완전 분석 보고서
+================================================================================
+
+📊 요약 정보:
+  - 총 요청 수: 2
+  - 총 페이지 수: 1
+  - HAR 버전: 1.2
+  - 생성자: WebInspector
+
+🎯 REGTECH 특화 분석:
+  - Excel 다운로드 요청: 1개
+  - 로그인 시도: 0개
+  - 블랙리스트 관련 요청: 2개
+
+📋 Excel 다운로드 요청 상세:
+  요청 1:
+    - URL: https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryListDownloadXlsx
+    - Method: POST
+    - Status: 200
+    - Error: net::ERR_ABORTED
+    - Content-Disposition: attachment; filename="fctiList_20250614224635.xlsx"
+    - POST 파라미터:
+      • page: 0
+      • tabSort: blacklist
+      • excelDownload: security%2Cblacklist%2Cweakpoint%2C
+      • cveId: 
+      • ipId: 
+      • estId: 
+      • startDate: 20250301
+      • endDate: 20250531
+      • findCondition: all
+      • findKeyword: 
+      • excelDown: security
+      • excelDown: blacklist
+      • excelDown: weakpoint
+      • size: 10
+
+🔐 인증 정보 분석:
+  - 발견된 쿠키: 0개
+  - 인증 헤더: 0개
+  - CSRF 토큰: 0개
+
+❌ 인증 쿠키 없음 - 비인증 세션으로 요청됨
+
+🛡️ 보안 분석:
+  - CORS 헤더: 4개
+  - CSP 헤더: 1개
+
+🎯 핵심 발견사항:
+  ❌ 인증 쿠키 없음 - 로그아웃 상태에서 요청
+  💡 이는 인증 없이도 Excel 다운로드가 가능할 수 있음을 시사
+  ⚠️ Excel 다운로드 요청이 중단됨 (ERR_ABORTED)
+  💡 브라우저에서 수동으로 중단했거나 타임아웃 발생
+  ✅ 서버에서 Excel 파일명 응답: attachment; filename="fctiList_20250614224635.xlsx"
+  💡 서버는 파일 다운로드를 준비했음
+
+💡 권장사항:
+  1. 인증 없이 Excel 다운로드 엔드포인트 직접 호출 시도
+  2. POST 파라미터 그대로 사용하여 요청
+  3. 브라우저 헤더 정확히 모방
+  4. 요청 타임아웃을 충분히 길게 설정 (60초 이상)
+  5. stream=True로 대용량 파일 처리
+  6. Content-Disposition 헤더 확인하여 파일명 추출

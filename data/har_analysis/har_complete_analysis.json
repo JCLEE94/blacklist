@@ -1,0 +1,475 @@
+{
+  "summary": {
+    "total_requests": 2,
+    "total_pages": 1,
+    "har_version": "1.2",
+    "creator": {
+      "name": "WebInspector",
+      "version": "537.36"
+    },
+    "analysis_timestamp": "2025-06-21"
+  },
+  "pages": [
+    {
+      "id": "page_13",
+      "title": "https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList",
+      "started": "2025-06-14T13:46:13.720Z",
+      "timing": {
+        "onContentLoad": 1526.2069999989762,
+        "onLoad": 1756.3669999981357
+      }
+    }
+  ],
+  "requests": [
+    {
+      "index": 0,
+      "method": "POST",
+      "url": "https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryListDownloadXlsx",
+      "status": 200,
+      "started_time": "2025-06-14T13:46:33.279Z",
+      "total_time": 4335.5069999997795,
+      "timing_breakdown": {
+        "blocked": 3.3959999998998827,
+        "dns": -1,
+        "ssl": -1,
+        "connect": -1,
+        "send": 0.2230000000000003,
+        "wait": 4330.693999999484,
+        "receive": 1.194000000396045,
+        "_blocked_queueing": 0.5799999998998828,
+        "_workerStart": -1,
+        "_workerReady": -1,
+        "_workerFetchStart": -1,
+        "_workerRespondWithSettled": -1
+      },
+      "request_headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Content-Length": "228",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Host": "regtech.fsec.or.kr",
+        "Origin": "https://regtech.fsec.or.kr",
+        "Pragma": "no-cache",
+        "Referer": "https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
+      },
+      "response_headers": {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Origin": "https://regtech.fsec.or.kr",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "Connection": "Keep-Alive",
+        "Content-Disposition": "attachment; filename=\"fctiList_20250614224635.xlsx\"",
+        "Date": "Sat, 14 Jun 2025 13:46:35 GMT",
+        "Expires": "0",
+        "Keep-Alive": "timeout=5, max=99",
+        "Pragma": "no-cache",
+        "Transfer-Encoding": "chunked",
+        "Vary": "Origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block"
+      },
+      "request_cookies": [],
+      "response_cookies": [],
+      "post_data": {
+        "mimeType": "application/x-www-form-urlencoded",
+        "text": "page=0&tabSort=blacklist&excelDownload=security%2Cblacklist%2Cweakpoint%2C&cveId=&ipId=&estId=&startDate=20250301&endDate=20250531&findCondition=all&findKeyword=&excelDown=security&excelDown=blacklist&excelDown=weakpoint&size=10",
+        "params": [
+          {
+            "name": "page",
+            "value": "0"
+          },
+          {
+            "name": "tabSort",
+            "value": "blacklist"
+          },
+          {
+            "name": "excelDownload",
+            "value": "security%2Cblacklist%2Cweakpoint%2C"
+          },
+          {
+            "name": "cveId",
+            "value": ""
+          },
+          {
+            "name": "ipId",
+            "value": ""
+          },
+          {
+            "name": "estId",
+            "value": ""
+          },
+          {
+            "name": "startDate",
+            "value": "20250301"
+          },
+          {
+            "name": "endDate",
+            "value": "20250531"
+          },
+          {
+            "name": "findCondition",
+            "value": "all"
+          },
+          {
+            "name": "findKeyword",
+            "value": ""
+          },
+          {
+            "name": "excelDown",
+            "value": "security"
+          },
+          {
+            "name": "excelDown",
+            "value": "blacklist"
+          },
+          {
+            "name": "excelDown",
+            "value": "weakpoint"
+          },
+          {
+            "name": "size",
+            "value": "10"
+          }
+        ]
+      },
+      "query_string": [],
+      "server_ip": "103.59.156.50",
+      "error": "net::ERR_ABORTED",
+      "content_type": "text/plain",
+      "content_size": 0
+    },
+    {
+      "index": 1,
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-7WRDYHF66J&gtm=45je56b1v9182031759za200&_p=1749908775153&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~103351869~103351871~104617979~104617981~104661466~104661468~104718208~104736445~104736447~104748470~104748472&cid=215465125.1748404470&ul=ko-kr&sr=2560x1440&uaa=x86&uab=64&uafvl=Google%2520Chrome%3B131.0.6778.265%7CChromium%3B131.0.6778.265%7CNot_A%2520Brand%3B24.0.0.0&uamb=0&uam=&uap=Windows&uapv=19.0.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEEAAAQ&sid=1749908410&sct=4&seg=1&dl=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dr=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dt=%EA%B8%88%EC%9C%B5%EB%B3%B4%EC%95%88%20%EB%A0%88%EA%B7%B8%ED%85%8C%ED%81%AC%20%ED%8F%AC%ED%84%B8&_s=2&tfd=24562",
+      "status": 204,
+      "started_time": "2025-06-14T13:46:38.280Z",
+      "total_time": 76.26600000003236,
+      "timing_breakdown": {
+        "blocked": 0.9550000001576264,
+        "dns": -1,
+        "ssl": -1,
+        "connect": -1,
+        "send": 0.23299999999999993,
+        "wait": 73.39200000026612,
+        "receive": 1.6859999996086117,
+        "_blocked_queueing": 0.6130000001576263,
+        "_workerStart": -1,
+        "_workerReady": -1,
+        "_workerFetchStart": -1,
+        "_workerRespondWithSettled": -1
+      },
+      "request_headers": {
+        ":authority": "www.google-analytics.com",
+        ":method": "POST",
+        ":path": "/g/collect?v=2&tid=G-7WRDYHF66J&gtm=45je56b1v9182031759za200&_p=1749908775153&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~103351869~103351871~104617979~104617981~104661466~104661468~104718208~104736445~104736447~104748470~104748472&cid=215465125.1748404470&ul=ko-kr&sr=2560x1440&uaa=x86&uab=64&uafvl=Google%2520Chrome%3B131.0.6778.265%7CChromium%3B131.0.6778.265%7CNot_A%2520Brand%3B24.0.0.0&uamb=0&uam=&uap=Windows&uapv=19.0.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEEAAAQ&sid=1749908410&sct=4&seg=1&dl=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dr=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dt=%EA%B8%88%EC%9C%B5%EB%B3%B4%EC%95%88%20%EB%A0%88%EA%B7%B8%ED%85%8C%ED%81%AC%20%ED%8F%AC%ED%84%B8&_s=2&tfd=24562",
+        ":scheme": "https",
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        "cache-control": "no-cache",
+        "content-length": "395",
+        "content-type": "text/plain;charset=UTF-8",
+        "origin": "https://regtech.fsec.or.kr",
+        "pragma": "no-cache",
+        "priority": "u=1, i",
+        "referer": "https://regtech.fsec.or.kr/",
+        "sec-ch-ua": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "no-cors",
+        "sec-fetch-site": "cross-site",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      },
+      "response_headers": {
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://regtech.fsec.or.kr",
+        "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-length": "0",
+        "content-security-policy-report-only": "script-src 'none'; form-action 'none'; frame-src 'none'; report-uri https://csp.withgoogle.com/csp/scaffolding/ascnsrsggc:102:0",
+        "content-type": "text/plain",
+        "cross-origin-opener-policy-report-only": "same-origin; report-to=ascnsrsggc:102:0",
+        "cross-origin-resource-policy": "cross-origin",
+        "date": "Sat, 14 Jun 2025 13:46:40 GMT",
+        "expires": "Fri, 01 Jan 1990 00:00:00 GMT",
+        "pragma": "no-cache",
+        "report-to": "{\"group\":\"ascnsrsggc:102:0\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/scaffolding/ascnsrsggc:102:0\"}],}",
+        "server": "Golfe2"
+      },
+      "request_cookies": [],
+      "response_cookies": [],
+      "post_data": {
+        "mimeType": "text/plain;charset=UTF-8",
+        "text": "en=form_start&ep.form_id=advisoryList&ep.form_name=advisoryList&ep.form_destination=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryListDownloadXlsx&epn.form_length=18&_et=13529\r\nen=form_submit&ep.form_id=advisoryList&ep.form_name=advisoryList&ep.form_destination=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryListDownloadXlsx&epn.form_length=18&_et=2"
+      },
+      "query_string": [
+        {
+          "name": "v",
+          "value": "2"
+        },
+        {
+          "name": "tid",
+          "value": "G-7WRDYHF66J"
+        },
+        {
+          "name": "gtm",
+          "value": "45je56b1v9182031759za200"
+        },
+        {
+          "name": "_p",
+          "value": "1749908775153"
+        },
+        {
+          "name": "gcd",
+          "value": "13l3l3l3l1l1"
+        },
+        {
+          "name": "npa",
+          "value": "0"
+        },
+        {
+          "name": "dma",
+          "value": "0"
+        },
+        {
+          "name": "tag_exp",
+          "value": "101509157~103116026~103200004~103233427~103351869~103351871~104617979~104617981~104661466~104661468~104718208~104736445~104736447~104748470~104748472"
+        },
+        {
+          "name": "cid",
+          "value": "215465125.1748404470"
+        },
+        {
+          "name": "ul",
+          "value": "ko-kr"
+        },
+        {
+          "name": "sr",
+          "value": "2560x1440"
+        },
+        {
+          "name": "uaa",
+          "value": "x86"
+        },
+        {
+          "name": "uab",
+          "value": "64"
+        },
+        {
+          "name": "uafvl",
+          "value": "Google%2520Chrome%3B131.0.6778.265%7CChromium%3B131.0.6778.265%7CNot_A%2520Brand%3B24.0.0.0"
+        },
+        {
+          "name": "uamb",
+          "value": "0"
+        },
+        {
+          "name": "uam",
+          "value": ""
+        },
+        {
+          "name": "uap",
+          "value": "Windows"
+        },
+        {
+          "name": "uapv",
+          "value": "19.0.0"
+        },
+        {
+          "name": "uaw",
+          "value": "0"
+        },
+        {
+          "name": "are",
+          "value": "1"
+        },
+        {
+          "name": "frm",
+          "value": "0"
+        },
+        {
+          "name": "pscdl",
+          "value": "noapi"
+        },
+        {
+          "name": "_eu",
+          "value": "AEEAAAQ"
+        },
+        {
+          "name": "sid",
+          "value": "1749908410"
+        },
+        {
+          "name": "sct",
+          "value": "4"
+        },
+        {
+          "name": "seg",
+          "value": "1"
+        },
+        {
+          "name": "dl",
+          "value": "https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList"
+        },
+        {
+          "name": "dr",
+          "value": "https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList"
+        },
+        {
+          "name": "dt",
+          "value": "%EA%B8%88%EC%9C%B5%EB%B3%B4%EC%95%88%20%EB%A0%88%EA%B7%B8%ED%85%8C%ED%81%AC%20%ED%8F%AC%ED%84%B8"
+        },
+        {
+          "name": "_s",
+          "value": "2"
+        },
+        {
+          "name": "tfd",
+          "value": "24562"
+        }
+      ],
+      "server_ip": "142.250.206.206",
+      "error": "net::ERR_ABORTED",
+      "content_type": "text/plain",
+      "content_size": 0
+    }
+  ],
+  "authentication": {
+    "cookies_found": [],
+    "auth_headers": [],
+    "session_tokens": [],
+    "csrf_tokens": []
+  },
+  "regtech_specific": {
+    "excel_download_requests": [
+      {
+        "url": "https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryListDownloadXlsx",
+        "method": "POST",
+        "post_data": {
+          "mimeType": "application/x-www-form-urlencoded",
+          "text": "page=0&tabSort=blacklist&excelDownload=security%2Cblacklist%2Cweakpoint%2C&cveId=&ipId=&estId=&startDate=20250301&endDate=20250531&findCondition=all&findKeyword=&excelDown=security&excelDown=blacklist&excelDown=weakpoint&size=10",
+          "params": [
+            {
+              "name": "page",
+              "value": "0"
+            },
+            {
+              "name": "tabSort",
+              "value": "blacklist"
+            },
+            {
+              "name": "excelDownload",
+              "value": "security%2Cblacklist%2Cweakpoint%2C"
+            },
+            {
+              "name": "cveId",
+              "value": ""
+            },
+            {
+              "name": "ipId",
+              "value": ""
+            },
+            {
+              "name": "estId",
+              "value": ""
+            },
+            {
+              "name": "startDate",
+              "value": "20250301"
+            },
+            {
+              "name": "endDate",
+              "value": "20250531"
+            },
+            {
+              "name": "findCondition",
+              "value": "all"
+            },
+            {
+              "name": "findKeyword",
+              "value": ""
+            },
+            {
+              "name": "excelDown",
+              "value": "security"
+            },
+            {
+              "name": "excelDown",
+              "value": "blacklist"
+            },
+            {
+              "name": "excelDown",
+              "value": "weakpoint"
+            },
+            {
+              "name": "size",
+              "value": "10"
+            }
+          ]
+        },
+        "status": 200,
+        "error": "net::ERR_ABORTED",
+        "content_disposition": "attachment; filename=\"fctiList_20250614224635.xlsx\""
+      }
+    ],
+    "login_attempts": [],
+    "blacklist_requests": [
+      {
+        "url": "https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryListDownloadXlsx",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-7WRDYHF66J&gtm=45je56b1v9182031759za200&_p=1749908775153&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~103351869~103351871~104617979~104617981~104661466~104661468~104718208~104736445~104736447~104748470~104748472&cid=215465125.1748404470&ul=ko-kr&sr=2560x1440&uaa=x86&uab=64&uafvl=Google%2520Chrome%3B131.0.6778.265%7CChromium%3B131.0.6778.265%7CNot_A%2520Brand%3B24.0.0.0&uamb=0&uam=&uap=Windows&uapv=19.0.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEEAAAQ&sid=1749908410&sct=4&seg=1&dl=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dr=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dt=%EA%B8%88%EC%9C%B5%EB%B3%B4%EC%95%88%20%EB%A0%88%EA%B7%B8%ED%85%8C%ED%81%AC%20%ED%8F%AC%ED%84%B8&_s=2&tfd=24562",
+        "method": "POST",
+        "status": 204
+      }
+    ]
+  },
+  "security_analysis": {
+    "cors_headers": [
+      {
+        "name": "Access-Control-Allow-Credentials",
+        "value": "true",
+        "url": "https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryListDownloadXlsx"
+      },
+      {
+        "name": "Access-Control-Allow-Origin",
+        "value": "https://regtech.fsec.or.kr",
+        "url": "https://regtech.fsec.or.kr/fcti/securityAdvisory/advisoryListDownloadXlsx"
+      },
+      {
+        "name": "access-control-allow-credentials",
+        "value": "true",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-7WRDYHF66J&gtm=45je56b1v9182031759za200&_p=1749908775153&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~103351869~103351871~104617979~104617981~104661466~104661468~104718208~104736445~104736447~104748470~104748472&cid=215465125.1748404470&ul=ko-kr&sr=2560x1440&uaa=x86&uab=64&uafvl=Google%2520Chrome%3B131.0.6778.265%7CChromium%3B131.0.6778.265%7CNot_A%2520Brand%3B24.0.0.0&uamb=0&uam=&uap=Windows&uapv=19.0.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEEAAAQ&sid=1749908410&sct=4&seg=1&dl=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dr=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dt=%EA%B8%88%EC%9C%B5%EB%B3%B4%EC%95%88%20%EB%A0%88%EA%B7%B8%ED%85%8C%ED%81%AC%20%ED%8F%AC%ED%84%B8&_s=2&tfd=24562"
+      },
+      {
+        "name": "access-control-allow-origin",
+        "value": "https://regtech.fsec.or.kr",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-7WRDYHF66J&gtm=45je56b1v9182031759za200&_p=1749908775153&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~103351869~103351871~104617979~104617981~104661466~104661468~104718208~104736445~104736447~104748470~104748472&cid=215465125.1748404470&ul=ko-kr&sr=2560x1440&uaa=x86&uab=64&uafvl=Google%2520Chrome%3B131.0.6778.265%7CChromium%3B131.0.6778.265%7CNot_A%2520Brand%3B24.0.0.0&uamb=0&uam=&uap=Windows&uapv=19.0.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEEAAAQ&sid=1749908410&sct=4&seg=1&dl=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dr=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dt=%EA%B8%88%EC%9C%B5%EB%B3%B4%EC%95%88%20%EB%A0%88%EA%B7%B8%ED%85%8C%ED%81%AC%20%ED%8F%AC%ED%84%B8&_s=2&tfd=24562"
+      }
+    ],
+    "csrf_protection": [],
+    "content_security_policy": [
+      {
+        "name": "content-security-policy-report-only",
+        "value": "script-src 'none'; form-action 'none'; frame-src 'none'; report-uri https://csp.withgoogle.com/csp/scaffolding/ascnsrsggc:102:0",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-7WRDYHF66J&gtm=45je56b1v9182031759za200&_p=1749908775153&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~103351869~103351871~104617979~104617981~104661466~104661468~104718208~104736445~104736447~104748470~104748472&cid=215465125.1748404470&ul=ko-kr&sr=2560x1440&uaa=x86&uab=64&uafvl=Google%2520Chrome%3B131.0.6778.265%7CChromium%3B131.0.6778.265%7CNot_A%2520Brand%3B24.0.0.0&uamb=0&uam=&uap=Windows&uapv=19.0.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEEAAAQ&sid=1749908410&sct=4&seg=1&dl=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dr=https%3A%2F%2Fregtech.fsec.or.kr%2Ffcti%2FsecurityAdvisory%2FadvisoryList&dt=%EA%B8%88%EC%9C%B5%EB%B3%B4%EC%95%88%20%EB%A0%88%EA%B7%B8%ED%85%8C%ED%81%AC%20%ED%8F%AC%ED%84%B8&_s=2&tfd=24562"
+      }
+    ]
+  }
+}

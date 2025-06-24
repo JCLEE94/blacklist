@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}블랙리스트 검색 - Nextrade Black List Deny System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-search"></i> 블랙리스트 IP 검색
+        </h1>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form id="searchForm" onsubmit="searchIP(event)">
+            <div class="input-group input-group-lg">
+                <input type="text" class="form-control" id="ipInput" 
+                       placeholder="검색할 IP 주소를 입력하세요 (예: 192.168.1.1)"
+                       pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+                       required>
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> 검색
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Search Results -->
+<div id="searchResults" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">검색 결과</h5>
+        </div>
+        <div class="card-body" id="resultsContent">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+</div>
+
+<!-- Recent Searches -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-clock-history"></i> 최근 검색
+        </h5>
+    </div>
+    <div class="card-body">
+        <div id="recentSearches">
+            <p class="text-muted">최근 검색 기록이 없습니다.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load recent searches from localStorage
+function loadRecentSearches() {
+    const recent = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    const container = document.getElementById('recentSearches');
+    
+    if (recent.length === 0) {
+        container.innerHTML = '<p class="text-muted">최근 검색 기록이 없습니다.</p>';
+        return;
+    }
+    
+    container.innerHTML = recent.slice(0, 10).map(item => `
+        <button class="btn btn-sm btn-outline-secondary me-2 mb-2" 
+                onclick="document.getElementById('ipInput').value='${item}'; searchIP(event)">
+            ${item}
+        </button>
+    `).join('');
+}
+
+function saveRecentSearch(ip) {
+    let recent = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    recent = [ip, ...recent.filter(item => item !== ip)].slice(0, 10);
+    localStorage.setItem('recentSearches', JSON.stringify(recent));
+    loadRecentSearches();
+}
+
+function searchIP(event) {
+    event.preventDefault();
+    
+    const ip = document.getElementById('ipInput').value.trim();
+    if (!ip) return;
+    
+    // Save to recent searches
+    saveRecentSearch(ip);
+    
+    // Show loading
+    document.getElementById('searchResults').style.display = 'block';
+    document.getElementById('resultsContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">검색 중...</span>
+            </div>
+        </div>
+    `;
+    
+    // Perform search
+    fetch('/api/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ip: ip })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsContent = document.getElementById('resultsContent');
+        
+        if (data.found) {
+            resultsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="bi bi-exclamation-triangle"></i> 블랙리스트에 등록된 IP입니다</h5>
+                </div>
+                <table class="table">
+                    <tr>
+                        <th>IP 주소</th>
+                        <td><strong>${data.ip}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>첫 검출일</th>
+                        <td>${data.first_seen || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <th>마지막 검출일</th>
+                        <td>${data.last_seen || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <th>검출 월</th>
+                        <td>
+                            ${data.detection_months ? data.detection_months.map(month => 
+                                `<span class="badge bg-secondary me-1">${month}</span>`
+                            ).join('') : 'N/A'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>활성 상태</th>
+                        <td>
+                            ${data.is_active ? 
+                                '<span class="badge bg-success">활성</span>' : 
+                                '<span class="badge bg-secondary">비활성</span>'}
+                        </td>
+                    </tr>
+                </table>
+            `;
+        } else {
+            resultsContent.innerHTML = `
+                <div class="alert alert-success">
+                    <h5><i class="bi bi-check-circle"></i> 안전한 IP입니다</h5>
+                    <p class="mb-0">${ip}는 블랙리스트에 등록되지 않은 IP입니다.</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        document.getElementById('resultsContent').innerHTML = `
+            <div class="alert alert-danger">
+                <h5><i class="bi bi-x-circle"></i> 검색 오류</h5>
+                <p class="mb-0">검색 중 오류가 발생했습니다: ${error.message}</p>
+            </div>
+        `;
+    });
+}
+
+// Load recent searches on page load
+loadRecentSearches();
+</script>
+{% endblock %}

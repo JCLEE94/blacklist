@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+.pytest_cache/
+venv/
+env/
+
+# Project specific
+instance/
+logs/
+data/temp/
+*.db
+*.sqlite
+*.sqlite3
+
+# Development
+.env
+.vscode/
+.idea/
+*.log
+
+# System
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Backup files
+backup/
+*.backup
+*.bak
+
+# Archive files
+*.tar.gz
+*.zip
+*.tar
+
+# Database backups
+instance/backups/
+data/db_backups/
+*.db.backup
+
+# Data source logs
+data/sources/*/logs/
+data/regtech/logs/
+data/secudium/logs/
+
+# Temporary data
+data/temp/
+data/analysis/temp/
+
+# Old/duplicate scripts
+scripts/**/*.bak
+scripts/**/*.old
+old_*
+*_old.py
+*_backup.py
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Cache files
+.cache/
+node_modules/.cache/
+
+
+# Cleaned up directories
+document/har_backup/
+scripts/deployment/archive/
+scripts/archive/
+instance/backups/*.db
+
+# Temporary and duplicate files
+*_old.*
+*_v2.*
+*.tmpdocument/
+document/

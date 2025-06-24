@@ -1,0 +1,100 @@
+{
+  "collection_info": {
+    "source": "SECUDIUM_HAR",
+    "collected_at": "2025-06-24T03:10:29.965247",
+    "method": "HAR-based authentication",
+    "total_ips": 10
+  },
+  "ips": [
+    {
+      "ip": "1.2.3.4",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1103",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-22",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "5.6.7.8",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1103",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-22",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "1.2.3.5",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1102",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-21",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "5.6.7.9",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1102",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-21",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "1.2.3.6",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1101",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-20",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "5.6.7.10",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1101",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-20",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "1.2.3.7",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1100",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-19",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "5.6.7.11",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1100",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-19",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "1.2.3.8",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1099",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-16",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    },
+    {
+      "ip": "5.6.7.12",
+      "source": "SECUDIUM",
+      "source_file": "backup_data_post_1099",
+      "detection_date": "2025-06-24",
+      "description": "SECUDIUM Black IP from [SK쉴더스] 신규 침해 Black IP - 2025-05-16",
+      "threat_type": "blacklist",
+      "confidence": "medium"
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Nextrade Black List Deny System{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Modern Design System -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-design-system.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('web.dashboard') }}">
+                <img src="https://www.nextrade.co.kr/images/main/header_logo_color.svg" alt="Nextrade" style="height: 32px; margin-right: 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                <span style="display: none; align-items: center;"><i class="bi bi-shield-lock"></i> Nextrade Black List</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'web.dashboard' %}active{% endif %}" 
+                           href="{{ url_for('web.dashboard') }}">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'web.blacklist_search' %}active{% endif %}" 
+                           href="{{ url_for('web.blacklist_search') }}">
+                            <i class="bi bi-search"></i> Search
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'web.statistics' %}active{% endif %}" 
+                           href="{{ url_for('web.statistics') }}">
+                            <i class="bi bi-graph-up"></i> 통계
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-collection"></i> 데이터 수집
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('web.regtech_collector') }}">
+                                <i class="bi bi-bank"></i> REGTECH 수집
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('web.secudium_collector') }}">
+                                <i class="bi bi-shield-check"></i> SECUDIUM 수집
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('web.collection_control') }}">
+                                <i class="bi bi-gear-wide-connected"></i> 수집 제어 패널
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('web.data_management') }}">
+                                <i class="bi bi-database"></i> 데이터 관리
+                            </a></li>
+                            <li><a class="dropdown-item" href="/raw-data">
+                                <i class="bi bi-table"></i> 전체 데이터 보기
+                            </a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-download"></i> 내보내기
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/api/blacklist/active-simple" target="_blank">
+                                <i class="bi bi-file-text"></i> IP 목록 (텍스트)
+                            </a></li>
+                            <li><a class="dropdown-item" href="/api/fortigate-simple" target="_blank">
+                                <i class="bi bi-gear"></i> FortiGate JSON
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/api/export/json" target="_blank">
+                                <i class="bi bi-filetype-json"></i> JSON 내보내기
+                            </a></li>
+                            <li><a class="dropdown-item" href="/api/export/txt" target="_blank">
+                                <i class="bi bi-file-earmark-text"></i> TXT 내보내기
+                            </a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-gear"></i> 시스템
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('web.connection_status') }}">
+                                <i class="bi bi-wifi"></i> 연결 상태
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('web.system_logs') }}">
+                                <i class="bi bi-journal-text"></i> 시스템 로그
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/api/stats-simple" target="_blank">
+                                <i class="bi bi-bar-chart"></i> 통계 API
+                            </a></li>
+                            <li><a class="dropdown-item" href="/health" target="_blank">
+                                <i class="bi bi-activity"></i> 시스템 헬스
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-primary me-2">
+                        <i class="bi bi-clock"></i> {{ build_time or '2025-06-19 17:56:00 KST' }}
+                    </span>
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle"></i> 운영중
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid mt-5 pt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">Nextrade Black List Deny System v2.1 | 
+                <a href="/api/docs" target="_blank">API Docs</a>
+            </span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- UI Enhancement Modules -->
+    <script src="{{ url_for('static', filename='js/toast-notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/realtime-dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/statistics-dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/system-monitor-widget.js') }}"></script>
+    
+    <script>
+        // Build time is fixed from Docker build time
+        console.log('Build time is fixed: {{ build_time or "2025-06-18 18:48:33 KST" }}');
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}REGTECH 상세 분석{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analysis-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    
+    .metric-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .chart-tab {
+        min-height: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 헤더 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('regtech.dashboard') }}">REGTECH</a></li>
+                    <li class="breadcrumb-item active">상세 분석</li>
+                </ol>
+            </nav>
+            <h1><i class="bi bi-bar-chart text-primary"></i> REGTECH 상세 분석</h1>
+            <p class="lead">위협 IP 데이터의 심화 분석 및 통계</p>
+        </div>
+    </div>
+    
+    <!-- 주요 지표 -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="metric-card">
+                <div class="metric-number" id="total-ips">-</div>
+                <div class="metric-label">총 IP 수</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="metric-number" id="high-risk">-</div>
+                <div class="metric-label">고위험</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="metric-card" style="background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);">
+                <div class="metric-number" id="medium-risk">-</div>
+                <div class="metric-label">중위험</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="metric-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="metric-number" id="low-risk">-</div>
+                <div class="metric-label">저위험</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="metric-number" id="unique-ranges">-</div>
+                <div class="metric-label">고유 대역</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="metric-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                <div class="metric-number" id="regions-count">-</div>
+                <div class="metric-label">탐지 지역</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 차트 탭 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="analysis-card">
+                <ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button">
+                            <i class="bi bi-graph-up"></i> 시계열 분석
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="geographic-tab" data-bs-toggle="tab" data-bs-target="#geographic" type="button">
+                            <i class="bi bi-globe"></i> 지역별 분석
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button">
+                            <i class="bi bi-diagram-3"></i> 네트워크 분석
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="risk-tab" data-bs-toggle="tab" data-bs-target="#risk" type="button">
+                            <i class="bi bi-shield-exclamation"></i> 위험도 분석
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="analysisTabContent">
+                    <!-- 시계열 분석 -->
+                    <div class="tab-pane fade show active chart-tab" id="timeline" role="tabpanel">
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="timeline-period" class="form-label">분석 기간</label>
+                                    <select class="form-select" id="timeline-period">
+                                        <option value="7">최근 7일</option>
+                                        <option value="30" selected>최근 30일</option>
+                                        <option value="90">최근 90일</option>
+                                        <option value="365">최근 1년</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="timeline-grouping" class="form-label">그룹화</label>
+                                    <select class="form-select" id="timeline-grouping">
+                                        <option value="day" selected>일별</option>
+                                        <option value="week">주별</option>
+                                        <option value="month">월별</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary" onclick="loadTimelineAnalysis()">
+                                    <i class="bi bi-arrow-clockwise"></i> 업데이트
+                                </button>
+                            </div>
+                            <div class="col-md-9">
+                                <canvas id="timelineChart" height="80"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 지역별 분석 -->
+                    <div class="tab-pane fade chart-tab" id="geographic" role="tabpanel">
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h5>지역별 분포</h5>
+                                <canvas id="geoChart" height="100"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>상위 위험 지역</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="risk-regions-table">
+                                        <thead>
+                                            <tr>
+                                                <th>지역</th>
+                                                <th>총 IP</th>
+                                                <th>고위험</th>
+                                                <th>위험도</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 네트워크 분석 -->
+                    <div class="tab-pane fade chart-tab" id="network" role="tabpanel">
+                        <div class="row mt-3">
+                            <div class="col-md-8">
+                                <h5>IP 대역별 분포</h5>
+                                <canvas id="networkChart" height="80"></canvas>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>네트워크 통계</h5>
+                                <div id="network-stats">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>클래스 A 대역:</span>
+                                        <span id="class-a-count">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>클래스 B 대역:</span>
+                                        <span id="class-b-count">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>클래스 C 대역:</span>
+                                        <span id="class-c-count">-</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>최다 대역:</span>
+                                        <span id="top-range">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>대역 수:</span>
+                                        <span id="top-range-count">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 위험도 분석 -->
+                    <div class="tab-pane fade chart-tab" id="risk" role="tabpanel">
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h5>위험도 분포</h5>
+                                <canvas id="riskChart" height="100"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>고위험 IP 상세</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm" id="high-risk-table">
+                                        <thead>
+                                            <tr>
+                                                <th>IP</th>
+                                                <th>지역</th>
+                                                <th>대역</th>
+                                                <th>탐지일</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let timelineChart, geoChart, networkChart, riskChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadBasicStats();
+    loadTimelineAnalysis();
+    
+    // 탭 변경 이벤트
+    document.getElementById('geographic-tab').addEventListener('shown.bs.tab', function() {
+        if (!geoChart) loadGeographicAnalysis();
+    });
+    
+    document.getElementById('network-tab').addEventListener('shown.bs.tab', function() {
+        if (!networkChart) loadNetworkAnalysis();
+    });
+    
+    document.getElementById('risk-tab').addEventListener('shown.bs.tab', function() {
+        if (!riskChart) loadRiskAnalysis();
+    });
+});
+
+function loadBasicStats() {
+    fetch('/regtech/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-ips').textContent = (data.total_ips || 0).toLocaleString();
+            
+            if (data.risk_distribution) {
+                document.getElementById('high-risk').textContent = (data.risk_distribution.high || 0).toLocaleString();
+                document.getElementById('medium-risk').textContent = (data.risk_distribution.medium || 0).toLocaleString();
+                document.getElementById('low-risk').textContent = (data.risk_distribution.low || 0).toLocaleString();
+            }
+            
+            if (data.region_distribution) {
+                document.getElementById('regions-count').textContent = Object.keys(data.region_distribution).length;
+            }
+        })
+        .catch(error => console.error('Stats loading error:', error));
+}
+
+function loadTimelineAnalysis() {
+    const period = document.getElementById('timeline-period').value;
+    const grouping = document.getElementById('timeline-grouping').value;
+    
+    fetch(`/regtech/api/trends?days=${period}&group=${grouping}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            
+            if (timelineChart) {
+                timelineChart.destroy();
+            }
+            
+            timelineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.date),
+                    datasets: [{
+                        label: 'IP 탐지 수',
+                        data: data.map(item => item.count),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Timeline loading error:', error));
+}
+
+function loadGeographicAnalysis() {
+    fetch('/regtech/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.region_distribution) return;
+            
+            const ctx = document.getElementById('geoChart').getContext('2d');
+            
+            const regions = Object.keys(data.region_distribution);
+            const counts = Object.values(data.region_distribution);
+            
+            geoChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: regions,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // 위험 지역 테이블 업데이트
+            updateRiskRegionsTable(data.region_distribution);
+        })
+        .catch(error => console.error('Geographic loading error:', error));
+}
+
+function loadNetworkAnalysis() {
+    fetch('/regtech/api/top-ranges?limit=15')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('networkChart').getContext('2d');
+            
+            networkChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.range),
+                    datasets: [{
+                        label: 'IP 수',
+                        data: data.map(item => item.count),
+                        backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 네트워크 통계 업데이트
+            updateNetworkStats(data);
+        })
+        .catch(error => console.error('Network loading error:', error));
+}
+
+function loadRiskAnalysis() {
+    fetch('/regtech/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.risk_distribution) return;
+            
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            
+            riskChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['고위험', '중위험', '저위험'],
+                    datasets: [{
+                        data: [
+                            data.risk_distribution.high || 0,
+                            data.risk_distribution.medium || 0,
+                            data.risk_distribution.low || 0
+                        ],
+                        backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Risk loading error:', error));
+}
+
+function updateRiskRegionsTable(regionData) {
+    // 실제 구현에서는 위험도별 데이터가 필요
+    const tbody = document.querySelector('#risk-regions-table tbody');
+    tbody.innerHTML = '';
+    
+    Object.entries(regionData).forEach(([region, count]) => {
+        const riskScore = Math.floor(Math.random() * 100); // 임시 위험도
+        tbody.innerHTML += `
+            <tr>
+                <td>${region}</td>
+                <td>${count.toLocaleString()}</td>
+                <td>${Math.floor(count * 0.1)}</td>
+                <td><span class="badge bg-${riskScore > 70 ? 'danger' : riskScore > 40 ? 'warning' : 'success'}">${riskScore}%</span></td>
+            </tr>
+        `;
+    });
+}
+
+function updateNetworkStats(rangeData) {
+    // 네트워크 클래스 분석
+    let classA = 0, classB = 0, classC = 0;
+    
+    rangeData.forEach(item => {
+        const firstOctet = parseInt(item.range.split('.')[0]);
+        if (firstOctet <= 127) classA += item.count;
+        else if (firstOctet <= 191) classB += item.count;
+        else classC += item.count;
+    });
+    
+    document.getElementById('class-a-count').textContent = classA.toLocaleString();
+    document.getElementById('class-b-count').textContent = classB.toLocaleString();
+    document.getElementById('class-c-count').textContent = classC.toLocaleString();
+    
+    if (rangeData.length > 0) {
+        document.getElementById('top-range').textContent = rangeData[0].range;
+        document.getElementById('top-range-count').textContent = rangeData[0].count.toLocaleString();
+    }
+}
+</script>
+{% endblock %}

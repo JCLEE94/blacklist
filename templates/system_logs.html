@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}시스템 로그 - Nextrade Black List Deny System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-entry {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        padding: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .log-entry:hover {
+        background-color: #f8f9fa;
+    }
+    .log-type-Application {
+        border-left: 3px solid #0d6efd;
+    }
+    .log-type-Data {
+        border-left: 3px solid #198754;
+    }
+    .log-type-Gunicorn {
+        border-left: 3px solid #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-journal-text"></i> 시스템 로그
+        </h1>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> 새로고침
+        </button>
+        <button class="btn btn-outline-secondary" onclick="clearFilters()">
+            <i class="bi bi-funnel"></i> 필터 초기화
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">로그 유형</label>
+                <select class="form-select" id="logTypeFilter" onchange="filterLogs()">
+                    <option value="">전체</option>
+                    <option value="Application">애플리케이션</option>
+                    <option value="Data Updater">데이터 업데이터</option>
+                    <option value="Gunicorn Server">Gunicorn 서버</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">로그 레벨</label>
+                <select class="form-select" id="logLevelFilter" onchange="filterLogs()">
+                    <option value="">전체</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="INFO">INFO</option>
+                    <option value="DEBUG">DEBUG</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">검색</label>
+                <input type="text" class="form-control" id="searchFilter" 
+                       placeholder="로그 내용 검색..." onkeyup="filterLogs()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Entries -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">최근 로그 ({{ logs|length }}개)</h5>
+    </div>
+    <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+        <div id="logContainer">
+            {% if logs %}
+                {% for log in logs %}
+                <div class="log-entry log-type-{{ log.type.replace(' ', '-') }}" 
+                     data-type="{{ log.type }}"
+                     data-content="{{ log.message }}">
+                    <div class="d-flex justify-content-between">
+                        <span class="badge bg-secondary">{{ log.type }}</span>
+                        <small class="text-muted">{{ log.timestamp }}</small>
+                    </div>
+                    <div class="mt-1">{{ log.message }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-4 text-center text-muted">
+                    로그가 없습니다.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Log Statistics -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">로그 통계</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="logStatsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">로그 파일 정보</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td>애플리케이션 로그</td>
+                        <td><code>logs/app.log</code></td>
+                    </tr>
+                    <tr>
+                        <td>업데이터 로그</td>
+                        <td><code>logs/updater.log</code></td>
+                    </tr>
+                    <tr>
+                        <td>서버 로그</td>
+                        <td><code>logs/gunicorn.log</code></td>
+                    </tr>
+                    <tr>
+                        <td>로그 보관 기간</td>
+                        <td>30일</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterLogs() {
+    const typeFilter = document.getElementById('logTypeFilter').value;
+    const levelFilter = document.getElementById('logLevelFilter').value;
+    const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+    
+    const entries = document.querySelectorAll('.log-entry');
+    
+    entries.forEach(entry => {
+        const type = entry.getAttribute('data-type');
+        const content = entry.getAttribute('data-content').toLowerCase();
+        
+        let show = true;
+        
+        if (typeFilter && type !== typeFilter) {
+            show = false;
+        }
+        
+        if (levelFilter && !content.includes(levelFilter.toLowerCase())) {
+            show = false;
+        }
+        
+        if (searchFilter && !content.includes(searchFilter)) {
+            show = false;
+        }
+        
+        entry.style.display = show ? 'block' : 'none';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('logTypeFilter').value = '';
+    document.getElementById('logLevelFilter').value = '';
+    document.getElementById('searchFilter').value = '';
+    filterLogs();
+}
+
+// Log statistics chart
+const ctx = document.getElementById('logStatsChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['ERROR', 'WARNING', 'INFO', 'DEBUG'],
+        datasets: [{
+            label: '로그 수',
+            data: [5, 12, 45, 23],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(255, 205, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Auto-refresh every 10 seconds
+setInterval(() => {
+    location.reload();
+}, 10000);
+</script>
+{% endblock %}

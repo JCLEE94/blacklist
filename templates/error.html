@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Blacklist Management{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">Error Occurred</h4>
+                <p>{{ error_message | default('An unexpected error occurred while processing your request.') }}</p>
+                <hr>
+                <p class="mb-0">
+                    <a href="/" class="btn btn-primary">Go to Dashboard</a>
+                    <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

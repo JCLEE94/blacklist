@@ -1,0 +1,54 @@
+{
+  "found_ips": {
+    "3.138.185.30": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html",
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/blackListView.html"
+    ],
+    "162.159.27.173": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "96.9.125.211": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "91.107.132.50": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "94.139.232.19": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "85.85.196.35": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "74.249.128.154": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "84.17.49.25": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "48.214.144.160": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ],
+    "58.152.113.24": [
+      "regtech/regtech.fsec.or.kr/regtech.fsec.or.kr/fcti/securityAdvisory/advisoryList.html"
+    ]
+  },
+  "regtech_detail": {
+    "ip": "3.138.185.30",
+    "country": "US",
+    "reason": "Namo CrossEditor 정보 노출 탐지",
+    "registration_date": "2025-06-20",
+    "release_date": "2025-09-18"
+  },
+  "malicious_candidates": [
+    "3.138.185.30",
+    "162.159.27.173",
+    "96.9.125.211",
+    "91.107.132.50",
+    "94.139.232.19",
+    "85.85.196.35",
+    "74.249.128.154",
+    "84.17.49.25",
+    "48.214.144.160",
+    "58.152.113.24"
+  ]
+}

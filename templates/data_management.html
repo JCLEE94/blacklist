@@ -1,0 +1,1982 @@
+{% extends "base.html" %}
+
+{% block title %}데이터 관리 - Nextrade Black List{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --dark-bg: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    --nextrade-blue: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.15);
+    --border-radius: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+
+.container-fluid {
+    padding: 2rem 1rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 3rem 2rem;
+    background: var(--nextrade-blue);
+    border-radius: var(--border-radius);
+    color: white;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.03) 2px,
+        rgba(255,255,255,0.03) 4px
+    );
+    animation: shimmer 20s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-50%) translateY(-50%) rotate(0deg); }
+    100% { transform: translateX(-50%) translateY(-50%) rotate(360deg); }
+}
+
+.page-header h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 1;
+}
+
+.page-header p {
+    font-size: 1.3rem;
+    margin: 1rem 0 0 0;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2.5rem 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: var(--transition);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+}
+
+.stat-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+}
+
+.stat-card .icon {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-card .value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .label {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.monthly-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+    gap: 2rem;
+}
+
+.month-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: var(--transition);
+    position: relative;
+}
+
+.month-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-hover);
+}
+
+.month-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--nextrade-blue);
+}
+
+.month-header {
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(30, 60, 114, 0.1) 0%, rgba(42, 82, 152, 0.1) 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.month-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.month-info {
+    padding: 2rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-item {
+    text-align: center;
+    padding: 1.5rem;
+    background: rgba(30, 60, 114, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(30, 60, 114, 0.1);
+    transition: var(--transition);
+}
+
+.info-item:hover {
+    background: rgba(30, 60, 114, 0.1);
+    transform: translateY(-2px);
+}
+
+.info-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 0.5rem;
+}
+
+.info-label {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.btn-view-details {
+    background: var(--nextrade-blue);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin: 1rem auto 0;
+    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-view-details::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: var(--transition);
+}
+
+.btn-view-details:hover::before {
+    left: 100%;
+}
+
+.btn-view-details:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(30, 60, 114, 0.4);
+}
+
+.action-buttons {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(10px);
+}
+
+.action-buttons-grid {
+    display: inline-flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-action {
+    background: var(--success-gradient);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.btn-action.secondary {
+    background: var(--secondary-gradient);
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+}
+
+.btn-action.primary {
+    background: var(--nextrade-blue);
+    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+}
+
+.btn-action:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(79, 172, 254, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+/* Enhanced Modal Styles */
+.modal {
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.modal-header {
+    background: var(--nextrade-blue);
+    color: white;
+    border-bottom: none;
+    padding: 1.5rem 2rem;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.daily-files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.daily-file-btn {
+    background: var(--success-gradient);
+    color: white;
+    border: none;
+    padding: 1.2rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: var(--transition);
+    font-size: 0.9rem;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.daily-file-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: var(--transition);
+}
+
+.daily-file-btn:hover::before {
+    left: 100%;
+}
+
+.daily-file-btn:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(79, 172, 254, 0.4);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(10px);
+}
+
+/* Collection Management Styles */
+.collection-management-section {
+    margin: 3rem 0;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 0.5rem;
+}
+
+.section-header p {
+    font-size: 1.1rem;
+    color: #666;
+    opacity: 0.8;
+}
+
+.collection-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.collection-source-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.collection-source-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.collection-source-card.regtech::before {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.collection-source-card.secudium::before {
+    background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
+}
+
+.collection-source-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(30, 60, 114, 0.2);
+}
+
+.source-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.source-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+}
+
+.collection-source-card.regtech .source-icon {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.collection-source-card.secudium .source-icon {
+    background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
+}
+
+.source-info {
+    flex: 1;
+}
+
+.source-info h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 0.25rem;
+}
+
+.source-info p {
+    color: #666;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.source-status {
+    text-align: right;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.status-badge.loading {
+    background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.status-badge.error {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.source-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.source-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-collection-action {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 12px;
+    background: var(--primary-gradient);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-collection-action.secondary {
+    background: var(--secondary-gradient);
+}
+
+.btn-collection-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+}
+
+.collection-summary {
+    margin-top: 2rem;
+}
+
+.summary-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+}
+
+.summary-header {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.summary-header h4 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1e3c72;
+    margin: 0;
+}
+
+.summary-content {
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-placeholder {
+    color: #666;
+    font-style: italic;
+}
+
+.empty-state .icon {
+    font-size: 5rem;
+    color: #ddd;
+    margin-bottom: 2rem;
+}
+
+.empty-state h3 {
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: #999;
+    font-size: 1.1rem;
+}
+
+/* Loading Animation */
+.loading {
+    text-align: center;
+    padding: 3rem;
+    color: #1e3c72;
+    font-size: 1.2rem;
+}
+
+.loading::after {
+    content: "";
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(30, 60, 114, 0.2);
+    border-top: 3px solid #1e3c72;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem 0.5rem;
+    }
+    
+    .page-header {
+        padding: 2rem 1rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .monthly-data-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-overview {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .action-buttons-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-action {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+    
+    .month-card,
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .month-title,
+    .stat-card .value {
+        color: #e2e8f0;
+    }
+    
+    .info-label,
+    .stat-card .label {
+        color: #a0aec0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="bi bi-database"></i> 데이터 관리</h1>
+        <p>블랙리스트 데이터 상태 및 관리 - 실시간 탐지 데이터 분석</p>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="icon"><i class="bi bi-calendar3"></i></div>
+            <div class="value">{{ monthly_data|length }}</div>
+            <div class="label">활성 월</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="bi bi-shield-exclamation"></i></div>
+            <div class="value">{% set total_ips = monthly_data|sum(attribute='ip_count') %}{{ "{:,}".format(total_ips) }}</div>
+            <div class="label">총 IP 수</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="bi bi-clock-history"></i></div>
+            <div class="value">실시간</div>
+            <div class="label">업데이트 상태</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="bi bi-graph-up"></i></div>
+            <div class="value">활성</div>
+            <div class="label">시스템 상태</div>
+        </div>
+    </div>
+
+    <!-- Monthly Data Grid -->
+    {% if monthly_data %}
+        <div class="monthly-data-grid">
+            {% for month_data in monthly_data %}
+            <div class="month-card">
+                <div class="month-header">
+                    <h3 class="month-title">
+                        <span>
+                            <i class="bi bi-calendar3"></i>
+                            {{ month_data.month }}
+                        </span>
+                        <span class="badge" style="background: rgba(30, 60, 114, 0.2); color: #1e3c72; font-size: 0.9rem;">
+                            {{ month_data.details.status }}
+                        </span>
+                    </h3>
+                </div>
+                
+                <div class="month-info">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-value">{{ "{:,}".format(month_data.ip_count) }}</div>
+                            <div class="info-label">총 IP 수</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value">{{ month_data.details.first_detection }}</div>
+                            <div class="info-label">첫 검출</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value">{{ month_data.details.last_detection }}</div>
+                            <div class="info-label">마지막 검출</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value">{{ month_data.details.collection_date[:10] if month_data.details.collection_date else 'N/A' }}</div>
+                            <div class="info-label">수집일</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-view-details" onclick="viewDetails('{{ month_data.month }}')">
+                        <i class="bi bi-calendar-day"></i>
+                        일자별 데이터 보기
+                    </button>
+                    {% if month_data.month < '2025-06' %}
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(52, 144, 220, 0.1); border-radius: 8px; border-left: 4px solid #3490dc;">
+                        <small style="color: #2779bd; font-weight: 500;">
+                            <i class="bi bi-info-circle"></i>
+                            월별 통합 데이터를 일별로 분산 표시
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="icon">
+                <i class="bi bi-database-slash"></i>
+            </div>
+            <h3>데이터가 없습니다</h3>
+            <p>블랙리스트 데이터를 수집해 주세요.</p>
+        </div>
+    {% endif %}
+
+    <!-- Collection Management Section -->
+    <div class="collection-management-section">
+        <div class="section-header">
+            <h2><i class="bi bi-collection"></i> 수집 관리</h2>
+            <p>REGTECH 및 SECUDIUM 데이터 소스 관리</p>
+        </div>
+        
+        <div class="collection-status-grid">
+            <div class="collection-source-card regtech">
+                <div class="source-header">
+                    <div class="source-icon">
+                        <i class="bi bi-bank"></i>
+                    </div>
+                    <div class="source-info">
+                        <h3>REGTECH</h3>
+                        <p>금융보안원 공식 블랙리스트</p>
+                    </div>
+                    <div class="source-status" id="regtech-status">
+                        <span class="status-badge loading">상태 확인 중...</span>
+                    </div>
+                </div>
+                <div class="source-stats" id="regtech-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">-</div>
+                        <div class="stat-label">총 IP 수</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">-</div>
+                        <div class="stat-label">마지막 수집</div>
+                    </div>
+                </div>
+                <div class="source-actions">
+                    <button class="btn-collection-action" onclick="triggerCollection('regtech')">
+                        <i class="bi bi-download"></i>
+                        수집 시작
+                    </button>
+                    <button class="btn-collection-action secondary" onclick="viewCollectionDetails('regtech')">
+                        <i class="bi bi-info-circle"></i>
+                        상세 정보
+                    </button>
+                </div>
+            </div>
+            
+            <div class="collection-source-card secudium">
+                <div class="source-header">
+                    <div class="source-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="source-info">
+                        <h3>SECUDIUM</h3>
+                        <p>실시간 위협 인텔리전스</p>
+                    </div>
+                    <div class="source-status" id="secudium-status">
+                        <span class="status-badge loading">상태 확인 중...</span>
+                    </div>
+                </div>
+                <div class="source-stats" id="secudium-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">-</div>
+                        <div class="stat-label">총 IP 수</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">-</div>
+                        <div class="stat-label">마지막 수집</div>
+                    </div>
+                </div>
+                <div class="source-actions">
+                    <button class="btn-collection-action" onclick="triggerCollection('secudium')">
+                        <i class="bi bi-download"></i>
+                        수집 시작
+                    </button>
+                    <button class="btn-collection-action secondary" onclick="viewCollectionDetails('secudium')">
+                        <i class="bi bi-info-circle"></i>
+                        상세 정보
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="collection-summary" id="collection-summary">
+            <div class="summary-card">
+                <div class="summary-header">
+                    <h4><i class="bi bi-graph-up"></i> 수집 통계</h4>
+                </div>
+                <div class="summary-content" id="collection-stats-content">
+                    <div class="loading-placeholder">통계 로드 중...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="action-buttons-grid">
+            <button class="btn-action primary" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i>
+                데이터 새로고침
+            </button>
+            <button class="btn-action" onclick="cleanupOldFiles()">
+                <i class="bi bi-trash"></i>
+                파일 정리
+            </button>
+            <a href="/api/export/txt" class="btn-action">
+                <i class="bi bi-download"></i>
+                전체 내보내기 (TXT)
+            </a>
+            <a href="/api/export/json" class="btn-action secondary">
+                <i class="bi bi-download"></i>
+                전체 내보내기 (JSON)
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar-week"></i> 월별 상세 정보
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <div class="loading">
+                    데이터를 로드하는 중입니다...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 닫기
+                </button>
+                <button type="button" class="btn btn-primary" id="refreshModal" onclick="refreshModalData()">
+                    <i class="bi bi-arrow-clockwise"></i> 새로고침
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Files Modal -->
+<div class="modal fade" id="dailyFilesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar3"></i> 일자별 IP 파일
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dailyModalContent">
+                <!-- Daily files content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMonth = null;
+let collectionStatusInterval = null;
+
+function refreshData() {
+    if (confirm('데이터를 업데이트하시겠습니까?')) {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-arrow-clockwise" style="animation: spin 1s linear infinite;"></i> 업데이트 중...';
+        button.disabled = true;
+        
+        fetch('/api/refresh-data', { method: 'POST' })
+            .then(response => {
+                if (response.ok) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    alert('업데이트 중 오류가 발생했습니다.');
+                }
+            })
+            .catch(error => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                alert('네트워크 오류가 발생했습니다.');
+            });
+    }
+}
+
+function viewDetails(month) {
+    currentMonth = month;
+    
+    // Show loading state
+    document.getElementById('modalContent').innerHTML = `
+        <div class="loading">
+            ${month} 데이터를 로드하는 중입니다...
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    modal.show();
+    
+    // Load month details
+    fetch(`/api/month/${month}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            displayMonthDetails(data);
+        })
+        .catch(error => {
+            document.getElementById('modalContent').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>오류:</strong> ${error.message}
+                </div>
+            `;
+        });
+}
+
+function displayMonthDetails(data) {
+    let dailyFilesHtml = '';
+    
+    if (data.daily_files && data.daily_files.length > 0) {
+        dailyFilesHtml = data.daily_files.map(file => `
+            <div class="daily-file-btn" onclick="viewDailyIPs('${data.month}', '${file.date}')">
+                <div style="font-weight: 700; margin-bottom: 0.5rem;">${file.day_name}</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">${file.date}</div>
+                <div style="font-size: 0.8rem; margin-top: 0.5rem;">
+                    <span style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.5rem; border-radius: 6px;">
+                        ${file.ip_count ? file.ip_count.toLocaleString() : 0} IPs
+                    </span>
+                </div>
+                ${file.total_detections ? `<div style="font-size: 0.75rem; margin-top: 0.25rem; opacity: 0.8;">${file.total_detections} 탐지</div>` : ''}
+            </div>
+        `).join('');
+    } else {
+        // 일별 데이터가 없는 경우
+        dailyFilesHtml = `
+            <div class="alert alert-warning" role="alert" style="margin: 2rem 0;">
+                <h6 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle-fill"></i> 일별 데이터 없음
+                </h6>
+                <p class="mb-0">이 월의 데이터는 일별로 분리되지 않은 통합 데이터입니다. (2025년 6월부터 일별 데이터 수집 시작)</p>
+            </div>
+        `;
+    }
+    
+    const content = `
+        <!-- Month Summary -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <h6 class="card-title text-primary">
+                            <i class="bi bi-info-circle"></i> 기본 정보
+                        </h6>
+                        <table class="table table-sm table-borderless">
+                            <tr><td><strong>검출 월:</strong></td><td>${data.month}</td></tr>
+                            <tr><td><strong>총 IP 수:</strong></td><td><span class="badge bg-primary">${data.ip_count.toLocaleString()}</span></td></tr>
+                            <tr><td><strong>첫 검출:</strong></td><td>${data.details.first_detection || 'N/A'}</td></tr>
+                            <tr><td><strong>마지막 검출:</strong></td><td>${data.details.last_detection || 'N/A'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-body">
+                        <h6 class="card-title text-success">
+                            <i class="bi bi-gear"></i> 수집 정보
+                        </h6>
+                        <table class="table table-sm table-borderless">
+                            <tr><td><strong>데이터 소스:</strong></td><td>${data.details.source || 'N/A'}</td></tr>
+                            <tr><td><strong>수집 일시:</strong></td><td>${data.details.collection_date || 'N/A'}</td></tr>
+                            <tr><td><strong>상태:</strong></td><td><span class="badge bg-success">${data.details.status || 'active'}</span></td></tr>
+                            <tr><td><strong>일별 데이터:</strong></td><td><span class="badge ${data.details.data_type === 'actual_daily' ? 'bg-success' : 'bg-info'}">${data.details.data_type === 'actual_daily' ? '실제 일별' : '분산 시뮬레이션'}</span></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Daily Files Grid -->
+        <div class="card">
+            <div class="card-header" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <h6 class="mb-0">
+                    <i class="bi bi-calendar-week"></i> 일자별 IP 파일
+                    <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 1rem;">${data.daily_files.length}개 파일</span>
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="daily-files-grid">
+                    ${dailyFilesHtml}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sample IPs Preview -->
+        <div class="card mt-3">
+            <div class="card-header" style="background: #f8f9fa;">
+                <h6 class="mb-0">
+                    <i class="bi bi-list-ul"></i> IP 미리보기 (처음 20개)
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    ${data.ips.slice(0, 20).map((ip, index) => `
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <code class="d-block p-2 bg-light rounded text-dark" style="font-size: 0.9rem;">${ip}</code>
+                        </div>
+                    `).join('')}
+                </div>
+                ${data.ip_count > 20 ? `<p class="text-muted mt-2"><small>... 외 ${(data.ip_count - 20).toLocaleString()}개 더</small></p>` : ''}
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('modalContent').innerHTML = content;
+}
+
+function viewDailyIPs(month, date) {
+    document.getElementById('dailyModalContent').innerHTML = `
+        <div class="loading">
+            ${date} IP 목록을 로드하는 중입니다...
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('dailyFilesModal'));
+    modal.show();
+    
+    fetch(`/api/month/${month}/daily/${date}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            displayDailyIPs(data);
+        })
+        .catch(error => {
+            document.getElementById('dailyModalContent').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>오류:</strong> ${error.message}
+                </div>
+            `;
+        });
+}
+
+function displayDailyIPs(data) {
+    const ipsHtml = data.ips.map((ip, index) => `
+        <div class="col-md-4 col-sm-6 mb-2">
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary me-2" style="min-width: 40px;">${index + 1}</span>
+                <code class="flex-grow-1 p-2 bg-light rounded text-dark" style="font-size: 0.9rem;">${ip}</code>
+            </div>
+        </div>
+    `).join('');
+    
+    const content = `
+        <div class="row mb-3">
+            <div class="col">
+                <div class="card" style="border: 1px solid #1e3c72;">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <strong>날짜:</strong> ${data.date}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>IP 수:</strong> <span class="badge" style="background: #1e3c72;">${data.ip_count}</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>데이터 소스:</strong> <span class="badge ${data.data_source === 'actual_daily_data' ? 'bg-success' : 'bg-info'}">${data.data_source === 'actual_daily_data' ? '실제 데이터' : '분산 시뮬레이션'}</span>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-sm btn-success" onclick="downloadDailyFile('${data.month}', '${data.date}')" style="width: 100%;">
+                                    <i class="bi bi-download"></i> 다운로드
+                                </button>
+                            </div>
+                        </div>
+                        ${data.total_detections ? `
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <small><strong>총 탐지 건수:</strong> ${data.total_detections}</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small><strong>중복 제거된 IP:</strong> ${data.ip_count}</small>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header" style="background: #1e3c72; color: white;">
+                <h6 class="mb-0">
+                    <i class="bi bi-list-ul"></i> IP 목록
+                </h6>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div class="row">
+                    ${ipsHtml}
+                </div>
+            </div>
+        </div>
+        
+        ${data.records_sample && data.records_sample.length > 0 ? `
+            <div class="card mt-3">
+                <div class="card-header" style="background: #f8f9fa;">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i> 탐지 정보 샘플 (처음 5개)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>IP</th>
+                                    <th>탐지 시간</th>
+                                    <th>공격 유형</th>
+                                    <th>심각도</th>
+                                    <th>국가</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.records_sample.slice(0, 5).map(record => `
+                                    <tr>
+                                        <td><code>${record.ip}</code></td>
+                                        <td><small>${record.detection_time}</small></td>
+                                        <td><small>${record.attack_type}</small></td>
+                                        <td><small>${record.severity}</small></td>
+                                        <td><small>${record.country}</small></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        ` : ''}
+    `;
+    
+    document.getElementById('dailyModalContent').innerHTML = content;
+}
+
+function downloadDailyFile(month, date) {
+    window.location.href = `/api/month/${month}/daily/${date}/download`;
+}
+
+function downloadMonth(month) {
+    window.location.href = `/data/blacklist/by_detection_month/${month}/ips.txt`;
+}
+
+function refreshModalData() {
+    if (currentMonth) {
+        viewDetails(currentMonth);
+    }
+}
+
+// Collection Management Functions
+function loadCollectionStatus() {
+    fetch('/api/collection/status')
+        .then(response => response.json())
+        .then(data => {
+            updateCollectionStatus(data);
+        })
+        .catch(error => {
+            console.error('수집 상태 로드 실패:', error);
+            showCollectionError();
+        });
+}
+
+function updateCollectionStatus(data) {
+    if (data.sources) {
+        // Update REGTECH
+        if (data.sources.regtech) {
+            const regtechData = data.sources.regtech;
+            updateSourceStatus('regtech', regtechData);
+        }
+        
+        // Update SECUDIUM
+        if (data.sources.secudium) {
+            const secudiumData = data.sources.secudium;
+            updateSourceStatus('secudium', secudiumData);
+        }
+    }
+    
+    // Load collection statistics
+    loadCollectionStats();
+}
+
+function updateSourceStatus(sourceType, data) {
+    const statusElement = document.getElementById(`${sourceType}-status`);
+    const statsElement = document.getElementById(`${sourceType}-stats`);
+    
+    if (statusElement) {
+        const statusBadge = statusElement.querySelector('.status-badge');
+        if (data.status === 'active') {
+            statusBadge.className = 'status-badge active';
+            statusBadge.textContent = '활성';
+        } else {
+            statusBadge.className = 'status-badge error';
+            statusBadge.textContent = '오류';
+        }
+    }
+    
+    if (statsElement) {
+        const statValues = statsElement.querySelectorAll('.stat-value');
+        if (statValues.length >= 2) {
+            statValues[0].textContent = (data.total_ips || 0).toLocaleString();
+            statValues[1].textContent = data.last_collection ? 
+                new Date(data.last_collection).toLocaleDateString('ko-KR') : '없음';
+        }
+    }
+}
+
+function showCollectionError() {
+    const statusElements = document.querySelectorAll('.status-badge');
+    statusElements.forEach(badge => {
+        badge.className = 'status-badge error';
+        badge.textContent = '연결 실패';
+    });
+}
+
+function loadCollectionStats() {
+    fetch('/api/collection/stats')
+        .then(response => response.json())
+        .then(data => {
+            updateCollectionStatsDisplay(data);
+        })
+        .catch(error => {
+            console.error('수집 통계 로드 실패:', error);
+            document.getElementById('collection-stats-content').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    통계를 불러올 수 없습니다.
+                </div>
+            `;
+        });
+}
+
+function updateCollectionStatsDisplay(data) {
+    const content = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card border-0 h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">전체 요약</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stat-value">${(data.summary?.total_sources || 0)}</div>
+                                <div class="stat-label">활성 소스</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-value">${(data.summary?.total_ips_collected || 0).toLocaleString()}</div>
+                                <div class="stat-label">수집된 IP</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">수집 효율성</h5>
+                        <div class="row">
+                            <div class="col-6 text-center">
+                                <strong>REGTECH</strong>
+                                <div class="text-success">${data.collection_efficiency?.regtech?.success_rate || 0}%</div>
+                                <small class="text-muted">${data.collection_efficiency?.regtech?.data_quality || 'N/A'}</small>
+                            </div>
+                            <div class="col-6 text-center">
+                                <strong>SECUDIUM</strong>
+                                <div class="text-info">${data.collection_efficiency?.secudium?.success_rate || 0}%</div>
+                                <small class="text-muted">${data.collection_efficiency?.secudium?.data_quality || 'N/A'}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('collection-stats-content').innerHTML = content;
+}
+
+function triggerCollection(sourceType) {
+    if (sourceType === 'regtech') {
+        showRegtechCollectionModal();
+    } else if (sourceType === 'secudium') {
+        // SECUDIUM API 기반 수집
+        if (confirm('SECUDIUM 블랙리스트를 수집하시겠습니까?\\n\\n이 작업은 API를 통해 자동으로 진행됩니다.')) {
+            collectSecudiumData();
+        }
+    }
+}
+
+function collectSecudiumData() {
+    const button = document.querySelector('[onclick*="secudium"]');
+    const statusBadge = document.getElementById('secudium-status').querySelector('.status-badge');
+    const originalContent = button.innerHTML;
+    
+    // Update UI to show loading
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i> 수집 중...';
+    button.disabled = true;
+    statusBadge.className = 'status-badge loading';
+    statusBadge.textContent = '수집 중...';
+    
+    // Call SECUDIUM collection API
+    fetch('/api/collection/secudium/execute', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Restore button
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        
+        if (data.success) {
+            statusBadge.className = 'status-badge active';
+            statusBadge.textContent = '수집 완료';
+            
+            alert(`SECUDIUM 수집이 완료되었습니다.\\n\\n결과:\\n- 수집된 IP: ${data.total_collected || 0}개\\n- 추가된 IP: ${data.total_added || 0}개`);
+            
+            // Refresh status
+            loadCollectionStatus();
+            
+            // Reload page after 2 seconds to show new data
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            statusBadge.className = 'status-badge error';
+            statusBadge.textContent = '수집 실패';
+            alert(`SECUDIUM 수집 실패: ${data.error || data.message || '알 수 없는 오류'}`);
+        }
+    })
+    .catch(error => {
+        console.error('SECUDIUM 수집 실패:', error);
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        statusBadge.className = 'status-badge error';
+        statusBadge.textContent = '연결 오류';
+        alert('SECUDIUM 수집 요청 중 오류가 발생했습니다.');
+    });
+}
+
+function showRegtechCollectionModal() {
+    const modalHtml = `
+        <div class="modal fade" id="regtechCollectionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                        <h5 class="modal-title">
+                            <i class="bi bi-bank"></i> REGTECH 데이터 수집
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-4">
+                            <div class="col">
+                                <div class="card border-success">
+                                    <div class="card-header" style="background: rgba(40, 167, 69, 0.1);">
+                                        <h6 class="mb-0" style="color: #28a745;">
+                                            <i class="bi bi-gear"></i> 수집 방식 선택
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="collectionType" id="pageBasedCollection" value="pages" checked>
+                                            <label class="form-check-label" for="pageBasedCollection" style="font-weight: 600;">
+                                                📄 페이지 기반 수집 (기존 방식)
+                                            </label>
+                                            <div class="form-text">지정된 페이지 수만큼 최신 데이터를 수집합니다.</div>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="collectionType" id="dateBasedCollection" value="date_range">
+                                            <label class="form-check-label" for="dateBasedCollection" style="font-weight: 600;">
+                                                📅 날짜 기반 수집 (새로운 방식)
+                                            </label>
+                                            <div class="form-text text-primary">특정 날짜 범위의 데이터를 3개월 단위로 수집합니다. 과거 데이터 보완에 적합합니다.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Page-based options -->
+                        <div id="pageBasedOptions" class="collection-options">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="bi bi-layers"></i> 페이지 기반 설정</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="maxPages" class="form-label">최대 페이지 수</label>
+                                            <input type="number" class="form-control" id="maxPages" value="2" min="1" max="183">
+                                            <div class="form-text">권장: 2-5페이지 (1페이지 = 약 50개 IP)</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">예상 수집량</label>
+                                            <div class="form-control-plaintext">
+                                                <span id="estimatedIPs">약 100개 IP</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Date-based options -->
+                        <div id="dateBasedOptions" class="collection-options" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="bi bi-calendar-range"></i> 날짜 기반 설정</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>3개월 제약사항:</strong> REGTECH 시스템은 3개월 단위로만 검색이 가능합니다. 더 긴 기간은 자동으로 3개월씩 분할됩니다.
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="startDate" class="form-label">시작 날짜 <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control" id="startDate" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">종료 조건</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="endCondition" id="useEndDate" value="endDate" checked>
+                                                <label class="form-check-label" for="useEndDate">종료 날짜</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="endCondition" id="useMonths" value="months">
+                                                <label class="form-check-label" for="useMonths">개월 수</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6" id="endDateGroup">
+                                            <label for="endDate" class="form-label">종료 날짜</label>
+                                            <input type="date" class="form-control" id="endDate">
+                                        </div>
+                                        <div class="col-md-6" id="monthsGroup" style="display: none;">
+                                            <label for="months" class="form-label">개월 수</label>
+                                            <input type="number" class="form-control" id="months" value="3" min="1" max="12">
+                                            <div class="form-text">1-12개월 범위</div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col">
+                                            <label class="form-label">수집 예상 정보</label>
+                                            <div class="alert alert-light">
+                                                <div id="dateRangeInfo">날짜를 선택하면 예상 정보가 표시됩니다.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="validateData" checked>
+                                    <label class="form-check-label" for="validateData">
+                                        <strong>데이터 검증 활성화</strong>
+                                    </label>
+                                    <div class="form-text">수집 후 데이터 품질을 자동으로 검증합니다. (권장)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> 취소
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="startRegtechCollection()">
+                            <i class="bi bi-download"></i> 수집 시작
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('regtechCollectionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Set default dates
+    const today = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    
+    document.getElementById('startDate').value = threeMonthsAgo.toISOString().split('T')[0];
+    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    
+    // Add event listeners
+    setupCollectionModalEvents();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('regtechCollectionModal'));
+    modal.show();
+}
+
+function setupCollectionModalEvents() {
+    // Collection type toggle
+    document.querySelectorAll('input[name="collectionType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const pageOptions = document.getElementById('pageBasedOptions');
+            const dateOptions = document.getElementById('dateBasedOptions');
+            
+            if (this.value === 'pages') {
+                pageOptions.style.display = 'block';
+                dateOptions.style.display = 'none';
+            } else {
+                pageOptions.style.display = 'none';
+                dateOptions.style.display = 'block';
+                updateDateRangeInfo();
+            }
+        });
+    });
+    
+    // End condition toggle
+    document.querySelectorAll('input[name="endCondition"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const endDateGroup = document.getElementById('endDateGroup');
+            const monthsGroup = document.getElementById('monthsGroup');
+            
+            if (this.value === 'endDate') {
+                endDateGroup.style.display = 'block';
+                monthsGroup.style.display = 'none';
+            } else {
+                endDateGroup.style.display = 'none';
+                monthsGroup.style.display = 'block';
+            }
+            updateDateRangeInfo();
+        });
+    });
+    
+    // Date change events
+    document.getElementById('startDate').addEventListener('change', updateDateRangeInfo);
+    document.getElementById('endDate').addEventListener('change', updateDateRangeInfo);
+    document.getElementById('months').addEventListener('input', updateDateRangeInfo);
+    
+    // Page count change
+    document.getElementById('maxPages').addEventListener('input', function() {
+        const pages = parseInt(this.value) || 0;
+        const estimatedIPs = pages * 50;
+        document.getElementById('estimatedIPs').textContent = `약 ${estimatedIPs.toLocaleString()}개 IP`;
+    });
+}
+
+function updateDateRangeInfo() {
+    const startDate = document.getElementById('startDate').value;
+    const endCondition = document.querySelector('input[name="endCondition"]:checked').value;
+    
+    if (!startDate) {
+        document.getElementById('dateRangeInfo').innerHTML = '시작 날짜를 선택해주세요.';
+        return;
+    }
+    
+    const start = new Date(startDate);
+    let end;
+    
+    if (endCondition === 'endDate') {
+        const endDate = document.getElementById('endDate').value;
+        if (!endDate) {
+            document.getElementById('dateRangeInfo').innerHTML = '종료 날짜를 선택해주세요.';
+            return;
+        }
+        end = new Date(endDate);
+    } else {
+        const months = parseInt(document.getElementById('months').value) || 3;
+        end = new Date(start);
+        end.setMonth(end.getMonth() + months);
+    }
+    
+    if (start >= end) {
+        document.getElementById('dateRangeInfo').innerHTML = '<span class="text-danger">시작 날짜가 종료 날짜보다 늦습니다.</span>';
+        return;
+    }
+    
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.ceil(diffDays / 30);
+    const quarterCount = Math.ceil(diffMonths / 3);
+    
+    const info = `
+        <strong>수집 정보:</strong><br>
+        📅 기간: ${diffDays}일 (약 ${diffMonths}개월)<br>
+        📊 분할: ${quarterCount}개 분기 (3개월씩)<br>
+        ⏱️ 예상 시간: ${quarterCount * 2}-${quarterCount * 5}분<br>
+        🔄 3개월 제약에 따라 자동 분할 처리
+    `;
+    
+    document.getElementById('dateRangeInfo').innerHTML = info;
+}
+
+function startRegtechCollection() {
+    const collectionType = document.querySelector('input[name="collectionType"]:checked').value;
+    const validate = document.getElementById('validateData').checked;
+    
+    let requestData = {
+        collection_type: collectionType,
+        validate: validate
+    };
+    
+    if (collectionType === 'pages') {
+        const maxPages = parseInt(document.getElementById('maxPages').value) || 2;
+        requestData.max_pages = maxPages;
+        
+        if (!confirm(`페이지 기반 수집을 시작하시겠습니까?\\n\\n설정:\\n- 최대 페이지: ${maxPages}\\n- 예상 수집량: 약 ${maxPages * 50}개 IP\\n- 소요 시간: 약 ${maxPages}분`)) {
+            return;
+        }
+    } else {
+        const startDate = document.getElementById('startDate').value;
+        const endCondition = document.querySelector('input[name="endCondition"]:checked').value;
+        
+        if (!startDate) {
+            alert('시작 날짜를 선택해주세요.');
+            return;
+        }
+        
+        requestData.start_date = startDate;
+        
+        if (endCondition === 'endDate') {
+            const endDate = document.getElementById('endDate').value;
+            if (!endDate) {
+                alert('종료 날짜를 선택해주세요.');
+                return;
+            }
+            requestData.end_date = endDate;
+        } else {
+            const months = parseInt(document.getElementById('months').value) || 3;
+            requestData.months = months;
+        }
+        
+        const start = new Date(startDate);
+        let end;
+        if (endCondition === 'endDate') {
+            end = new Date(requestData.end_date);
+        } else {
+            end = new Date(start);
+            end.setMonth(end.getMonth() + requestData.months);
+        }
+        
+        if (start >= end) {
+            alert('시작 날짜가 종료 날짜보다 늦습니다.');
+            return;
+        }
+        
+        const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24));
+        const diffMonths = Math.ceil(diffDays / 30);
+        const quarterCount = Math.ceil(diffMonths / 3);
+        
+        if (!confirm(`날짜 기반 수집을 시작하시겠습니까?\\n\\n설정:\\n- 기간: ${diffDays}일 (${diffMonths}개월)\\n- 분할: ${quarterCount}개 분기\\n- 예상 시간: ${quarterCount * 2}-${quarterCount * 5}분\\n\\n주의: 수집 중 중단하지 마세요.`)) {
+            return;
+        }
+    }
+    
+    // Close modal and start collection
+    const modal = bootstrap.Modal.getInstance(document.getElementById('regtechCollectionModal'));
+    modal.hide();
+    
+    executeRegtechCollection(requestData);
+}
+
+function executeRegtechCollection(requestData) {
+    // Find and update the REGTECH button
+    const regtechCard = document.querySelector('.collection-source-card.regtech');
+    const button = regtechCard.querySelector('.btn-collection-action');
+    const originalContent = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i> 수집 중...';
+    button.disabled = true;
+    
+    // Update status
+    const statusBadge = regtechCard.querySelector('.status-badge');
+    statusBadge.className = 'status-badge loading';
+    statusBadge.textContent = '수집 중...';
+    
+    fetch('/api/collection/integrated/regtech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        
+        if (data.success) {
+            alert(`REGTECH 수집이 완료되었습니다.\\n\\n결과:\\n- 수집 방식: ${data.collection_type === 'pages' ? '페이지 기반' : '날짜 기반'}\\n- 처리된 데이터: ${data.message}`);
+            // Refresh collection status
+            loadCollectionStatus();
+        } else {
+            alert(`수집 실패: ${data.error || data.message || '알 수 없는 오류'}`);
+            statusBadge.className = 'status-badge error';
+            statusBadge.textContent = '수집 실패';
+        }
+    })
+    .catch(error => {
+        console.error('수집 트리거 실패:', error);
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        statusBadge.className = 'status-badge error';
+        statusBadge.textContent = '연결 오류';
+        alert('수집 요청 중 오류가 발생했습니다.');
+    });
+}
+
+function viewCollectionDetails(sourceType) {
+    // Show collection details in a modal or new section
+    const detailsHtml = `
+        <div class="alert alert-info">
+            <h5>${sourceType.toUpperCase()} 수집 정보</h5>
+            <ul>
+                ${sourceType === 'regtech' ? `
+                    <li>소스: 금융보안원 공식 블랙리스트</li>
+                    <li>수집 방식: 자동 (웹 스크래핑)</li>
+                    <li>인증: 불필요 (공개 데이터)</li>
+                    <li>업데이트 주기: 일일</li>
+                    <li>데이터 품질: 높음</li>
+                ` : `
+                    <li>소스: SECUDIUM 위협 인텔리전스</li>
+                    <li>수집 방식: 수동 (SMS OTP 인증 필요)</li>
+                    <li>인증: SMS OTP 인증 필수</li>
+                    <li>업데이트 주기: 실시간</li>
+                    <li>데이터 품질: 중간</li>
+                `}
+            </ul>
+        </div>
+    `;
+    
+    // You can show this in a modal or alert for now
+    alert(`${sourceType.toUpperCase()} 상세 정보:\\n\\n수집 방식: ${sourceType === 'regtech' ? '자동' : '수동 (OTP 필요)'}\\n데이터 품질: ${sourceType === 'regtech' ? '높음' : '중간'}\\n업데이트: ${sourceType === 'regtech' ? '일일' : '실시간'}`);
+}
+
+function cleanupOldFiles() {
+    if (confirm('30일 이전의 임시 파일을 정리하시겠습니까?')) {
+        const button = event.target;
+        const originalContent = button.innerHTML;
+        
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> 정리 중...';
+        button.disabled = true;
+        
+        fetch('/api/collection/integrated/cleanup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ days: 30 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            
+            if (data.success) {
+                alert('파일 정리가 완료되었습니다.');
+            } else {
+                alert(`정리 실패: ${data.error || '알 수 없는 오류'}`);
+            }
+        })
+        .catch(error => {
+            console.error('파일 정리 실패:', error);
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            alert('파일 정리 중 오류가 발생했습니다.');
+        });
+    }
+}
+
+// Enhanced animations and interactions
+document.addEventListener('DOMContentLoaded', function() {
+    // Load collection status on page load
+    loadCollectionStatus();
+    
+    // Set up periodic status updates
+    collectionStatusInterval = setInterval(loadCollectionStatus, 30000); // Every 30 seconds
+    
+    // Add entrance animations
+    const cards = document.querySelectorAll('.month-card, .stat-card, .collection-source-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Add floating animation to stats
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.2}s`;
+        card.style.animation = 'float 6s ease-in-out infinite';
+    });
+});
+
+// Cleanup interval on page unload
+window.addEventListener('beforeunload', function() {
+    if (collectionStatusInterval) {
+        clearInterval(collectionStatusInterval);
+    }
+});
+
+// Add floating keyframes
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

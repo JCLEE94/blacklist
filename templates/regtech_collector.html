@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}REGTECH 수집기{% endblock %}
+
+{% block extra_css %}
+<style>
+    .collector-card {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .date-input-group {
+        display: flex;
+        gap: 1rem;
+        align-items: end;
+        margin-bottom: 1.5rem;
+    }
+    
+    .date-input-group > div {
+        flex: 1;
+    }
+    
+    .preset-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+    
+    .collection-log {
+        background: #f8f9fa;
+        border-radius: 5px;
+        padding: 1rem;
+        height: 400px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .loading-spinner {
+        display: none;
+    }
+    
+    .collecting {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">
+        <i class="bi bi-collection"></i> REGTECH 데이터 수집기
+    </h1>
+    
+    <!-- 현재 상태 -->
+    <div class="stats-card">
+        <div class="row">
+            <div class="col-md-3">
+                <h3 id="totalCount">{{ total_ips|default('0') }}</h3>
+                <small>전체 REGTECH IP</small>
+            </div>
+            <div class="col-md-3">
+                <h3 id="todayCount">{{ today_count|default('0') }}</h3>
+                <small>오늘 수집된 IP</small>
+            </div>
+            <div class="col-md-3">
+                <h3 id="lastUpdate">{{ last_update|default('없음') }}</h3>
+                <small>마지막 업데이트</small>
+            </div>
+            <div class="col-md-3">
+                <h3 id="collectionStatus">대기중</h3>
+                <small>수집 상태</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 날짜 범위 선택 -->
+    <div class="collector-card">
+        <h4 class="mb-3">
+            <i class="bi bi-calendar-range"></i> 수집 날짜 범위 설정
+        </h4>
+        
+        <!-- 빠른 선택 버튼 -->
+        <div class="preset-buttons">
+            <button class="btn btn-sm btn-outline-primary" onclick="setDateRange('today')">오늘</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="setDateRange('yesterday')">어제</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="setDateRange('week')">최근 1주일</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="setDateRange('month')">최근 1개월</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="setDateRange('3months')">최근 3개월</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="setDateRange('6months')">최근 6개월</button>
+        </div>
+        
+        <!-- 날짜 입력 -->
+        <div class="date-input-group">
+            <div>
+                <label for="startDate" class="form-label">시작일</label>
+                <input type="date" class="form-control" id="startDate" 
+                       value="{{ default_start_date }}" max="{{ today }}">
+            </div>
+            <div>
+                <label for="endDate" class="form-label">종료일</label>
+                <input type="date" class="form-control" id="endDate" 
+                       value="{{ today }}" max="{{ today }}">
+            </div>
+            <div>
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="startCollection()" id="collectBtn">
+                    <i class="bi bi-play-circle"></i> 수집 시작
+                </button>
+            </div>
+        </div>
+        
+        <!-- 고급 옵션 -->
+        <details>
+            <summary class="text-muted mb-2" style="cursor: pointer;">고급 옵션</summary>
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <label for="pageSize" class="form-label">페이지 크기</label>
+                    <input type="number" class="form-control" id="pageSize" value="200" min="50" max="1000">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">수집 모드</label>
+                    <select class="form-select" id="collectionMode">
+                        <option value="update">업데이트 (기존 데이터 유지)</option>
+                        <option value="replace">교체 (기간 내 데이터 교체)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">자동 DB 저장</label>
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="autoSave" checked>
+                        <label class="form-check-label" for="autoSave">
+                            수집 후 자동으로 DB에 저장
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </details>
+    </div>
+    
+    <!-- 수집 로그 -->
+    <div class="collector-card">
+        <h4 class="mb-3">
+            <i class="bi bi-terminal"></i> 수집 로그
+            <button class="btn btn-sm btn-outline-secondary float-end" onclick="clearLog()">
+                <i class="bi bi-trash"></i> 로그 지우기
+            </button>
+        </h4>
+        <div class="collection-log" id="collectionLog">
+            <div class="text-muted">수집을 시작하면 여기에 로그가 표시됩니다...</div>
+        </div>
+    </div>
+    
+    <!-- 수집 결과 -->
+    <div class="collector-card" id="resultsCard" style="display: none;">
+        <h4 class="mb-3">
+            <i class="bi bi-graph-up"></i> 수집 결과
+        </h4>
+        <div id="collectionResults">
+            <!-- 결과가 여기에 표시됨 -->
+        </div>
+    </div>
+</div>
+
+<!-- 로딩 스피너 -->
+<div class="loading-spinner position-fixed top-50 start-50 translate-middle" id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 날짜 범위 프리셋
+function setDateRange(preset) {
+    const today = new Date();
+    const endDate = document.getElementById('endDate');
+    const startDate = document.getElementById('startDate');
+    
+    endDate.value = formatDate(today);
+    
+    let start = new Date(today);
+    switch(preset) {
+        case 'today':
+            start = new Date(today);
+            break;
+        case 'yesterday':
+            start.setDate(start.getDate() - 1);
+            endDate.value = formatDate(start);
+            break;
+        case 'week':
+            start.setDate(start.getDate() - 7);
+            break;
+        case 'month':
+            start.setDate(start.getDate() - 30);
+            break;
+        case '3months':
+            start.setDate(start.getDate() - 90);
+            break;
+        case '6months':
+            start.setDate(start.getDate() - 180);
+            break;
+    }
+    
+    startDate.value = formatDate(start);
+}
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+// 로그 추가
+function addLog(message, type = 'info') {
+    const log = document.getElementById('collectionLog');
+    const timestamp = new Date().toLocaleTimeString('ko-KR');
+    const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry text-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'dark'}`;
+    logEntry.innerHTML = `[${timestamp}] ${icon} ${message}`;
+    
+    log.appendChild(logEntry);
+    log.scrollTop = log.scrollHeight;
+}
+
+// 로그 지우기
+function clearLog() {
+    document.getElementById('collectionLog').innerHTML = '<div class="text-muted">로그가 지워졌습니다.</div>';
+}
+
+// 수집 시작
+function startCollection() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const pageSize = document.getElementById('pageSize').value;
+    const mode = document.getElementById('collectionMode').value;
+    const autoSave = document.getElementById('autoSave').checked;
+    
+    if (!startDate || !endDate) {
+        alert('시작일과 종료일을 선택하세요.');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('시작일이 종료일보다 늦을 수 없습니다.');
+        return;
+    }
+    
+    // UI 상태 변경
+    const collectBtn = document.getElementById('collectBtn');
+    collectBtn.disabled = true;
+    collectBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 수집 중...';
+    document.getElementById('collectionStatus').textContent = '수집 중';
+    document.getElementById('collectionStatus').parentElement.parentElement.classList.add('collecting');
+    
+    clearLog();
+    addLog(`수집 시작: ${startDate} ~ ${endDate}`);
+    addLog(`옵션: 페이지크기=${pageSize}, 모드=${mode}, 자동저장=${autoSave}`);
+    
+    // API 호출
+    fetch('/api/regtech/collect', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            start_date: startDate.replace(/-/g, ''),
+            end_date: endDate.replace(/-/g, ''),
+            page_size: parseInt(pageSize),
+            mode: mode,
+            auto_save: autoSave
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addLog(`수집 완료! 총 ${data.total_collected}개 IP 수집됨`, 'success');
+            
+            // 결과 표시
+            showResults(data);
+            
+            // 통계 업데이트
+            updateStats();
+        } else {
+            addLog(`수집 실패: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        addLog(`네트워크 오류: ${error}`, 'error');
+    })
+    .finally(() => {
+        collectBtn.disabled = false;
+        collectBtn.innerHTML = '<i class="bi bi-play-circle"></i> 수집 시작';
+        document.getElementById('collectionStatus').textContent = '대기중';
+        document.getElementById('collectionStatus').parentElement.parentElement.classList.remove('collecting');
+    });
+}
+
+// 결과 표시
+function showResults(data) {
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsDiv = document.getElementById('collectionResults');
+    
+    resultsCard.style.display = 'block';
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5>수집 요약</h5>
+                <ul>
+                    <li>총 수집된 IP: <strong>${data.total_collected}</strong>개</li>
+                    <li>신규 IP: <strong>${data.new_ips || 0}</strong>개</li>
+                    <li>업데이트된 IP: <strong>${data.updated_ips || 0}</strong>개</li>
+                    <li>수집 시간: <strong>${data.collection_time || 'N/A'}</strong></li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h5>날짜별 분포</h5>
+                <div style="max-height: 200px; overflow-y: auto;">
+    `;
+    
+    if (data.date_distribution) {
+        for (const [date, count] of Object.entries(data.date_distribution)) {
+            html += `<div>${date}: ${count}개</div>`;
+        }
+    }
+    
+    html += `
+                </div>
+            </div>
+        </div>
+    `;
+    
+    resultsDiv.innerHTML = html;
+}
+
+// 통계 업데이트
+function updateStats() {
+    fetch('/api/regtech/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalCount').textContent = data.total_ips.toLocaleString();
+            document.getElementById('todayCount').textContent = data.today_count.toLocaleString();
+            document.getElementById('lastUpdate').textContent = data.last_update || '없음';
+        });
+}
+
+// 페이지 로드 시 통계 업데이트
+document.addEventListener('DOMContentLoaded', updateStats);
+</script>
+{% endblock %}

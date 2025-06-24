@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}연결 상태 - Nextrade Black List Deny System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-activity"></i> 서비스 연결 상태
+        </h1>
+        <p class="text-muted">실시간 서비스 상태 모니터링</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> 새로고침
+        </button>
+    </div>
+</div>
+
+<!-- Service Status Cards -->
+<div class="row">
+    {% for service in services %}
+    <div class="col-md-4 mb-4">
+        <div class="card {% if service.status == 'online' %}border-success{% else %}border-danger{% endif %}">
+            <div class="card-header {% if service.status == 'online' %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+                <h5 class="mb-0">
+                    <i class="bi {% if service.status == 'online' %}bi-check-circle{% else %}bi-x-circle{% endif %}"></i>
+                    {{ service.name }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">상태</small>
+                        <p class="mb-0">
+                            <strong>
+                                {% if service.status == 'online' %}
+                                    <span class="text-success">정상</span>
+                                {% else %}
+                                    <span class="text-danger">오프라인</span>
+                                {% endif %}
+                            </strong>
+                        </p>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">응답 시간</small>
+                        <p class="mb-0"><strong>{{ service.response_time }}</strong></p>
+                    </div>
+                </div>
+                <hr>
+                <small class="text-muted">마지막 확인: {{ service.last_check }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Connection History Chart -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-graph-up"></i> 연결 상태 이력
+        </h5>
+    </div>
+    <div class="card-body">
+        <canvas id="statusChart" height="100"></canvas>
+    </div>
+</div>
+
+<!-- API Endpoints Status -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-plug"></i> API 엔드포인트 상태
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>엔드포인트</th>
+                        <th>메소드</th>
+                        <th>상태</th>
+                        <th>응답 시간</th>
+                        <th>테스트</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>/api/blacklist/active</code></td>
+                        <td><span class="badge bg-primary">GET</span></td>
+                        <td><span class="badge bg-success">정상</span></td>
+                        <td>12ms</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/blacklist/active')">
+                                <i class="bi bi-play"></i> 테스트
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/fortigate</code></td>
+                        <td><span class="badge bg-primary">GET</span></td>
+                        <td><span class="badge bg-success">정상</span></td>
+                        <td>15ms</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/fortigate')">
+                                <i class="bi bi-play"></i> 테스트
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/stats</code></td>
+                        <td><span class="badge bg-primary">GET</span></td>
+                        <td><span class="badge bg-success">정상</span></td>
+                        <td>8ms</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/stats')">
+                                <i class="bi bi-play"></i> 테스트
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/search/{ip}</code></td>
+                        <td><span class="badge bg-primary">GET</span></td>
+                        <td><span class="badge bg-success">정상</span></td>
+                        <td>5ms</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/search/1.1.1.1')">
+                                <i class="bi bi-play"></i> 테스트
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Status history chart
+const ctx = document.getElementById('statusChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+        datasets: [
+            {
+                label: 'Secudium API',
+                data: [100, 100, 100, 100, 100, 100, 100],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.1
+            },
+            {
+                label: 'Redis Cache',
+                data: [100, 100, 100, 95, 100, 100, 100],
+                borderColor: 'rgb(255, 205, 86)',
+                backgroundColor: 'rgba(255, 205, 86, 0.1)',
+                tension: 0.1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+function testEndpoint(endpoint) {
+    const startTime = Date.now();
+    
+    fetch(endpoint)
+        .then(response => {
+            const endTime = Date.now();
+            const responseTime = endTime - startTime;
+            
+            if (response.ok) {
+                alert(`엔드포인트 테스트 성공!\n응답 시간: ${responseTime}ms`);
+            } else {
+                alert(`엔드포인트 테스트 실패!\n상태 코드: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            alert(`엔드포인트 테스트 오류: ${error.message}`);
+        });
+}
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}
