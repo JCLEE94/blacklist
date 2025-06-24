@@ -86,3 +86,10 @@ document/
 
 # Watchtower config
 watchtower-config.json
+config/watchtower-config.json
+
+# Test archives
+tests_archive/
+
+# Reports (optional - remove if you want to track reports)
+docs/reports/

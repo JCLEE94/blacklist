@@ -17,8 +17,8 @@ services:
       - FLASK_ENV=production
       - TZ=Asia/Seoul
     volumes:
-      - ./instance:/app/instance
-      - ./logs:/app/logs
+      - ../instance:/app/instance
+      - ../logs:/app/logs
     networks:
       - blacklist-net
     depends_on:
@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./watchtower-config.json:/config.json:ro
+      - ../config/watchtower-config.json:/config.json:ro
     environment:
       - WATCHTOWER_POLL_INTERVAL=300  # 5분마다 체크
       - WATCHTOWER_CLEANUP=true
