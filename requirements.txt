@@ -53,7 +53,7 @@ flake8==6.0.0
 
 # Memory profiling (optional)
 memory-profiler==0.61.0
-pympler==0.9
+pympler==1.1
 
 # Environment management
 python-dotenv==1.0.0
