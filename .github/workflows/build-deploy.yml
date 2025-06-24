@@ -71,12 +71,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          
       - name: Login to Private Registry
         uses: docker/login-action@v3
         with:
@@ -84,20 +78,9 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
           
-      - name: Build and Push to Docker Hub
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: deployment/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
-          build-args: |
-            BUILD_TIME=${{ steps.time.outputs.time }}
+      - name: Get build time
+        id: time
+        run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
             
       - name: Build and Push to Private Registry
         uses: docker/build-push-action@v5
@@ -114,10 +97,6 @@ jobs:
           build-args: |
             BUILD_TIME=${{ steps.time.outputs.time }}
       
-      - name: Get build time
-        id: time
-        run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
-
   deploy:
     needs: build
     runs-on: ubuntu-latest
