@@ -21,7 +21,7 @@ jobs:
     
     steps:
       - name: Trigger collection on production
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -66,7 +66,7 @@ jobs:
             docker exec blacklist-app-1 curl -s http://localhost:2541/api/stats | jq '.'
 
       - name: Check collection results
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -97,7 +97,7 @@ jobs:
     
     steps:
       - name: Backup collected data
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
