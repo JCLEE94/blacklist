@@ -83,3 +83,6 @@ instance/backups/*.db
 *_v2.*
 *.tmpdocument/
 document/
+
+# Watchtower config
+watchtower-config.json
