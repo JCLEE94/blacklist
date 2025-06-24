@@ -26,7 +26,7 @@ if ! gh auth status &> /dev/null; then
 fi
 
 # 저장소 설정
-REPO="${GITHUB_REPOSITORY:-qws941/blacklist}"
+REPO="${GITHUB_REPOSITORY:-JCLEE94/blacklist}"
 
 echo "📦 저장소: $REPO"
 
