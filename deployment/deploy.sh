@@ -24,7 +24,7 @@ rm -rf .pytest_cache __pycache__ *.egg-info
 
 # Build Docker image
 echo "📦 Building Docker image (no cache)..."
-docker build --no-cache --pull --build-arg BUILD_TIME="$BUILD_TIME" -t $PROJECT_NAME:$VERSION_TAG -t $PROJECT_NAME:latest .
+docker build --no-cache --pull --build-arg BUILD_TIME="$BUILD_TIME" -t $PROJECT_NAME:$VERSION_TAG -t $PROJECT_NAME:latest -f deployment/Dockerfile .
 
 # Tag for registry
 echo "🏷️ Tagging images..."
