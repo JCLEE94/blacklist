@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Push
 
 on:
   push:
@@ -9,8 +9,6 @@ on:
 env:
   REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist-management
-  DEPLOY_HOST: registry.jclee.me
-  DEPLOY_PORT: 1112
 
 jobs:
   build:
@@ -60,92 +58,3 @@ jobs:
             BUILD_DATE=${{ github.event.repository.updated_at }}
             VCS_REF=${{ github.sha }}
             VERSION=${{ steps.meta.outputs.version }}
-
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
-
-      - name: Run tests
-        run: |
-          pytest tests/ -v --cov=src --cov-report=xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [build, test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - name: Deploy to Production
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          script: |
-            # 배포 디렉토리로 이동
-            cd /home/docker/blacklist
-            
-            # 최신 이미지 pull
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            
-            # 기존 컨테이너 중지 및 제거
-            docker-compose down
-            
-            # 새 컨테이너 시작
-            docker-compose up -d
-            
-            # 헬스 체크
-            sleep 10
-            curl -f http://localhost:${{ env.DEPLOY_PORT }}/health || exit 1
-            
-            # 로그 확인
-            docker-compose logs --tail=50
-            
-      - name: Log deployment status
-        if: always()
-        run: |
-          echo "Deployment ${{ job.status }}"
-          echo "Branch: ${{ github.ref }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Author: ${{ github.actor }}"
-
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
