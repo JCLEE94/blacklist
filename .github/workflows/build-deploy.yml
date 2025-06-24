@@ -31,7 +31,7 @@ on:
         type: boolean
 
 env:
-  REGISTRY: registry.jclee.me:1234
+  REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
   DEPLOY_HOST: registry.jclee.me
   DEPLOY_PORT: 1112
