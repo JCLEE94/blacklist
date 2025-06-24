@@ -1,61 +1,188 @@
-name: Build and Push
+name: Build and Deploy
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 env:
   REGISTRY: registry.jclee.me
-  IMAGE_NAME: blacklist-management
+  IMAGE_NAME: blacklist
+  DEPLOY_HOST: registry.jclee.me
+  DEPLOY_PORT: 1112
+  DEPLOY_USER: docker
+  APP_PORT: 2541
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Run tests
+        env:
+          FLASK_ENV: testing
+          REGTECH_USERNAME: test_user
+          REGTECH_PASSWORD: test_pass
+          SECUDIUM_USERNAME: test_user
+          SECUDIUM_PASSWORD: test_pass
+        run: |
+          echo "🧪 Testing configuration validation..."
+          python -c "
+          from src.config.factory import get_config
+          try:
+              config = get_config('production')
+              print('✅ Production config validation passed')
+          except Exception as e:
+              print(f'❌ Config validation failed: {e}')
+              exit(1)
+          "
+          
+          echo "🚀 Testing application startup..."
+          python -c "
+          from src.core.app_compact import create_compact_app
+          try:
+              app = create_compact_app()
+              print('✅ App creation test passed')
+          except Exception as e:
+              print(f'❌ App creation failed: {e}')
+              exit(1)
+          "
+          
+          echo "✅ All tests passed"
 
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
+        
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
       - name: Login to Private Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
+          
+      - name: Build and Push to Docker Hub
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deployment/Dockerfile
+          file: deployment/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            BUILD_TIME=${{ steps.time.outputs.time }}
+            
+      - name: Build and Push to Private Registry
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deployment/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
-            BUILD_DATE=${{ github.event.repository.updated_at }}
-            VCS_REF=${{ github.sha }}
-            VERSION=${{ steps.meta.outputs.version }}
+            BUILD_TIME=${{ steps.time.outputs.time }}
+      
+      - name: Get build time
+        id: time
+        run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Deploy to Production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ env.DEPLOY_PORT }}
+          script: |
+            cd ~/app/blacklist
+            
+            echo "🛑 Stopping existing containers..."
+            docker-compose down -v --remove-orphans || true
+            
+            echo "📥 Pulling latest images..."
+            docker-compose pull
+            
+            echo "🚀 Starting new deployment..."
+            docker-compose up -d
+            
+            echo "⏳ Waiting for application to start..."
+            sleep 30
+            
+            echo "🏥 Health check..."
+            curl -f http://localhost:${{ env.APP_PORT }}/health || exit 1
+            
+            echo "✅ Deployment completed successfully!"
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Verify Deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          
+          for i in {1..5}; do
+            echo "Attempt $i/5..."
+            if curl -f http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}/health; then
+              echo "✅ Deployment verified!"
+              exit 0
+            fi
+            sleep 10
+          done
+          
+          echo "❌ Deployment verification failed!"
+          exit 1
+
+  notify:
+    needs: [build, deploy, verify]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify Status
+        run: |
+          if [ "${{ needs.verify.result }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "🌐 Application URL: http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
+          else
+            echo "❌ Deployment failed!"
+          fi
