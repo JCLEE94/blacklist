@@ -31,14 +31,29 @@ on:
         type: boolean
 
 env:
-  REGISTRY: registry.jclee.me
-  IMAGE_NAME: blacklist
-  DEPLOY_HOST: registry.jclee.me
-  DEPLOY_PORT: 1112
-  DEPLOY_USER: docker
-  APP_PORT: 2541
+  # 기본 설정 - 환경변수로 오버라이드 가능
+  REGISTRY: ${{ vars.DOCKER_REGISTRY || 'registry.jclee.me' }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'blacklist' }}
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST || 'registry.jclee.me' }}
+  DEPLOY_PORT: ${{ vars.DEPLOY_SSH_PORT || '1112' }}
+  DEPLOY_USER: ${{ vars.DEPLOY_USER || 'docker' }}
+  APP_PORT: ${{ vars.APP_PORT || '2541' }}
+  STAGING_PORT: ${{ vars.STAGING_PORT || '2542' }}
+  
+  # 타임아웃 설정
+  TEST_TIMEOUT: ${{ vars.TEST_TIMEOUT || '300' }}
+  BUILD_TIMEOUT: ${{ vars.BUILD_TIMEOUT || '600' }}
+  DEPLOY_TIMEOUT: ${{ vars.DEPLOY_TIMEOUT || '300' }}
+  VERIFY_TIMEOUT: ${{ vars.VERIFY_TIMEOUT || '600' }}
+  
+  # Watchtower 설정
+  WATCHTOWER_WAIT_TIME: ${{ vars.WATCHTOWER_WAIT_TIME || '30' }}
+  VERIFY_MAX_ATTEMPTS: ${{ vars.VERIFY_MAX_ATTEMPTS || '60' }}
+  VERIFY_ATTEMPT_INTERVAL: ${{ vars.VERIFY_ATTEMPT_INTERVAL || '10' }}
+  
+  # 알림 설정
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-  STAGING_PORT: 2542
+  NOTIFICATIONS_ENABLED: ${{ vars.NOTIFICATIONS_ENABLED || 'true' }}
 
 jobs:
   test:
@@ -224,72 +239,11 @@ jobs:
       - name: Build Success
         run: echo "✅ Docker image built and pushed successfully"
       
-  # Performance testing stage
-  performance:
-    needs: build
-    runs-on: self-hosted
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Run Performance Tests
-        run: |
-          echo "🏎️ Running performance tests..."
           
-          # Install k6 for load testing
-          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
-          
-          # Create k6 test script
-          cat > performance-test.js << 'EOF'
-          import http from 'k6/http';
-          import { check, sleep } from 'k6';
-          
-          export let options = {
-            stages: [
-              { duration: '30s', target: 10 },
-              { duration: '1m', target: 50 },
-              { duration: '30s', target: 0 },
-            ],
-            thresholds: {
-              http_req_duration: ['p(95)<500'], // 95% of requests must complete below 500ms
-              http_req_failed: ['rate<0.1'], // http errors should be less than 10%
-            },
-          };
-          
-          export default function() {
-            let response = http.get('http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}/health');
-            check(response, {
-              'status is 200': (r) => r.status === 200,
-              'response time < 500ms': (r) => r.timings.duration < 500,
-            });
-            sleep(1);
-          }
-          EOF
-          
-          # Run performance test (will run against staging)
-          echo "Performance test will run after staging deployment"
-          
-  # Database migration stage (auto-handled by container startup)
-  migrate:
-    needs: build
-    runs-on: self-hosted
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    steps:
-      - uses: actions/checkout@v4
-        
-      - name: Prepare Database Migration
-        run: |
-          echo "🗝️ Database migrations will be handled automatically..."
-          echo "📝 Container startup script runs setup_database.py automatically"
-          echo "💾 Database backup is handled by container volume persistence"
-          echo "✅ Migration preparation completed"
             
   # Simplified Watchtower-based deployment
   deploy:
-    needs: [build, migrate]
+    needs: build
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: 
@@ -306,48 +260,11 @@ jobs:
           # Watchtower on production server will automatically detect and deploy the new image
           # Since we tagged with :latest, Watchtower will pull and restart the containers
           
-          echo "⏳ Waiting for Watchtower to detect and deploy..."
-          sleep 30
+          echo "⏳ Waiting ${{ env.WATCHTOWER_WAIT_TIME }}s for Watchtower to detect and deploy..."
+          sleep ${{ env.WATCHTOWER_WAIT_TIME }}
           
           echo "✅ Deployment triggered - Watchtower will handle the rest"
 
-  # Staging deployment for testing
-  deploy-staging:
-    needs: build
-    runs-on: self-hosted
-    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
-    environment:
-      name: staging
-      url: http://${{ env.DEPLOY_HOST }}:${{ env.STAGING_PORT }}
-    steps:
-      - uses: actions/checkout@v4
-        
-      - name: Deploy to Staging
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ env.DEPLOY_PORT }}
-          script: |
-            cd ~/app/blacklist-staging
-            mkdir -p ~/app/blacklist-staging
-            
-            # Copy docker-compose and modify for staging
-            cp ~/app/blacklist/docker-compose.yml ~/app/blacklist-staging/
-            cd ~/app/blacklist-staging
-            
-            # Update port for staging
-            sed -i 's/2541:8541/${{ env.STAGING_PORT }}:8541/g' docker-compose.yml
-            sed -i 's/PORT=2541/PORT=${{ env.STAGING_PORT }}/g' docker-compose.yml
-            
-            echo "🧪 Deploying to staging environment..."
-            docker-compose pull
-            docker-compose up -d
-            
-            sleep 20
-            curl -f http://localhost:${{ env.STAGING_PORT }}/health || exit 1
-            echo "✅ Staging deployment completed!"
             
   # Enhanced verification with Watchtower deployment wait
   verify:
@@ -362,7 +279,7 @@ jobs:
           echo "⏳ Waiting for Watchtower to complete deployment..."
           
           BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
-          MAX_ATTEMPTS=60  # 10 minutes max wait
+          MAX_ATTEMPTS=${{ env.VERIFY_MAX_ATTEMPTS }}
           ATTEMPT=0
           
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
@@ -373,8 +290,8 @@ jobs:
               echo "✅ Application is healthy and responding!"
               break
             else
-              echo "⏳ Application not ready yet, waiting 10 seconds..."
-              sleep 10
+              echo "⏳ Application not ready yet, waiting ${{ env.VERIFY_ATTEMPT_INTERVAL }} seconds..."
+              sleep ${{ env.VERIFY_ATTEMPT_INTERVAL }}
             fi
             
             if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
@@ -430,80 +347,7 @@ jobs:
           
           echo "✅ All integration tests passed!"
 
-  # Rollback job
-  rollback:
-    runs-on: self-hosted
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.rollback == 'true'
-    steps:
-      - name: Rollback to Previous Version
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ env.DEPLOY_PORT }}
-          script: |
-            cd ~/app/blacklist
             
-            echo "⏮️ Starting rollback..."
-            
-            if [ -f .previous_version ]; then
-              PREVIOUS_IMAGE=$(cat .previous_version)
-              echo "🔄 Rolling back to: $PREVIOUS_IMAGE"
-              
-              # Update docker-compose with previous image
-              sed -i "s|image:.*|image: $PREVIOUS_IMAGE|g" docker-compose.yml
-              
-              # Restart with previous version
-              docker-compose pull
-              docker-compose up -d
-              
-              sleep 20
-              
-              # Verify rollback
-              if curl -f http://localhost:${{ env.APP_PORT }}/health; then
-                echo "✅ Rollback successful!"
-              else
-                echo "❌ Rollback failed!"
-                exit 1
-              fi
-            else
-              echo "❌ No previous version found for rollback"
-              exit 1
-            fi
-            
-  # Monitoring and alerting
-  monitor:
-    needs: verify
-    runs-on: self-hosted
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Setup Monitoring
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ env.DEPLOY_PORT }}
-          script: |
-            cd ~/app/blacklist
-            
-            echo "📡 Setting up monitoring..."
-            
-            # Create monitoring script
-            cat > monitor.sh << 'EOF'
-            #!/bin/bash
-            while true; do
-              if ! curl -f -s http://localhost:${{ env.APP_PORT }}/health > /dev/null; then
-                echo "[$(date)] Health check failed!"
-                # Send alert (webhook, email, etc.)
-              fi
-              sleep 60
-            done
-            EOF
-            
-            chmod +x monitor.sh
-            echo "✅ Monitoring script created"
             
   # Comprehensive notification
   notify:

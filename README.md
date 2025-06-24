@@ -1,8 +1,37 @@
 # Blacklist Management System
 
-블랙리스트 IP 관리 시스템 - FortiGate External Connector 통합
+엔터프라이즈급 위협 인텔리전스 플랫폼 - 다중 소스 데이터 수집, 자동화된 처리 및 FortiGate External Connector 통합
 
-## 🚀 Quick Start
+## 🚀 주요 기능
+
+- **다중 소스 통합**: REGTECH, SECUDIUM 등 여러 위협 인텔리전스 소스 통합
+- **자동화된 수집**: 예약된 수집 및 실시간 업데이트
+- **FortiGate 연동**: External Connector API를 통한 직접 통합
+- **성능 최적화**: Redis 캐싱, 비동기 처리
+- **컨테이너화**: Docker 기반 배포 및 Watchtower 자동 업데이트
+
+## 📋 요구사항
+
+- Python 3.9+
+- Docker & Docker Compose
+- Redis
+- Git
+
+## 🛠️ 빠른 시작
+
+### 1. 환경 설정
+
+```bash
+# 저장소 클론
+git clone https://github.com/qws941/blacklist.git
+cd blacklist
+
+# 환경변수 설정
+cp .env.example .env
+# .env 파일을 편집하여 실제 값으로 수정
+```
+
+### 2. 로컬 개발
 
 ```bash
 # 의존성 설치
@@ -12,98 +41,107 @@ pip install -r requirements.txt
 python3 setup_database.py
 
 # 개발 서버 실행
-python3 app.py
-
-# 또는 프로덕션 배포
-./deploy.sh container
+python3 main.py
 ```
 
-## 📋 주요 API Endpoints
+### 3. Docker 배포
 
-### FortiGate 연동
-- `GET /api/blacklist/active` - 활성 IP 목록 (플레인 텍스트)
-- `GET /api/fortigate` - FortiGate External Connector JSON 형식
-- `GET /health` - 헬스체크
+```bash
+# Docker Compose로 실행
+cd deployment
+docker-compose up -d
 
-### 관리 및 모니터링
-- `GET /api/stats` - 시스템 통계
-- `GET /api/search/{ip}` - IP 검색 및 히스토리
-- `GET /api/stats/detection-trends` - 탐지 동향 분석
+# 상태 확인
+docker-compose ps
+docker-compose logs -f
+```
 
-## 🏗️ 시스템 아키텍처
+### 4. 프로덕션 배포
 
-### 핵심 구조
+```bash
+# 프로덕션 서버에서 실행
+./production-setup.sh
+```
+
+## 🔧 환경 변수
+
+주요 환경 변수 설정 (`.env` 파일):
+
+```bash
+# Docker Registry
+DOCKER_REGISTRY=registry.jclee.me
+IMAGE_NAME=blacklist
+APP_PORT=2541
+
+# 외부 서비스 인증
+REGTECH_USERNAME=your-username
+REGTECH_PASSWORD=your-password
+SECUDIUM_USERNAME=your-username
+SECUDIUM_PASSWORD=your-password
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+```
+
+전체 환경 변수 목록은 [.env.example](.env.example) 참조
+
+## 📦 프로젝트 구조
+
 ```
 blacklist/
-├── app.py                  # 메인 진입점
-├── core/
-│   ├── app_compact.py      # 통합 Flask 애플리케이션
-│   ├── blacklist.py        # 블랙리스트 관리 로직
-│   └── database.py         # 데이터베이스 운영
-├── config/                 # 환경별 설정
-├── scripts/                # 백그라운드 서비스
-├── utils/                  # 유틸리티 (캐시, 인증, 모니터링)
-└── deploy.sh              # 통합 배포 스크립트
+├── src/                    # 소스 코드
+│   ├── core/              # 핵심 비즈니스 로직
+│   ├── config/            # 설정 관리
+│   ├── utils/             # 유틸리티 함수
+│   └── web/               # 웹 라우트
+├── deployment/            # 배포 관련 파일
+│   ├── docker-compose.yml # Docker Compose 설정
+│   ├── Dockerfile         # Docker 이미지 빌드
+│   └── docker-compose.watchtower.yml  # Watchtower 설정
+├── config/                # 애플리케이션 설정
+│   ├── environments.yml   # 환경별 설정
+│   └── deployment.yml     # 배포 설정
+├── scripts/               # 유틸리티 스크립트
+├── tests/                 # 테스트 코드
+└── .github/workflows/     # CI/CD 파이프라인
 ```
 
-### 데이터 처리 흐름
-1. **수집**: 외부 API에서 시간당 데이터 수집
-2. **저장**: SQLite 데이터베이스 + 월별 파일 구조
-3. **캐싱**: Redis를 통한 고성능 응답
-4. **제공**: FortiGate External Connector 표준 준수
-5. **만료**: 3개월 자동 데이터 보존 정책
+## 🚢 배포 방식
 
-## 🔧 배포 옵션
+### Watchtower 자동 배포
 
-### Container 배포 (권장)
-```bash
-# 자동 감지 (Podman/Docker)
-./deploy.sh container
+이 프로젝트는 Watchtower를 통한 자동 배포를 사용합니다:
 
-# 특정 포트 지정
-./deploy.sh container --port 8080
+1. **이미지 푸시**: GitHub Actions가 새 Docker 이미지를 `registry.jclee.me`에 푸시
+2. **자동 감지**: Watchtower가 30초마다 새 이미지 확인
+3. **자동 업데이트**: 새 이미지 발견 시 자동으로 컨테이너 재시작
+
+### CI/CD 파이프라인
+
+```yaml
+main 브랜치 푸시 → 테스트 → 빌드 → 레지스트리 푸시 → Watchtower 자동 배포 → 검증
 ```
 
-### 직접 배포
-```bash
-# Python 직접 실행
-./deploy.sh python
+## 📊 API 엔드포인트
 
-# Gunicorn (프로덕션)
-./deploy.sh gunicorn
-```
+### 핵심 엔드포인트
 
-### CI/CD 자동 배포
-```bash
-# main 브랜치 푸시 시 자동 배포
-git push origin main
-```
+- `GET /health` - 시스템 헬스 체크
+- `GET /api/blacklist/active` - 활성 IP 목록 (텍스트)
+- `GET /api/fortigate` - FortiGate External Connector 형식
+- `GET /api/stats` - 시스템 통계
 
-## 📊 운영 모니터링
+### 수집 관리
 
-### 서비스 상태 확인
-```bash
-# 헬스체크
-curl http://localhost:2541/health
+- `GET /api/collection/status` - 수집 상태
+- `POST /api/collection/enable` - 수집 활성화
+- `POST /api/collection/disable` - 수집 비활성화
 
-# 시스템 통계
-curl http://localhost:2541/api/stats | python3 -m json.tool
+### 검색 및 분석
 
-# FortiGate 연동 테스트
-curl http://localhost:2541/api/blacklist/active
-```
-
-### 백그라운드 서비스
-```bash
-# 데이터 업데이터 설정
-./scripts/setup_updater_service.sh
-
-# 수동 데이터 업데이트
-python3 scripts/run_updater.py
-
-# 로그 모니터링
-tail -f logs/updater.log
-```
+- `GET /api/search/{ip}` - 단일 IP 조회
+- `POST /api/search` - 배치 IP 검색
+- `GET /api/stats/detection-trends` - 탐지 동향
 
 ## 🛡️ FortiGate 설정
 
@@ -117,14 +155,49 @@ tail -f logs/updater.log
 - **URL**: `http://your-server:2541/api/blacklist/active`
 - **Format**: `Text (one IP per line)`
 
+## 🔒 보안
+
+- 모든 민감한 정보는 환경 변수로 관리
+- GitHub Secrets를 통한 CI/CD 인증 정보 보호
+- Docker 레지스트리 인증 필수
+- 프로덕션 환경에서 HTTPS 사용 권장
+
+## 🛠️ 개발
+
+### 테스트 실행
+
+```bash
+# 전체 테스트
+pytest
+
+# 특정 테스트
+pytest tests/test_blacklist_unified.py
+
+# 커버리지 포함
+pytest --cov=src
+```
+
+### 코드 품질
+
+```bash
+# 포맷팅
+black src/
+
+# 린팅
+flake8 src/
+
+# 보안 검사
+bandit -r src/
+```
+
 ## 📈 성능 및 확장성
 
 ### 기술 스택
 - **Backend**: Flask + Gunicorn
-- **Database**: SQLite (개발) / PostgreSQL (옵션)
+- **Database**: SQLite (개발) / PostgreSQL (프로덕션 옵션)
 - **Cache**: Redis
-- **Container**: Docker/Podman 지원
-- **CI/CD**: GitLab Runner
+- **Container**: Docker/Podman
+- **CI/CD**: GitHub Actions + Self-hosted Runner
 
 ### 성능 최적화
 - **압축**: 자동 gzip 응답 압축
@@ -132,32 +205,24 @@ tail -f logs/updater.log
 - **Rate Limiting**: 엔드포인트별 제한
 - **Connection Pooling**: 데이터베이스 연결 풀링
 
-## 📚 문서 및 가이드
+## 📝 라이선스
 
-- [시스템 아키텍처](docs/SYSTEM_ARCHITECTURE_REPORT.md)
-- [운영 가이드](docs/OPERATIONS_GUIDE.md)
-- [고급 기능](docs/ADVANCED_FEATURES.md)
-- [배포 가이드](docs/DEPLOYMENT.md)
-- [CI/CD 설정](docs/CICD_PIPELINE_GUIDE.md)
-- [트러블슈팅](docs/TROUBLESHOOTING.md)
+이 프로젝트는 비공개 소프트웨어입니다. 무단 복제 및 배포를 금지합니다.
 
-## 🔐 보안 및 인증
+## 🤝 기여
 
-- SQL Injection 방지
-- Input 검증 및 Sanitization
-- Rate Limiting 및 DDoS 방지
-- CORS 설정
-- 환경별 보안 정책
+1. 이슈를 생성하여 논의
+2. 기능 브랜치 생성 (`git checkout -b feature/amazing-feature`)
+3. 변경사항 커밋 (`git commit -m 'feat: add amazing feature'`)
+4. 브랜치 푸시 (`git push origin feature/amazing-feature`)
+5. Pull Request 생성
 
-## 📞 지원 및 기여
+## 📞 지원
 
-- **이슈 리포트**: GitLab Issues
-- **기능 요청**: Merge Request
-- **문서**: `docs/` 디렉토리
-- **설정**: `CLAUDE.md` 참조
+- 이슈 트래커: [GitHub Issues](https://github.com/qws941/blacklist/issues)
+- 문서: [docs/](./docs/) 디렉토리 참조
 
 ---
 
-**현재 버전**: Compact v2.1  
-**마지막 업데이트**: 2025.06.04  
-**라이선스**: MIT# CI/CD Pipeline Trigger
+**현재 버전**: v3.0.0  
+**마지막 업데이트**: 2025.06.25

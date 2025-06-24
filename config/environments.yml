@@ -1,0 +1,103 @@
+# 환경별 설정 통합 관리
+# 이 파일의 값들은 환경변수로 오버라이드 가능
+
+common: &common
+  app:
+    name: blacklist-management
+    version: "3.0.0"
+    timezone: Asia/Seoul
+  
+  server:
+    host: 0.0.0.0
+    dev_port: 8541
+    prod_port: 2541
+    staging_port: 2542
+  
+  database:
+    sqlite_path: instance/blacklist.db
+    redis_db: 0
+  
+  cache:
+    ttl_default: 300
+    ttl_long: 3600
+    ttl_short: 60
+  
+  rate_limits:
+    public: "1000/hour"
+    authenticated: "5000/hour"
+    admin: "10000/hour"
+  
+  collection:
+    enabled: true
+    interval_hours: 6
+    max_retries: 3
+
+development:
+  <<: *common
+  environment: development
+  debug: true
+  server:
+    <<: *common.server
+    port: 8541
+  
+  deployment:
+    host: localhost
+    registry: localhost:5000
+  
+  external_services:
+    regtech:
+      base_url: https://regtech.fsec.or.kr
+      username: test_user
+      password: test_pass
+    secudium:
+      base_url: https://secudium.skinfosec.co.kr
+      username: test_user
+      password: test_pass
+
+staging:
+  <<: *common
+  environment: staging
+  debug: false
+  server:
+    <<: *common.server
+    port: 2542
+  
+  deployment:
+    host: "${DEPLOY_HOST}"
+    ssh_port: "${DEPLOY_SSH_PORT}"
+    user: "${DEPLOY_USER}"
+    registry: "${DOCKER_REGISTRY}"
+  
+  external_services:
+    regtech:
+      base_url: https://regtech.fsec.or.kr
+      username: "${REGTECH_USERNAME}"
+      password: "${REGTECH_PASSWORD}"
+    secudium:
+      base_url: https://secudium.skinfosec.co.kr
+      username: "${SECUDIUM_USERNAME}"
+      password: "${SECUDIUM_PASSWORD}"
+
+production:
+  <<: *common
+  environment: production
+  debug: false
+  server:
+    <<: *common.server
+    port: 2541
+  
+  deployment:
+    host: "${DEPLOY_HOST}"
+    ssh_port: "${DEPLOY_SSH_PORT}"
+    user: "${DEPLOY_USER}"
+    registry: "${DOCKER_REGISTRY}"
+  
+  external_services:
+    regtech:
+      base_url: https://regtech.fsec.or.kr
+      username: "${REGTECH_USERNAME}"
+      password: "${REGTECH_PASSWORD}"
+    secudium:
+      base_url: https://secudium.skinfosec.co.kr
+      username: "${SECUDIUM_USERNAME}"
+      password: "${SECUDIUM_PASSWORD}"

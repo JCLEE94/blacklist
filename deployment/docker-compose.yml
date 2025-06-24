@@ -2,21 +2,20 @@ version: '3.8'
 
 services:
   app:
-    image: registry.jclee.me/blacklist:latest
-    container_name: blacklist-app
+    image: ${DOCKER_REGISTRY:-registry.jclee.me}/${IMAGE_NAME:-blacklist}:${IMAGE_TAG:-latest}
+    container_name: ${CONTAINER_NAME:-blacklist-app}
     ports:
-      - "2541:2541"
+      - "${APP_PORT:-2541}:${APP_PORT:-2541}"
     environment:
-      - PORT=2541
+      - PORT=${APP_PORT:-2541}
       - HOST=0.0.0.0
-      - TZ=Asia/Seoul
-      - FLASK_ENV=production
+      - TZ=${TZ:-Asia/Seoul}
+      - FLASK_ENV=${FLASK_ENV:-production}
       - REDIS_URL=redis://redis:6379/0
       - REGTECH_USERNAME=${REGTECH_USERNAME}
       - REGTECH_PASSWORD=${REGTECH_PASSWORD}
       - SECUDIUM_USERNAME=${SECUDIUM_USERNAME}
       - SECUDIUM_PASSWORD=${SECUDIUM_PASSWORD}
-
     volumes:
       - ./instance:/app/instance
       - ./data:/app/data
@@ -29,7 +28,7 @@ services:
     networks:
       - blacklist-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT:-2541}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,7 +36,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: blacklist-redis
+    container_name: ${REDIS_CONTAINER_NAME:-blacklist-redis}
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
