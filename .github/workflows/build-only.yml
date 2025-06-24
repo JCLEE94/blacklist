@@ -1,17 +1,10 @@
 name: Build Only
 
 on:
-  workflow_dispatch:
-    inputs:
-      target:
-        description: 'Build target'
-        required: true
-        default: 'build'
-        type: choice
-        options:
-        - build
-        - test
-        - deploy
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 env:
   REGISTRY: registry.jclee.me
@@ -19,7 +12,6 @@ env:
 
 jobs:
   build:
-    if: github.event.inputs.target == 'build'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -51,32 +43,3 @@ jobs:
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
 
-  test:
-    if: github.event.inputs.target == 'test'
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run tests
-        run: |
-          python3 -m pytest --version || echo "pytest not found"
-          echo "✅ Test completed"
-
-  deploy:
-    if: github.event.inputs.target == 'deploy'
-    runs-on: self-hosted
-    steps:
-      - name: Deploy to production
-        run: |
-          echo "🚀 Deploying to production..."
-          ssh -o StrictHostKeyChecking=no -p 1111 docker@registry.jclee.me "
-            docker pull registry.jclee.me/blacklist:latest
-            docker stop blacklist-app || true
-            docker rm blacklist-app || true
-            docker run -d --name blacklist-app -p 2541:2541 \
-              -e REGTECH_USERNAME=nextrade \
-              -e REGTECH_PASSWORD=Sprtmxm1@3 \
-              -e SECUDIUM_USERNAME=nextrade \
-              -e SECUDIUM_PASSWORD=Sprtmxm1@3 \
-              registry.jclee.me/blacklist:latest
-          "
-          echo "✅ Deploy completed"
