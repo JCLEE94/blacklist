@@ -31,7 +31,7 @@ on:
         type: boolean
 
 env:
-  REGISTRY: registry.jclee.me
+  REGISTRY: 192.168.50.215:1234
   IMAGE_NAME: blacklist
   DEPLOY_HOST: registry.jclee.me
   DEPLOY_PORT: 1112
@@ -174,7 +174,7 @@ jobs:
             image=moby/buildkit:latest
             network=host
           config-inline: |
-            [registry."registry.jclee.me"]
+            [registry."192.168.50.215:1234"]
               http = true
               insecure = true
         
