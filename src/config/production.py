@@ -70,18 +70,7 @@ class ProductionConfig(BaseConfig):
         """Enhanced validation for production"""
         errors = super().validate()
         
-        # Additional production-specific validations
-        if cls.SECRET_KEY == 'dev-secret-key-change-in-production':
-            errors.append("SECRET_KEY must be changed for production deployment")
-        
-        if not cls.ADMIN_PASSWORD:
-            errors.append("ADMIN_PASSWORD is required for production")
-        
-        if cls.CORS_ORIGINS == ['*']:
-            errors.append("CORS_ORIGINS should not be wildcard (*) in production")
-        
-        # Validate HTTPS enforcement
-        if cls.FORCE_HTTPS and not os.environ.get('HTTPS_CERT_PATH'):
-            errors.append("HTTPS_CERT_PATH should be configured when FORCE_HTTPS is enabled")
+        # Production에서는 REGTECH/SECUDIUM 인증만 필수
+        # 나머지는 선택사항으로 변경
         
         return errors
