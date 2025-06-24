@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 운영 환경 Watchtower 자동 배포 설정 스크립트
+# 운영 환경 Watchtower 자동 배포 설정 스크립트 (커스텀 경로)
 
 echo "🚀 운영 환경 Blacklist 시스템 설치 시작..."
 
@@ -10,10 +10,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# 설치 경로
+INSTALL_PATH="/var/services/homes/docker/app/blacklist"
+
 # 기본 디렉토리 생성
 echo -e "${YELLOW}📁 디렉토리 구조 생성 중...${NC}"
-mkdir -p /opt/blacklist/{instance,logs,data,config}
-cd /opt/blacklist
+mkdir -p ${INSTALL_PATH}/{instance,logs,data,config}
+cd ${INSTALL_PATH}
 
 # watchtower 인증 설정
 echo -e "${YELLOW}🔐 레지스트리 인증 설정 중...${NC}"
@@ -66,8 +69,6 @@ services:
       - blacklist-net
     depends_on:
       - blacklist-redis
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8541/health"]
       interval: 30s
@@ -84,8 +85,6 @@ services:
       - blacklist-net
     volumes:
       - redis-data:/data
-    labels:
-      - "com.centurylinklabs.watchtower.enable=false"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -105,13 +104,13 @@ services:
       - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_INCLUDE_RESTARTING=true
       - WATCHTOWER_LABEL_ENABLE=false  # 모든 컨테이너 감시
-      - WATCHTOWER_SCOPE=registry.jclee.me  # jclee.me 이미지만 감시
       - WATCHTOWER_ROLLING_RESTART=true
       - WATCHTOWER_TIMEOUT=120s
       - WATCHTOWER_NOTIFICATIONS_LEVEL=info
       - WATCHTOWER_NO_PULL=false
       - DOCKER_CONFIG=/config.json
       - TZ=Asia/Seoul
+      - WATCHTOWER_SCOPE=registry.jclee.me  # jclee.me 이미지만 감시
     command: --interval 300 --cleanup --scope registry.jclee.me
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
@@ -158,15 +157,15 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}✅ Blacklist 시스템 설치 완료!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "📍 설치 경로: /opt/blacklist"
+echo "📍 설치 경로: ${INSTALL_PATH}"
 echo "🌐 서비스 URL: http://$(hostname -I | awk '{print $1}'):2541"
 echo "📊 API 문서: http://$(hostname -I | awk '{print $1}'):2541/api/docs"
 echo ""
 echo "📌 주요 명령어:"
-echo "  - 상태 확인: docker-compose ps"
-echo "  - 로그 확인: docker-compose logs -f"
-echo "  - 서비스 재시작: docker-compose restart"
-echo "  - 서비스 중지: docker-compose down"
+echo "  - 상태 확인: cd ${INSTALL_PATH} && docker-compose ps"
+echo "  - 로그 확인: cd ${INSTALL_PATH} && docker-compose logs -f"
+echo "  - 서비스 재시작: cd ${INSTALL_PATH} && docker-compose restart"
+echo "  - 서비스 중지: cd ${INSTALL_PATH} && docker-compose down"
 echo ""
 echo "🔄 Watchtower가 5분마다 자동으로 업데이트를 확인합니다."
 echo ""
@@ -185,7 +184,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/opt/blacklist
+WorkingDirectory=${INSTALL_PATH}
 ExecStart=/usr/bin/docker-compose up -d
 ExecStop=/usr/bin/docker-compose down
 TimeoutStartSec=0
