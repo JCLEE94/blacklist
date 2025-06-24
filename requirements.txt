@@ -1,6 +1,6 @@
 # Optimized requirements with performance-focused libraries
 Flask==2.3.3
-Flask-CORS==4.0.0
+Flask-CORS==6.0.1
 Flask-Compress==1.13  # Response compression
 Flask-Limiter==3.5.0  # Rate limiting
 
