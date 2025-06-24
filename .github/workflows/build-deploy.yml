@@ -42,7 +42,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         
@@ -156,7 +156,7 @@ jobs:
 
   build:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
@@ -224,7 +224,7 @@ jobs:
   # Performance testing stage
   performance:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
     steps:
       - uses: actions/checkout@v4
@@ -272,7 +272,7 @@ jobs:
   # Database migration stage
   migrate:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     steps:
       - uses: actions/checkout@v4
@@ -300,7 +300,7 @@ jobs:
   # Blue-green deployment
   deploy:
     needs: [build, migrate]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: 
       name: production
@@ -398,7 +398,7 @@ jobs:
   # Staging deployment for testing
   deploy-staging:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
     environment:
       name: staging
@@ -436,7 +436,7 @@ jobs:
   # Enhanced verification with smoke tests
   verify:
     needs: [deploy]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -514,7 +514,7 @@ jobs:
 
   # Rollback job
   rollback:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.rollback == 'true'
     steps:
       - name: Rollback to Previous Version
@@ -557,7 +557,7 @@ jobs:
   # Monitoring and alerting
   monitor:
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Setup Monitoring
@@ -590,7 +590,7 @@ jobs:
   # Comprehensive notification
   notify:
     needs: [build, deploy, verify]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: always()
     steps:
       - name: Calculate Deployment Time
