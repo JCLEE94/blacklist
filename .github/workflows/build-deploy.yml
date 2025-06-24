@@ -173,13 +173,6 @@ jobs:
             image=moby/buildkit:latest
             network=host
         
-      - name: Login to Private Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-          
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -198,18 +191,16 @@ jobs:
         id: time
         run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
             
-      - name: Build and Push to Private Registry
+      - name: Build Docker Image (Local Only)
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: deployment/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
+          platforms: linux/amd64
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
             BUILD_TIME=${{ steps.time.outputs.time }}
             GIT_COMMIT=${{ github.sha }}
