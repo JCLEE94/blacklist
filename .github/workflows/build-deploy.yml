@@ -173,6 +173,12 @@ jobs:
             image=moby/buildkit:latest
             network=host
         
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -191,14 +197,14 @@ jobs:
         id: time
         run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
             
-      - name: Build Docker Image (Local Only)
+      - name: Build and Push to Registry
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: deployment/Dockerfile
-          platforms: linux/amd64
-          push: false
+          platforms: linux/amd64,linux/arm64
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
