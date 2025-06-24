@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  blacklist-app:
+    image: registry.jclee.me/blacklist-management:latest
+    container_name: blacklist-app
+    restart: unless-stopped
+    ports:
+      - "2541:8541"
+    env_file:
+      - .env.production
+    volumes:
+      - ./instance:/app/instance
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - blacklist-net
+    depends_on:
+      - blacklist-redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8541/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  blacklist-redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes
+    networks:
+      - blacklist-net
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  blacklist-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
