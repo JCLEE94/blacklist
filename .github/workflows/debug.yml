@@ -1,0 +1,28 @@
+name: Debug Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check Docker login
+        run: |
+          echo "=== Docker 상태 확인 ==="
+          docker --version
+          
+          echo "=== Registry 연결 테스트 ==="
+          curl -f http://registry.jclee.me/v2/ || echo "Registry 연결 실패"
+          
+          echo "=== 로그인 테스트 ==="
+          echo "bingogo1l7!" | docker login registry.jclee.me -u qws941 --password-stdin
+          
+          echo "=== 간단한 이미지 push 테스트 ==="
+          docker pull alpine:latest
+          docker tag alpine:latest registry.jclee.me/test-debug:latest
+          docker push registry.jclee.me/test-debug:latest
+          
+          echo "=== 성공! ==="
