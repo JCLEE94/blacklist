@@ -37,6 +37,38 @@ EOF
 chmod 600 config/watchtower-config.json
 echo -e "${GREEN}✅ 인증 설정 완료${NC}"
 
+# 환경 변수 파일 생성
+echo -e "${YELLOW}🔧 환경 변수 설정 중...${NC}"
+cat > .env.production << 'EOF'
+# Production Environment Variables
+PORT=8541
+FLASK_ENV=production
+TZ=Asia/Seoul
+REDIS_URL=redis://blacklist-redis:6379/0
+
+# Nextrade Credentials (All Services)
+NEXTRADE_USERNAME=nextrade
+NEXTRADE_PASSWORD=Sprtmxm1@3
+
+# Service Specific
+REGTECH_USERNAME=nextrade
+REGTECH_PASSWORD=Sprtmxm1@3
+SECUDIUM_USERNAME=nextrade
+SECUDIUM_PASSWORD=Sprtmxm1@3
+BLACKLIST_USERNAME=nextrade
+BLACKLIST_PASSWORD=Sprtmxm1@3
+ADMIN_PASSWORD=Sprtmxm1@3
+
+# Security Keys
+SECRET_KEY=blacklist-prod-secret-key-2025
+JWT_SECRET_KEY=blacklist-jwt-secret-key-2025
+API_SECRET_KEY=blacklist-api-secret-key-2025
+FORCE_HTTPS=false
+EOF
+
+chmod 600 .env.production
+echo -e "${GREEN}✅ 환경 변수 설정 완료${NC}"
+
 # Watchtower 포함 docker-compose 파일 생성
 echo -e "${YELLOW}📝 Docker Compose 파일 생성 중...${NC}"
 cat > docker-compose.yml << 'EOF'
@@ -49,22 +81,8 @@ services:
     restart: unless-stopped
     ports:
       - "2541:8541"
-    environment:
-      - PORT=8541
-      - REDIS_URL=redis://blacklist-redis:6379/0
-      - REGTECH_USERNAME=nextrade
-      - REGTECH_PASSWORD=Sprtmxm1@3
-      - SECUDIUM_USERNAME=nextrade
-      - SECUDIUM_PASSWORD=Sprtmxm1@3
-      - BLACKLIST_USERNAME=admin
-      - BLACKLIST_PASSWORD=blacklist2025!
-      - ADMIN_PASSWORD=admin2025!
-      - FLASK_ENV=production
-      - TZ=Asia/Seoul
-      - SECRET_KEY=blacklist-prod-secret-key-2025
-      - JWT_SECRET_KEY=blacklist-jwt-secret-key-2025
-      - API_SECRET_KEY=blacklist-api-secret-key-2025
-      - FORCE_HTTPS=false
+    env_file:
+      - .env.production
     volumes:
       - ./instance:/app/instance
       - ./logs:/app/logs
