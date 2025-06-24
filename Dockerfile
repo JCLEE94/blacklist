@@ -1,5 +1,5 @@
 # Multi-stage Python FastAPI Blacklist Management System
-FROM python:3.9-slim AS builder
+FROM python:3.13-slim AS builder
 
 # Build arguments
 ARG BUILD_TIME="Unknown"
@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Production stage
-FROM python:3.9-slim AS production
+FROM python:3.13-slim AS production
 
 # Build arguments
 ARG BUILD_TIME="Unknown"
