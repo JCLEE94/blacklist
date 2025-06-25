@@ -460,13 +460,16 @@ class HarBasedSecudiumCollector:
         except:
             return False
     
-    def save_to_database(self, ip_data: List[Dict[str, Any]]) -> bool:
+    def save_to_database(self, ip_data: List[Dict[str, Any]], db_path: str = None) -> bool:
         """데이터베이스에 저장"""
         try:
-            db_path = Path("instance") / "blacklist.db"
-            db_path.parent.mkdir(exist_ok=True)
+            if db_path:
+                db_file_path = Path(db_path)
+            else:
+                db_file_path = Path("instance") / "blacklist.db"
+            db_file_path.parent.mkdir(exist_ok=True)
             
-            conn = sqlite3.connect(str(db_path))
+            conn = sqlite3.connect(str(db_file_path))
             cursor = conn.cursor()
             
             # 테이블 생성 (없는 경우)
@@ -503,7 +506,7 @@ class HarBasedSecudiumCollector:
             logger.error(f"데이터베이스 저장 실패: {e}")
             return False
     
-    def auto_collect(self) -> Dict[str, Any]:
+    def auto_collect(self, db_path: str = None) -> Dict[str, Any]:
         """자동 수집 실행"""
         try:
             logger.info("SECUDIUM 자동 수집 시작 (HAR 기반)")
@@ -542,7 +545,7 @@ class HarBasedSecudiumCollector:
                     }, f, ensure_ascii=False, indent=2)
                 
                 # 데이터베이스 저장
-                db_saved = self.save_to_database(ip_data)
+                db_saved = self.save_to_database(ip_data, db_path)
             else:
                 json_file = None
                 db_saved = False

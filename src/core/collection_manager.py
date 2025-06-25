@@ -326,7 +326,7 @@ class CollectionManager:
                 collector = HarBasedRegtechCollector(data_dir=data_dir)
                 
                 # 수집 실행 (HAR 기반 auto_collect 사용)
-                result = collector.auto_collect(prefer_web=True)
+                result = collector.auto_collect(prefer_web=True, db_path=self.db_path)
                 
                 if result.get('success', False):
                     # 수집 성공
@@ -397,7 +397,7 @@ class CollectionManager:
                 collector = HarBasedSecudiumCollector(data_dir=data_dir)
                 
                 # 수집 실행 (HAR 기반 auto_collect 사용)
-                result = collector.auto_collect()
+                result = collector.auto_collect(db_path=self.db_path)
                 
                 if result.get('success', False):
                     # 수집 성공
@@ -512,6 +512,7 @@ class CollectionManager:
             )
             count = cursor.fetchone()[0]
             conn.close()
+            logger.debug(f"Source {source} has {count} IPs in database")
             return count
         except Exception as e:
             logger.error(f"소스 IP 수 조회 오류: {e}")
