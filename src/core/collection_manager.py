@@ -372,66 +372,12 @@ class CollectionManager:
     
     def collect_secudium_data(self) -> Dict[str, Any]:
         """
-        SECUDIUM 데이터 수집
+        SECUDIUM 데이터 수집 (trigger_secudium_collection과 동일)
         
         Returns:
             수집 결과
         """
-        try:
-            logger.info("SECUDIUM 수집 시작")
-            
-            # HAR 기반 SECUDIUM 수집기 import 및 실행 (collect_secudium_data 메서드)
-            try:
-                from .har_based_secudium_collector import HarBasedSecudiumCollector
-                # data 디렉토리 경로 전달
-                data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
-                collector = HarBasedSecudiumCollector(data_dir=data_dir)
-                
-                # 수집 실행 (HAR 기반)
-                result = collector.auto_collect()
-                
-                if result.get('success', False):
-                    # 수집 성공
-                    self.sources['secudium']['last_collection'] = datetime.now().isoformat()
-                    self.sources['secudium']['status'] = 'active'
-                    
-                    # IP 수 업데이트
-                    ip_count = self._get_source_ip_count('SECUDIUM')
-                    self.sources['secudium']['total_ips'] = ip_count
-                    
-                    return {
-                        'success': True,
-                        'message': f'SECUDIUM 수집 완료: {ip_count:,}개 IP',
-                        'source': 'secudium',
-                        'timestamp': datetime.now().isoformat(),
-                        'details': result
-                    }
-                else:
-                    return {
-                        'success': False,
-                        'message': f'SECUDIUM 수집 실패: {result.get("message")}',
-                        'source': 'secudium',
-                        'timestamp': datetime.now().isoformat()
-                    }
-                    
-            except ImportError as e:
-                logger.error(f"SECUDIUM 수집기 import 실패: {e}")
-                return {
-                    'success': False,
-                    'message': f'SECUDIUM 수집기를 찾을 수 없습니다: {e}',
-                    'source': 'secudium',
-                    'timestamp': datetime.now().isoformat()
-                }
-                
-        except Exception as e:
-            logger.error(f"SECUDIUM 수집 오류: {e}")
-            logger.error(traceback.format_exc())
-            return {
-                'success': False,
-                'message': f'SECUDIUM 수집 중 오류 발생: {str(e)}',
-                'source': 'secudium',
-                'timestamp': datetime.now().isoformat()
-            }
+        return self.trigger_secudium_collection()
     
     def trigger_secudium_collection(self) -> Dict[str, Any]:
         """
