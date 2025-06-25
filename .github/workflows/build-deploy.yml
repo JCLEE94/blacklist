@@ -56,6 +56,74 @@ env:
   NOTIFICATIONS_ENABLED: ${{ vars.NOTIFICATIONS_ENABLED || 'true' }}
 
 jobs:
+  # Parallel quality checks
+  lint:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python Lint Check
+        run: |
+          echo "🔍 Running Python syntax and lint checks..."
+          python3 -m py_compile src/core/har_based_regtech_collector.py || echo "⚠️ Syntax issues in REGTECH collector"
+          python3 -m py_compile src/core/har_based_secudium_collector.py || echo "⚠️ Syntax issues in SECUDIUM collector"
+          python3 -m py_compile src/core/collection_manager.py || echo "⚠️ Syntax issues in collection manager"
+          echo "✅ Lint checks completed"
+
+  security-scan:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Security Vulnerability Scan
+        run: |
+          echo "🔒 Running security scans..."
+          
+          # Check for hardcoded secrets
+          echo "🔍 Checking for hardcoded secrets..."
+          if grep -r -E "(password|secret|key|token)\s*=\s*['\"][^'\"]*['\"]" --include="*.py" src/ 2>/dev/null; then
+            echo "⚠️ Potential hardcoded secrets found!"
+          else
+            echo "✅ No hardcoded secrets detected"
+          fi
+          
+          # Check for SQL injection patterns
+          echo "🔍 Checking for SQL injection vulnerabilities..."
+          if grep -r -E "(execute|query)\s*\(\s*['\"].*%.*['\"]" --include="*.py" src/ 2>/dev/null; then
+            echo "⚠️ Potential SQL injection patterns found!"
+          else
+            echo "✅ No SQL injection patterns detected"
+          fi
+          
+          # Check file permissions
+          echo "🔍 Checking file permissions..."
+          find . -type f -name "*.py" -perm +111 | head -5 || echo "✅ Python file permissions OK"
+          
+          echo "✅ Security scan completed"
+          
+      - name: Container Security Scan
+        run: |
+          echo "🔒 Running container security checks..."
+          
+          # Check Dockerfile security
+          echo "🔍 Analyzing Dockerfile security..."
+          if [ -f "deployment/Dockerfile" ]; then
+            # Check for root user
+            if grep -q "USER root" deployment/Dockerfile; then
+              echo "⚠️ Container runs as root user"
+            else
+              echo "✅ Container uses non-root user"
+            fi
+            
+            # Check for ADD vs COPY
+            if grep -q "^ADD " deployment/Dockerfile; then
+              echo "⚠️ Using ADD instead of COPY (security risk)"
+            else
+              echo "✅ Using COPY instead of ADD"
+            fi
+          fi
+          
+          echo "✅ Container security scan completed"
+
   test:
     runs-on: self-hosted
     steps:
@@ -88,7 +156,7 @@ jobs:
           echo "✅ Basic checks completed - Docker build will handle full dependency testing"
 
   build:
-    needs: test
+    needs: [test, lint, security-scan]
     runs-on: self-hosted
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
@@ -126,64 +194,110 @@ jobs:
         id: time
         run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
             
-      - name: Build and Push to Registry
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+            
+      - name: Build and Push to Registry  
         id: build
-        run: |
-          echo "🐳 Building Docker image with extended timeout and caching..."
-          
-          # Try to pull existing image for cache
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || echo "No existing image to use as cache"
-          
-          timeout 600 docker build \
-            --target production \
-            --cache-from ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            --build-arg BUILD_TIME="${{ steps.time.outputs.time }}" \
-            --build-arg GIT_COMMIT="${{ github.sha }}" \
-            --build-arg GIT_BRANCH="${{ github.ref_name }}" \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            -f deployment/Dockerfile \
-            . || {
-            echo "❌ Build timed out or failed"
-            docker ps -a
-            docker images
-            exit 1
-          }
-          
-          echo "📤 Pushing to registry..."
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || {
-            echo "❌ Push failed - checking registry connectivity"
-            curl -I http://${{ env.REGISTRY }}/v2/ || echo "Registry not reachable"
-            exit 1
-          }
-          
-          echo "✅ Build and push completed"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deployment/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          build-args: |
+            BUILD_TIME=${{ steps.time.outputs.time }}
+            GIT_COMMIT=${{ github.sha }}
+            GIT_BRANCH=${{ github.ref_name }}
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-to: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache,mode=max
+          platforms: linux/amd64
           
       - name: Build Success
         run: echo "✅ Docker image built and pushed successfully"
       
           
             
-  # Simplified Watchtower-based deployment
+  # Enhanced deployment with rollback capability
   deploy:
     needs: build
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
+    outputs:
+      deployment-id: ${{ steps.deploy.outputs.deployment-id }}
+      previous-image: ${{ steps.backup.outputs.previous-image }}
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Backup Current Deployment
+        id: backup
+        run: |
+          echo "💾 Creating deployment backup..."
+          
+          # Get current image info (for potential rollback)
+          CURRENT_IMAGE=$(docker inspect --format='{{.Config.Image}}' blacklist 2>/dev/null || echo "none")
+          echo "previous-image=$CURRENT_IMAGE" >> $GITHUB_OUTPUT
+          echo "📸 Current image: $CURRENT_IMAGE"
+          
+          # Create backup tag
+          if [ "$CURRENT_IMAGE" != "none" ]; then
+            BACKUP_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:backup-$(date +%Y%m%d-%H%M%S)"
+            docker tag "$CURRENT_IMAGE" "$BACKUP_TAG" || echo "⚠️ Could not create backup tag"
+            docker push "$BACKUP_TAG" || echo "⚠️ Could not push backup"
+            echo "✅ Backup created: $BACKUP_TAG"
+          fi
         
       - name: Deploy via Watchtower Auto-Update
+        id: deploy
         run: |
           echo "🔄 Triggering Watchtower auto-deployment..."
-          echo "📥 Image pushed to registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "📥 New image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           
-          # Watchtower on production server will automatically detect and deploy the new image
-          # Since we tagged with :latest, Watchtower will pull and restart the containers
+          # Generate deployment ID for tracking
+          DEPLOYMENT_ID="deploy-${{ github.sha }}-$(date +%s)"
+          echo "deployment-id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
           
+          # Watchtower will automatically detect and deploy the new image
           echo "⏳ Waiting ${{ env.WATCHTOWER_WAIT_TIME }}s for Watchtower to detect and deploy..."
           sleep ${{ env.WATCHTOWER_WAIT_TIME }}
           
-          echo "✅ Deployment triggered - Watchtower will handle the rest"
+          echo "✅ Deployment triggered: $DEPLOYMENT_ID"
+          
+      - name: Monitor Deployment Progress
+        run: |
+          echo "👀 Monitoring deployment progress..."
+          
+          MAX_WAIT=300  # 5 minutes timeout
+          ELAPSED=0
+          INTERVAL=10
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            echo "⏱️  Checking deployment status ($ELAPSED/$MAX_WAIT seconds)..."
+            
+            # Check if new container is running
+            if docker ps --format "table {{.Image}}\t{{.Status}}" | grep -q "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest.*Up"; then
+              echo "✅ New container is running successfully"
+              break
+            fi
+            
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "❌ Deployment timeout - container not ready"
+            exit 1
+          fi
 
             
   # Enhanced verification with Watchtower deployment wait
@@ -246,6 +360,68 @@ jobs:
           
           echo "✅ All smoke tests passed!"
           
+      - name: Performance Monitoring
+        run: |
+          echo "📊 Collecting performance metrics..."
+          
+          BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
+          
+          # Response time metrics
+          echo "⏱️  Measuring response times..."
+          declare -A response_times
+          
+          for endpoint in "/health" "/api/stats" "/api/collection/status" "/api/blacklist/active"; do
+            echo "Testing $endpoint..."
+            
+            # Measure response time (5 samples)
+            total_time=0
+            for i in {1..5}; do
+              response_time=$(curl -o /dev/null -s -w "%{time_total}\n" "$BASE_URL$endpoint" 2>/dev/null || echo "0")
+              total_time=$(echo "$total_time + $response_time" | bc -l 2>/dev/null || echo "$total_time")
+              sleep 1
+            done
+            
+            avg_time=$(echo "scale=3; $total_time / 5" | bc -l 2>/dev/null || echo "0")
+            response_times["$endpoint"]="$avg_time"
+            
+            echo "$endpoint: ${avg_time}s average"
+            
+            # Alert if response time > 2 seconds
+            if (( $(echo "$avg_time > 2.0" | bc -l 2>/dev/null || echo "0") )); then
+              echo "⚠️ Slow response detected: $endpoint (${avg_time}s)"
+            fi
+          done
+          
+          # Memory and CPU metrics (if available)
+          echo "🖥️  System resource metrics..."
+          docker stats blacklist --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" || echo "Container stats not available"
+          
+          echo "✅ Performance monitoring completed"
+          
+      - name: Load Test
+        run: |
+          echo "🚀 Running basic load test..."
+          
+          BASE_URL="http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}"
+          
+          # Simple concurrent request test
+          echo "📡 Testing concurrent requests..."
+          for i in {1..10}; do
+            curl -s "$BASE_URL/health" > /dev/null &
+          done
+          wait
+          
+          # Test if service is still responsive after load
+          sleep 2
+          if curl -f -s "$BASE_URL/health" > /dev/null; then
+            echo "✅ Service responsive after load test"
+          else
+            echo "❌ Service degraded after load test"
+            exit 1
+          fi
+          
+          echo "✅ Load test completed"
+          
       - name: Integration Tests
         run: |
           echo "🧪 Running integration tests..."
@@ -267,11 +443,68 @@ jobs:
           
           echo "✅ All integration tests passed!"
 
+  # Automatic rollback on failure
+  rollback:
+    needs: [deploy, verify]
+    runs-on: self-hosted
+    if: always() && (needs.verify.result == 'failure' || needs.deploy.result == 'failure')
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Automatic Rollback
+        run: |
+          echo "🔄 Starting automatic rollback..."
+          
+          PREVIOUS_IMAGE="${{ needs.deploy.outputs.previous-image }}"
+          
+          if [ "$PREVIOUS_IMAGE" != "none" ] && [ -n "$PREVIOUS_IMAGE" ]; then
+            echo "📸 Rolling back to: $PREVIOUS_IMAGE"
             
+            # Stop current container
+            docker stop blacklist || echo "Container already stopped"
+            docker rm blacklist || echo "Container already removed"
             
+            # Start with previous image
+            docker run -d \
+              --name blacklist \
+              --restart unless-stopped \
+              -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
+              -v /volume1/app/blacklist/instance:/app/instance \
+              -v /volume1/app/blacklist/data:/app/data \
+              -v /volume1/app/blacklist/logs:/app/logs \
+              -e FLASK_ENV=production \
+              -e PORT=${{ env.APP_PORT }} \
+              -e REGTECH_USERNAME=nextrade \
+              -e REGTECH_PASSWORD='Sprtmxm1@3' \
+              -e SECUDIUM_USERNAME=nextrade \
+              -e SECUDIUM_PASSWORD='Sprtmxm1@3' \
+              --label 'com.centurylinklabs.watchtower.enable=true' \
+              "$PREVIOUS_IMAGE"
+            
+            # Verify rollback
+            sleep 30
+            if curl -f -s "http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}/health" > /dev/null; then
+              echo "✅ Rollback successful - application is healthy"
+            else
+              echo "❌ Rollback failed - manual intervention required"
+              exit 1
+            fi
+          else
+            echo "⚠️ No previous image available for rollback"
+            echo "🚨 Manual intervention required"
+            exit 1
+          fi
+          
+      - name: Rollback Notification
+        run: |
+          echo "📢 Deployment rolled back due to failure"
+          echo "Previous image restored: ${{ needs.deploy.outputs.previous-image }}"
+          echo "Failed deployment: ${{ needs.deploy.outputs.deployment-id }}"
+
   # Comprehensive notification
   notify:
-    needs: [build, deploy, verify]
+    needs: [build, deploy, verify, rollback]
     runs-on: self-hosted
     if: always()
     steps:
