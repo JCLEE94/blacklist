@@ -79,7 +79,8 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
-          python3 -m pip install -r requirements-dev.txt
+          # Skip dev dependencies for now - focus on image push
+          # python3 -m pip install -r requirements-dev.txt
           
       - name: Code Quality Checks
         run: |
