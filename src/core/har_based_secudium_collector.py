@@ -387,6 +387,46 @@ class HarBasedSecudiumCollector:
             logger.error(f"상세 조회 중 오류: {e}")
             return []
     
+    def parse_excel_for_ips(self, excel_path: str) -> List[Dict[str, Any]]:
+        """Excel 파일에서 IP 추출"""
+        try:
+            import pandas as pd
+            import re
+            
+            logger.info(f"Excel 파일 파싱 시작: {excel_path}")
+            
+            # Excel 파일 읽기
+            df = pd.read_excel(excel_path, engine='openpyxl')
+            
+            ip_data = []
+            unique_ips = set()
+            
+            # IP 패턴
+            ip_pattern = r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+            
+            # 모든 열에서 IP 찾기
+            for col in df.columns:
+                for value in df[col].dropna():
+                    if isinstance(value, str):
+                        # IP 패턴 매칭
+                        ips_found = re.findall(ip_pattern, value)
+                        for ip in ips_found:
+                            if self._is_valid_ip(ip) and ip not in unique_ips:
+                                unique_ips.add(ip)
+                                ip_data.append({
+                                    'ip': ip,
+                                    'source': 'SECUDIUM',
+                                    'collected_at': datetime.now().isoformat(),
+                                    'from_excel': True
+                                })
+            
+            logger.info(f"Excel에서 추출된 고유 IP 수: {len(ip_data)}")
+            return ip_data
+            
+        except Exception as e:
+            logger.error(f"Excel 파싱 중 오류: {e}")
+            return []
+    
     def download_excel(self) -> Optional[str]:
         """Excel 파일 다운로드 (HAR에서 확인된 방식)"""
         if not self.token:
@@ -531,14 +571,17 @@ class HarBasedSecudiumCollector:
                     'method': 'har-based'
                 }
             
-            # 2. 데이터 수집 (최대 3개월)
-            logger.info("최근 3개월 데이터 수집")
-            ip_data = self.collect_blackip_data(months_back=3)
-            
-            # 3. Excel 다운로드도 시도
+            # 2. SECUDIUM은 Excel 파일만 사용
+            logger.info("SECUDIUM Excel 파일 다운로드 및 파싱")
             excel_file = self.download_excel()
             
-            if not ip_data and not excel_file:
+            # Excel 파일에서 IP 추출
+            ip_data = []
+            if excel_file:
+                ip_data = self.parse_excel_for_ips(excel_file)
+                logger.info(f"Excel에서 {len(ip_data)}개 IP 추출")
+            
+            if not excel_file or not ip_data:
                 return {
                     'success': False,
                     'error': 'IP 데이터 수집 및 Excel 다운로드 모두 실패',
