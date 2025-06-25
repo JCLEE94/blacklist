@@ -531,22 +531,9 @@ class HarBasedSecudiumCollector:
                     'method': 'har-based'
                 }
             
-            # 2. 데이터 수집 (단계적으로 기간 확대)
-            ip_data = []
-            
-            # 먼저 3개월 데이터 시도
-            logger.info("최근 3개월 데이터 수집 시도")
+            # 2. 데이터 수집 (최대 3개월)
+            logger.info("최근 3개월 데이터 수집")
             ip_data = self.collect_blackip_data(months_back=3)
-            
-            # 데이터가 50개 미만이면 6개월로 확대
-            if len(ip_data) < 50:
-                logger.info(f"3개월 데이터 {len(ip_data)}개로 부족, 6개월로 확대")
-                ip_data = self.collect_blackip_data(months_back=6)
-            
-            # 그래도 부족하면 12개월로 확대
-            if len(ip_data) < 50:
-                logger.info(f"6개월 데이터 {len(ip_data)}개로 부족, 12개월로 확대")
-                ip_data = self.collect_blackip_data(months_back=12)
             
             # 3. Excel 다운로드도 시도
             excel_file = self.download_excel()
