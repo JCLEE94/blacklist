@@ -96,14 +96,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
-          config-inline: |
-            [registry."registry.jclee.me"]
-              http = true
-              insecure = true
+      - name: Configure Docker for insecure registry
+        run: |
+          echo "🔧 Configuring Docker for insecure registry access..."
+          sudo mkdir -p /etc/docker
+          echo '{
+            "insecure-registries": ["registry.jclee.me"]
+          }' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker || echo "⚠️ Docker restart skipped in CI"
         
       - name: Login to Private Registry
         uses: docker/login-action@v3
@@ -132,23 +132,21 @@ jobs:
             
       - name: Build and Push to Registry
         id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: deployment/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          target: production
-          build-args: |
-            BUILD_TIME=${{ steps.time.outputs.time }}
-            GIT_COMMIT=${{ github.sha }}
-            GIT_BRANCH=${{ github.ref_name }}
-          provenance: false
-          sbom: false
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
-        env:
-          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+        run: |
+          echo "🐳 Building Docker image..."
+          docker build \
+            --target production \
+            --build-arg BUILD_TIME="${{ steps.time.outputs.time }}" \
+            --build-arg GIT_COMMIT="${{ github.sha }}" \
+            --build-arg GIT_BRANCH="${{ github.ref_name }}" \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            -f deployment/Dockerfile \
+            .
+          
+          echo "📤 Pushing to registry..."
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          echo "✅ Build and push completed"
           
       - name: Build Success
         run: echo "✅ Docker image built and pushed successfully"
