@@ -132,8 +132,12 @@ class HarBasedSecudiumCollector:
             logger.error(traceback.format_exc())
             return False
     
-    def collect_blackip_data(self) -> List[Dict[str, Any]]:
-        """블랙리스트 IP 데이터 수집 (HAR 기반)"""
+    def collect_blackip_data(self, months_back: int = 3) -> List[Dict[str, Any]]:
+        """블랙리스트 IP 데이터 수집 (HAR 기반)
+        
+        Args:
+            months_back: 조회할 개월 수 (기본값: 3개월)
+        """
         if not self.token:
             logger.error("인증 토큰이 없습니다")
             return []
@@ -144,16 +148,22 @@ class HarBasedSecudiumCollector:
             # HAR에서 확인된 API 엔드포인트
             api_url = f"{self.base_url}/isap-api/secinfo/list/black_ip"
             
+            # 날짜 범위 설정 (기본 3개월)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30 * months_back)
+            
             # 쿼리 파라미터 (HAR에서 확인)
             params = {
                 'X-Auth-Token': self.token,
-                'sdate': '',  # 빈 값으로 전체 조회
-                'edate': '',
+                'sdate': start_date.strftime('%Y-%m-%d'),  # 3개월 전
+                'edate': end_date.strftime('%Y-%m-%d'),    # 오늘
                 'dateKey': 'i.reg_date',
                 'count': '1000',  # 100 -> 1000으로 증가
                 'filter': '',
                 f'dhxr{int(datetime.now().timestamp() * 1000)}': '1'  # 타임스탬프
             }
+            
+            logger.info(f"날짜 범위: {params['sdate']} ~ {params['edate']}")
             
             # API 호출
             response = self.session.get(
@@ -521,8 +531,22 @@ class HarBasedSecudiumCollector:
                     'method': 'har-based'
                 }
             
-            # 2. 데이터 수집
-            ip_data = self.collect_blackip_data()
+            # 2. 데이터 수집 (단계적으로 기간 확대)
+            ip_data = []
+            
+            # 먼저 3개월 데이터 시도
+            logger.info("최근 3개월 데이터 수집 시도")
+            ip_data = self.collect_blackip_data(months_back=3)
+            
+            # 데이터가 50개 미만이면 6개월로 확대
+            if len(ip_data) < 50:
+                logger.info(f"3개월 데이터 {len(ip_data)}개로 부족, 6개월로 확대")
+                ip_data = self.collect_blackip_data(months_back=6)
+            
+            # 그래도 부족하면 12개월로 확대
+            if len(ip_data) < 50:
+                logger.info(f"6개월 데이터 {len(ip_data)}개로 부족, 12개월로 확대")
+                ip_data = self.collect_blackip_data(months_back=12)
             
             # 3. Excel 다운로드도 시도
             excel_file = self.download_excel()
