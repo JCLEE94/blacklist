@@ -2,30 +2,32 @@ version: '3.8'
 
 services:
   blacklist:
-    image: registry.jclee.me/blacklist:latest
-    container_name: blacklist
-    restart: unless-stopped
+    image: ${DOCKER_REGISTRY:-registry.jclee.me}/${IMAGE_NAME:-blacklist}:${IMAGE_TAG:-latest}
+    container_name: ${CONTAINER_NAME:-blacklist}
+    restart: ${RESTART_POLICY:-unless-stopped}
     ports:
-      - "2541:2541"
+      - "${HOST_PORT:-2541}:${CONTAINER_PORT:-2541}"
     environment:
-      - FLASK_ENV=production
-      - PORT=2541
-      - HOST=0.0.0.0
-      # Redis URL을 제거하여 메모리 캐시 사용
-      # - REDIS_URL=redis://blacklist-redis:6379/0
-      - REGTECH_USERNAME=nextrade
-      - REGTECH_PASSWORD=Sprtmxm1@3
-      - SECUDIUM_USERNAME=nextrade
-      - SECUDIUM_PASSWORD=Sprtmxm1@3
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - PORT=${CONTAINER_PORT:-2541}
+      - HOST=${HOST:-0.0.0.0}
+      - REGTECH_USERNAME=${REGTECH_USERNAME}
+      - REGTECH_PASSWORD=${REGTECH_PASSWORD}
+      - SECUDIUM_USERNAME=${SECUDIUM_USERNAME}
+      - SECUDIUM_PASSWORD=${SECUDIUM_PASSWORD}
+      - REDIS_URL=${REDIS_URL:-}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - API_SECRET_KEY=${API_SECRET_KEY:-}
     volumes:
-      - ${BLACKLIST_INSTANCE_PATH:-./instance}:/app/instance
-      - ${BLACKLIST_DATA_PATH:-./data}:/app/data
-      - ${BLACKLIST_LOGS_PATH:-./logs}:/app/logs
+      - ${VOLUME_INSTANCE_PATH:-./instance}:/app/instance
+      - ${VOLUME_DATA_PATH:-./data}:/app/data
+      - ${VOLUME_LOGS_PATH:-./logs}:/app/logs
     labels:
-      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.enable=${WATCHTOWER_ENABLED:-true}"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      test: ["CMD", "curl", "-f", "http://localhost:${CONTAINER_PORT:-2541}${HEALTH_ENDPOINT:-/health}"]
+      interval: ${HEALTH_CHECK_INTERVAL:-30s}
+      timeout: ${HEALTH_CHECK_TIMEOUT:-10s}
+      retries: ${HEALTH_CHECK_RETRIES:-3}
+      start_period: ${HEALTH_CHECK_START_PERIOD:-40s}
