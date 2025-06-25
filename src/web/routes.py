@@ -146,6 +146,7 @@ def dashboard():
         regtech_count = 0
         secudium_count = 0
         total_real = 0
+        active_sources = []
         
         try:
             db_path = Path('instance/blacklist.db')
@@ -162,12 +163,30 @@ def dashboard():
                 cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
                 total_real = cursor.fetchone()[0]
                 
+                # Get unique sources with data
+                cursor.execute("SELECT DISTINCT source, COUNT(*) FROM blacklist_ip GROUP BY source HAVING COUNT(*) > 0")
+                source_data = cursor.fetchall()
+                
+                # Build active sources list
+                source_names = {
+                    'REGTECH': 'REGTECH',
+                    'SECUDIUM': 'SECUDIUM',
+                    'PUBLIC': 'Public'
+                }
+                
+                for source, count in source_data:
+                    if source and count > 0:
+                        source_upper = source.upper()
+                        display_name = source_names.get(source_upper, source)
+                        active_sources.append(display_name)
+                
                 conn.close()
         except Exception as e:
             logger.error(f"데이터베이스 통계 조회 오류: {e}")
             regtech_count = 0
             secudium_count = 0
             total_real = 0
+            active_sources = []
         
         # 월별 데이터 (빈 데이터로 초기화)
         monthly_data = [
@@ -185,6 +204,7 @@ def dashboard():
             'active_ips': total_real,  # 모든 IP가 활성상태
             'regtech_count': regtech_count,  # 실제 REGTECH 개수
             'secudium_count': secudium_count,  # 실제 SECUDIUM 개수
+            'active_sources': active_sources,  # 동적 활성 소스 목록
             'uptime_hours': round((time.time() - health.get('start_time', time.time())) / 3600, 1),
             'build_time': get_build_time(),  # 실제 빌드 시간
             'build_version': get_build_version()  # 빌드 버전
