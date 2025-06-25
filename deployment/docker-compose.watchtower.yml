@@ -2,13 +2,13 @@ version: '3.8'
 
 services:
   blacklist-app:
-    image: registry.jclee.me/blacklist-management:latest
+    image: registry.jclee.me/blacklist:latest
     container_name: blacklist-app
     restart: unless-stopped
     ports:
-      - "2541:8541"
+      - "2541:2541"
     environment:
-      - PORT=8541
+      - PORT=2541
       - REDIS_URL=redis://blacklist-redis:6379/0
       - REGTECH_USERNAME=nextrade
       - REGTECH_PASSWORD=Sprtmxm1@3
