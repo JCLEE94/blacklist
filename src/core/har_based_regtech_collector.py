@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-HAR-based REGTECH Collector
-HAR 파일 분석을 기반으로 한 REGTECH 수집기
+HAR 기반 REGTECH 수집기
+실제 브라우저 동작을 모방한 수집 구현
 """
 
 import os
@@ -12,9 +12,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 import sqlite3
-import re
-import time
-from urllib.parse import urlencode
+import pandas as pd
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +34,8 @@ class HarBasedRegtechCollector:
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
-            'Cache-Control': 'max-age=0',
-            'Upgrade-Insecure-Requests': '1'
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
         })
         
     def authenticate(self) -> bool:
@@ -44,12 +43,17 @@ class HarBasedRegtechCollector:
         try:
             logger.info("REGTECH 로그인 시작 (HAR 기반)")
             
-            # 1. 로그인 폼 페이지 방문 (쿠키 획득)
-            login_form_url = f"{self.base_url}/login/loginForm"
-            resp = self.session.get(login_form_url, timeout=30)
-            logger.info(f"로그인 폼 접근: {resp.status_code}")
+            # 1. 먼저 메인 페이지 방문하여 세션 초기화
+            main_resp = self.session.get(f"{self.base_url}/")
+            logger.info(f"메인 페이지 응답: {main_resp.status_code}")
             
-            # 2. 로그인 데이터 준비 (HAR에서 확인된 형식)
+            # 2. 로그인 페이지 접근
+            login_page_url = f"{self.base_url}/fcti/login/loginPage"
+            login_page_resp = self.session.get(login_page_url)
+            logger.info(f"로그인 페이지 응답: {login_page_resp.status_code}")
+            
+            # 3. 로그인 요청 (HAR에서 확인된 형식)
+            login_url = f"{self.base_url}/fcti/login/loginUser"
             login_data = {
                 'login_error': '',
                 'txId': '',
@@ -60,179 +64,48 @@ class HarBasedRegtechCollector:
                 'password': self.password
             }
             
-            # 3. 로그인 요청
-            login_url = f"{self.base_url}/login/addLogin"
             login_resp = self.session.post(
                 login_url,
                 data=login_data,
                 headers={
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'Origin': self.base_url,
-                    'Referer': login_form_url
+                    'Referer': login_page_url
                 },
-                allow_redirects=False,
-                timeout=30
+                allow_redirects=False
             )
             
-            logger.info(f"로그인 응답: {login_resp.status_code}")
-            logger.info(f"응답 헤더: {dict(login_resp.headers)}")
+            logger.info(f"로그인 응답 상태: {login_resp.status_code}")
             
-            # 4. 리다이렉트 처리
+            # 로그인 성공 여부 확인
             if login_resp.status_code == 302:
                 redirect_url = login_resp.headers.get('Location', '')
-                logger.info(f"리다이렉트 URL: {redirect_url}")
-                
-                # 에러 체크
                 if 'error=true' in redirect_url:
-                    logger.error("로그인 실패: error=true in redirect")
+                    logger.error("로그인 실패: 인증 오류")
                     return False
-                
-                # 리다이렉트 따라가기
-                if redirect_url:
-                    full_url = redirect_url if redirect_url.startswith('http') else f"{self.base_url}{redirect_url}"
-                    follow_resp = self.session.get(full_url, timeout=30)
-                    logger.info(f"리다이렉트 페이지 접근: {follow_resp.status_code}")
-                
+                logger.info("로그인 성공")
                 return True
-            
-            # 200 OK인 경우도 성공으로 간주
             elif login_resp.status_code == 200:
                 # 응답 내용 확인
-                if 'error' in login_resp.text.lower() or 'fail' in login_resp.text.lower():
-                    logger.error("로그인 실패: 응답에 에러 메시지 포함")
+                if 'error' in login_resp.text.lower():
+                    logger.error("로그인 실패: 응답에 오류 포함")
                     return False
-                logger.info("로그인 성공 (200 OK)")
+                logger.info("로그인 성공")
                 return True
-            
-            logger.error(f"예상치 못한 로그인 응답: {login_resp.status_code}")
-            return False
-            
+            else:
+                logger.error(f"예상치 않은 로그인 응답: {login_resp.status_code}")
+                return False
+                
         except Exception as e:
             logger.error(f"인증 중 오류: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
             return False
     
-    def collect_blacklist_data(self, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
-        """블랙리스트 데이터 수집 (HAR 기반)"""
-        try:
-            logger.info("블랙리스트 데이터 수집 시작")
-            
-            # 날짜 설정
-            if not end_date:
-                end_date = datetime.now().strftime('%Y%m%d')
-            if not start_date:
-                start_date = (datetime.now() - timedelta(days=90)).strftime('%Y%m%d')
-            
-            # 1. advisoryList 페이지 접근 (필수)
-            list_url = f"{self.base_url}/fcti/securityAdvisory/advisoryList"
-            page_resp = self.session.get(list_url, timeout=30)
-            logger.info(f"목록 페이지 접근: {page_resp.status_code}")
-            
-            # 2. POST 요청으로 데이터 가져오기 (HAR에서 확인된 형식)
-            post_data = {
-                'page': '0',
-                'tabSort': 'blacklist',
-                'excelDownload': '',
-                'cveId': '',
-                'ipId': '',
-                'estId': '',
-                'startDate': start_date,
-                'endDate': end_date,
-                'findCondition': 'all',
-                'findKeyword': '',
-                'excelDown': ['security', 'blacklist', 'weakpoint'],
-                'size': '1000'  # 더 많은 데이터 요청
-            }
-            
-            # POST 요청
-            data_resp = self.session.post(
-                list_url,
-                data=post_data,
-                headers={
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Referer': list_url
-                },
-                timeout=60
-            )
-            
-            logger.info(f"데이터 요청 응답: {data_resp.status_code}")
-            
-            if data_resp.status_code == 200:
-                # HTML 응답에서 데이터 추출
-                content = data_resp.text
-                
-                # IP 패턴 찾기
-                ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
-                ips = list(set(re.findall(ip_pattern, content)))
-                
-                # JavaScript 변수에서 데이터 추출 시도
-                results = []
-                
-                # 테이블 데이터 파싱
-                if 'blackListView' in content:
-                    # blackListView 링크에서 ipId 추출
-                    view_pattern = r'blackListView\?[^"]*ipId=([a-f0-9\-]+)'
-                    view_matches = re.findall(view_pattern, content)
-                    
-                    for ip_id in view_matches[:10]:  # 처음 10개만 상세 조회
-                        time.sleep(0.5)  # 과도한 요청 방지
-                        detail_url = f"{self.base_url}/fcti/securityAdvisory/blackListView"
-                        detail_data = post_data.copy()
-                        detail_data['ipId'] = ip_id
-                        
-                        detail_resp = self.session.post(
-                            detail_url,
-                            data=detail_data,
-                            headers={
-                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Referer': list_url
-                            },
-                            timeout=30
-                        )
-                        
-                        if detail_resp.status_code == 200:
-                            # 상세 페이지에서 IP 추출
-                            detail_ips = re.findall(ip_pattern, detail_resp.text)
-                            for ip in detail_ips:
-                                if self._is_valid_ip(ip):
-                                    results.append({
-                                        'ip': ip,
-                                        'source': 'REGTECH',
-                                        'collected_at': datetime.now().isoformat(),
-                                        'ip_id': ip_id
-                                    })
-                
-                # 목록에서 직접 찾은 IP들도 추가
-                for ip in ips:
-                    if self._is_valid_ip(ip) and not any(r['ip'] == ip for r in results):
-                        results.append({
-                            'ip': ip,
-                            'source': 'REGTECH',
-                            'collected_at': datetime.now().isoformat()
-                        })
-                
-                logger.info(f"수집된 IP 수: {len(results)}")
-                return results
-            
-            else:
-                logger.error(f"데이터 요청 실패: HTTP {data_resp.status_code}")
-                return []
-                
-        except Exception as e:
-            logger.error(f"데이터 수집 중 오류: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            return []
-    
     def download_excel(self, start_date: str = None, end_date: str = None) -> Optional[str]:
-        """Excel 파일 다운로드 (HAR에서 확인된 방식)"""
+        """Excel 파일 다운로드"""
         try:
-            logger.info("Excel 다운로드 시작")
+            logger.info("Excel 파일 다운로드 시작")
             
-            # 날짜 설정
+            # 기본 날짜 설정 (최근 90일)
             if not end_date:
                 end_date = datetime.now().strftime('%Y%m%d')
             if not start_date:
@@ -241,59 +114,97 @@ class HarBasedRegtechCollector:
             # 다운로드 URL (HAR에서 확인)
             download_url = f"{self.base_url}/fcti/securityAdvisory/advisoryListDownloadXlsx"
             
-            # POST 데이터 (HAR에서 확인된 형식)
-            download_data = {
-                'page': '0',
-                'tabSort': 'blacklist',
-                'excelDownload': 'security,blacklist,weakpoint,',
-                'cveId': '',
-                'ipId': '',
-                'estId': '',
+            # 다운로드 파라미터
+            params = {
                 'startDate': start_date,
                 'endDate': end_date,
-                'findCondition': 'all',
-                'findKeyword': '',
-                'excelDown': ['security', 'blacklist', 'weakpoint'],
-                'size': '10'
+                'blockRule': '',
+                'blockTarget': ''
             }
             
             # 다운로드 요청
-            download_resp = self.session.post(
+            response = self.session.get(
                 download_url,
-                data=download_data,
+                params=params,
                 headers={
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Referer': f"{self.base_url}/fcti/securityAdvisory/advisoryList"
+                    'Referer': f'{self.base_url}/fcti/securityAdvisory/advisoryList'
                 },
-                timeout=120,
                 stream=True
             )
             
-            if download_resp.status_code == 200:
-                # 파일명 추출
-                content_disp = download_resp.headers.get('Content-Disposition', '')
-                if 'filename=' in content_disp:
-                    filename = content_disp.split('filename=')[-1].strip('"')
-                else:
-                    filename = f"regtech_blacklist_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            if response.status_code == 200:
+                # 파일명 생성
+                filename = f"fctiList_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+                file_path = self.data_dir / filename
                 
                 # 파일 저장
-                file_path = self.data_dir / filename
                 with open(file_path, 'wb') as f:
-                    for chunk in download_resp.iter_content(chunk_size=8192):
+                    for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
                 
                 logger.info(f"Excel 파일 저장 완료: {file_path}")
                 return str(file_path)
-            
             else:
-                logger.error(f"Excel 다운로드 실패: HTTP {download_resp.status_code}")
+                logger.error(f"Excel 다운로드 실패: HTTP {response.status_code}")
                 return None
                 
         except Exception as e:
             logger.error(f"Excel 다운로드 중 오류: {e}")
             return None
+    
+    def parse_excel_to_ips(self, file_path: str) -> List[Dict[str, Any]]:
+        """Excel 파일에서 IP 추출"""
+        try:
+            logger.info(f"Excel 파일 파싱: {file_path}")
+            
+            # pandas로 Excel 읽기
+            df = pd.read_excel(file_path, engine='openpyxl')
+            
+            # IP 주소가 있는 컬럼 찾기
+            ip_columns = []
+            for col in df.columns:
+                if 'ip' in col.lower() or '주소' in col:
+                    ip_columns.append(col)
+            
+            if not ip_columns:
+                # 모든 컬럼에서 IP 패턴 찾기
+                import re
+                ip_pattern = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')
+                
+                ips = []
+                for idx, row in df.iterrows():
+                    for col in df.columns:
+                        value = str(row[col])
+                        matches = ip_pattern.findall(value)
+                        for ip in matches:
+                            if self._is_valid_ip(ip):
+                                ips.append({
+                                    'ip': ip,
+                                    'source': 'REGTECH',
+                                    'collected_at': datetime.now().isoformat()
+                                })
+                
+                logger.info(f"Excel에서 {len(ips)}개 IP 추출")
+                return ips
+            
+            # IP 컬럼에서 추출
+            ips = []
+            for col in ip_columns:
+                for ip in df[col].dropna().unique():
+                    ip_str = str(ip).strip()
+                    if self._is_valid_ip(ip_str):
+                        ips.append({
+                            'ip': ip_str,
+                            'source': 'REGTECH',
+                            'collected_at': datetime.now().isoformat()
+                        })
+            
+            logger.info(f"Excel에서 {len(ips)}개 IP 추출")
+            return ips
+            
+        except Exception as e:
+            logger.error(f"Excel 파싱 오류: {e}")
+            return []
     
     def _is_valid_ip(self, ip: str) -> bool:
         """유효한 IP 주소인지 확인"""
@@ -368,50 +279,48 @@ class HarBasedRegtechCollector:
                     'method': 'har-based'
                 }
             
-            # 2. 데이터 수집
-            ip_data = self.collect_blacklist_data()
-            
-            # 3. Excel 다운로드도 시도
-            excel_file = None
-            if prefer_web:
-                excel_file = self.download_excel()
-            
-            if not ip_data and not excel_file:
+            # 2. Excel 다운로드
+            excel_file = self.download_excel()
+            if not excel_file:
                 return {
                     'success': False,
-                    'error': 'IP 데이터 수집 및 Excel 다운로드 모두 실패',
+                    'error': 'Excel 다운로드 실패',
                     'method': 'har-based'
                 }
             
-            # 4. 데이터 저장
-            # JSON 파일 저장
-            if ip_data:
-                json_file = self.data_dir / f"regtech_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-                with open(json_file, 'w', encoding='utf-8') as f:
-                    json.dump({
-                        'source': 'REGTECH',
-                        'collected_at': datetime.now().isoformat(),
-                        'total_ips': len(ip_data),
-                        'ips': [item['ip'] for item in ip_data]
-                    }, f, ensure_ascii=False, indent=2)
-                
-                # 데이터베이스 저장
-                db_saved = self.save_to_database(ip_data)
-            else:
-                json_file = None
-                db_saved = False
+            # 3. IP 추출
+            ip_data = self.parse_excel_to_ips(excel_file)
+            if not ip_data:
+                return {
+                    'success': False,
+                    'error': 'IP 추출 실패',
+                    'method': 'har-based'
+                }
+            
+            # 4. 데이터베이스 저장
+            db_saved = self.save_to_database(ip_data)
+            
+            # 5. JSON 파일로도 저장
+            json_file = self.data_dir / f"regtech_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(json_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'source': 'REGTECH',
+                    'collected_at': datetime.now().isoformat(),
+                    'total_ips': len(ip_data),
+                    'ips': [item['ip'] for item in ip_data]
+                }, f, ensure_ascii=False, indent=2)
             
             result = {
                 'success': True,
-                'method': 'har-based web collection',
-                'total_ips': len(ip_data) if ip_data else 0,
+                'method': 'har-based excel download',
+                'total_collected': len(ip_data),  # 중요: collection_manager가 기대하는 키
                 'saved_to_db': db_saved,
-                'json_file': str(json_file) if json_file else None,
                 'excel_file': excel_file,
+                'json_file': str(json_file),
                 'collected_at': datetime.now().isoformat()
             }
             
-            logger.info(f"REGTECH 수집 완료: {len(ip_data) if ip_data else 0}개 IP")
+            logger.info(f"REGTECH 수집 완료: {len(ip_data)}개 IP")
             return result
             
         except Exception as e:

@@ -78,25 +78,36 @@ class HarBasedSecudiumCollector:
                     # 응답에서 토큰 추출 방법 확인 필요
                     
                     # 응답 구조 확인
-                    if 'response' in data:
+                    logger.debug(f"로그인 응답 데이터: {data}")
+                    
+                    # 응답에서 토큰 추출 - 다양한 경로 시도
+                    if 'response' in data and isinstance(data['response'], dict):
                         resp_data = data['response']
+                        
+                        # 토큰 추출 시도
                         if 'token' in resp_data:
                             self.token = resp_data['token']
-                        elif 'auth_token' in resp_data:
-                            self.token = resp_data['auth_token']
+                            logger.info(f"response.token에서 토큰 추출 성공: {self.token[:50]}...")
+                        elif 'authToken' in resp_data:
+                            self.token = resp_data['authToken']
+                            logger.info(f"response.authToken에서 토큰 추출 성공: {self.token[:50]}...")
                         elif 'X-Auth-Token' in resp_data:
                             self.token = resp_data['X-Auth-Token']
+                            logger.info(f"response.X-Auth-Token에서 토큰 추출 성공: {self.token[:50]}...")
                     
-                    # 토큰이 응답에 없는 경우 HAR 형식으로 생성 시도
+                    # 최상위 레벨에서도 토큰 찾기
                     if not self.token:
-                        # HAR에서 본 형식으로 토큰 구성
-                        import hashlib
-                        import time
-                        
-                        timestamp = str(int(time.time() * 1000))
-                        hash_str = hashlib.sha256(f"{self.username}:{timestamp}:{self.password}".encode()).hexdigest()
-                        self.token = f"{self.username}:{timestamp}:{hash_str}"
-                        logger.info("토큰을 HAR 형식으로 생성")
+                        if 'token' in data:
+                            self.token = data['token']
+                            logger.info(f"최상위 token에서 추출 성공: {self.token[:50]}...")
+                        elif 'authToken' in data:
+                            self.token = data['authToken']
+                            logger.info(f"최상위 authToken에서 추출 성공: {self.token[:50]}...")
+                    
+                    # 토큰이 없으면 오류
+                    if not self.token:
+                        logger.error(f"토큰을 찾을 수 없음. 응답 구조: {json.dumps(data, indent=2)}")
+                        return False
                     
                     logger.info(f"로그인 성공, 토큰: {self.token[:50]}...")
                     
@@ -170,29 +181,34 @@ class HarBasedSecudiumCollector:
                     if content.startswith('<?xml'):
                         # rows/row 구조에서 데이터 추출
                         results = []
+                        unique_ips = set()  # 중복 제거를 위한 set
                         
                         # <row> 태그 찾기
                         row_pattern = r'<row[^>]*>(.*?)</row>'
                         rows = re.findall(row_pattern, content, re.DOTALL)
                         
-                        for row in rows:
+                        logger.info(f"XML에서 {len(rows)}개의 row 발견")
+                        
+                        for row_idx, row in enumerate(rows):
                             # <cell> 태그에서 데이터 추출
                             cell_pattern = r'<cell[^>]*><!\[CDATA\[(.*?)\]\]></cell>'
                             cells = re.findall(cell_pattern, row)
                             
-                            # IP 주소 찾기 (보통 첫 번째나 두 번째 셀)
+                            if row_idx < 3:  # 처음 3개 row 디버깅
+                                logger.debug(f"Row {row_idx} cells: {cells[:5]}...")  # 처음 5개 셀만
+                            
+                            # 각 셀에서 IP 주소 찾기
                             for cell in cells:
-                                # IP 패턴 매칭
-                                ip_match = re.match(r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$', cell.strip())
-                                if ip_match:
-                                    ip = ip_match.group(1)
-                                    if self._is_valid_ip(ip):
+                                cell_text = cell.strip()
+                                # IP 패턴 매칭 - 더 정확한 패턴
+                                if re.match(r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$', cell_text):
+                                    if self._is_valid_ip(cell_text) and cell_text not in unique_ips:
+                                        unique_ips.add(cell_text)
                                         results.append({
-                                            'ip': ip,
+                                            'ip': cell_text,
                                             'source': 'SECUDIUM',
                                             'collected_at': datetime.now().isoformat()
                                         })
-                                        break
                         
                         logger.info(f"XML에서 추출된 IP 수: {len(results)}")
                         return results
@@ -216,34 +232,51 @@ class HarBasedSecudiumCollector:
                                 items = data
                             
                             # IP 추출 - SECUDIUM 구조에 맞게 수정
+                            unique_ips = set()  # 중복 제거
+                            
                             for item in items:
                                 if isinstance(item, dict):
                                     # SECUDIUM 응답 구조: {"id": 20009, "data": [...], "userData": {...}}
                                     if 'data' in item and isinstance(item['data'], list):
                                         # data 배열에서 IP 패턴 찾기
-                                        for data_item in item['data']:
+                                        for idx, data_item in enumerate(item['data']):
                                             if isinstance(data_item, str):
-                                                # HTML에서 IP 추출
-                                                ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
-                                                ips_found = re.findall(ip_pattern, data_item)
-                                                for ip in ips_found:
-                                                    if self._is_valid_ip(ip):
+                                                # 정확한 IP 패턴으로만 매칭
+                                                if re.match(r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$', data_item.strip()):
+                                                    ip = data_item.strip()
+                                                    if self._is_valid_ip(ip) and ip not in unique_ips:
+                                                        unique_ips.add(ip)
                                                         results.append({
                                                             'ip': ip,
                                                             'source': 'SECUDIUM',
                                                             'collected_at': datetime.now().isoformat(),
                                                             'record_id': item.get('id')
                                                         })
+                                                # HTML 또는 텍스트에서 IP 추출
+                                                else:
+                                                    ip_pattern = r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+                                                    ips_found = re.findall(ip_pattern, data_item)
+                                                    for ip in ips_found:
+                                                        if self._is_valid_ip(ip) and ip not in unique_ips:
+                                                            unique_ips.add(ip)
+                                                            results.append({
+                                                                'ip': ip,
+                                                                'source': 'SECUDIUM',
+                                                                'collected_at': datetime.now().isoformat(),
+                                                                'record_id': item.get('id')
+                                                            })
                                     
                                     # 직접 IP 필드도 확인
-                                    ip = item.get('mal_ip') or item.get('ip') or item.get('malIp') or item.get('ip_address')
-                                    if ip and self._is_valid_ip(ip):
-                                        results.append({
-                                            'ip': ip,
-                                            'source': 'SECUDIUM',
-                                            'collected_at': datetime.now().isoformat(),
-                                            'record_id': item.get('id')
-                                        })
+                                    for field in ['mal_ip', 'ip', 'malIp', 'ip_address', 'malicious_ip']:
+                                        ip = item.get(field)
+                                        if ip and isinstance(ip, str) and self._is_valid_ip(ip) and ip not in unique_ips:
+                                            unique_ips.add(ip)
+                                            results.append({
+                                                'ip': ip,
+                                                'source': 'SECUDIUM',
+                                                'collected_at': datetime.now().isoformat(),
+                                                'record_id': item.get('id')
+                                            })
                             
                             # 상세 조회도 시도
                             if items and len(results) == 0:
@@ -517,6 +550,7 @@ class HarBasedSecudiumCollector:
             result = {
                 'success': True,
                 'method': 'har-based token authentication',
+                'total_collected': len(ip_data) if ip_data else 0,  # collection_manager 호환성
                 'total_ips': len(ip_data) if ip_data else 0,
                 'saved_to_db': db_saved,
                 'json_file': str(json_file) if json_file else None,
