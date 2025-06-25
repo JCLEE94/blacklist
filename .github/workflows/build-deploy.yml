@@ -116,18 +116,27 @@ jobs:
       - name: Build and Push to Registry
         id: build
         run: |
-          echo "🐳 Building Docker image..."
-          docker build \
+          echo "🐳 Building Docker image with timeout..."
+          timeout 300 docker build \
             --target production \
             --build-arg BUILD_TIME="${{ steps.time.outputs.time }}" \
             --build-arg GIT_COMMIT="${{ github.sha }}" \
             --build-arg GIT_BRANCH="${{ github.ref_name }}" \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             -f deployment/Dockerfile \
-            .
+            . || {
+            echo "❌ Build timed out or failed"
+            docker ps -a
+            docker images
+            exit 1
+          }
           
           echo "📤 Pushing to registry..."
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || {
+            echo "❌ Push failed - checking registry connectivity"
+            curl -I http://${{ env.REGISTRY }}/v2/ || echo "Registry not reachable"
+            exit 1
+          }
           
           echo "✅ Build and push completed"
           
