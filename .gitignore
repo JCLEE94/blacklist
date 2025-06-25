@@ -93,3 +93,11 @@ tests_archive/
 
 # Reports (optional - remove if you want to track reports)
 docs/reports/
+
+# Shrimp task manager data
+$SHRIMP_DATA_DIR/
+
+# HAR files and analysis data (archived)
+*.har
+har_analysis/
+archives/
