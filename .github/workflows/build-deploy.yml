@@ -102,12 +102,22 @@ jobs:
           docker info | grep -A 5 "Insecure Registries" || echo "No insecure registries configured"
           echo "✅ Docker check completed"
         
-      - name: Check Registry Access  
+      - name: Login to Docker Registry
         run: |
-          echo "🔍 Testing registry access..."
-          # Try to pull a test image to see if we're already authenticated
-          docker pull hello-world > /dev/null 2>&1 || echo "Docker pull test completed"
-          echo "✅ Registry access check completed"
+          echo "🔐 Logging into registry..."
+          # Create temporary docker config directory
+          mkdir -p ~/.docker
+          
+          # Try registry-specific credentials first
+          if [ -n "${{ secrets.REGISTRY_USERNAME }}" ] && [ -n "${{ secrets.REGISTRY_PASSWORD }}" ]; then
+            echo "Using registry-specific credentials"
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login registry.jclee.me -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+          else
+            echo "Using Docker Hub credentials for registry"
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login registry.jclee.me -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          fi
+          
+          echo "✅ Registry login completed"
           
       - name: Get build time
         id: time
