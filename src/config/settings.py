@@ -62,7 +62,7 @@ class Settings:
     # ===== 배포 서버 설정 =====
     @property
     def deploy_host(self) -> str:
-        return os.getenv('DEPLOY_HOST', '192.168.50.215')
+        return os.getenv('DEPLOY_HOST', 'registry.jclee.me')
     
     @property
     def deploy_ssh_port(self) -> int:
@@ -74,7 +74,7 @@ class Settings:
     
     @property
     def docker_registry(self) -> str:
-        return os.getenv('DOCKER_REGISTRY', f'{self.deploy_host}:1234')
+        return os.getenv('DOCKER_REGISTRY', 'registry.jclee.me')
     
     @property
     def docker_registry_port(self) -> int:
