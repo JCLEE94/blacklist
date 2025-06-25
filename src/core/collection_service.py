@@ -84,7 +84,7 @@ class CollectionService:
             self.status['sources']['regtech']['last_run'] = datetime.now().isoformat()
             
             # Prepare command
-            cmd = ['python3', '/app/src/scripts/regtech_manual_collector.py']
+            cmd = ['python3', '/app/scripts/collection/regtech_date_range_collector.py']
             
             if params:
                 if params.get('start_date'):
@@ -165,7 +165,7 @@ class CollectionService:
             self.status['sources']['secudium']['last_run'] = datetime.now().isoformat()
             
             # Prepare command
-            cmd = ['python3', '/app/src/scripts/secudium_api_collector.py']
+            cmd = ['python3', '/app/scripts/collection/secudium_api_collector.py']
             
             collection_type = 'blackip'
             if params:
