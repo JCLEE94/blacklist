@@ -1,0 +1,90 @@
+# 빌더 스테이지
+FROM python:3.9 AS builder
+
+WORKDIR /app
+
+# 시스템 종속성 설치 (python:3.9는 이미 gcc/g++ 포함)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python 종속성 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# 프로덕션 스테이지 - Redis 내장
+FROM python:3.9-slim AS production-with-redis
+
+# Redis와 supervisor 설치
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    redis-server \
+    supervisor \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Python 패키지 복사
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# 애플리케이션 코드 복사
+COPY . .
+
+# Redis 설정 (메모리 사용 최적화)
+RUN echo "maxmemory 256mb" >> /etc/redis/redis.conf && \
+    echo "maxmemory-policy allkeys-lru" >> /etc/redis/redis.conf && \
+    echo "save \"\"" >> /etc/redis/redis.conf && \
+    echo "appendonly no" >> /etc/redis/redis.conf
+
+# Supervisor 설정
+COPY deployment/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# 디렉토리 생성
+RUN mkdir -p instance data logs
+
+# 데이터베이스 초기화
+RUN python setup_database.py || echo "Database setup will be done at runtime"
+
+# 환경 변수 설정
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_ENV=production
+ENV PORT=2541
+ENV REDIS_URL=redis://localhost:6379/0
+
+EXPOSE 2541
+
+# supervisor로 Redis와 Flask 앱 동시 실행
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
+# 기본 프로덕션 스테이지 (Redis 없음)
+FROM python:3.9-slim AS production
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Python 패키지 복사
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# 애플리케이션 코드 복사
+COPY . .
+
+# 디렉토리 생성
+RUN mkdir -p instance data logs
+
+# 데이터베이스 초기화
+RUN python setup_database.py || echo "Database setup will be done at runtime"
+
+# 환경 변수 설정
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_ENV=production
+ENV PORT=2541
+
+EXPOSE 2541
+
+# 단일 프로세스로 실행
+CMD ["python", "main.py"]
