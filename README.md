@@ -23,7 +23,7 @@
 
 ```bash
 # 저장소 클론
-git clone https://github.com/qws941/blacklist.git
+git clone https://github.com/JCLEE94/blacklist.git
 cd blacklist
 
 # 환경변수 설정

@@ -1,7 +1,8 @@
-# 환경별 설정 통합 관리
-# 이 파일의 값들은 환경변수로 오버라이드 가능
+# 통합 애플리케이션 설정
+# 환경변수로 오버라이드 가능: ${VARIABLE_NAME:-default_value}
 
-common: &common
+# 기본 설정
+defaults: &defaults
   app:
     name: blacklist-management
     version: "3.0.0"
@@ -31,18 +32,43 @@ common: &common
     enabled: true
     interval_hours: 6
     max_retries: 3
+  
+  # 배포 설정
+  deployment:
+    registry:
+      url: "${DOCKER_REGISTRY:-registry.jclee.me}"
+      username: "${REGISTRY_USERNAME:-qws941}"
+      password: "${REGISTRY_PASSWORD}"
+    
+    watchtower:
+      poll_interval: 30
+      cleanup: true
+      include_stopped: true
+      include_restarting: true
+      label_enable: true
+      rolling_restart: true
+    
+    cicd:
+      timeout: 600
+      coverage: true
+      security_scan: true
+      platforms: linux/amd64
+      cache: true
 
+# 환경별 설정
 development:
-  <<: *common
+  <<: *defaults
   environment: development
   debug: true
+  
   server:
-    <<: *common.server
+    <<: *defaults.server
     port: 8541
   
   deployment:
     host: localhost
     registry: localhost:5000
+    method: local
   
   external_services:
     regtech:
@@ -55,18 +81,19 @@ development:
       password: test_pass
 
 staging:
-  <<: *common
+  <<: *defaults
   environment: staging
   debug: false
+  
   server:
-    <<: *common.server
+    <<: *defaults.server
     port: 2542
   
   deployment:
-    host: "${DEPLOY_HOST}"
-    ssh_port: "${DEPLOY_SSH_PORT}"
-    user: "${DEPLOY_USER}"
-    registry: "${DOCKER_REGISTRY}"
+    host: "${DEPLOY_HOST:-registry.jclee.me}"
+    ssh_port: "${DEPLOY_SSH_PORT:-1112}"
+    user: "${DEPLOY_USER:-docker}"
+    method: watchtower
   
   external_services:
     regtech:
@@ -79,18 +106,19 @@ staging:
       password: "${SECUDIUM_PASSWORD}"
 
 production:
-  <<: *common
+  <<: *defaults
   environment: production
   debug: false
+  
   server:
-    <<: *common.server
+    <<: *defaults.server
     port: 2541
   
   deployment:
-    host: "${DEPLOY_HOST}"
-    ssh_port: "${DEPLOY_SSH_PORT}"
-    user: "${DEPLOY_USER}"
-    registry: "${DOCKER_REGISTRY}"
+    host: "${DEPLOY_HOST:-registry.jclee.me}"
+    ssh_port: "${DEPLOY_SSH_PORT:-1112}"
+    user: "${DEPLOY_USER:-docker}"
+    method: watchtower
   
   external_services:
     regtech:
