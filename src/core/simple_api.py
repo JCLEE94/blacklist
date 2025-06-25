@@ -17,11 +17,15 @@ def register_simple_api(app: Flask):
     @app.route('/health')
     def health():
         """Health check endpoint"""
+        # Get build time from environment variable
+        build_time = os.environ.get('BUILD_TIME', 'Unknown')
+        
         return jsonify({
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
             'service': 'blacklist-api',
-            'version': '1.0.0'
+            'version': '1.0.0',
+            'build_time': build_time
         })
     
     @app.route('/api/stats')
