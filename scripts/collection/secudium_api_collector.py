@@ -47,7 +47,7 @@ class SecudiumAPICollector:
             login_data = {
                 'lang': 'ko',
                 'is_otp': 'N', 
-                'is_expire': 'N',
+                'is_expire': 'Y',  # 기존 세션 강제 종료
                 'login_name': username,
                 'password': password,
                 'otp_value': ''
