@@ -34,8 +34,8 @@ env:
   # 기본 설정 - 환경변수로 오버라이드 가능
   REGISTRY: ${{ vars.DOCKER_REGISTRY || 'registry.jclee.me' }}
   IMAGE_NAME: ${{ vars.IMAGE_NAME || 'blacklist' }}
-  DEPLOY_HOST: ${{ vars.DEPLOY_HOST || 'registry.jclee.me' }}
-  DEPLOY_PORT: ${{ vars.DEPLOY_SSH_PORT || '1112' }}
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST || '192.168.50.215' }}
+  DEPLOY_PORT: ${{ vars.DEPLOY_SSH_PORT || '1111' }}
   DEPLOY_USER: ${{ vars.DEPLOY_USER || 'docker' }}
   APP_PORT: ${{ vars.APP_PORT || '2541' }}
   STAGING_PORT: ${{ vars.STAGING_PORT || '2542' }}
