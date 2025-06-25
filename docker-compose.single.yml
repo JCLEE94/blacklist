@@ -18,9 +18,9 @@ services:
       - SECUDIUM_USERNAME=nextrade
       - SECUDIUM_PASSWORD=Sprtmxm1@3
     volumes:
-      - /volume1/app/blacklist/instance:/app/instance
-      - /volume1/app/blacklist/data:/app/data
-      - /volume1/app/blacklist/logs:/app/logs
+      - ${BLACKLIST_INSTANCE_PATH:-./instance}:/app/instance
+      - ${BLACKLIST_DATA_PATH:-./data}:/app/data
+      - ${BLACKLIST_LOGS_PATH:-./logs}:/app/logs
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
