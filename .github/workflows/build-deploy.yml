@@ -96,36 +96,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Configure Docker for insecure registry
+      - name: Check Docker configuration
         run: |
-          echo "🔧 Configuring Docker for insecure registry access..."
-          sudo mkdir -p /etc/docker
-          echo '{
-            "insecure-registries": ["registry.jclee.me"]
-          }' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker || echo "⚠️ Docker restart skipped in CI"
+          echo "🔧 Checking Docker configuration..."
+          docker info | grep -A 5 "Insecure Registries" || echo "No insecure registries configured"
+          echo "✅ Docker check completed"
         
       - name: Login to Private Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          echo "🔐 Logging into private registry..."
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+          echo "✅ Login successful"
           
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value={{date 'YYYYMMDD-HHmmss' tz='Asia/Seoul'}}
-            
       - name: Get build time
         id: time
         run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
