@@ -437,9 +437,13 @@ class HarBasedSecudiumCollector:
             logger.info("Excel 다운로드 시작")
             
             # HAR에서 확인된 다운로드 정보
-            # serverFileName과 fileName이 필요
+            # serverFileName과 fileName이 필요 (동적으로 현재 월 설정)
             server_filename = '704544bf-b8c7-4345-ac40-1bc6b7bcf8fc'
-            file_name = '25년 06월 Blacklist 현황.xlsx'
+            current_year = datetime.now().strftime('%y')
+            current_month = datetime.now().strftime('%m')
+            file_name = f'{current_year}년 {current_month}월 Blacklist 현황.xlsx'
+            
+            logger.info(f"Excel 파일 검색: {file_name}")
             
             # 파일 존재 확인
             check_url = f"{self.base_url}/isap-api/file/SECINFO/hasFile"
