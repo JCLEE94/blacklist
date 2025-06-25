@@ -24,28 +24,21 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Force use app_compact directly to avoid unified service errors
+# Use app_compact as primary application
 try:
     from src.core.app_compact import create_compact_app
     application = create_compact_app()
-    logger.info("📦 app_compact 사용 (강제)")
+    logger.info("✅ app_compact 성공적으로 로드됨")
+except ImportError as e:
+    logger.error(f"❌ app_compact import 실패: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)  # app_compact 실패시 종료 (minimal_app 사용 안함)
 except Exception as e:
-    logger.error(f"app_compact 실패: {e}")
-    # Fallback to minimal app
-    try:
-        from src.core.minimal_app import create_minimal_app
-        application = create_minimal_app()
-        logger.info("🔧 minimal_app 사용")
-    except Exception as e2:
-        logger.error(f"minimal_app 실패: {e2}")
-        # Final fallback to legacy app
-        try:
-            from src.app import application
-            logger.info("🔄 src.app 사용")
-        except Exception as e3:
-            logger.error(f"src.app 실패: {e3}")
-            from app import application
-            logger.info("📚 legacy app 사용")
+    logger.error(f"❌ app_compact 생성 실패: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
 
 if __name__ == '__main__':
     import argparse
