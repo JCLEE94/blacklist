@@ -318,14 +318,14 @@ class CollectionManager:
         try:
             logger.info("REGTECH 수집 시작")
             
-            # REGTECH 수집기 import 및 실행
+            # HAR 기반 REGTECH 수집기 import 및 실행
             try:
-                from .regtech_collector import RegtechCollector
+                from .har_based_regtech_collector import HarBasedRegtechCollector
                 # data 디렉토리 경로 전달
                 data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
-                collector = RegtechCollector(data_dir=data_dir)
+                collector = HarBasedRegtechCollector(data_dir=data_dir)
                 
-                # 수집 실행 (auto_collect 사용)
+                # 수집 실행 (HAR 기반 auto_collect 사용)
                 result = collector.auto_collect(prefer_web=True)
                 
                 if result.get('success', False):
@@ -380,12 +380,12 @@ class CollectionManager:
         try:
             logger.info("SECUDIUM 수집 시작")
             
-            # SECUDIUM HAR 기반 수집기 import 및 실행
+            # HAR 기반 SECUDIUM 수집기 import 및 실행 (collect_secudium_data 메서드)
             try:
-                from .secudium_har_collector import SecudiumHarCollector
+                from .har_based_secudium_collector import HarBasedSecudiumCollector
                 # data 디렉토리 경로 전달
                 data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
-                collector = SecudiumHarCollector(data_dir=data_dir)
+                collector = HarBasedSecudiumCollector(data_dir=data_dir)
                 
                 # 수집 실행 (HAR 기반)
                 result = collector.auto_collect()
@@ -443,12 +443,12 @@ class CollectionManager:
         try:
             logger.info("SECUDIUM 수집 시작")
             
-            # SECUDIUM HAR 기반 수집기 import 및 실행
+            # HAR 기반 SECUDIUM 수집기 import 및 실행
             try:
-                from .secudium_har_collector import SecudiumHarCollector
+                from .har_based_secudium_collector import HarBasedSecudiumCollector
                 # data 디렉토리 경로 전달
                 data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
-                collector = SecudiumHarCollector(data_dir=data_dir)
+                collector = HarBasedSecudiumCollector(data_dir=data_dir)
                 
                 # 수집 실행 (HAR 기반 auto_collect 사용)
                 result = collector.auto_collect()
