@@ -566,7 +566,8 @@ class HarBasedSecudiumCollector:
             return {
                 'success': False,
                 'error': str(e),
-                'method': 'har-based'
+                'method': 'har-based',
+                'total_collected': 0  # collection_manager가 기대하는 키
             }
         finally:
             if hasattr(self, 'session'):
