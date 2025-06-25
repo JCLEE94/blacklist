@@ -150,7 +150,7 @@ class HarBasedSecudiumCollector:
                 'sdate': '',  # 빈 값으로 전체 조회
                 'edate': '',
                 'dateKey': 'i.reg_date',
-                'count': '100',
+                'count': '1000',  # 100 -> 1000으로 증가
                 'filter': '',
                 f'dhxr{int(datetime.now().timestamp() * 1000)}': '1'  # 타임스탬프
             }
@@ -281,7 +281,9 @@ class HarBasedSecudiumCollector:
                             # 상세 조회도 시도
                             if items and len(results) == 0:
                                 logger.info("기본 목록에서 IP를 찾지 못함, 상세 조회 시도")
-                                for item in items[:5]:  # 처음 5개만 상세 조회
+                                # 최대 20개까지 상세 조회 (너무 많으면 시간이 오래 걸림)
+                                max_detail_queries = min(20, len(items))
+                                for item in items[:max_detail_queries]:  # 최대 20개까지 상세 조회
                                     if isinstance(item, dict) and 'id' in item:
                                         detail_ips = self._get_detailed_ip_info(item['id'])
                                         results.extend(detail_ips)
