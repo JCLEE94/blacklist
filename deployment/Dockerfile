@@ -1,17 +1,14 @@
 # Multi-stage Python FastAPI Blacklist Management System
 # Stage 1: Builder for production dependencies
-FROM python:3.9-slim AS builder
+FROM python:3.9 AS builder
 
 # Build arguments
 ARG BUILD_TIME="Unknown"
 ENV BUILD_TIME=${BUILD_TIME}
 ENV TZ=Asia/Seoul
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+# python:3.9 already includes gcc, g++, and other build tools
+# No need to install them separately, saving significant build time
 
 # Create app user
 RUN useradd --create-home --shell /bin/bash app
