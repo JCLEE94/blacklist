@@ -105,8 +105,9 @@ jobs:
       - name: Login to Docker Registry
         run: |
           echo "🔐 Logging into registry..."
-          # Create temporary docker config directory
-          mkdir -p ~/.docker
+          # Create temporary docker config directory in /tmp (writable)
+          export DOCKER_CONFIG="/tmp/.docker"
+          mkdir -p "$DOCKER_CONFIG"
           
           # Try registry-specific credentials first
           if [ -n "${{ secrets.REGISTRY_USERNAME }}" ] && [ -n "${{ secrets.REGISTRY_PASSWORD }}" ]; then
@@ -117,6 +118,8 @@ jobs:
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login registry.jclee.me -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           fi
           
+          # Export DOCKER_CONFIG for subsequent steps
+          echo "DOCKER_CONFIG=$DOCKER_CONFIG" >> $GITHUB_ENV
           echo "✅ Registry login completed"
           
       - name: Get build time
