@@ -248,9 +248,7 @@ jobs:
     needs: build
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
-    environment: 
-      name: production
-      url: http://${{ env.DEPLOY_HOST }}:${{ env.APP_PORT }}
+    environment: production
     steps:
       - uses: actions/checkout@v4
         
