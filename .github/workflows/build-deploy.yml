@@ -96,15 +96,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver-opts: |
-            image=moby/buildkit:latest
-            network=host
+          driver-opts: network=host
           config-inline: |
             [registry."registry.jclee.me"]
               http = true
@@ -141,7 +136,6 @@ jobs:
         with:
           context: .
           file: deployment/Dockerfile
-          platforms: linux/amd64
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           target: production
