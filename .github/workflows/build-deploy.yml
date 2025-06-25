@@ -79,7 +79,7 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
-          python3 -m pip install pytest pytest-cov black flake8 bandit safety
+          python3 -m pip install -r requirements-dev.txt
           
       - name: Code Quality Checks
         run: |
@@ -225,12 +225,15 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          target: production
           build-args: |
             BUILD_TIME=${{ steps.time.outputs.time }}
             GIT_COMMIT=${{ github.sha }}
             GIT_BRANCH=${{ github.ref_name }}
           provenance: false
           sbom: false
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
         env:
           BUILDX_NO_DEFAULT_ATTESTATIONS: 1
           

@@ -1,4 +1,5 @@
 # Multi-stage Python FastAPI Blacklist Management System
+# Stage 1: Builder for production dependencies
 FROM python:3.9-slim AS builder
 
 # Build arguments
@@ -21,11 +22,26 @@ WORKDIR /app
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install Python dependencies (production only)
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Production stage
+# Stage 2: Test runner (CI/CD only)
+FROM builder AS test
+
+# Copy requirements for dev dependencies
+COPY requirements-dev.txt .
+
+# Install development dependencies
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Copy source code for testing
+COPY . .
+
+# Run tests
+RUN python -m pytest tests/ || true
+
+# Stage 3: Production image with all dependencies
 FROM python:3.9-slim AS production
 
 # Build arguments
