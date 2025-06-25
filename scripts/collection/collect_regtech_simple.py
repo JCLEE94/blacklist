@@ -25,13 +25,16 @@ def main():
         result = collector.collect_from_web(max_pages=3, parallel_workers=1)
         
         print("\n📊 Collection Results:")
-        print(f"Total collected: {result['total_collected']}")
-        print(f"Successful: {result['successful_collections']}")
-        print(f"Failed: {result['failed_collections']}")
-        print(f"Duplicates: {result['duplicate_count']}")
+        stats = result.get('stats', {})
+        total_collected = stats.get('total_collected', 0)
+        
+        print(f"Total collected: {total_collected}")
+        print(f"Successful: {stats.get('successful_collections', 0)}")
+        print(f"Failed: {stats.get('failed_collections', 0)}")
+        print(f"Duplicates: {stats.get('duplicate_count', 0)}")
         
         # Import to database if successful
-        if result['total_collected'] > 0:
+        if total_collected > 0:
             print("\n💾 Importing to database...")
             import sqlite3
             conn = sqlite3.connect('instance/blacklist.db')
