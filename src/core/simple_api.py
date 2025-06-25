@@ -5,13 +5,14 @@ Simple API routes for minimal Flask app
 import os
 import json
 import logging
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 def register_simple_api(app: Flask):
     """Register simple API routes"""
+    
     
     @app.route('/health')
     def health():

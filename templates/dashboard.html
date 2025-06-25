@@ -130,7 +130,7 @@
                     <span class="badge bg-success me-2">
                         <i class="bi bi-circle-fill animate-pulse"></i> 실시간 모니터링
                     </span>
-                    <small class="opacity-75">{{ last_update }}</small>
+                    <small class="opacity-75" id="last-update">{{ last_update }}</small>
                 </div>
             </div>
         </div>
@@ -143,7 +143,7 @@
                 <div class="stat-icon primary">
                     <i class="bi bi-database-fill"></i>
                 </div>
-                <h2 class="fw-bold mb-1">{{ "{:,}".format(total_ips) }}</h2>
+                <h2 class="fw-bold mb-1" id="total-ips">{{ "{:,}".format(total_ips) }}</h2>
                 <p class="text-muted mb-0">전체 블랙리스트 IP</p>
                 <div class="mt-3">
                     <small class="text-success">
@@ -157,7 +157,7 @@
                 <div class="stat-icon success">
                     <i class="bi bi-shield-fill-check"></i>
                 </div>
-                <h2 class="fw-bold mb-1">{{ "{:,}".format(active_ips) }}</h2>
+                <h2 class="fw-bold mb-1" id="active-ips">{{ "{:,}".format(active_ips) }}</h2>
                 <p class="text-muted mb-0">활성 차단 IP</p>
                 <div class="mt-3">
                     <small class="text-success">
@@ -339,9 +339,13 @@
     </div>
     
     <!-- 시스템 모니터링 위젯 -->
-    <div class="row mt-4">
+    <div class="row mt-4 mb-4">
         <div class="col-lg-12">
-            <div id="system-monitor-container"></div>
+            <div id="system-monitor-container" class="modern-card p-3">
+                <div class="text-center text-muted">
+                    <i class="bi bi-activity"></i> 시스템 모니터 준비 중...
+                </div>
+            </div>
         </div>
     </div>
 </div>
