@@ -20,9 +20,9 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
       - API_SECRET_KEY=${API_SECRET_KEY:-}
     volumes:
-      - blacklist_instance:/app/instance
-      - blacklist_data:/app/data
-      - blacklist_logs:/app/logs
+      - ${VOLUME_INSTANCE_PATH:-./instance}:/app/instance
+      - ${VOLUME_DATA_PATH:-./data}:/app/data
+      - ${VOLUME_LOGS_PATH:-./logs}:/app/logs
     labels:
       - "com.centurylinklabs.watchtower.enable=${WATCHTOWER_ENABLED:-true}"
     healthcheck:
@@ -31,14 +31,4 @@ services:
       timeout: ${HEALTH_CHECK_TIMEOUT:-10s}
       retries: ${HEALTH_CHECK_RETRIES:-3}
       start_period: ${HEALTH_CHECK_START_PERIOD:-40s}
-
-volumes:
-  blacklist_instance:
-    name: ${VOLUME_INSTANCE_NAME:-blacklist_instance}
-    external: ${VOLUME_EXTERNAL:-false}
-  blacklist_data:
-    name: ${VOLUME_DATA_NAME:-blacklist_data}
-    external: ${VOLUME_EXTERNAL:-false}
-  blacklist_logs:
-    name: ${VOLUME_LOGS_NAME:-blacklist_logs}
-    external: ${VOLUME_EXTERNAL:-false}
+EOF < /dev/null

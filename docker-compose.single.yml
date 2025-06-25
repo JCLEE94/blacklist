@@ -20,9 +20,9 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
       - API_SECRET_KEY=${API_SECRET_KEY:-}
     volumes:
-      - ${VOLUME_INSTANCE_NAME:-blacklist_instance}:/app/instance
-      - ${VOLUME_DATA_NAME:-blacklist_data}:/app/data
-      - ${VOLUME_LOGS_NAME:-blacklist_logs}:/app/logs
+      - blacklist_instance:/app/instance
+      - blacklist_data:/app/data
+      - blacklist_logs:/app/logs
     labels:
       - "com.centurylinklabs.watchtower.enable=${WATCHTOWER_ENABLED:-true}"
     healthcheck:
@@ -33,24 +33,12 @@ services:
       start_period: ${HEALTH_CHECK_START_PERIOD:-40s}
 
 volumes:
-  ${VOLUME_INSTANCE_NAME:-blacklist_instance}:
+  blacklist_instance:
     name: ${VOLUME_INSTANCE_NAME:-blacklist_instance}
-    driver: ${VOLUME_DRIVER:-local}
-    driver_opts:
-      type: ${VOLUME_TYPE:-none}
-      device: ${VOLUME_INSTANCE_PATH:-}
-      o: ${VOLUME_OPTIONS:-bind}
-  ${VOLUME_DATA_NAME:-blacklist_data}:
+    driver: local
+  blacklist_data:
     name: ${VOLUME_DATA_NAME:-blacklist_data}
-    driver: ${VOLUME_DRIVER:-local}
-    driver_opts:
-      type: ${VOLUME_TYPE:-none}
-      device: ${VOLUME_DATA_PATH:-}
-      o: ${VOLUME_OPTIONS:-bind}
-  ${VOLUME_LOGS_NAME:-blacklist_logs}:
+    driver: local
+  blacklist_logs:
     name: ${VOLUME_LOGS_NAME:-blacklist_logs}
-    driver: ${VOLUME_DRIVER:-local}
-    driver_opts:
-      type: ${VOLUME_TYPE:-none}
-      device: ${VOLUME_LOGS_PATH:-}
-      o: ${VOLUME_OPTIONS:-bind}
+    driver: local
