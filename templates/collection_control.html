@@ -601,15 +601,23 @@ async function triggerCollection(collector) {
         button.disabled = true;
         button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 수집 중...';
         
-        const response = await fetch(`/api/collection/${collector}/trigger`, { method: 'POST' });
+        const response = await fetch(`/api/collection/${collector}/trigger`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
         const data = await response.json();
         
-        if (data.status === 'success') {
-            showNotification(`${collector.toUpperCase()} 수집이 시작되었습니다.`, 'info');
-            collectionControl.addLog('info', 
-                `${collector.toUpperCase()} 수동 수집이 시작되었습니다.`);
+        if (data.success === true) {
+            showNotification(`${collector.toUpperCase()} 수집이 완료되었습니다.`, 'success');
+            collectionControl.addLog('success', 
+                `${collector.toUpperCase()} 수집 완료: ${data.message || '성공'}`);
+            // 상태 업데이트
+            collectionControl.checkCollectionStatus();
         } else {
-            throw new Error(data.message || '수집 시작 실패');
+            throw new Error(data.message || data.error || '수집 시작 실패');
         }
     } catch (error) {
         showNotification(`오류: ${error.message}`, 'danger');
