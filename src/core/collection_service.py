@@ -83,8 +83,8 @@ class CollectionService:
             self.status['sources']['regtech']['status'] = 'running'
             self.status['sources']['regtech']['last_run'] = datetime.now().isoformat()
             
-            # Prepare command
-            cmd = ['python3', '/app/scripts/collection/regtech_date_range_collector.py']
+            # Prepare command  
+            cmd = ['python3', '/app/scripts/collection/collect_regtech_simple.py']
             
             if params:
                 if params.get('start_date'):
