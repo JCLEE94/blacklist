@@ -27,7 +27,6 @@ class SecudiumAPICollector:
         self.session.headers.update({
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Content-Type": "application/json; charset=UTF-8",
             "X-Requested-With": "XMLHttpRequest",
             "sec-ch-ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
             "sec-ch-ua-mobile": "?0",
@@ -44,11 +43,14 @@ class SecudiumAPICollector:
             session_resp = self.session.get(main_url, timeout=30)
             logger.info(f"세션 초기화: {session_resp.status_code}")
             
-            # 2. 올바른 로그인 파라미터 사용 (문서 분석 결과)
+            # 2. 올바른 로그인 파라미터 사용 (HAR 분석 결과)
             login_data = {
-                'login_name': username,  # 올바른 필드명 (loginId가 아님)
-                'password': password,    # 올바른 필드명 (loginPw가 아님)
-                'lang': 'ko'            # 언어 설정
+                'lang': 'ko',
+                'is_otp': 'N', 
+                'is_expire': 'N',
+                'login_name': username,
+                'password': password,
+                'otp_value': ''
             }
             
             # 3. 로그인 요청 헤더 설정
