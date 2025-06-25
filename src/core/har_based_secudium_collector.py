@@ -436,31 +436,53 @@ class HarBasedSecudiumCollector:
         try:
             logger.info("Excel 다운로드 시작")
             
-            # HAR에서 확인된 다운로드 정보
-            # serverFileName과 fileName이 필요 (동적으로 현재 월 설정)
-            server_filename = '704544bf-b8c7-4345-ac40-1bc6b7bcf8fc'
-            current_year = datetime.now().strftime('%y')
-            current_month = datetime.now().strftime('%m')
-            file_name = f'{current_year}년 {current_month}월 Blacklist 현황.xlsx'
-            
-            logger.info(f"Excel 파일 검색: {file_name}")
-            
-            # 파일 존재 확인
-            check_url = f"{self.base_url}/isap-api/file/SECINFO/hasFile"
-            check_params = {
-                'X-Auth-Token': self.token,
-                'serverFileName': server_filename,
-                'fileName': file_name
+            # Excel 다운로드를 위한 API 엔드포인트 시도
+            # 먼저 파일 목록을 조회해서 실제 파일명을 찾아보자
+            list_url = f"{self.base_url}/isap-api/secinfo/file/list"
+            list_params = {
+                'X-Auth-Token': self.token
             }
             
-            check_resp = self.session.get(
-                check_url,
-                params=check_params,
+            # 파일 목록 조회
+            list_resp = self.session.get(
+                list_url,
+                params=list_params,
                 timeout=30
             )
             
-            if check_resp.status_code != 200:
-                logger.warning("파일 존재 확인 실패, 직접 다운로드 시도")
+            server_filename = None
+            file_name = None
+            
+            if list_resp.status_code == 200:
+                try:
+                    # 응답에서 Excel 파일 정보 찾기
+                    content = list_resp.text
+                    logger.info(f"파일 목록 응답: {content[:500]}")
+                    
+                    # JSON 파싱 시도
+                    if content.strip().startswith('{'):
+                        import json
+                        data = json.loads(content)
+                        # Excel 파일 찾기
+                        if 'files' in data:
+                            for file_info in data['files']:
+                                if 'xlsx' in file_info.get('fileName', '').lower():
+                                    server_filename = file_info.get('serverFileName')
+                                    file_name = file_info.get('fileName')
+                                    logger.info(f"Excel 파일 발견: {file_name} (서버: {server_filename})")
+                                    break
+                except Exception as e:
+                    logger.warning(f"파일 목록 파싱 실패: {e}")
+            
+            # 파일 정보를 찾지 못한 경우 기본값 사용
+            if not server_filename or not file_name:
+                logger.warning("Excel 파일 정보를 찾지 못함, 기본값 사용")
+                server_filename = '704544bf-b8c7-4345-ac40-1bc6b7bcf8fc'
+                current_year = datetime.now().strftime('%y')
+                current_month = datetime.now().strftime('%m')
+                file_name = f'{current_year}년 {current_month}월 Blacklist 현황.xlsx'
+            
+            logger.info(f"Excel 다운로드 시도: {file_name} (서버: {server_filename})")
             
             # 다운로드 URL
             download_url = f"{self.base_url}/isap-api/file/SECINFO/download"
