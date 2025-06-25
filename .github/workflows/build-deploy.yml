@@ -371,4 +371,4 @@ jobs:
           
           if [ "${{ needs.verify.result }}" != "success" ]; then
             echo "⚠️ **Action Required**: Deployment failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
-          fi# Docker registry configured
+          fi
