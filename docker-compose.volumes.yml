@@ -35,22 +35,11 @@ services:
 volumes:
   ${VOLUME_INSTANCE_NAME:-blacklist_instance}:
     name: ${VOLUME_INSTANCE_NAME:-blacklist_instance}
-    driver: ${VOLUME_DRIVER:-local}
-    driver_opts:
-      type: ${VOLUME_TYPE:-none}
-      device: ${VOLUME_INSTANCE_PATH:-}
-      o: ${VOLUME_OPTIONS:-bind}
+    external: ${VOLUME_EXTERNAL:-false}
   ${VOLUME_DATA_NAME:-blacklist_data}:
     name: ${VOLUME_DATA_NAME:-blacklist_data}
-    driver: ${VOLUME_DRIVER:-local}
-    driver_opts:
-      type: ${VOLUME_TYPE:-none}
-      device: ${VOLUME_DATA_PATH:-}
-      o: ${VOLUME_OPTIONS:-bind}
+    external: ${VOLUME_EXTERNAL:-false}
   ${VOLUME_LOGS_NAME:-blacklist_logs}:
     name: ${VOLUME_LOGS_NAME:-blacklist_logs}
-    driver: ${VOLUME_DRIVER:-local}
-    driver_opts:
-      type: ${VOLUME_TYPE:-none}
-      device: ${VOLUME_LOGS_PATH:-}
-      o: ${VOLUME_OPTIONS:-bind}
+    external: ${VOLUME_EXTERNAL:-false}
+EOF < /dev/null

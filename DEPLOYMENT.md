@@ -8,27 +8,58 @@ All configuration is managed through `.env` files to eliminate hardcoding.
 
 1. **Development** (`.env.development`)
    - Port: 8541
-   - Local volumes
+   - Pure Docker volumes (dev environment)
    - Debug mode enabled
    - Watchtower disabled
 
 2. **Production** (`.env.production`)
    - Port: 2541
-   - Synology NAS volumes
+   - Docker volumes with Synology NAS bind mounts
    - Production optimized
    - Watchtower enabled
+
+3. **Docker Volumes** (`.env.docker-volumes`)
+   - Port: 2541
+   - Pure Docker volumes (no host bind mounts)
+   - Portable and isolated
+   - Easy backup/restore
 
 ### Quick Deployment
 
 ```bash
-# Production deployment
+# Production deployment (Synology NAS)
 ./deploy-env.sh production
 
-# Development deployment  
+# Development deployment (pure Docker volumes)
 ./deploy-env.sh development
+
+# Docker volumes deployment (portable)
+./deploy-env.sh docker-volumes
 
 # Custom environment
 ./deploy-env.sh staging
+```
+
+### Docker Volume Management
+
+```bash
+# Create volumes
+./manage-volumes.sh production create
+
+# Check volume status
+./manage-volumes.sh production status
+
+# Backup volumes
+./manage-volumes.sh production backup
+
+# Restore from backup
+./manage-volumes.sh production restore ./backups/20241226-123456
+
+# Remove volumes (with confirmation)
+./manage-volumes.sh production remove
+
+# Inspect volume details
+./manage-volumes.sh production inspect
 ```
 
 ### Manual Deployment
