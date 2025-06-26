@@ -187,7 +187,6 @@ class BlacklistContainer(ServiceContainer):
         from src.utils.monitoring import get_metrics_collector, get_health_checker
         from .database import DatabaseManager
         from .blacklist_unified import UnifiedBlacklistManager
-        from .unified_routes import unified_bp
         
         # Configuration
         self.register_factory('config', lambda: get_config())
