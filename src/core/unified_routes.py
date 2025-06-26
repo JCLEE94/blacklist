@@ -76,6 +76,11 @@ def api_dashboard():
         }
     })
 
+@unified_bp.route('/docker/logs', methods=['GET'])
+def docker_logs_page():
+    """Docker 로그 조회 페이지"""
+    return render_template('docker_logs.html')
+
 # === 핵심 API 엔드포인트 ===
 
 @unified_bp.route('/health', methods=['GET'])

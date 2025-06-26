@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Docker 컨테이너 로그 - Nextrade Black List Deny System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-container {
+        background: #1e1e1e;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        height: 400px;
+        overflow-y: auto;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    
+    .log-line {
+        margin-bottom: 0.25rem;
+        word-wrap: break-word;
+    }
+    
+    .log-timestamp {
+        color: #6c757d;
+    }
+    
+    .log-info {
+        color: #0dcaf0;
+    }
+    
+    .log-warning {
+        color: #ffc107;
+    }
+    
+    .log-error {
+        color: #dc3545;
+    }
+    
+    .log-debug {
+        color: #6f42c1;
+    }
+    
+    .control-panel {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .status-connected {
+        background: #28a745;
+        animation: pulse 2s infinite;
+    }
+    
+    .status-disconnected {
+        background: #dc3545;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-terminal"></i> Docker 컨테이너 로그</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">홈</a></li>
+                        <li class="breadcrumb-item"><a href="#">시스템</a></li>
+                        <li class="breadcrumb-item active">Docker 로그</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <!-- 제어 패널 -->
+            <div class="control-panel">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="containerSelect" class="form-label">컨테이너</label>
+                        <select class="form-select" id="containerSelect">
+                            <option value="blacklist-app-1">blacklist-app-1</option>
+                            <option value="blacklist-redis">blacklist-redis</option>
+                            <option value="blacklist-unified">blacklist-unified</option>
+                            <option value="blacklist-db">blacklist-db</option>
+                            <option value="blacklist-nginx">blacklist-nginx</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="linesSelect" class="form-label">라인 수</label>
+                        <select class="form-select" id="linesSelect">
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="200">200</option>
+                            <option value="500">500</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="sinceInput" class="form-label">시간 필터</label>
+                        <select class="form-select" id="sinceInput">
+                            <option value="">전체</option>
+                            <option value="5m">5분</option>
+                            <option value="10m">10분</option>
+                            <option value="1h">1시간</option>
+                            <option value="24h">24시간</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">제어</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" id="loadLogsBtn">
+                                <i class="bi bi-arrow-clockwise"></i> 로그 조회
+                            </button>
+                            <button type="button" class="btn btn-success" id="streamLogsBtn">
+                                <i class="bi bi-play-fill"></i> 실시간
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="stopStreamBtn" disabled>
+                                <i class="bi bi-stop-fill"></i> 정지
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">상태</label>
+                        <div class="d-flex align-items-center">
+                            <span class="status-indicator status-disconnected" id="statusIndicator"></span>
+                            <span id="statusText">대기 중</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoScrollCheck" checked>
+                            <label class="form-check-label" for="autoScrollCheck">
+                                자동 스크롤
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 로그 출력 영역 -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-file-text"></i> 로그 출력</span>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearLogsBtn">
+                            <i class="bi bi-trash"></i> 지우기
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="downloadLogsBtn">
+                            <i class="bi bi-download"></i> 다운로드
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="log-container" id="logContainer">
+                        <div class="text-center text-muted p-4">
+                            <i class="bi bi-info-circle"></i> 컨테이너를 선택하고 "로그 조회" 또는 "실시간" 버튼을 클릭하세요.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let isStreaming = false;
+let eventSource = null;
+
+// DOM 요소 참조
+const containerSelect = document.getElementById('containerSelect');
+const linesSelect = document.getElementById('linesSelect');
+const sinceInput = document.getElementById('sinceInput');
+const loadLogsBtn = document.getElementById('loadLogsBtn');
+const streamLogsBtn = document.getElementById('streamLogsBtn');
+const stopStreamBtn = document.getElementById('stopStreamBtn');
+const clearLogsBtn = document.getElementById('clearLogsBtn');
+const downloadLogsBtn = document.getElementById('downloadLogsBtn');
+const logContainer = document.getElementById('logContainer');
+const statusIndicator = document.getElementById('statusIndicator');
+const statusText = document.getElementById('statusText');
+const autoScrollCheck = document.getElementById('autoScrollCheck');
+
+// 상태 업데이트 함수
+function updateStatus(status, text) {
+    statusIndicator.className = `status-indicator status-${status}`;
+    statusText.textContent = text;
+}
+
+// 로그 추가 함수
+function addLogLine(line) {
+    const logLine = document.createElement('div');
+    logLine.className = 'log-line';
+    
+    // 로그 레벨 감지 및 스타일링
+    let className = '';
+    if (line.includes('ERROR') || line.includes('error')) {
+        className = 'log-error';
+    } else if (line.includes('WARNING') || line.includes('warning')) {
+        className = 'log-warning';
+    } else if (line.includes('INFO') || line.includes('info')) {
+        className = 'log-info';
+    } else if (line.includes('DEBUG') || line.includes('debug')) {
+        className = 'log-debug';
+    }
+    
+    // 타임스탬프 감지
+    const timestampMatch = line.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    if (timestampMatch) {
+        const timestamp = timestampMatch[0];
+        const content = line.substring(timestamp.length);
+        logLine.innerHTML = `<span class="log-timestamp">${timestamp}</span>${content}`;
+    } else {
+        logLine.textContent = line;
+    }
+    
+    if (className) {
+        logLine.classList.add(className);
+    }
+    
+    logContainer.appendChild(logLine);
+    
+    // 자동 스크롤
+    if (autoScrollCheck.checked) {
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+}
+
+// 로그 조회 함수
+async function loadLogs() {
+    try {
+        updateStatus('connected', '로그 조회 중...');
+        
+        const container = containerSelect.value;
+        const lines = linesSelect.value;
+        const since = sinceInput.value;
+        
+        const params = new URLSearchParams({
+            container: container,
+            lines: lines
+        });
+        
+        if (since) {
+            params.append('since', since);
+        }
+        
+        const response = await fetch(`/api/system/docker/logs?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            // 기존 로그 지우기
+            logContainer.innerHTML = '';
+            
+            // 로그 라인 추가
+            data.data.logs.forEach(line => {
+                if (line.trim()) {
+                    addLogLine(line);
+                }
+            });
+            
+            updateStatus('disconnected', `${data.data.lines_count}줄 조회 완료`);
+        } else {
+            logContainer.innerHTML = `<div class="text-danger p-3">오류: ${data.error}</div>`;
+            updateStatus('disconnected', '조회 실패');
+        }
+    } catch (error) {
+        console.error('로그 조회 오류:', error);
+        logContainer.innerHTML = `<div class="text-danger p-3">오류: ${error.message}</div>`;
+        updateStatus('disconnected', '조회 실패');
+    }
+}
+
+// 실시간 로그 스트리밍 함수
+function startLogStream() {
+    if (isStreaming) return;
+    
+    const container = containerSelect.value;
+    const since = sinceInput.value;
+    
+    const params = new URLSearchParams({
+        container: container,
+        follow: 'true'
+    });
+    
+    if (since) {
+        params.append('since', since);
+    }
+    
+    // EventSource 대신 fetch stream 사용
+    const streamUrl = `/api/system/docker/logs?${params}`;
+    
+    fetch(streamUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            isStreaming = true;
+            updateStatus('connected', '실시간 스트리밍 중...');
+            streamLogsBtn.disabled = true;
+            stopStreamBtn.disabled = false;
+            
+            function readStream() {
+                return reader.read().then(({ done, value }) => {
+                    if (done || !isStreaming) {
+                        stopLogStream();
+                        return;
+                    }
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    lines.forEach(line => {
+                        if (line.trim() && line.startsWith('data: ')) {
+                            const logLine = line.substring(6); // 'data: ' 제거
+                            if (logLine.trim()) {
+                                addLogLine(logLine);
+                            }
+                        }
+                    });
+                    
+                    return readStream();
+                });
+            }
+            
+            return readStream();
+        })
+        .catch(error => {
+            console.error('스트리밍 오류:', error);
+            stopLogStream();
+            addLogLine(`스트리밍 오류: ${error.message}`);
+        });
+}
+
+// 스트리밍 정지 함수
+function stopLogStream() {
+    isStreaming = false;
+    updateStatus('disconnected', '스트리밍 정지됨');
+    streamLogsBtn.disabled = false;
+    stopStreamBtn.disabled = true;
+}
+
+// 로그 지우기
+function clearLogs() {
+    logContainer.innerHTML = '<div class="text-center text-muted p-4"><i class="bi bi-info-circle"></i> 로그가 지워졌습니다.</div>';
+}
+
+// 로그 다운로드
+function downloadLogs() {
+    const logLines = Array.from(logContainer.querySelectorAll('.log-line'))
+        .map(line => line.textContent)
+        .join('\n');
+    
+    const blob = new Blob([logLines], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `docker-logs-${containerSelect.value}-${new Date().toISOString().slice(0, 19)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// 이벤트 리스너 등록
+loadLogsBtn.addEventListener('click', loadLogs);
+streamLogsBtn.addEventListener('click', startLogStream);
+stopStreamBtn.addEventListener('click', stopLogStream);
+clearLogsBtn.addEventListener('click', clearLogs);
+downloadLogsBtn.addEventListener('click', downloadLogs);
+
+// 페이지 언로드 시 스트리밍 정지
+window.addEventListener('beforeunload', () => {
+    if (isStreaming) {
+        stopLogStream();
+    }
+});
+
+// 초기 컨테이너 목록 로드
+async function loadContainers() {
+    try {
+        const response = await fetch('/api/system/docker/containers');
+        const data = await response.json();
+        
+        if (data.success) {
+            containerSelect.innerHTML = '';
+            data.data.containers.forEach(container => {
+                const option = document.createElement('option');
+                option.value = container.name;
+                option.textContent = `${container.name} (${container.status})`;
+                containerSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.log('컨테이너 목록 로드 실패:', error);
+        // 기본값 유지
+    }
+}
+
+// 페이지 로드 시 컨테이너 목록 로드
+document.addEventListener('DOMContentLoaded', loadContainers);
+</script>
+{% endblock %}
