@@ -65,6 +65,9 @@ class UnifiedBlacklistService:
             self.cache = None
             self.collection_manager = None
         
+        # Mark as running for basic health checks
+        self._running = True
+        
     async def start(self) -> None:
         """통합 서비스 시작"""
         self.logger.info("🚀 통합 블랙리스트 서비스 시작...")
