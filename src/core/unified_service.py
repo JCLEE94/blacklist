@@ -49,6 +49,22 @@ class UnifiedBlacklistService:
             'version': '3.0.0'
         }
         
+        # Initialize core services immediately
+        try:
+            self.blacklist_manager = self.container.resolve('blacklist_manager')
+            self.cache = self.container.resolve('cache_manager')
+            # Try to get collection_manager
+            try:
+                self.collection_manager = self.container.resolve('collection_manager')
+            except Exception as e:
+                self.logger.warning(f"Collection Manager not available: {e}")
+                self.collection_manager = None
+        except Exception as e:
+            self.logger.error(f"Failed to initialize core services: {e}")
+            self.blacklist_manager = None
+            self.cache = None
+            self.collection_manager = None
+        
     async def start(self) -> None:
         """통합 서비스 시작"""
         self.logger.info("🚀 통합 블랙리스트 서비스 시작...")
@@ -90,22 +106,16 @@ class UnifiedBlacklistService:
         """의존성 컨테이너 초기화"""
         self.logger.info("📦 의존성 컨테이너 초기화 중...")
         
-        try:
-            # 컨테이너에서 핵심 서비스들 가져오기
-            self.blacklist_manager = self.container.resolve('blacklist_manager')
-            self.cache = self.container.resolve('cache_manager')
-            
-            # collection_manager는 선택적으로 로드
-            try:
-                self.collection_manager = self.container.resolve('collection_manager')
-            except Exception as e:
-                self.logger.warning(f"Collection manager 로드 실패, 기본 기능으로 대체: {e}")
-                self.collection_manager = None
-            
-            self.logger.info("✅ 의존성 컨테이너 초기화 완료")
-        except Exception as e:
-            self.logger.error(f"의존성 컨테이너 초기화 실패: {e}")
-            raise
+        # Already initialized in __init__, just verify they exist
+        if not self.blacklist_manager:
+            self.logger.error("blacklist_manager not initialized")
+            raise RuntimeError("Required service 'blacklist_manager' not available")
+        
+        if not self.cache:
+            self.logger.error("cache not initialized")
+            raise RuntimeError("Required service 'cache' not available")
+        
+        self.logger.info("✅ 의존성 컨테이너 초기화 완료")
     
     async def _initialize_components(self):
         """핵심 컴포넌트 초기화"""
@@ -255,6 +265,14 @@ class UnifiedBlacklistService:
     async def get_active_blacklist(self, format_type: str = 'json') -> Dict[str, Any]:
         """활성 블랙리스트 조회"""
         try:
+            # Check if blacklist_manager is available
+            if not self.blacklist_manager:
+                return {
+                    'success': False,
+                    'error': "Blacklist manager not initialized",
+                    'timestamp': datetime.now().isoformat()
+                }
+            
             if format_type == 'fortigate':
                 # FortiGate 형식으로 변환
                 active_ips, active_months = self.blacklist_manager.get_active_ips()
@@ -292,6 +310,14 @@ class UnifiedBlacklistService:
     async def get_statistics(self) -> Dict[str, Any]:
         """통합 시스템 통계"""
         try:
+            # Check if blacklist_manager is available
+            if not self.blacklist_manager:
+                return {
+                    'success': False,
+                    'error': "Blacklist manager not initialized",
+                    'timestamp': datetime.now().isoformat()
+                }
+            
             # load_stats() 메서드 사용
             stats = self.blacklist_manager.load_stats()
             
