@@ -42,8 +42,8 @@ def api_dashboard():
 
 @unified_bp.route('/dashboard', methods=['GET'])
 @public_endpoint(cache_ttl=60)
-def simple_dashboard():
-    """간단한 대시보드 (JSON)"""
+def dashboard():
+    """웹 대시보드 (HTML)"""
     try:
         # 시스템 상태 정보 수집
         health = service.get_health()
@@ -52,35 +52,52 @@ def simple_dashboard():
         
         stats = result.get('statistics', {}) if result.get('success') else {}
         
-        # 소스별 분포 계산
+        # 소스별 분포 계산 (하드코딩 제거)
         from .root_route import calculate_source_distribution
         source_distribution = calculate_source_distribution(stats)
         
-        return jsonify({
-            'dashboard': '🛡️ Blacklist Management Dashboard',
-            'timestamp': datetime.now().isoformat(),
-            'system': {
-                'status': health.status,
-                'version': health.version,
-                'service': 'blacklist-unified'
-            },
-            'collection': {
-                'enabled': collection_status.get('status', {}).get('collection_enabled', False),
-                'sources': collection_status.get('status', {}).get('sources', {}),
-                'summary': collection_status.get('status', {}).get('summary', {})
-            },
-            'statistics': stats,
-            'source_distribution': source_distribution,
-            'links': {
-                'health': '/health',
-                'active_ips': '/api/blacklist/active',
-                'fortigate': '/api/fortigate', 
-                'collection_status': '/api/collection/status'
-            }
-        })
+        return render_template('dashboard.html', 
+                             health=health,
+                             collection_status=collection_status,
+                             stats=stats,
+                             source_distribution=source_distribution)
     except Exception as e:
-        logger.error(f"간단한 대시보드 실패: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"대시보드 렌더링 실패: {e}")
+        # 템플릿 오류 시 간단한 HTML 대시보드 반환
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Blacklist Management Dashboard</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+        </head>
+        <body>
+            <div class="container mt-5">
+                <div class="row">
+                    <div class="col-12">
+                        <h1 class="text-center mb-4">🛡️ Blacklist Management System</h1>
+                        <div class="alert alert-warning">
+                            <h4>템플릿 로딩 오류</h4>
+                            <p>대시보드 템플릿을 로드할 수 없습니다: {str(e)}</p>
+                            <hr>
+                            <p><strong>사용 가능한 링크:</strong></p>
+                            <ul>
+                                <li><a href="/health" target="_blank">시스템 상태</a></li>
+                                <li><a href="/api/stats" target="_blank">통계</a></li>
+                                <li><a href="/api/collection/status" target="_blank">수집 상태</a></li>
+                                <li><a href="/api/blacklist/active" target="_blank">활성 IP 목록</a></li>
+                                <li><a href="/api/fortigate" target="_blank">FortiGate 형식</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """, 500
 
 # === 헬스 체크 및 상태 ===
 
