@@ -2,7 +2,7 @@
 통합 API 라우트
 모든 블랙리스트 API를 하나로 통합한 라우트 시스템
 """
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, render_template
 from typing import Dict, Any
 import logging
 import asyncio
@@ -20,6 +20,28 @@ unified_bp = Blueprint('unified', __name__)
 
 # 통합 서비스 인스턴스
 service = get_unified_service()
+
+# === 웹 인터페이스 ===
+
+@unified_bp.route('/api/docs', methods=['GET'])
+@public_endpoint(cache_ttl=300)
+def api_dashboard():
+    """API 대시보드"""
+    try:
+        # 시스템 상태 정보 수집
+        health = service.get_health()
+        collection_status = service.get_collection_status()
+        result = asyncio.run(service.get_statistics())
+        
+        stats = result.get('statistics', {}) if result.get('success') else {}
+        
+        return render_template('dashboard.html', 
+                             health=health,
+                             collection_status=collection_status,
+                             stats=stats)
+    except Exception as e:
+        logger.error(f"대시보드 렌더링 실패: {e}")
+        return render_template('error.html', error=str(e)), 500
 
 # === 헬스 체크 및 상태 ===
 
