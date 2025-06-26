@@ -59,30 +59,38 @@ def dashboard():
         # 헬스 상태
         health = service.get_health()
         
+        # 안전한 변수 추출
+        total_ips = int(stats.get('total_ips', 0)) if stats.get('total_ips') is not None else 0
+        active_ips = int(stats.get('active_ips', total_ips)) if stats.get('active_ips') is not None else total_ips
+        
+        # Collection status 안전 처리
+        collection_data = collection_status.get('status', {}) if collection_status else {}
+        sources_data = collection_data.get('sources', {}) if collection_data else {}
+        
         return render_template('dashboard.html',
             # 통계 데이터
-            total_ips=stats.get('total_ips', 0),
-            active_ips=stats.get('active_ips', stats.get('total_ips', 0)),
-            stats=stats,
+            total_ips=total_ips,
+            active_ips=active_ips,
+            stats=stats or {},
             
             # 수집 상태
-            collection_status=collection_status,
-            collection_enabled=collection_status.get('status', {}).get('collection_enabled', False),
+            collection_status=collection_status or {},
+            collection_enabled=bool(collection_data.get('collection_enabled', False)),
             
             # 소스 정보
-            source_distribution=source_distribution,
-            active_sources=list(collection_status.get('status', {}).get('sources', {}).keys()),
+            source_distribution=source_distribution or {},
+            active_sources=list(sources_data.keys()),
             
-            # 시스템 상태
-            health=health,
+            # 시스템 상태 - JSON 직렬화 가능하도록 처리
+            health=None,  # health 객체는 복잡할 수 있으므로 None으로 설정
             system_status={
-                'version': health.version if health else '3.0.0',
-                'status': health.status if health else 'unknown',
-                'components': health.components if health else {}
+                'version': str(health.version) if health and hasattr(health, 'version') else '3.0.0',
+                'status': str(health.status) if health and hasattr(health, 'status') else 'unknown',
+                'components': dict(health.components) if health and hasattr(health, 'components') else {}
             },
             
             # 기타 정보
-            last_update=stats.get('last_updated', 'N/A')
+            last_update=str(stats.get('last_updated', 'N/A')) if stats else 'N/A'
         )
     except Exception as e:
         logger.error(f"대시보드 렌더링 실패: {e}")
