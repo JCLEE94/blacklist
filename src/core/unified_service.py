@@ -278,7 +278,7 @@ class UnifiedBlacklistService:
             
             if format_type == 'fortigate':
                 # FortiGate 형식으로 변환
-                active_ips, active_months = self.blacklist_manager.get_active_ips()
+                active_ips = self.blacklist_manager.get_active_ips()
                 result = {
                     "version": "1.0",
                     "name": "Blacklist IPs",
@@ -289,11 +289,11 @@ class UnifiedBlacklistService:
                     "generated_at": datetime.now().isoformat()
                 }
             else:
-                active_ips, active_months = self.blacklist_manager.get_active_ips()
+                active_ips = self.blacklist_manager.get_active_ips()
                 result = {
                     "ips": list(active_ips),
                     "count": len(active_ips),
-                    "months": active_months
+                    "timestamp": datetime.now().isoformat()
                 }
             
             return {
