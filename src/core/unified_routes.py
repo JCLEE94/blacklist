@@ -41,10 +41,9 @@ def api_dashboard():
     })
 
 @unified_bp.route('/dashboard', methods=['GET'])
-@public_endpoint(cache_ttl=60)
 def dashboard():
     """웹 대시보드 - 간단한 응답으로 임시 변경"""
-    # 임시로 간단한 HTML 응답 (템플릿 문제 해결 후 복원)
+    # @public_endpoint 데코레이터 제거하여 JSON serialization 문제 회피
     return """
     <!DOCTYPE html>
     <html lang="ko">
