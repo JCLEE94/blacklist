@@ -43,208 +43,42 @@ def api_dashboard():
 @unified_bp.route('/dashboard', methods=['GET'])
 @public_endpoint(cache_ttl=60)
 def dashboard():
-    """웹 대시보드"""
-    return """
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Blacklist Management Dashboard</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-        <style>
-            .stat-card {
-                background: white;
-                border-radius: 1rem;
-                padding: 1.5rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-                border: 1px solid rgba(0, 0, 0, 0.05);
-                transition: all 0.3s ease;
+    """웹 대시보드 - 원래 템플릿 렌더링으로 복원"""
+    try:
+        # 통계 데이터 가져오기
+        result = asyncio.run(service.get_statistics())
+        stats = result.get('statistics', {}) if result.get('success') else {}
+        
+        # 수집 상태 가져오기
+        collection_status = service.get_collection_status()
+        
+        # 소스별 분포 계산 (하드코딩 제거됨)
+        from .root_route import calculate_source_distribution
+        source_distribution = calculate_source_distribution(stats)
+        
+        # 헬스 상태
+        health = service.get_health()
+        
+        return render_template('dashboard.html',
+            stats=stats,
+            collection_status=collection_status,
+            source_distribution=source_distribution,
+            health=health,
+            system_status={
+                'version': health.version,
+                'status': health.status,
+                'components': health.components
             }
-            .stat-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            }
-            .stat-icon {
-                width: 48px;
-                height: 48px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-                margin-bottom: 1rem;
-            }
-            .stat-icon.primary { background: rgba(80, 70, 229, 0.1); color: #5046e5; }
-            .stat-icon.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-            .stat-icon.info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-            .stat-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-        </style>
-    </head>
-    <body class="bg-light">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-            <div class="container">
-                <a class="navbar-brand" href="/">
-                    <i class="bi bi-shield-check"></i> Blacklist Management
-                </a>
-                <span class="badge bg-success">LIVE</span>
-            </div>
-        </nav>
-
-        <div class="container mt-4">
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h1 class="h3 mb-1">🛡️ 시스템 대시보드</h1>
-                    <p class="text-muted">Nextrade Blacklist Management System</p>
-                </div>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="stat-icon primary">
-                            <i class="bi bi-database-fill"></i>
-                        </div>
-                        <h3 class="fw-bold mb-1" id="total-ips">로딩중...</h3>
-                        <p class="text-muted mb-0">전체 블랙리스트 IP</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="stat-icon success">
-                            <i class="bi bi-shield-check"></i>
-                        </div>
-                        <h3 class="fw-bold mb-1" id="system-status">로딩중...</h3>
-                        <p class="text-muted mb-0">시스템 상태</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="stat-icon info">
-                            <i class="bi bi-collection"></i>
-                        </div>
-                        <h3 class="fw-bold mb-1" id="collection-status">로딩중...</h3>
-                        <p class="text-muted mb-0">수집 상태</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="stat-icon warning">
-                            <i class="bi bi-sources"></i>
-                        </div>
-                        <h3 class="fw-bold mb-1" id="sources-count">로딩중...</h3>
-                        <p class="text-muted mb-0">활성 소스</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4">
-                <div class="col-lg-6">
-                    <div class="stat-card">
-                        <h5 class="fw-semibold mb-3">
-                            <i class="bi bi-pie-chart text-info"></i> 소스별 분포
-                        </h5>
-                        <div id="source-distribution">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="text-muted">REGTECH</span>
-                                <span class="fw-semibold" id="regtech-percent">계산중...</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="text-muted">SECUDIUM</span>
-                                <span class="fw-semibold" id="secudium-percent">계산중...</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted">Public Sources</span>
-                                <span class="fw-semibold" id="public-percent">계산중...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="stat-card">
-                        <h5 class="fw-semibold mb-3">
-                            <i class="bi bi-lightning text-warning"></i> 빠른 작업
-                        </h5>
-                        <div class="d-grid gap-2">
-                            <a href="/api/blacklist/active" class="btn btn-primary" target="_blank">
-                                <i class="bi bi-list"></i> 활성 IP 목록
-                            </a>
-                            <a href="/api/fortigate" class="btn btn-success" target="_blank">
-                                <i class="bi bi-gear"></i> FortiGate 형식
-                            </a>
-                            <a href="/api/collection/status" class="btn btn-info" target="_blank">
-                                <i class="bi bi-info-circle"></i> 수집 상태
-                            </a>
-                            <button class="btn btn-warning" onclick="refreshData()">
-                                <i class="bi bi-arrow-clockwise"></i> 새로고침
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script>
-            async function loadDashboardData() {
-                try {
-                    // Health check
-                    const healthResponse = await fetch('/health');
-                    const health = await healthResponse.json();
-                    document.getElementById('system-status').textContent = health.status || 'unknown';
-                    
-                    // Stats
-                    const statsResponse = await fetch('/api/stats');
-                    const stats = await statsResponse.json();
-                    document.getElementById('total-ips').textContent = stats.total_ips || '0';
-                    
-                    // Collection status
-                    const collectionResponse = await fetch('/api/collection/status');
-                    const collection = await collectionResponse.json();
-                    const enabled = collection.status?.collection_enabled;
-                    document.getElementById('collection-status').textContent = enabled ? '활성화' : '비활성화';
-                    
-                    const sources = collection.status?.sources || {};
-                    document.getElementById('sources-count').textContent = Object.keys(sources).length;
-                    
-                    // Source distribution
-                    const regtech = sources.regtech?.total_ips || 0;
-                    const secudium = sources.secudium?.total_ips || 0;
-                    const total = regtech + secudium;
-                    
-                    if (total > 0) {
-                        document.getElementById('regtech-percent').textContent = 
-                            Math.round((regtech / total) * 100) + '% (' + regtech + '개)';
-                        document.getElementById('secudium-percent').textContent = 
-                            Math.round((secudium / total) * 100) + '% (' + secudium + '개)';
-                        document.getElementById('public-percent').textContent = '0% (0개)';
-                    } else {
-                        document.getElementById('regtech-percent').textContent = '0% (0개)';
-                        document.getElementById('secudium-percent').textContent = '0% (0개)';
-                        document.getElementById('public-percent').textContent = '0% (0개)';
-                    }
-                    
-                } catch (error) {
-                    console.error('Dashboard data loading failed:', error);
-                    document.getElementById('total-ips').textContent = 'Error';
-                    document.getElementById('system-status').textContent = 'Error';
-                }
-            }
-            
-            function refreshData() {
-                location.reload();
-            }
-            
-            // Load data on page load
-            loadDashboardData();
-            
-            // Auto refresh every 30 seconds
-            setInterval(loadDashboardData, 30000);
-        </script>
-    </body>
-    </html>
-    """
+        )
+    except Exception as e:
+        logger.error(f"대시보드 렌더링 실패: {e}")
+        return render_template('dashboard.html',
+            stats={'total_ips': 0, 'sources': {}},
+            collection_status={'status': {'collection_enabled': False, 'sources': {}}},
+            source_distribution={'regtech': {'count': 0, 'percentage': 0}, 'secudium': {'count': 0, 'percentage': 0}, 'public': {'count': 0, 'percentage': 0}},
+            health=None,
+            system_status={'version': '3.0.0', 'status': 'error', 'components': {}}
+        )
 
 # === 헬스 체크 및 상태 ===
 
