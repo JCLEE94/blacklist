@@ -26,39 +26,8 @@ service = get_unified_service()
 @unified_bp.route('/api/docs', methods=['GET'])
 @public_endpoint(cache_ttl=300)
 def api_dashboard():
-    """API 대시보드"""
-    try:
-        # 시스템 상태 정보 수집
-        health = service.get_health()
-        collection_status = service.get_collection_status()
-        result = asyncio.run(service.get_statistics())
-        
-        stats = result.get('statistics', {}) if result.get('success') else {}
-        
-        # 소스별 분포 계산 (하드코딩 제거)
-        from .root_route import calculate_source_distribution
-        source_distribution = calculate_source_distribution(stats)
-        
-        return render_template('dashboard.html', 
-                             health=health,
-                             collection_status=collection_status,
-                             stats=stats,
-                             source_distribution=source_distribution)
-    except Exception as e:
-        logger.error(f"대시보드 렌더링 실패: {e}")
-        # 오류 시 JSON으로 상세 정보 반환
-        return jsonify({
-            'error': 'Dashboard template rendering failed',
-            'details': str(e),
-            'message': '대시보드 템플릿 렌더링 실패',
-            'fallback_endpoints': {
-                'system_status': '/health',
-                'collection_status': '/api/collection/status', 
-                'statistics': '/api/stats',
-                'active_ips': '/api/blacklist/active',
-                'fortigate': '/api/fortigate'
-            }
-        }), 500
+    """API 문서 - 대시보드로 리다이렉트"""
+    return redirect('/dashboard', code=302)
 
 @unified_bp.route('/dashboard', methods=['GET'])
 @public_endpoint(cache_ttl=60)
