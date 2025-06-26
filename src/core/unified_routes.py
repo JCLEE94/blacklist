@@ -35,10 +35,15 @@ def api_dashboard():
         
         stats = result.get('statistics', {}) if result.get('success') else {}
         
+        # 소스별 분포 계산 (하드코딩 제거)
+        from .root_route import calculate_source_distribution
+        source_distribution = calculate_source_distribution(stats)
+        
         return render_template('dashboard.html', 
                              health=health,
                              collection_status=collection_status,
-                             stats=stats)
+                             stats=stats,
+                             source_distribution=source_distribution)
     except Exception as e:
         logger.error(f"대시보드 렌더링 실패: {e}")
         return render_template('error.html', error=str(e)), 500
