@@ -224,15 +224,15 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         
         # V2 API routes already registered above - avoiding duplicate registration
         
-        # Register missing API routes
-        try:
-            from .missing_routes import register_missing_routes
-            register_missing_routes(app)
-            logger.info("Missing API routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register missing API routes: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+        # Register missing API routes - DISABLED due to route conflicts with unified_routes
+        # try:
+        #     from .missing_routes import register_missing_routes
+        #     register_missing_routes(app)
+        #     logger.info("Missing API routes registered successfully")
+        # except Exception as e:
+        #     logger.error(f"Failed to register missing API routes: {e}")
+        #     import traceback
+        #     logger.error(traceback.format_exc())
 
         # Register root routes - DISABLED due to route conflicts with unified_routes
         # try:
