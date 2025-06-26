@@ -23,32 +23,8 @@ service = get_unified_service()
 
 # === 웹 인터페이스 ===
 
-@unified_bp.route('/', methods=['GET'])
-def index():
-    """홈페이지 - 대시보드로 리다이렉트"""
-    from flask import redirect
-    return redirect('/dashboard')
-
-@unified_bp.route('/api/docs', methods=['GET'])
-@public_endpoint(cache_ttl=300)
-def api_dashboard():
-    """API 문서"""
-    return jsonify({
-        'message': 'API Documentation',
-        'dashboard_url': '/dashboard',
-        'note': 'Visit /dashboard for the web interface',
-        'api_endpoints': {
-            'health': '/health',
-            'stats': '/api/stats', 
-            'blacklist': '/api/blacklist/active',
-            'fortigate': '/api/fortigate',
-            'collection': '/api/collection/status'
-        }
-    })
-
-@unified_bp.route('/dashboard', methods=['GET'])
-def dashboard():
-    """완전 기능 대시보드 - 템플릿 렌더링으로 복원"""
+def _get_dashboard_data():
+    """대시보드 데이터 준비 (공통 함수)"""
     from datetime import datetime
     
     # 실제 통계 데이터 수집
@@ -71,8 +47,34 @@ def dashboard():
             'public': {'count': stats.get('public_count', 0), 'percentage': 25}
         }
     }
-    
-    return render_template('dashboard.html', **template_data)
+    return template_data
+
+@unified_bp.route('/', methods=['GET'])
+def index():
+    """메인페이지 - 대시보드"""
+    return render_template('dashboard.html', **_get_dashboard_data())
+
+@unified_bp.route('/dashboard', methods=['GET'])
+def dashboard():
+    """대시보드 (메인페이지와 동일)"""
+    return render_template('dashboard.html', **_get_dashboard_data())
+
+@unified_bp.route('/api/docs', methods=['GET'])
+@public_endpoint(cache_ttl=300)
+def api_dashboard():
+    """API 문서"""
+    return jsonify({
+        'message': 'API Documentation',
+        'dashboard_url': '/',
+        'note': 'Visit / or /dashboard for the web interface',
+        'api_endpoints': {
+            'health': '/health',
+            'stats': '/api/stats', 
+            'blacklist': '/api/blacklist/active',
+            'fortigate': '/api/fortigate',
+            'collection': '/api/collection/status'
+        }
+    })
 
 # === 핵심 API 엔드포인트 ===
 
