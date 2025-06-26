@@ -234,25 +234,25 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             import traceback
             logger.error(traceback.format_exc())
 
-        # Register root routes
-        try:
-            from .root_route import root_bp
-            app.register_blueprint(root_bp)
-            logger.info("Root routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register root routes: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+        # Register root routes - DISABLED due to route conflicts with unified_routes
+        # try:
+        #     from .root_route import root_bp
+        #     app.register_blueprint(root_bp)
+        #     logger.info("Root routes registered successfully")
+        # except Exception as e:
+        #     logger.error(f"Failed to register root routes: {e}")
+        #     import traceback
+        #     logger.error(traceback.format_exc())
             
-        # Register web UI blueprint
-        try:
-            from src.web import web_bp
-            app.register_blueprint(web_bp)
-            logger.info("Web UI blueprint registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register web blueprint: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+        # Register web UI blueprint - DISABLED due to route conflicts with unified_routes
+        # try:
+        #     from src.web import web_bp
+        #     app.register_blueprint(web_bp)
+        #     logger.info("Web UI blueprint registered successfully")
+        # except Exception as e:
+        #     logger.error(f"Failed to register web blueprint: {e}")
+        #     import traceback
+        #     logger.error(traceback.format_exc())
         
         # REGTECH 분석 메뉴 제거됨 (사용자 요청)
         

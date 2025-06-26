@@ -509,6 +509,10 @@ def api_endpoint(
         decorated = unified_rate_limit(limit=rate_limit_val)(decorated)
         decorated = unified_cache(ttl=cache_ttl)(decorated)
         
+        # Preserve the original function's metadata
+        import functools
+        decorated = functools.wraps(func)(decorated)
+        
         return decorated
     return api_endpoint_decorator
 
@@ -529,6 +533,10 @@ def admin_endpoint(
         decorated = unified_rate_limit(limit=rate_limit_val)(decorated)
         decorated = unified_cache(ttl=cache_ttl, per_user=True)(decorated)
         
+        # Preserve the original function's metadata
+        import functools
+        decorated = functools.wraps(func)(decorated)
+        
         return decorated
     return admin_endpoint_decorator
 
@@ -547,6 +555,10 @@ def public_endpoint(
         decorated = unified_monitoring(track_response_size=track_size)(decorated)
         decorated = unified_rate_limit(limit=rate_limit_val)(decorated)
         decorated = unified_cache(ttl=cache_ttl)(decorated)
+        
+        # Preserve the original function's metadata
+        import functools
+        decorated = functools.wraps(func)(decorated)
         
         return decorated
     return public_endpoint_decorator

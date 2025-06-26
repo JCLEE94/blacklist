@@ -32,7 +32,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -r requirements.txt
 
 # Initialize database (SQLite with auto-migration)
-python3 setup_database.py
+# Note: Database is auto-initialized on first run, but you can manually set it up:
+python3 -c "from src.core.database import DatabaseManager; db = DatabaseManager(); db.init_database()"
 
 # Development server (entry point with fallback chain)
 python3 main.py                    # Preferred: app_compact → minimal_app → fallback
@@ -88,6 +89,10 @@ pytest -v --cov=src                         # With coverage
 
 # Debugging and diagnostics
 python3 scripts/debug_regtech_advanced.py     # REGTECH auth analysis
+python3 scripts/integration_test_comprehensive.py  # Full integration test
+
+# Run a single test
+pytest tests/test_blacklist_unified.py::TestBlacklistManager::test_add_ip -v
 ```
 
 ## Core Architecture
@@ -220,6 +225,33 @@ Push to main → GitHub Actions → Build & Push to Registry → Watchtower Auto
 - `GET /api/docker/containers` - List all Docker containers
 - `GET /api/docker/container/{name}/logs` - Get container logs (streaming support)
 - `GET /docker-logs` - Web interface for Docker logs monitoring
+
+## Code Style and Patterns
+
+### Naming Conventions
+- **Flask Routes**: Use blueprint pattern with route prefixes (`/api`, `/api/v2`)
+- **Service Classes**: Suffix with `Manager`, `Collector`, or `Service`
+- **Database Models**: Located in `src/core/models.py`, use SQLAlchemy declarative base
+- **Error Handling**: Custom exceptions in `src/core/exceptions.py`
+
+### Common Patterns
+```python
+# Service access via container
+from src/core.container import get_container
+container = get_container()
+service = container.get('service_name')
+
+# Route decorators with rate limiting
+from src.utils.unified_decorators import with_rate_limit
+@with_rate_limit("10 per minute")
+def api_endpoint():
+    pass
+
+# Cache usage pattern
+from src.utils.advanced_cache import get_cache
+cache = get_cache()
+result = cache.get_or_set('key', expensive_function, ttl=300)
+```
 
 ## Critical Implementation Notes
 
@@ -355,6 +387,27 @@ docker logs blacklist -f
 # - "Cache is None" (cache initialization issue)
 ```
 
+### Testing Utilities
+
+**Available Test Scripts**:
+```bash
+# Comprehensive integration test
+python3 scripts/integration_test_comprehensive.py
+
+# REGTECH authentication debugging
+python3 scripts/debug_regtech_advanced.py
+
+# Performance testing (if enabled)
+python3 scripts/performance_test.py
+
+# Docker deployment test
+./scripts/test_docker_deployment.sh
+```
+
+**Mock Data for Testing**:
+- Test IPs are available in `data/test_ips.txt`
+- Mock responses in `tests/fixtures/`
+
 ### Manual Deployment (Fallback)
 If CI/CD fails, use manual deployment:
 ```bash
@@ -369,3 +422,38 @@ docker-compose -f deployment/docker-compose.yml up -d
 # Or use the manual deploy script
 ./manual-deploy.sh
 ```
+
+## Quick Reference
+
+### Entry Points
+- **Primary**: `main.py` → Loads `app_compact.py` with full features
+- **Fallback**: `src/core/minimal_app.py` → Essential features only
+- **Import**: `from main import application` for WSGI servers
+
+### Service Names in Container
+- `blacklist_manager` - Core IP management
+- `cache_manager` - Redis/memory cache
+- `collection_manager` - Data collection orchestrator
+- `regtech_collector` - REGTECH source
+- `secudium_collector` - SECUDIUM source
+- `db_manager` - Database operations
+
+### Common File Locations
+- **Configuration**: `src/config/` (base.py, development.py, production.py)
+- **Routes**: `src/core/*_routes.py` files
+- **Templates**: `templates/` (Jinja2 HTML)
+- **Static Files**: `static/` (CSS, JS)
+- **Database Models**: `src/core/models.py`
+- **Container Setup**: `src/core/container.py`
+
+### Environment-Specific Notes
+- **Development**: Uses SQLite, runs on port 8541
+- **Production**: Can use PostgreSQL, runs on port 2541
+- **Docker**: Redis available at `redis://blacklist-redis:6379/0`
+- **Timezone**: All times in KST (Asia/Seoul)
+
+### Debugging Tips
+- Enable debug mode: `python3 main.py --debug`
+- Check container health: `curl http://localhost:2541/health`
+- View real-time logs: `docker logs blacklist -f --tail 100`
+- Test specific source: `curl -X POST http://localhost:8541/api/collection/regtech/trigger`
