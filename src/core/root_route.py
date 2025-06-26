@@ -5,8 +5,8 @@ root_bp = Blueprint('root', __name__)
 
 @root_bp.route('/')
 def index():
-    """루트 경로 - API 문서로 리다이렉트"""
-    return redirect('/api/docs', code=302)
+    """루트 경로 - API 엔드포인트 목록으로 리다이렉트"""
+    return redirect('/api', code=302)
 
 @root_bp.route('/api')
 def api_root():
