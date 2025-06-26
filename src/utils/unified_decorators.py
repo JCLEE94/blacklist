@@ -70,9 +70,9 @@ def unified_cache(
             stacklevel=2
         )
         ttl = timeout
-    def decorator(func):
+    def cache_decorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def cache_wrapper(*args, **kwargs):
             # Skip caching if condition is met
             if cache_unless and cache_unless():
                 return func(*args, **kwargs)
@@ -131,8 +131,8 @@ def unified_cache(
                 logger.debug(f"Cache not available, skipping cache set for key: {cache_key}")
             
             return result
-        return wrapper
-    return decorator
+        return cache_wrapper
+    return cache_decorator
 
 
 def unified_rate_limit(
@@ -153,9 +153,9 @@ def unified_rate_limit(
         exempt_when: Function to determine if rate limiting should be skipped
         use_user_id: Use authenticated user ID if available
     """
-    def decorator(func):
+    def rate_limit_decorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def rate_limit_wrapper(*args, **kwargs):
             # Skip rate limiting if exemption condition is met
             if exempt_when and exempt_when():
                 return func(*args, **kwargs)
@@ -219,8 +219,8 @@ def unified_rate_limit(
                 result.headers['X-RateLimit-Remaining'] = str(g._rate_limit_info['remaining'])
             
             return result
-        return wrapper
-    return decorator
+        return rate_limit_wrapper
+    return rate_limit_decorator
 
 
 def unified_auth(
@@ -243,9 +243,9 @@ def unified_auth(
         require_admin: Whether to require admin privileges
         ip_whitelist: List of allowed IP addresses
     """
-    def decorator(func):
+    def auth_decorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def auth_wrapper(*args, **kwargs):
             # Check IP whitelist if specified
             if ip_whitelist:
                 client_ip = request.remote_addr
@@ -333,8 +333,8 @@ def unified_auth(
                 g.is_admin = user_context.get('is_admin', False)
             
             return func(*args, **kwargs)
-        return wrapper
-    return decorator
+        return auth_wrapper
+    return auth_decorator
 
 
 def unified_monitoring(
@@ -347,9 +347,9 @@ def unified_monitoring(
     Unified monitoring decorator
     Consolidates all monitoring and metrics collection
     """
-    def decorator(func):
+    def monitoring_decorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def monitoring_wrapper(*args, **kwargs):
             start_time = time.time()
             error_occurred = False
             response_size = 0
@@ -419,8 +419,8 @@ def unified_monitoring(
                     except Exception as e:
                         logger.warning(f"Metrics recording error: {e}")
         
-        return wrapper
-    return decorator
+        return monitoring_wrapper
+    return monitoring_decorator
 
 
 def unified_validation(
@@ -433,9 +433,9 @@ def unified_validation(
     Unified validation decorator
     Consolidates input validation logic
     """
-    def decorator(func):
+    def validation_decorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def validation_wrapper(*args, **kwargs):
             errors = []
             
             # Validate JSON body
@@ -481,8 +481,8 @@ def unified_validation(
                 }), 400
             
             return func(*args, **kwargs)
-        return wrapper
-    return decorator
+        return validation_wrapper
+    return validation_decorator
 
 
 # Convenience decorators for common combinations
@@ -496,7 +496,7 @@ def api_endpoint(
     Convenience decorator for standard API endpoints
     Combines caching, rate limiting, auth, and monitoring
     """
-    def decorator(func):
+    def api_endpoint_decorator(func):
         # Apply decorators in reverse order (they wrap from inside out)
         decorated = func
         
@@ -510,7 +510,7 @@ def api_endpoint(
         decorated = unified_cache(ttl=cache_ttl)(decorated)
         
         return decorated
-    return decorator
+    return api_endpoint_decorator
 
 
 def admin_endpoint(
@@ -522,7 +522,7 @@ def admin_endpoint(
     Convenience decorator for admin endpoints
     Includes authentication with role checking
     """
-    def decorator(func):
+    def admin_endpoint_decorator(func):
         decorated = func
         decorated = unified_monitoring()(decorated)
         decorated = unified_auth(required=True, roles=required_roles or ['admin'])(decorated)
@@ -530,7 +530,7 @@ def admin_endpoint(
         decorated = unified_cache(ttl=cache_ttl, per_user=True)(decorated)
         
         return decorated
-    return decorator
+    return admin_endpoint_decorator
 
 
 def public_endpoint(
@@ -542,14 +542,14 @@ def public_endpoint(
     Convenience decorator for public endpoints
     Optimized for high-traffic public APIs
     """
-    def decorator(func):
+    def public_endpoint_decorator(func):
         decorated = func
         decorated = unified_monitoring(track_response_size=track_size)(decorated)
         decorated = unified_rate_limit(limit=rate_limit_val)(decorated)
         decorated = unified_cache(ttl=cache_ttl)(decorated)
         
         return decorated
-    return decorator
+    return public_endpoint_decorator
 
 
 # Initialize function for the registry
