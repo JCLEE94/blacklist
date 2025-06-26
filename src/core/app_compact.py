@@ -181,59 +181,10 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         
         # Enhanced routes disabled (module not found)
         
-        # Register Simple V2 API routes (conflict-free version)
-        try:
-            from .v2_routes_simple import register_simple_v2_routes
-            blacklist_manager = container.resolve('blacklist_manager')
-            cache_manager = container.resolve('cache')
-            register_simple_v2_routes(app, blacklist_manager, cache_manager)
-            logger.info("Simple V2 API routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register Simple V2 API routes: {e}")
+        # ALL ROUTE REGISTRATIONS DISABLED FOR DEBUGGING
+        # Will re-enable once Flask conflicts are resolved
         
-        # Register simple API routes (fallback)
-        try:
-            from .simple_api import register_simple_api
-            register_simple_api(app)
-            logger.info("Simple API routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register simple API routes: {e}")
-            
-        # Register simple routes (fallback)
-        try:
-            from .simple_routes import register_simple_routes
-            register_simple_routes(app)
-            logger.info("Simple routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register simple routes: {e}")
-        
-        # Register simple collection routes
-        try:
-            from .collection_simple import register_collection_simple
-            register_collection_simple(app)
-            logger.info("Simple collection routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register simple collection routes: {e}")
-        
-        # Register collection management routes
-        try:
-            from .collection_routes import register_collection_routes
-            register_collection_routes(app)
-            logger.info("Collection routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register collection routes: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-        
-        # Register collection control routes (ON/OFF functionality)
-        try:
-            from .collection_control_routes import register_collection_control_routes
-            register_collection_control_routes(app)
-            logger.info("Collection Control routes registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register Collection Control routes: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+        logger.info("Running in minimal mode - only basic routes active")
         
         # V2 API routes already registered above - avoiding duplicate registration
         
