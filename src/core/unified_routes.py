@@ -383,6 +383,179 @@ def trigger_secudium_collection():
         logger.error(f"SECUDIUM collection trigger error: {e}")
         return handle_exception(e)
 
+# === 시스템 관리 API ===
+
+@unified_bp.route('/api/system/docker/logs', methods=['GET'])
+@api_endpoint
+def get_docker_logs():
+    """Docker 컨테이너 로그 조회"""
+    import subprocess
+    import os
+    
+    try:
+        # 쿼리 파라미터
+        container_name = request.args.get('container', 'blacklist-app-1')
+        lines = min(request.args.get('lines', 100, type=int), 1000)  # 최대 1000줄
+        follow = request.args.get('follow', 'false').lower() == 'true'
+        since = request.args.get('since', '')  # 예: '10m', '1h', '2023-01-01'
+        
+        # Docker 명령어 구성
+        cmd = ['docker', 'logs']
+        
+        if since:
+            cmd.extend(['--since', since])
+        
+        if follow:
+            cmd.append('-f')
+        
+        cmd.extend(['-n', str(lines), container_name])
+        
+        # 보안: 컨테이너 이름 검증
+        allowed_containers = [
+            'blacklist-app-1', 'blacklist-redis', 'blacklist-unified',
+            'blacklist-db', 'blacklist-nginx'
+        ]
+        
+        if container_name not in allowed_containers:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid container name',
+                'allowed_containers': allowed_containers
+            }), 400
+        
+        # Docker 명령어 실행
+        if follow:
+            # 실시간 로그의 경우 스트리밍 응답
+            def generate_logs():
+                try:
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        universal_newlines=True,
+                        bufsize=1
+                    )
+                    
+                    for line in iter(process.stdout.readline, ''):
+                        yield f"data: {line}\n\n"
+                    
+                    process.stdout.close()
+                    process.wait()
+                except Exception as e:
+                    yield f"data: Error: {str(e)}\n\n"
+            
+            from flask import Response
+            return Response(
+                generate_logs(),
+                mimetype='text/plain',
+                headers={
+                    'Cache-Control': 'no-cache',
+                    'X-Container-Name': container_name
+                }
+            )
+        else:
+            # 일반 로그 조회
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                return jsonify({
+                    'success': False,
+                    'error': f'Docker logs failed: {result.stderr}',
+                    'container': container_name
+                }), 500
+            
+            # 로그 라인을 배열로 변환
+            log_lines = result.stdout.strip().split('\n') if result.stdout.strip() else []
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'container': container_name,
+                    'lines_count': len(log_lines),
+                    'logs': log_lines,
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            })
+    
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'error': 'Docker logs command timed out',
+            'container': container_name
+        }), 504
+    except FileNotFoundError:
+        return jsonify({
+            'success': False,
+            'error': 'Docker command not found. Is Docker installed?'
+        }), 503
+    except Exception as e:
+        logger.error(f"Docker logs error: {e}")
+        return handle_exception(e)
+
+@unified_bp.route('/api/system/docker/containers', methods=['GET'])
+@api_endpoint
+def list_docker_containers():
+    """Docker 컨테이너 목록 조회"""
+    import subprocess
+    
+    try:
+        # Docker ps 명령어 실행
+        result = subprocess.run(
+            ['docker', 'ps', '--format', 'table {{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode != 0:
+            return jsonify({
+                'success': False,
+                'error': f'Docker ps failed: {result.stderr}'
+            }), 500
+        
+        # 결과 파싱
+        lines = result.stdout.strip().split('\n')
+        containers = []
+        
+        if len(lines) > 1:  # 헤더 제외
+            for line in lines[1:]:
+                parts = line.split('\t')
+                if len(parts) >= 4:
+                    containers.append({
+                        'name': parts[0],
+                        'status': parts[1],
+                        'ports': parts[2],
+                        'image': parts[3]
+                    })
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'containers': containers,
+                'count': len(containers),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        })
+    
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'error': 'Docker ps command timed out'
+        }), 504
+    except FileNotFoundError:
+        return jsonify({
+            'success': False,
+            'error': 'Docker command not found. Is Docker installed?'
+        }), 503
+    except Exception as e:
+        logger.error(f"Docker containers list error: {e}")
+        return handle_exception(e)
+
 # === 향상된 API (v2) ===
 
 @unified_bp.route('/api/v2/blacklist/enhanced', methods=['GET'])
