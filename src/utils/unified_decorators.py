@@ -511,8 +511,12 @@ def api_endpoint(
         decorated = unified_rate_limit(limit=rate_limit_val)(decorated)
         decorated = unified_cache(ttl=cache_ttl)(decorated)
         
-        # Preserve the original function's metadata (apply to final result)
-        return functools.wraps(func)(decorated)
+        # Preserve the original function's metadata with unique wrapper name
+        @functools.wraps(func)
+        def api_endpoint_wrapper(*args, **kwargs):
+            return decorated(*args, **kwargs)
+        
+        return api_endpoint_wrapper
         
     return api_endpoint_decorator
 
@@ -535,8 +539,12 @@ def admin_endpoint(
         decorated = unified_rate_limit(limit=rate_limit_val)(decorated)
         decorated = unified_cache(ttl=cache_ttl, per_user=True)(decorated)
         
-        # Preserve the original function's metadata (apply to final result)
-        return functools.wraps(func)(decorated)
+        # Preserve the original function's metadata with unique wrapper name
+        @functools.wraps(func)
+        def admin_endpoint_wrapper(*args, **kwargs):
+            return decorated(*args, **kwargs)
+        
+        return admin_endpoint_wrapper
         
     return admin_endpoint_decorator
 
@@ -558,8 +566,12 @@ def public_endpoint(
         decorated = unified_rate_limit(limit=rate_limit_val)(decorated)
         decorated = unified_cache(ttl=cache_ttl)(decorated)
         
-        # Preserve the original function's metadata (apply to final result)
-        return functools.wraps(func)(decorated)
+        # Preserve the original function's metadata with unique wrapper name
+        @functools.wraps(func)
+        def public_endpoint_wrapper(*args, **kwargs):
+            return decorated(*args, **kwargs)
+        
+        return public_endpoint_wrapper
         
     return public_endpoint_decorator
 
