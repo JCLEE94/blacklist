@@ -321,8 +321,16 @@ class UnifiedBlacklistService:
                     'timestamp': datetime.now().isoformat()
                 }
             
-            # load_stats() 메서드 사용
-            stats = self.blacklist_manager.load_stats()
+            # Get system health which includes stats
+            health_data = self.blacklist_manager.get_system_health()
+            
+            # Extract stats from health data
+            stats = {
+                'total_ips': len(self.blacklist_manager.get_active_ips()),
+                'sources': health_data.get('sources', {}),
+                'status': health_data.get('status', 'unknown'),
+                'last_update': health_data.get('last_update', None)
+            }
             
             # 서비스 상태 추가
             stats['service'] = {
