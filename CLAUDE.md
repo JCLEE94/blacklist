@@ -4,18 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Blacklist Management System** - Enterprise threat intelligence platform with multi-source data collection, automated processing, and FortiGate External Connector integration. Features dependency injection architecture, containerized deployment, and comprehensive API endpoints.
+**Blacklist Management System** - Enterprise threat intelligence platform with multi-source data collection, automated processing, and FortiGate External Connector integration. Features dependency injection architecture, containerized deployment with GitHub Actions CI/CD and Watchtower auto-deployment.
 
 **Key Architecture Principles:**
 - **Dependency Injection**: Central service container (`src/core/container.py`) manages all service lifecycles
 - **Multi-layered Entry Points**: `main.py` → `src/core/app_compact.py` → fallback chain for maximum compatibility
 - **Plugin-based IP Sources**: Extensible source system in `src/core/ip_sources/`
-- **Container-First**: Docker/Podman deployment with automated CI/CD to `192.168.50.215:1111`
+- **Container-First**: Docker/Podman deployment with automated CI/CD
 
 **Production Infrastructure:**
-- Docker Registry: `192.168.50.215:1234`
-- Production Server: `docker@192.168.50.215:1111`
+- Docker Registry: `registry.jclee.me`
+- Production Server: `192.168.50.215` (port 1111 for SSH, port 2541 for app)
 - Default Ports: DEV=8541, PROD=2541
+- Auto-deployment: Watchtower monitors registry for updates
 - Timezone: Asia/Seoul (KST)
 
 **Data Sources:**
@@ -39,24 +40,23 @@ python3 main.py --port 8080        # Custom port
 python3 main.py --debug            # Debug mode
 
 # Production deployment
-./deploy.sh                        # Auto-detect best deployment method
 gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application
 ```
 
 ### Container Operations
 ```bash
 # Build and deploy to registry
-./deploy.sh                        # Clean build, push to 192.168.50.215:1234, deploy
+./manual-deploy.sh                 # Build, push to registry, trigger Watchtower
 
 # Local container development
-docker-compose -f docker/docker-compose.yml up -d --build
+docker-compose -f deployment/docker-compose.yml up -d --build
 
 # Container logs and debugging
-docker logs blacklist-app-1 -f
-docker exec -it blacklist-app-1 /bin/bash
+docker logs blacklist -f
+docker exec -it blacklist /bin/bash
 
 # Force rebuild (no cache)
-docker-compose -f docker/docker-compose.yml build --no-cache
+docker-compose -f deployment/docker-compose.yml build --no-cache
 ```
 
 ### Data Collection Management
@@ -176,9 +176,24 @@ class BaseIPSource(ABC):
 - Connection pooling for database operations
 - Rate limiting per endpoint
 
+### CI/CD Pipeline
+
+**GitHub Actions Workflow** (`.github/workflows/build-deploy.yml`):
+1. **Parallel Quality Checks**: Lint, security scan, tests
+2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me`
+3. **Watchtower Deployment**: Auto-detects and deploys new images
+4. **Verification**: Health checks, smoke tests, performance monitoring
+5. **Automatic Rollback**: On failure, reverts to previous version
+
+**Deployment Flow**:
+```
+Push to main → GitHub Actions → Build & Push to Registry → Watchtower Auto-Deploy → Verify → Rollback on Failure
+```
+
 ## API Endpoints Reference
 
 ### Core Blacklist Endpoints
+- `GET /` - Web dashboard interface
 - `GET /health` - System health check with detailed diagnostics
 - `GET /api/blacklist/active` - Active IPs in plain text format
 - `GET /api/fortigate` - FortiGate External Connector JSON format
@@ -200,6 +215,11 @@ class BaseIPSource(ABC):
 - `GET /api/search/{ip}` - Single IP lookup with history
 - `POST /api/search` - Batch IP search (JSON payload)
 - `GET /api/stats/detection-trends` - Detection trends over time
+
+### Docker Monitoring
+- `GET /api/docker/containers` - List all Docker containers
+- `GET /api/docker/container/{name}/logs` - Get container logs (streaming support)
+- `GET /docker-logs` - Web interface for Docker logs monitoring
 
 ## Critical Implementation Notes
 
@@ -230,6 +250,12 @@ REDIS_URL=redis://localhost:6379/0  # Optional, falls back to memory cache
 # Security
 JWT_SECRET_KEY=jwt-secret    # JWT token signing
 API_SECRET_KEY=api-secret    # API key generation
+
+# Docker Registry (for CI/CD)
+DOCKER_USERNAME=your-username
+DOCKER_PASSWORD=your-password
+REGISTRY_USERNAME=registry-username  # For private registry
+REGISTRY_PASSWORD=registry-password
 ```
 
 ### Date Parameters for REGTECH
@@ -239,6 +265,12 @@ REGTECH collector requires startDate and endDate parameters:
 collector.collect_from_web(start_date='20250601', end_date='20250620')
 ```
 
+### Database Management
+- SQLite for development/small deployments
+- Auto-migration support via `setup_database.py`
+- 3-month data retention with automatic cleanup
+- Located at `/app/instance/blacklist.db` in containers
+
 ## Troubleshooting
 
 ### Common Issues and Solutions
@@ -246,9 +278,9 @@ collector.collect_from_web(start_date='20250601', end_date='20250620')
 **Container Build Issues**:
 ```bash
 # Force clean rebuild
-docker-compose -f docker/docker-compose.yml down
-docker-compose -f docker/docker-compose.yml build --no-cache
-docker-compose -f docker/docker-compose.yml up -d
+docker-compose -f deployment/docker-compose.yml down
+docker-compose -f deployment/docker-compose.yml build --no-cache
+docker-compose -f deployment/docker-compose.yml up -d
 ```
 
 **REGTECH Authentication Failures**:
@@ -274,10 +306,10 @@ docker logs blacklist-redis -f
 **Database Initialization**:
 ```bash
 # Manual database setup in container
-docker exec blacklist-app-1 python3 setup_database.py
+docker exec blacklist python3 setup_database.py
 
 # Check database status
-docker exec blacklist-app-1 python3 -c "
+docker exec blacklist python3 -c "
 import sqlite3
 conn = sqlite3.connect('/app/instance/blacklist.db')
 cursor = conn.cursor()
@@ -285,6 +317,18 @@ cursor.execute('SELECT COUNT(*) FROM blacklist_ip')
 print(f'Total IPs: {cursor.fetchone()[0]}')
 conn.close()
 "
+```
+
+**Watchtower Auto-Deployment Issues**:
+```bash
+# Check Watchtower logs
+docker logs watchtower -f
+
+# Manually trigger update check
+docker exec watchtower sh -c 'kill -HUP 1'
+
+# Verify Watchtower labels on container
+docker inspect blacklist | grep -A 5 "Labels"
 ```
 
 ### Integration Testing
@@ -303,7 +347,7 @@ Expected results:
 ### Log Analysis
 ```bash
 # Application logs
-docker logs blacklist-app-1 -f
+docker logs blacklist -f
 
 # Key log patterns to watch for:
 # - "로그인 후 다시 로그인 페이지로 리다이렉트됨" (REGTECH auth issue)
@@ -311,3 +355,17 @@ docker logs blacklist-app-1 -f
 # - "Cache is None" (cache initialization issue)
 ```
 
+### Manual Deployment (Fallback)
+If CI/CD fails, use manual deployment:
+```bash
+# Build and push manually
+docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
+docker push registry.jclee.me/blacklist:latest
+
+# On production server
+docker pull registry.jclee.me/blacklist:latest
+docker-compose -f deployment/docker-compose.yml up -d
+
+# Or use the manual deploy script
+./manual-deploy.sh
+```
