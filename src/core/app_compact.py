@@ -162,9 +162,9 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             metrics=container.resolve('metrics_collector')
         )
         
-        # Register API routes through container
-        api_routes = container.resolve('api_routes')
-        api_routes.register_routes(app)
+        # Register unified routes blueprint directly
+        from .unified_routes import unified_bp
+        app.register_blueprint(unified_bp)
         
         # Enhanced routes disabled (module not found)
         

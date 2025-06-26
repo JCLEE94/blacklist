@@ -2,6 +2,7 @@
 Flask==2.3.3
 Flask-CORS==6.0.1
 Flask-Limiter==3.11.0
+Flask-Compress==1.13
 
 # Database
 SQLAlchemy==2.0.41

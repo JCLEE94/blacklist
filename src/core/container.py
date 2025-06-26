@@ -187,7 +187,7 @@ class BlacklistContainer(ServiceContainer):
         from src.utils.monitoring import get_metrics_collector, get_health_checker
         from .database import DatabaseManager
         from .blacklist_unified import UnifiedBlacklistManager
-        from .routes_unified import UnifiedAPIRoutes
+        from .unified_routes import unified_bp
         
         # Configuration
         self.register_factory('config', lambda: get_config())
@@ -242,11 +242,7 @@ class BlacklistContainer(ServiceContainer):
             logger.warning(f"Collection Manager registration failed: {e}")
         
         # API Routes
-        self.register(
-            'api_routes',
-            UnifiedAPIRoutes,
-            dependencies={'blacklist_manager': 'blacklist_manager'}
-        )
+        # Blueprint registration is handled in app creation, not container
     
     def configure_flask_app(self, app):
         """Flask 앱에 서비스 연결"""
