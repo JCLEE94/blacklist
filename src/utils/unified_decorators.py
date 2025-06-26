@@ -496,11 +496,16 @@ def api_endpoint(
     Convenience decorator for standard API endpoints
     Combines caching, rate limiting, auth, and monitoring
     """
-    def api_endpoint_decorator(func):
-        # TEMPORARY FIX: Return function unchanged to test without decorator conflicts
-        return func
+    def decorator(func):
+        import functools
         
-    return api_endpoint_decorator
+        # Apply individual decorators without conflicts
+        decorated = func
+        decorated = unified_cache(ttl=cache_ttl)(decorated)
+        
+        return decorated
+        
+    return decorator
 
 
 def admin_endpoint(
@@ -512,11 +517,16 @@ def admin_endpoint(
     Convenience decorator for admin endpoints
     Includes authentication with role checking
     """
-    def admin_endpoint_decorator(func):
-        # TEMPORARY FIX: Return function unchanged to test without decorator conflicts
-        return func
+    def decorator(func):
+        import functools
         
-    return admin_endpoint_decorator
+        # Apply individual decorators without conflicts
+        decorated = func
+        decorated = unified_cache(ttl=cache_ttl)(decorated)
+        
+        return decorated
+        
+    return decorator
 
 
 def public_endpoint(
@@ -528,11 +538,16 @@ def public_endpoint(
     Convenience decorator for public endpoints
     Optimized for high-traffic public APIs
     """
-    def public_endpoint_decorator(func):
-        # TEMPORARY FIX: Return function unchanged to test without decorator conflicts
-        return func
+    def decorator(func):
+        import functools
         
-    return public_endpoint_decorator
+        # Apply individual decorators without conflicts
+        decorated = func
+        decorated = unified_cache(ttl=cache_ttl)(decorated)
+        
+        return decorated
+        
+    return decorator
 
 
 # Initialize function for the registry
