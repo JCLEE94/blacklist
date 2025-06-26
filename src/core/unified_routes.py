@@ -26,8 +26,19 @@ service = get_unified_service()
 @unified_bp.route('/api/docs', methods=['GET'])
 @public_endpoint(cache_ttl=300)
 def api_dashboard():
-    """API 문서 - 대시보드로 리다이렉트"""
-    return redirect('/dashboard', code=302)
+    """API 문서"""
+    return jsonify({
+        'message': 'API Documentation',
+        'dashboard_url': '/dashboard',
+        'note': 'Visit /dashboard for the web interface',
+        'api_endpoints': {
+            'health': '/health',
+            'stats': '/api/stats', 
+            'blacklist': '/api/blacklist/active',
+            'fortigate': '/api/fortigate',
+            'collection': '/api/collection/status'
+        }
+    })
 
 @unified_bp.route('/dashboard', methods=['GET'])
 @public_endpoint(cache_ttl=60)

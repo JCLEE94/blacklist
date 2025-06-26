@@ -8,8 +8,21 @@ logger = logging.getLogger(__name__)
 
 @root_bp.route('/')
 def index():
-    """루트 경로 - 대시보드로 리다이렉트"""
-    return redirect('/dashboard', code=302)
+    """루트 경로 - 시스템 상태"""
+    return jsonify({
+        "message": "🛡️ Blacklist Management System",
+        "version": "3.0.0", 
+        "status": "running",
+        "dashboard": "/dashboard",
+        "endpoints": {
+            "dashboard": "/dashboard",
+            "health": "/health",
+            "stats": "/api/stats",
+            "blacklist": "/api/blacklist/active",
+            "fortigate": "/api/fortigate",
+            "collection": "/api/collection/status"
+        }
+    })
 
 def calculate_source_distribution(stats):
     """실제 데이터를 기반으로 소스별 분포 계산"""
