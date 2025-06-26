@@ -46,7 +46,61 @@ def api_dashboard():
                              source_distribution=source_distribution)
     except Exception as e:
         logger.error(f"대시보드 렌더링 실패: {e}")
-        return render_template('error.html', error=str(e)), 500
+        # 오류 시 JSON으로 상세 정보 반환
+        return jsonify({
+            'error': 'Dashboard template rendering failed',
+            'details': str(e),
+            'message': '대시보드 템플릿 렌더링 실패',
+            'fallback_endpoints': {
+                'system_status': '/health',
+                'collection_status': '/api/collection/status', 
+                'statistics': '/api/stats',
+                'active_ips': '/api/blacklist/active',
+                'fortigate': '/api/fortigate'
+            }
+        }), 500
+
+@unified_bp.route('/dashboard', methods=['GET'])
+@public_endpoint(cache_ttl=60)
+def simple_dashboard():
+    """간단한 대시보드 (JSON)"""
+    try:
+        # 시스템 상태 정보 수집
+        health = service.get_health()
+        collection_status = service.get_collection_status()
+        result = asyncio.run(service.get_statistics())
+        
+        stats = result.get('statistics', {}) if result.get('success') else {}
+        
+        # 소스별 분포 계산
+        from .root_route import calculate_source_distribution
+        source_distribution = calculate_source_distribution(stats)
+        
+        return jsonify({
+            'dashboard': '🛡️ Blacklist Management Dashboard',
+            'timestamp': datetime.now().isoformat(),
+            'system': {
+                'status': health.status,
+                'version': health.version,
+                'service': 'blacklist-unified'
+            },
+            'collection': {
+                'enabled': collection_status.get('status', {}).get('collection_enabled', False),
+                'sources': collection_status.get('status', {}).get('sources', {}),
+                'summary': collection_status.get('status', {}).get('summary', {})
+            },
+            'statistics': stats,
+            'source_distribution': source_distribution,
+            'links': {
+                'health': '/health',
+                'active_ips': '/api/blacklist/active',
+                'fortigate': '/api/fortigate', 
+                'collection_status': '/api/collection/status'
+            }
+        })
+    except Exception as e:
+        logger.error(f"간단한 대시보드 실패: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # === 헬스 체크 및 상태 ===
 
