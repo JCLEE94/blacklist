@@ -8,42 +8,46 @@ logger = logging.getLogger(__name__)
 
 @root_bp.route('/')
 def index():
-    """루트 경로 - 대시보드 직접 렌더링"""
+    """루트 경로 - 시스템 상태 및 API 안내"""
     try:
         # 서비스 인스턴스 가져오기
         from .unified_service import get_unified_service
         service = get_unified_service()
         
-        # 시스템 상태 정보 수집
+        # 기본 상태 정보 수집
         health = service.get_health()
         collection_status = service.get_collection_status()
-        result = asyncio.run(service.get_statistics())
         
-        stats = result.get('statistics', {}) if result.get('success') else {}
-        
-        # 소스별 분포 계산 (하드코딩 제거)
-        source_distribution = calculate_source_distribution(stats)
-        
-        return render_template('dashboard.html', 
-                             health=health,
-                             collection_status=collection_status,
-                             stats=stats,
-                             source_distribution=source_distribution)
-    except Exception as e:
-        logger.error(f"홈페이지 대시보드 렌더링 실패: {e}")
-        # 오류 시 간단한 JSON 응답으로 폴백
         return jsonify({
-            "message": "Blacklist Management System",
-            "version": "1.0.0",
-            "status": "Dashboard temporarily unavailable",
-            "endpoints": {
-                "health": "/health",
-                "dashboard": "/api/docs", 
-                "blacklist": "/api/blacklist/active",
-                "fortigate": "/api/fortigate",
-                "stats": "/api/stats",
-                "collection_status": "/api/collection/status"
+            "message": "🛡️ Blacklist Management System",
+            "version": "3.0.0",
+            "status": health.status,
+            "service_info": {
+                "name": "blacklist-unified",
+                "running": health.status == "healthy",
+                "collection_enabled": collection_status.get('status', {}).get('collection_enabled', False),
+                "total_sources": len(collection_status.get('status', {}).get('sources', {}))
             },
+            "endpoints": {
+                "dashboard": "/api/docs",
+                "health_check": "/health", 
+                "active_blacklist": "/api/blacklist/active",
+                "fortigate_format": "/api/fortigate",
+                "system_stats": "/api/stats",
+                "collection_control": "/api/collection/status"
+            },
+            "quick_actions": {
+                "enable_collection": "POST /api/collection/enable",
+                "trigger_regtech": "POST /api/collection/regtech/trigger",
+                "trigger_secudium": "POST /api/collection/secudium/trigger"
+            }
+        })
+    except Exception as e:
+        logger.error(f"홈페이지 로딩 실패: {e}")
+        return jsonify({
+            "message": "Blacklist Management System", 
+            "version": "3.0.0",
+            "status": "error",
             "error": str(e)
         }), 500
 
