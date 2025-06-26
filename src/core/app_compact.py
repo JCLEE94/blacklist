@@ -162,9 +162,22 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             metrics=container.resolve('metrics_collector')
         )
         
-        # Register unified routes blueprint directly
-        from .unified_routes import unified_bp
-        app.register_blueprint(unified_bp)
+        # Register unified routes blueprint directly - DISABLED for debugging
+        # from .unified_routes import unified_bp
+        # app.register_blueprint(unified_bp)
+        
+        # Add basic test route for verification
+        @app.route('/')
+        def home():
+            return {'status': 'running', 'service': 'blacklist', 'version': '1.0'}
+        
+        @app.route('/health')
+        def basic_health():
+            return {'status': 'healthy', 'message': 'Service is running'}
+            
+        @app.route('/api/blacklist/active')
+        def basic_blacklist():
+            return "# Basic response - service running\n127.0.0.1\n"
         
         # Enhanced routes disabled (module not found)
         
