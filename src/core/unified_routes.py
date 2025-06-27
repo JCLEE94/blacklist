@@ -117,33 +117,39 @@ def docker_logs_page():
 
 @unified_bp.route('/search', methods=['GET'])
 def blacklist_search():
-    """IP 검색 페이지"""
-    return render_template('blacklist_search.html')
+    """IP 검색 페이지 - 메인 대시보드로 리다이렉트"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.dashboard'))
 
 @unified_bp.route('/collection-control', methods=['GET'])
 def collection_control():
-    """수집 제어 패널 페이지"""
-    return render_template('collection_control.html')
+    """수집 제어 패널 - 메인 대시보드로 리다이렉트"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.dashboard'))
 
 @unified_bp.route('/connection-status', methods=['GET'])
 def connection_status():
-    """연결 상태 페이지"""
-    return render_template('connection_status.html')
+    """연결 상태 - 메인 대시보드로 리다이렉트"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.dashboard'))
 
 @unified_bp.route('/data-management', methods=['GET'])
 def data_management():
-    """데이터 관리 페이지"""
-    return render_template('data_management.html')
+    """데이터 관리 - 메인 대시보드로 리다이렉트"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.dashboard'))
 
 @unified_bp.route('/system-logs', methods=['GET'])
 def system_logs():
-    """시스템 로그 페이지"""
-    return render_template('system_logs.html')
+    """시스템 로그 - Docker 로그 페이지로 리다이렉트"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.docker_logs_page'))
 
 @unified_bp.route('/statistics', methods=['GET'])
 def statistics():
-    """통계 페이지"""
-    return render_template('statistics.html')
+    """통계 - 메인 대시보드로 리다이렉트"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.dashboard'))
 
 @unified_bp.route('/export/<format>', methods=['GET'])
 def export_data(format):

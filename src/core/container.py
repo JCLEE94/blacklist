@@ -240,6 +240,32 @@ class BlacklistContainer(ServiceContainer):
         except Exception as e:
             logger.warning(f"Collection Manager registration failed: {e}")
         
+        # REGTECH Collector
+        try:
+            from .regtech_collector import RegtechCollector
+            self.register(
+                'regtech_collector',
+                RegtechCollector,
+                factory=lambda: RegtechCollector('data'),
+                dependencies={}
+            )
+            logger.info("REGTECH Collector registered in container")
+        except Exception as e:
+            logger.warning(f"REGTECH Collector registration failed: {e}")
+        
+        # SECUDIUM Collector
+        try:
+            from .secudium_collector import SecudiumCollector
+            self.register(
+                'secudium_collector',
+                SecudiumCollector,
+                factory=lambda: SecudiumCollector('data'),
+                dependencies={}
+            )
+            logger.info("SECUDIUM Collector registered in container")
+        except Exception as e:
+            logger.warning(f"SECUDIUM Collector registration failed: {e}")
+        
         # API Routes
         # Blueprint registration is handled in app creation, not container
     
