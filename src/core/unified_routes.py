@@ -28,8 +28,19 @@ def _get_dashboard_data():
     """대시보드 데이터 준비 (공통 함수)"""
     from datetime import datetime
     
-    # 실제 통계 데이터 수집
-    stats = service.get_system_health()
+    try:
+        # 실제 통계 데이터 수집
+        stats = service.get_system_health()
+    except Exception as e:
+        logger.error(f"Dashboard data collection error: {e}")
+        # 기본값 사용
+        stats = {
+            'total_ips': 0,
+            'active_ips': 0,
+            'regtech_count': 0,
+            'secudium_count': 0,
+            'public_count': 0
+        }
     
     # 템플릿 데이터 준비
     template_data = {
@@ -53,15 +64,30 @@ def _get_dashboard_data():
 @unified_bp.route('/', methods=['GET'])
 def index():
     """메인페이지 - 대시보드"""
-    return render_template('dashboard.html', **_get_dashboard_data())
+    try:
+        return render_template('dashboard.html', **_get_dashboard_data())
+    except Exception as e:
+        logger.error(f"Dashboard template error: {e}")
+        return jsonify({
+            'error': 'Dashboard rendering failed',
+            'message': str(e),
+            'fallback': 'Try /test for a simple page'
+        }), 500
 
 @unified_bp.route('/dashboard', methods=['GET'])
 def dashboard():
     """대시보드 (메인페이지와 동일)"""
-    return render_template('dashboard.html', **_get_dashboard_data())
+    try:
+        return render_template('dashboard.html', **_get_dashboard_data())
+    except Exception as e:
+        logger.error(f"Dashboard template error: {e}")
+        return jsonify({
+            'error': 'Dashboard rendering failed',
+            'message': str(e),
+            'fallback': 'Try /test for a simple page'
+        }), 500
 
 @unified_bp.route('/api/docs', methods=['GET'])
-
 def api_dashboard():
     """API 문서"""
     return jsonify({
@@ -76,6 +102,11 @@ def api_dashboard():
             'collection': '/api/collection/status'
         }
     })
+
+@unified_bp.route('/test', methods=['GET'])
+def test_page():
+    """간단한 테스트 페이지"""
+    return "<html><body><h1>Test Page Working</h1><p>Simple HTML without templates</p></body></html>"
 
 @unified_bp.route('/docker/logs', methods=['GET'])
 def docker_logs_page():
