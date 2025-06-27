@@ -339,4 +339,4 @@ bandit -r src/
 
 **현재 버전**: v3.1.0  
 **마지막 업데이트**: 2025.06.26  
-**유지보수자**: JC Lee
+**유지보수자**: JC Lee# Trigger deployment
