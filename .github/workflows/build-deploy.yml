@@ -267,8 +267,23 @@ jobs:
           DEPLOYMENT_ID="deploy-${{ github.sha }}-$(date +%s)"
           echo "deployment-id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
           
-          # Watchtower will automatically detect and deploy the new image
-          echo "⏳ Waiting ${{ env.WATCHTOWER_WAIT_TIME }}s for Watchtower to detect and deploy..."
+          # Trigger Watchtower update via webhook
+          echo "🔔 Triggering Watchtower update via webhook..."
+          WEBHOOK_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://watchtower.jclee.me/v1/update \
+            -H "Authorization: Bearer MySuperSecretToken12345" 2>&1 || echo "Failed")
+          
+          HTTP_CODE=$(echo "$WEBHOOK_RESPONSE" | tail -n1)
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Watchtower webhook triggered successfully!"
+          else
+            echo "⚠️ Watchtower webhook returned: $HTTP_CODE"
+            echo "Response: $WEBHOOK_RESPONSE"
+            echo "Continuing anyway as Watchtower may still detect the update..."
+          fi
+          
+          # Wait for Watchtower to process the update
+          echo "⏳ Waiting ${{ env.WATCHTOWER_WAIT_TIME }}s for Watchtower to deploy..."
           sleep ${{ env.WATCHTOWER_WAIT_TIME }}
           
           echo "✅ Deployment triggered: $DEPLOYMENT_ID"

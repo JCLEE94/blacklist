@@ -22,11 +22,17 @@ docker push registry.jclee.me/blacklist:$COMMIT_HASH
 docker push registry.jclee.me/blacklist:latest
 
 echo "🔄 프로덕션 서버에 배포 신호 전송..."
-# Watchtower에게 업데이트 신호 (label 기반)
-curl -X POST "https://registry.jclee.me:1111/v1/update" \
-  -H "Authorization: Bearer watchtower" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "blacklist"}' 2>/dev/null || echo "Watchtower API 호출 실패 (정상적일 수 있음)"
+# Watchtower webhook 호출
+echo "🔔 Watchtower webhook 트리거..."
+WEBHOOK_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://watchtower.jclee.me/v1/update \
+  -H "Authorization: Bearer MySuperSecretToken12345" 2>&1 || echo "Failed")
+
+HTTP_CODE=$(echo "$WEBHOOK_RESPONSE" | tail -n1)
+if [ "$HTTP_CODE" = "200" ]; then
+  echo "✅ Watchtower webhook 성공!"
+else
+  echo "⚠️ Watchtower webhook 응답: $HTTP_CODE"
+fi
 
 echo "⏳ 배포 대기 (60초)..."
 sleep 60
