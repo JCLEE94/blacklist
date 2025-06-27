@@ -117,39 +117,77 @@ def docker_logs_page():
 
 @unified_bp.route('/search', methods=['GET'])
 def blacklist_search():
-    """IP 검색 페이지 - 메인 대시보드로 리다이렉트"""
-    from flask import redirect, url_for
-    return redirect(url_for('unified.dashboard'))
+    """IP 검색 페이지"""
+    try:
+        return render_template('blacklist_search.html')
+    except Exception as e:
+        logger.error(f"Search page error: {e}")
+        return jsonify({
+            'error': 'Search page not available',
+            'message': str(e),
+            'fallback': 'Use /api/search/<ip> for direct search'
+        }), 500
 
 @unified_bp.route('/collection-control', methods=['GET'])
 def collection_control():
-    """수집 제어 패널 - 메인 대시보드로 리다이렉트"""
-    from flask import redirect, url_for
-    return redirect(url_for('unified.dashboard'))
+    """수집 제어 패널 페이지"""
+    try:
+        return render_template('collection_control.html')
+    except Exception as e:
+        logger.error(f"Collection control page error: {e}")
+        return jsonify({
+            'error': 'Collection control page not available',
+            'message': str(e),
+            'fallback': 'Use /api/collection/status for status'
+        }), 500
 
 @unified_bp.route('/connection-status', methods=['GET'])
 def connection_status():
-    """연결 상태 - 메인 대시보드로 리다이렉트"""
-    from flask import redirect, url_for
-    return redirect(url_for('unified.dashboard'))
+    """연결 상태 페이지"""
+    try:
+        return render_template('connection_status.html')
+    except Exception as e:
+        logger.error(f"Connection status page error: {e}")
+        return jsonify({
+            'error': 'Connection status page not available',
+            'message': str(e),
+            'fallback': 'Use /health for system health'
+        }), 500
 
 @unified_bp.route('/data-management', methods=['GET'])
 def data_management():
-    """데이터 관리 - 메인 대시보드로 리다이렉트"""
-    from flask import redirect, url_for
-    return redirect(url_for('unified.dashboard'))
+    """데이터 관리 페이지"""
+    try:
+        return render_template('data_management.html')
+    except Exception as e:
+        logger.error(f"Data management page error: {e}")
+        return jsonify({
+            'error': 'Data management page not available',
+            'message': str(e),
+            'fallback': 'Use /api/stats for data information'
+        }), 500
 
 @unified_bp.route('/system-logs', methods=['GET'])
 def system_logs():
-    """시스템 로그 - Docker 로그 페이지로 리다이렉트"""
-    from flask import redirect, url_for
-    return redirect(url_for('unified.docker_logs_page'))
+    """시스템 로그 페이지"""
+    try:
+        return render_template('system_logs.html')
+    except Exception as e:
+        logger.error(f"System logs page error: {e}")
+        return redirect(url_for('unified.docker_logs_page'))
 
 @unified_bp.route('/statistics', methods=['GET'])
 def statistics():
-    """통계 - 메인 대시보드로 리다이렉트"""
-    from flask import redirect, url_for
-    return redirect(url_for('unified.dashboard'))
+    """통계 페이지"""
+    try:
+        return render_template('statistics.html')
+    except Exception as e:
+        logger.error(f"Statistics page error: {e}")
+        return jsonify({
+            'error': 'Statistics page not available',
+            'message': str(e),
+            'fallback': 'Use /api/stats for statistics data'
+        }), 500
 
 @unified_bp.route('/export/<format>', methods=['GET'])
 def export_data(format):
