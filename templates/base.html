@@ -23,7 +23,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('web.dashboard') }}">
+            <a class="navbar-brand" href="{{ url_for('unified.dashboard') }}">
                 <img src="https://www.nextrade.co.kr/images/main/header_logo_color.svg" alt="Nextrade" style="height: 32px; margin-right: 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
                 <span style="display: none; align-items: center;"><i class="bi bi-shield-lock"></i> Nextrade Black List</span>
             </a>
@@ -33,20 +33,20 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'web.dashboard' %}active{% endif %}" 
-                           href="{{ url_for('web.dashboard') }}">
+                        <a class="nav-link {% if request.endpoint == 'unified.dashboard' %}active{% endif %}" 
+                           href="{{ url_for('unified.dashboard') }}">
                             <i class="bi bi-house"></i> Home
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'web.blacklist_search' %}active{% endif %}" 
-                           href="{{ url_for('web.blacklist_search') }}">
+                        <a class="nav-link {% if request.endpoint == 'unified.blacklist_search' %}active{% endif %}" 
+                           href="{{ url_for('unified.blacklist_search') }}">
                             <i class="bi bi-search"></i> Search
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'web.statistics' %}active{% endif %}" 
-                           href="{{ url_for('web.statistics') }}">
+                        <a class="nav-link {% if request.endpoint == 'unified.statistics' %}active{% endif %}" 
+                           href="{{ url_for('unified.statistics') }}">
                             <i class="bi bi-graph-up"></i> 통계
                         </a>
                     </li>
@@ -55,11 +55,11 @@
                             <i class="bi bi-collection"></i> 데이터 수집
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('web.collection_control') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('unified.collection_control') }}">
                                 <i class="bi bi-gear-wide-connected"></i> 수집 제어 패널
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('web.data_management') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('unified.data_management') }}">
                                 <i class="bi bi-database"></i> 데이터 관리
                             </a></li>
                             <li><a class="dropdown-item" href="/raw-data">
@@ -92,10 +92,10 @@
                             <i class="bi bi-gear"></i> 시스템
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('web.connection_status') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('unified.connection_status') }}">
                                 <i class="bi bi-wifi"></i> 연결 상태
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('web.system_logs') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('unified.system_logs') }}">
                                 <i class="bi bi-journal-text"></i> 시스템 로그
                             </a></li>
                             <li><a class="dropdown-item" href="/docker/logs">
