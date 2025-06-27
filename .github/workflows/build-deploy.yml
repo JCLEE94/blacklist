@@ -275,19 +275,32 @@ jobs:
           
       - name: Monitor Deployment Progress
         run: |
-          echo "👀 Monitoring deployment progress..."
+          echo "👀 Monitoring deployment progress on production server..."
           
           MAX_WAIT=600  # 10 minutes timeout
           ELAPSED=0
           INTERVAL=15
+          PRODUCTION_URL="https://blacklist.jclee.me/health"
+          
+          # Wait for Watchtower to detect and deploy
+          echo "⏳ Waiting for Watchtower to detect new image..."
+          sleep 30
           
           while [ $ELAPSED -lt $MAX_WAIT ]; do
             echo "⏱️  Checking deployment status ($ELAPSED/$MAX_WAIT seconds)..."
             
-            # Check if new container is running
-            if docker ps --format "table {{.Image}}\t{{.Status}}" | grep -q "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest.*Up"; then
-              echo "✅ New container is running successfully"
-              break
+            # Check if production server is responding
+            if curl -f -s --connect-timeout 5 --max-time 10 "$PRODUCTION_URL" > /dev/null 2>&1; then
+              echo "✅ Production server is responding!"
+              
+              # Verify it's the new version by checking response
+              RESPONSE=$(curl -s "$PRODUCTION_URL" 2>/dev/null || echo "{}")
+              if echo "$RESPONSE" | grep -q '"status":"healthy"'; then
+                echo "✅ New version deployed and healthy!"
+                break
+              fi
+            else
+              echo "⏳ Production server not ready yet (502 or timeout)..."
             fi
             
             sleep $INTERVAL
@@ -295,7 +308,9 @@ jobs:
           done
           
           if [ $ELAPSED -ge $MAX_WAIT ]; then
-            echo "❌ Deployment timeout - container not ready"
+            echo "❌ Deployment timeout - production server not ready"
+            echo "🔍 Checking production URL directly:"
+            curl -v "$PRODUCTION_URL" || true
             exit 1
           fi
 
