@@ -82,6 +82,69 @@ def docker_logs_page():
     """Docker 로그 조회 페이지"""
     return render_template('docker_logs.html')
 
+# === Additional web pages ===
+
+@unified_bp.route('/search', methods=['GET'])
+def blacklist_search():
+    """IP 검색 페이지"""
+    return render_template('search.html')
+
+@unified_bp.route('/collection-control', methods=['GET'])
+def collection_control():
+    """수집 제어 패널 페이지"""
+    return render_template('collection_control.html')
+
+@unified_bp.route('/connection-status', methods=['GET'])
+def connection_status():
+    """연결 상태 페이지"""
+    return render_template('connection_status.html')
+
+@unified_bp.route('/data-management', methods=['GET'])
+def data_management():
+    """데이터 관리 페이지"""
+    return render_template('data_management.html')
+
+@unified_bp.route('/system-logs', methods=['GET'])
+def system_logs():
+    """시스템 로그 페이지"""
+    return render_template('system_logs.html')
+
+@unified_bp.route('/statistics', methods=['GET'])
+def statistics():
+    """통계 페이지"""
+    return render_template('statistics.html')
+
+@unified_bp.route('/export/<format>', methods=['GET'])
+def export_data(format):
+    """데이터 내보내기"""
+    try:
+        if format == 'json':
+            ips = service.get_active_blacklist_ips()
+            return jsonify({
+                'success': True,
+                'data': ips,
+                'count': len(ips),
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        elif format == 'csv':
+            # CSV 형식으로 내보내기
+            ips = service.get_active_blacklist_ips()
+            csv_content = "IP Address\n" + "\n".join(ips)
+            response = Response(
+                csv_content,
+                mimetype='text/csv',
+                headers={'Content-Disposition': 'attachment; filename=blacklist.csv'}
+            )
+            return response
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Unsupported format. Use json or csv.'
+            }), 400
+    except Exception as e:
+        logger.error(f"Export data error: {e}")
+        return handle_exception(e)
+
 # === 핵심 API 엔드포인트 ===
 
 @unified_bp.route('/health', methods=['GET'])
