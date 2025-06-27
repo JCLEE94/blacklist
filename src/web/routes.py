@@ -948,7 +948,7 @@ def raw_data_viewer():
     except Exception as e:
         logger.error(f"RAW data viewer 페이지 로드 실패: {e}")
         flash(f"페이지 로드 중 오류가 발생했습니다: {str(e)}", 'error')
-        return redirect(url_for('web.dashboard'))
+        return redirect(url_for('unified.dashboard'))
 
 @web_bp.route('/api/raw-data')
 def api_raw_data():
@@ -1087,7 +1087,7 @@ def regtech_collector():
     except Exception as e:
         logger.error(f"REGTECH collector page error: {e}")
         flash(f"페이지 로드 중 오류: {str(e)}", 'error')
-        return redirect(url_for('web.dashboard'))
+        return redirect(url_for('unified.dashboard'))
 
 @web_bp.route('/secudium-collector')
 def secudium_collector():
@@ -1098,7 +1098,7 @@ def secudium_collector():
     except Exception as e:
         logger.error(f"SECUDIUM collector page error: {e}")
         flash('페이지 로드 중 오류가 발생했습니다.', 'error')
-        return redirect(url_for('web.dashboard'))
+        return redirect(url_for('unified.dashboard'))
 
 @web_bp.route('/api/collection/secudium/test', methods=['POST'])
 def api_secudium_test():
