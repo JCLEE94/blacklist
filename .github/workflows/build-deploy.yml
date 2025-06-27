@@ -296,8 +296,22 @@ jobs:
               # Verify it's the new version by checking response
               RESPONSE=$(curl -s "$PRODUCTION_URL" 2>/dev/null || echo "{}")
               if echo "$RESPONSE" | grep -q '"status":"healthy"'; then
-                echo "✅ New version deployed and healthy!"
-                break
+                # Check uptime to ensure it's a fresh deployment
+                UPTIME=$(echo "$RESPONSE" | grep -o '"uptime_seconds":[0-9]*' | cut -d: -f2)
+                UPTIME_HUMAN=$(echo "$RESPONSE" | grep -o '"uptime_human":"[^"]*"' | cut -d'"' -f4)
+                
+                echo "📊 Container uptime: ${UPTIME_HUMAN:-unknown} (${UPTIME:-0} seconds)"
+                
+                # If uptime is less than 5 minutes, it's likely a new deployment
+                if [ -n "$UPTIME" ] && [ "$UPTIME" -lt 300 ]; then
+                  echo "✅ New deployment confirmed (uptime < 5 minutes)!"
+                  break
+                elif [ -z "$UPTIME" ]; then
+                  echo "⚠️  Uptime not available in response, assuming healthy"
+                  break
+                else
+                  echo "⏳ Container has been running for ${UPTIME_HUMAN}, waiting for new deployment..."
+                fi
               fi
             else
               echo "⏳ Production server not ready yet (502 or timeout)..."

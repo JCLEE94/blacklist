@@ -4,11 +4,14 @@
 """
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, render_template_string, Response
 
 # 통합 Flask 애플리케이션
 application = Flask(__name__)
+
+# 애플리케이션 시작 시간
+START_TIME = datetime.utcnow()
 
 # 기본 데이터
 blacklist_data = []
@@ -87,13 +90,23 @@ def index():
 @application.route('/health')
 def health():
     """헬스 체크"""
+    uptime = datetime.utcnow() - START_TIME
+    uptime_seconds = int(uptime.total_seconds())
+    
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.utcnow().isoformat(),
         'service': 'blacklist-unified',
         'version': '2.0.0-simplified',
+        'uptime_seconds': uptime_seconds,
+        'uptime_human': f"{uptime_seconds // 3600}h {(uptime_seconds % 3600) // 60}m {uptime_seconds % 60}s",
+        'start_time': START_TIME.isoformat(),
         'total_ips': len(blacklist_data),
-        'collection_enabled': collection_enabled
+        'collection_enabled': collection_enabled,
+        'environment': {
+            'port': os.environ.get('PORT', 8541),
+            'flask_env': os.environ.get('FLASK_ENV', 'development')
+        }
     })
 
 @application.route('/api/blacklist/active')
@@ -189,4 +202,5 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 8541))
     print(f"Starting Blacklist Unified App on port {port}")
+    print(f"Start time: {START_TIME.isoformat()}")
     application.run(host='0.0.0.0', port=port, debug=False)
