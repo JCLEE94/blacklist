@@ -40,16 +40,16 @@ env:
   APP_PORT: ${{ vars.APP_PORT || '2541' }}
   STAGING_PORT: ${{ vars.STAGING_PORT || '2542' }}
   
-  # 타임아웃 설정
-  TEST_TIMEOUT: ${{ vars.TEST_TIMEOUT || '300' }}
-  BUILD_TIMEOUT: ${{ vars.BUILD_TIMEOUT || '600' }}
-  DEPLOY_TIMEOUT: ${{ vars.DEPLOY_TIMEOUT || '300' }}
-  VERIFY_TIMEOUT: ${{ vars.VERIFY_TIMEOUT || '600' }}
+  # 타임아웃 설정 (늘림)
+  TEST_TIMEOUT: ${{ vars.TEST_TIMEOUT || '600' }}
+  BUILD_TIMEOUT: ${{ vars.BUILD_TIMEOUT || '1200' }}
+  DEPLOY_TIMEOUT: ${{ vars.DEPLOY_TIMEOUT || '600' }}
+  VERIFY_TIMEOUT: ${{ vars.VERIFY_TIMEOUT || '1200' }}
   
-  # Watchtower 설정
-  WATCHTOWER_WAIT_TIME: ${{ vars.WATCHTOWER_WAIT_TIME || '30' }}
-  VERIFY_MAX_ATTEMPTS: ${{ vars.VERIFY_MAX_ATTEMPTS || '60' }}
-  VERIFY_ATTEMPT_INTERVAL: ${{ vars.VERIFY_ATTEMPT_INTERVAL || '10' }}
+  # Watchtower 설정 (늘림)
+  WATCHTOWER_WAIT_TIME: ${{ vars.WATCHTOWER_WAIT_TIME || '120' }}
+  VERIFY_MAX_ATTEMPTS: ${{ vars.VERIFY_MAX_ATTEMPTS || '120' }}
+  VERIFY_ATTEMPT_INTERVAL: ${{ vars.VERIFY_ATTEMPT_INTERVAL || '15' }}
   
   # 알림 설정
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
@@ -277,9 +277,9 @@ jobs:
         run: |
           echo "👀 Monitoring deployment progress..."
           
-          MAX_WAIT=300  # 5 minutes timeout
+          MAX_WAIT=600  # 10 minutes timeout
           ELAPSED=0
-          INTERVAL=10
+          INTERVAL=15
           
           while [ $ELAPSED -lt $MAX_WAIT ]; do
             echo "⏱️  Checking deployment status ($ELAPSED/$MAX_WAIT seconds)..."
