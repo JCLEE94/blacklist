@@ -58,7 +58,7 @@ env:
 jobs:
   # Parallel quality checks
   lint:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Python Lint Check
@@ -70,7 +70,7 @@ jobs:
           echo "✅ Lint checks completed"
 
   security-scan:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
@@ -125,7 +125,7 @@ jobs:
           echo "✅ Container security scan completed"
 
   test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         
@@ -157,7 +157,7 @@ jobs:
 
   build:
     needs: [test, lint, security-scan]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
@@ -230,7 +230,7 @@ jobs:
   # Enhanced deployment with rollback capability
   deploy:
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
     outputs:
@@ -318,7 +318,7 @@ jobs:
   # Enhanced verification with Watchtower deployment wait
   verify:
     needs: [deploy]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -461,7 +461,7 @@ jobs:
   # Automatic rollback on failure
   rollback:
     needs: [deploy, verify]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: always() && (needs.verify.result == 'failure' || needs.deploy.result == 'failure')
     environment: production
     steps:
@@ -520,7 +520,7 @@ jobs:
   # Comprehensive notification
   notify:
     needs: [build, deploy, verify, rollback]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Calculate Deployment Time
