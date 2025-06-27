@@ -594,7 +594,9 @@ class UnifiedBlacklistService:
         
         try:
             # 실제 REGTECH 수집 실행
-            regtech_collector = self.container.get('regtech_collector')
+            self.logger.info(f"Container type: {type(self.container)}")
+            self.logger.info(f"Container methods: {[m for m in dir(self.container) if not m.startswith('_')]}")
+            regtech_collector = self.container.resolve('regtech_collector')
             if regtech_collector:
                 # 백그라운드 수집 시작
                 import threading
@@ -625,7 +627,7 @@ class UnifiedBlacklistService:
         
         try:
             # 실제 SECUDIUM 수집 실행
-            secudium_collector = self.container.get('secudium_collector')
+            secudium_collector = self.container.resolve('secudium_collector')
             if secudium_collector:
                 # 백그라운드 수집 시작
                 import threading

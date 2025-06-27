@@ -73,6 +73,10 @@ class ServiceContainer:
         """팩토리 함수 등록"""
         return self.register(name, type(None), factory=factory, singleton=singleton)
     
+    def get(self, name: str) -> Any:
+        """서비스 조회 (resolve의 별칭)"""
+        return self.resolve(name)
+    
     def resolve(self, name: str) -> Any:
         """서비스 해결"""
         if not self._initialized:
