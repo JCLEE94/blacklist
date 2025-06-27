@@ -591,7 +591,30 @@ class UnifiedBlacklistService:
         import uuid
         task_id = str(uuid.uuid4())
         self.logger.info(f"REGTECH collection triggered (task_id: {task_id})")
-        # TODO: Implement actual REGTECH collection
+        
+        try:
+            # 실제 REGTECH 수집 실행
+            regtech_collector = self.container.get('regtech_collector')
+            if regtech_collector:
+                # 백그라운드 수집 시작
+                import threading
+                def collect_regtech():
+                    try:
+                        ips = regtech_collector.collect_from_web(start_date=start_date, end_date=end_date)
+                        self.logger.info(f"REGTECH collection completed: {len(ips)} IPs collected")
+                    except Exception as e:
+                        self.logger.error(f"REGTECH collection failed: {e}")
+                
+                thread = threading.Thread(target=collect_regtech)
+                thread.daemon = True
+                thread.start()
+                self.logger.info(f"REGTECH collection started in background")
+            else:
+                self.logger.warning("REGTECH collector not available")
+                
+        except Exception as e:
+            self.logger.error(f"Failed to start REGTECH collection: {e}")
+            
         return task_id
     
     def trigger_secudium_collection(self) -> str:
@@ -599,7 +622,30 @@ class UnifiedBlacklistService:
         import uuid
         task_id = str(uuid.uuid4())
         self.logger.info(f"SECUDIUM collection triggered (task_id: {task_id})")
-        # TODO: Implement actual SECUDIUM collection
+        
+        try:
+            # 실제 SECUDIUM 수집 실행
+            secudium_collector = self.container.get('secudium_collector')
+            if secudium_collector:
+                # 백그라운드 수집 시작
+                import threading
+                def collect_secudium():
+                    try:
+                        ips = secudium_collector.collect_from_web()
+                        self.logger.info(f"SECUDIUM collection completed: {len(ips)} IPs collected")
+                    except Exception as e:
+                        self.logger.error(f"SECUDIUM collection failed: {e}")
+                
+                thread = threading.Thread(target=collect_secudium)
+                thread.daemon = True
+                thread.start()
+                self.logger.info(f"SECUDIUM collection started in background")
+            else:
+                self.logger.warning("SECUDIUM collector not available")
+                
+        except Exception as e:
+            self.logger.error(f"Failed to start SECUDIUM collection: {e}")
+            
         return task_id
     
     def get_enhanced_blacklist(self, page: int = 1, per_page: int = 50, include_metadata: bool = True, source_filter: str = None) -> Dict[str, Any]:
