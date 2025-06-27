@@ -11,7 +11,7 @@ echo "현재 커밋: $COMMIT_HASH"
 
 # Docker 이미지 빌드
 echo "📦 Docker 이미지 빌드 중..."
-docker build -t registry.jclee.me/blacklist:$COMMIT_HASH .
+DOCKER_BUILDKIT=0 docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:$COMMIT_HASH .
 docker tag registry.jclee.me/blacklist:$COMMIT_HASH registry.jclee.me/blacklist:latest
 
 echo "🔑 Docker Registry 로그인..."
