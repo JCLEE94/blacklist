@@ -58,9 +58,9 @@ env:
 jobs:
   # Parallel quality checks
   lint:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - name: Python Lint Check
         run: |
           echo "🔍 Running Python syntax and lint checks..."
@@ -70,9 +70,9 @@ jobs:
           echo "✅ Lint checks completed"
 
   security-scan:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Security Vulnerability Scan
         run: |
@@ -125,9 +125,9 @@ jobs:
           echo "✅ Container security scan completed"
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         
       - name: Setup Python Environment
         run: |
@@ -157,12 +157,12 @@ jobs:
 
   build:
     needs: [test, lint, security-scan]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Check Docker configuration
         run: |
@@ -195,14 +195,14 @@ jobs:
         run: echo "time=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_OUTPUT
             
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
         with:
           driver-opts: |
             network=host
             
       - name: Build and Push to Registry  
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: deployment/Dockerfile
@@ -230,14 +230,14 @@ jobs:
   # Enhanced deployment with rollback capability
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
     outputs:
       deployment-id: ${{ steps.deploy.outputs.deployment-id }}
       previous-image: ${{ steps.backup.outputs.previous-image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Backup Current Deployment
         id: backup
@@ -318,10 +318,10 @@ jobs:
   # Enhanced verification with Watchtower deployment wait
   verify:
     needs: [deploy]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Wait for Watchtower Deployment
         run: |
@@ -461,11 +461,11 @@ jobs:
   # Automatic rollback on failure
   rollback:
     needs: [deploy, verify]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: always() && (needs.verify.result == 'failure' || needs.deploy.result == 'failure')
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Automatic Rollback
         run: |
@@ -520,7 +520,7 @@ jobs:
   # Comprehensive notification
   notify:
     needs: [build, deploy, verify, rollback]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: always()
     steps:
       - name: Calculate Deployment Time
