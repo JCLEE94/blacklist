@@ -2,6 +2,7 @@
 """
 통합 블랙리스트 관리 시스템 - 단일 통합 앱
 """
+import os
 import json
 import time
 from datetime import datetime, timedelta
@@ -199,7 +200,6 @@ def trigger_secudium():
     })
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 8541))
     print(f"Starting Blacklist Unified App on port {port}")
     print(f"Start time: {START_TIME.isoformat()}")
