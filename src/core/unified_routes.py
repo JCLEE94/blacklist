@@ -87,7 +87,7 @@ def docker_logs_page():
 @unified_bp.route('/search', methods=['GET'])
 def blacklist_search():
     """IP 검색 페이지"""
-    return render_template('search.html')
+    return render_template('blacklist_search.html')
 
 @unified_bp.route('/collection-control', methods=['GET'])
 def collection_control():
