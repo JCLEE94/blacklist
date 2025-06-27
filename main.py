@@ -1,28 +1,44 @@
 #!/usr/bin/env python3
 """
-통합 블랙리스트 관리 시스템 - 전체 기능 포함
+통합 블랙리스트 관리 시스템 - Full Compact App Integration
 """
 import os
 import sys
-from pathlib import Path
+import logging
 
-# Add the project root to Python path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-# Import and use the full application
-from src.core.app_compact import create_compact_app, application
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# For compatibility with existing deployment
+# Try to import the compact app
+try:
+    from src.core.app_compact import application
+    logger.info("Successfully imported app_compact - using full-featured app")
+except Exception as e:
+    logger.error(f"Failed to import from app_compact: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    
+    # If app_compact fails, create a minimal error app
+    from flask import Flask, jsonify
+    application = Flask(__name__)
+    
+    @application.route('/health')
+    def health():
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to load app_compact: {str(e)}',
+            'mode': 'emergency_fallback'
+        }), 503
+
+# Main execution
 if __name__ == '__main__':
-    # Load environment variables
-    from dotenv import load_dotenv
-    env_path = project_root / '.env'
-    if env_path.exists():
-        load_dotenv(env_path)
-    
-    env = os.environ.get('FLASK_ENV', 'production')
-    port = int(os.environ.get('PORT', 8541))
-    
-    app = create_compact_app(env)
-    app.run(host='0.0.0.0', port=port, debug=(env == 'development'))
+    port = int(os.environ.get('PORT', 2541))
+    logger.info(f"Starting Blacklist App on port {port}")
+    application.run(host='0.0.0.0', port=port, debug=False)

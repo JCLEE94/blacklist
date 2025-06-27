@@ -37,8 +37,8 @@ class BaseConfig:
     }
     
     # Cache Configuration
-    REDIS_URL = os.environ.get('REDIS_URL', DEFAULT_REDIS_URL)
-    CACHE_TYPE = 'redis' if 'REDIS_URL' in os.environ else 'simple'
+    REDIS_URL = os.environ.get('REDIS_URL', '')  # Don't default to redis URL if not set
+    CACHE_TYPE = 'redis' if REDIS_URL else 'simple'
     CACHE_DEFAULT_TIMEOUT = int(os.environ.get('CACHE_DEFAULT_TIMEOUT', 300))
     CACHE_KEY_PREFIX = os.environ.get('CACHE_KEY_PREFIX', 'secudium:')
     
@@ -53,7 +53,7 @@ class BaseConfig:
     CORS_EXPOSE_HEADERS = ['X-Total-IPs', 'X-Active-Months', 'X-Cache']
     
     # Rate Limiting
-    RATELIMIT_STORAGE_URL = REDIS_URL if CACHE_TYPE == 'redis' else 'memory://'
+    RATELIMIT_STORAGE_URL = REDIS_URL if REDIS_URL else 'memory://'
     RATELIMIT_DEFAULT = ["1000 per hour", "100 per minute"]
     RATELIMIT_HEADERS_ENABLED = True
     

@@ -103,11 +103,26 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         
         # Rate limiting with container-managed cache
         cache = container.resolve('cache')
+        
+        # Determine storage URI for rate limiter based on Redis availability
+        storage_uri = 'memory://'
+        if hasattr(config, 'REDIS_URL') and config.REDIS_URL:
+            # Check if Redis is actually accessible
+            try:
+                import redis
+                r = redis.from_url(config.REDIS_URL)
+                r.ping()
+                storage_uri = config.REDIS_URL
+                logger.info("Rate limiter using Redis storage")
+            except Exception as e:
+                logger.warning(f"Redis not available for rate limiter, falling back to memory: {e}")
+                storage_uri = 'memory://'
+        
         limiter = Limiter(
             app=app,
             key_func=get_remote_address,
             default_limits=["1000 per hour", "100 per minute"],
-            storage_uri=config.REDIS_URL if hasattr(config, 'REDIS_URL') and config.REDIS_URL else 'memory://'
+            storage_uri=storage_uri
         )
         
         # Configure Flask app with container

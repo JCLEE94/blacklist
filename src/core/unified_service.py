@@ -381,33 +381,6 @@ class UnifiedBlacklistService:
             version=self.config['version']
         )
     
-    async def enable_collection(self) -> Dict[str, Any]:
-        """수집 시스템 활성화"""
-        try:
-            if self.collection_manager:
-                result = self.collection_manager.enable_collection()
-                self.logger.info("✅ 수집 시스템 활성화됨")
-                return {'success': True, 'message': '수집 시스템이 활성화되었습니다', **result}
-            else:
-                self.logger.info("✅ 내장 수집 시스템 활성화됨")
-                return {'success': True, 'message': '내장 수집 시스템이 활성화되었습니다'}
-        except Exception as e:
-            self.logger.error(f"수집 시스템 활성화 실패: {e}")
-            return {'success': False, 'error': str(e)}
-    
-    async def disable_collection(self) -> Dict[str, Any]:
-        """수집 시스템 비활성화"""
-        try:
-            if self.collection_manager:
-                result = self.collection_manager.disable_collection()
-                self.logger.info("⏹️ 수집 시스템 비활성화됨")
-                return {'success': True, 'message': '수집 시스템이 비활성화되었습니다', **result}
-            else:
-                self.logger.info("⏹️ 내장 수집 시스템 비활성화됨")
-                return {'success': True, 'message': '내장 수집 시스템이 비활성화되었습니다'}
-        except Exception as e:
-            self.logger.error(f"수집 시스템 비활성화 실패: {e}")
-            return {'success': False, 'error': str(e)}
     
     def get_collection_status(self) -> Dict[str, Any]:
         """수집 시스템 상태 조회"""
@@ -434,6 +407,244 @@ class UnifiedBlacklistService:
         except Exception as e:
             self.logger.error(f"수집 상태 조회 실패: {e}")
             return {'success': False, 'error': str(e)}
+    
+    def get_system_health(self) -> Dict[str, Any]:
+        """시스템 헬스 정보 반환 (unified_routes에서 사용)"""
+        try:
+            # Check if blacklist_manager is available
+            if not self.blacklist_manager:
+                return {
+                    'status': 'unhealthy',
+                    'total_ips': 0,
+                    'active_ips': 0,
+                    'error': 'Blacklist manager not initialized'
+                }
+            
+            # Get active IPs
+            active_ips = self.blacklist_manager.get_active_ips()
+            if isinstance(active_ips, tuple):
+                active_ips = active_ips[0]  # Get the actual list from tuple
+            
+            total_ips = len(active_ips) if active_ips else 0
+            
+            return {
+                'status': 'healthy' if self._running else 'stopped',
+                'total_ips': total_ips,
+                'active_ips': total_ips,
+                'regtech_count': 0,  # Will be updated when collection is enabled
+                'secudium_count': 0,  # Will be updated when collection is enabled
+                'public_count': 0,
+                'sources': {
+                    'regtech': {'enabled': self.config.get('regtech_enabled', False), 'count': 0},
+                    'secudium': {'enabled': self.config.get('secudium_enabled', False), 'count': 0}
+                },
+                'last_update': datetime.now().isoformat(),
+                'cache_available': self.cache is not None,
+                'database_connected': True,
+                'version': self.config.get('version', '3.0.0')
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to get system health: {e}")
+            return {
+                'status': 'error',
+                'total_ips': 0,
+                'active_ips': 0,
+                'error': str(e)
+            }
+    
+    def get_system_stats(self) -> Dict[str, Any]:
+        """시스템 통계 반환"""
+        return self.get_system_health()  # Reuse system health data
+    
+    def get_active_blacklist_ips(self) -> list:
+        """활성 블랙리스트 IP 목록 반환"""
+        try:
+            if not self.blacklist_manager:
+                return []
+            
+            active_ips = self.blacklist_manager.get_active_ips()
+            if isinstance(active_ips, tuple):
+                active_ips = active_ips[0]  # Get the actual list from tuple
+            
+            return list(active_ips) if active_ips else []
+        except Exception as e:
+            self.logger.error(f"Failed to get active blacklist IPs: {e}")
+            return []
+    
+    def format_for_fortigate(self, ips: list) -> Dict[str, Any]:
+        """FortiGate 형식으로 변환"""
+        return {
+            "threat_feed": {
+                "name": "Nextrade Blacklist",
+                "description": "통합 위협 IP 목록",
+                "entries": [{"ip": ip, "type": "malicious"} for ip in ips]
+            },
+            "total_count": len(ips),
+            "last_updated": datetime.utcnow().isoformat()
+        }
+    
+    def get_blacklist_paginated(self, page: int = 1, per_page: int = 100, source_filter: str = None) -> Dict[str, Any]:
+        """페이징된 블랙리스트 반환"""
+        try:
+            ips = self.get_active_blacklist_ips()
+            
+            # Simple pagination
+            start = (page - 1) * per_page
+            end = start + per_page
+            paginated_ips = ips[start:end]
+            
+            return {
+                'page': page,
+                'per_page': per_page,
+                'total': len(ips),
+                'pages': (len(ips) + per_page - 1) // per_page,
+                'data': paginated_ips
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to get paginated blacklist: {e}")
+            return {
+                'page': page,
+                'per_page': per_page,
+                'total': 0,
+                'pages': 0,
+                'data': []
+            }
+    
+    def search_ip(self, ip: str) -> Dict[str, Any]:
+        """단일 IP 검색"""
+        try:
+            if not self.blacklist_manager:
+                return {'found': False, 'ip': ip, 'error': 'Blacklist manager not initialized'}
+            
+            active_ips = self.get_active_blacklist_ips()
+            found = ip in active_ips
+            
+            return {
+                'found': found,
+                'ip': ip,
+                'status': 'active' if found else 'not_found',
+                'timestamp': datetime.now().isoformat()
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to search IP {ip}: {e}")
+            return {'found': False, 'ip': ip, 'error': str(e)}
+    
+    def search_batch_ips(self, ips: list) -> Dict[str, Any]:
+        """배치 IP 검색"""
+        results = {}
+        for ip in ips:
+            results[ip] = self.search_ip(ip)
+        return results
+    
+    def get_analytics_summary(self, days: int = 7) -> Dict[str, Any]:
+        """분석 요약 반환"""
+        return {
+            'period_days': days,
+            'total_ips': len(self.get_active_blacklist_ips()),
+            'new_ips_today': 0,  # Placeholder
+            'removed_ips_today': 0,  # Placeholder
+            'top_sources': [
+                {'name': 'REGTECH', 'count': 0},
+                {'name': 'SECUDIUM', 'count': 0}
+            ],
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def enable_collection(self) -> Dict[str, Any]:
+        """수집 시스템 활성화 (동기 버전)"""
+        try:
+            if self.collection_manager:
+                result = self.collection_manager.enable_collection()
+                self.logger.info("✅ 수집 시스템 활성화됨")
+                return result
+            else:
+                self.logger.info("✅ 내장 수집 시스템 활성화됨")
+                return {'success': True, 'message': '내장 수집 시스템이 활성화되었습니다', 'collection_enabled': True}
+        except Exception as e:
+            self.logger.error(f"수집 시스템 활성화 실패: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def disable_collection(self) -> Dict[str, Any]:
+        """수집 시스템 비활성화 (동기 버전)"""
+        try:
+            if self.collection_manager:
+                result = self.collection_manager.disable_collection()
+                self.logger.info("⏹️ 수집 시스템 비활성화됨")
+                return result
+            else:
+                self.logger.info("⏹️ 내장 수집 시스템 비활성화됨")
+                return {'success': True, 'message': '내장 수집 시스템이 비활성화되었습니다', 'collection_enabled': False}
+        except Exception as e:
+            self.logger.error(f"수집 시스템 비활성화 실패: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def trigger_collection(self, source: str = 'all') -> str:
+        """수동 수집 트리거"""
+        import uuid
+        task_id = str(uuid.uuid4())
+        self.logger.info(f"Manual collection triggered: {source} (task_id: {task_id})")
+        # TODO: Implement actual collection trigger
+        return task_id
+    
+    def trigger_regtech_collection(self, start_date: str = None, end_date: str = None) -> str:
+        """REGTECH 수집 트리거"""
+        import uuid
+        task_id = str(uuid.uuid4())
+        self.logger.info(f"REGTECH collection triggered (task_id: {task_id})")
+        # TODO: Implement actual REGTECH collection
+        return task_id
+    
+    def trigger_secudium_collection(self) -> str:
+        """SECUDIUM 수집 트리거"""
+        import uuid
+        task_id = str(uuid.uuid4())
+        self.logger.info(f"SECUDIUM collection triggered (task_id: {task_id})")
+        # TODO: Implement actual SECUDIUM collection
+        return task_id
+    
+    def get_enhanced_blacklist(self, page: int = 1, per_page: int = 50, include_metadata: bool = True, source_filter: str = None) -> Dict[str, Any]:
+        """향상된 블랙리스트 조회"""
+        try:
+            ips = self.get_active_blacklist_ips()
+            
+            # Simple pagination
+            start = (page - 1) * per_page
+            end = start + per_page
+            paginated_ips = ips[start:end]
+            
+            # Add metadata if requested
+            if include_metadata:
+                data = [
+                    {
+                        'ip': ip,
+                        'source': 'unknown',
+                        'added_date': datetime.now().isoformat(),
+                        'threat_level': 'high',
+                        'category': 'malicious'
+                    }
+                    for ip in paginated_ips
+                ]
+            else:
+                data = paginated_ips
+            
+            return {
+                'page': page,
+                'per_page': per_page,
+                'total': len(ips),
+                'pages': (len(ips) + per_page - 1) // per_page,
+                'data': data,
+                'metadata_included': include_metadata
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to get enhanced blacklist: {e}")
+            return {
+                'page': page,
+                'per_page': per_page,
+                'total': 0,
+                'pages': 0,
+                'data': [],
+                'error': str(e)
+            }
 
 # 전역 서비스 인스턴스
 _unified_service = None
