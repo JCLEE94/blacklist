@@ -264,13 +264,13 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-3">
-                        <button class="action-button d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('web.blacklist_search') }}'">
+                        <button class="action-button d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('unified.blacklist_search') }}'">
                             <i class="bi bi-search me-2"></i> IP 검색
                         </button>
                         <button class="action-button d-flex align-items-center justify-content-center" onclick="refreshData()">
                             <i class="bi bi-arrow-clockwise me-2"></i> 데이터 새로고침
                         </button>
-                        <button class="action-button d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('web.data_management') }}'">
+                        <button class="action-button d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('unified.data_management') }}'">
                             <i class="bi bi-database me-2"></i> 데이터 관리
                         </button>
                         <button class="action-button d-flex align-items-center justify-content-center" onclick="exportData()">

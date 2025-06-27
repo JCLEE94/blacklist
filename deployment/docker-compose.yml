@@ -21,6 +21,10 @@ services:
       - blacklist-logs:/app/logs
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.stop-timeout=30s"
+      - "app.name=blacklist"
+      - "app.version=latest"
+      - "registry.source=registry.jclee.me/blacklist:latest"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
       interval: 30s

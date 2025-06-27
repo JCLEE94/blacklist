@@ -9,7 +9,7 @@ import asyncio
 from datetime import datetime
 
 from .unified_service import get_unified_service
-from .exceptions import ValidationError, handle_exception
+from .exceptions import ValidationError, handle_exception, create_error_response
 from .validators import validate_ip
 # Decorators removed to fix Flask endpoint conflicts
 # from src.utils.unified_decorators import public_endpoint, api_endpoint
@@ -174,7 +174,7 @@ def export_data(format):
             }), 400
     except Exception as e:
         logger.error(f"Export data error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 # === 핵심 API 엔드포인트 ===
 
@@ -217,7 +217,7 @@ def service_status():
         })
     except Exception as e:
         logger.error(f"Service status error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/blacklist/active', methods=['GET'])
 
@@ -240,7 +240,7 @@ def get_active_blacklist():
         return response
     except Exception as e:
         logger.error(f"Active blacklist error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/fortigate', methods=['GET'])
 
@@ -254,7 +254,7 @@ def get_fortigate_format():
         return jsonify(fortigate_data)
     except Exception as e:
         logger.error(f"FortiGate format error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/blacklist/json', methods=['GET'])
  
@@ -274,7 +274,7 @@ def get_blacklist_json():
         return jsonify(result)
     except Exception as e:
         logger.error(f"Blacklist JSON error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/search/<ip>', methods=['GET'])
 
@@ -297,7 +297,7 @@ def search_single_ip(ip: str):
         })
     except Exception as e:
         logger.error(f"Single IP search error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/search', methods=['POST'])
 
@@ -334,7 +334,7 @@ def search_batch_ips():
         })
     except Exception as e:
         logger.error(f"Batch IP search error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/stats', methods=['GET'])
 
@@ -349,7 +349,7 @@ def get_system_stats():
         })
     except Exception as e:
         logger.error(f"System stats error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/analytics/summary', methods=['GET'])
 
@@ -370,7 +370,7 @@ def get_analytics_summary():
         })
     except Exception as e:
         logger.error(f"Analytics summary error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 # === 수집 관리 API ===
 
@@ -383,7 +383,7 @@ def get_collection_status():
         return jsonify(status)
     except Exception as e:
         logger.error(f"Collection status error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/collection/enable', methods=['POST'])
 
@@ -398,7 +398,7 @@ def enable_collection():
         })
     except Exception as e:
         logger.error(f"Enable collection error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/collection/disable', methods=['POST'])
 
@@ -413,7 +413,7 @@ def disable_collection():
         })
     except Exception as e:
         logger.error(f"Disable collection error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/collection/trigger', methods=['POST'])
   
@@ -439,7 +439,7 @@ def trigger_manual_collection():
         })
     except Exception as e:
         logger.error(f"Manual collection trigger error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/collection/regtech/trigger', methods=['POST'])
 
@@ -465,7 +465,7 @@ def trigger_regtech_collection():
         })
     except Exception as e:
         logger.error(f"REGTECH collection trigger error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/collection/secudium/trigger', methods=['POST'])
 
@@ -481,7 +481,7 @@ def trigger_secudium_collection():
         })
     except Exception as e:
         logger.error(f"SECUDIUM collection trigger error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 # === 시스템 관리 API ===
 
@@ -595,7 +595,7 @@ def get_docker_logs():
         }), 503
     except Exception as e:
         logger.error(f"Docker logs error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/system/docker/containers', methods=['GET'])
 
@@ -654,7 +654,7 @@ def list_docker_containers():
         }), 503
     except Exception as e:
         logger.error(f"Docker containers list error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 # === 향상된 API (v2) ===
 
@@ -681,7 +681,7 @@ def get_enhanced_blacklist():
         })
     except Exception as e:
         logger.error(f"Enhanced blacklist error: {e}")
-        return handle_exception(e)
+        return jsonify(create_error_response(e)), 500
 
 # === 에러 핸들러 ===
 
