@@ -86,15 +86,32 @@ jobs:
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Wait for Watchtower Auto-Deployment
+      - name: Trigger Watchtower Deployment
         run: |
-          echo "⏳ Waiting for Watchtower to deploy new image..."
+          echo "🔔 Triggering Watchtower deployment via webhook..."
           echo "📥 New image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           
-          # Watchtower가 새 이미지를 감지하고 배포할 시간을 줌 (2분)
-          sleep 120
+          # Watchtower 웹훅 호출
+          WEBHOOK_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            https://watchtower.jclee.me/v1/update \
+            -H "Authorization: Bearer MySuperSecretToken12345" \
+            --connect-timeout 10 --max-time 30 2>&1 || echo "Failed")
           
-          echo "✅ Watchtower deployment wait completed"
+          HTTP_CODE=$(echo "$WEBHOOK_RESPONSE" | tail -n1)
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Watchtower webhook successful! Deployment triggered."
+            # 웹훅 성공시 짧게 대기
+            sleep 30
+          else
+            echo "⚠️ Watchtower webhook failed (HTTP: $HTTP_CODE)"
+            echo "Response: $WEBHOOK_RESPONSE"
+            echo "🔄 Falling back to polling deployment..."
+            # 웹훅 실패시 더 길게 대기 (폴링 방식)
+            sleep 90
+          fi
+          
+          echo "✅ Watchtower deployment initiated"
 
       - name: Verify Deployment
         run: |
