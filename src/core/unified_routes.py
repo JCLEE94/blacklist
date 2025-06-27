@@ -11,7 +11,8 @@ from datetime import datetime
 from .unified_service import get_unified_service
 from .exceptions import ValidationError, handle_exception
 from .validators import validate_ip
-from src.utils.unified_decorators import public_endpoint, api_endpoint
+# Decorators removed to fix Flask endpoint conflicts
+# from src.utils.unified_decorators import public_endpoint, api_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def dashboard():
     return render_template('dashboard.html', **_get_dashboard_data())
 
 @unified_bp.route('/api/docs', methods=['GET'])
-@public_endpoint(cache_ttl=300)
+
 def api_dashboard():
     """API 문서"""
     return jsonify({
@@ -84,7 +85,7 @@ def docker_logs_page():
 # === 핵심 API 엔드포인트 ===
 
 @unified_bp.route('/health', methods=['GET'])
-@public_endpoint(cache_ttl=10)
+
 def health_check():
     """통합 서비스 헬스 체크"""
     try:
@@ -125,7 +126,7 @@ def service_status():
         return handle_exception(e)
 
 @unified_bp.route('/api/blacklist/active', methods=['GET'])
-@public_endpoint(cache_ttl=300)
+
 def get_active_blacklist():
     """활성 블랙리스트 조회 (플레인 텍스트)"""
     try:
@@ -148,7 +149,7 @@ def get_active_blacklist():
         return handle_exception(e)
 
 @unified_bp.route('/api/fortigate', methods=['GET'])
-@public_endpoint(cache_ttl=300)
+
 def get_fortigate_format():
     """FortiGate External Connector 형식"""
     try:
@@ -162,7 +163,7 @@ def get_fortigate_format():
         return handle_exception(e)
 
 @unified_bp.route('/api/blacklist/json', methods=['GET'])
-@public_endpoint(cache_ttl=300) 
+ 
 def get_blacklist_json():
     """블랙리스트 JSON 형식"""
     try:
@@ -182,7 +183,7 @@ def get_blacklist_json():
         return handle_exception(e)
 
 @unified_bp.route('/api/search/<ip>', methods=['GET'])
-@api_endpoint
+
 def search_single_ip(ip: str):
     """단일 IP 검색"""
     try:
@@ -205,7 +206,7 @@ def search_single_ip(ip: str):
         return handle_exception(e)
 
 @unified_bp.route('/api/search', methods=['POST'])
-@api_endpoint
+
 def search_batch_ips():
     """배치 IP 검색"""
     try:
@@ -242,7 +243,7 @@ def search_batch_ips():
         return handle_exception(e)
 
 @unified_bp.route('/api/stats', methods=['GET'])
-@public_endpoint(cache_ttl=60)
+
 def get_system_stats():
     """시스템 통계"""
     try:
@@ -257,7 +258,7 @@ def get_system_stats():
         return handle_exception(e)
 
 @unified_bp.route('/api/analytics/summary', methods=['GET'])
-@api_endpoint
+
 def get_analytics_summary():
     """분석 요약"""
     try:
@@ -280,7 +281,7 @@ def get_analytics_summary():
 # === 수집 관리 API ===
 
 @unified_bp.route('/api/collection/status', methods=['GET'])
-@public_endpoint(cache_ttl=30)
+
 def get_collection_status():
     """수집 시스템 상태"""
     try:
@@ -291,7 +292,7 @@ def get_collection_status():
         return handle_exception(e)
 
 @unified_bp.route('/api/collection/enable', methods=['POST'])
-@api_endpoint
+
 def enable_collection():
     """수집 시스템 활성화"""
     try:
@@ -306,7 +307,7 @@ def enable_collection():
         return handle_exception(e)
 
 @unified_bp.route('/api/collection/disable', methods=['POST'])
-@api_endpoint
+
 def disable_collection():
     """수집 시스템 비활성화"""
     try:
@@ -321,7 +322,7 @@ def disable_collection():
         return handle_exception(e)
 
 @unified_bp.route('/api/collection/trigger', methods=['POST'])
-@api_endpoint  
+  
 def trigger_manual_collection():
     """수동 데이터 수집 트리거"""
     try:
@@ -347,7 +348,7 @@ def trigger_manual_collection():
         return handle_exception(e)
 
 @unified_bp.route('/api/collection/regtech/trigger', methods=['POST'])
-@api_endpoint
+
 def trigger_regtech_collection():
     """REGTECH 수집 트리거"""
     try:
@@ -373,7 +374,7 @@ def trigger_regtech_collection():
         return handle_exception(e)
 
 @unified_bp.route('/api/collection/secudium/trigger', methods=['POST'])
-@api_endpoint
+
 def trigger_secudium_collection():
     """SECUDIUM 수집 트리거"""
     try:
@@ -391,7 +392,7 @@ def trigger_secudium_collection():
 # === 시스템 관리 API ===
 
 @unified_bp.route('/api/system/docker/logs', methods=['GET'])
-@api_endpoint
+
 def get_docker_logs():
     """Docker 컨테이너 로그 조회"""
     import subprocess
@@ -503,7 +504,7 @@ def get_docker_logs():
         return handle_exception(e)
 
 @unified_bp.route('/api/system/docker/containers', methods=['GET'])
-@api_endpoint
+
 def list_docker_containers():
     """Docker 컨테이너 목록 조회"""
     import subprocess
@@ -564,7 +565,7 @@ def list_docker_containers():
 # === 향상된 API (v2) ===
 
 @unified_bp.route('/api/v2/blacklist/enhanced', methods=['GET'])
-@api_endpoint
+
 def get_enhanced_blacklist():
     """향상된 블랙리스트 (메타데이터 포함)"""
     try:

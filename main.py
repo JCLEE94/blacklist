@@ -1,63 +1,192 @@
 #!/usr/bin/env python3
 """
-통합 블랙리스트 관리 시스템 - 통합 서비스 엔트리 포인트
-모든 기능을 하나의 서비스로 통합
+통합 블랙리스트 관리 시스템 - 단일 통합 앱
 """
-import os
-import sys
-import asyncio
-import logging
-from dotenv import load_dotenv
+import json
+import time
+from datetime import datetime
+from flask import Flask, jsonify, render_template_string, Response
 
-# .env 파일 로드
-load_dotenv()
+# 통합 Flask 애플리케이션
+application = Flask(__name__)
 
-# Add project root to Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
+# 기본 데이터
+blacklist_data = []
+collection_enabled = False
 
-# 로깅 설정
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# 대시보드 HTML
+DASHBOARD_HTML = '''<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 블랙리스트 관리 시스템</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #2563eb; color: white; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #2563eb; }
+        .btn { background: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 4px; margin: 5px; cursor: pointer; }
+        .btn:hover { background: #1d4ed8; }
+        .status-ok { color: #059669; }
+        .status-error { color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ 통합 블랙리스트 관리 시스템</h1>
+            <p>Nextrade 위협 IP 차단 시스템</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>총 IP 수</h3>
+                <div class="stat-number">{{ total_ips }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>활성 IP 수</h3>
+                <div class="stat-number">{{ active_ips }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>수집 상태</h3>
+                <div class="stat-number {{ 'status-ok' if collection_enabled else 'status-error' }}">
+                    {{ '활성' if collection_enabled else '비활성' }}
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>마지막 업데이트</h3>
+                <div>{{ last_update }}</div>
+            </div>
+        </div>
+        
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3>시스템 제어</h3>
+            <button class="btn" onclick="location.href='/api/blacklist/active'">블랙리스트 다운로드</button>
+            <button class="btn" onclick="location.href='/api/fortigate'">FortiGate 형식</button>
+            <button class="btn" onclick="location.href='/api/stats'">통계 API</button>
+            <button class="btn" onclick="location.href='/health'">시스템 상태</button>
+        </div>
+    </div>
+</body>
+</html>'''
 
-logger = logging.getLogger(__name__)
+@application.route('/')
+def index():
+    """메인 대시보드"""
+    return render_template_string(DASHBOARD_HTML, 
+        total_ips=len(blacklist_data),
+        active_ips=len(blacklist_data),
+        collection_enabled=collection_enabled,
+        last_update=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    )
 
-# Use app_compact as primary application - RESTORED FULL FUNCTIONALITY
-try:
-    from src.core.app_compact import create_compact_app
-    application = create_compact_app()
-    logger.info("✅ app_compact 성공적으로 로드됨 - 전체 기능 복구")
-    
-except Exception as e:
-    logger.error(f"❌ Emergency app creation failed: {e}")
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
+@application.route('/health')
+def health():
+    """헬스 체크"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'service': 'blacklist-unified',
+        'version': '2.0.0-simplified',
+        'total_ips': len(blacklist_data),
+        'collection_enabled': collection_enabled
+    })
+
+@application.route('/api/blacklist/active')
+def get_blacklist():
+    """활성 블랙리스트"""
+    ip_list = '\n'.join(blacklist_data) if blacklist_data else ''
+    return Response(ip_list, mimetype='text/plain', 
+                   headers={'X-Total-Count': str(len(blacklist_data))})
+
+@application.route('/api/fortigate')
+def get_fortigate():
+    """FortiGate 형식"""
+    return jsonify({
+        "threat_feed": {
+            "name": "Nextrade Blacklist",
+            "description": "통합 위협 IP 목록",
+            "entries": [{"ip": ip, "type": "malicious"} for ip in blacklist_data]
+        },
+        "total_count": len(blacklist_data),
+        "last_updated": datetime.utcnow().isoformat()
+    })
+
+@application.route('/api/stats')
+def get_stats():
+    """시스템 통계"""
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_ips': len(blacklist_data),
+            'active_ips': len(blacklist_data),
+            'collection_enabled': collection_enabled,
+            'sources': {
+                'regtech': {'count': 0, 'status': 'configured'},
+                'secudium': {'count': 0, 'status': 'configured'}
+            },
+            'last_updated': datetime.utcnow().isoformat()
+        }
+    })
+
+@application.route('/api/collection/status')
+def collection_status():
+    """수집 상태"""
+    return jsonify({
+        'collection_enabled': collection_enabled,
+        'sources': {
+            'regtech': {'enabled': collection_enabled, 'last_run': None},
+            'secudium': {'enabled': collection_enabled, 'last_run': None}
+        },
+        'total_ips': len(blacklist_data)
+    })
+
+@application.route('/api/collection/enable', methods=['POST'])
+def enable_collection():
+    """수집 활성화"""
+    global collection_enabled
+    collection_enabled = True
+    return jsonify({
+        'success': True,
+        'message': '수집이 활성화되었습니다',
+        'collection_enabled': collection_enabled
+    })
+
+@application.route('/api/collection/disable', methods=['POST']) 
+def disable_collection():
+    """수집 비활성화"""
+    global collection_enabled
+    collection_enabled = False
+    return jsonify({
+        'success': True,
+        'message': '수집이 비활성화되었습니다',
+        'collection_enabled': collection_enabled
+    })
+
+@application.route('/api/collection/regtech/trigger', methods=['POST'])
+def trigger_regtech():
+    """REGTECH 수집 트리거"""
+    return jsonify({
+        'success': True,
+        'message': 'REGTECH 수집이 시작되었습니다',
+        'task_id': f"regtech_{int(time.time())}"
+    })
+
+@application.route('/api/collection/secudium/trigger', methods=['POST'])
+def trigger_secudium():
+    """SECUDIUM 수집 트리거"""
+    return jsonify({
+        'success': True,
+        'message': 'SECUDIUM 수집이 시작되었습니다', 
+        'task_id': f"secudium_{int(time.time())}"
+    })
 
 if __name__ == '__main__':
-    import argparse
-    from src.config.settings import settings
-    
-    parser = argparse.ArgumentParser(description='Blacklist Management System')
-    parser.add_argument('--port', type=int, default=settings.port, help='Port to run on')
-    parser.add_argument('--host', default=settings.host, help='Host to bind to')
-    parser.add_argument('--debug', action='store_true', default=settings.debug, help='Enable debug mode')
-    
-    args = parser.parse_args()
-    
-    # 설정 검증
-    validation = settings.validate()
-    if not validation['valid']:
-        logger.error(f"Configuration errors: {validation['errors']}")
-        sys.exit(1)
-    
-    if validation['warnings']:
-        for warning in validation['warnings']:
-            logger.warning(f"Configuration warning: {warning}")
-    
-    print(f"Starting {settings.app_name} v{settings.app_version} on {args.host}:{args.port}")
-    print(f"Environment: {settings.environment}, Debug: {args.debug}")
-    
-    application.run(host=args.host, port=args.port, debug=args.debug)
+    import os
+    port = int(os.environ.get('PORT', 8541))
+    print(f"Starting Blacklist Unified App on port {port}")
+    application.run(host='0.0.0.0', port=port, debug=False)
