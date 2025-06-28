@@ -635,6 +635,79 @@ def get_monthly_data():
         logger.error(f"Monthly data error: {e}")
         return jsonify([]), 500
 
+@unified_bp.route('/api/debug/database', methods=['GET'])
+def debug_database():
+    """데이터베이스 디버깅 정보"""
+    try:
+        import sqlite3
+        import os
+        
+        debug_info = {}
+        
+        # Check multiple possible database paths
+        possible_paths = [
+            '/app/instance/blacklist.db',
+            '/app/instance/secudium.db', 
+            './instance/blacklist.db',
+            './instance/secudium.db'
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                try:
+                    conn = sqlite3.connect(path)
+                    cursor = conn.cursor()
+                    
+                    # Check if blacklist_ip table exists
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='blacklist_ip'")
+                    table_exists = cursor.fetchone() is not None
+                    
+                    if table_exists:
+                        # Get total count
+                        cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
+                        total_count = cursor.fetchone()[0]
+                        
+                        # Get source counts
+                        cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
+                        source_counts = dict(cursor.fetchall())
+                        
+                        debug_info[path] = {
+                            'exists': True,
+                            'table_exists': True,
+                            'total_ips': total_count,
+                            'source_counts': source_counts,
+                            'file_size': os.path.getsize(path)
+                        }
+                    else:
+                        debug_info[path] = {
+                            'exists': True,
+                            'table_exists': False,
+                            'file_size': os.path.getsize(path)
+                        }
+                    
+                    conn.close()
+                except Exception as e:
+                    debug_info[path] = {
+                        'exists': True,
+                        'error': str(e),
+                        'file_size': os.path.getsize(path)
+                    }
+            else:
+                debug_info[path] = {'exists': False}
+        
+        return jsonify({
+            'success': True,
+            'database_files': debug_info,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
 @unified_bp.route('/api/stats', methods=['GET'])
 
 def get_system_stats():
