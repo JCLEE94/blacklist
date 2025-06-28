@@ -734,6 +734,56 @@ class UnifiedBlacklistService:
                 'data': [],
                 'error': str(e)
             }
+    
+    def get_monthly_stats(self, start_date: str, end_date: str) -> Dict[str, Any]:
+        """월별 통계 조회"""
+        try:
+            # Get stats from blacklist manager if available
+            if self.blacklist_manager and hasattr(self.blacklist_manager, 'get_stats_for_period'):
+                stats = self.blacklist_manager.get_stats_for_period(start_date, end_date)
+                return stats
+            
+            # Fallback to basic stats
+            total_ips = len(self.get_active_blacklist_ips())
+            return {
+                'total_ips': total_ips,
+                'first_detection': start_date,
+                'last_detection': end_date,
+                'sources': {
+                    'REGTECH': 0,
+                    'SECUDIUM': 0
+                }
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to get monthly stats: {e}")
+            return {
+                'total_ips': 0,
+                'first_detection': None,
+                'last_detection': None,
+                'sources': {}
+            }
+    
+    def cleanup_old_data(self, cutoff_date: str) -> Dict[str, Any]:
+        """오래된 데이터 정리"""
+        try:
+            # Use blacklist manager's cleanup function if available
+            if self.blacklist_manager and hasattr(self.blacklist_manager, 'cleanup_old_data'):
+                result = self.blacklist_manager.cleanup_old_data(cutoff_date)
+                return result
+            
+            # Fallback response
+            return {
+                'success': True,
+                'deleted_count': 0,
+                'message': 'Cleanup function not available in current configuration'
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to cleanup old data: {e}")
+            return {
+                'success': False,
+                'deleted_count': 0,
+                'message': str(e)
+            }
 
 # 전역 서비스 인스턴스
 _unified_service = None

@@ -2,79 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🎯 Project Overview
+## Project Overview
 
 **Blacklist Management System** - Enterprise threat intelligence platform with multi-source data collection, automated processing, and FortiGate External Connector integration. Features dependency injection architecture, containerized deployment with GitHub Actions CI/CD and Watchtower auto-deployment.
 
-**Current Status (2025.06.27)**: The application has been simplified to a single unified Flask app in `main.py` due to decorator conflicts. The complex multi-module architecture is temporarily disabled.
-
-### Key Architecture Principles:
-- **Simplified Entry Point**: `main.py` contains the entire application (temporarily)
-- **Original Architecture** (currently disabled):
-  - Dependency Injection: Central service container (`src/core/container.py`)
-  - Multi-layered Entry Points: `main.py` → `src/core/app_compact.py` → fallback chain
-  - Plugin-based IP Sources: Extensible source system in `src/core/ip_sources/`
+**Key Architecture Principles:**
+- **Dependency Injection**: Central service container (`src/core/container.py`) manages all service lifecycles
+- **Multi-layered Entry Points**: `main.py` → `src/core/app_compact.py` → fallback chain for maximum compatibility
+- **Plugin-based IP Sources**: Extensible source system in `src/core/ip_sources/`
 - **Container-First**: Docker/Podman deployment with automated CI/CD
-- **Self-Hosted Runner**: GitHub Actions uses self-hosted runner with specific version requirements
 
-### Production Infrastructure:
-- **Docker Registry**: `registry.jclee.me`
-- **Production Server**: `192.168.50.215` (port 1111 for SSH, port 2541 for app)
-- **Production URL**: `https://blacklist.jclee.me`
-- **Default Ports**: DEV=8541, PROD=2541
-- **Auto-deployment**: Watchtower monitors registry for updates
-- **Timezone**: Asia/Seoul (KST)
-- **Reverse Proxy**: NGINX/OpenResty handles HTTPS termination
+**Production Infrastructure:**
+- Docker Registry: `registry.jclee.me`
+- Production Server: `192.168.50.215` (port 1111 for SSH, port 2541 for app)
+- Default Ports: DEV=8541, PROD=2541
+- Auto-deployment: Watchtower monitors registry for updates
+- Timezone: Asia/Seoul (KST)
 
-### Data Sources:
-- **REGTECH** (Financial Security Institute) - Requires authentication, ~1,200 IPs
-- **SECUDIUM** - Standard authentication (SMS OTP not required)
-- **Public Threat Intelligence** - Automated collection
-
-## ⚠️ Critical Issues and Solutions
-
-### 1. Flask Endpoint Conflicts (RESOLVED)
-**Problem**: Decorators in `src/utils/unified_decorators.py` caused Flask endpoint registration conflicts.
-```
-AssertionError: View function mapping is overwriting an existing endpoint function
-```
-
-**Solution**: Removed all `@api_endpoint` and `@public_endpoint` decorators from route files. The decorators are currently disabled and return functions unchanged.
-
-### 2. GitHub Actions Runner Compatibility
-**Problem**: Self-hosted runner requires specific action versions.
-```
-Can't find 'action.yml', 'action.yaml' or 'Dockerfile'
-```
-
-**Solution**: Use these specific versions in workflows:
-```yaml
-runs-on: self-hosted
-- uses: actions/checkout@v3         # NOT v4
-- uses: docker/setup-buildx-action@v2  # NOT v3
-- uses: docker/build-push-action@v4    # NOT v5
-```
-
-### 3. CI/CD Timeout Issues
-**Problem**: Deployment verification times out before Watchtower completes deployment.
-
-**Solution**: Extended all timeout values in `.github/workflows/build-deploy.yml`:
-```yaml
-TEST_TIMEOUT: 600
-BUILD_TIMEOUT: 1200
-DEPLOY_TIMEOUT: 600
-VERIFY_TIMEOUT: 1200
-WATCHTOWER_WAIT_TIME: 120
-VERIFY_MAX_ATTEMPTS: 120
-```
-
-### 4. Production Server Monitoring
-**Problem**: CI/CD was checking local Docker instead of production server.
-
-**Solution**: Monitor production URL directly:
-```bash
-PRODUCTION_URL="https://blacklist.jclee.me/health"
-```
+**Data Sources:**
+- REGTECH (Financial Security Institute) - Requires authentication, ~1,200 IPs
+- SECUDIUM - Standard authentication with POST-based login and Excel download
+- Public Threat Intelligence - Automated collection
 
 ## Development Commands
 
@@ -86,8 +34,8 @@ pip install -r requirements.txt
 # Initialize database (SQLite with auto-migration)
 python3 setup_database.py
 
-# Development server (CURRENT: simplified single-file app)
-python3 main.py                    # Default port 8541
+# Development server (entry point with fallback chain)
+python3 main.py                    # Preferred: app_compact → minimal_app → fallback
 python3 main.py --port 8080        # Custom port
 python3 main.py --debug            # Debug mode
 
@@ -142,15 +90,11 @@ pytest -v --cov=src                         # With coverage
 python3 scripts/debug_regtech_advanced.py     # REGTECH auth analysis
 ```
 
-## Core Architecture (Currently Simplified)
+## Core Architecture
 
-### Current Simplified Architecture
-Due to Flask endpoint conflicts, the application is temporarily running as a single unified Flask app in `main.py`. All complex features are disabled until the decorator issues are resolved.
+### Service Container and Dependency Injection
 
-### Original Architecture (Disabled)
-
-#### Service Container and Dependency Injection
-The system was designed to use a central dependency injection container (`src/core/container.py`) that manages service lifecycles:
+The system uses a central dependency injection container (`src/core/container.py`) that manages service lifecycles:
 
 ```python
 from src.core.container import get_container
@@ -166,11 +110,11 @@ cache_manager = container.get('cache_manager')
 - `cache_manager`: Redis/memory cache fallback (`src/utils/advanced_cache.py`)
 - `collection_manager`: Multi-source data collection (`src/core/collection_manager.py`)
 - `regtech_collector`: REGTECH-specific collection with session management
-- `secudium_collector`: SECUDIUM-specific collection
+- `secudium_collector`: SECUDIUM-specific collection with Excel download
 
-#### Application Entry Points and Fallback Chain
+### Application Entry Points and Fallback Chain
 
-The system was designed with multiple entry points with automatic fallback:
+The system provides multiple entry points with automatic fallback:
 
 1. **Primary**: `main.py` → `src/core/app_compact.py` (full feature set)
 2. **Fallback**: `src/core/minimal_app.py` (essential features only)
@@ -182,7 +126,7 @@ The system was designed with multiple entry points with automatic fallback:
 - Rate limiting and security headers
 - Comprehensive error handling
 
-#### IP Source Plugin System
+### IP Source Plugin System
 
 Extensible architecture in `src/core/ip_sources/`:
 
@@ -214,9 +158,11 @@ class BaseIPSource(ABC):
 - Comprehensive error detection and logging
 
 **SECUDIUM Collection** (`src/core/secudium_collector.py`):
-- Token-based authentication
-- Automatic fallback strategies
-- Integration with collection manager
+- POST-based login to `/isap-api/loginProcess`
+- Force login with `is_expire='Y'` to handle concurrent sessions
+- Excel file download from bulletin board
+- Token-based authentication with Bearer token
+- Automatic IP extraction from Excel files
 
 ### Caching and Performance
 
@@ -262,17 +208,17 @@ Push to main → GitHub Actions → Build & Push to Registry → Watchtower Auto
 - `POST /api/collection/regtech/trigger` - Manual REGTECH collection trigger
 - `POST /api/collection/secudium/trigger` - Manual SECUDIUM collection trigger
 
-### Enhanced V2 Endpoints (Currently Disabled)
+### Enhanced V2 Endpoints
 - `GET /api/v2/blacklist/enhanced` - Enhanced blacklist with metadata
 - `GET /api/v2/analytics/trends` - Advanced analytics and trends
 - `GET /api/v2/sources/status` - Multi-source collection detailed status
 
-### Search and Analysis (Currently Disabled)
+### Search and Analysis
 - `GET /api/search/{ip}` - Single IP lookup with history
 - `POST /api/search` - Batch IP search (JSON payload)
 - `GET /api/stats/detection-trends` - Detection trends over time
 
-### Docker Monitoring (Currently Disabled)
+### Docker Monitoring
 - `GET /api/docker/containers` - List all Docker containers
 - `GET /api/docker/container/{name}/logs` - Get container logs (streaming support)
 - `GET /docker-logs` - Web interface for Docker logs monitoring
@@ -339,12 +285,6 @@ docker-compose -f deployment/docker-compose.yml build --no-cache
 docker-compose -f deployment/docker-compose.yml up -d
 ```
 
-**502 Bad Gateway Error**:
-- Usually indicates Flask app not starting properly
-- Check decorator conflicts in route files
-- Verify all imports are working correctly
-- Check Docker logs: `docker logs blacklist -f`
-
 **REGTECH Authentication Failures**:
 - Server returns `error=true` in login redirect URL
 - Indicates external server authentication policy changes
@@ -352,8 +292,10 @@ docker-compose -f deployment/docker-compose.yml up -d
 - Run `python3 scripts/debug_regtech_advanced.py` for detailed auth analysis
 
 **SECUDIUM Collection Issues**:
-- Standard authentication (no SMS OTP required)
-- Check server response for 500 errors indicating server-side issues
+- Uses POST login to `/isap-api/loginProcess` (not GET)
+- Requires `is_expire='Y'` to handle concurrent sessions
+- Downloads Excel files from bulletin board, not direct API
+- Check server response for authentication errors
 - Verify credentials are properly set in container environment
 
 **Cache and API Errors**:
@@ -415,7 +357,7 @@ docker logs blacklist -f
 # - "로그인 후 다시 로그인 페이지로 리다이렉트됨" (REGTECH auth issue)
 # - "numpy.dtype size changed" (non-blocking compatibility warning)  
 # - "Cache is None" (cache initialization issue)
-# - "View function mapping is overwriting" (decorator conflict)
+# - "동일 ID로 로그인 한 사용자가 있습니다" (SECUDIUM concurrent session)
 ```
 
 ### Manual Deployment (Fallback)
@@ -433,74 +375,29 @@ docker-compose -f deployment/docker-compose.yml up -d
 ./manual-deploy.sh
 ```
 
+## GitHub Actions Compatibility Notes
+
+The self-hosted runner requires specific action versions:
+```yaml
+runs-on: self-hosted
+- uses: actions/checkout@v3         # NOT v4
+- uses: docker/setup-buildx-action@v2  # NOT v3
+- uses: docker/build-push-action@v4    # NOT v5
+```
+
 ## Quick Fix Guide
-
-### Flask Endpoint Conflict Fix
-If you encounter Flask endpoint conflicts:
-1. Remove all `@api_endpoint` and `@public_endpoint` decorators from route files
-2. Check `src/utils/unified_decorators.py` - decorators should return functions unchanged
-3. Restart the application
-
-### CI/CD Failure Fix
-If CI/CD is failing:
-1. Check GitHub Actions runner compatibility - use v3/v2 versions, not v4/v3
-2. Increase timeout values in workflow files
-3. Ensure production URL monitoring is correct
-4. Check self-hosted runner is properly configured
 
 ### 502 Bad Gateway Fix
 If production returns 502:
-1. Check if container is running: `docker ps | grep blacklist`
-2. Check container logs: `docker logs blacklist -f`
-3. Verify Flask app is starting without errors
-4. Check NGINX/OpenResty reverse proxy configuration
-5. Try manual restart: `docker restart blacklist`
+1. Check if `main.py` exists in repository root
+2. Verify container is running: `docker ps | grep blacklist`
+3. Check container logs: `docker logs blacklist -f`
+4. Check if app can find main.py: `docker exec blacklist ls -la /app/main.py`
+5. If main.py is missing, restore from git and push to trigger deployment
 
-## Development Tips
-
-### Working with Simplified Architecture
-Until the decorator issues are fully resolved:
-1. All changes should be made directly in `main.py`
-2. Avoid importing from complex modules that use decorators
-3. Test locally before pushing to avoid CI/CD issues
-4. Use manual deployment script if CI/CD is problematic
-
-### Restoring Full Architecture
-To restore the full architecture:
-1. Fix decorator conflicts in `src/utils/unified_decorators.py`
-2. Ensure no duplicate endpoint registrations
-3. Gradually re-enable imports in `main.py`
-4. Test each module independently
-5. Use feature flags to enable/disable complex features
-
-### Performance Considerations
-- Current simplified app has no caching - performance may be limited
-- No rate limiting or advanced features
-- Database operations are direct without pooling
-- Consider impact on production load
-
-## Future Improvements
-
-### Immediate Priorities
-1. **Fix Decorator System**: Resolve Flask endpoint conflicts properly
-2. **Restore Full Architecture**: Re-enable dependency injection and plugins
-3. **Improve CI/CD**: Make deployment more robust with better error handling
-4. **Add Monitoring**: Implement proper APM and logging
-
-### Long-term Goals
-1. **Kubernetes Support**: Move from Docker Compose to K8s
-2. **Multi-tenancy**: Support multiple organizations
-3. **GraphQL API**: Modern API interface
-4. **Real-time Updates**: WebSocket support for live data
-5. **Machine Learning**: Threat prediction and anomaly detection
-
-## Contact and Support
-
-- **Repository**: https://github.com/JCLEE94/blacklist
-- **Production**: https://blacklist.jclee.me
-- **Maintainer**: JC Lee
-- **Last Updated**: 2025.06.27
-
----
-
-**Note**: This document reflects the current simplified state of the application. The full architecture documentation is preserved for when the decorator issues are resolved.
+### Memory Issues
+If experiencing high memory usage:
+1. Check system memory: `free -h`
+2. Check Docker stats: `docker stats --no-stream`
+3. Restart container: `docker restart blacklist`
+4. Consider killing unused processes consuming memory

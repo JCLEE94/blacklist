@@ -130,13 +130,19 @@ def blacklist_search():
 
 @unified_bp.route('/collection-control', methods=['GET'])
 def collection_control():
-    """수집 제어 패널 페이지"""
+    """수집 제어 패널 페이지 - 통합 관리로 리디렉션"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.unified_control'))
+
+@unified_bp.route('/unified-control', methods=['GET'])
+def unified_control():
+    """통합 관리 패널 (수집 제어 + 데이터 관리)"""
     try:
-        return render_template('collection_control.html')
+        return render_template('unified_control.html')
     except Exception as e:
-        logger.error(f"Collection control page error: {e}")
+        logger.error(f"Unified control page error: {e}")
         return jsonify({
-            'error': 'Collection control page not available',
+            'error': 'Unified control page not available',
             'message': str(e),
             'fallback': 'Use /api/collection/status for status'
         }), 500
@@ -156,16 +162,9 @@ def connection_status():
 
 @unified_bp.route('/data-management', methods=['GET'])
 def data_management():
-    """데이터 관리 페이지"""
-    try:
-        return render_template('data_management.html')
-    except Exception as e:
-        logger.error(f"Data management page error: {e}")
-        return jsonify({
-            'error': 'Data management page not available',
-            'message': str(e),
-            'fallback': 'Use /api/stats for data information'
-        }), 500
+    """데이터 관리 페이지 - 통합 관리로 리디렉션"""
+    from flask import redirect, url_for
+    return redirect(url_for('unified.unified_control'))
 
 @unified_bp.route('/system-logs', methods=['GET'])
 def system_logs():
@@ -526,6 +525,110 @@ def trigger_secudium_collection():
     except Exception as e:
         logger.error(f"SECUDIUM collection trigger error: {e}")
         return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/monthly-data', methods=['GET'])
+
+def get_monthly_data():
+    """월별 데이터 통계 조회"""
+    try:
+        from datetime import datetime, timedelta
+        import calendar
+        
+        # Get current month and previous months
+        now = datetime.now()
+        monthly_data = []
+        
+        # Get data for last 6 months
+        for i in range(6):
+            # Calculate month
+            month_date = now - timedelta(days=30 * i)
+            month_name = month_date.strftime('%m월')
+            month_year = month_date.strftime('%Y-%m')
+            
+            # Get start and end of month
+            _, last_day = calendar.monthrange(month_date.year, month_date.month)
+            start_date = month_date.replace(day=1).strftime('%Y-%m-%d')
+            end_date = month_date.replace(day=last_day).strftime('%Y-%m-%d')
+            
+            # Get monthly statistics from service
+            try:
+                stats = service.get_monthly_stats(start_date, end_date)
+                ip_count = stats.get('total_ips', 0)
+                
+                monthly_data.append({
+                    'month': month_name,
+                    'year_month': month_year,
+                    'ip_count': ip_count,
+                    'details': {
+                        'first_detection': stats.get('first_detection', '-'),
+                        'last_detection': stats.get('last_detection', '-'),
+                        'status': 'active' if ip_count > 0 else 'no_data',
+                        'sources': stats.get('sources', {})
+                    }
+                })
+            except Exception as e:
+                logger.warning(f"Failed to get stats for {month_year}: {e}")
+                # Provide fallback data
+                monthly_data.append({
+                    'month': month_name,
+                    'year_month': month_year,
+                    'ip_count': 0,
+                    'details': {
+                        'first_detection': '-',
+                        'last_detection': '-',
+                        'status': 'no_data',
+                        'sources': {}
+                    }
+                })
+        
+        # Reverse to show oldest first
+        monthly_data.reverse()
+        
+        return jsonify({
+            'status': 'success',
+            'monthly_data': monthly_data,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Monthly data error: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'monthly_data': []
+        }), 500
+
+@unified_bp.route('/api/cleanup-old-data', methods=['POST'])
+
+def cleanup_old_data():
+    """3개월 이상 된 데이터 정리"""
+    try:
+        # Calculate cutoff date (3 months ago)
+        from datetime import datetime, timedelta
+        cutoff_date = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+        
+        # Call service to cleanup old data
+        result = service.cleanup_old_data(cutoff_date)
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': f"Cleaned up {result.get('deleted_count', 0)} old records",
+                'deleted_count': result.get('deleted_count', 0),
+                'cutoff_date': cutoff_date
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('message', 'Cleanup failed')
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Cleanup old data error: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 # === 시스템 관리 API ===
 
