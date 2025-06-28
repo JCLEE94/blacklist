@@ -224,20 +224,36 @@ class BlacklistContainer(ServiceContainer):
         self.register_factory('health_checker', lambda: get_health_checker())
         
         # Blacklist Manager
+        import os
+        if os.path.exists('/app'):
+            blacklist_db_url = 'sqlite:////app/instance/blacklist.db'  # 4 slashes for absolute path
+        else:
+            blacklist_db_url = 'sqlite:///instance/blacklist.db'
+        
         self.register(
             'blacklist_manager',
             UnifiedBlacklistManager,
-            factory=lambda cache: UnifiedBlacklistManager('data', cache_backend=cache, db_url='sqlite:///instance/blacklist.db'),
+            factory=lambda cache: UnifiedBlacklistManager('data', cache_backend=cache, db_url=blacklist_db_url),
             dependencies={'cache': 'cache'}
         )
         
         # Collection Manager
         try:
             from .collection_manager import CollectionManager
+            import os
+            
+            # Use absolute path in Docker
+            if os.path.exists('/app'):
+                db_path = '/app/instance/blacklist.db'
+                config_path = '/app/instance/collection_config.json'
+            else:
+                db_path = 'instance/blacklist.db'
+                config_path = 'instance/collection_config.json'
+            
             self.register(
                 'collection_manager',
                 CollectionManager,
-                factory=lambda: CollectionManager(),
+                factory=lambda: CollectionManager(db_path=db_path, config_path=config_path),
                 dependencies={}
             )
             logger.info("Collection Manager registered in container")

@@ -43,20 +43,36 @@ def _get_dashboard_data():
         }
     
     # 템플릿 데이터 준비
+    # Calculate real percentages
+    total = stats.get('total_ips', 0)
+    regtech_count = stats.get('regtech_count', 0)
+    secudium_count = stats.get('secudium_count', 0)
+    public_count = stats.get('public_count', 0)
+    
+    regtech_pct = round((regtech_count / total * 100) if total > 0 else 0, 1)
+    secudium_pct = round((secudium_count / total * 100) if total > 0 else 0, 1)
+    public_pct = round((public_count / total * 100) if total > 0 else 0, 1)
+    
+    # Get real monthly data (for now, return empty if no data)
+    monthly_data = []
+    if total > 0:
+        # Show current month with actual data
+        from datetime import datetime
+        current_month = datetime.now().strftime('%m월')
+        monthly_data = [
+            {'month': current_month, 'count': total}
+        ]
+    
     template_data = {
         'total_ips': stats.get('total_ips', 0),
         'active_ips': stats.get('active_ips', 0),
-        'active_sources': ['REGTECH', 'SECUDIUM', 'Public'],
+        'active_sources': ['REGTECH', 'SECUDIUM', 'Public'] if total > 0 else [],
         'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'monthly_data': [
-            {'month': '11월', 'count': 1200},
-            {'month': '12월', 'count': 1350},
-            {'month': '1월', 'count': 1500}
-        ],
+        'monthly_data': monthly_data,
         'source_distribution': {
-            'regtech': {'count': stats.get('regtech_count', 0), 'percentage': 45},
-            'secudium': {'count': stats.get('secudium_count', 0), 'percentage': 30},
-            'public': {'count': stats.get('public_count', 0), 'percentage': 25}
+            'regtech': {'count': regtech_count, 'percentage': regtech_pct},
+            'secudium': {'count': secudium_count, 'percentage': secudium_pct},
+            'public': {'count': public_count, 'percentage': public_pct}
         }
     }
     return template_data
