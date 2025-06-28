@@ -17,6 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Production Server: `192.168.50.215` (port 1111 for SSH, port 2541 for app)
 - Default Ports: DEV=8541, PROD=2541
 - Auto-deployment: Watchtower monitors registry for updates
+- Production URL: https://blacklist.jclee.me
 - Timezone: Asia/Seoul (KST)
 
 **Data Sources:**
@@ -32,7 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -r requirements.txt
 
 # Initialize database (SQLite with auto-migration)
-python3 setup_database.py
+python3 init_database.py
 
 # Development server (entry point with fallback chain)
 python3 main.py                    # Preferred: app_compact → minimal_app → fallback
@@ -88,6 +89,22 @@ pytest -v --cov=src                         # With coverage
 
 # Debugging and diagnostics
 python3 scripts/debug_regtech_advanced.py     # REGTECH auth analysis
+python3 scripts/debug_regtech_har.py          # HAR-based debugging
+```
+
+### Linting and Code Quality
+```bash
+# Python syntax check
+python3 -m py_compile src/**/*.py
+
+# Security scan for hardcoded credentials
+grep -r -E "(password|secret|key|token)\s*=\s*['\"][^'\"]*['\"]" --include="*.py" src/
+
+# Format code
+black src/
+
+# Run flake8 (if configured)
+flake8 src/
 ```
 
 ## Core Architecture
@@ -111,13 +128,15 @@ cache_manager = container.get('cache_manager')
 - `collection_manager`: Multi-source data collection (`src/core/collection_manager.py`)
 - `regtech_collector`: REGTECH-specific collection with session management
 - `secudium_collector`: SECUDIUM-specific collection with Excel download
+- `unified_service`: Central service orchestrator (`src/core/unified_service.py`)
 
 ### Application Entry Points
 
 The system provides streamlined entry point with error handling:
 
 1. **Primary**: `main.py` → `src/core/app_compact.py` (full feature set)
-2. **Error Handling**: Comprehensive logging and graceful shutdown on failure
+2. **Fallback**: `src/core/minimal_app.py` (if compact fails)
+3. **Error Handling**: Comprehensive logging and graceful shutdown on failure
 
 **app_compact.py** features:
 - Full dependency injection
@@ -156,6 +175,7 @@ class BaseIPSource(ABC):
 - Sequential collection to maintain session integrity
 - Proper date parsing from Excel source data (not current time)
 - Comprehensive error detection and logging
+- HAR-based collector available (`src/core/har_based_regtech_collector.py`)
 
 **SECUDIUM Collection** (`src/core/secudium_collector.py`):
 - POST-based login to `/isap-api/loginProcess`
@@ -164,6 +184,7 @@ class BaseIPSource(ABC):
 - Token-based authentication with Bearer token
 - Automatic IP extraction from Excel files
 - Original detection date preservation from source data
+- HAR-based collector available (`src/core/har_based_secudium_collector.py`)
 
 ### Caching and Performance
 
@@ -191,6 +212,15 @@ class BaseIPSource(ABC):
 **Deployment Flow**:
 ```
 Push to main → GitHub Actions → Build & Push to Registry → Watchtower Auto-Deploy → Verify → Rollback on Failure
+```
+
+**Self-hosted Runner Compatibility**:
+```yaml
+runs-on: self-hosted
+# Must use these specific versions:
+- uses: actions/checkout@v3         # NOT v4
+- uses: docker/setup-buildx-action@v2  # NOT v3
+- uses: docker/build-push-action@v4    # NOT v5
 ```
 
 ## API Endpoints Reference
@@ -223,6 +253,9 @@ Push to main → GitHub Actions → Build & Push to Registry → Watchtower Auto
 - `GET /api/docker/containers` - List all Docker containers
 - `GET /api/docker/container/{name}/logs` - Get container logs (streaming support)
 - `GET /docker-logs` - Web interface for Docker logs monitoring
+
+### Test Endpoint
+- `GET /test` - Simple test endpoint that returns "Test response from blacklist app"
 
 ## Critical Implementation Notes
 
@@ -289,7 +322,7 @@ collector.collect_from_web(start_date='20250601', end_date='20250620')
 
 ### Database Management
 - SQLite for development/small deployments
-- Auto-migration support via `setup_database.py`
+- Auto-migration support via `init_database.py`
 - 3-month data retention with automatic cleanup
 - Located at `/app/instance/blacklist.db` in containers
 
@@ -310,6 +343,7 @@ docker-compose -f deployment/docker-compose.yml up -d
 - Indicates external server authentication policy changes
 - Check credentials in docker-compose.yml environment variables
 - Run `python3 scripts/debug_regtech_advanced.py` for detailed auth analysis
+- Try HAR-based collector: `python3 scripts/debug_regtech_har.py`
 
 **SECUDIUM Collection Issues**:
 - Uses POST login to `/isap-api/loginProcess` (not GET)
@@ -330,7 +364,7 @@ docker logs blacklist-redis -f
 **Database Initialization**:
 ```bash
 # Manual database setup in container
-docker exec blacklist python3 setup_database.py
+docker exec blacklist python3 init_database.py
 
 # Check database status
 docker exec blacklist python3 -c "
@@ -341,6 +375,9 @@ cursor.execute('SELECT COUNT(*) FROM blacklist_ip')
 print(f'Total IPs: {cursor.fetchone()[0]}')
 conn.close()
 "
+
+# Force recreate database
+python3 init_database.py --force
 ```
 
 **Watchtower Auto-Deployment Issues**:
@@ -353,6 +390,10 @@ docker exec watchtower sh -c 'kill -HUP 1'
 
 # Verify Watchtower labels on container
 docker inspect blacklist | grep -A 5 "Labels"
+
+# Watchtower webhook URL
+https://watchtower.jclee.me/v1/update
+# Authorization: Bearer MySuperSecretToken12345
 ```
 
 ### Integration Testing
@@ -395,16 +436,6 @@ docker-compose -f deployment/docker-compose.yml up -d
 ./manual-deploy.sh
 ```
 
-## GitHub Actions Compatibility Notes
-
-The self-hosted runner requires specific action versions:
-```yaml
-runs-on: self-hosted
-- uses: actions/checkout@v3         # NOT v4
-- uses: docker/setup-buildx-action@v2  # NOT v3
-- uses: docker/build-push-action@v4    # NOT v5
-```
-
 ## Quick Fix Guide
 
 ### 502 Bad Gateway Fix
@@ -442,6 +473,11 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
 ```
 
 ## Recent Implementations (2025.06.28)
+
+### HAR-Based Collectors
+- Added HAR-based REGTECH collector for enhanced compatibility
+- Added HAR-based SECUDIUM collector for robust authentication
+- Comprehensive logging for debugging authentication issues
 
 ### V2 API Endpoints
 - Enhanced blacklist API with metadata
@@ -491,4 +527,9 @@ curl http://localhost:8541/api/collection/status
 # Manual Collection
 curl -X POST http://localhost:8541/api/collection/regtech/trigger
 curl -X POST http://localhost:8541/api/collection/secudium/trigger
+
+# Force collection with date range (REGTECH)
+curl -X POST http://localhost:8541/api/collection/regtech/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"start_date": "20250601", "end_date": "20250620"}'
 ```
