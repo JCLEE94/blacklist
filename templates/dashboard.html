@@ -200,6 +200,49 @@
         </div>
     </div>
 
+    <!-- Expiration Status Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-calendar-x text-warning"></i> 만료 상태 관리
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-success mb-1" id="active-count">{{ active_ips|default(0) }}</h4>
+                                <small class="text-muted">활성 IP</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-danger mb-1" id="expired-count">0</h4>
+                                <small class="text-muted">만료된 IP</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-warning mb-1" id="expiring-soon-count">0</h4>
+                                <small class="text-muted">30일 내 만료</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <button class="btn btn-outline-primary w-100" onclick="updateExpirationStatus()">
+                                    <i class="bi bi-arrow-clockwise me-2"></i>만료 상태 업데이트
+                                </button>
+                                <small class="text-muted d-block mt-2">등록일 + 3개월 자동 만료</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts Row -->
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
@@ -724,7 +767,82 @@ document.addEventListener('DOMContentLoaded', function() {
             duration: 3000
         });
     }
+    
+    // Load expiration statistics on page load
+    loadExpirationStats();
 });
+
+// 만료 상태 업데이트 함수
+function updateExpirationStatus() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Loading state
+    button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>업데이트 중...';
+    button.disabled = true;
+    
+    fetch('/api/expiration/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI with new data
+            if (data.data) {
+                document.getElementById('active-count').textContent = data.data.active_ips.toLocaleString();
+                document.getElementById('expired-count').textContent = data.data.expired_ips.toLocaleString();
+            }
+            
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-5';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                만료 상태가 업데이트되었습니다.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+            
+            // Reload stats
+            loadExpirationStats();
+        } else {
+            alert(data.error || '만료 상태 업데이트에 실패했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('네트워크 오류가 발생했습니다.');
+    })
+    .finally(() => {
+        // Restore button
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+// 만료 통계 로드
+function loadExpirationStats() {
+    fetch('/api/stats/expiration')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const stats = data.current_month_stats;
+                if (stats) {
+                    document.getElementById('active-count').textContent = stats.active_ips.toLocaleString();
+                    document.getElementById('expired-count').textContent = stats.expired_ips.toLocaleString();
+                }
+            }
+        })
+        .catch(error => console.error('Failed to load expiration stats:', error));
+}
 
 // Stop real-time updates when page is hidden
 document.addEventListener('visibilitychange', function() {

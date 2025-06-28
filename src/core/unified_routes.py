@@ -689,16 +689,26 @@ def get_monthly_data():
             try:
                 stats = service.get_monthly_stats(start_date, end_date)
                 ip_count = stats.get('total_ips', 0)
+                active_count = stats.get('active_ips', 0)
+                expired_count = stats.get('expired_ips', 0)
                 
                 monthly_data.append({
                     'month': month_name,
                     'year_month': month_year,
-                    'ip_count': ip_count,
+                    'ip_count': active_count,  # Show only active IPs in charts
+                    'total_ips': ip_count,     # Total historical IPs
+                    'active_ips': active_count,
+                    'expired_ips': expired_count,
                     'details': {
                         'first_detection': stats.get('first_detection', '-'),
                         'last_detection': stats.get('last_detection', '-'),
-                        'status': 'active' if ip_count > 0 else 'no_data',
-                        'sources': stats.get('sources', {})
+                        'status': 'active' if active_count > 0 else 'no_data',
+                        'sources': stats.get('sources', {}),
+                        'expiration_info': {
+                            'total': ip_count,
+                            'active': active_count,
+                            'expired': expired_count
+                        }
                     }
                 })
             except Exception as e:
@@ -731,6 +741,74 @@ def get_monthly_data():
             'status': 'error',
             'message': str(e),
             'monthly_data': []
+        }), 500
+
+@unified_bp.route('/api/expiration/update', methods=['POST'])
+
+def update_expiration_status():
+    """만료 상태 업데이트"""
+    try:
+        # Get blacklist manager from service
+        blacklist_manager = service.blacklist_manager
+        if not blacklist_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Blacklist manager not available'
+            }), 500
+        
+        # Update expiration status
+        result = blacklist_manager.update_expiration_status()
+        
+        return jsonify({
+            'success': True,
+            'message': '만료 상태가 업데이트되었습니다.',
+            'data': result
+        })
+        
+    except Exception as e:
+        logger.error(f"Expiration update error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/stats/expiration', methods=['GET'])
+
+def get_expiration_stats():
+    """만료 관련 통계 조회"""
+    try:
+        blacklist_manager = service.blacklist_manager
+        if not blacklist_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Blacklist manager not available'
+            }), 500
+        
+        # Update expiration status first
+        expiration_result = blacklist_manager.update_expiration_status()
+        
+        # Get current month stats
+        from datetime import datetime
+        current_month_start = datetime.now().strftime('%Y-%m-01')
+        current_month_end = datetime.now().strftime('%Y-%m-31')
+        
+        monthly_stats = blacklist_manager.get_stats_for_period(
+            current_month_start, 
+            current_month_end
+        )
+        
+        return jsonify({
+            'success': True,
+            'expiration_update': expiration_result,
+            'current_month_stats': monthly_stats,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Expiration stats error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500
 
 @unified_bp.route('/api/cleanup-old-data', methods=['POST'])

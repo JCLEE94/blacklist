@@ -596,6 +596,148 @@ class UnifiedBlacklistManager:
         except Exception as e:
             logger.error(f"Cleanup failed: {e}")
     
+    def get_stats_for_period(self, start_date: str, end_date: str) -> Dict[str, Any]:
+        """Get statistics for a specific time period with expiration support"""
+        try:
+            if not self.db_manager:
+                return {'total_ips': 0, 'sources': {}, 'active_ips': 0, 'expired_ips': 0}
+            
+            with self.db_manager.get_session() as session:
+                from sqlalchemy import text
+                
+                # Query for the specific period using detection_date
+                # Include both active and expired IPs for historical accuracy
+                query = text("""
+                    SELECT 
+                        source,
+                        COUNT(DISTINCT ip) as total_count,
+                        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_count,
+                        SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as expired_count,
+                        MIN(detection_date) as first_detection,
+                        MAX(detection_date) as last_detection
+                    FROM blacklist_ip 
+                    WHERE detection_date >= :start_date 
+                    AND detection_date <= :end_date
+                    GROUP BY source
+                """)
+                
+                result = session.execute(query, {
+                    'start_date': start_date,
+                    'end_date': end_date
+                })
+                
+                sources = {}
+                total_ips = 0
+                active_ips = 0
+                expired_ips = 0
+                first_detection = None
+                last_detection = None
+                
+                for row in result:
+                    source, total_count, active_count, expired_count, first, last = row
+                    sources[source] = {
+                        'total': total_count,
+                        'active': active_count,
+                        'expired': expired_count
+                    }
+                    total_ips += total_count
+                    active_ips += active_count
+                    expired_ips += expired_count
+                    
+                    if first_detection is None or (first and first < first_detection):
+                        first_detection = first
+                    if last_detection is None or (last and last > last_detection):
+                        last_detection = last
+                
+                return {
+                    'total_ips': total_ips,
+                    'active_ips': active_ips,
+                    'expired_ips': expired_ips,
+                    'sources': sources,
+                    'first_detection': first_detection if first_detection else None,
+                    'last_detection': last_detection if last_detection else None
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting stats for period {start_date} to {end_date}: {e}")
+            return {
+                'total_ips': 0,
+                'active_ips': 0,
+                'expired_ips': 0,
+                'sources': {},
+                'first_detection': None,
+                'last_detection': None
+            }
+    
+    def update_expiration_status(self) -> Dict[str, Any]:
+        """Update expiration status for all IPs based on current time"""
+        try:
+            if not self.db_manager:
+                return {'updated': 0, 'error': 'Database not available'}
+            
+            with self.db_manager.get_session() as session:
+                from sqlalchemy import text
+                
+                # Update is_active status based on expires_at
+                query = text("""
+                    UPDATE blacklist_ip 
+                    SET is_active = CASE 
+                        WHEN expires_at > datetime('now') THEN 1 
+                        ELSE 0 
+                    END
+                    WHERE expires_at IS NOT NULL
+                """)
+                
+                result = session.execute(query)
+                session.commit()
+                
+                # Get current statistics
+                stats_query = text("""
+                    SELECT 
+                        COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_count,
+                        COUNT(CASE WHEN is_active = 0 THEN 1 END) as expired_count,
+                        COUNT(*) as total_count
+                    FROM blacklist_ip
+                """)
+                
+                stats_result = session.execute(stats_query)
+                stats_row = stats_result.fetchone()
+                
+                return {
+                    'updated': result.rowcount,
+                    'active_ips': stats_row[0],
+                    'expired_ips': stats_row[1],
+                    'total_ips': stats_row[2],
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            logger.error(f"Error updating expiration status: {e}")
+            return {'updated': 0, 'error': str(e)}
+    
+    def get_active_blacklist_ips(self) -> List[str]:
+        """Get only currently active (non-expired) blacklist IPs"""
+        try:
+            if not self.db_manager:
+                return []
+                
+            with self.db_manager.get_session() as session:
+                from sqlalchemy import text
+                
+                query = text("""
+                    SELECT DISTINCT ip 
+                    FROM blacklist_ip 
+                    WHERE is_active = 1
+                    ORDER BY ip
+                """)
+                
+                result = session.execute(query)
+                return [row[0] for row in result]
+                
+        except Exception as e:
+            logger.error(f"Error getting active blacklist IPs: {e}")
+            return []
+    
     def get_system_health(self) -> Dict[str, Any]:
         """Get system health status"""
         return {
