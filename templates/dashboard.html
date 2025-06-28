@@ -285,6 +285,27 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- 일일 자동 수집 컨트롤 -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="bi bi-calendar-check me-2"></i>일일 자동 수집
+                                </h6>
+                                <small class="text-muted">매일 자동으로 당일 데이터만 수집</small>
+                            </div>
+                            <div class="form-check form-switch form-switch-lg">
+                                <input class="form-check-input" type="checkbox" id="dailyCollectionSwitch" onchange="toggleDailyCollection(this)">
+                                <label class="form-check-label" for="dailyCollectionSwitch">
+                                    <span id="dailyCollectionStatus">OFF</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="lastDailyCollection" class="mt-2 small text-muted" style="display: none;">
+                            마지막 수집: <span id="lastDailyCollectionTime">-</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -603,6 +624,51 @@ function updateLastUpdate() {
     }
 }
 
+// 일일 자동 수집 토글
+function toggleDailyCollection(checkbox) {
+    const isEnabled = checkbox.checked;
+    const statusSpan = document.getElementById('dailyCollectionStatus');
+    const endpoint = isEnabled ? '/api/collection/daily/enable' : '/api/collection/daily/disable';
+    
+    // UI 업데이트
+    statusSpan.textContent = 'Loading...';
+    checkbox.disabled = true;
+    
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusSpan.textContent = isEnabled ? 'ON' : 'OFF';
+            statusSpan.className = isEnabled ? 'text-success fw-bold' : '';
+            
+            // 마지막 수집 시간 표시
+            if (isEnabled && data.last_daily_collection) {
+                document.getElementById('lastDailyCollection').style.display = 'block';
+                document.getElementById('lastDailyCollectionTime').textContent = new Date(data.last_daily_collection).toLocaleString('ko-KR');
+            }
+        } else {
+            // 실패 시 원래 상태로 되돌리기
+            checkbox.checked = !isEnabled;
+            statusSpan.textContent = !isEnabled ? 'ON' : 'OFF';
+            alert(data.error || '설정 변경에 실패했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        checkbox.checked = !isEnabled;
+        statusSpan.textContent = !isEnabled ? 'ON' : 'OFF';
+        alert('네트워크 오류가 발생했습니다.');
+    })
+    .finally(() => {
+        checkbox.disabled = false;
+    });
+}
+
 // Add fade-in animation to elements
 document.addEventListener('DOMContentLoaded', function() {
     const elements = document.querySelectorAll('.stat-card, .modern-card');
@@ -622,6 +688,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load monthly data
     loadMonthlyData();
+    
+    // 일일 자동 수집 상태 확인
+    fetch('/api/collection/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.daily_collection_enabled) {
+                document.getElementById('dailyCollectionSwitch').checked = true;
+                document.getElementById('dailyCollectionStatus').textContent = 'ON';
+                document.getElementById('dailyCollectionStatus').className = 'text-success fw-bold';
+                
+                if (data.last_daily_collection) {
+                    document.getElementById('lastDailyCollection').style.display = 'block';
+                    document.getElementById('lastDailyCollectionTime').textContent = new Date(data.last_daily_collection).toLocaleString('ko-KR');
+                }
+            }
+        })
+        .catch(error => console.error('Failed to load collection status:', error));
     
     // Initialize new UI components
     

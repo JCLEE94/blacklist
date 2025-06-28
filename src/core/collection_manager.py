@@ -39,6 +39,10 @@ class CollectionManager:
         # collection_enabled 속성 추가
         self.collection_enabled = self.config.get('collection_enabled', False)
         
+        # 일일 자동 수집 설정
+        self.daily_collection_enabled = self.config.get('daily_collection_enabled', False)
+        self.last_daily_collection = self.config.get('last_daily_collection', None)
+        
         self.sources = {
             'regtech': {
                 'name': 'REGTECH (금융보안원)',
@@ -69,7 +73,9 @@ class CollectionManager:
                     'collection_enabled': False,
                     'sources': {'regtech': False, 'secudium': False},
                     'last_enabled_at': None,
-                    'last_disabled_at': None
+                    'last_disabled_at': None,
+                    'daily_collection_enabled': False,
+                    'last_daily_collection': None
                 }
         except Exception as e:
             logger.error(f"설정 로드 실패: {e}")
@@ -77,7 +83,9 @@ class CollectionManager:
                 'collection_enabled': False,
                 'sources': {'regtech': False, 'secudium': False},
                 'last_enabled_at': None,
-                'last_disabled_at': None
+                'last_disabled_at': None,
+                'daily_collection_enabled': False,
+                'last_daily_collection': None
             }
     
     def _save_collection_config(self):
@@ -279,8 +287,10 @@ class CollectionManager:
             return {
                 'status': 'active' if self.config.get('collection_enabled', False) else 'inactive',
                 'collection_enabled': self.config.get('collection_enabled', False),
+                'daily_collection_enabled': self.daily_collection_enabled,
                 'last_enabled_at': self.config.get('last_enabled_at'),
                 'last_disabled_at': self.config.get('last_disabled_at'),
+                'last_daily_collection': self.last_daily_collection,
                 'last_updated': datetime.now().isoformat(),
                 'sources': {
                     source_key: {
@@ -308,15 +318,112 @@ class CollectionManager:
                 'last_updated': datetime.now().isoformat()
             }
     
-    def trigger_regtech_collection(self) -> Dict[str, Any]:
+    def enable_daily_collection(self) -> Dict[str, Any]:
+        """
+        일일 자동 수집 활성화
+        """
+        try:
+            self.daily_collection_enabled = True
+            self.config['daily_collection_enabled'] = True
+            self._save_collection_config()
+            
+            logger.info("✅ 일일 자동 수집 활성화")
+            
+            return {
+                'success': True,
+                'message': '일일 자동 수집이 활성화되었습니다',
+                'daily_collection_enabled': True
+            }
+        except Exception as e:
+            logger.error(f"일일 자동 수집 활성화 실패: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def disable_daily_collection(self) -> Dict[str, Any]:
+        """
+        일일 자동 수집 비활성화
+        """
+        try:
+            self.daily_collection_enabled = False
+            self.config['daily_collection_enabled'] = False
+            self._save_collection_config()
+            
+            logger.info("⏹️ 일일 자동 수집 비활성화")
+            
+            return {
+                'success': True,
+                'message': '일일 자동 수집이 비활성화되었습니다',
+                'daily_collection_enabled': False
+            }
+        except Exception as e:
+            logger.error(f"일일 자동 수집 비활성화 실패: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def trigger_daily_collection(self) -> Dict[str, Any]:
+        """
+        일일 자동 수집 실행 (하루 단위 데이터만)
+        """
+        try:
+            if not self.daily_collection_enabled:
+                return {
+                    'success': False,
+                    'message': '일일 자동 수집이 비활성화 상태입니다'
+                }
+            
+            # 오늘 날짜로 수집 범위 설정
+            today = datetime.now()
+            start_date = today.strftime('%Y%m%d')
+            end_date = today.strftime('%Y%m%d')
+            
+            logger.info(f"🔄 일일 자동 수집 시작: {start_date}")
+            
+            results = {}
+            
+            # REGTECH 수집 (하루 단위)
+            regtech_result = self.trigger_regtech_collection(start_date=start_date, end_date=end_date)
+            results['regtech'] = regtech_result
+            
+            # SECUDIUM 수집 (하루 단위)
+            secudium_result = self.trigger_secudium_collection()
+            results['secudium'] = secudium_result
+            
+            # 마지막 수집 시간 업데이트
+            self.last_daily_collection = datetime.now().isoformat()
+            self.config['last_daily_collection'] = self.last_daily_collection
+            self._save_collection_config()
+            
+            return {
+                'success': True,
+                'message': '일일 자동 수집 완료',
+                'collection_date': start_date,
+                'results': results
+            }
+            
+        except Exception as e:
+            logger.error(f"일일 자동 수집 실패: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def trigger_regtech_collection(self, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
         """
         REGTECH 수집 트리거
         
+        Args:
+            start_date: 시작일 (YYYYMMDD), None이면 최근 90일
+            end_date: 종료일 (YYYYMMDD), None이면 오늘
+            
         Returns:
             수집 결과
         """
         try:
-            logger.info("REGTECH 수집 시작")
+            logger.info(f"REGTECH 수집 시작 (start_date={start_date}, end_date={end_date})")
             
             # HAR 기반 REGTECH 수집기 import 및 실행
             try:
@@ -326,7 +433,16 @@ class CollectionManager:
                 collector = HarBasedRegtechCollector(data_dir=data_dir)
                 
                 # 수집 실행 (HAR 기반 auto_collect 사용)
-                result = collector.auto_collect(prefer_web=True, db_path=self.db_path)
+                # 날짜 범위가 지정된 경우 collect_from_web 사용
+                if start_date and end_date:
+                    ips = collector.collect_from_web(start_date=start_date, end_date=end_date)
+                    result = {
+                        'success': True if ips else False,
+                        'total_collected': len(ips) if ips else 0,
+                        'ips': ips
+                    }
+                else:
+                    result = collector.auto_collect(prefer_web=True, db_path=self.db_path)
                 
                 if result.get('success', False):
                     # 수집 성공

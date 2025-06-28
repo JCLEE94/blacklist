@@ -152,19 +152,34 @@ class UnifiedBlacklistService:
         """주기적 데이터 수집"""
         while self._running:
             try:
-                self.logger.info("🔄 주기적 데이터 수집 시작...")
+                # 일일 자동 수집이 활성화된 경우만 실행
+                if self.collection_manager and hasattr(self.collection_manager, 'daily_collection_enabled'):
+                    if self.collection_manager.daily_collection_enabled:
+                        # 마지막 수집이 오늘이 아니면 수집 실행
+                        last_collection = self.collection_manager.last_daily_collection
+                        if not last_collection or not last_collection.startswith(datetime.now().strftime('%Y-%m-%d')):
+                            self.logger.info("🔄 일일 자동 수집 시작...")
+                            
+                            # 오늘 날짜로 수집
+                            today = datetime.now()
+                            start_date = today.strftime('%Y%m%d')
+                            end_date = today.strftime('%Y%m%d')
+                            
+                            # REGTECH 수집 (하루 단위)
+                            result = await self._collect_regtech_data_with_date(start_date, end_date)
+                            
+                            if result.get('success'):
+                                self.logger.info(f"✅ 일일 자동 수집 완료: {result.get('total_collected', 0)}개 IP")
+                                
+                                # 마지막 수집 시간 업데이트
+                                self.collection_manager.last_daily_collection = datetime.now().isoformat()
+                                self.collection_manager.config['last_daily_collection'] = self.collection_manager.last_daily_collection
+                                self.collection_manager._save_collection_config()
+                            else:
+                                self.logger.warning("⚠️ 일일 자동 수집 실패")
                 
-                # 모든 소스에서 데이터 수집
-                result = await self.collect_all_data()
-                
-                if result.get('success'):
-                    total_collected = sum(r.get('total_collected', 0) for r in result.get('results', {}).values())
-                    self.logger.info(f"✅ 주기적 수집 완료: {total_collected}개 IP")
-                else:
-                    self.logger.warning("⚠️ 주기적 수집 중 일부 실패")
-                
-                # 다음 수집까지 대기
-                await asyncio.sleep(self.config['collection_interval'])
+                # 다음 체크까지 대기 (1시간)
+                await asyncio.sleep(3600)
                 
             except Exception as e:
                 self.logger.error(f"❌ 주기적 수집 오류: {e}")
@@ -235,6 +250,19 @@ class UnifiedBlacklistService:
         return await loop.run_in_executor(
             None, 
             self._components['regtech'].auto_collect
+        )
+    
+    async def _collect_regtech_data_with_date(self, start_date: str, end_date: str) -> Dict[str, Any]:
+        """REGTECH 데이터 수집 (날짜 지정)"""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None,
+            self._components['regtech'].collect_from_web,
+            5,  # max_pages
+            100,  # page_size
+            1,  # parallel_workers
+            start_date,
+            end_date
         )
     
     async def _collect_secudium_data(self, force: bool = False) -> Dict[str, Any]:

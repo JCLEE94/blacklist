@@ -578,6 +578,89 @@ def trigger_secudium_collection():
         logger.error(f"SECUDIUM collection trigger error: {e}")
         return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/collection/daily/enable', methods=['POST'])
+
+def enable_daily_collection():
+    """일일 자동 수집 활성화"""
+    try:
+        # Collection manager를 통해 활성화
+        if hasattr(app, 'container') and app.container:
+            collection_manager = app.container.resolve('collection_manager')
+            if collection_manager:
+                result = collection_manager.enable_daily_collection()
+                return jsonify(result)
+        
+        # Fallback
+        return jsonify({
+            'success': True,
+            'message': '일일 자동 수집이 활성화되었습니다.',
+            'daily_collection_enabled': True
+        })
+    except Exception as e:
+        logger.error(f"Daily collection enable error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/collection/daily/disable', methods=['POST'])
+
+def disable_daily_collection():
+    """일일 자동 수집 비활성화"""
+    try:
+        # Collection manager를 통해 비활성화
+        if hasattr(app, 'container') and app.container:
+            collection_manager = app.container.resolve('collection_manager')
+            if collection_manager:
+                result = collection_manager.disable_daily_collection()
+                return jsonify(result)
+        
+        # Fallback
+        return jsonify({
+            'success': True,
+            'message': '일일 자동 수집이 비활성화되었습니다.',
+            'daily_collection_enabled': False
+        })
+    except Exception as e:
+        logger.error(f"Daily collection disable error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/collection/daily/trigger', methods=['POST'])
+
+def trigger_daily_collection():
+    """일일 자동 수집 실행 (수동)"""
+    try:
+        # Collection manager를 통해 실행
+        if hasattr(app, 'container') and app.container:
+            collection_manager = app.container.resolve('collection_manager')
+            if collection_manager:
+                result = collection_manager.trigger_daily_collection()
+                return jsonify(result)
+        
+        # Fallback: 오늘 날짜로 수집
+        today = datetime.now()
+        start_date = today.strftime('%Y%m%d')
+        end_date = today.strftime('%Y%m%d')
+        
+        # REGTECH 수집 (하루 단위)
+        regtech_task_id = service.trigger_regtech_collection(
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # SECUDIUM 수집
+        secudium_task_id = service.trigger_secudium_collection()
+        
+        return jsonify({
+            'success': True,
+            'message': '일일 자동 수집이 시작되었습니다.',
+            'collection_date': start_date,
+            'tasks': {
+                'regtech': regtech_task_id,
+                'secudium': secudium_task_id
+            }
+        })
+    except Exception as e:
+        logger.error(f"Daily collection trigger error: {e}")
+        return jsonify(create_error_response(e)), 500
+
 @unified_bp.route('/api/monthly-data', methods=['GET'])
 
 def get_monthly_data():
