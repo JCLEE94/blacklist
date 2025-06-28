@@ -667,11 +667,30 @@ class UnifiedBlacklistService:
                     total_in_db = cursor.fetchone()[0]
                     self.logger.info(f"Total IPs in database: {total_in_db}")
                     
-                    cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
-                    for row in cursor.fetchall():
-                        self.logger.info(f"Source {row[0]}: {row[1]} IPs")
-                        if row[0] in source_counts:
-                            source_counts[row[0]] = row[1]
+                    # 더 상세한 디버깅 정보
+                    if total_in_db > 0:
+                        cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
+                        for row in cursor.fetchall():
+                            self.logger.info(f"Source {row[0]}: {row[1]} IPs")
+                            if row[0] in source_counts:
+                                source_counts[row[0]] = row[1]
+                        
+                        # 최근 추가된 데이터 확인
+                        cursor.execute("SELECT ip, source, created_at FROM blacklist_ip ORDER BY created_at DESC LIMIT 5")
+                        recent_ips = cursor.fetchall()
+                        self.logger.info(f"Recent IPs added: {recent_ips}")
+                    else:
+                        self.logger.warning("No IPs found in database - checking table structure...")
+                        cursor.execute("PRAGMA table_info(blacklist_ip)")
+                        table_info = cursor.fetchall()
+                        self.logger.info(f"Table structure: {table_info}")
+                        
+                        # 모든 테이블 확인
+                        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                        all_tables = cursor.fetchall()
+                        self.logger.info(f"All tables in database: {all_tables}")
+                    
+                    total_ips = total_in_db  # Use the actual count from database
                 conn.close()
             except Exception as e:
                 self.logger.warning(f"Failed to get source counts: {e}")
