@@ -680,14 +680,21 @@ def get_collection_status():
     try:
         result = service.get_collection_status()
         
-        # If the result is already properly formatted, return it
+        # If the result is already properly formatted, add logs and return it
         if 'enabled' in result:
+            # Add collection logs to the response
+            try:
+                recent_logs = service.get_collection_logs(limit=100)
+                result['logs'] = recent_logs
+            except Exception as e:
+                logger.warning(f"Failed to get collection logs: {e}")
+                result['logs'] = []
             return jsonify(result)
         
         # Otherwise, extract from nested structure (legacy format)
         if 'status' in result and isinstance(result['status'], dict):
             status = result['status']
-            return jsonify({
+            result = {
                 'enabled': status.get('collection_enabled', False),
                 'status': status.get('status', 'inactive'),
                 'sources': status.get('sources', {}),
@@ -698,10 +705,18 @@ def get_collection_status():
                 'last_collection': status.get('last_updated'),
                 'last_enabled_at': status.get('last_enabled_at'),
                 'last_disabled_at': status.get('last_disabled_at')
-            })
+            }
+            # Add logs for legacy format too
+            try:
+                recent_logs = service.get_collection_logs(limit=100)
+                result['logs'] = recent_logs
+            except Exception as e:
+                logger.warning(f"Failed to get collection logs: {e}")
+                result['logs'] = []
+            return jsonify(result)
         
         # Fallback
-        return jsonify({
+        fallback_result = {
             'enabled': False,
             'status': 'inactive',
             'sources': {},
@@ -710,7 +725,15 @@ def get_collection_status():
                 'today_collected': 0
             },
             'last_collection': None
-        })
+        }
+        # Add logs for fallback too
+        try:
+            recent_logs = service.get_collection_logs(limit=100)
+            fallback_result['logs'] = recent_logs
+        except Exception as e:
+            logger.warning(f"Failed to get collection logs: {e}")
+            fallback_result['logs'] = []
+        return jsonify(fallback_result)
     except Exception as e:
         logger.error(f"Collection status error: {e}")
         return jsonify({
