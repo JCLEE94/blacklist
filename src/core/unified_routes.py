@@ -205,7 +205,7 @@ def statistics():
         }), 500
 
 @unified_bp.route('/api/stats/monthly-data', methods=['GET'])
-def get_monthly_data():
+def api_monthly_data():
     """월별 블랙리스트 데이터 추이"""
     try:
         blacklist_manager = current_app.blacklist_manager
@@ -264,7 +264,7 @@ def get_monthly_data():
         }), 500
 
 @unified_bp.route('/api/stats/sources-distribution', methods=['GET'])
-def get_sources_distribution():
+def api_sources_distribution():
     """소스별 분포 데이터"""
     try:
         blacklist_manager = current_app.blacklist_manager
@@ -308,7 +308,7 @@ def get_sources_distribution():
         }), 500
 
 @unified_bp.route('/api/collection/logs', methods=['GET'])
-def get_collection_logs():
+def api_collection_logs():
     """수집 로그 조회 (지속성 있는)"""
     try:
         import os
