@@ -112,13 +112,12 @@ cache_manager = container.get('cache_manager')
 - `regtech_collector`: REGTECH-specific collection with session management
 - `secudium_collector`: SECUDIUM-specific collection with Excel download
 
-### Application Entry Points and Fallback Chain
+### Application Entry Points
 
-The system provides multiple entry points with automatic fallback:
+The system provides streamlined entry point with error handling:
 
 1. **Primary**: `main.py` → `src/core/app_compact.py` (full feature set)
-2. **Fallback**: `src/core/minimal_app.py` (essential features only)
-3. **Legacy**: `src/app.py` or `app.py` (backward compatibility)
+2. **Error Handling**: Comprehensive logging and graceful shutdown on failure
 
 **app_compact.py** features:
 - Full dependency injection
@@ -155,6 +154,7 @@ class BaseIPSource(ABC):
 - Session-based authentication with enhanced retry logic
 - Date range parameters (startDate, endDate) for filtered collection
 - Sequential collection to maintain session integrity
+- Proper date parsing from Excel source data (not current time)
 - Comprehensive error detection and logging
 
 **SECUDIUM Collection** (`src/core/secudium_collector.py`):
@@ -163,6 +163,7 @@ class BaseIPSource(ABC):
 - Excel file download from bulletin board
 - Token-based authentication with Bearer token
 - Automatic IP extraction from Excel files
+- Original detection date preservation from source data
 
 ### Caching and Performance
 
@@ -233,6 +234,25 @@ cache.set(key, value, ttl=300)  # Use 'ttl=', not 'timeout='
 
 # Decorator usage
 @cached(cache, ttl=300, key_prefix="stats")  # Use 'ttl=' and 'key_prefix='
+```
+
+### Content-Type Handling
+Support both JSON and form data in POST endpoints:
+```python
+# Handle both JSON and form data
+if request.is_json:
+    data = request.get_json() or {}
+else:
+    data = request.form.to_dict() or {}
+```
+
+### Date Parsing in Collectors
+Preserve original detection dates from source data:
+```python
+# Correct - use source data dates
+if isinstance(detection_date_raw, pd.Timestamp):
+    detection_date = detection_date_raw.strftime('%Y-%m-%d')
+# NOT: detection_date = datetime.now().strftime('%Y-%m-%d')
 ```
 
 ### Environment Variables
@@ -401,3 +421,74 @@ If experiencing high memory usage:
 2. Check Docker stats: `docker stats --no-stream`
 3. Restart container: `docker restart blacklist`
 4. Consider killing unused processes consuming memory
+
+## Collection Logging
+
+Enhanced collection logging system (`src/core/unified_service.py`):
+- Detailed daily collection statistics in logs
+- Collection start/complete events with IP counts
+- Memory-based log storage with rotation
+- Source-specific action tracking
+
+```python
+def add_collection_log(self, source: str, action: str, details: Dict[str, Any] = None):
+    """수집 로그 추가 - 일일 상세 통계 포함"""
+    log_entry = {
+        'timestamp': datetime.now().isoformat(),
+        'source': source,
+        'action': action,
+        'details': details or {}
+    }
+```
+
+## Recent Implementations (2025.06.28)
+
+### V2 API Endpoints
+- Enhanced blacklist API with metadata
+- Advanced analytics and trends
+- Multi-source status monitoring
+- Docker container management
+
+### Collection Date Fix
+- Fixed collectors to use source dates instead of current time
+- Proper Excel timestamp parsing in REGTECH and SECUDIUM
+- Original detection date preservation throughout pipeline
+
+### Collection Logging Enhancement
+- Daily collection statistics displayed in logs
+- Detailed collector action tracking
+- Memory-based log storage with automatic rotation
+
+### Technology Stack
+
+- **Backend**: Flask 2.3.3 + Gunicorn
+- **Database**: SQLite with auto-migration support
+- **Cache**: Redis (memory fallback for development)
+- **Container**: Docker/Podman with Watchtower auto-deployment
+- **CI/CD**: GitHub Actions + Self-hosted Runner
+- **Monitoring**: Built-in performance metrics and health checks
+- **JSON**: orjson for high-performance serialization
+- **Data Processing**: pandas + openpyxl for Excel parsing
+
+## Quick Reference
+
+```bash
+# Development
+python3 main.py --debug
+
+# Testing
+pytest -v
+
+# Deployment
+./manual-deploy.sh
+
+# Health Check
+curl http://localhost:8541/health
+
+# Collection Status
+curl http://localhost:8541/api/collection/status
+
+# Manual Collection
+curl -X POST http://localhost:8541/api/collection/regtech/trigger
+curl -X POST http://localhost:8541/api/collection/secudium/trigger
+```
