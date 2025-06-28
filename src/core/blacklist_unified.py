@@ -482,14 +482,16 @@ class UnifiedBlacklistManager:
     def get_active_ips(self) -> List[str]:
         """Get all active IPs for FortiGate external connector compatibility"""
         try:
-            with self.db_manager.get_session() as session:
-                from sqlalchemy import text
-                
-                result = session.execute(
-                    text("SELECT DISTINCT ip FROM blacklist_ip ORDER BY ip")
-                ).fetchall()
-                
-                return [row.ip for row in result]
+            # Use direct SQLite connection
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT ip FROM blacklist_ip ORDER BY ip")
+            result = cursor.fetchall()
+            conn.close()
+            
+            ips = [row[0] for row in result]
+            logger.info(f"Retrieved {len(ips)} active IPs from database")
+            return ips
                 
         except Exception as e:
             logger.error(f"Failed to get active IPs from database: {e}")
