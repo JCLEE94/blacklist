@@ -7,7 +7,7 @@ import sqlite3
 import os
 import sys
 
-def init_database():
+def init_database(force_recreate=False):
     # Docker 환경과 로컬 환경 모두 지원
     if os.path.exists('/app'):
         db_path = '/app/instance/blacklist.db'
@@ -33,8 +33,11 @@ def init_database():
             cursor.execute("PRAGMA table_info(blacklist_ip)")
             columns = [col[1] for col in cursor.fetchall()]
             
-            if 'ip' not in columns:
-                print("❌ 'ip' column missing in blacklist_ip table. Recreating table...")
+            if 'ip' not in columns or force_recreate:
+                if force_recreate:
+                    print("🔄 Force recreating table...")
+                else:
+                    print("❌ 'ip' column missing in blacklist_ip table. Recreating table...")
                 cursor.execute("DROP TABLE IF EXISTS blacklist_ip")
                 table_exists = False
         
@@ -45,6 +48,7 @@ def init_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ip VARCHAR(45) UNIQUE NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                detection_date TIMESTAMP,
                 attack_type VARCHAR(50),
                 country VARCHAR(100),
                 source VARCHAR(100),
@@ -92,5 +96,7 @@ def init_database():
         return False
 
 if __name__ == "__main__":
-    success = init_database()
+    # 명령줄 인자로 --force-recreate 옵션 지원
+    force_recreate = '--force-recreate' in sys.argv
+    success = init_database(force_recreate=force_recreate)
     sys.exit(0 if success else 1)

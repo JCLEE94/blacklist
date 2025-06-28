@@ -401,23 +401,34 @@ class UnifiedBlacklistManager:
                             session.execute(
                                 text("""
                                     UPDATE blacklist_ip 
-                                    SET created_at = :now
+                                    SET created_at = :created_at,
+                                        detection_date = COALESCE(:detection_date, detection_date),
+                                        attack_type = COALESCE(:attack_type, attack_type),
+                                        country = COALESCE(:country, country)
                                     WHERE ip = :ip
                                 """),
-                                {"ip": ip, "now": datetime.now()}
+                                {
+                                    "ip": ip,
+                                    "created_at": datetime.now(),
+                                    "detection_date": ip_data.get('reg_date') or ip_data.get('detection_date'),
+                                    "attack_type": ip_data.get('threat_type', 'blacklist'),
+                                    "country": ip_data.get('country')
+                                }
                             )
                         else:
                             # Insert new record
                             session.execute(
                                 text("""
                                     INSERT INTO blacklist_ip 
-                                    (ip, created_at, attack_type, source)
-                                    VALUES (:ip, :now, :attack_type, :source)
+                                    (ip, created_at, detection_date, attack_type, country, source)
+                                    VALUES (:ip, :now, :detection_date, :attack_type, :country, :source)
                                 """),
                                 {
                                     "ip": ip,
                                     "now": datetime.now(),
+                                    "detection_date": ip_data.get('reg_date') or ip_data.get('detection_date'),
                                     "attack_type": ip_data.get('threat_type', 'blacklist'),
+                                    "country": ip_data.get('country'),
                                     "source": ip_data.get('source', source)
                                 }
                             )

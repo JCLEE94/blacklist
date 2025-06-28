@@ -659,6 +659,7 @@ class UnifiedBlacklistService:
                                         'source': 'REGTECH',
                                         'threat_type': ip_entry.reason,
                                         'country': ip_entry.country,
+                                        'reg_date': ip_entry.reg_date,  # 원본 등록일 추가
                                         'confidence': 1.0
                                     })
                                 
@@ -717,6 +718,7 @@ class UnifiedBlacklistService:
                                         'source': 'SECUDIUM',
                                         'threat_type': ip_entry.reason,
                                         'country': ip_entry.country,
+                                        'reg_date': ip_entry.reg_date,  # 원본 등록일 추가
                                         'confidence': 1.0
                                     })
                                 
