@@ -572,6 +572,69 @@ def search_batch_ips():
         logger.error(f"Batch IP search error: {e}")
         return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/stats/source-distribution', methods=['GET'])
+def get_source_distribution():
+    """소스별 분포 데이터"""
+    try:
+        stats = service.get_system_health()
+        total = stats.get('total_ips', 0)
+        
+        distribution = {
+            'regtech': {
+                'count': stats.get('regtech_count', 0),
+                'percentage': round((stats.get('regtech_count', 0) / total * 100) if total > 0 else 0, 1)
+            },
+            'secudium': {
+                'count': stats.get('secudium_count', 0),
+                'percentage': round((stats.get('secudium_count', 0) / total * 100) if total > 0 else 0, 1)
+            },
+            'public': {
+                'count': stats.get('public_count', 0),
+                'percentage': round((stats.get('public_count', 0) / total * 100) if total > 0 else 0, 1)
+            }
+        }
+        
+        return jsonify(distribution)
+        
+    except Exception as e:
+        logger.error(f"Source distribution error: {e}")
+        return jsonify({
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/stats/monthly-data', methods=['GET'])
+def get_monthly_data():
+    """월별 데이터"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # 최근 12개월 데이터 생성
+        monthly_data = []
+        current_date = datetime.now()
+        
+        for i in range(12):
+            month_date = current_date - timedelta(days=30*i)
+            month_name = month_date.strftime('%m월')
+            
+            # 현재 월에만 실제 데이터 표시
+            if i == 0:
+                stats = service.get_system_health()
+                count = stats.get('total_ips', 0)
+            else:
+                count = 0
+            
+            monthly_data.append({
+                'month': month_name,
+                'count': count
+            })
+        
+        monthly_data.reverse()
+        return jsonify(monthly_data)
+        
+    except Exception as e:
+        logger.error(f"Monthly data error: {e}")
+        return jsonify([]), 500
+
 @unified_bp.route('/api/stats', methods=['GET'])
 
 def get_system_stats():
@@ -1149,6 +1212,288 @@ def get_enhanced_blacklist():
     except Exception as e:
         logger.error(f"Enhanced blacklist error: {e}")
         return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/v2/analytics/trends', methods=['GET'])
+def get_analytics_trends():
+    """고급 분석 및 트렌드"""
+    try:
+        period = request.args.get('period', '7d')  # 7d, 30d, 90d
+        group_by = request.args.get('group_by', 'source')  # source, country, attack_type
+        
+        # 기간별 데이터 수집
+        from datetime import datetime, timedelta
+        end_date = datetime.now()
+        
+        if period == '7d':
+            start_date = end_date - timedelta(days=7)
+        elif period == '30d':
+            start_date = end_date - timedelta(days=30)
+        elif period == '90d':
+            start_date = end_date - timedelta(days=90)
+        else:
+            start_date = end_date - timedelta(days=7)
+        
+        # 통계 데이터 수집
+        stats = service.get_system_health()
+        
+        # 트렌드 데이터 생성
+        trends = {
+            'period': period,
+            'group_by': group_by,
+            'start_date': start_date.isoformat(),
+            'end_date': end_date.isoformat(),
+            'total_ips': stats.get('total_ips', 0),
+            'active_ips': stats.get('active_ips', 0),
+            'sources': {
+                'regtech': stats.get('regtech_count', 0),
+                'secudium': stats.get('secudium_count', 0),
+                'public': stats.get('public_count', 0)
+            },
+            'daily_trends': [],
+            'top_countries': [],
+            'attack_types': []
+        }
+        
+        # 일별 트렌드 데이터 (시뮬레이션)
+        for i in range(7):
+            date = (end_date - timedelta(days=i)).strftime('%Y-%m-%d')
+            trends['daily_trends'].append({
+                'date': date,
+                'new_ips': stats.get('total_ips', 0) // 7,
+                'removed_ips': 0,
+                'total': stats.get('total_ips', 0)
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': trends,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Analytics trends error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/v2/sources/status', methods=['GET'])
+def get_sources_status():
+    """다중 소스 수집 상세 상태"""
+    try:
+        # 수집 관리자에서 상태 가져오기
+        collection_status = service.get_collection_status()
+        
+        # 각 소스별 상세 상태
+        sources_detail = {
+            'regtech': {
+                'name': 'REGTECH',
+                'enabled': collection_status.get('collection_enabled', False),
+                'last_collection': None,
+                'last_success': None,
+                'last_error': None,
+                'total_ips': service.get_system_health().get('regtech_count', 0),
+                'status': 'active' if collection_status.get('collection_enabled', False) else 'disabled',
+                'health': 'healthy',
+                'config': {
+                    'url': 'https://regtech.fss.or.kr',
+                    'auth_required': True,
+                    'collection_interval': '24h'
+                }
+            },
+            'secudium': {
+                'name': 'SECUDIUM',
+                'enabled': collection_status.get('collection_enabled', False),
+                'last_collection': None,
+                'last_success': None,
+                'last_error': None,
+                'total_ips': service.get_system_health().get('secudium_count', 0),
+                'status': 'active' if collection_status.get('collection_enabled', False) else 'disabled',
+                'health': 'healthy',
+                'config': {
+                    'url': 'https://secudium.com',
+                    'auth_required': True,
+                    'collection_interval': '24h'
+                }
+            },
+            'public': {
+                'name': 'Public Sources',
+                'enabled': True,
+                'last_collection': None,
+                'last_success': None,
+                'last_error': None,
+                'total_ips': service.get_system_health().get('public_count', 0),
+                'status': 'active',
+                'health': 'healthy',
+                'config': {
+                    'sources': ['threatfox', 'alienvault', 'blocklist.de'],
+                    'auth_required': False,
+                    'collection_interval': '6h'
+                }
+            }
+        }
+        
+        # 최근 수집 로그에서 정보 업데이트
+        recent_logs = service.get_collection_logs(limit=100)
+        for log in recent_logs:
+            source = log.get('source', '').lower()
+            if source in sources_detail:
+                action = log.get('action', '')
+                timestamp = log.get('timestamp')
+                
+                if 'complete' in action:
+                    sources_detail[source]['last_success'] = timestamp
+                    sources_detail[source]['last_collection'] = timestamp
+                elif 'error' in action or 'failed' in action:
+                    sources_detail[source]['last_error'] = timestamp
+                    sources_detail[source]['health'] = 'error'
+                elif 'start' in action:
+                    sources_detail[source]['last_collection'] = timestamp
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'sources': sources_detail,
+                'summary': {
+                    'total_sources': len(sources_detail),
+                    'active_sources': sum(1 for s in sources_detail.values() if s['status'] == 'active'),
+                    'healthy_sources': sum(1 for s in sources_detail.values() if s['health'] == 'healthy'),
+                    'total_ips': sum(s['total_ips'] for s in sources_detail.values())
+                },
+                'collection_enabled': collection_status.get('collection_enabled', False),
+                'last_update': datetime.now().isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Sources status error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# === Docker 모니터링 API ===
+
+@unified_bp.route('/api/docker/containers', methods=['GET'])
+def get_docker_containers():
+    """Docker 컨테이너 목록 조회"""
+    try:
+        import subprocess
+        import json
+        
+        # Docker 컨테이너 목록 가져오기
+        cmd = ['docker', 'ps', '--format', 'json', '--all']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        
+        if result.returncode != 0:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to get container list',
+                'message': result.stderr
+            }), 500
+        
+        containers = []
+        for line in result.stdout.strip().split('\n'):
+            if line:
+                try:
+                    container = json.loads(line)
+                    containers.append({
+                        'id': container.get('ID', ''),
+                        'name': container.get('Names', ''),
+                        'image': container.get('Image', ''),
+                        'status': container.get('Status', ''),
+                        'state': container.get('State', ''),
+                        'ports': container.get('Ports', ''),
+                        'created': container.get('CreatedAt', ''),
+                        'size': container.get('Size', '')
+                    })
+                except json.JSONDecodeError:
+                    logger.warning(f"Failed to parse container info: {line}")
+        
+        return jsonify({
+            'success': True,
+            'containers': containers,
+            'count': len(containers),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'error': 'Docker command timeout'
+        }), 504
+    except Exception as e:
+        logger.error(f"Docker containers error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/docker/container/<name>/logs', methods=['GET'])
+def get_docker_container_logs(name):
+    """Docker 컨테이너 로그 조회"""
+    try:
+        import subprocess
+        
+        # 파라미터 파싱
+        lines = request.args.get('lines', 100, type=int)
+        follow = request.args.get('follow', 'false').lower() == 'true'
+        timestamps = request.args.get('timestamps', 'true').lower() == 'true'
+        
+        # Docker logs 명령어 구성
+        cmd = ['docker', 'logs', name, '--tail', str(lines)]
+        if timestamps:
+            cmd.append('--timestamps')
+        
+        if follow:
+            # 스트리밍 모드
+            def generate():
+                process = subprocess.Popen(cmd + ['-f'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                try:
+                    for line in iter(process.stdout.readline, ''):
+                        if line:
+                            yield f"data: {json.dumps({'log': line.strip()})}\n\n"
+                finally:
+                    process.terminate()
+            
+            return Response(generate(), mimetype='text/event-stream')
+        else:
+            # 일반 모드
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                return jsonify({
+                    'success': False,
+                    'error': 'Failed to get container logs',
+                    'message': result.stderr
+                }), 404
+            
+            logs = result.stdout.strip().split('\n')
+            
+            return jsonify({
+                'success': True,
+                'container': name,
+                'logs': logs,
+                'count': len(logs),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'error': 'Docker command timeout'
+        }), 504
+    except Exception as e:
+        logger.error(f"Docker logs error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/docker-logs')
+def docker_logs_page():
+    """Docker 로그 웹 인터페이스"""
+    return render_template('docker_logs.html')
 
 # === 에러 핸들러 ===
 
