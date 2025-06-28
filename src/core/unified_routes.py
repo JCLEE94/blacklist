@@ -204,6 +204,164 @@ def statistics():
             'fallback': 'Use /api/stats for statistics data'
         }), 500
 
+@unified_bp.route('/api/stats/monthly-data', methods=['GET'])
+def get_monthly_data():
+    """월별 블랙리스트 데이터 추이"""
+    try:
+        blacklist_manager = current_app.blacklist_manager
+        
+        # 최근 12개월 데이터 조회
+        monthly_stats = []
+        from datetime import datetime, timedelta
+        import calendar
+        
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=365)  # 1년 전
+        
+        current_date = start_date.replace(day=1)  # 월 첫날로 설정
+        
+        while current_date <= end_date:
+            year = current_date.year
+            month = current_date.month
+            
+            # 해당 월의 시작일과 끝일
+            month_start = current_date.strftime('%Y-%m-%d')
+            
+            # 월 마지막 날 계산
+            last_day = calendar.monthrange(year, month)[1]
+            month_end = current_date.replace(day=last_day).strftime('%Y-%m-%d')
+            
+            # 해당 월의 통계 조회
+            stats = blacklist_manager.get_stats_for_period(month_start, month_end)
+            
+            monthly_stats.append({
+                'month': current_date.strftime('%Y-%m'),
+                'label': current_date.strftime('%Y년 %m월'),
+                'total_ips': stats.get('total_ips', 0),
+                'active_ips': stats.get('active_ips', 0),
+                'regtech_count': stats.get('regtech_count', 0),
+                'secudium_count': stats.get('secudium_count', 0)
+            })
+            
+            # 다음 월로 이동
+            if month == 12:
+                current_date = current_date.replace(year=year+1, month=1)
+            else:
+                current_date = current_date.replace(month=month+1)
+        
+        return jsonify({
+            'success': True,
+            'data': monthly_stats,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Monthly data error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': []
+        }), 500
+
+@unified_bp.route('/api/stats/sources-distribution', methods=['GET'])
+def get_sources_distribution():
+    """소스별 분포 데이터"""
+    try:
+        blacklist_manager = current_app.blacklist_manager
+        stats = blacklist_manager.get_system_stats()
+        
+        sources_data = []
+        if stats.get('regtech_count', 0) > 0:
+            sources_data.append({
+                'source': 'REGTECH',
+                'count': stats['regtech_count'],
+                'percentage': round((stats['regtech_count'] / stats['total_ips']) * 100, 1) if stats['total_ips'] > 0 else 0
+            })
+        
+        if stats.get('secudium_count', 0) > 0:
+            sources_data.append({
+                'source': 'SECUDIUM',
+                'count': stats['secudium_count'],
+                'percentage': round((stats['secudium_count'] / stats['total_ips']) * 100, 1) if stats['total_ips'] > 0 else 0
+            })
+        
+        if stats.get('public_count', 0) > 0:
+            sources_data.append({
+                'source': 'PUBLIC',
+                'count': stats['public_count'],
+                'percentage': round((stats['public_count'] / stats['total_ips']) * 100, 1) if stats['total_ips'] > 0 else 0
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': sources_data,
+            'total_ips': stats.get('total_ips', 0),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Sources distribution error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': []
+        }), 500
+
+@unified_bp.route('/api/collection/logs', methods=['GET'])
+def get_collection_logs():
+    """수집 로그 조회 (지속성 있는)"""
+    try:
+        import os
+        from pathlib import Path
+        
+        # 로그 파일 경로들
+        log_paths = [
+            '/app/logs/collection.log',
+            '/app/instance/collection_history.log'
+        ]
+        
+        logs = []
+        
+        # 각 로그 파일에서 수집 관련 로그 추출
+        for log_path in log_paths:
+            if os.path.exists(log_path):
+                try:
+                    with open(log_path, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()[-100:]  # 최근 100줄
+                        for line in lines:
+                            if any(keyword in line.lower() for keyword in ['collection', 'regtech', 'secudium', '수집', '완료']):
+                                logs.append({
+                                    'timestamp': line.split(' - ')[0] if ' - ' in line else datetime.now().isoformat(),
+                                    'message': line.strip(),
+                                    'source': 'file'
+                                })
+                except Exception as e:
+                    logger.warning(f"Failed to read log file {log_path}: {e}")
+        
+        # 메모리에서 최근 로그도 추가 (실시간)
+        if hasattr(current_app, 'collection_logs'):
+            memory_logs = getattr(current_app, 'collection_logs', [])
+            for log_entry in memory_logs[-50:]:  # 최근 50개
+                logs.append(log_entry)
+        
+        # 시간순 정렬
+        logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'logs': logs[:100],  # 최대 100개
+            'count': len(logs),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Collection logs error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'logs': []
+        }), 500
+
 @unified_bp.route('/export/<format>', methods=['GET'])
 def export_data(format):
     """데이터 내보내기"""

@@ -369,18 +369,20 @@ let monthlyChart;
 // Fetch real monthly data
 async function loadMonthlyData() {
     try {
-        const response = await fetch('/api/monthly-data');
+        const response = await fetch('/api/stats/monthly-data');
         const result = await response.json();
         
-        if (result.status === 'success') {
-            const monthlyData = result.monthly_data || [];
+        if (result.success) {
+            const monthlyData = result.data || [];
             updateMonthlyChart(monthlyData);
+        } else {
+            console.error('API error:', result.error);
+            updateMonthlyChart([]);
         }
     } catch (error) {
         console.error('Failed to load monthly data:', error);
-        // Use initial data if available
-        const monthlyData = {{ monthly_data | tojson }} || [];
-        updateMonthlyChart(monthlyData);
+        // Use fallback empty data
+        updateMonthlyChart([]);
     }
 }
 
@@ -396,10 +398,10 @@ function updateMonthlyChart(monthlyData) {
     monthlyChart = new Chart(monthlyCtx, {
         type: 'line',
         data: {
-            labels: monthlyData.map(d => d.month),
+            labels: monthlyData.map(d => d.label || d.month),
             datasets: [{
                 label: '차단 IP 수',
-                data: monthlyData.map(d => d.count || d.ip_count || 0),
+                data: monthlyData.map(d => d.active_ips || d.total_ips || 0),
             borderColor: '#5046e5',
             backgroundColor: gradient,
             borderWidth: 3,
@@ -519,6 +521,123 @@ new Chart(sourceCtx, {
         }
     }
 });
+
+// Sources distribution chart
+const sourcesCtx = document.getElementById('sourcesChart').getContext('2d');
+let sourcesChart;
+
+// Fetch sources distribution data
+async function loadSourcesData() {
+    try {
+        const response = await fetch('/api/stats/sources-distribution');
+        const result = await response.json();
+        
+        if (result.success) {
+            const sourcesData = result.data || [];
+            updateSourcesChart(sourcesData);
+        } else {
+            console.error('Sources API error:', result.error);
+            updateSourcesChart([]);
+        }
+    } catch (error) {
+        console.error('Failed to load sources data:', error);
+        updateSourcesChart([]);
+    }
+}
+
+function updateSourcesChart(sourcesData) {
+    if (sourcesChart) {
+        sourcesChart.destroy();
+    }
+
+    const colors = ['#5046e5', '#e74c3c', '#f39c12', '#27ae60', '#9b59b6'];
+    
+    sourcesChart = new Chart(sourcesCtx, {
+        type: 'doughnut',
+        data: {
+            labels: sourcesData.map(d => d.source),
+            datasets: [{
+                data: sourcesData.map(d => d.count),
+                backgroundColor: colors.slice(0, sourcesData.length),
+                borderColor: '#fff',
+                borderWidth: 3,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const source = sourcesData[context.dataIndex];
+                            return `${source.source}: ${source.count.toLocaleString()}개 (${source.percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Collection logs management
+let collectionLogs = [];
+
+// Fetch collection logs
+async function loadCollectionLogs() {
+    try {
+        const response = await fetch('/api/collection/logs');
+        const result = await response.json();
+        
+        if (result.success) {
+            collectionLogs = result.logs || [];
+            updateCollectionLogsDisplay();
+        } else {
+            console.error('Collection logs API error:', result.error);
+        }
+    } catch (error) {
+        console.error('Failed to load collection logs:', error);
+    }
+}
+
+function updateCollectionLogsDisplay() {
+    const logContainer = document.getElementById('collectionLogs');
+    if (!logContainer) return;
+    
+    if (collectionLogs.length === 0) {
+        logContainer.innerHTML = '<div class="text-muted text-center py-3">수집 로그가 없습니다.</div>';
+        return;
+    }
+    
+    const logsHtml = collectionLogs.slice(0, 20).map(log => {
+        const timestamp = new Date(log.timestamp).toLocaleString('ko-KR');
+        const logLevel = log.message.includes('ERROR') ? 'danger' : 
+                        log.message.includes('WARNING') ? 'warning' : 'info';
+        
+        return `
+            <div class="log-entry border-start border-${logLevel} border-3 ps-3 mb-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <small class="text-muted">${timestamp}</small>
+                    <span class="badge bg-${logLevel} ms-2">${log.source || 'system'}</span>
+                </div>
+                <div class="mt-1 small">${log.message}</div>
+            </div>
+        `;
+    }).join('');
+    
+    logContainer.innerHTML = logsHtml;
+}
+
+// Auto-refresh collection logs every 30 seconds
+setInterval(loadCollectionLogs, 30000);
 
 // Refresh data function with animation
 function refreshData() {
@@ -843,6 +962,20 @@ function loadExpirationStats() {
         })
         .catch(error => console.error('Failed to load expiration stats:', error));
 }
+
+// Load initial data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadMonthlyData();
+    loadSourcesData();
+    loadCollectionLogs();
+    setupRealtimeFeed();
+    
+    // Refresh charts every 5 minutes
+    setInterval(() => {
+        loadMonthlyData();
+        loadSourcesData();
+    }, 300000);
+});
 
 // Stop real-time updates when page is hidden
 document.addEventListener('visibilitychange', function() {
