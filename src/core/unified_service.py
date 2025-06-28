@@ -923,9 +923,19 @@ class UnifiedBlacklistService:
                                     })
                                 
                                 self.logger.info(f"REGTECH: Calling bulk_import_ips with {len(ips_data)} IPs")
+                                self.logger.info(f"REGTECH: Sample IP data: {ips_data[:3] if ips_data else 'None'}")  # 샘플 확인
                                 result = self.blacklist_manager.bulk_import_ips(ips_data, source='REGTECH')
+                                self.logger.info(f"REGTECH: bulk_import_ips result: {result}")
+                                
                                 if result.get('success'):
                                     self.logger.info(f"REGTECH: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
+                                    
+                                    # 저장 후 데이터베이스에서 직접 확인
+                                    try:
+                                        source_counts = self._get_source_counts_from_db()
+                                        self.logger.info(f"REGTECH: 저장 후 DB 상태: {source_counts}")
+                                    except Exception as verify_e:
+                                        self.logger.error(f"REGTECH: DB 확인 실패: {verify_e}")
                                 else:
                                     self.logger.error(f"REGTECH: 데이터베이스 저장 실패 - {result.get('error')}")
                             except Exception as e:
