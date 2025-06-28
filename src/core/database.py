@@ -18,7 +18,7 @@ class DatabaseManager:
     def __init__(self, database_url: str = None):
         self.database_url = database_url or os.environ.get(
             'DATABASE_URL',
-            'sqlite:///instance/secudium.db'
+            'sqlite:///instance/blacklist.db'
         )
         
         # 데이터베이스별 최적화된 연결 풀 설정

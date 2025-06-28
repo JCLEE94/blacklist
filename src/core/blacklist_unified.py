@@ -76,6 +76,15 @@ class UnifiedBlacklistManager:
         
         # Initialize core components
         self.db_manager = DatabaseManager(db_url)
+        
+        # Set database path for direct SQLite access
+        if db_url and 'sqlite:///' in db_url:
+            # Extract path from SQLite URL
+            self.db_path = db_url.replace('sqlite:///', '')
+        else:
+            # Default path
+            self.db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+        
         self.cache = EnhancedSmartCache(cache_backend)
         # Dummy classes for missing modules
         self.monitor = type('DummyMonitor', (), {'start_monitoring': lambda self: None})()
