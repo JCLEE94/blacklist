@@ -453,16 +453,31 @@ class UnifiedBlacklistService:
             
             total_ips = len(active_ips) if active_ips else 0
             
+            # Get actual counts by source from database
+            source_counts = {'REGTECH': 0, 'SECUDIUM': 0, 'PUBLIC': 0}
+            try:
+                # Direct SQLite query to get counts by source
+                import sqlite3
+                conn = sqlite3.connect('instance/blacklist.db')
+                cursor = conn.cursor()
+                cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
+                for row in cursor.fetchall():
+                    if row[0] in source_counts:
+                        source_counts[row[0]] = row[1]
+                conn.close()
+            except Exception as e:
+                self.logger.warning(f"Failed to get source counts: {e}")
+            
             return {
                 'status': 'healthy' if self._running else 'stopped',
                 'total_ips': total_ips,
                 'active_ips': total_ips,
-                'regtech_count': 0,  # Will be updated when collection is enabled
-                'secudium_count': 0,  # Will be updated when collection is enabled
-                'public_count': 0,
+                'regtech_count': source_counts.get('REGTECH', 0),
+                'secudium_count': source_counts.get('SECUDIUM', 0),
+                'public_count': source_counts.get('PUBLIC', 0),
                 'sources': {
-                    'regtech': {'enabled': self.config.get('regtech_enabled', False), 'count': 0},
-                    'secudium': {'enabled': self.config.get('secudium_enabled', False), 'count': 0}
+                    'regtech': {'enabled': self.config.get('regtech_enabled', False), 'count': source_counts.get('REGTECH', 0)},
+                    'secudium': {'enabled': self.config.get('secudium_enabled', False), 'count': source_counts.get('SECUDIUM', 0)}
                 },
                 'last_update': datetime.now().isoformat(),
                 'cache_available': self.cache is not None,
