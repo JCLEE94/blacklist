@@ -372,91 +372,83 @@ class UnifiedBlacklistManager:
         start_time = time.time()
         
         try:
-            with self.db_manager.get_session() as session:
-                from sqlalchemy import text
-                
-                for ip_data in ips_data:
+            # Use direct SQLite connection instead of SQLAlchemy session
+            logger.info(f"Using database path: {self.db_path}")
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            for ip_data in ips_data:
+                try:
+                    ip = ip_data.get('ip', '').strip()
+                    if not ip:
+                        skipped += 1
+                        continue
+                    
+                    # Validate IP
                     try:
-                        ip = ip_data.get('ip', '').strip()
-                        if not ip:
-                            skipped += 1
-                            continue
-                        
-                        # Validate IP
-                        try:
-                            ipaddress.ip_address(ip)
-                        except ValueError:
-                            logger.warning(f"Invalid IP address: {ip}")
-                            errors += 1
-                            continue
-                        
-                        # Check if IP already exists
-                        existing = session.execute(
-                            text("SELECT id FROM blacklist_ip WHERE ip = :ip"),
-                            {"ip": ip}
-                        ).fetchone()
-                        
-                        if existing:
-                            # Update existing record
-                            session.execute(
-                                text("""
-                                    UPDATE blacklist_ip 
-                                    SET created_at = :created_at,
-                                        detection_date = COALESCE(:detection_date, detection_date),
-                                        attack_type = COALESCE(:attack_type, attack_type),
-                                        country = COALESCE(:country, country)
-                                    WHERE ip = :ip
-                                """),
-                                {
-                                    "ip": ip,
-                                    "created_at": datetime.now(),
-                                    "detection_date": ip_data.get('reg_date') or ip_data.get('detection_date'),
-                                    "attack_type": ip_data.get('threat_type', 'blacklist'),
-                                    "country": ip_data.get('country')
-                                }
-                            )
-                        else:
-                            # Insert new record
-                            session.execute(
-                                text("""
-                                    INSERT INTO blacklist_ip 
-                                    (ip, created_at, detection_date, attack_type, country, source)
-                                    VALUES (:ip, :now, :detection_date, :attack_type, :country, :source)
-                                """),
-                                {
-                                    "ip": ip,
-                                    "now": datetime.now(),
-                                    "detection_date": ip_data.get('reg_date') or ip_data.get('detection_date'),
-                                    "attack_type": ip_data.get('threat_type', 'blacklist'),
-                                    "country": ip_data.get('country'),
-                                    "source": ip_data.get('source', source)
-                                }
-                            )
-                        
-                        # Record detection
-                        session.execute(
-                            text("""
-                                INSERT INTO ip_detection 
-                                (ip, created_at, source, attack_type, confidence_score)
-                                VALUES (:ip, :date, :source, :detection_type, :confidence)
-                            """),
-                            {
-                                "ip": ip,
-                                "date": datetime.now(),
-                                "source": source,
-                                "detection_type": ip_data.get('threat_type', 'blacklist'),
-                                "confidence": ip_data.get('confidence', 1.0)
-                            }
-                        )
-                        
-                        imported += 1
-                        
-                    except Exception as e:
-                        logger.error(f"Failed to import IP {ip_data.get('ip', 'unknown')}: {e}")
+                        ipaddress.ip_address(ip)
+                    except ValueError:
+                        logger.warning(f"Invalid IP address: {ip}")
                         errors += 1
-                
-                # Commit all changes
-                session.commit()
+                        continue
+                    
+                    # Check if IP already exists
+                    cursor.execute("SELECT id FROM blacklist_ip WHERE ip = ?", (ip,))
+                    existing = cursor.fetchone()
+                    
+                    if existing:
+                        # Update existing record
+                        cursor.execute("""
+                            UPDATE blacklist_ip 
+                            SET created_at = ?,
+                                detection_date = COALESCE(?, detection_date),
+                                attack_type = COALESCE(?, attack_type),
+                                country = COALESCE(?, country)
+                            WHERE ip = ?
+                        """, (
+                            datetime.now().isoformat(),
+                            ip_data.get('reg_date') or ip_data.get('detection_date'),
+                            ip_data.get('threat_type', 'blacklist'),
+                            ip_data.get('country'),
+                            ip
+                        ))
+                    else:
+                        # Insert new record
+                        cursor.execute("""
+                            INSERT INTO blacklist_ip 
+                            (ip, created_at, detection_date, attack_type, country, source)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (
+                            ip,
+                            datetime.now().isoformat(),
+                            ip_data.get('reg_date') or ip_data.get('detection_date'),
+                            ip_data.get('threat_type', 'blacklist'),
+                            ip_data.get('country'),
+                            ip_data.get('source', source)
+                        ))
+                    
+                    # Record detection
+                    cursor.execute("""
+                        INSERT INTO ip_detection 
+                        (ip, created_at, source, attack_type, confidence_score)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        ip,
+                        datetime.now().isoformat(),
+                        source,
+                        ip_data.get('threat_type', 'blacklist'),
+                        ip_data.get('confidence', 1.0)
+                    ))
+                    
+                    imported += 1
+                    
+                except Exception as e:
+                    logger.error(f"Failed to import IP {ip_data.get('ip', 'unknown')}: {e}")
+                    errors += 1
+            
+            # Commit all changes
+            conn.commit()
+            conn.close()
                 
             # Clear cache after successful import
             if imported > 0:
