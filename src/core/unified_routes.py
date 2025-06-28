@@ -124,9 +124,9 @@ def test_page():
     """간단한 테스트 페이지"""
     return "<html><body><h1>Test Page Working</h1><p>Simple HTML without templates</p></body></html>"
 
-@unified_bp.route('/docker/logs', methods=['GET'])
+@unified_bp.route('/docker-logs', methods=['GET'])
 def docker_logs_page():
-    """Docker 로그 조회 페이지"""
+    """Docker 로그 웹 인터페이스"""
     return render_template('docker_logs.html')
 
 # === Additional web pages ===
@@ -1490,10 +1490,7 @@ def get_docker_container_logs(name):
             'error': str(e)
         }), 500
 
-@unified_bp.route('/docker-logs')
-def docker_logs_page():
-    """Docker 로그 웹 인터페이스"""
-    return render_template('docker_logs.html')
+
 
 # === 에러 핸들러 ===
 
