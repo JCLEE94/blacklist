@@ -882,6 +882,79 @@ def not_found_error(error):
         ]
     }), 404
 
+@unified_bp.route('/raw-data')
+def raw_data_page():
+    """Raw data 페이지"""
+    return render_template('raw_data_modern.html')
+
+@unified_bp.route('/api/raw-data', methods=['GET'])
+def get_raw_data():
+    """Raw blacklist data API endpoint"""
+    try:
+        # Get all blacklist IPs with details
+        import sqlite3
+        import os
+        db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Query all data
+        query = """
+        SELECT 
+            id,
+            ip,
+            source,
+            country,
+            attack_type,
+            created_at,
+            extra_data
+        FROM blacklist_ip
+        ORDER BY id DESC
+        """
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        # Convert to list of dicts
+        data = []
+        for row in rows:
+            data.append({
+                'id': row['id'],
+                'ip': row['ip'],
+                'source': row['source'],
+                'country': row['country'],
+                'attack_type': row['attack_type'],
+                'created_at': row['created_at'],
+                'extra_data': row['extra_data']
+            })
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'data': data,
+            'total': len(data),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get raw data: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@unified_bp.errorhandler(404)
+def not_found_error(error):
+    """404 에러 핸들러"""
+    return jsonify({
+        'success': False,
+        'error': 'Not found',
+        'message': 'The requested resource was not found'
+    }), 404
+
 @unified_bp.errorhandler(500)
 def internal_error(error):
     """500 에러 핸들러"""

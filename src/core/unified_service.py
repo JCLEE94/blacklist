@@ -458,7 +458,9 @@ class UnifiedBlacklistService:
             try:
                 # Direct SQLite query to get counts by source
                 import sqlite3
-                conn = sqlite3.connect('instance/blacklist.db')
+                import os
+                db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+                conn = sqlite3.connect(db_path)
                 cursor = conn.cursor()
                 cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
                 for row in cursor.fetchall():
