@@ -541,19 +541,32 @@ class UnifiedBlacklistService:
                     db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
                 
                 self.logger.info(f"Getting source counts from database: {db_path}")
+                self.logger.info(f"Database file exists: {os.path.exists(db_path)}")
+                if os.path.exists(db_path):
+                    self.logger.info(f"Database file size: {os.path.getsize(db_path)} bytes")
+                
                 conn = sqlite3.connect(db_path)
                 cursor = conn.cursor()
                 
-                # First check if table exists and has data
-                cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
-                total_in_db = cursor.fetchone()[0]
-                self.logger.info(f"Total IPs in database: {total_in_db}")
+                # Check if table exists
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='blacklist_ip'")
+                table_exists = cursor.fetchone()
+                self.logger.info(f"blacklist_ip table exists: {table_exists is not None}")
                 
-                cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
-                for row in cursor.fetchall():
-                    self.logger.info(f"Source {row[0]}: {row[1]} IPs")
-                    if row[0] in source_counts:
-                        source_counts[row[0]] = row[1]
+                if table_exists:
+                    # First check if table exists and has data
+                    cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
+                    total_in_db = cursor.fetchone()[0]
+                    self.logger.info(f"Total IPs in database: {total_in_db}")
+                    
+                    cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
+                    for row in cursor.fetchall():
+                        self.logger.info(f"Source {row[0]}: {row[1]} IPs")
+                        if row[0] in source_counts:
+                            source_counts[row[0]] = row[1]
+                else:
+                    self.logger.warning("blacklist_ip table does not exist!")
+                    
                 conn.close()
             except Exception as e:
                 self.logger.warning(f"Failed to get source counts: {e}")
