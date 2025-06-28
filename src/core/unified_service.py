@@ -387,26 +387,50 @@ class UnifiedBlacklistService:
         try:
             if self.collection_manager:
                 status = self.collection_manager.get_status()
+                # Ensure 'enabled' field exists at the top level
+                return {
+                    'enabled': status.get('collection_enabled', False),
+                    'status': status.get('status', 'inactive'),
+                    'sources': status.get('sources', {}),
+                    'stats': {
+                        'total_ips': status.get('summary', {}).get('total_ips_collected', 0),
+                        'today_collected': 0  # Placeholder
+                    },
+                    'last_collection': status.get('last_updated'),
+                    'last_enabled_at': status.get('last_enabled_at'),
+                    'last_disabled_at': status.get('last_disabled_at')
+                }
             else:
-                status = {
+                # Fallback when collection_manager is not available
+                return {
                     'enabled': True,
-                    'sources': list(self._components.keys()),
-                    'last_run': 'Never',
-                    'mode': 'unified'
+                    'status': 'active',
+                    'sources': {
+                        'regtech': {
+                            'enabled': self.config.get('regtech_enabled', False),
+                            'status': 'inactive',
+                            'total_ips': 0
+                        },
+                        'secudium': {
+                            'enabled': self.config.get('secudium_enabled', False),
+                            'status': 'inactive',
+                            'total_ips': 0
+                        }
+                    },
+                    'stats': {
+                        'total_ips': len(self.get_active_blacklist_ips()),
+                        'today_collected': 0
+                    },
+                    'last_collection': None
                 }
-            
-            return {
-                'success': True,
-                'status': status,
-                'components': {
-                    'regtech_enabled': self.config['regtech_enabled'],
-                    'secudium_enabled': self.config['secudium_enabled'],
-                    'auto_collection': self.config['auto_collection']
-                }
-            }
         except Exception as e:
             self.logger.error(f"수집 상태 조회 실패: {e}")
-            return {'success': False, 'error': str(e)}
+            return {
+                'enabled': False,
+                'status': 'error',
+                'error': str(e),
+                'sources': {}
+            }
     
     def get_system_health(self) -> Dict[str, Any]:
         """시스템 헬스 정보 반환 (unified_routes에서 사용)"""

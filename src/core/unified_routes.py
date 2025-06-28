@@ -423,10 +423,40 @@ def get_collection_status():
     """수집 시스템 상태"""
     try:
         status = service.get_collection_status()
-        return jsonify(status)
+        
+        # Ensure the response has the expected structure
+        if isinstance(status, dict) and 'status' in status:
+            # Extract the nested status if it exists
+            if 'status' in status and isinstance(status['status'], dict):
+                return jsonify(status['status'])
+            else:
+                # Add enabled field if missing
+                if 'enabled' not in status:
+                    status['enabled'] = status.get('collection_enabled', False)
+                return jsonify(status)
+        else:
+            # Create a proper response structure
+            return jsonify({
+                'enabled': False,
+                'status': 'inactive',
+                'sources': {
+                    'regtech': {'enabled': False, 'status': 'inactive', 'total_ips': 0},
+                    'secudium': {'enabled': False, 'status': 'inactive', 'total_ips': 0}
+                },
+                'stats': {
+                    'total_ips': 0,
+                    'today_collected': 0
+                },
+                'last_collection': None
+            })
     except Exception as e:
         logger.error(f"Collection status error: {e}")
-        return jsonify(create_error_response(e)), 500
+        return jsonify({
+            'enabled': False,
+            'status': 'error',
+            'error': str(e),
+            'sources': {}
+        }), 500
 
 @unified_bp.route('/api/collection/enable', methods=['POST'])
 
