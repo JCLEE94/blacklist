@@ -228,7 +228,8 @@ class SecudiumCollector:
             logger.error("로그인 실패로 웹 수집 불가")
             return self.collect_from_file()  # 폴백: 파일 기반 수집
         
-        logger.info("SECUDIUM 웹 데이터 수집 시작...")
+        logger.info("🔄 SECUDIUM 웹 데이터 수집 시작...")
+        logger.info(f"📅 수집 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         try:
             # 블랙리스트 게시판 조회
@@ -348,7 +349,17 @@ class SecudiumCollector:
                     )
                     entries.append(entry)
                 
-                logger.info(f"SECUDIUM 웹에서 총 {len(entries)}개 IP 수집 완료")
+                # 수집 통계 로그
+                logger.info(f"✅ SECUDIUM 웹 수집 완료")
+                logger.info(f"📊 수집 통계:")
+                logger.info(f"   - 총 수집 IP: {len(entries)}개")
+                logger.info(f"   - 게시글 검색: {len(rows[:3])}개")
+                logger.info(f"   - 수집 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                
+                # 일일 수집인 경우 추가 통계
+                today = datetime.now().strftime('%Y%m%d')
+                if any(today in file_name for file_name in [row.get('data', [])[2] for row in rows[:3] if len(row.get('data', [])) > 2]):
+                    logger.info(f"📅 금일({today}) 데이터 수집 포함")
                 
                 # 결과를 파일로도 저장
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

@@ -338,11 +338,30 @@ def api_collection_logs():
                 except Exception as e:
                     logger.warning(f"Failed to read log file {log_path}: {e}")
         
-        # 메모리에서 최근 로그도 추가 (실시간)
-        if hasattr(current_app, 'collection_logs'):
-            memory_logs = getattr(current_app, 'collection_logs', [])
-            for log_entry in memory_logs[-50:]:  # 최근 50개
-                logs.append(log_entry)
+        # unified_service에서 최근 로그 가져오기
+        try:
+            memory_logs = service.get_collection_logs(limit=50)
+            for log_entry in memory_logs:
+                formatted_log = {
+                    'timestamp': log_entry.get('timestamp'),
+                    'source': log_entry.get('source', 'unknown'),
+                    'action': log_entry.get('action', ''),
+                    'message': f"[{log_entry.get('source')}] {log_entry.get('action')}"
+                }
+                
+                # 상세 정보 추가
+                details = log_entry.get('details', {})
+                if details:
+                    if details.get('is_daily'):
+                        formatted_log['message'] += f" (일일 수집)"
+                    if details.get('ips_collected') is not None:
+                        formatted_log['message'] += f" - {details['ips_collected']}개 IP 수집"
+                    if details.get('start_date'):
+                        formatted_log['message'] += f" - 기간: {details['start_date']}~{details.get('end_date', details['start_date'])}"
+                
+                logs.append(formatted_log)
+        except Exception as e:
+            logger.warning(f"Failed to get memory logs: {e}")
         
         # 시간순 정렬
         logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)

@@ -49,6 +49,10 @@ class UnifiedBlacklistService:
             'version': '3.0.0'
         }
         
+        # 수집 로그 저장 (메모리, 최대 1000개)
+        self.collection_logs = []
+        self.max_logs = 1000
+        
         # Initialize core services immediately
         try:
             self.blacklist_manager = self.container.resolve('blacklist_manager')
@@ -527,6 +531,31 @@ class UnifiedBlacklistService:
         """시스템 통계 반환"""
         return self.get_system_health()  # Reuse system health data
     
+    def add_collection_log(self, source: str, action: str, details: Dict[str, Any] = None):
+        """수집 로그 추가"""
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'source': source,
+            'action': action,
+            'details': details or {}
+        }
+        
+        # 로그 추가
+        self.collection_logs.append(log_entry)
+        
+        # 최대 개수 유지
+        if len(self.collection_logs) > self.max_logs:
+            self.collection_logs = self.collection_logs[-self.max_logs:]
+    
+    def get_collection_logs(self, limit: int = 100) -> list:
+        """최근 수집 로그 반환"""
+        return self.collection_logs[-limit:]
+    
+    def clear_collection_logs(self):
+        """수집 로그 초기화"""
+        self.collection_logs = []
+        self.logger.info("수집 로그가 초기화되었습니다")
+    
     def get_active_blacklist_ips(self) -> list:
         """활성 블랙리스트 IP 목록 반환"""
         try:
@@ -663,6 +692,14 @@ class UnifiedBlacklistService:
         task_id = str(uuid.uuid4())
         self.logger.info(f"REGTECH collection triggered (task_id: {task_id})")
         
+        # 수집 로그 추가
+        self.add_collection_log('REGTECH', 'collection_started', {
+            'task_id': task_id,
+            'start_date': start_date,
+            'end_date': end_date,
+            'is_daily': start_date == end_date if start_date and end_date else False
+        })
+        
         try:
             # 실제 REGTECH 수집 실행
             self.logger.info(f"Container type: {type(self.container)}")
@@ -675,6 +712,15 @@ class UnifiedBlacklistService:
                     try:
                         ips = regtech_collector.collect_from_web(start_date=start_date, end_date=end_date)
                         self.logger.info(f"REGTECH collection completed: {len(ips)} IPs collected")
+                        
+                        # 수집 완료 로그 추가
+                        self.add_collection_log('REGTECH', 'collection_completed', {
+                            'task_id': task_id,
+                            'ips_collected': len(ips),
+                            'start_date': start_date,
+                            'end_date': end_date,
+                            'is_daily': start_date == end_date if start_date and end_date else False
+                        })
                         
                         # 수집한 IP를 데이터베이스에 저장
                         if ips and self.blacklist_manager:
@@ -723,6 +769,11 @@ class UnifiedBlacklistService:
         task_id = str(uuid.uuid4())
         self.logger.info(f"SECUDIUM collection triggered (task_id: {task_id})")
         
+        # 수집 로그 추가
+        self.add_collection_log('SECUDIUM', 'collection_started', {
+            'task_id': task_id
+        })
+        
         try:
             # 실제 SECUDIUM 수집 실행
             secudium_collector = self.container.resolve('secudium_collector')
@@ -734,6 +785,12 @@ class UnifiedBlacklistService:
                         result = secudium_collector.auto_collect()
                         ips = result.get('ips', []) if result.get('success') else []
                         self.logger.info(f"SECUDIUM collection completed: {len(ips)} IPs collected")
+                        
+                        # 수집 완료 로그 추가
+                        self.add_collection_log('SECUDIUM', 'collection_completed', {
+                            'task_id': task_id,
+                            'ips_collected': len(ips)
+                        })
                         
                         # 수집한 IP를 데이터베이스에 저장
                         if ips and self.blacklist_manager:

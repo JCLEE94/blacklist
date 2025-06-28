@@ -72,7 +72,10 @@ class RegtechCollector:
         """
         REGTECH Excel 다운로드 방식으로 데이터 수집
         """
-        logger.info(f"REGTECH Excel 다운로드 수집 시작")
+        logger.info(f"🔄 REGTECH Excel 다운로드 수집 시작")
+        
+        # 일일 수집 여부 확인
+        is_daily_collection = False
         
         # 기본 날짜 설정 (파라미터로 제공되지 않은 경우)
         if not start_date or not end_date:
@@ -80,8 +83,16 @@ class RegtechCollector:
             start_dt = end_dt - timedelta(days=90)  # 90일로 확대
             start_date = start_dt.strftime('%Y%m%d')
             end_date = end_dt.strftime('%Y%m%d')
+        else:
+            # 시작일과 종료일이 같으면 일일 수집
+            if start_date == end_date:
+                is_daily_collection = True
+                logger.info(f"📅 일일 자동 수집 모드: {start_date} 하루 데이터만 수집")
         
-        logger.info(f"REGTECH 수집 날짜 범위: {start_date} ~ {end_date}")
+        logger.info(f"📆 REGTECH 수집 날짜 범위: {start_date} ~ {end_date}")
+        
+        if is_daily_collection:
+            logger.info(f"🔔 일일 수집 실행 중 - 금일({start_date}) 신규 탐지 IP만 수집합니다")
         
         self.stats = RegtechCollectionStats(
             start_time=datetime.now(),
@@ -110,7 +121,14 @@ class RegtechCollector:
                 self.stats.successful_collections = len(collected_ips)
                 self.stats.end_time = datetime.now()
                 
-                logger.info(f"REGTECH Excel 수집 완료: {len(collected_ips)}개 IP")
+                # 일일 수집 여부 확인
+                if start_date == end_date:
+                    logger.info(f"✅ REGTECH 일일 수집 완료 ({start_date}): {len(collected_ips)}개 신규 IP 추가")
+                    logger.info(f"📊 금일 탐지 통계:")
+                    logger.info(f"   - 신규 탐지 IP: {len(collected_ips)}개")
+                    logger.info(f"   - 수집 시간: {self.stats.end_time - self.stats.start_time}")
+                else:
+                    logger.info(f"✅ REGTECH Excel 수집 완료: {len(collected_ips)}개 IP")
                 return collected_ips
             else:
                 # Excel 다운로드 실패시 기존 HTML 파싱 방식 시도
@@ -361,7 +379,12 @@ class RegtechCollector:
                 'Sec-Fetch-Site': 'same-origin'
             }
             
-            logger.info("Excel 파일 다운로드 중...")
+            # 일일 수집 여부 확인
+            is_daily = (start_date == end_date)
+            if is_daily:
+                logger.info(f"📅 일일 수집 모드 - {start_date} 하루 데이터만 다운로드")
+            
+            logger.info(f"📥 Excel 파일 다운로드 중... (기간: {start_date} ~ {end_date})")
             response = session.post(
                 excel_url,
                 data=excel_data,
@@ -379,7 +402,10 @@ class RegtechCollector:
                     
                     try:
                         df = pd.read_excel(excel_content)
-                        logger.info(f"Excel 데이터 로드 성공: {len(df)} 행")
+                        logger.info(f"✅ Excel 데이터 로드 성공: {len(df)} 행")
+                        
+                        if is_daily:
+                            logger.info(f"📊 일일 수집 결과: {start_date}에 탐지된 {len(df)}개 IP 발견")
                         
                         # IP 컬럼 찾기
                         ip_column = None
@@ -478,10 +504,30 @@ class RegtechCollector:
                             else:
                                 self.stats.duplicate_count += 1
                         
-                        logger.info(f"Excel에서 {len(unique_ips)}개 고유 IP 추출 (중복 {self.stats.duplicate_count}개 제거)")
-                        logger.info(f"무효한 IP 수: {invalid_count}")
+                        # 일일 수집 통계 로그
+                        if is_daily:
+                            logger.info(f"📊 {start_date} 일일 수집 상세 통계:")
+                            logger.info(f"   - 전체 행 수: {len(df)}개")
+                            logger.info(f"   - 유효한 IP: {len(unique_ips)}개")
+                            logger.info(f"   - 중복 제거: {self.stats.duplicate_count}개")
+                            logger.info(f"   - 무효한 IP: {invalid_count}개")
+                            
+                            # 국가별 통계
+                            if unique_ips:
+                                country_stats = {}
+                                for entry in unique_ips:
+                                    country = entry.country or 'Unknown'
+                                    country_stats[country] = country_stats.get(country, 0) + 1
+                                
+                                logger.info(f"   - 국가별 분포:")
+                                for country, count in sorted(country_stats.items(), key=lambda x: x[1], reverse=True)[:5]:
+                                    logger.info(f"     • {country}: {count}개")
+                        else:
+                            logger.info(f"Excel에서 {len(unique_ips)}개 고유 IP 추출 (중복 {self.stats.duplicate_count}개 제거)")
+                            logger.info(f"무효한 IP 수: {invalid_count}")
+                        
                         if len(unique_ips) == 0:
-                            logger.warning(f"IP가 하나도 추출되지 않음. 전체 {len(df)}행 중 무효 {invalid_count}개")
+                            logger.warning(f"⚠️ IP가 하나도 추출되지 않음. 전체 {len(df)}행 중 무효 {invalid_count}개")
                         return unique_ips
                         
                     except Exception as e:
