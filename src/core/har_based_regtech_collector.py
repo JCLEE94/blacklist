@@ -226,14 +226,21 @@ class HarBasedRegtechCollector:
     def save_to_database(self, ip_data: List[Dict[str, Any]], db_path: str = None) -> bool:
         """데이터베이스에 저장 - 통합 blacklist_manager 사용"""
         try:
+            logger.info(f"💾 데이터베이스 저장 시작: {len(ip_data)}개 IP")
+            
             # Container에서 blacklist_manager 가져오기
             from .container import get_container
             container = get_container()
+            logger.info("📦 Container 접근 성공")
+            
             blacklist_manager = container.resolve('blacklist_manager')
+            logger.info(f"🔧 blacklist_manager 해결: {blacklist_manager is not None}")
             
             if not blacklist_manager:
-                logger.error("blacklist_manager를 container에서 찾을 수 없습니다")
-                return False
+                logger.error("❌ blacklist_manager를 container에서 찾을 수 없습니다")
+                logger.info("🔄 폴백 저장 방식으로 전환...")
+                # 바로 폴백으로 이동
+                raise Exception("blacklist_manager not available")
             
             # IP 데이터를 bulk_import_ips 형식으로 변환
             formatted_data = []
@@ -248,29 +255,48 @@ class HarBasedRegtechCollector:
                 }
                 formatted_data.append(formatted_entry)
             
+            logger.info(f"📝 데이터 포맷팅 완료: {len(formatted_data)}개 항목")
+            
             # blacklist_manager의 bulk_import_ips 사용
+            logger.info("🔧 blacklist_manager.bulk_import_ips 호출 중...")
             result = blacklist_manager.bulk_import_ips(formatted_data, source="REGTECH")
+            logger.info(f"📊 bulk_import_ips 결과: {result}")
             
             if result.get('success'):
-                logger.info(f"✅ blacklist_manager를 통해 {result.get('imported_count', 0)}개 IP 저장 완료")
+                imported_count = result.get('imported_count', 0)
+                logger.info(f"✅ blacklist_manager를 통해 {imported_count}개 IP 저장 완료")
+                
+                # 즉시 확인
+                logger.info("🔍 저장 후 즉시 확인...")
+                active_ips = blacklist_manager.get_active_ips()
+                logger.info(f"📈 현재 활성 IP 수: {len(active_ips) if active_ips else 0}")
+                
                 return True
             else:
-                logger.error(f"❌ blacklist_manager 저장 실패: {result.get('error', 'Unknown error')}")
-                return False
+                error_msg = result.get('error', 'Unknown error')
+                logger.error(f"❌ blacklist_manager 저장 실패: {error_msg}")
+                logger.info("🔄 폴백 저장 방식으로 전환...")
+                # 폴백으로 이동
+                raise Exception(f"blacklist_manager failed: {error_msg}")
             
         except Exception as e:
             logger.error(f"❌ 통합 데이터베이스 저장 실패: {e}")
             # 폴백: 기존 방식으로 시도
-            logger.info("기존 방식으로 폴백 시도...")
+            logger.info("🔄 기존 방식으로 폴백 시도...")
             try:
                 if db_path:
                     db_file_path = Path(db_path)
+                    logger.info(f"📂 사용자 지정 DB 경로: {db_path}")
                 else:
                     db_file_path = Path("instance") / "blacklist.db"
+                    logger.info(f"📂 기본 DB 경로: {db_file_path}")
+                
                 db_file_path.parent.mkdir(exist_ok=True)
+                logger.info(f"📁 DB 디렉토리 생성 완료: {db_file_path.parent}")
                 
                 conn = sqlite3.connect(str(db_file_path))
                 cursor = conn.cursor()
+                logger.info("🗄️ SQLite 연결 성공")
                 
                 # 통합 스키마와 호환되는 테이블 생성
                 cursor.execute('''
@@ -287,31 +313,51 @@ class HarBasedRegtechCollector:
                         last_seen TEXT
                     )
                 ''')
+                logger.info("🔧 테이블 생성/확인 완료")
+                
+                # 기존 REGTECH 데이터 확인
+                cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE source = 'REGTECH'")
+                existing_count = cursor.fetchone()[0]
+                logger.info(f"📊 기존 REGTECH IP 수: {existing_count}")
                 
                 # 새 데이터 삽입 (통합 스키마 사용)
+                inserted_count = 0
                 for item in ip_data:
-                    cursor.execute('''
-                        INSERT OR REPLACE INTO blacklist_ip 
-                        (ip, created_at, detection_date, attack_type, country, source, confidence_score, is_active)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-                    ''', (
-                        item['ip'], 
-                        datetime.now().isoformat(),
-                        datetime.now().strftime('%Y-%m-%d'),
-                        'blacklist',
-                        item.get('country', ''),
-                        'REGTECH',
-                        1.0
-                    ))
+                    try:
+                        cursor.execute('''
+                            INSERT OR REPLACE INTO blacklist_ip 
+                            (ip, created_at, detection_date, attack_type, country, source, confidence_score, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                        ''', (
+                            item['ip'], 
+                            datetime.now().isoformat(),
+                            datetime.now().strftime('%Y-%m-%d'),
+                            'blacklist',
+                            item.get('country', ''),
+                            'REGTECH',
+                            1.0
+                        ))
+                        inserted_count += 1
+                    except Exception as insert_error:
+                        logger.warning(f"⚠️ IP {item['ip']} 삽입 실패: {insert_error}")
                 
                 conn.commit()
+                logger.info("💾 커밋 완료")
+                
+                # 저장 후 확인
+                cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE source = 'REGTECH'")
+                final_count = cursor.fetchone()[0]
+                logger.info(f"📈 최종 REGTECH IP 수: {final_count}")
+                
                 conn.close()
                 
-                logger.info(f"폴백으로 {len(ip_data)}개 IP 저장 완료")
+                logger.info(f"✅ 폴백으로 {inserted_count}개 IP 저장 완료 (총 {final_count}개)")
                 return True
                 
             except Exception as fallback_error:
-                logger.error(f"폴백 저장도 실패: {fallback_error}")
+                logger.error(f"❌ 폴백 저장도 실패: {fallback_error}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
                 return False
     
     def auto_collect(self, prefer_web: bool = True, db_path: str = None) -> Dict[str, Any]:
