@@ -95,7 +95,7 @@ class SecudiumCollector:
                     country=item.get('country', 'Unknown'),
                     reason=item.get('attack_type', 'SECUDIUM'),
                     source='SECUDIUM',
-                    reg_date=item.get('detection_date', datetime.now().strftime('%Y-%m-%d')),
+                    reg_date=self._parse_detection_date(item.get('detection_date')),
                     exp_date=None,
                     is_active=True,
                     threat_level=item.get('threat_level', 'high'),
@@ -137,7 +137,7 @@ class SecudiumCollector:
                     country=row.get('country', 'Unknown'),
                     reason=row.get('attack_type', 'SECUDIUM'),
                     source='SECUDIUM',
-                    reg_date=row.get('detection_date', datetime.now().strftime('%Y-%m-%d')),
+                    reg_date=self._parse_detection_date(row.get('detection_date')),
                     exp_date=None,
                     is_active=True,
                     threat_level=row.get('threat_level', 'high'),
@@ -337,7 +337,7 @@ class SecudiumCollector:
                         country='Unknown',
                         reason='SECUDIUM',
                         source='SECUDIUM',
-                        reg_date=datetime.now().strftime('%Y-%m-%d'),
+                        reg_date=self._extract_date_from_filename(file_name),
                         exp_date=None,
                         is_active=True,
                         threat_level='high',
@@ -414,6 +414,76 @@ class SecudiumCollector:
         except ValueError:
             return self._extract_ips_from_html(response.text)
     
+    def _parse_detection_date(self, date_value) -> str:
+        """탐지일 파싱 - 원본 데이터 우선 사용"""
+        if not date_value:
+            return datetime.now().strftime('%Y-%m-%d')
+        
+        try:
+            # pandas.Timestamp 객체인 경우
+            if hasattr(date_value, 'strftime'):
+                return date_value.strftime('%Y-%m-%d')
+            
+            # 문자열인 경우 파싱 시도
+            if isinstance(date_value, str):
+                # 다양한 날짜 형식 시도
+                date_formats = ['%Y-%m-%d', '%Y/%m/%d', '%Y.%m.%d', '%m/%d/%Y', '%d/%m/%Y']
+                for fmt in date_formats:
+                    try:
+                        parsed_date = datetime.strptime(date_value, fmt)
+                        return parsed_date.strftime('%Y-%m-%d')
+                    except ValueError:
+                        continue
+                
+                # pandas로 파싱 시도
+                try:
+                    import pandas as pd
+                    parsed_date = pd.to_datetime(date_value)
+                    return parsed_date.strftime('%Y-%m-%d')
+                except:
+                    pass
+            
+            # 기타 타입인 경우 문자열로 변환 후 재시도
+            return self._parse_detection_date(str(date_value))
+            
+        except Exception as e:
+            logger.warning(f"날짜 파싱 실패 ({date_value}): {e}")
+            return datetime.now().strftime('%Y-%m-%d')
+    
+    def _extract_date_from_filename(self, filename: str) -> str:
+        """파일명에서 날짜 추출 시도"""
+        if not filename:
+            return datetime.now().strftime('%Y-%m-%d')
+        
+        try:
+            # 파일명에서 날짜 패턴 찾기 (YYYYMMDD, YYYY-MM-DD, YYYY_MM_DD 등)
+            import re
+            date_patterns = [
+                r'(\d{4})(\d{2})(\d{2})',  # YYYYMMDD
+                r'(\d{4})-(\d{2})-(\d{2})',  # YYYY-MM-DD
+                r'(\d{4})_(\d{2})_(\d{2})',  # YYYY_MM_DD
+                r'(\d{4})\.(\d{2})\.(\d{2})',  # YYYY.MM.DD
+            ]
+            
+            for pattern in date_patterns:
+                match = re.search(pattern, filename)
+                if match:
+                    year, month, day = match.groups()
+                    try:
+                        # 날짜 유효성 검증
+                        date_obj = datetime(int(year), int(month), int(day))
+                        return date_obj.strftime('%Y-%m-%d')
+                    except ValueError:
+                        continue
+            
+            # 파일명에서 날짜를 찾지 못한 경우 현재 날짜 사용
+            logger.info(f"파일명 '{filename}'에서 날짜 패턴을 찾지 못함, 현재 날짜 사용")
+            return datetime.now().strftime('%Y-%m-%d')
+            
+        except Exception as e:
+            logger.warning(f"파일명 날짜 추출 실패 ({filename}): {e}")
+            return datetime.now().strftime('%Y-%m-%d')
+
     def _is_valid_ip(self, ip: str) -> bool:
         """IP 주소 유효성 검사"""
         try:

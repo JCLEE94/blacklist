@@ -413,8 +413,30 @@ class RegtechCollector:
                                 # 다른 컬럼 데이터 추출
                                 country = str(row.get('국가', 'Unknown')).strip()
                                 attack_type = str(row.get('등록사유', 'REGTECH')).strip()
-                                detection_date = str(row.get('등록일', datetime.now().strftime('%Y-%m-%d'))).strip()
-                                release_date = str(row.get('해제일', '')).strip()
+                                
+                                # 원본 등록일 파싱 (Excel에서 실제 날짜 컬럼 사용)
+                                detection_date_raw = row.get('등록일')
+                                if pd.notna(detection_date_raw):
+                                    if isinstance(detection_date_raw, pd.Timestamp):
+                                        detection_date = detection_date_raw.strftime('%Y-%m-%d')
+                                    else:
+                                        # 문자열인 경우 파싱 시도
+                                        try:
+                                            parsed_date = pd.to_datetime(str(detection_date_raw))
+                                            detection_date = parsed_date.strftime('%Y-%m-%d')
+                                        except:
+                                            detection_date = datetime.now().strftime('%Y-%m-%d')
+                                else:
+                                    detection_date = datetime.now().strftime('%Y-%m-%d')
+                                
+                                release_date_raw = row.get('해제일')
+                                if pd.notna(release_date_raw):
+                                    if isinstance(release_date_raw, pd.Timestamp):
+                                        release_date = release_date_raw.strftime('%Y-%m-%d')
+                                    else:
+                                        release_date = str(release_date_raw).strip()
+                                else:
+                                    release_date = ''
                                 
                                 # extra_data
                                 extra_data = {
