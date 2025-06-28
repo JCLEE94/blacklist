@@ -699,7 +699,12 @@ def trigger_manual_collection():
 def trigger_regtech_collection():
     """REGTECH 수집 트리거"""
     try:
-        data = request.get_json() or {}
+        # JSON과 폼 데이터 둘 다 지원
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.form.to_dict() or {}
+        
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         
@@ -725,6 +730,12 @@ def trigger_regtech_collection():
 def trigger_secudium_collection():
     """SECUDIUM 수집 트리거"""
     try:
+        # JSON과 폼 데이터 둘 다 지원 (향후 확장성을 위해)
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.form.to_dict() or {}
+        
         task_id = service.trigger_secudium_collection()
         
         return jsonify({
