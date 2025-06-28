@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  blacklist:
+  blacklist-app:
     image: registry.jclee.me/blacklist:latest
-    container_name: blacklist
+    container_name: blacklist-app
     restart: unless-stopped
     ports:
       - "2541:2541"
@@ -11,35 +11,40 @@ services:
       - FLASK_ENV=production
       - PORT=2541
       - HOST=0.0.0.0
+      - REDIS_URL=redis://blacklist-redis:6379/0
       - REGTECH_USERNAME=nextrade
       - REGTECH_PASSWORD=Sprtmxm1@3
-      - REGTECH_BEARER_TOKEN=${REGTECH_BEARER_TOKEN:-}
       - SECUDIUM_USERNAME=nextrade
       - SECUDIUM_PASSWORD=Sprtmxm1@3
     volumes:
-      - blacklist-instance:/app/instance
-      - blacklist-data:/app/data
-      - blacklist-logs:/app/logs
+      - ./instance:/app/instance
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - blacklist-redis
+    networks:
+      - blacklist-network
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-      - "com.centurylinklabs.watchtower.stop-timeout=30s"
-      - "app.name=blacklist"
-      - "app.version=latest"
-      - "registry.source=registry.jclee.me/blacklist:latest"
+
+  blacklist-redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - blacklist-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  blacklist-network:
+    driver: bridge
 
 volumes:
-  blacklist-instance:
-    name: blacklist-instance
-    driver: local
-  blacklist-data:
-    name: blacklist-data
-    driver: local
-  blacklist-logs:
-    name: blacklist-logs
+  redis-data:
     driver: local

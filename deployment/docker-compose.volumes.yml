@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  blacklist:
+    image: ${DOCKER_REGISTRY:-registry.jclee.me}/${IMAGE_NAME:-blacklist}:${IMAGE_TAG:-latest}
+    container_name: ${CONTAINER_NAME:-blacklist}
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${HOST_PORT:-2541}:${CONTAINER_PORT:-2541}"
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - PORT=${CONTAINER_PORT:-2541}
+      - HOST=${HOST:-0.0.0.0}
+      - REGTECH_USERNAME=${REGTECH_USERNAME}
+      - REGTECH_PASSWORD=${REGTECH_PASSWORD}
+      - SECUDIUM_USERNAME=${SECUDIUM_USERNAME}
+      - SECUDIUM_PASSWORD=${SECUDIUM_PASSWORD}
+      - REDIS_URL=${REDIS_URL:-}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - API_SECRET_KEY=${API_SECRET_KEY:-}
+    volumes:
+      - blacklist_instance:/app/instance
+      - blacklist_data:/app/data
+      - blacklist_logs:/app/logs
+    labels:
+      - "com.centurylinklabs.watchtower.enable=${WATCHTOWER_ENABLED:-true}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${CONTAINER_PORT:-2541}${HEALTH_ENDPOINT:-/health}"]
+      interval: ${HEALTH_CHECK_INTERVAL:-30s}
+      timeout: ${HEALTH_CHECK_TIMEOUT:-10s}
+      retries: ${HEALTH_CHECK_RETRIES:-3}
+      start_period: ${HEALTH_CHECK_START_PERIOD:-40s}
+
+volumes:
+  blacklist_instance:
+    name: ${VOLUME_INSTANCE_NAME:-blacklist_instance}
+    external: ${VOLUME_EXTERNAL:-false}
+  blacklist_data:
+    name: ${VOLUME_DATA_NAME:-blacklist_data}
+    external: ${VOLUME_EXTERNAL:-false}
+  blacklist_logs:
+    name: ${VOLUME_LOGS_NAME:-blacklist_logs}
+    external: ${VOLUME_EXTERNAL:-false}
