@@ -631,7 +631,37 @@ class UnifiedBlacklistService:
                 table_exists = cursor.fetchone()
                 self.logger.info(f"blacklist_ip table exists: {table_exists is not None}")
                 
-                if table_exists:
+                if not table_exists:
+                    self.logger.warning("blacklist_ip table does not exist! Creating tables...")
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS blacklist_ip (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            ip TEXT NOT NULL UNIQUE,
+                            created_at TEXT NOT NULL,
+                            detection_date TEXT,
+                            attack_type TEXT,
+                            country TEXT,
+                            source TEXT,
+                            confidence_score REAL DEFAULT 1.0,
+                            is_active INTEGER DEFAULT 1,
+                            last_seen TEXT
+                        )
+                    """)
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS ip_detection (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            ip TEXT NOT NULL,
+                            created_at TEXT NOT NULL,
+                            source TEXT NOT NULL,
+                            attack_type TEXT,
+                            confidence_score REAL DEFAULT 1.0
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_source ON blacklist_ip(source)")
+                    conn.commit()
+                    self.logger.info("Database tables created successfully!")
+                
+                if table_exists or True:  # Always check after potential creation
                     # First check if table exists and has data
                     cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
                     total_in_db = cursor.fetchone()[0]
@@ -642,9 +672,6 @@ class UnifiedBlacklistService:
                         self.logger.info(f"Source {row[0]}: {row[1]} IPs")
                         if row[0] in source_counts:
                             source_counts[row[0]] = row[1]
-                else:
-                    self.logger.warning("blacklist_ip table does not exist!")
-                    
                 conn.close()
             except Exception as e:
                 self.logger.warning(f"Failed to get source counts: {e}")
