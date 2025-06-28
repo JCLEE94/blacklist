@@ -889,6 +889,13 @@ class UnifiedBlacklistService:
                         
                     except Exception as e:
                         self.logger.error(f"REGTECH collection failed: {e}")
+                        # 수집 실패 로그 추가
+                        self.add_collection_log('REGTECH', 'collection_failed', {
+                            'task_id': task_id,
+                            'error': str(e),
+                            'start_date': start_date,
+                            'end_date': end_date
+                        })
                 
                 thread = threading.Thread(target=collect_regtech)
                 thread.daemon = True
@@ -959,6 +966,11 @@ class UnifiedBlacklistService:
                         
                     except Exception as e:
                         self.logger.error(f"SECUDIUM collection failed: {e}")
+                        # 수집 실패 로그 추가
+                        self.add_collection_log('SECUDIUM', 'collection_failed', {
+                            'task_id': task_id,
+                            'error': str(e)
+                        })
                 
                 thread = threading.Thread(target=collect_secudium)
                 thread.daemon = True
