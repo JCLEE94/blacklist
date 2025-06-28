@@ -67,5 +67,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port (configurable)
 EXPOSE ${PORT:-8541}
 
-# Start application
-CMD ["python3", "main.py"]
+# Initialize database and start application
+CMD ["/bin/bash", "-c", "python3 init_database.py && python3 main.py"]
