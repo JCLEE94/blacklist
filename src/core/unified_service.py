@@ -386,19 +386,21 @@ class UnifiedBlacklistService:
         """수집 시스템 상태 조회"""
         try:
             if self.collection_manager:
-                status = self.collection_manager.get_status()
-                # Ensure 'enabled' field exists at the top level
+                # Get status from collection manager
+                cm_status = self.collection_manager.get_status()
+                
+                # Return properly formatted response
                 return {
-                    'enabled': status.get('collection_enabled', False),
-                    'status': status.get('status', 'inactive'),
-                    'sources': status.get('sources', {}),
+                    'enabled': cm_status.get('collection_enabled', False),
+                    'status': cm_status.get('status', 'inactive'),
+                    'sources': cm_status.get('sources', {}),
                     'stats': {
-                        'total_ips': status.get('summary', {}).get('total_ips_collected', 0),
+                        'total_ips': cm_status.get('summary', {}).get('total_ips_collected', 0),
                         'today_collected': 0  # Placeholder
                     },
-                    'last_collection': status.get('last_updated'),
-                    'last_enabled_at': status.get('last_enabled_at'),
-                    'last_disabled_at': status.get('last_disabled_at')
+                    'last_collection': cm_status.get('last_updated'),
+                    'last_enabled_at': cm_status.get('last_enabled_at'),
+                    'last_disabled_at': cm_status.get('last_disabled_at')
                 }
             else:
                 # Fallback when collection_manager is not available

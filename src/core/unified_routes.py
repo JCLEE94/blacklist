@@ -422,33 +422,39 @@ def get_analytics_summary():
 def get_collection_status():
     """수집 시스템 상태"""
     try:
-        status = service.get_collection_status()
+        result = service.get_collection_status()
         
-        # Ensure the response has the expected structure
-        if isinstance(status, dict) and 'status' in status:
-            # Extract the nested status if it exists
-            if 'status' in status and isinstance(status['status'], dict):
-                return jsonify(status['status'])
-            else:
-                # Add enabled field if missing
-                if 'enabled' not in status:
-                    status['enabled'] = status.get('collection_enabled', False)
-                return jsonify(status)
-        else:
-            # Create a proper response structure
+        # If the result is already properly formatted, return it
+        if 'enabled' in result:
+            return jsonify(result)
+        
+        # Otherwise, extract from nested structure (legacy format)
+        if 'status' in result and isinstance(result['status'], dict):
+            status = result['status']
             return jsonify({
-                'enabled': False,
-                'status': 'inactive',
-                'sources': {
-                    'regtech': {'enabled': False, 'status': 'inactive', 'total_ips': 0},
-                    'secudium': {'enabled': False, 'status': 'inactive', 'total_ips': 0}
-                },
+                'enabled': status.get('collection_enabled', False),
+                'status': status.get('status', 'inactive'),
+                'sources': status.get('sources', {}),
                 'stats': {
-                    'total_ips': 0,
+                    'total_ips': status.get('summary', {}).get('total_ips_collected', 0),
                     'today_collected': 0
                 },
-                'last_collection': None
+                'last_collection': status.get('last_updated'),
+                'last_enabled_at': status.get('last_enabled_at'),
+                'last_disabled_at': status.get('last_disabled_at')
             })
+        
+        # Fallback
+        return jsonify({
+            'enabled': False,
+            'status': 'inactive',
+            'sources': {},
+            'stats': {
+                'total_ips': 0,
+                'today_collected': 0
+            },
+            'last_collection': None
+        })
     except Exception as e:
         logger.error(f"Collection status error: {e}")
         return jsonify({
