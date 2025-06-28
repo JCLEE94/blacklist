@@ -604,6 +604,26 @@ class UnifiedBlacklistService:
                     try:
                         ips = regtech_collector.collect_from_web(start_date=start_date, end_date=end_date)
                         self.logger.info(f"REGTECH collection completed: {len(ips)} IPs collected")
+                        
+                        # 수집한 IP를 데이터베이스에 저장
+                        if ips and self.blacklist_manager:
+                            # bulk_import_ips expects a list of dictionaries
+                            ips_data = []
+                            for ip_entry in ips:
+                                ips_data.append({
+                                    'ip': ip_entry.ip_address,
+                                    'source': 'REGTECH',
+                                    'threat_type': ip_entry.reason,
+                                    'country': ip_entry.country,
+                                    'confidence': 1.0
+                                })
+                            
+                            result = self.blacklist_manager.bulk_import_ips(ips_data, source='REGTECH')
+                            if result.get('success'):
+                                self.logger.info(f"REGTECH: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
+                            else:
+                                self.logger.error(f"REGTECH: 데이터베이스 저장 실패 - {result.get('error')}")
+                        
                     except Exception as e:
                         self.logger.error(f"REGTECH collection failed: {e}")
                 
@@ -633,8 +653,29 @@ class UnifiedBlacklistService:
                 import threading
                 def collect_secudium():
                     try:
-                        ips = secudium_collector.collect_from_web()
+                        result = secudium_collector.auto_collect()
+                        ips = result.get('ips', []) if result.get('success') else []
                         self.logger.info(f"SECUDIUM collection completed: {len(ips)} IPs collected")
+                        
+                        # 수집한 IP를 데이터베이스에 저장
+                        if ips and self.blacklist_manager:
+                            # bulk_import_ips expects a list of dictionaries
+                            ips_data = []
+                            for ip_entry in ips:
+                                ips_data.append({
+                                    'ip': ip_entry.ip_address,
+                                    'source': 'SECUDIUM',
+                                    'threat_type': ip_entry.reason,
+                                    'country': ip_entry.country,
+                                    'confidence': 1.0
+                                })
+                            
+                            result = self.blacklist_manager.bulk_import_ips(ips_data, source='SECUDIUM')
+                            if result.get('success'):
+                                self.logger.info(f"SECUDIUM: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
+                            else:
+                                self.logger.error(f"SECUDIUM: 데이터베이스 저장 실패 - {result.get('error')}")
+                        
                     except Exception as e:
                         self.logger.error(f"SECUDIUM collection failed: {e}")
                 

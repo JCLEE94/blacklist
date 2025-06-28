@@ -1,0 +1,1874 @@
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>금융보안 레그테크 포털</title>
+
+<script src="/js/jquery-1.12.4.min.js"></script>
+<script src="/js/jquery-ui.min.js"></script>
+
+<!-- <script src="/js/jquery.fullpage.extensions.min.js"></script> -->
+<script src="/js/jquery.fullPage.js"></script>
+<script src="/js/slick.min.js?v=20231016"></script>
+<script src="/js/scroll.min.js"></script>
+<script src="/js/common.js?v=20231016"></script>
+<script src="/js/dqCommon.js"></script>
+<script src="/js/lightslider.js"></script>
+
+<!--[if lt IE 9]><script src="../../js/html5shiv.min.js"></script><![endif]-->
+<link rel="stylesheet" href="/css/common.css?v=20231016">
+<link rel="stylesheet" href="/css/lightslider.css?v=20231016">
+<link rel="stylesheet" type="text/css" href="/js/themes/default/style.css" />
+<link rel="stylesheet" type="text/css" href="/css/select2.css" />
+
+<!-- URL -->
+<script type="text/javascript" src="/js/jquery-url-min.js"></script>
+
+<!-- 페이징 -->
+<script type="text/javascript" src="/js/jquery.twbsPagination.min.js"></script>
+
+<!-- 스마트 에디터 -->
+<script type="text/javascript" src="/js/smartEditor/HuskyEZCreator.js?v=20231016"></script>
+
+<!-- 파일 업로드 -->
+<script type="text/javascript" src="/js/dropzone.js?v=20231016"></script>
+
+<!-- 트리 -->
+<script type="text/javascript" src="/js/jstree.min.js"></script>
+
+<!-- 유효성 검사 -->
+<script type="text/javascript" src="/js/jquery.validate_custom.js"></script>
+<script type="text/javascript" src="/js/jquery.validate_additional-methods.min.js"></script>
+
+<!-- js render -->
+<script type="text/javascript" src="/js/jsrender.js"></script>
+
+<!-- high chart -->
+<script type="text/javascript" src="/js/highstock5.0.2/common.js"></script>
+<script type="text/javascript" src="/js/highstock5.0.2/core/highstock.js"></script>
+<script type="text/javascript" src="/js/highstock5.0.2/modules/data.js"></script>
+<script type="text/javascript" src="/js/highstock5.0.2/modules/exporting.js"></script>
+<script type="text/javascript" src="/js/highstock5.0.2/modules/no-data-to-display.js"></script>
+
+<script type="text/javascript" src="/js/moment.min.js"></script>
+
+<script type="text/javascript" src="/js/select2.min.js"></script>
+
+<!-- chat -->
+<script type="text/javascript" src="/js/websocket/sockjs.min.js"></script>
+<script type="text/javascript" src="/js/websocket/stomp.min.js"></script>
+<script type="text/javascript" src="/js/collections.min.js"></script>
+
+<!-- Google tag (gtag.js) 2025-유지보수-08-->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-7WRDYHF66J"></script> 
+<script> 
+window.dataLayer = window.dataLayer || []; 
+function gtag(){dataLayer.push(arguments);} 
+gtag('js', new Date()); 
+gtag('config', 'G-7WRDYHF66J'); 
+</script>
+<link rel="stylesheet" href="/css/sub.css?v=20231027"> <!-- sub css -->
+
+
+<style>
+.submitOrg .org_select .list_wrap {
+    height: 560px !important;
+    border-top: 1px solid #ccc;
+    overflow-y: auto;
+}
+</style>
+
+
+<style>
+/* jquery Full Calendar */
+.fc {font-family:'NanumBarunGothic-Regular', 'Apple Gothic','애플 고딕','맑은 고딕', 'Malgun Gothic', Dotum,'돋움', sans-serif, Helvetica, Arial; color:#666; font-size:15px; line-height:1.4;letter-spacing:-0.02em;}
+/* .fc .fc-center {font-family: 'NanumBarunGothic-Bold';} */
+.fc .fc-center h2 {margin-top: 7px !important;font-size: 20px !important;margin-left:20px !important; margin-right:20px !important;}
+.fc .fc-content span{color:white;}
+.fc .fc-content {height:15px !important;font-size: 15px !important;cursor: pointer;text-align: center;}
+.fc .fc-more {font-size: 14px !important;}
+.fc .fc-day-number {font-size: 14px !important;}
+.fc .fc-time{display:none;}
+/** append **/
+.fc-toolbar.fc-header-toolbar{position:relative}
+.fc-toolbar .fc-right {float:none;position:absolute;top:0;right:0;}
+.fc-toolbar .fc-right .flag{display:inline-block;padding:6px 13px;margin-left:10px;font-size:13px;border:1px solid}
+
+ /** 기존 코드
+.fc-toolbar .fc-right .flag.type1{color:#4373f8;border-color:#4373f8}
+.fc-toolbar .fc-right .flag.type2{color:#3dbacd;border-color:#3dbacd}
+.fc-toolbar .fc-right .flag.type3{color:#f96b4f;border-color:#f96b4f}
+.fc-toolbar .fc-right .flag.type4{color:#a075b7;border-color:#a075b7}
+.fc-toolbar .fc-right .flag.type5{color:#5c6672;border-color:#5c6672}
+**/
+.fc-toolbar .fc-right .flag.type1{color:#2E62FF;border-color:#2E62FF}
+.fc-toolbar .fc-right .flag.type2{color:#25808F;border-color:#25808F}
+.fc-toolbar .fc-right .flag.type3{color:#E22D08;border-color:#E22D08}
+.fc-toolbar .fc-right .flag.type4{color:#9262AC;border-color:#9262AC}
+.fc-toolbar .fc-right .flag.type5{color:#5c6672;border-color:#5c6672}
+/*************************************************************변경 코드**/
+
+
+.fc-sun {
+color: #E30000 !important;
+}
+
+.fc-sat{
+color: blue !important;
+}
+body{
+	font-family: 'NanumBarunGothic-Regular', 'Apple Gothic','애플 고딕','맑은 고딕', 'Malgun Gothic', Dotum,'돋움', sans-serif, Helvetica, Arial;
+    color: #666;
+    font-size: 15px;
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+}
+</style>
+
+
+<style>
+.highLightCls {background: #fef6f6 !important;padding:10px !important;}
+</style>
+
+           
+<style>
+.submitOrg .org_select .list_wrap {
+    height: 560px !important;
+    border-top: 1px solid #ccc;
+    overflow-y: auto;
+}
+</style>
+
+</head>
+
+<body>
+	<!-- skip navigation -->
+	<div id="skip">
+		<a href="#gnb">주메뉴 바로가기</a>
+		<a href="#contents">본문 바로가기</a>
+	</div>
+	
+	<!-- //skip navigation -->
+	<!-- wrapper -->
+	<div class="wrapper">
+		<!-- header -->
+		<header>
+			
+
+
+
+
+<div class="top_wrapper">
+	<h1 class="logo">
+	<a href="javascript:topMenuMove('/main/main');"><img src="/images/logo.gif" alt="금융보안원·금융 IT 보안 RegTech 포털"></a></h1> 
+	<ul class="top_menu">
+		<li><a class="link_notice" href="/board/11/boardList"><span class="txt">공지사항</span></a></li>
+		
+		
+			
+			<!-- <set var="loginFlag" value="Y"> -->
+			<li><a class="link_mypage" href="javascript:topMenuMove('/member/myPage/subMain');"><span class="txt">마이페이지</span></a></li>
+            <li><a class="link_mypage2" href="javascript:topMenuMove('/organ/myOrgan/myOrganMain');"><span class="txt">마이기관페이지</span></a></li>
+			<li><a class="link_logout" href="/login/logout"><span class="txt">로그아웃</span></a></li>
+		
+		<li><a class="link_sitemap" href="/member/siteMapView"><span class="txt">사이트 맵</span></a></li>
+	</ul>
+</div>
+<div class="gnb_wrapper">
+	<nav id="gnb">
+	</nav>
+</div>
+<div class="top_search">
+	<button class="btn_search" id="btn_search" type="button">검색</button>
+	<div class="input_box">
+		<!-- 검색 시작 -->
+		<form id="searchForm_h" name="searchForm_h" action="/search/searchView" method="get" onsubmit="return validateForm_h()">
+			<fieldset>
+				<legend>검색어 입력</legend>
+				<div class="input_area">
+					<input type="hidden" name="idx" value="0">
+					<input type="hidden" name="page" value="0">
+					<input type="hidden" id="hrekeyword" name="rekeyword" value="">
+					
+					<label for="hkeyword" class="sr-only">통합검색</label>
+					<input type="text" id="hkeyword" name="keyword" placeholder="검색어를 입력하세요.">
+					<button class="btn_preview" type="submit">검색</button>
+				</div>
+				<dl class="keyword_area">
+					<dt>인기검색어</dt>
+					<dd>
+					</dd>
+				</dl>
+			</fieldset>
+		</form>
+		<!-- 검색 끝 -->
+	</div>
+</div>
+<form id="menuForm" name="menuForm">
+<input type="hidden" id="url" name="url" value="">
+</form>
+<!-- <div class="gnb_bg"></div> -->
+<script type="text/javascript">
+$(function(){
+	$("#hkeyword").keyup(function(){
+		if($(this).val().length > 500){
+			alert("최대 500자까지 입력 가능합니다.");
+	        $(this).val($(this).val().substring(0, 500));
+		}
+	});
+	
+	var menuUrl = "";
+	if($.url('path').split('/').length -1 == 1){
+		menuUrl = '/';
+	}
+	if($.url('path').split('/').length -1 == 2){
+		menuUrl = '/'+$.url('1');
+	}
+	if($.url('path').split('/').length -1 == 3){
+		menuUrl = '/'+$.url('1')+'/'+$.url('2');
+	}
+	if($.url('path').split('/').length -1 == 4){
+		menuUrl = '/'+$.url('1')+'/'+$.url('2')+'/'+$.url('3');
+	}
+	if($.url('path').split('/').length -1 == 5){
+		menuUrl = '/'+$.url('1')+'/'+$.url('2')+'/'+$.url('3')+'/'+$.url('4');
+	}
+
+	var level1Cnt = 0;
+	var level2Cnt = 0;
+	$.ajax({
+		async: false,
+		type:'get',
+		url:"/common/menu/menuConnectByListJson",
+		dataType : "json",
+		success:function(data){
+			var menuStr = "";
+			
+			
+			menuStr +="<ul class=\"depth1\">";
+			
+			var level1SizeCnt = 0;
+			for(var i = 0; i < data.length; i++){
+				// 노드 태그 열기
+				// 1레벨
+				if(data[i].menuLevel == 1){
+					// 1레벨 하위 노드가 없을 경우
+					if(data[i].menuCnt == 0){
+						if(level1SizeCnt == 1){
+							menuStr += "<li style=\"width:225px\"><a href=\""+data[i].menuUrl+"\">"+data[i].menuName+"</a>";
+						}else{
+							menuStr += "<li><a href=\"javascript:topMenuMoveByMenuNo('"+data[i].menuUrl+"', " + data[i].menuNo + ");\">"+data[i].menuName+"</a>";
+						}
+					}
+					// 1레벨 하위 노드가 있을 경우
+					if(data[i].menuCnt > 0){
+						if(level1SizeCnt == 1){
+							level1Cnt = data[i].menuCnt;
+							menuStr += "<li style=\"width:225px\"><a href=\"javascript:topMenuMoveByMenuNo('"+data[i].menuUrl+"', " + data[i].menuNo + ");\">"+data[i].menuName+"</a>";
+							menuStr += "<ul class=\"depth2\">";
+						}else{
+							level1Cnt = data[i].menuCnt;
+							menuStr += "<li><a href=\"javascript:topMenuMoveByMenuNo('"+data[i].menuUrl+"', " + data[i].menuNo + ");\">"+data[i].menuName+"</a>";
+							menuStr += "<ul class=\"depth2\">";
+						}
+					}
+					level1SizeCnt++;
+				}
+				// 2레벨
+				if(data[i].menuLevel == 2){
+					level1Cnt = level1Cnt - 1;
+					// 2레벨 하위 노드가 없을 경우
+					if(data[i].menuCnt == 0){
+						menuStr += "<li><a href=\"javascript:topMenuMoveByMenuNo('"+data[i].menuUrl+"', " + data[i].menuNo + ");\">"+data[i].menuName+"</a>";
+					}
+					// 2레벨 하위 노드가 있을 경우
+					if(data[i].menuCnt > 0){
+						level2Cnt = data[i].menuCnt;
+						menuStr += "<li class=\"in\"><a href=\"javascript:topMenuMoveByMenuNo('"+data[i].menuUrl+"', " + data[i].menuNo + ");\">"+data[i].menuName+"</a>";
+						menuStr += "    <ul class=\"depth3\">";
+					}
+				}
+				// 3레벨
+				if(data[i].menuLevel == 3){
+					level2Cnt = level2Cnt - 1;
+					menuStr += "<li><a href=\"javascript:topMenuMoveByMenuNo('"+data[i].menuUrl+"', " + data[i].menuNo + ");\">"+data[i].menuName+"</a>";
+				}
+				// 노드 태그 닫기
+				// 1레벨 노드 닫기
+				if(data[i].menuLevel == 1){
+					if(level1Cnt == 0 && level2Cnt == 0){
+						menuStr += "</li>";
+					}
+				}
+				// 2레벨 노드 닫기
+				if(data[i].menuLevel == 2){
+					if(data[i].menuCnt == 0){
+						menuStr += "</li>";
+					}
+					if(level1Cnt == 0 && level2Cnt == 0){
+						menuStr += "</ul>";
+						menuStr += "</li>";
+					}
+				}
+				// 3레벨 노드 닫기
+				if(data[i].menuLevel == 3){
+					menuStr += "</li>";
+					if(level2Cnt == 0){
+						menuStr += "</ul>";
+						menuStr += "</li>";
+					}
+					if(level1Cnt == 0 && level2Cnt == 0){
+						menuStr += "</ul>";
+						menuStr += "</li>";
+					}
+				}
+			}
+			menuStr += "</ul>";
+			$("#gnb").html(menuStr);
+		}
+	});
+
+	
+	common.gnb();
+	if(menuUrl !="/common/file" && menuUrl !="/" && menuUrl !="/popup" && menuUrl != "/main" && menuUrl != "/search" && menuUrl != "/login" && menuUrl != "/member" && menuUrl != "/member/myPage" && menuUrl.indexOf("/aireport") == -1    
+			&& menuUrl.indexOf("/chat") == -1 && menuUrl.indexOf("/stomp-chat") == -1 && menuUrl.indexOf("/publish") == -1  && menuUrl.indexOf("/subscribe") == -1 && menuUrl.indexOf("/board/11") == -1) {
+		
+		if(menuUrl =="/board/1" || menuUrl =="/board/lawAnalysis"){
+			menuUrl = "/board/18";
+		}
+		
+		$.ajax({
+			async: true,
+			type:'get',
+			url:"/common/menu/findOneNaviJson",
+			dataType : "json",
+			data:{"menuType" : 'COM003002', "menuUrl" : menuUrl+"/"},
+			success:function(data){
+				if(data.menuPath.indexOf('-') != -1){
+					var menuNavi = data.menuPath.split('-');
+				}
+					var menuNaviHtml = "";
+					if(menuNavi.length == 2){
+						menuNaviHtml += "<div class=\"sub_top\">";
+						menuNaviHtml += "<a href=\"#none\" class=\"btn_home\">홈으로</a>";
+						menuNaviHtml += "<ul class=\"location\">";
+						menuNaviHtml += "	<li><a href=\"#none\">"+menuNavi[0]+"</a>";
+						menuNaviHtml += "		<ul class=\"smenu\">";
+						for(var i = 0; i < data.menuDepth1List.length; i++){
+							menuNaviHtml += "			<li><a href=\"javascript:naviMenuMoveByMenuNo('"+data.menuDepth1List[i].menuUrl+"', " + data.menuNo + ");\">"+data.menuDepth1List[i].menuName+"</a></li>";
+						}
+						menuNaviHtml += "		</ul>";
+						menuNaviHtml += "	</li>";
+						menuNaviHtml += "	<li><a href=\"#none\">"+menuNavi[1]+"</a>";
+						menuNaviHtml += "		<ul class=\"smenu\">";
+						for(var i = 0; i < data.menuDepth2List.length; i++){
+							menuNaviHtml += "			<li><a href=\"javascript:naviMenuMoveByMenuNo('"+data.menuDepth2List[i].menuUrl+"', " + data.menuNo + ");\">"+data.menuDepth2List[i].menuName+"</a></li>";
+						}
+							menuNaviHtml += "	</ul>";
+						menuNaviHtml += "	</li>";
+						menuNaviHtml += "</ul>";
+						menuNaviHtml += "</div>";
+					}else if(menuNavi.length == 3){
+						menuNaviHtml += "<div class=\"sub_top\">";
+						menuNaviHtml += "<a href=\"#none\" class=\"btn_home\">홈으로</a>";
+						menuNaviHtml += "<ul class=\"location\">";
+						menuNaviHtml += "	<li><a href=\"#none\">"+menuNavi[0]+"</a>";
+						menuNaviHtml += "		<ul class=\"smenu\">";
+						for(var i = 0; i < data.menuDepth1List.length; i++){
+							menuNaviHtml += "			<li><a href=\"javascript:naviMenuMoveByMenuNo('"+data.menuDepth1List[i].menuUrl+"', " + data.menuNo + ");\">"+data.menuDepth1List[i].menuName+"</a></li>";
+						}
+						menuNaviHtml += "		</ul>";
+						menuNaviHtml += "	</li>";
+						menuNaviHtml += "	<li><a href=\"#none\">"+menuNavi[1]+"</a>";
+						menuNaviHtml += "		<ul class=\"smenu\">";
+						for(var i = 0; i < data.menuDepth2List.length; i++){
+							menuNaviHtml += "			<li><a href=\"javascript:naviMenuMoveByMenuNo('"+data.menuDepth2List[i].menuUrl+"', " + data.menuNo + ");\">"+data.menuDepth2List[i].menuName+"</a></li>";
+						}
+							menuNaviHtml += "		</ul>";
+						menuNaviHtml += "	</li>";
+						menuNaviHtml += "	<li><a href=\"#none\">"+menuNavi[2]+"</a>";
+						menuNaviHtml += "		<ul class=\"smenu\">";
+						for(var i = 0; i < data.menuDepth3List.length; i++){
+							menuNaviHtml += "		<li><a href=\"javascript:naviMenuMoveByMenuNo('"+data.menuDepth3List[i].menuUrl+"', " + data.menuNo + ");\">"+data.menuDepth3List[i].menuName+"</a></li>";
+						}
+						menuNaviHtml += "		</ul>";
+						menuNaviHtml += "	</li>";
+						menuNaviHtml += "</ul>";
+						menuNaviHtml += "</div>";
+					}
+					$("#sub_top").html(menuNaviHtml);
+					sub.location();
+				}
+			});
+		
+	}
+	
+	if(menuUrl.indexOf("/board/11") != -1){
+		var menuNaviHtml = "";
+		menuNaviHtml += "<div class=\"sub_top\">";
+		menuNaviHtml += "<a href=\"/\" class=\"btn_home\">홈으로</a>";
+		menuNaviHtml += "<ul class=\"location\">";
+		menuNaviHtml += "<li><a href=\"/board/11/boardList\">전체 공지사항</a></li>";
+		menuNaviHtml += "</ul>";
+		menuNaviHtml += "</div>";
+		$("#sub_top").html(menuNaviHtml);
+		sub.location();
+	}else if(menuUrl.indexOf("/board/scrap") != -1){
+		var menuNaviHtml = "";
+		menuNaviHtml += "<div class=\"sub_top\">";
+		menuNaviHtml += "<a href=\"/\" class=\"btn_home\">홈으로</a>";
+		menuNaviHtml += "<ul class=\"location\">";
+		menuNaviHtml += "<li><a href=\"/board/scrap/myScrapList\">나의 스크랩</a></li>";
+		menuNaviHtml += "</ul>";
+		menuNaviHtml += "</div>";
+		$("#sub_top").html(menuNaviHtml);
+		sub.location();
+	}
+	
+	$.ajax({
+		async: true,
+		type:'get',
+		url:"/search/getHotKeyword",
+		dataType : "json",
+		success:function(data){
+			$(".keyword_area>dd").empty();
+			for(var i in data){
+				$(".keyword_area>dd").append('<a href="javascript:searhHotKeyword(\''+data[i]+'\')">'+data[i]+'</a>');
+			}
+			
+		}
+	});
+	
+
+	/**
+	let target = document.querySelector('input');
+	let observer = new MutationObserver((mutations) => {
+		alert('파일 업로드!');
+	})
+	let option = {
+			attributes: true,
+			childList: true,
+			characterData: true
+	};
+	observer.observe(target, option);
+	**/
+	
+});
+
+
+$(window).load(function() {
+    $('.ui-datepicker-year').attr('title', '연도 선택');
+    $('.ui-datepicker-month').attr('title', '월 선택');
+    $('.dz-hidden-input').attr('title', '파일 업로드');
+	$('.ui-datepicker-calendar').append('<caption>날짜 선택</caption>');	
+});
+
+
+$('[class^=link_]').on('focusin', function() {
+	// 공통
+	if ($(this).context.className == 'link_notice') { $(this).find('.txt').css('margin-left', '-47px').css('opacity', 1).css('z-index', 10)}
+	if ($(this).context.className == 'link_sitemap') { $(this).find('.txt').css('margin-left', '-48px').css('opacity', 1).css('z-index', 10)}
+	
+	// 로그인 전
+	if ($(this).context.className == 'link_login') { $(this).find('.txt').css('margin-left', '-40px').css('opacity', 1).css('z-index', 10)}
+	if ($(this).context.className == 'link_find') { $(this).find('.txt').css('margin-left', '-81px').css('opacity', 1).css('z-index', 10)}
+	if ($(this).context.className == 'link_join') { $(this).find('.txt').css('margin-left', '-46px').css('opacity', 1).css('z-index', 10)}
+	
+	// 로그인 후
+	if ($(this).context.className == 'link_mypage') { $(this).find('.txt').css('margin-left', '-53px').css('opacity', 1).css('z-index', 10)}
+	if ($(this).context.className == 'link_mypage2') { $(this).find('.txt').css('margin-left', '-65px').css('opacity', 1).css('z-index', 10)}
+	if ($(this).context.className == 'link_logout') { $(this).find('.txt').css('margin-left', '-46px').css('opacity', 1).css('z-index', 10)}
+		   
+}).on('focusout', function() {
+	$(this).find('.txt').css('opacity', '').css('z-index', '');
+})
+
+
+//인기검색어_클릭이벤트
+function searhHotKeyword(keyword){
+	$("#hkeyword").val(keyword);
+	$("#searchForm_h").submit();
+}
+
+//헤더_검색
+function validateForm_h(){
+	if($("#hkeyword").val()==""){
+		alert("검색어를 입력해 주세요");
+		return false;
+	}
+	$("#hrekeyword").val($("#hkeyword").val());
+	
+	setCookie($("#hkeyword").val());
+	return true;
+}
+
+
+//쿠키 설정
+function setCookie(cTerm){
+	var cName = "tempCookie";
+	var cValue = cTerm;
+	var cDay = 1;
+
+	var start = document.cookie.indexOf(cName);
+	if (start != -1) {
+		var tempArray = getCookie(cName).split(",");
+		for(var i in tempArray){
+			if(i == 9)
+				break;
+			if(tempArray[i] == cTerm)
+				return;
+			if(tempArray[i] != "")
+				cValue = cValue + "," + tempArray[i];
+		}
+	}
+	var expire = new Date();
+	expire.setDate(expire.getDate() + cDay);
+	cookies = cName + '=' + escape(cValue) + '; path=/'; // 한글 깨짐을 막기위해 escape(cValue)를 합니다.
+	if (typeof cDay != 'undefined')
+		cookies += ';expires=' + expire.toGMTString() + ';';
+	document.cookie = cookies;
+}
+
+//쿠키 가져오기
+function getCookie(cName) {
+	cName = cName + '=';
+	var cookieData = document.cookie;
+	var start = cookieData.indexOf(cName);
+	var cValue = '';
+	if (start != -1) {
+		start += cName.length;
+		var end = cookieData.indexOf(';', start);
+		if (end == -1)
+			end = cookieData.length;
+		cValue = cookieData.substring(start, end);
+	}
+	return unescape(cValue);
+}
+
+function topMenuMove(url){
+	$("#url").val(url);
+	if(fnCmdAuthResourceCheck(url)){
+		if((url.indexOf("compliance") > -1 || url.indexOf("report") > -1 || url.indexOf("cyber") > -1 ||  url.indexOf("member/myPage/pwChangeForm") > -1 || url.indexOf("performManage") > -1 || url.indexOf("vm") > -1) && url.indexOf("vm/board") <= -1 ){	 //2024-유지보수-83 취약점분석평가수요조사 2차인증	//2025-유지보수-22 최상위 메뉴 변경
+			//url.indexOf("member/myPage/subMain") > -1 || 2022.10.28 삭제
+			
+			$.ajax({
+		        async: true,
+		        type: 'post',
+		        url: '/member/findOneAuthConfirm',
+		        dataType: 'json',
+		        success: function(data) {
+		        	/* 2023.07.03 [SFR-005] 인증 변경(kakaopay -> kakaotalk) 및 추가(naver)로 상태값 체크 변경 및 모달 크기 변경
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETE"){
+		        		common.modalPopShow('#secondAuth','450');
+		        	}else{
+		        		location.href=url;
+		        	}
+        		  	*/
+        		  	
+		        	
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETED" &&  data.kakaoStatus != "success"){
+		        		common.modalPopShow('#secondAuth','500');
+		        	}else{
+		        		location.href=url;
+		        	}
+		        	/***********************************************************************************************/
+		        },
+		        error: function(data){
+					alert('SMS 인증에 실패 하였습니다.');
+					return;
+		        }
+		    });
+			
+			
+		}else{
+			location.href=url;
+		}
+	}else{
+		location.href=url;
+	}
+}
+
+
+function naviMenuMove(url){
+	$("#url").val(url);
+	if(fnCmdAuthResourceCheck(url)){
+		if((url.indexOf("compliance") > -1 || url.indexOf("report") > -1 || url.indexOf("cyber") > -1 || url.indexOf("member/myPage/subMain") > -1 || url.indexOf("performManage") > -1 || url.indexOf("consult") > -1 || url.indexOf("consultCloud") > -1 || url.indexOf("vm") > -1) && url.indexOf("vm/board") <= -1 ){	//2024-유지보수-83 취약점분석평가수요조사 2차인증	//2025-유지보수-22 최상위메뉴 변경
+			
+			$.ajax({
+		        async: true,
+		        type: 'post',
+		        url: '/member/findOneAuthConfirm',
+		        dataType: 'json',
+		        success: function(data) {
+		        	/* 2023.07.03 [SFR-005] 인증 변경(kakaopay -> kakaotalk) 및 추가(naver)로 상태값 체크 변경 및 모달 크기 변경
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETE"){
+		        		common.modalPopShow('#secondAuth','450');
+		        	}else{
+		        		location.href=url;
+		        	}
+        		  	*/
+        		  	
+		        	
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETED" &&  data.kakaoStatus != "success"){
+		        		common.modalPopShow('#secondAuth','500');
+		        	}else{
+		        		location.href=url;
+		        	}
+		        	/***********************************************************************************************/
+		        },
+		        error: function(data){
+					alert('SMS 인증에 실패 하였습니다.');
+					return;
+		        }
+		    });
+			
+			
+		}else{
+			location.href=url;
+		}
+	}else{
+		location.href=url;
+	}
+}
+
+/**
+ * 메뉴 번호 저장 (2022 NAT IP 정책 관련 추가)
+ */
+function topMenuMoveByMenuNo(url, menuNo){
+	$("#url").val(url);
+	var result = fnCmdAuthResourceCheckMenu(url, menuNo);
+	
+	if(result == true || result != "NATIP-FAIL"){
+		if((url.indexOf("compliance") > -1 || url.indexOf("report") > -1 || url.indexOf("cyber") > -1 || url.indexOf("member/myPage/subMain") > -1 || url.indexOf("member/myPage/pwChangeForm") > -1 || url.indexOf("performManage") > -1 || url.indexOf("vm") > -1) && url.indexOf("vm/board") <= -1 ){		//2024-유지보수-83 취약점분석평가수요조사 2차인증		//2025-유지보수-22 최상위 메뉴 변경
+			
+			$.ajax({
+		        async: true,
+		        type: 'post',
+		        url: '/member/findOneAuthConfirm',
+		        dataType: 'json',
+		        success: function(data) {
+        		  	/* 2023.07.03 [SFR-005] 인증 변경(kakaopay -> kakaotalk) 및 추가(naver)로 상태값 체크 변경 및 모달 크기 변경
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETE"){
+		        		common.modalPopShow('#secondAuth','450');
+		        	}else{
+		        		location.href=url;
+		        	}
+        		  	*/
+        		  	
+		        	
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETED" &&  data.kakaoStatus != "success"){
+		        		common.modalPopShow('#secondAuth','500');
+		        	}else{
+		        		location.href=url;
+		        	}
+		        	/***********************************************************************************************/
+		        },
+		        error: function(data){
+					alert('SMS 인증에 실패 하였습니다.');
+					return;
+		        }
+		    });
+			
+			
+		}else{
+			location.href=url;
+		}
+	}else{
+		if (result != "NATIP-FAIL"){
+
+			location.href=url;	
+		}
+	}
+}
+function naviMenuMoveByMenuNo(url, menuNo){
+	$("#url").val(url);
+
+	var result = fnCmdAuthResourceCheckMenu(url, menuNo);
+	
+	if(result != "NATIP-FAIL"){
+		if((url.indexOf("compliance") > -1 || url.indexOf("report") > -1 || url.indexOf("cyber") > -1 || url.indexOf("member/myPage/subMain") > -1 || url.indexOf("performManage") > -1 || url.indexOf("consult") > -1 || url.indexOf("consultCloud") > -1 || url.indexOf("vm") > -1) && url.indexOf("vm/board") <= -1 ){	//2024-유지보수-83 취약점분석평가수요조사 2차인증	//2025-유지보수-22 최상위 메뉴 변경
+			
+			$.ajax({
+		        async: true,
+		        type: 'post',
+		        url: '/member/findOneAuthConfirm',
+		        dataType: 'json',
+		        success: function(data) {
+		        	/* 2023.07.03 [SFR-005] 인증 변경(kakaopay -> kakaotalk) 및 추가(naver)로 상태값 체크 변경 및 모달 크기 변경
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETE"){
+		        		common.modalPopShow('#secondAuth','450');
+		        	}else{
+		        		location.href=url;
+		        	}
+        		  	*/
+        		  	
+		        	
+		        	if(data.smsFlag == "N" && data.kakaoStatus != "COMPLETED" &&  data.kakaoStatus != "success"){
+		        		common.modalPopShow('#secondAuth','500');
+		        	}else{
+		        		location.href=url;
+		        	}
+		        	/***********************************************************************************************/
+		        },
+		        error: function(data){
+					alert('SMS 인증에 실패 하였습니다.');
+					return;
+		        }
+		    });
+			
+			
+		}else{
+			location.href=url;
+		}
+	}else{
+		if (result != "NATIP-FAIL"){
+
+			location.href=url;	
+		}
+	}
+}
+//권한 자원 체크
+function fnCmdAuthResourceCheck(url){
+	var flag = true;
+	$.ajax({
+        async: false,
+        type: 'post',
+        url: '/member/authResourceCheck',
+        dataType: 'json',
+        data:{
+        	url : url
+	    },
+        success: function(data) {
+    		flag = data;
+        },
+        error: function(data){
+			flag = false;
+        }
+    });
+	return flag
+}
+
+
+//권한 자원 체크 - 메뉴번호 저장
+function fnCmdAuthResourceCheckMenu(url, menuNo){
+	
+	var flag = true;
+	$.ajax({
+      async: false,
+      type: 'post',
+      url: '/member/authResourceCheck',
+      dataType: 'json',
+      data:{
+      	url : url, menuNo : menuNo 
+	    },
+      success: function(data) {
+  		flag = data;
+      },
+      error: function(data){
+		flag = false;
+    	  
+      	if(data.status == 406 || (data.responseJSON != null && data.responseJSON.code == 'E00010601')){
+      		flag = "NATIP-FAIL";
+    		$("#menuForm").attr("action", "/common/error/errorsNatIp").submit();
+      	}
+		
+      }
+  	});
+	return flag;
+}
+</script>
+		</header>
+		<!-- contents -->
+		<div id="contents">
+			
+
+
+
+
+
+
+
+
+<div class="sub_top_wrap" id="sub_top">
+</div>
+<div class="content_area">
+<form method="post" id="advisoryList" name="advisoryList">
+	<input type="hidden" id="page" name="page" value="0"/>
+	<input type="hidden" id="tabSort" name="tabSort" value="blacklist"/>
+	<input type="hidden" id="excelDownload" name="excelDownload" value=""/>
+	<input type="hidden" id="cveId" name="cveId" value=""/>
+	<input type="hidden" id="ipId" name="ipId" value=""/>
+	<input type="hidden" id="estId" name="estId" value=""/>
+	
+	<div class="content_title">
+		<h2>사이버 위협정보</h2>
+	</div>
+	<div class="mt10">
+		<div class="filter_wrap" style="margin-bottom:40px;">
+			<div class="row">
+				<span class="tit">
+					
+			    		
+			    		
+			    			등록일
+			    		
+			    		
+			   		
+				</span>
+				<div class="calendar type185">
+					<span class="unit"><input type="text" id="startDate" name="startDate" title="검색시작일" value="20250601" readonly="readonly"></span>
+					<span class="unit"><input type="text" id="endDate"   name="endDate"   title="검색종료일" value="20250630" readonly="readonly"></span>
+				</div>
+			</div>
+			<div class="row">
+				<span class="table_cate">
+					<span class="tit">검색어</span>
+					<span class="selectbox w150">						
+						<select title="검색어분류" id="findCondition" name="findCondition">
+							<option value="all" selected>전체          </option>
+						</select>
+					</span>
+					<input class="" type="text" id="findKeyword" name="findKeyword" title="검색어" value="" style="width:750px;">
+				</span>
+			</div>
+			<div class="alC">
+				<button class="btnS btn_search nph" type="button" onclick="fnSearch()">검색</button>
+				<button class="btnS btn_search nph ml7" type="button" onclick="javascript:fnCmdCommonReset();">초기화</button>
+			</div>
+		</div>
+		
+		<div class="total_area" style="margin-bottom:0;">
+			<span class="left">
+			</span>
+			<span class="right">
+				<span class="table_cate mr10">
+			   	    <span class="checkbox"><input type="checkbox" id="excelSecurity" name="excelDown" value="security" checked><label for="excelSecurity" class="ml5">보안권고문  </label></span>
+            		<span class="checkbox"><input type="checkbox" id="excelBlacklist" name="excelDown" value="blacklist" checked><label for="excelBlacklist" class="ml5">요주의 IP </label></span>
+            		<span class="checkbox"><input type="checkbox" id="excelWeakpoint" name="excelDown" value="weakpoint" checked><label for="excelWeakpoint" class="ml5">취약점 정보</label></span>
+				</span>
+				<a class="btnIn download" href="javascript:fnCmdExcelDown();">목록(Excel) 다운로드</a>
+			</span>
+		</div>	
+		
+		<div class="tab_wrap three no_tab mt35">
+			
+			<ul class="tab_menu">
+				<li ><a onclick="javascript:changeTab('security')">보안권고문</a></li>
+				<li  class="active"><a onclick="javascript:changeTab('blacklist')">요주의 IP</a></li>
+				<li ><a onclick="javascript:changeTab('weakpoint')">취약점 정보</a></li>
+			</ul>
+		</div>
+		
+		<div class="total_area">
+			<span class="left">
+				<span class="total_num">총 
+					<em>
+					
+						
+							5,231
+						
+						
+					
+					</em>
+					건
+				</span>
+			</span>
+			
+			<span class="right">
+				<span class="selectbox ml7">
+					
+					<select id="size" name="size" title="페이지 목록 개수"><option value="10" selected="selected">10개씩 보기</option><option value="30">30개씩 보기</option><option value="50">50개씩 보기</option></select>
+				</span>
+			</span>
+		</div>
+		
+		<div class="tbl typeL">						
+			
+	    		
+           		
+					<table>
+				        <caption>요주의 IP 목록</caption>
+				        <colgroup>
+				       		<col class="wf15">
+				            <col class="wf10">
+				            <col>
+				            <col class="wf10">
+				            <col class="wf10">
+				            <col class="wf7">
+				        </colgroup>
+				        <thead>
+					        <th scope="col">IP</th>
+					        <th scope="col">국가</th>
+					        <th scope="col">등록사유</th>
+					        <th scope="col">등록일</th>
+					        <th scope="col">해제일</th>
+					        <th scope="col">조회수</th>
+					    </thead>
+					    <tbody>
+					    	
+					    	
+					    		<tr>
+						    		<td>
+										129.226.213.145  			
+						    		</td>
+						    		<td>
+						    			SG 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('628f0f18-838a-44a2-b4d4-850c6dd42095','blacklist')">Namo CrossEditor 정보 노출 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										66.235.114.50  			
+						    		</td>
+						    		<td>
+						    			US 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('cffe856e-72ea-42c2-8f0b-937e2864476d','blacklist')">Apache Tomcat 원격코드 실행 공격 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										85.190.242.233  			
+						    		</td>
+						    		<td>
+						    			DE 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('16a457a1-47bd-4fd1-b06a-608eaed8cd3e','blacklist')">WordPress xmlRPC 취약점 공격 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										91.123.10.109  			
+						    		</td>
+						    		<td>
+						    			BR 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('59276a69-92ea-4d5e-bdec-977958b733af','blacklist')">사용자 권한 획득시도 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										85.208.150.97  			
+						    		</td>
+						    		<td>
+						    			KE 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('88161cd0-ebc8-430e-a5f5-c3cf9333b073','blacklist')">사용자 권한 획득시도 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										89.184.203.97  			
+						    		</td>
+						    		<td>
+						    			AU 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('91b33c68-3583-4333-b83f-4b6eae98438a','blacklist')">사용자 권한 획득시도 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										85.239.59.181  			
+						    		</td>
+						    		<td>
+						    			RU 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('a3c65183-5d09-472b-9116-9313a58f6e34','blacklist')">WordPress xmlRPC 취약점 공격 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										85.239.59.59  			
+						    		</td>
+						    		<td>
+						    			RU 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('c176105a-618c-410c-9324-9ff60365c648','blacklist')">WordPress xmlRPC 취약점 공격 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										5.62.155.16  			
+						    		</td>
+						    		<td>
+						    			CA 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('6d8681c7-1a77-488b-a3e2-74697012ff80','blacklist')">사용자 권한 획득시도 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    		<tr>
+						    		<td>
+										64.49.36.82  			
+						    		</td>
+						    		<td>
+						    			US 
+						    		</td>
+						    		<td class="textEllipsisU">
+						    			<a class="el" href="javascript:goView('032795c9-cecd-41a4-8a56-a3f29799d379','blacklist')">WordPress xmlRPC 취약점 공격 탐지</a>
+						    		</td>
+						    		<td>
+						    			2025-06-25  
+						    		</td>
+						    		<td>
+						    			2025-09-23
+						    		</td>
+						    		<td>
+						    			0
+						    		</td>
+						    	</tr>
+					    	
+					    </tbody>
+				    </table>				    			 
+      			
+           		
+	    	
+		</div>
+		
+		<ul class="paging_area">
+			<script language='javascript'>              
+$(function(){                               
+ var page = Number('0')+1;             
+$('#pagination-demo').twbsPagination({      
+first:'첫페이지',
+prev:'이전게시물 10개', 
+next:'다음게시물 10개',  
+last:'마지막페이지',  
+firstClass:'btn_first',             
+prevClass:'btn_prev',             
+nextClass:'btn_next',             
+lastClass:'btn_last',             
+pageClass:'paging_num',                      
+activeClass:'paging_num on',                 
+initiateStartPageClick: false,              
+visiblePages: 10,                           
+startPage: page,                            
+totalPages: '524',       		   
+onPageClick: function (event, page) {       
+    $('#page').val(Number(page - 1));       
+    fnPageMove();                               
+}                                           
+});                                         
+});                                         
+</script>                                   
+<li><span id="pagination-demo" class="pagination-sm inner_paging"></span></li> 
+
+		</ul>
+		
+		
+	</div>
+</form>
+</div>
+<!-- 페이지 로딩: 레이어팝업 아래위치-->
+<div class="loading">
+	<p class="image"><img id="loadingGif" src="/images/loading.gif" alt="로딩중"></p>
+</div>
+<!-- //.페이지 로딩 -->
+<script type="text/javascript">
+$(function(){
+	$(".loading").hide();
+	
+	$("#ui-datepicker-div").hide();
+	$('#startDate').datepicker();
+    $('#startDate').datepicker("option", "maxDate", $("#endDate").val());
+    $('#startDate').datepicker("option", "onClose", function ( selectedDate ) {
+        $("#endDate").datepicker( "option", "minDate", selectedDate );
+    });
+    $('#endDate').datepicker();
+    $('#endDate').datepicker("option", "minDate", $("#startDate").val());
+    $('#endDate').datepicker("option", "onClose", function ( selectedDate ) {
+        $("#startDate").datepicker( "option", "maxDate", selectedDate );
+    });
+	
+	$("#size").on('change', function(){
+		$("#page").val(0);
+		fnPageMove();
+	});
+});
+
+function changeTab(arg){
+// 	fnCmdCommonReset();
+	$('#tabSort').val(arg);
+	 fnSearch();
+}
+
+function fnSearch(){
+	$("#page").val(0);
+	fnPageMove();
+}
+
+function fnPageMove(){
+	$("#advisoryList").attr("action","/fcti/securityAdvisory/advisoryList").submit();
+}
+
+function goView(no, tab){
+	if(tab == 'security'){
+		$("#estId").val(no);
+		$("#advisoryList").attr("action", "/fcti/securityAdvisory/advisoryView").submit();
+	}else if(tab == 'blacklist'){
+		$("#ipId").val(no);
+		$("#advisoryList").attr("action", "/fcti/securityAdvisory/blackListView").submit();
+	}else if(tab == 'weakpoint'){
+		$("#cveId").val(no);
+		$("#advisoryList").attr("action", "/fcti/securityAdvisory/weakPointView").submit();
+	}
+}
+
+//엑셀 다운
+function fnCmdExcelDown(){
+	var excelDown = '';
+	
+	var startDate = $('#startDate').val();
+	var endDate = $('#endDate').val();
+	var findKeyword = $('#findKeyword').val();
+	
+	if(findKeyword == '' && (startDate == '' || endDate == '')){
+		alert('검색조건 입력 후 다운로드 가능합니다');
+		return;
+	}
+	//2024-유지보수-92 기간제한
+	if (isMoreThreeMonth(startDate, endDate)){
+		alert('기간조건은 3개월이내로 가능합니다.');
+		return;
+	}
+	$("input:checkbox[name='excelDown']").each(function(){
+		excelDown += this.checked ? ($(this).val() + ',') : '';
+	});
+	
+	if(excelDown == ''){
+		alert('항목을 선택해주세요');
+		return;
+	}else{
+		$('#excelDownload').val(excelDown);
+		$("#advisoryList").attr("action","/fcti/securityAdvisory/advisoryListDownloadXlsx").submit();
+	}
+	
+}
+function isMoreThreeMonth(date1, date2) { 
+	// 두 날짜를 Date 객체로 변환 
+	const d1 = parseDate(date1); 
+	const d2 = parseDate(date2); // 두 날짜의 연도와 월 차이를 계산 
+	const yearDiff = d2.getFullYear() - d1.getFullYear(); 
+	const monthDiff = d2.getMonth() - d1.getMonth(); // 전체 월 차이 계산 
+	const totalMonthDiff = yearDiff * 12 + monthDiff; // 날짜 차이를 기준으로 월 계산 
+	if (totalMonthDiff > 3) return true; // 월 차이가 3개월 이상 
+	if (totalMonthDiff === 3 && d2.getDate() >= d1.getDate()) return true; // 정확히 1개월 이상 
+	return false; 
+} 
+
+function parseDate(yyyymmdd){
+	const year = parseInt(yyyymmdd.substring(0,4), 10);
+	const month = parseInt(yyyymmdd.substring(4,6), 10) - 1;
+	const day = parseInt(yyyymmdd.substring(6,8), 10);
+	
+	return new Date(year, month, day);
+}
+</script>
+		</div>
+		<div class="footer">
+			
+<div class="footer_wrap">
+	<p class="logo"><img src="/images/footer_logo.png" alt="금융보안원"></p>
+	<ul class="footer_menu">
+		<li><b><a href="https://www.fsec.or.kr/terms/detail?gubunCode=TG01" target="_blank"">개인정보처리방침</a></b></li>	<!-- 2023-유지보수38-->
+		<li><a href="/member/emailCollectPolicy">이메일무단수집거부</a></li>
+	</ul>
+	 <p>(우)16881 경기도 용인시 수지구 대지로 132&nbsp;&nbsp;&nbsp;&nbsp;침해사고대응훈련/비상대응센터 문의 : 02-3495-9351~2	 <!-- 2024-유지보수-53 20240603 -->
+	 &nbsp;&nbsp;&nbsp;&nbsp; 자문관련 문의 : 02-3495-9721~6	<!-- 2023-유지보수24 20230803 -->
+	 &nbsp;&nbsp;&nbsp;&nbsp; 회원가입 및 기타 문의 : 02-3495-9817</p>			
+	 <p>Copyright©2020 Financial Security Institute All Right Reserved.</p>
+	<div class="link_box">
+		<a class="btn_link" href="#none">관련사이트</a>
+		<ul class="link_list">
+			<li><a href="http://www.fsec.or.kr" target="_blank">금융보안원</a></li>
+			<li><a href="http://edu.fsec.or.kr" target="_blank">금융보안원 교육센터</a></li>
+			<li><a href="http://kfisac.or.kr" target="_blank">금융ISAC 정보공유포털</a></li>
+			<li><a href="http://findatamall.or.kr" target="_blank">금융데이터거래소</a></li>
+			<li><a href="http://data.fsec.or.kr" target="_blank">데이터전문기관</a></li>
+		</ul>
+	</div>
+	<button class="go_top" type="button">TOP</button>
+</div>
+
+		</div>		
+	</div>
+	
+	
+	<div class="popup_container" id="commonPopupContainer">
+	<!-- 로그인 실패안내 팝업-->
+	<div id="loginFail" class="layer_box">
+		<div class="pop_head"><h2>로그인 실패 안내</h2></div>
+		<div class="pop_cont">
+			<div class="loginFail">
+				<p class="ico_area"><img src="/images/deco_pop_loginFail.png" alt="로그인 실패"></p>
+				<div class="msg">
+					입력하신 로그인 정보가 정확하지 않아<br>
+					로그인을 <em>5회 이상</em> 실패하였습니다
+					<p>해당 계정은 로그인이 <em>10분간 제한</em> 됩니다.</p>
+					<p><em>10분 후</em>에 다시 로그인 하시기 바랍니다.</p>
+				</div>
+				<div class="btn_area">
+					<a class="btn type1 layer_close" href="#none">확인</a>	<!-- 팝업창 닫기 클래스 "layer_close" -->
+				</div>
+			</div>
+		</div>			
+		<button type="button" class="btn_close">닫기</button>
+	</div>
+	<!-- //.로그인 실패안내 팝업 -->
+	<!-- 2차인증 선택 팝업 -->
+	<div id="secondAuth" class="layer_box">
+		<div class="pop_head"><h2>인증방법 선택</h2></div>
+		<div class="pop_cont">
+			<div class="kakaoCertify">
+				<div class="msg">
+				<span style="font-size: 20px;">2차인증 후 접근 가능한 페이지입니다.</span>
+				</div>
+				<p class="ico_area"><img src="/images/deco_pop_kakaocertify.png" alt=""></p>
+				<div class="msg">
+					<p>인증방법을 선택하세요.</p>
+					<p>회원 가입 시 입력한 휴대폰 번호로 인증이 진행됩니다.</p>
+				</div>
+				
+				<div class="btn_area">
+					<!-- 2023.06.19 [SFR-005] 인증 선택 버튼 변경
+					<a class="btn type1 wid130" href="javascript:fnCmdKakaoPay();">카카오 페이 인증</a> 
+					<a class="btn type1 wid130" href="javascript:fnCmdSms();">SMS 인증</a>
+					-->
+					
+					<a class="btn type1 wid130 kakaoChkBtn" href="javascript:fnCmdKakaoTalk();">카카오톡 인증</a>
+					<a class="btn type1 wid130 naverChkBtn" href="javascript:fnCmdNaver();">네이버 인증</a>
+					<a class="btn type1 wid130" href="javascript:fnCmdSms();">SMS 인증</a>
+					<!------------------------------------------------------------------------------->
+				</div>
+			</div>
+		</div>
+		<button type="button" class="btn_close">닫기</button>
+	</div>
+	<!-- 2차인증 선택 팝업 -->
+	
+	<!-- 카카오페이 간편인증 팝업 -->
+	<div id="kakaoCertify" class="layer_box">
+		<div class="pop_head"><h2>카카오페이 간편인증</h2></div>
+		<div class="pop_cont">
+			<div class="kakaoCertify">
+				<p class="ico_area"><img src="/images/deco_pop_kakaocertify.png" alt=""></p>
+				<div class="msg">
+					<p>카카오톡으로 인증 요청이 발송되었습니다.</p>
+					<p>카카오 페이 인증을 완료 하신 후 <br>하단의 <em>확인</em> 버튼을 눌러주세요.</p>
+				</div>
+				<div class="btn_area" >
+					<a class="btn type2 layer_close" href="/">취소</a>	<!-- 팝업창 닫기 클래스 "layer_close" -->
+					<a class="btn type1" href="javascript:fnCmdKakaoLoginProc();">확인</a>
+				</div>
+			</div>
+		</div>
+		<button type="button" class="btn_close">닫기</button>
+	</div>
+	<!-- //.카카오페이 간편인증 팝업 -->
+	
+	
+	<!-- 카카오톡 인증 팝업 -->
+	<div id="kakaoTalkCertify" class="layer_box">
+		<div class="pop_head"><h2>카카오톡 간편인증</h2></div>
+		<div class="pop_cont">
+			<div class="kakaoCertify">
+				<p class="ico_area"><img src="/images/deco_pop_kakaocertify.png" alt=""></p>
+				<div class="msg">
+					<p>카카오톡으로 인증 요청이 발송되었습니다.</p>
+					<p>카카오톡 인증을 완료 하신 후 <br>하단의 <em>확인</em> 버튼을 눌러주세요.</p>
+				</div>
+				<div class="btn_area" >
+					<a class="btn type2 layer_close" href="/">취소</a>	<!-- 팝업창 닫기 클래스 "layer_close" -->
+					<a class="btn type1" href="javascript:fnCmdKakaoTalkLoginProc();">확인</a>
+				</div>
+			</div>
+		</div>
+		<button type="button" class="btn_close">닫기</button>
+	</div>
+	<!-- //.카카오톡 인증 팝업 -->
+	<!------------------------------------------------------------------------------->
+	
+	
+	<!-- 네이버 인증 팝업 -->
+	<div id="naverCertify" class="layer_box">
+		<div class="pop_head"><h2>네이버 간편인증</h2></div>
+		<div class="pop_cont">
+			<div class="kakaoCertify">
+				<p class="ico_area"><img src="/images/deco_pop_kakaocertify.png" alt=""></p>
+				<div class="msg">
+					<p>네이버로 인증 요청이 발송되었습니다.</p>
+					<p>네이버 인증을 완료 하신 후 <br>하단의 <em>확인</em> 버튼을 눌러주세요.</p>
+				</div>
+				<div class="btn_area" >
+					<a class="btn type2 layer_close" href="/">취소</a>	<!-- 팝업창 닫기 클래스 "layer_close" -->
+					<a class="btn type1" href="javascript:fnCmdNaverStatus();">확인</a>
+				</div>
+			</div>
+		</div>
+		<button type="button" class="btn_close">닫기</button>
+	</div>
+	<!-- //.네이버 인증 팝업 -->
+	<!------------------------------------------------------------------------------->
+		
+	<!-- SNS인증 팝업-->
+	<div id="snsCertify" class="layer_box">
+		<div class="pop_head"><h2>SMS 인증</h2></div>
+		<div class="pop_cont">
+			<div class="loginFail">
+				<p class="ico_area"><img src="/images/deco_pop_sns.png" alt=""></p>
+				<div class="msg">
+					회원 가입 시 입력한 휴대폰 번호로<br>
+					인증번호를 발송하였습니다.
+				</div>
+				<div class="cert_mail alC mt20">
+						<fieldset>
+							<legend>SMS 인증</legend>
+							<div class="time_rel w250">
+								<input class="wf100" type="text" id="smsKey" name="smsKey" title="인증번호" placeholder="인증번호를 입력하세요." maxlength="6" onkeypress="javascript:if(event.keyCode == 13){fnCmdSmsLoginProc();}"><!-- 접근성수정: title추가 -->									
+								<div class="time" id="smsTime">3분 0초</div>
+							</div>
+							<button class="btnIn type1" type="button" onclick="javascript:fnCmdSmsReSend();" id="reSendBtn" disabled>재발송</button>
+							<p class="alert_msg alL ml3 mt5">3분이내에 발급 받은 인증번호를 입력하세요.</p>
+						</fieldset>
+				</div>
+				<div class="btn_area">
+					<a class="btn type2" href="/">취소</a>
+					<a class="btn type1" id="smsBtn" href="javascript:fnCmdSmsLoginProc();">확인</a>	<!-- 팝업창 닫기 클래스 "layer_close" -->
+				</div>
+			</div>
+		</div>			
+		<button type="button" class="btn_close">닫기</button>
+	</div>
+	<!-- sms 인증 팝업 -->
+	</div>
+	<form id="authForm" name="authForm">
+	<input type="hidden" id="txId" name="txId" value="" />
+	<input type="hidden" id="token" name="token" value="" />
+	<input type="hidden" id="smsTimeExcess" name="smsTimeExcess" value="N" />
+	</form>
+
+	
+	<script type="text/javascript">
+	//카카오 페이 인증
+	function fnCmdKakaoPay(){
+		common.modalPopAutoHide("#secondAuth");
+		$.ajax({																									 	                                                                                        																	          
+			async: true,                                                                                                                                     																	          
+			type:'post',                                                                                                                                       																	           
+			url:'/third/kakao/authCheck',                                                                                                                  																	           
+			dataType : 'json',                                                                                                                                																	         
+			success:function(data){         
+				common.modalPopShow('#kakaoCertify','370');
+				$("#txId").val(data.data.tx_id);
+				$("#token").val(data.data.token);
+			},
+			error:function(data){
+				if(data.status == 404){
+					if(data.responseJSON.code == 'E00010002' || data.responseJSON.code == 'E00010201'){
+						alert("사용자 정보가 일치하지 않습니다.");
+						return;
+					}else if(data.responseJSON.code == 'E00010205'){
+						alert(data.responseJSON.message);
+						return;
+					}
+				}else{
+					alert('카카오 간편인증에 실패 하였습니다.');
+					return;
+				}
+			}                                                                                                                                                 																	      
+		});
+	}
+	
+	
+	function fnCmdKakaoTalk(){
+		common.modalPopAutoHide("#secondAuth");
+		$.ajax({																									 	                                                                                        																	          
+			async: true,                                                                                                                                     																	          
+			type:'post',                                                                                                                                       																	           
+			url:'/third/kakaoTalk/authPreReq',                                                                                                                  																	           
+			dataType : 'json',                                                                                                                                																	         
+			success:function(data){
+				common.modalPopShow('#kakaoTalkCertify','370');
+				$("#txId").val(data.tx_id);
+				$("#token").val(data.token);
+			},
+			error:function(jqXHR, textStatus, errorThrown){
+				if (jqXHR.status == 400) {
+					if (jqXHR.responseJSON.code == 'E0001') {
+						alert("서버 내부에서 처리 중 에러가 발생하였습니다. 다시 시도해주세요.");
+						return;
+					} else if (jqXHR.responseJSON.code == 'E1001') {
+						alert("카카오톡에 연결된 번호가 해외번호로 확인됩니다. 카카오톡에 연결된 번호를 확인해주세요.");
+						return;
+					} else if (jqXHR.responseJSON.code == 'E2001') {
+						alert("존재하지 않는 카카오계정입니다. 사용자 정보를 확인해주세요.");
+						return;
+					} else if (jqXHR.responseJSON.code == 'E2002') {
+						alert("전화번호와 사용자 이름이 맞지 않습니다. 사용자 정보를 확인해주세요.");
+						return;
+					} else if (jqXHR.responseJSON.code == 'E2009') {
+						alert("채널 메시지 수신거부로 인해 요청 발송이 실패하였습니다.");
+						return;
+					} else if (jqXHR.responseJSON.code == 'E2010') {
+						alert("카카오계정에 본인인증 정보가 없습니다. 카카오톡의 [더보기]>[지갑]>[인증서 발급받기] 또는 카카오톡 지갑 채널로 발송된 인증서 발급 안내 메시지를 통해 인증서를 발급해주세요.");
+						return;
+					} else if (jqXHR.responseJSON.code == 'E2011') {
+						alert("유효한 인증서가 없습니다. 카카오톡의 [더보기]>[지갑]>[인증서 발급받기]를 통해 인증서를 발급해주세요.");
+						return;
+					} else {
+						alert('카카오 간편인증에 실패 하였습니다.');
+						return;
+					}
+				} else if (jqXHR.status == 503){
+					if (jqXHR.responseJSON.code == 'E0002') {
+						alert("카카오톡 인증 서버 점검 중입니다. 다른 인증 서비스를 이용해주세요.");
+						return;
+					}
+				} else {
+					alert('카카오 간편인증에 실패 하였습니다.');
+					return;
+				}
+			}                                                                                                                                                																	      
+		});
+	}
+	/*****************************************************************************************************/
+	 
+	
+	function fnCmdKakaoTalkLoginProc(){
+		var tx_id = $("#txId").val();
+		var token = $("#token").val();
+		$.ajax({
+	       url: '/third/kakaoTalk/authStatus',
+	       type: 'get',
+	       dataType: 'json',
+	       data:{"txId" : tx_id,
+	        	  "token" : token
+	       },
+	       success: function(data) {
+	       	if(tx_id == data.tx_id && data.status == 'COMPLETED'){
+	       		var url = $("#url").val();
+	       		fnCmdKakaoTalkVerify(url)
+	       	}else if(tx_id == data.tx_id && data.status == 'EXPIRED'){
+	       		alert("인증시간이 종료 되었습니다.다시시도 하세요.");
+	       		return;
+		        }else if(tx_id == data.tx_id && data.status == 'REQUESTED'){
+		        	alert("카카오 간편인증을 해주세요.");
+		        	return;
+		        }
+	       },
+	       error: function(data){
+				alert('카카오 간편인증에 실패 하였습니다.');
+				return;
+	       }
+	   });
+	}
+	/*****************************************************************************************************/
+	
+	
+	function fnCmdKakaoTalkVerify(url){
+		var tx_id = $("#txId").val();
+		$.ajax({
+	       url: '/third/kakaoTalk/authVerify',
+	       type: 'get',
+	       dataType: 'json',
+	       data:{"txId" : tx_id
+	       },
+	       success: function(data) {
+	       	if(data.status == "COMPLETED"){
+	       		location.href = url;
+	       	}
+	       },
+	       error: function(data){
+				alert('카카오 간편인증 검증에 실패 하였습니다.');
+				return;
+	       }
+	   });
+	}
+	/*****************************************************************************************************/
+	 
+	
+	function fnCmdNaver(){
+		common.modalPopAutoHide("#secondAuth");
+		$.ajax({																									 	                                                                                        																	          
+			async: true,                                                                                                                                     																	          
+			type:'post',                                                                                                                                       																	           
+			url:'/third/naver/authRequest',                                                                                                                  																	           
+			dataType : 'json',                                                                                                                                																	         
+			success:function(data){
+				common.modalPopShow('#naverCertify','370');
+				$("#txId").val(data.txId);
+				$("#token").val(data.token);
+			},
+			error:function(jqXHR, textStatus, errorThrown){
+				if (jqXHR.status == 400){
+					if (jqXHR.responseJSON.rtnMsg == 'not_exist_user'){
+						alert("일치하는 사용자가 존재하지 않습니다.");
+						return;
+					} else {
+						alert('네이버 인증에 실패 하였습니다.');
+						return;
+					}
+				} else if (jqXHR.status == 404){
+					if (jqXHR.responseJSON.rtnMsg == 'device_not_found'){
+						alert("푸시를 발송할 네이버앱을 찾을 수 없습니다.");
+						return;
+					} else {
+						alert('네이버 인증에 실패 하였습니다.');
+						return;
+					}
+				} else {
+					alert('네이버 인증에 실패 하였습니다.');
+					return;
+				}
+			}                                                                                                                                                    																	      
+		});
+	}
+	/*****************************************************************************************************/ 
+	
+	
+	function fnCmdNaverLoginProc(){
+		var tx_id = $("#txId").val();
+		var token = $("#token").val();
+		$.ajax({
+	       url: '/third/naver/authResult',
+	       type: 'get',
+	       dataType: 'json',
+	       data:{"txId" : tx_id,
+	        	  "token" : token
+	       },
+	       success: function(data) {
+	       	if(tx_id ==  data.txId && data.authResult == 'success'){
+	       		var url = $("#url").val();
+	       		location.href = url;
+	       	}else if(tx_id ==  data.txId && data.authResult == 'pending'){
+	       		alert("네이버 간편인증을 해주세요.");
+	       		return;
+		        }else if(tx_id ==  data.txId && data.authResult == 'cancel'){
+		        	alert("네이버 간편인증이 취소되었습니다.");
+		        	return;
+		        }
+	       },
+	       error: function(data){
+				alert('네이버 간편인증에 실패 하였습니다.');
+				return;
+	       }
+	   });
+	}
+	/*****************************************************************************************************/
+	
+	
+	
+	function fnCmdNaverStatus(url){
+		var tx_id = $("#txId").val();
+		var token = $("#token").val();
+		$.ajax({
+	       url: '/third/naver/authStatus',
+	       type: 'get',
+	       dataType: 'json',
+	       data:{"txId" : tx_id,
+		     	  "token" : token
+		    },
+	       success: function(data) {
+				if(tx_id ==  data.txId && data.authStatus == 'success'){
+		       		var url = $("#url").val();
+		       		location.href = url;
+		       	}else if(tx_id ==  data.txId && data.authStatus == 'pending'){
+		       		alert("네이버 간편인증을 해주세요.");
+	       			return;
+		        }else if(tx_id ==  data.txId && data.authStatus == 'cancel'){
+		        	alert("네이버 간편인증이 취소되었습니다.");
+		        	return;
+		        }
+	       },
+	       error: function(data){
+				alert('네이버 간편인증 검증에 실패 하였습니다.');
+				return;
+	       }
+	   });
+	}
+	/*****************************************************************************************************/
+	
+	var setTime = 180; // 최초 설정 시간(기본 : 초)	
+	var tid = null;
+	
+	function fnSmdSetTime(){
+		tid = setInterval('msg_time()',1000) 
+	};
+	
+	// SMS 인증
+	function fnCmdSms(){
+		if(tid != null){
+			clearInterval(tid);
+		}
+		$("#smsKey").val("");
+		setTime = 180;
+		common.modalPopAutoHide("#secondAuth");
+		$("#smsTimeExcess").val("N");
+	    $("#reSendBtn").attr("disabled", true);
+		$.ajax({
+	        async: true,
+	        type: 'post',
+	        url: '/member/smsKeySend2',
+	        dataType: 'json',
+	        success: function(data) {
+	        	common.modalPopShow('#snsCertify','450');
+	        	fnSmdSetTime();
+	        },
+	        error: function(data){
+				alert('SMS 인증에 실패 하였습니다.');
+				return;
+	        }
+	    });
+	
+	}
+	
+	function msg_time() {	// 1초씩 카운트
+		m = Math.floor(setTime / 60) + "분 " + setTime % 60 + "초";	// 남은 시간 계산
+		$("#smsTime").html(m);
+		setTime--;					// 1초씩 감소
+		if (setTime < 0) {			// 시간이 종료 되었으면..
+			clearInterval(tid);		// 타이머 해제
+			$("#reSendBtn").attr("disabled", false);
+			$("#smsBtn").removeAttr("href")
+			$("#smsTimeExcess").val("Y");
+		}
+	}
+	
+	function fnCmdKakaoLoginProc(){
+		var tx_id = $("#txId").val();
+		var token = $("#token").val();
+		$.ajax({
+	        url: '/third/kakao/auth/status',
+	        type: 'get',
+	        dataType: 'json',
+	        data:{"txId" : tx_id,
+	         	  "token" : token
+	        },
+	        success: function(data) {
+	        	if(tx_id ==  data.data.tx_id && data.data.status == 'COMPLETE'){
+	        		var url = $("#url").val();
+					fnCmdKakaoVerify(url);
+	        	}else if(tx_id ==  data.data.tx_id && data.data.status == 'EXPIRED'){
+	        		alert("인증시간이 종료 되었습니다.다시시도 하세요.");
+	        		return;
+		        }else if(tx_id ==  data.data.tx_id && data.data.status == 'PREPARE'){
+		        	alert("카카오 간편인증을 해주세요.");
+		        	return;
+		        }
+	        },
+	        error: function(data){
+				alert('카카오 간편인증에 실패 하였습니다.');
+				return;
+	        }
+	    });
+	}
+	
+	function fnCmdKakaoVerify(url){
+		var tx_id = $("#txId").val();
+		$.ajax({
+	        url: '/third/kakao/auth/verify',
+	        type: 'get',
+	        dataType: 'json',
+	        data:{"txId" : tx_id
+	        },
+	        success: function(data) {
+	        	if(data.data.token != null){
+	        		location.href = url;
+	        	}
+	        },
+	        error: function(data){
+				alert('카카오 간편인증 검증에 실패 하였습니다.');
+				return;
+	        }
+	    });
+	}
+	
+	//SMS 인증 처리
+	function fnCmdSmsLoginProc(){
+		if($("#smsTimeExcess").val()=="N"){
+			$.ajax({
+		        //async: true,
+		        type: 'post',
+		        url: '/member/smsKeyConfirm2',
+		        dataType: 'json',
+		        data:{
+		        	smsKey : $("#smsKey").val()
+			    },
+		        success: function(data) {
+		        	if (data != null && data.smsKey == $("#smsKey").val()){				//2023-유지보수-53-20231228-취약점조치
+			        	$.ajax({				
+					        async: false,
+					        type:'post',
+					        url:"/member/smsKeyAuthConfirm",
+					        dataType : "json",
+					        data:{memberId : data.memberId
+								 ,smsKey : $("#smsKey").val()
+						    },
+					        success:function(data){
+					        	if(data){	
+									var url = $("#url").val();
+									location.href=url;
+					        	}else{
+					        		alert("인증번호가 일치 하지 않습니다.");
+					        		return;
+					        	}
+					        },
+					        error: function(data){
+					        	alert("SMS 인증에 실패 하였습니다.");
+				        		return;
+					        }
+			        	});
+		        	}
+		        	
+		        },
+		        error: function(data){
+		        	if(data.status == 404){
+		        		if(data.responseJSON.code == 'E00010204'){
+		        			common.modalPopAutoHide("#snsCertify");
+							common.modalPopShow('#loginFail','450');
+			        	} else {
+			        		alert('인증번호가 일치 하지 않습니다.');
+			        	}
+		        	}else {
+						alert('SMS 인증에 실패 하였습니다.');
+		        	}
+		        }
+		    });
+		}else{
+			alert("인증시간이 초과되었습니다.\n재발송 버튼을 눌러 재인증해주세요.");
+			return;
+		}
+	}
+	
+	//SMS 재발송
+	function fnCmdSmsReSend(){
+		$("#reSendBtn").attr("disabled", true);
+		$("#smsBtn").attr("href","javascript:fnCmdSmsLoginProc();");
+		$.ajax({
+	        async: true,
+	        type: 'post',
+	        url: '/member/smsKeySend2',
+	        dataType: 'json',
+	        success: function(data) {
+	        	$("#smsKey").val("");
+	        	$("#smsTimeExcess").val("N");
+	    		setTime = 180; // 최초 설정 시간(기본 : 초)	
+	    		fnSmdSetTime();
+	        },
+	        error: function(data){
+				alert('SMS 인증에 실패 하였습니다.');
+				return;
+	        }
+	    });
+	}
+	</script>
+</body>
+</html>

@@ -181,6 +181,16 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         from .unified_routes import unified_bp
         app.register_blueprint(unified_bp)
         
+        # Register settings routes
+        try:
+            from .settings_routes import settings_bp
+            app.register_blueprint(settings_bp)
+            logger.info("Settings routes registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register settings routes: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+        
         # Enhanced routes disabled (module not found)
         
         # Register Simple V2 API routes (conflict-free version)

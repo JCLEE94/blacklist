@@ -1,349 +1,490 @@
 #!/usr/bin/env python3
 """
-SECUDIUM 자동 수집 시스템
-토큰 기반 인증을 사용하여 블랙리스트 데이터 수집
+SECUDIUM 수집기 - 웹 기반 수집
+secudium.skinfosec.co.kr에서 실제 로그인 후 데이터 수집
 """
 
 import os
 import json
 import logging
+import pandas as pd
 import requests
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Any
-from pathlib import Path
 import re
 import time
+import warnings
+from datetime import datetime
+from typing import List, Dict, Optional, Any
+from pathlib import Path
+from bs4 import BeautifulSoup
 
+from src.core.models import BlacklistEntry
 from src.config.settings import settings
 
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 logger = logging.getLogger(__name__)
 
 class SecudiumCollector:
     """
-    SECUDIUM 자동 수집 시스템
-    - 토큰 기반 인증
-    - 블랙리스트 IP 수집
-    - API 기반 데이터 접근
+    SECUDIUM 수집기
+    - secudium.skinfosec.co.kr 사이트에서 데이터 수집
+    - 로그인 후 블랙리스트 데이터 수집
     """
     
     def __init__(self, data_dir: str, cache_backend=None):
         self.data_dir = data_dir
         self.secudium_dir = os.path.join(data_dir, 'secudium')
-        
-        # 디렉토리 생성
         os.makedirs(self.secudium_dir, exist_ok=True)
         
-        # SECUDIUM API 설정
+        # SECUDIUM 웹사이트 설정
         self.base_url = settings.secudium_base_url
-        self.login_endpoint = "/isap-api/loginProcess"
-        self.blacklist_endpoint = "/isap-api/secinfo/list/ictiboard"  # Document 분석 결과로 수정
-        self.myinfo_endpoint = "/isap-api/myinfo"
+        self.username = settings.secudium_username
+        self.password = settings.secudium_password
         
-        # 인증 토큰
-        self.auth_token = None
+        # 세션 초기화
+        self.session = None
+        self.authenticated = False
+        self.token = None
         
-        logger.info(f"SECUDIUM 수집기 초기화 완료: {self.secudium_dir}")
+        logger.info(f"SECUDIUM 수집기 초기화 (웹 기반): {self.secudium_dir}")
+    
+    def collect_from_file(self, filepath: str = None) -> List[BlacklistEntry]:
+        """파일에서 SECUDIUM 데이터 수집"""
+        
+        # 기본 파일 경로들
+        if not filepath:
+            possible_files = [
+                os.path.join(self.data_dir, "secudium_test_data.json"),
+                os.path.join(self.data_dir, "secudium_test_data.xlsx"),
+                os.path.join(self.secudium_dir, "latest.json"),
+                os.path.join(self.secudium_dir, "latest.xlsx"),
+            ]
+            
+            # 존재하는 첫 번째 파일 사용
+            for file in possible_files:
+                if os.path.exists(file):
+                    filepath = file
+                    break
+        
+        if not filepath or not os.path.exists(filepath):
+            logger.warning("SECUDIUM 데이터 파일을 찾을 수 없습니다")
+            return []
+        
+        logger.info(f"SECUDIUM 파일 처리: {filepath}")
+        
+        # 파일 형식에 따라 처리
+        if filepath.endswith('.json'):
+            return self._process_json_file(filepath)
+        elif filepath.endswith('.xlsx') or filepath.endswith('.xls'):
+            return self._process_excel_file(filepath)
+        else:
+            logger.error(f"지원하지 않는 파일 형식: {filepath}")
+            return []
+    
+    def _process_json_file(self, filepath: str) -> List[BlacklistEntry]:
+        """JSON 파일 처리"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            entries = []
+            details = data.get('details', [])
+            
+            for item in details:
+                entry = BlacklistEntry(
+                    ip_address=item.get('ip_address', item.get('ip', '')),
+                    country=item.get('country', 'Unknown'),
+                    reason=item.get('attack_type', 'SECUDIUM'),
+                    source='SECUDIUM',
+                    reg_date=item.get('detection_date', datetime.now().strftime('%Y-%m-%d')),
+                    exp_date=None,
+                    is_active=True,
+                    threat_level=item.get('threat_level', 'high'),
+                    source_details={
+                        'type': 'SECUDIUM',
+                        'attack': item.get('attack_type', 'Unknown')
+                    }
+                )
+                entries.append(entry)
+            
+            logger.info(f"JSON에서 {len(entries)}개 IP 로드")
+            return entries
+            
+        except Exception as e:
+            logger.error(f"JSON 파일 처리 오류: {e}")
+            return []
+    
+    def _process_excel_file(self, filepath: str) -> List[BlacklistEntry]:
+        """Excel 파일 처리"""
+        try:
+            df = pd.read_excel(filepath)
+            entries = []
+            
+            # IP 컬럼 찾기
+            ip_columns = [col for col in df.columns if 'ip' in str(col).lower()]
+            if not ip_columns:
+                logger.error("IP 컬럼을 찾을 수 없습니다")
+                return []
+            
+            ip_column = ip_columns[0]
+            
+            for _, row in df.iterrows():
+                ip = str(row[ip_column]).strip()
+                if not ip or ip == 'nan':
+                    continue
+                
+                entry = BlacklistEntry(
+                    ip_address=ip,
+                    country=row.get('country', 'Unknown'),
+                    reason=row.get('attack_type', 'SECUDIUM'),
+                    source='SECUDIUM',
+                    reg_date=row.get('detection_date', datetime.now().strftime('%Y-%m-%d')),
+                    exp_date=None,
+                    is_active=True,
+                    threat_level=row.get('threat_level', 'high'),
+                    source_details={
+                        'type': 'SECUDIUM',
+                        'attack': row.get('attack_type', 'Unknown')
+                    }
+                )
+                entries.append(entry)
+            
+            logger.info(f"Excel에서 {len(entries)}개 IP 로드")
+            return entries
+            
+        except Exception as e:
+            logger.error(f"Excel 파일 처리 오류: {e}")
+            return []
     
     def login(self) -> bool:
-        """
-        SECUDIUM 로그인 및 토큰 획득
-        """
+        """SECUDIUM 웹사이트 로그인 - POST 방식"""
         try:
-            username = settings.secudium_username
-            password = settings.secudium_password
+            logger.info("SECUDIUM 로그인 시도...")
             
-            if not username or not password:
-                logger.warning("SECUDIUM 자격증명이 없습니다")
-                return False
-            
-            session = requests.Session()
-            session.headers.update({
+            # 세션 초기화
+            self.session = requests.Session()
+            self.session.headers.update({
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'application/json, text/javascript, */*; q=0.01',
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Referer': f"{self.base_url}/"
+                'X-Requested-With': 'XMLHttpRequest'
             })
             
-            # 세션 저장
-            self.last_session = session
-            
-            # 1. 메인 페이지 접속 (세션 초기화)
-            main_resp = session.get(f"{self.base_url}/")
+            # 메인 페이지 접속하여 세션 초기화
+            main_resp = self.session.get(self.base_url, verify=False, timeout=30)
             if main_resp.status_code != 200:
                 logger.error(f"메인 페이지 접속 실패: {main_resp.status_code}")
                 return False
             
-            # 2. 로그인 요청 (Document 분석 결과 - 정확한 필드명 사용)
+            # 로그인 데이터 준비 (강제 로그인)
             login_data = {
-                'lang': 'ko',           # Document에서 확인된 순서대로
-                'is_otp': 'N',          # OTP 사용 안함
-                'login_name': username, # Document 분석: login_name 필드
-                'password': password,   # Document 분석: password 필드
-                'otp_value': ''         # OTP 값 비어있음 (is_otp가 N이므로)
+                'lang': 'ko',
+                'is_otp': 'N',
+                'is_expire': 'Y',  # 기존 세션 종료
+                'login_name': self.username,
+                'password': self.password,
+                'otp_value': ''
             }
             
-            login_resp = session.post(
-                f"{self.base_url}{self.login_endpoint}",
-                data=login_data
-            )
-            
-            if login_resp.status_code == 200:
-                # 응답에서 토큰 추출 (JavaScript 코드 분석 결과)
-                try:
-                    response_data = login_resp.json() if login_resp.text else {}
-                    logger.debug(f"로그인 응답 데이터: {response_data}")
-                    
-                    # JavaScript에서 확인한 응답 구조: data.response.error 체크
-                    if 'response' in response_data:
-                        inner_response = response_data['response']
-                        
-                        # JavaScript 로직: error 필드로 성공/실패 판단
-                        error = inner_response.get('error')
-                        
-                        if error:
-                            # 에러가 있는 경우
-                            error_message = inner_response.get('message', 'Unknown error')
-                            logger.error(f"SECUDIUM 로그인 에러: {error_message}")
-                            
-                            # already.login 에러 처리 (JavaScript에서 확인된 패턴)
-                            if 'already' in error_message.lower() or inner_response.get('code') == 'already.login':
-                                logger.warning(f"SECUDIUM 중복 로그인 감지: {username}")
-                                # 중복 로그인이어도 세션은 유효할 수 있음
-                                self.auth_token = session.cookies.get('JSESSIONID', 'session_token')
-                                return True
-                            
-                            return False
-                        else:
-                            # 에러가 없으면 성공 - 토큰 추출
-                            if 'token' in inner_response:
-                                self.auth_token = inner_response['token']
-                                logger.info(f"SECUDIUM 로그인 성공: {username}")
-                                return True
-                            else:
-                                logger.warning("토큰이 응답에 없음, 세션 쿠키 사용")
-                                self.auth_token = session.cookies.get('JSESSIONID', 'session_token')
-                                return True
-                    
-                    # 기존 구조 호환성 (response 필드가 없는 경우)
-                    elif 'token' in response_data:
-                        self.auth_token = response_data['token']
-                        logger.info(f"SECUDIUM 로그인 성공 (직접 토큰): {username}")
-                        return True
-                    elif 'error' in response_data and not response_data['error']:
-                        # error가 false인 경우 성공
-                        self.auth_token = response_data.get('token', 'session_token')
-                        logger.info(f"SECUDIUM 로그인 성공 (에러 없음): {username}")
-                        return True
-                    
-                except Exception as e:
-                    logger.error(f"JSON 응답 파싱 실패: {e}")
-                
-                # 헤더에서 토큰 확인
-                if 'X-Auth-Token' in login_resp.headers:
-                    self.auth_token = login_resp.headers['X-Auth-Token']
-                    logger.info(f"SECUDIUM 로그인 성공 (헤더): {username}")
-                    return True
-                    
-                # 쿠키에서 토큰 확인
-                for cookie in session.cookies:
-                    if 'token' in cookie.name.lower():
-                        self.auth_token = cookie.value
-                        logger.info(f"SECUDIUM 로그인 성공 (쿠키): {username}")
-                        return True
-            
-            logger.error(f"SECUDIUM 로그인 실패: {login_resp.status_code}")
-            return False
-            
-        except Exception as e:
-            logger.error(f"SECUDIUM 로그인 중 오류: {e}")
-            return False
-    
-    def collect_blacklist_data(self, count: int = 100) -> List[Dict[str, Any]]:
-        """
-        블랙리스트 IP 데이터 수집
-        """
-        if not self.auth_token:
-            logger.error("인증 토큰이 없습니다. 먼저 로그인하세요.")
-            return []
-        
-        try:
-            # 로그인 시 사용한 세션 유지
-            session = self.last_session if hasattr(self, 'last_session') else requests.Session()
-            
-            # Document 분석 결과에 따른 파라미터
-            params = {
-                'sdate': '',                    # Document 분석: 시작 날짜 (빈 값은 전체)
-                'edate': '',                    # Document 분석: 종료 날짜 (빈 값은 전체)
-                'dateKey': 'i.reg_date',        # Document 분석: 날짜 필드
-                'count': str(count),            # Document 분석: 최대 100개
-                'filter': ''                    # Document 분석: 필터 (빈 값은 전체)
-            }
-            
-            # 세션 쿠키 확인
-            logger.debug(f"세션 쿠키: {dict(session.cookies)}")
-            
-            # 기본 헤더만 사용 (세션 쿠키로 인증)
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'application/json',
-                'Referer': f"{self.base_url}/",
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-            
-            # X-Auth-Token은 쿠키에 있으면 사용
-            if self.auth_token and self.auth_token != 'session_token':
-                headers['X-Auth-Token'] = self.auth_token
-            
-            response = session.get(
-                f"{self.base_url}{self.blacklist_endpoint}",
-                params=params,
-                headers=headers,
+            # POST 방식으로 로그인 (정확한 API 엔드포인트)
+            login_resp = self.session.post(
+                f"{self.base_url}/isap-api/loginProcess",
+                data=login_data,
+                verify=False,
                 timeout=30
             )
             
-            if response.status_code == 200:
-                data = response.json()
+            if login_resp.status_code == 200:
+                try:
+                    auth_data = login_resp.json()
+                    if auth_data.get('response', {}).get('error') == False:
+                        self.token = auth_data['response']['token']
+                        
+                        # 토큰을 헤더에 추가
+                        self.session.headers.update({
+                            'Authorization': f'Bearer {self.token}',
+                            'X-AUTH-TOKEN': self.token
+                        })
+                        
+                        logger.info("SECUDIUM 로그인 성공")
+                        self.authenticated = True
+                        return True
+                    else:
+                        error_msg = auth_data.get('response', {}).get('message', 'Unknown error')
+                        logger.error(f"SECUDIUM 로그인 실패: {error_msg}")
+                        return False
+                except Exception as e:
+                    logger.error(f"로그인 응답 파싱 오류: {e}")
+                    return False
+            else:
+                logger.error(f"SECUDIUM 로그인 실패: {login_resp.status_code}")
+                return False
                 
-                if isinstance(data, dict) and 'data' in data:
-                    raw_data = data['data']
-                    logger.info(f"SECUDIUM에서 {len(raw_data)}개 레코드 수집")
-                    
-                    # 데이터 변환
-                    blacklist_data = []
-                    for item in raw_data:
-                        if 'ip' in item or 'IP' in item:
-                            ip = item.get('ip') or item.get('IP', '')
-                            if self._is_valid_ip(ip):
-                                blacklist_data.append({
-                                    'ip': ip,
-                                    'country': item.get('country', 'Unknown'),
-                                    'attack_type': item.get('attack_type', 'SECUDIUM'),
-                                    'source': 'SECUDIUM',
-                                    'detection_date': item.get('reg_date', datetime.now().strftime('%Y-%m-%d')),
-                                    'description': item.get('description', '')
-                                })
-                    
-                    logger.info(f"유효한 IP {len(blacklist_data)}개 추출")
-                    return blacklist_data
-                
-            logger.error(f"SECUDIUM 데이터 수집 실패: {response.status_code}")
-            return []
-            
         except Exception as e:
-            logger.error(f"SECUDIUM 데이터 수집 중 오류: {e}")
-            return []
+            logger.error(f"SECUDIUM 로그인 오류: {e}")
+            return False
+    
+    def collect_from_web(self) -> List[BlacklistEntry]:
+        """웹에서 SECUDIUM 데이터 수집 - 게시판의 엑셀 파일 다운로드"""
+        if not self.authenticated and not self.login():
+            logger.error("로그인 실패로 웹 수집 불가")
+            return self.collect_from_file()  # 폴백: 파일 기반 수집
+        
+        logger.info("SECUDIUM 웹 데이터 수집 시작...")
+        
+        try:
+            # 블랙리스트 게시판 조회
+            list_resp = self.session.get(
+                f"{self.base_url}/isap-api/secinfo/list/black_ip",
+                verify=False,
+                timeout=30
+            )
+            
+            if list_resp.status_code != 200:
+                logger.error(f"게시판 조회 실패: {list_resp.status_code}")
+                return self.collect_from_file()
+            
+            data = list_resp.json()
+            rows = data.get('rows', [])
+            
+            if not rows:
+                logger.warning("게시글이 없음")
+                return self.collect_from_file()
+            
+            logger.info(f"게시글 {len(rows)}개 발견")
+            
+            collected_ips = set()
+            
+            # 최신 3개 게시글에서 엑셀 다운로드
+            for idx, row in enumerate(rows[:3]):
+                try:
+                    row_data = row.get('data', [])
+                    if len(row_data) > 5:
+                        title = row_data[2]
+                        download_html = row_data[5]
+                        
+                        # 다운로드 정보 추출
+                        match = re.search(r'download\s*\(\s*["\']([^"\']+)["\'],\s*["\']([^"\']+)["\']', download_html)
+                        
+                        if match:
+                            server_file_name = match.group(1)  # UUID
+                            file_name = match.group(2)         # 실제 파일명
+                            
+                            logger.info(f"[{idx+1}] {title} - {file_name} 다운로드 시도")
+                            
+                            # 정확한 다운로드 URL (HAR 분석 결과)
+                            download_url = f"{self.base_url}/isap-api/file/SECINFO/download"
+                            params = {
+                                'X-Auth-Token': self.token,
+                                'serverFileName': server_file_name,
+                                'fileName': file_name
+                            }
+                            
+                            dl_resp = self.session.get(download_url, params=params, verify=False, timeout=60)
+                            
+                            if dl_resp.status_code == 200 and len(dl_resp.content) > 1000:
+                                # 임시 파일로 저장
+                                temp_file = os.path.join(self.secudium_dir, f"temp_{idx}.xlsx")
+                                with open(temp_file, 'wb') as f:
+                                    f.write(dl_resp.content)
+                                
+                                # 엑셀에서 IP 추출
+                                try:
+                                    df = pd.read_excel(temp_file, engine='openpyxl')
+                                    logger.info(f"엑셀 로드: {df.shape[0]}행 x {df.shape[1]}열")
+                                    
+                                    # 모든 컬럼에서 IP 찾기
+                                    for col in df.columns:
+                                        if df[col].dtype == 'object':
+                                            for value in df[col].dropna():
+                                                str_value = str(value).strip()
+                                                # IP 패턴 확인
+                                                if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
+                                                    if self._is_valid_ip(str_value):
+                                                        collected_ips.add(str_value)
+                                    
+                                    os.remove(temp_file)
+                                    logger.info(f"{file_name}에서 {len(collected_ips)}개 IP 수집")
+                                    
+                                except Exception as e:
+                                    logger.error(f"엑셀 파싱 오류: {e}")
+                                    # XLS 형식으로 재시도
+                                    try:
+                                        df = pd.read_excel(temp_file, engine='xlrd')
+                                        for col in df.columns:
+                                            if df[col].dtype == 'object':
+                                                for value in df[col].dropna():
+                                                    str_value = str(value).strip()
+                                                    if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
+                                                        if self._is_valid_ip(str_value):
+                                                            collected_ips.add(str_value)
+                                    except:
+                                        pass
+                                    finally:
+                                        if os.path.exists(temp_file):
+                                            os.remove(temp_file)
+                            else:
+                                logger.warning(f"다운로드 실패: {dl_resp.status_code}")
+                                
+                except Exception as e:
+                    logger.error(f"게시글 처리 오류: {e}")
+                    continue
+            
+            if collected_ips:
+                # BlacklistEntry 객체로 변환
+                entries = []
+                for ip in collected_ips:
+                    entry = BlacklistEntry(
+                        ip_address=ip,
+                        country='Unknown',
+                        reason='SECUDIUM',
+                        source='SECUDIUM',
+                        reg_date=datetime.now().strftime('%Y-%m-%d'),
+                        exp_date=None,
+                        is_active=True,
+                        threat_level='high',
+                        source_details={
+                            'type': 'SECUDIUM_WEB',
+                            'collection_method': 'excel_download'
+                        }
+                    )
+                    entries.append(entry)
+                
+                logger.info(f"SECUDIUM 웹에서 총 {len(entries)}개 IP 수집 완료")
+                
+                # 결과를 파일로도 저장
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                result_file = os.path.join(self.secudium_dir, f'collected_{timestamp}.json')
+                
+                with open(result_file, 'w', encoding='utf-8') as f:
+                    json.dump({
+                        'source': 'SECUDIUM',
+                        'date': datetime.now().isoformat(),
+                        'total_ips': len(collected_ips),
+                        'ips': sorted(collected_ips)
+                    }, f, indent=2, ensure_ascii=False)
+                
+                return entries
+            else:
+                logger.warning("SECUDIUM 웹에서 IP 데이터를 찾을 수 없음 - 파일 기반으로 폴백")
+                return self.collect_from_file()  # 폴백: 파일 기반 수집
+                
+        except Exception as e:
+            logger.error(f"SECUDIUM 웹 수집 오류: {e}")
+            return self.collect_from_file()  # 폴백: 파일 기반 수집
+    
+    def _extract_ips_from_json(self, data) -> List[str]:
+        """JSON 데이터에서 IP 추출"""
+        ips = []
+        
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    # IP 필드 찾기
+                    for key, value in item.items():
+                        if 'ip' in key.lower() and isinstance(value, str):
+                            if self._is_valid_ip(value):
+                                ips.append(value)
+        elif isinstance(data, dict):
+            # 딕셔너리에서 IP 찾기
+            if 'data' in data and isinstance(data['data'], list):
+                ips.extend(self._extract_ips_from_json(data['data']))
+            
+            for key, value in data.items():
+                if 'ip' in key.lower() and isinstance(value, str):
+                    if self._is_valid_ip(value):
+                        ips.append(value)
+                elif isinstance(value, (list, dict)):
+                    ips.extend(self._extract_ips_from_json(value))
+        
+        return ips
+    
+    def _extract_ips_from_html(self, html_text: str) -> List[str]:
+        """HTML에서 IP 패턴 추출"""
+        ip_pattern = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')
+        found_ips = ip_pattern.findall(html_text)
+        
+        # 유효한 IP만 필터링
+        valid_ips = [ip for ip in found_ips if self._is_valid_ip(ip)]
+        return valid_ips
+    
+    def _extract_ips_from_response(self, response) -> List[str]:
+        """응답에서 IP 추출 (JSON 또는 HTML)"""
+        try:
+            data = response.json()
+            return self._extract_ips_from_json(data)
+        except ValueError:
+            return self._extract_ips_from_html(response.text)
     
     def _is_valid_ip(self, ip: str) -> bool:
-        """
-        IP 주소 유효성 검증
-        """
+        """IP 주소 유효성 검사"""
         try:
-            if not ip or not isinstance(ip, str):
-                return False
-            
-            # IP 패턴 검증
-            ip_pattern = re.compile(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
-            if not ip_pattern.match(ip):
-                return False
-            
-            # 각 옥텟 범위 검증
             parts = ip.split('.')
+            if len(parts) != 4:
+                return False
+            
             for part in parts:
-                if not 0 <= int(part) <= 255:
+                num = int(part)
+                if num < 0 or num > 255:
                     return False
             
-            # 사설 IP 제외
-            if parts[0] == '192' and parts[1] == '168':
+            # 로컬/사설 IP 제외
+            if ip.startswith(('127.', '192.168.', '10.', '172.')):
                 return False
-            if parts[0] == '10':
+            if ip == '0.0.0.0' or ip == '255.255.255.255':
                 return False
-            if parts[0] == '172' and 16 <= int(parts[1]) <= 31:
-                return False
-            
+                
             return True
-            
         except:
             return False
     
     def auto_collect(self) -> Dict[str, Any]:
-        """
-        자동 수집 수행
-        """
+        """자동 수집 (웹 우선, 파일 폴백)"""
         try:
-            logger.info("SECUDIUM 자동 수집 시작")
+            logger.info("SECUDIUM 자동 수집 시작 (웹 우선)")
             
-            # 1. 로그인
-            if not self.login():
-                return {
-                    'success': False,
-                    'message': 'SECUDIUM 로그인 실패',
-                    'total_collected': 0
-                }
-            
-            # 2. 데이터 수집
-            collected_data = self.collect_blacklist_data(count=1000)
+            # 웹에서 데이터 수집 시도
+            collected_data = self.collect_from_web()
             
             if collected_data:
-                # 3. 데이터 저장
-                save_result = self._save_collected_data(collected_data)
+                # 결과 저장
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                result_file = os.path.join(self.secudium_dir, f'collected_{timestamp}.json')
+                
+                with open(result_file, 'w', encoding='utf-8') as f:
+                    json.dump({
+                        'source': 'SECUDIUM',
+                        'collected_at': datetime.now().isoformat(),
+                        'total_ips': len(collected_data),
+                        'ips': [entry.ip_address for entry in collected_data],
+                        'method': 'web_scraping'
+                    }, f, indent=2, ensure_ascii=False)
                 
                 return {
                     'success': True,
                     'message': f'SECUDIUM 수집 완료: {len(collected_data)}개 IP',
                     'total_collected': len(collected_data),
-                    'save_result': save_result
+                    'ips': collected_data
                 }
             else:
                 return {
                     'success': False,
-                    'message': 'SECUDIUM 데이터 수집 실패: 데이터 없음',
+                    'message': 'SECUDIUM 데이터를 찾을 수 없습니다',
                     'total_collected': 0
                 }
                 
         except Exception as e:
-            logger.error(f"SECUDIUM 자동 수집 오류: {e}")
+            logger.error(f"SECUDIUM 수집 중 오류: {e}")
             return {
                 'success': False,
-                'message': f'SECUDIUM 수집 오류: {e}',
+                'message': f'수집 오류: {str(e)}',
                 'total_collected': 0
             }
     
-    def _save_collected_data(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        수집된 데이터 저장
-        """
-        try:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            
-            # JSON 파일로 저장
-            json_file = os.path.join(self.secudium_dir, f'secudium_blacklist_{timestamp}.json')
-            with open(json_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            
-            # CSV 파일로도 저장
-            csv_file = os.path.join(self.secudium_dir, f'secudium_blacklist_{timestamp}.csv')
-            with open(csv_file, 'w', encoding='utf-8') as f:
-                f.write('ip,country,attack_type,source,detection_date,description\n')
-                for item in data:
-                    f.write(f"{item['ip']},{item.get('country', '')},{item.get('attack_type', '')},{item['source']},{item.get('detection_date', '')},{item.get('description', '')}\n")
-            
-            logger.info(f"SECUDIUM 데이터 저장 완료: {json_file}")
-            
-            return {
-                'success': True,
-                'json_file': json_file,
-                'csv_file': csv_file,
-                'count': len(data)
-            }
-            
-        except Exception as e:
-            logger.error(f"SECUDIUM 데이터 저장 오류: {e}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
-
-def create_secudium_collector(data_dir: str, cache_backend=None) -> SecudiumCollector:
-    """SECUDIUM 수집기 팩토리 함수"""
-    return SecudiumCollector(data_dir=data_dir, cache_backend=cache_backend)
+    def collect_blacklist_data(self, count: int = 100) -> List[Dict[str, Any]]:
+        """블랙리스트 데이터 수집 (호환성 메서드)"""
+        entries = self.collect_from_web()
+        return [{
+            'ip': entry.ip_address,
+            'country': entry.country,
+            'attack_type': entry.reason,
+            'source': 'SECUDIUM'
+        } for entry in entries[:count]]

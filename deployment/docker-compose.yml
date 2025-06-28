@@ -13,6 +13,7 @@ services:
       - HOST=0.0.0.0
       - REGTECH_USERNAME=nextrade
       - REGTECH_PASSWORD=Sprtmxm1@3
+      - REGTECH_BEARER_TOKEN=${REGTECH_BEARER_TOKEN:-}
       - SECUDIUM_USERNAME=nextrade
       - SECUDIUM_PASSWORD=Sprtmxm1@3
     volumes:

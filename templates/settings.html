@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시스템 설정 - Blacklist Management</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .settings-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .settings-card h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .status-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .status-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .status-warning {
+            background: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+        }
+        .token-display {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f1f3f4;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            position: relative;
+        }
+        .token-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            padding: 5px 10px;
+            font-size: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .log-area {
+            margin-top: 15px;
+            padding: 10px;
+            background: #2d2d2d;
+            color: #f8f8f2;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        .log-time {
+            color: #75715e;
+        }
+        .log-success {
+            color: #a6e22e;
+        }
+        .log-error {
+            color: #f92672;
+        }
+        .log-info {
+            color: #66d9ef;
+        }
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>시스템 설정</h1>
+            <p>외부 서비스 인증 정보 및 시스템 설정을 관리합니다.</p>
+        </div>
+
+        <div class="settings-grid">
+            <!-- REGTECH 설정 -->
+            <div class="settings-card">
+                <h2>REGTECH (금융보안원) 설정</h2>
+                <form id="regtechForm">
+                    <div class="form-group">
+                        <label for="regtechUsername">사용자명</label>
+                        <input type="text" id="regtechUsername" name="username" placeholder="REGTECH 사용자명" value="{{ regtech_username or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="regtechPassword">비밀번호</label>
+                        <input type="password" id="regtechPassword" name="password" placeholder="REGTECH 비밀번호">
+                    </div>
+                    <button type="submit" class="btn btn-primary">저장 및 테스트</button>
+                    <button type="button" class="btn btn-warning" onclick="refreshRegtechToken()">토큰 갱신</button>
+                </form>
+
+                <div id="regtechStatus" class="status-box" style="display: none;"></div>
+                
+                <div id="regtechToken" style="display: none;">
+                    <h4>Bearer Token</h4>
+                    <div class="token-display">
+                        <span id="tokenValue"></span>
+                        <button class="copy-btn" onclick="copyToken()">복사</button>
+                    </div>
+                    <div class="token-info">
+                        <div>만료 시간: <span id="tokenExpiry"></span></div>
+                        <div>사용자: <span id="tokenUser"></span></div>
+                    </div>
+                </div>
+
+                <div class="log-area" id="regtechLog">
+                    <div class="log-entry">
+                        <span class="log-time">[준비]</span>
+                        <span class="log-info">REGTECH 인증 대기 중...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECUDIUM 설정 -->
+            <div class="settings-card">
+                <h2>SECUDIUM (에스케이인포섹) 설정</h2>
+                <form id="secudiumForm">
+                    <div class="form-group">
+                        <label for="secudiumUsername">사용자명</label>
+                        <input type="text" id="secudiumUsername" name="username" placeholder="SECUDIUM 사용자명" value="{{ secudium_username or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="secudiumPassword">비밀번호</label>
+                        <input type="password" id="secudiumPassword" name="password" placeholder="SECUDIUM 비밀번호">
+                    </div>
+                    <button type="submit" class="btn btn-primary">저장 및 테스트</button>
+                </form>
+
+                <div id="secudiumStatus" class="status-box" style="display: none;"></div>
+            </div>
+
+            <!-- 수집 설정 -->
+            <div class="settings-card">
+                <h2>수집 설정</h2>
+                <form id="collectionSettings">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="autoCollection" {{ 'checked' if auto_collection else '' }}>
+                            자동 수집 활성화
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="collectionInterval">수집 주기 (시간)</label>
+                        <input type="number" id="collectionInterval" min="1" max="24" value="{{ collection_interval or 6 }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataRetention">데이터 보관 기간 (일)</label>
+                        <input type="number" id="dataRetention" min="1" max="365" value="{{ data_retention or 90 }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">저장</button>
+                </form>
+
+                <div id="collectionStatus" class="status-box" style="display: none;"></div>
+            </div>
+
+            <!-- 시스템 상태 -->
+            <div class="settings-card">
+                <h2>시스템 상태</h2>
+                <div class="status-box">
+                    <div>서버 시작 시간: <span id="serverUptime">{{ server_uptime }}</span></div>
+                    <div>데이터베이스 크기: <span id="dbSize">{{ db_size }}</span></div>
+                    <div>캐시 상태: <span id="cacheStatus">{{ cache_status }}</span></div>
+                    <div>활성 IP 수: <span id="activeIps">{{ active_ips }}</span></div>
+                </div>
+                <button class="btn btn-danger" onclick="clearCache()">캐시 초기화</button>
+                <button class="btn btn-warning" onclick="compactDatabase()">DB 최적화</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // REGTECH 폼 제출
+        document.getElementById('regtechForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('regtechUsername').value;
+            const password = document.getElementById('regtechPassword').value;
+            
+            if (!username || !password) {
+                showStatus('regtechStatus', 'error', '사용자명과 비밀번호를 입력하세요.');
+                return;
+            }
+
+            addLog('regtechLog', 'info', '인증 정보 저장 중...');
+            showStatus('regtechStatus', 'info', '인증 테스트 중... <span class="loading"></span>');
+
+            try {
+                const response = await fetch('/api/settings/regtech/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addLog('regtechLog', 'success', '로그인 성공!');
+                    showStatus('regtechStatus', 'success', '인증 성공! Bearer Token이 발급되었습니다.');
+                    
+                    // 토큰 표시
+                    displayToken(data.token, data.expires_at, data.username);
+                    
+                    // 수집 테스트
+                    addLog('regtechLog', 'info', '데이터 수집 테스트 중...');
+                    testCollection();
+                } else {
+                    addLog('regtechLog', 'error', `인증 실패: ${data.error}`);
+                    showStatus('regtechStatus', 'error', `인증 실패: ${data.error}`);
+                }
+            } catch (error) {
+                addLog('regtechLog', 'error', `오류: ${error.message}`);
+                showStatus('regtechStatus', 'error', `오류: ${error.message}`);
+            }
+        });
+
+        // Bearer Token 갱신
+        async function refreshRegtechToken() {
+            addLog('regtechLog', 'info', 'Bearer Token 갱신 시작...');
+            showStatus('regtechStatus', 'info', '토큰 갱신 중... <span class="loading"></span>');
+
+            try {
+                const response = await fetch('/api/settings/regtech/refresh-token', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addLog('regtechLog', 'success', '토큰 갱신 성공!');
+                    showStatus('regtechStatus', 'success', 'Bearer Token이 갱신되었습니다.');
+                    displayToken(data.token, data.expires_at, data.username);
+                } else {
+                    addLog('regtechLog', 'error', `토큰 갱신 실패: ${data.error}`);
+                    showStatus('regtechStatus', 'error', `토큰 갱신 실패: ${data.error}`);
+                }
+            } catch (error) {
+                addLog('regtechLog', 'error', `오류: ${error.message}`);
+                showStatus('regtechStatus', 'error', `오류: ${error.message}`);
+            }
+        }
+
+        // 토큰 표시
+        function displayToken(token, expiresAt, username) {
+            document.getElementById('regtechToken').style.display = 'block';
+            document.getElementById('tokenValue').textContent = token;
+            
+            // 만료 시간 계산
+            const expDate = new Date(expiresAt * 1000);
+            document.getElementById('tokenExpiry').textContent = expDate.toLocaleString('ko-KR');
+            document.getElementById('tokenUser').textContent = username;
+            
+            addLog('regtechLog', 'info', `토큰 만료: ${expDate.toLocaleString('ko-KR')}`);
+        }
+
+        // 토큰 복사
+        function copyToken() {
+            const tokenValue = document.getElementById('tokenValue').textContent;
+            navigator.clipboard.writeText(tokenValue).then(() => {
+                alert('토큰이 클립보드에 복사되었습니다.');
+            });
+        }
+
+        // 수집 테스트
+        async function testCollection() {
+            try {
+                const response = await fetch('/api/collection/regtech/test', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addLog('regtechLog', 'success', `수집 테스트 성공: ${data.ip_count}개 IP 확인`);
+                } else {
+                    addLog('regtechLog', 'error', `수집 테스트 실패: ${data.error}`);
+                }
+            } catch (error) {
+                addLog('regtechLog', 'error', `수집 테스트 오류: ${error.message}`);
+            }
+        }
+
+        // 로그 추가
+        function addLog(logId, type, message) {
+            const logArea = document.getElementById(logId);
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const colorClass = type === 'success' ? 'log-success' : 
+                              type === 'error' ? 'log-error' : 'log-info';
+            
+            logEntry.innerHTML = `
+                <span class="log-time">[${timestamp}]</span>
+                <span class="${colorClass}">${message}</span>
+            `;
+            
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // 상태 표시
+        function showStatus(statusId, type, message) {
+            const statusBox = document.getElementById(statusId);
+            statusBox.style.display = 'block';
+            statusBox.className = `status-box status-${type}`;
+            statusBox.innerHTML = message;
+        }
+
+        // 페이지 로드시 현재 토큰 확인
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/settings/regtech/token-status');
+                const data = await response.json();
+                
+                if (data.has_token && data.is_valid) {
+                    displayToken(data.token, data.expires_at, data.username);
+                    addLog('regtechLog', 'success', '유효한 토큰이 있습니다.');
+                } else if (data.has_token && !data.is_valid) {
+                    addLog('regtechLog', 'warning', '토큰이 만료되었습니다. 갱신이 필요합니다.');
+                }
+            } catch (error) {
+                console.error('토큰 상태 확인 오류:', error);
+            }
+        });
+    </script>
+</body>
+</html>

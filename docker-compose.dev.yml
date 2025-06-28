@@ -15,14 +15,13 @@ services:
       - HOST=0.0.0.0
       - REGTECH_USERNAME=nextrade
       - REGTECH_PASSWORD=Sprtmxm1@3
+      - REGTECH_BEARER_TOKEN=${REGTECH_BEARER_TOKEN:-}
       - SECUDIUM_USERNAME=nextrade
       - SECUDIUM_PASSWORD=Sprtmxm1@3
     volumes:
       - blacklist-instance:/app/instance
       - blacklist-data:/app/data
       - blacklist-logs:/app/logs
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
       interval: 30s
