@@ -6,6 +6,8 @@
 import os
 import logging
 import asyncio
+import json
+import sqlite3
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
@@ -68,6 +70,16 @@ class UnifiedBlacklistService:
             self.blacklist_manager = None
             self.cache = None
             self.collection_manager = None
+        
+        # 로그 테이블 초기화
+        self._ensure_log_table()
+        
+        # 데이터베이스에서 기존 로그 로드
+        try:
+            existing_logs = self._load_logs_from_db(100)
+            self.collection_logs = existing_logs
+        except Exception as e:
+            self.logger.warning(f"Failed to load existing logs: {e}")
         
         # Mark as running for basic health checks
         self._running = True
@@ -532,7 +544,7 @@ class UnifiedBlacklistService:
         return self.get_system_health()  # Reuse system health data
     
     def add_collection_log(self, source: str, action: str, details: Dict[str, Any] = None):
-        """수집 로그 추가"""
+        """수집 로그 추가 - 메모리와 데이터베이스에 저장"""
         log_entry = {
             'timestamp': datetime.now().isoformat(),
             'source': source,
@@ -540,16 +552,143 @@ class UnifiedBlacklistService:
             'details': details or {}
         }
         
-        # 로그 추가
+        # 메모리에 로그 추가
         self.collection_logs.append(log_entry)
         
         # 최대 개수 유지
         if len(self.collection_logs) > self.max_logs:
             self.collection_logs = self.collection_logs[-self.max_logs:]
+            
+        # 데이터베이스에도 저장
+        try:
+            self._save_log_to_db(log_entry)
+        except Exception as e:
+            self.logger.warning(f"Failed to save log to database: {e}")
+            
+        # 콘솔에도 출력 (일일 통계 포함)
+        if action in ['collection_complete', 'collection_start']:
+            ip_count = details.get('ip_count', 0) if details else 0
+            self.logger.info(f"📊 {source} {action}: {ip_count}개 IP 처리")
+        else:
+            self.logger.info(f"📝 {source}: {action}")
     
     def get_collection_logs(self, limit: int = 100) -> list:
-        """최근 수집 로그 반환"""
-        return self.collection_logs[-limit:]
+        """최근 수집 로그 반환 - 데이터베이스와 메모리에서 통합"""
+        try:
+            # 데이터베이스에서 최근 로그 조회
+            db_logs = self._load_logs_from_db(limit)
+            
+            # 메모리의 최신 로그와 병합
+            all_logs = db_logs + self.collection_logs[-50:]  # 메모리에서 최신 50개
+            
+            # 중복 제거 및 시간순 정렬
+            unique_logs = {}
+            for log in all_logs:
+                key = f"{log['timestamp']}_{log['source']}_{log['action']}"
+                unique_logs[key] = log
+                
+            sorted_logs = sorted(unique_logs.values(), 
+                               key=lambda x: x['timestamp'], reverse=True)
+            
+            return sorted_logs[:limit]
+        except Exception as e:
+            self.logger.warning(f"Failed to load logs from database: {e}")
+            # 데이터베이스 실패 시 메모리 로그만 반환
+            return self.collection_logs[-limit:]
+
+    def _save_log_to_db(self, log_entry: Dict[str, Any]):
+        """로그를 데이터베이스에 저장"""
+        if not self.blacklist_manager:
+            return
+            
+        try:
+            # JSON으로 details 직렬화
+            details_json = json.dumps(log_entry['details']) if log_entry['details'] else '{}'
+            
+            query = """
+            INSERT INTO collection_logs (timestamp, source, action, details, created_at)
+            VALUES (?, ?, ?, ?, datetime('now'))
+            """
+            
+            with sqlite3.connect(self.blacklist_manager.db_path) as conn:
+                conn.execute(query, (
+                    log_entry['timestamp'],
+                    log_entry['source'],
+                    log_entry['action'],
+                    details_json
+                ))
+                conn.commit()
+                
+        except Exception as e:
+            self.logger.warning(f"Failed to save log to database: {e}")
+            
+    def _load_logs_from_db(self, limit: int = 100) -> list:
+        """데이터베이스에서 로그 불러오기"""
+        if not self.blacklist_manager:
+            return []
+            
+        try:
+            query = """
+            SELECT timestamp, source, action, details
+            FROM collection_logs
+            ORDER BY created_at DESC
+            LIMIT ?
+            """
+            
+            with sqlite3.connect(self.blacklist_manager.db_path) as conn:
+                cursor = conn.execute(query, (limit,))
+                rows = cursor.fetchall()
+                
+                logs = []
+                for row in rows:
+                    try:
+                        details = json.loads(row[3]) if row[3] else {}
+                    except (json.JSONDecodeError, TypeError):
+                        details = {}
+                        
+                    logs.append({
+                        'timestamp': row[0],
+                        'source': row[1],
+                        'action': row[2],
+                        'details': details
+                    })
+                    
+                return logs
+                
+        except Exception as e:
+            self.logger.warning(f"Failed to load logs from database: {e}")
+            return []
+            
+    def _ensure_log_table(self):
+        """로그 테이블이 존재하는지 확인하고 생성"""
+        if not self.blacklist_manager:
+            return
+            
+        try:
+            query = """
+            CREATE TABLE IF NOT EXISTS collection_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source TEXT NOT NULL,
+                action TEXT NOT NULL,
+                details TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+            
+            with sqlite3.connect(self.blacklist_manager.db_path) as conn:
+                conn.execute(query)
+                conn.commit()
+                
+                # 인덱스 생성
+                conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_collection_logs_created_at 
+                ON collection_logs(created_at DESC)
+                """)
+                conn.commit()
+                
+        except Exception as e:
+            self.logger.warning(f"Failed to create log table: {e}")
     
     def clear_collection_logs(self):
         """수집 로그 초기화"""
