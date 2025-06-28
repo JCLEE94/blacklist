@@ -224,50 +224,95 @@ class HarBasedRegtechCollector:
             return False
     
     def save_to_database(self, ip_data: List[Dict[str, Any]], db_path: str = None) -> bool:
-        """데이터베이스에 저장"""
+        """데이터베이스에 저장 - 통합 blacklist_manager 사용"""
         try:
-            if db_path:
-                db_file_path = Path(db_path)
-            else:
-                db_file_path = Path("instance") / "blacklist.db"
-            db_file_path.parent.mkdir(exist_ok=True)
+            # Container에서 blacklist_manager 가져오기
+            from .container import get_container
+            container = get_container()
+            blacklist_manager = container.resolve('blacklist_manager')
             
-            conn = sqlite3.connect(str(db_file_path))
-            cursor = conn.cursor()
+            if not blacklist_manager:
+                logger.error("blacklist_manager를 container에서 찾을 수 없습니다")
+                return False
             
-            # 테이블 생성 (없는 경우)
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS blacklist_ip (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip_address TEXT NOT NULL,
-                    source TEXT NOT NULL,
-                    added_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    is_active INTEGER DEFAULT 1,
-                    UNIQUE(ip_address, source)
-                )
-            ''')
-            
-            # 기존 REGTECH 데이터 비활성화
-            cursor.execute(
-                "UPDATE blacklist_ip SET is_active = 0 WHERE source = 'REGTECH'"
-            )
-            
-            # 새 데이터 삽입
+            # IP 데이터를 bulk_import_ips 형식으로 변환
+            formatted_data = []
             for item in ip_data:
-                cursor.execute('''
-                    INSERT OR REPLACE INTO blacklist_ip (ip_address, source, is_active)
-                    VALUES (?, ?, 1)
-                ''', (item['ip'], 'REGTECH'))
+                formatted_entry = {
+                    'ip': item['ip'],
+                    'source': 'REGTECH',
+                    'detection_date': datetime.now().strftime('%Y-%m-%d'),
+                    'threat_type': 'blacklist',
+                    'country': item.get('country', ''),
+                    'confidence': 1.0
+                }
+                formatted_data.append(formatted_entry)
             
-            conn.commit()
-            conn.close()
+            # blacklist_manager의 bulk_import_ips 사용
+            result = blacklist_manager.bulk_import_ips(formatted_data, source="REGTECH")
             
-            logger.info(f"데이터베이스에 {len(ip_data)}개 IP 저장 완료")
-            return True
+            if result.get('success'):
+                logger.info(f"✅ blacklist_manager를 통해 {result.get('imported_count', 0)}개 IP 저장 완료")
+                return True
+            else:
+                logger.error(f"❌ blacklist_manager 저장 실패: {result.get('error', 'Unknown error')}")
+                return False
             
         except Exception as e:
-            logger.error(f"데이터베이스 저장 실패: {e}")
-            return False
+            logger.error(f"❌ 통합 데이터베이스 저장 실패: {e}")
+            # 폴백: 기존 방식으로 시도
+            logger.info("기존 방식으로 폴백 시도...")
+            try:
+                if db_path:
+                    db_file_path = Path(db_path)
+                else:
+                    db_file_path = Path("instance") / "blacklist.db"
+                db_file_path.parent.mkdir(exist_ok=True)
+                
+                conn = sqlite3.connect(str(db_file_path))
+                cursor = conn.cursor()
+                
+                # 통합 스키마와 호환되는 테이블 생성
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS blacklist_ip (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ip TEXT NOT NULL UNIQUE,
+                        created_at TEXT NOT NULL,
+                        detection_date TEXT,
+                        attack_type TEXT,
+                        country TEXT,
+                        source TEXT,
+                        confidence_score REAL DEFAULT 1.0,
+                        is_active INTEGER DEFAULT 1,
+                        last_seen TEXT
+                    )
+                ''')
+                
+                # 새 데이터 삽입 (통합 스키마 사용)
+                for item in ip_data:
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO blacklist_ip 
+                        (ip, created_at, detection_date, attack_type, country, source, confidence_score, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                    ''', (
+                        item['ip'], 
+                        datetime.now().isoformat(),
+                        datetime.now().strftime('%Y-%m-%d'),
+                        'blacklist',
+                        item.get('country', ''),
+                        'REGTECH',
+                        1.0
+                    ))
+                
+                conn.commit()
+                conn.close()
+                
+                logger.info(f"폴백으로 {len(ip_data)}개 IP 저장 완료")
+                return True
+                
+            except Exception as fallback_error:
+                logger.error(f"폴백 저장도 실패: {fallback_error}")
+                return False
     
     def auto_collect(self, prefer_web: bool = True, db_path: str = None) -> Dict[str, Any]:
         """자동 수집 실행"""
