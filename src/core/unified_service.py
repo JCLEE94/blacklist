@@ -426,6 +426,29 @@ class UnifiedBlacklistService:
         )
     
     
+    def _get_source_counts_from_db(self) -> Dict[str, int]:
+        """데이터베이스에서 소스별 IP 개수 조회"""
+        source_counts = {'REGTECH': 0, 'SECUDIUM': 0, 'PUBLIC': 0}
+        try:
+            # Use blacklist_manager's database path
+            if hasattr(self.blacklist_manager, 'db_path'):
+                db_path = self.blacklist_manager.db_path
+            else:
+                # Fallback to instance path
+                db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+            
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
+            for row in cursor.fetchall():
+                if row[0] in source_counts:
+                    source_counts[row[0]] = row[1]
+            conn.close()
+        except Exception as e:
+            self.logger.warning(f"Failed to get source counts from database: {e}")
+        return source_counts
+    
     def get_collection_status(self) -> Dict[str, Any]:
         """수집 시스템 상태 조회"""
         try:
@@ -448,26 +471,36 @@ class UnifiedBlacklistService:
                 }
             else:
                 # Fallback when collection_manager is not available
+                # Get actual counts from database
+                source_counts = self._get_source_counts_from_db()
+                total_ips = sum(source_counts.values())
+                
                 return {
                     'enabled': True,
                     'status': 'active',
                     'sources': {
                         'regtech': {
-                            'enabled': self.config.get('regtech_enabled', False),
-                            'status': 'inactive',
-                            'total_ips': 0
+                            'enabled': self.config.get('regtech_enabled', True),
+                            'status': 'has_data' if source_counts.get('REGTECH', 0) > 0 else 'no_data',
+                            'total_ips': source_counts.get('REGTECH', 0),
+                            'name': 'REGTECH (금융보안원)',
+                            'manual_only': True,
+                            'last_collection': None
                         },
                         'secudium': {
-                            'enabled': self.config.get('secudium_enabled', False),
-                            'status': 'inactive',
-                            'total_ips': 0
+                            'enabled': self.config.get('secudium_enabled', True),
+                            'status': 'has_data' if source_counts.get('SECUDIUM', 0) > 0 else 'no_data',
+                            'total_ips': source_counts.get('SECUDIUM', 0),
+                            'name': 'SECUDIUM (에스케이인포섹)',
+                            'manual_only': True,
+                            'last_collection': None
                         }
                     },
                     'stats': {
-                        'total_ips': len(self.get_active_blacklist_ips()),
+                        'total_ips': total_ips,
                         'today_collected': 0
                     },
-                    'last_collection': None
+                    'last_collection': datetime.now().isoformat()
                 }
         except Exception as e:
             self.logger.error(f"수집 상태 조회 실패: {e}")
@@ -500,19 +533,32 @@ class UnifiedBlacklistService:
             # Get actual counts by source from database
             source_counts = {'REGTECH': 0, 'SECUDIUM': 0, 'PUBLIC': 0}
             try:
-                # Direct SQLite query to get counts by source
-                import sqlite3
-                import os
-                db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+                # Use blacklist_manager's database path
+                if hasattr(self.blacklist_manager, 'db_path'):
+                    db_path = self.blacklist_manager.db_path
+                else:
+                    # Fallback to instance path
+                    db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+                
+                self.logger.info(f"Getting source counts from database: {db_path}")
                 conn = sqlite3.connect(db_path)
                 cursor = conn.cursor()
+                
+                # First check if table exists and has data
+                cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
+                total_in_db = cursor.fetchone()[0]
+                self.logger.info(f"Total IPs in database: {total_in_db}")
+                
                 cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
                 for row in cursor.fetchall():
+                    self.logger.info(f"Source {row[0]}: {row[1]} IPs")
                     if row[0] in source_counts:
                         source_counts[row[0]] = row[1]
                 conn.close()
             except Exception as e:
                 self.logger.warning(f"Failed to get source counts: {e}")
+                import traceback
+                self.logger.warning(f"Traceback: {traceback.format_exc()}")
             
             return {
                 'status': 'healthy' if self._running else 'stopped',
