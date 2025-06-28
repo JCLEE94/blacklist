@@ -746,6 +746,18 @@ def get_analytics_summary():
 
 # === 수집 관리 API ===
 
+@unified_bp.route('/api/admin/init-database', methods=['POST'])
+def init_database():
+    """데이터베이스 테이블 초기화"""
+    try:
+        result = service.initialize_database_tables()
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @unified_bp.route('/api/collection/status', methods=['GET'])
 
 def get_collection_status():

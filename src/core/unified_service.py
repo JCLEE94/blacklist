@@ -426,6 +426,84 @@ class UnifiedBlacklistService:
         )
     
     
+    def initialize_database_tables(self) -> Dict[str, Any]:
+        """데이터베이스 테이블 강제 초기화"""
+        try:
+            # Use blacklist_manager's database path
+            if hasattr(self.blacklist_manager, 'db_path'):
+                db_path = self.blacklist_manager.db_path
+            else:
+                db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+            
+            self.logger.info(f"Initializing database tables at: {db_path}")
+            
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Create blacklist_ip table if not exists
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS blacklist_ip (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip TEXT NOT NULL UNIQUE,
+                    created_at TEXT NOT NULL,
+                    detection_date TEXT,
+                    attack_type TEXT,
+                    country TEXT,
+                    source TEXT,
+                    confidence_score REAL DEFAULT 1.0,
+                    is_active INTEGER DEFAULT 1,
+                    last_seen TEXT
+                )
+            """)
+            
+            # Create ip_detection table if not exists
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS ip_detection (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    attack_type TEXT,
+                    confidence_score REAL DEFAULT 1.0,
+                    FOREIGN KEY (ip) REFERENCES blacklist_ip(ip)
+                )
+            """)
+            
+            # Create collection_logs table if not exists
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS collection_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    details TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Create indexes
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_source ON blacklist_ip(source)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_created_at ON blacklist_ip(created_at)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_collection_logs_created_at ON collection_logs(created_at DESC)")
+            
+            conn.commit()
+            conn.close()
+            
+            self.logger.info("Database tables initialized successfully")
+            return {
+                'success': True,
+                'message': 'Database tables initialized',
+                'database_path': db_path
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize database tables: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
     def _get_source_counts_from_db(self) -> Dict[str, int]:
         """데이터베이스에서 소스별 IP 개수 조회"""
         source_counts = {'REGTECH': 0, 'SECUDIUM': 0, 'PUBLIC': 0}
