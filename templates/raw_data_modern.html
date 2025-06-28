@@ -411,15 +411,15 @@
 <div class="raw-data-container">
     <!-- Header -->
     <div class="raw-data-header">
-        <h1><i class="bi bi-database"></i> Raw Blacklist Data</h1>
-        <p>Complete blacklist IP database with detailed information</p>
+        <h1><i class="bi bi-database"></i> 전체 블랙리스트 데이터</h1>
+        <p>블랙리스트 IP 데이터베이스 전체 정보</p>
     </div>
     
     <!-- Statistics -->
     <div class="stats-grid">
         <div class="stat-mini-card primary">
             <h3 class="stat-value" id="totalCount">0</h3>
-            <p class="stat-label">Total IPs</p>
+            <p class="stat-label">전체 IP</p>
         </div>
         <div class="stat-mini-card success">
             <h3 class="stat-value" id="regtechCount">0</h3>
@@ -431,52 +431,52 @@
         </div>
         <div class="stat-mini-card warning">
             <h3 class="stat-value" id="todayCount">0</h3>
-            <p class="stat-label">Today's Additions</p>
+            <p class="stat-label">오늘 추가</p>
         </div>
     </div>
     
     <!-- Filters -->
     <div class="filter-card">
-        <h3 class="filter-title"><i class="bi bi-funnel"></i> Filter Data</h3>
+        <h3 class="filter-title"><i class="bi bi-funnel"></i> 데이터 필터</h3>
         <div class="filter-row">
             <div class="filter-group">
-                <label>Source</label>
+                <label>소스</label>
                 <select class="form-select" id="sourceFilter">
-                    <option value="">All Sources</option>
+                    <option value="">전체 소스</option>
                     <option value="REGTECH">REGTECH</option>
                     <option value="SECUDIUM">SECUDIUM</option>
                     <option value="PUBLIC">PUBLIC</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label>Country</label>
+                <label>국가</label>
                 <select class="form-select" id="countryFilter">
-                    <option value="">All Countries</option>
+                    <option value="">전체 국가</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label>Attack Type</label>
-                <input type="text" class="form-control" id="attackTypeFilter" placeholder="Search attack type...">
+                <label>공격 유형</label>
+                <input type="text" class="form-control" id="attackTypeFilter" placeholder="공격 유형 검색...">
             </div>
             <div class="filter-group">
-                <label>Date Range</label>
+                <label>기간</label>
                 <select class="form-select" id="dateFilter">
-                    <option value="">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="week">Last 7 Days</option>
-                    <option value="month">Last 30 Days</option>
+                    <option value="">전체 기간</option>
+                    <option value="today">오늘</option>
+                    <option value="week">최근 7일</option>
+                    <option value="month">최근 30일</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label>IP Search</label>
-                <input type="text" class="form-control" id="ipSearch" placeholder="Search IP...">
+                <label>IP 검색</label>
+                <input type="text" class="form-control" id="ipSearch" placeholder="IP 주소 검색...">
             </div>
             <div class="filter-actions">
                 <button class="btn btn-filter" onclick="applyFilters()">
-                    <i class="bi bi-search"></i> Apply
+                    <i class="bi bi-search"></i> 적용
                 </button>
                 <button class="btn btn-reset" onclick="resetFilters()">
-                    <i class="bi bi-arrow-clockwise"></i> Reset
+                    <i class="bi bi-arrow-clockwise"></i> 초기화
                 </button>
             </div>
         </div>
@@ -485,7 +485,7 @@
     <!-- Data Table -->
     <div class="data-card">
         <div class="data-card-header">
-            <h3 class="data-card-title"><i class="bi bi-table"></i> Blacklist Entries</h3>
+            <h3 class="data-card-title"><i class="bi bi-table"></i> 블랙리스트 목록</h3>
             <div class="export-buttons">
                 <button class="btn btn-export" onclick="exportData('csv')">
                     <i class="bi bi-file-earmark-csv"></i> CSV
@@ -494,7 +494,7 @@
                     <i class="bi bi-file-earmark-code"></i> JSON
                 </button>
                 <button class="btn btn-export" onclick="refreshData()">
-                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                    <i class="bi bi-arrow-clockwise"></i> 새로고침
                 </button>
             </div>
         </div>
@@ -504,19 +504,19 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>IP Address</th>
-                        <th>Source</th>
-                        <th>Country</th>
-                        <th>Attack Type</th>
-                        <th>Created At</th>
-                        <th>Actions</th>
+                        <th>IP 주소</th>
+                        <th>소스</th>
+                        <th>국가</th>
+                        <th>공격 유형</th>
+                        <th>등록일</th>
+                        <th>작업</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
                         <td colspan="7" class="loading-state">
                             <div class="loading-spinner"></div>
-                            <p>Loading data...</p>
+                            <p>데이터 로딩 중...</p>
                         </td>
                     </tr>
                 </tbody>
@@ -525,18 +525,17 @@
         
         <div class="pagination-container">
             <div class="pagination-info">
-                Showing <span id="showingStart">0</span> to <span id="showingEnd">0</span> 
-                of <span id="totalFiltered">0</span> entries
+                총 <span id="totalFiltered">0</span>개 중 <span id="showingStart">0</span> ~ <span id="showingEnd">0</span> 표시
             </div>
             <div class="pagination-controls">
                 <button class="btn btn-page" id="prevBtn" onclick="previousPage()" disabled>
-                    <i class="bi bi-chevron-left"></i> Previous
+                    <i class="bi bi-chevron-left"></i> 이전
                 </button>
                 <span class="page-info">
-                    Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+                    <span id="currentPage">1</span> / <span id="totalPages">1</span> 페이지
                 </span>
                 <button class="btn btn-page" id="nextBtn" onclick="nextPage()">
-                    Next <i class="bi bi-chevron-right"></i>
+                    다음 <i class="bi bi-chevron-right"></i>
                 </button>
             </div>
         </div>
@@ -573,11 +572,11 @@ async function loadData() {
             populateCountryFilter(allData);
             renderPage(1);
         } else {
-            showError('Failed to load data');
+            showError('데이터 로드 실패');
         }
     } catch (error) {
         console.error('Error loading data:', error);
-        showError('Network error occurred');
+        showError('네트워크 오류가 발생했습니다');
     }
 }
 
@@ -683,7 +682,7 @@ function renderPage(page) {
             <tr>
                 <td colspan="7" class="empty-state">
                     <i class="bi bi-inbox"></i>
-                    <p>No data found</p>
+                    <p>데이터가 없습니다</p>
                 </td>
             </tr>
         `;
@@ -697,10 +696,10 @@ function renderPage(page) {
                 <td>${item.attack_type ? `<span class="attack-type-badge">${item.attack_type}</span>` : '-'}</td>
                 <td class="date-text">${formatDate(item.created_at)}</td>
                 <td>
-                    <button class="action-btn" onclick="viewDetails(${item.id})" title="View Details">
+                    <button class="action-btn" onclick="viewDetails(${item.id})" title="상세 보기">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <button class="action-btn" onclick="searchIP('${item.ip}')" title="Search IP">
+                    <button class="action-btn" onclick="searchIP('${item.ip}')" title="IP 검색">
                         <i class="bi bi-search"></i>
                     </button>
                 </td>
@@ -818,7 +817,7 @@ function viewDetails(id) {
     const item = allData.find(d => d.id === id);
     if (item) {
         // You can create a modal here instead of alert
-        alert(`IP Details:\n\nID: ${item.id}\nIP: ${item.ip}\nSource: ${item.source}\nCountry: ${item.country || 'N/A'}\nAttack Type: ${item.attack_type || 'N/A'}\nCreated: ${item.created_at}`);
+        alert(`IP 상세 정보:\n\nID: ${item.id}\nIP: ${item.ip}\n소스: ${item.source}\n국가: ${item.country || '없음'}\n공격 유형: ${item.attack_type || '없음'}\n등록일: ${item.created_at}`);
     }
 }
 
