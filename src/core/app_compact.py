@@ -5,7 +5,6 @@ Advanced architecture with plugin-based IP source system and dependency injectio
 """
 import os
 import time
-import logging
 from typing import Optional
 
 from flask import Flask, g, request
@@ -20,12 +19,12 @@ from .container import get_container, BlacklistContainer
 from .constants import PRODUCTION_CONFIG, DEVELOPMENT_CONFIG, SECURITY_HEADERS
 from .exceptions import BlacklistError, handle_exception, create_error_response
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Import new error handling and logging modules
+from src.utils.error_handler import register_error_handlers, error_handler
+from src.utils.structured_logging import get_logger, setup_request_logging
+
+# Use structured logger instead of basic logging
+logger = get_logger(__name__)
 
 
 # Performance optimization imports
@@ -99,7 +98,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         if HAS_ORJSON:
             app.json_encoder = None  # Disable default JSON encoder to use orjson
             app.config['JSON_SORT_KEYS'] = False  # orjson handles sorting
-            logger.info("orjson 활성화됨 - JSON 직렬화 성능 향상")
+            logger.info("orjson 활성화됨 - JSON 직렬화 성능 향상", feature="orjson", status="enabled")
         
         # Rate limiting with container-managed cache
         cache = container.resolve('cache')
@@ -113,9 +112,10 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
                 r = redis.from_url(config.REDIS_URL)
                 r.ping()
                 storage_uri = config.REDIS_URL
-                logger.info("Rate limiter using Redis storage")
+                logger.info("Rate limiter using Redis storage", storage="redis", status="connected")
             except Exception as e:
-                logger.warning(f"Redis not available for rate limiter, falling back to memory: {e}")
+                logger.warning("Redis not available for rate limiter, falling back to memory", 
+                             exception=e, storage="memory", fallback=True)
                 storage_uri = 'memory://'
         
         limiter = Limiter(
@@ -158,7 +158,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
                     'database_queries': getattr(app, 'db_query_count', 0)
                 }
             except Exception as e:
-                logger.error(f"메트릭 수집 실패: {e}")
+                logger.error("메트릭 수집 실패", exception=e, component="metrics")
                 return {}
         
         monitor = setup_monitoring(app_metrics_callback)
@@ -177,6 +177,14 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             metrics=container.resolve('metrics_collector')
         )
         
+        # Register error handlers from the new error handling system
+        register_error_handlers(app)
+        logger.info("Error handlers registered successfully")
+        
+        # Setup structured request logging
+        setup_request_logging(app)
+        logger.info("Request logging configured successfully")
+        
         # Register unified routes blueprint directly
         from .unified_routes import unified_bp
         app.register_blueprint(unified_bp)
@@ -188,9 +196,8 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             app.register_blueprint(settings_bp)
             logger.info("Settings routes registered successfully")
         except Exception as e:
-            logger.error(f"Failed to register settings routes: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error("Failed to register settings routes", 
+                       exception=e, blueprint="settings_bp")
         
         # Register V2 API routes (advanced features under /api/v2)
         try:
@@ -198,9 +205,8 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             app.register_blueprint(v2_bp, url_prefix='/api/v2')
             logger.info("V2 API routes registered successfully")
         except Exception as e:
-            logger.error(f"Failed to register V2 API routes: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error("Failed to register V2 API routes", 
+                       exception=e, blueprint="v2_bp")
         
         # NOTE: Removed duplicate route registrations to prevent conflicts
         # All core API routes are now centralized in unified_routes.py:
@@ -316,7 +322,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         @app.errorhandler(500)
         def internal_error(error):
             """Handle internal server errors"""
-            logger.error(f"Internal error: {error}", exc_info=True)
+            logger.error("Internal error", exception=error, status_code=500)
             
             # Convert to structured error
             if isinstance(error, Exception):
@@ -338,7 +344,11 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             # Inject container into Flask g for easy access
             g.container = container
             
-            logger.info(f"[{g.request_id}] {request.method} {request.path} from {request.remote_addr}")
+            logger.info("Request started", 
+                       request_id=g.request_id,
+                       method=request.method,
+                       path=request.path,
+                       remote_addr=request.remote_addr)
         
         @app.after_request
         def after_request(response):
@@ -383,11 +393,12 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             except:
                 return {'build_time': '2025-06-18 18:48:33 KST'}
         
-        logger.info("Blacklist API Server initialized successfully")
+        logger.info("Blacklist API Server initialized successfully", 
+                   environment=config_name or 'default')
         return app
     
     except Exception as e:
-        logger.error(f"Failed to create application: {e}", exc_info=True)
+        logger.error("Failed to create application", exception=e, critical=True)
         # Return a minimal Flask app with error information
         error_app = Flask(__name__)
         error_message = str(e)
@@ -419,13 +430,15 @@ def main():
         port = app.config['PORT']
         debug = app.config['DEBUG']
     
-    logger.info(f"Starting Blacklist API Server (Unified v2.1) on port {port}")
-    logger.info(f"Environment: {env}")
-    logger.info("Features: Unified Components, Compression, Caching, Rate Limiting, Authentication")
+    logger.info("Starting Blacklist API Server", 
+               version="2.1", port=port, environment=env)
+    logger.info("Features enabled", 
+               features=["Unified Components", "Compression", "Caching", 
+                        "Rate Limiting", "Authentication", "Structured Logging"])
     
     if env == 'production':
-        logger.info("⚠️  Production mode - use Gunicorn:")
-        logger.info(f"gunicorn -w 4 -b 0.0.0.0:{port} core.app_compact:create_compact_app()")
+        logger.warning("Production mode - use Gunicorn", 
+                      command=f"gunicorn -w 4 -b 0.0.0.0:{port} core.app_compact:create_compact_app()")
     
     app.run(host='0.0.0.0', port=port, debug=debug)
 

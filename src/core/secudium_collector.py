@@ -6,7 +6,6 @@ secudium.skinfosec.co.kr에서 실제 로그인 후 데이터 수집
 
 import os
 import json
-import logging
 import pandas as pd
 import requests
 import re
@@ -16,12 +15,18 @@ from datetime import datetime
 from typing import List, Dict, Optional, Any
 from pathlib import Path
 from bs4 import BeautifulSoup
+from requests.exceptions import RequestException, Timeout, ConnectionError
 
 from src.core.models import BlacklistEntry
 from src.config.settings import settings
+from src.utils.error_handler import (
+    CollectionError, ExternalServiceError, retry_on_error, 
+    handle_api_errors, safe_execute
+)
+from src.utils.structured_logging import get_logger
 
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class SecudiumCollector:
     """
@@ -106,12 +111,20 @@ class SecudiumCollector:
                 )
                 entries.append(entry)
             
-            logger.info(f"JSON에서 {len(entries)}개 IP 로드")
+            logger.info(f"JSON에서 {len(entries)}개 IP 로드", file_path=filepath, count=len(entries))
             return entries
             
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON 파일 파싱 오류", 
+                        exception=e, file_path=filepath, line=e.lineno, column=e.colno)
+            raise CollectionError("SECUDIUM", f"잘못된 JSON 형식: {filepath}")
+        except FileNotFoundError as e:
+            logger.error(f"JSON 파일을 찾을 수 없음", exception=e, file_path=filepath)
+            raise CollectionError("SECUDIUM", f"파일 없음: {filepath}")
         except Exception as e:
-            logger.error(f"JSON 파일 처리 오류: {e}")
-            return []
+            logger.error(f"JSON 파일 처리 중 예상치 못한 오류", 
+                        exception=e, file_path=filepath)
+            raise CollectionError("SECUDIUM", f"파일 처리 실패: {str(e)}")
     
     def _process_excel_file(self, filepath: str) -> List[BlacklistEntry]:
         """Excel 파일 처리"""
@@ -122,43 +135,58 @@ class SecudiumCollector:
             # IP 컬럼 찾기
             ip_columns = [col for col in df.columns if 'ip' in str(col).lower()]
             if not ip_columns:
-                logger.error("IP 컬럼을 찾을 수 없습니다")
-                return []
+                logger.error("IP 컬럼을 찾을 수 없음", 
+                           file_path=filepath, columns=list(df.columns))
+                raise CollectionError("SECUDIUM", "Excel 파일에 IP 컬럼이 없습니다")
             
             ip_column = ip_columns[0]
             
-            for _, row in df.iterrows():
-                ip = str(row[ip_column]).strip()
-                if not ip or ip == 'nan':
+            for idx, row in df.iterrows():
+                try:
+                    ip = str(row[ip_column]).strip()
+                    if not ip or ip == 'nan':
+                        continue
+                    
+                    entry = BlacklistEntry(
+                        ip_address=ip,
+                        country=row.get('country', 'Unknown'),
+                        reason=row.get('attack_type', 'SECUDIUM'),
+                        source='SECUDIUM',
+                        reg_date=self._parse_detection_date(row.get('detection_date')),
+                        exp_date=None,
+                        is_active=True,
+                        threat_level=row.get('threat_level', 'high'),
+                        source_details={
+                            'type': 'SECUDIUM',
+                            'attack': row.get('attack_type', 'Unknown')
+                        }
+                    )
+                    entries.append(entry)
+                except Exception as e:
+                    logger.warning(f"Excel 행 처리 스킵", 
+                                 exception=e, row_index=idx, ip=ip if 'ip' in locals() else 'N/A')
                     continue
-                
-                entry = BlacklistEntry(
-                    ip_address=ip,
-                    country=row.get('country', 'Unknown'),
-                    reason=row.get('attack_type', 'SECUDIUM'),
-                    source='SECUDIUM',
-                    reg_date=self._parse_detection_date(row.get('detection_date')),
-                    exp_date=None,
-                    is_active=True,
-                    threat_level=row.get('threat_level', 'high'),
-                    source_details={
-                        'type': 'SECUDIUM',
-                        'attack': row.get('attack_type', 'Unknown')
-                    }
-                )
-                entries.append(entry)
             
-            logger.info(f"Excel에서 {len(entries)}개 IP 로드")
+            logger.info(f"Excel에서 {len(entries)}개 IP 로드", 
+                       file_path=filepath, count=len(entries), total_rows=len(df))
             return entries
             
+        except FileNotFoundError as e:
+            logger.error(f"Excel 파일을 찾을 수 없음", exception=e, file_path=filepath)
+            raise CollectionError("SECUDIUM", f"파일 없음: {filepath}")
+        except ValueError as e:
+            logger.error(f"Excel 파일 형식 오류", exception=e, file_path=filepath)
+            raise CollectionError("SECUDIUM", f"잘못된 Excel 형식: {str(e)}")
         except Exception as e:
-            logger.error(f"Excel 파일 처리 오류: {e}")
-            return []
+            logger.error(f"Excel 파일 처리 중 예상치 못한 오류", 
+                        exception=e, file_path=filepath)
+            raise CollectionError("SECUDIUM", f"Excel 처리 실패: {str(e)}")
     
+    @retry_on_error(max_attempts=3, delay=2.0, exceptions=(RequestException,))
     def login(self) -> bool:
         """SECUDIUM 웹사이트 로그인 - POST 방식"""
         try:
-            logger.info("SECUDIUM 로그인 시도...")
+            logger.info("SECUDIUM 로그인 시도", base_url=self.base_url)
             
             # 세션 초기화
             self.session = requests.Session()
@@ -171,8 +199,10 @@ class SecudiumCollector:
             # 메인 페이지 접속하여 세션 초기화
             main_resp = self.session.get(self.base_url, verify=False, timeout=30)
             if main_resp.status_code != 200:
-                logger.error(f"메인 페이지 접속 실패: {main_resp.status_code}")
-                return False
+                logger.error(f"메인 페이지 접속 실패", 
+                           status_code=main_resp.status_code, url=self.base_url)
+                raise ExternalServiceError("SECUDIUM", 
+                                         f"메인 페이지 접속 실패: HTTP {main_resp.status_code}")
             
             # 로그인 데이터 준비 (강제 로그인)
             login_data = {
@@ -204,32 +234,47 @@ class SecudiumCollector:
                             'X-AUTH-TOKEN': self.token
                         })
                         
-                        logger.info("SECUDIUM 로그인 성공")
+                        logger.info("SECUDIUM 로그인 성공", 
+                                  username=self.username, token_length=len(self.token))
                         self.authenticated = True
                         return True
                     else:
                         error_msg = auth_data.get('response', {}).get('message', 'Unknown error')
-                        logger.error(f"SECUDIUM 로그인 실패: {error_msg}")
-                        return False
-                except Exception as e:
-                    logger.error(f"로그인 응답 파싱 오류: {e}")
-                    return False
+                        logger.error(f"SECUDIUM 로그인 인증 실패", 
+                                   error_message=error_msg, username=self.username)
+                        raise ExternalServiceError("SECUDIUM", f"로그인 실패: {error_msg}")
+                except json.JSONDecodeError as e:
+                    logger.error(f"로그인 응답 파싱 오류", 
+                               exception=e, response_text=login_resp.text[:200])
+                    raise ExternalServiceError("SECUDIUM", "로그인 응답 파싱 실패")
             else:
-                logger.error(f"SECUDIUM 로그인 실패: {login_resp.status_code}")
-                return False
+                logger.error(f"SECUDIUM 로그인 HTTP 오류", 
+                           status_code=login_resp.status_code)
+                raise ExternalServiceError("SECUDIUM", 
+                                         f"로그인 실패: HTTP {login_resp.status_code}")
                 
+        except (Timeout, ConnectionError) as e:
+            logger.error(f"SECUDIUM 연결 오류", exception=e)
+            raise ExternalServiceError("SECUDIUM", f"서버 연결 실패: {str(e)}")
+        except RequestException as e:
+            logger.error(f"SECUDIUM 요청 오류", exception=e)
+            raise ExternalServiceError("SECUDIUM", f"HTTP 요청 실패: {str(e)}")
         except Exception as e:
-            logger.error(f"SECUDIUM 로그인 오류: {e}")
-            return False
+            logger.error(f"SECUDIUM 로그인 중 예상치 못한 오류", exception=e)
+            raise
     
     def collect_from_web(self) -> List[BlacklistEntry]:
         """웹에서 SECUDIUM 데이터 수집 - 게시판의 엑셀 파일 다운로드"""
-        if not self.authenticated and not self.login():
-            logger.error("로그인 실패로 웹 수집 불가")
-            return self.collect_from_file()  # 폴백: 파일 기반 수집
+        try:
+            if not self.authenticated and not self.login():
+                logger.warning("로그인 실패로 파일 기반 수집 시도")
+                return self.collect_from_file()
+        except ExternalServiceError:
+            logger.warning("웹 수집 실패, 파일 기반 수집으로 전환")
+            return self.collect_from_file()
         
-        logger.info("🔄 SECUDIUM 웹 데이터 수집 시작...")
-        logger.info(f"📅 수집 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("SECUDIUM 웹 데이터 수집 시작", 
+                   timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         
         try:
             # 블랙리스트 게시판 조회
@@ -290,7 +335,8 @@ class SecudiumCollector:
                                 # 엑셀에서 IP 추출
                                 try:
                                     df = pd.read_excel(temp_file, engine='openpyxl')
-                                    logger.info(f"엑셀 로드: {df.shape[0]}행 x {df.shape[1]}열")
+                                    logger.info(f"엑셀 로드 성공", 
+                                              rows=df.shape[0], columns=df.shape[1], file=file_name)
                                     
                                     # 모든 컬럼에서 IP 찾기
                                     for col in df.columns:
@@ -303,10 +349,12 @@ class SecudiumCollector:
                                                         collected_ips.add(str_value)
                                     
                                     os.remove(temp_file)
-                                    logger.info(f"{file_name}에서 {len(collected_ips)}개 IP 수집")
+                                    logger.info(f"IP 수집 완료", 
+                                              file=file_name, ip_count=len(collected_ips))
                                     
-                                except Exception as e:
-                                    logger.error(f"엑셀 파싱 오류: {e}")
+                                except pd.errors.ExcelFileError as e:
+                                    logger.warning(f"XLSX 파싱 실패, XLS 형식 시도", 
+                                                 exception=e, file=file_name)
                                     # XLS 형식으로 재시도
                                     try:
                                         df = pd.read_excel(temp_file, engine='xlrd')
@@ -317,16 +365,20 @@ class SecudiumCollector:
                                                     if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
                                                         if self._is_valid_ip(str_value):
                                                             collected_ips.add(str_value)
-                                    except:
-                                        pass
-                                    finally:
-                                        if os.path.exists(temp_file):
-                                            os.remove(temp_file)
+                                        logger.info(f"XLS 형식으로 IP 수집 성공", 
+                                                  file=file_name, ip_count=len(collected_ips))
+                                    except Exception as xe:
+                                        logger.error(f"Excel 파일 처리 실패", 
+                                                   exception=xe, file=file_name)
+                                finally:
+                                    if os.path.exists(temp_file):
+                                        os.remove(temp_file)
                             else:
                                 logger.warning(f"다운로드 실패: {dl_resp.status_code}")
                                 
                 except Exception as e:
-                    logger.error(f"게시글 처리 오류: {e}")
+                    logger.error(f"게시글 처리 오류", 
+                              exception=e, row_index=idx, title=title if 'title' in locals() else 'N/A')
                     continue
             
             if collected_ips:
@@ -378,9 +430,12 @@ class SecudiumCollector:
                 logger.warning("SECUDIUM 웹에서 IP 데이터를 찾을 수 없음 - 파일 기반으로 폴백")
                 return self.collect_from_file()  # 폴백: 파일 기반 수집
                 
+        except RequestException as e:
+            logger.error(f"SECUDIUM 웹 수집 HTTP 오류", exception=e)
+            raise ExternalServiceError("SECUDIUM", f"웹 수집 실패: {str(e)}")
         except Exception as e:
-            logger.error(f"SECUDIUM 웹 수집 오류: {e}")
-            return self.collect_from_file()  # 폴백: 파일 기반 수집
+            logger.error(f"SECUDIUM 웹 수집 중 예상치 못한 오류", exception=e)
+            raise CollectionError("SECUDIUM", f"웹 수집 실패: {str(e)}")
     
     def _extract_ips_from_json(self, data) -> List[str]:
         """JSON 데이터에서 IP 추출"""
@@ -514,30 +569,31 @@ class SecudiumCollector:
                 return False
                 
             return True
-        except:
+        except (ValueError, AttributeError) as e:
+            logger.debug(f"IP 유효성 검사 실패", ip=ip, exception=e)
             return False
     
     def auto_collect(self) -> Dict[str, Any]:
         """자동 수집 (웹 우선, 파일 폴백)"""
         try:
-            logger.info("SECUDIUM 자동 수집 시작 (웹 우선)")
+            logger.info("SECUDIUM 자동 수집 시작")
             
             # 웹에서 데이터 수집 시도
-            collected_data = self.collect_from_web()
+            try:
+                collected_data = self.collect_from_web()
+            except (CollectionError, ExternalServiceError) as e:
+                logger.warning(f"웹 수집 실패, 파일 수집 시도", exception=e)
+                collected_data = self.collect_from_file()
             
             if collected_data:
                 # 결과 저장
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 result_file = os.path.join(self.secudium_dir, f'collected_{timestamp}.json')
                 
-                with open(result_file, 'w', encoding='utf-8') as f:
-                    json.dump({
-                        'source': 'SECUDIUM',
-                        'collected_at': datetime.now().isoformat(),
-                        'total_ips': len(collected_data),
-                        'ips': [entry.ip_address for entry in collected_data],
-                        'method': 'web_scraping'
-                    }, f, indent=2, ensure_ascii=False)
+                safe_execute(
+                    lambda: self._save_collection_result(result_file, collected_data),
+                    error_message="수집 결과 저장 실패"
+                )
                 
                 return {
                     'success': True,
@@ -553,12 +609,23 @@ class SecudiumCollector:
                 }
                 
         except Exception as e:
-            logger.error(f"SECUDIUM 수집 중 오류: {e}")
+            logger.error(f"SECUDIUM 자동 수집 중 예상치 못한 오류", exception=e)
             return {
                 'success': False,
                 'message': f'수집 오류: {str(e)}',
                 'total_collected': 0
             }
+    
+    def _save_collection_result(self, filepath: str, data: List[BlacklistEntry]):
+        """수집 결과 저장"""
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump({
+                'source': 'SECUDIUM',
+                'collected_at': datetime.now().isoformat(),
+                'total_ips': len(data),
+                'ips': [entry.ip_address for entry in data],
+                'method': 'web_scraping'
+            }, f, indent=2, ensure_ascii=False)
     
     def collect_blacklist_data(self, count: int = 100) -> List[Dict[str, Any]]:
         """블랙리스트 데이터 수집 (호환성 메서드)"""

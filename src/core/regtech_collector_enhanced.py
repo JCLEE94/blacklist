@@ -5,7 +5,6 @@ Enhanced REGTECH 수집기 - 안정성 및 오류 처리 강화 버전
 
 import os
 import json
-import logging
 import time
 import requests
 from datetime import datetime, timedelta
@@ -19,18 +18,26 @@ import io
 import tempfile
 from urllib.parse import urljoin
 import traceback
+from requests.exceptions import RequestException, Timeout, ConnectionError
 
 try:
     import pandas as pd
     PANDAS_AVAILABLE = True
 except ImportError:
     PANDAS_AVAILABLE = False
-    logging.warning("pandas not available - Excel download will not work")
 
 from src.core.models import BlacklistEntry
 from src.config.settings import settings
+from src.utils.error_handler import (
+    CollectionError, ExternalServiceError, retry_on_error,
+    handle_api_errors, safe_execute
+)
+from src.utils.structured_logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+if not PANDAS_AVAILABLE:
+    logger.warning("pandas not available - Excel download will not work")
 
 
 @dataclass
@@ -122,10 +129,17 @@ class EnhancedRegtechCollector:
                     self.stats.source_method = method_name.lower().replace(' ', '_')
                     break
                 else:
-                    logger.warning(f"❌ {method_name} 실패 또는 데이터 없음")
+                    logger.warning(f"{method_name} 실패 또는 데이터 없음", method=method_name)
                     
+            except CollectionError as e:
+                logger.error(f"{method_name} 수집 오류", 
+                           exception=e, method=method_name)
+                self.stats.last_error = str(e)
+                self.stats.error_count += 1
+                continue
             except Exception as e:
-                logger.error(f"❌ {method_name} 중 오류: {e}")
+                logger.error(f"{method_name} 중 예상치 못한 오류", 
+                           exception=e, method=method_name)
                 self.stats.last_error = str(e)
                 self.stats.error_count += 1
                 continue
@@ -170,8 +184,14 @@ class EnhancedRegtechCollector:
                 if result:
                     return result
                     
+            except RequestException as e:
+                logger.error(f"Excel 수집 HTTP 오류", 
+                           exception=e, attempt=attempt + 1, max_attempts=self.max_retries)
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay)
             except Exception as e:
-                logger.error(f"Excel 수집 오류 (시도 {attempt + 1}): {e}")
+                logger.error(f"Excel 수집 예상치 못한 오류", 
+                           exception=e, attempt=attempt + 1)
                 if attempt < self.max_retries - 1:
                     time.sleep(self.retry_delay)
                     
@@ -261,6 +281,7 @@ class EnhancedRegtechCollector:
         
         return session
     
+    @retry_on_error(max_attempts=3, delay=2.0, exceptions=(RequestException,))
     def _perform_enhanced_login(self, session: requests.Session) -> bool:
         """강화된 로그인 처리"""
         try:
@@ -272,7 +293,7 @@ class EnhancedRegtechCollector:
             
             if not username or not password:
                 logger.error("REGTECH 인증 정보 없음")
-                return False
+                raise CollectionError("REGTECH", "인증 정보가 설정되지 않았습니다")
             
             logger.info(f"🔐 REGTECH 로그인 시작 (사용자: {username})")
             
@@ -282,8 +303,10 @@ class EnhancedRegtechCollector:
             
             main_resp = session.get(main_url)
             if main_resp.status_code != 200:
-                logger.error(f"메인 페이지 접속 실패: {main_resp.status_code}")
-                return False
+                logger.error(f"메인 페이지 접속 실패", 
+                           status_code=main_resp.status_code, url=main_url)
+                raise ExternalServiceError("REGTECH", 
+                                         f"메인 페이지 접속 실패: HTTP {main_resp.status_code}")
             
             time.sleep(1)
             
@@ -363,10 +386,15 @@ class EnhancedRegtechCollector:
                 logger.error(f"로그인 확인 실패: {verify_resp.status_code}")
                 return False
                 
+        except (Timeout, ConnectionError) as e:
+            logger.error(f"REGTECH 연결 오류", exception=e)
+            raise ExternalServiceError("REGTECH", f"서버 연결 실패: {str(e)}")
+        except RequestException as e:
+            logger.error(f"REGTECH 요청 오류", exception=e)
+            raise ExternalServiceError("REGTECH", f"HTTP 요청 실패: {str(e)}")
         except Exception as e:
-            logger.error(f"로그인 중 예외 발생: {e}")
-            logger.debug(traceback.format_exc())
-            return False
+            logger.error(f"REGTECH 로그인 중 예상치 못한 오류", exception=e)
+            raise
     
     def _download_excel_data_enhanced(self, session: requests.Session, 
                                      start_date: str, end_date: str) -> List[BlacklistEntry]:
@@ -490,7 +518,8 @@ class EnhancedRegtechCollector:
                         entries.append(entry)
                         
                     except Exception as e:
-                        logger.debug(f"행 {idx} 처리 오류: {e}")
+                        logger.debug(f"행 처리 오류", 
+                                   exception=e, row_index=idx, ip=ip if 'ip' in locals() else 'N/A')
                         continue
                 
                 # 중복 제거
@@ -499,15 +528,19 @@ class EnhancedRegtechCollector:
                 logger.info(f"✅ Excel에서 {len(unique_entries)}개 고유 IP 추출")
                 return unique_entries
                 
+            except pd.errors.ParserError as e:
+                logger.error(f"Excel 파싱 오류", exception=e)
+                raise CollectionError("REGTECH", "Excel 파일 파싱 실패")
             except Exception as e:
-                logger.error(f"Excel 파싱 오류: {e}")
-                logger.debug(traceback.format_exc())
-                return []
+                logger.error(f"Excel 처리 중 예상치 못한 오류", exception=e)
+                raise CollectionError("REGTECH", f"Excel 처리 실패: {str(e)}")
                 
+        except RequestException as e:
+            logger.error(f"Excel 다운로드 HTTP 오류", exception=e)
+            raise ExternalServiceError("REGTECH", f"Excel 다운로드 실패: {str(e)}")
         except Exception as e:
-            logger.error(f"Excel 다운로드 중 오류: {e}")
-            logger.debug(traceback.format_exc())
-            return []
+            logger.error(f"Excel 다운로드 중 예상치 못한 오류", exception=e)
+            raise
     
     def _collect_html_enhanced(self, session: requests.Session, start_date: str, 
                               end_date: str, max_pages: int, page_size: int) -> List[BlacklistEntry]:
@@ -625,7 +658,8 @@ class EnhancedRegtechCollector:
                                 entries.append(entry)
                                 
                             except Exception as e:
-                                logger.debug(f"행 파싱 오류: {e}")
+                                logger.debug(f"HTML 행 파싱 오류", 
+                                          exception=e, row_data=str(cells)[:100])
                                 continue
             
             # 결과가 없으면 다른 구조 시도
@@ -644,8 +678,8 @@ class EnhancedRegtechCollector:
             return entries
             
         except Exception as e:
-            logger.error(f"HTML 파싱 오류: {e}")
-            return []
+            logger.error(f"HTML 파싱 중 예상치 못한 오류", exception=e)
+            raise CollectionError("REGTECH", f"HTML 파싱 실패: {str(e)}")
     
     def _is_valid_ip(self, ip: str) -> bool:
         """IP 유효성 검증 (강화)"""
