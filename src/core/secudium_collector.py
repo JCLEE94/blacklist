@@ -352,7 +352,7 @@ class SecudiumCollector:
                                     logger.info(f"IP 수집 완료", 
                                               file=file_name, ip_count=len(collected_ips))
                                     
-                                except pd.errors.ExcelFileError as e:
+                                except Exception as e:
                                     logger.warning(f"XLSX 파싱 실패, XLS 형식 시도", 
                                                  exception=e, file=file_name)
                                     # XLS 형식으로 재시도

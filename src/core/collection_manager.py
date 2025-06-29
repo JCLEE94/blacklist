@@ -545,7 +545,7 @@ class CollectionManager:
         try:
             logger.info("SECUDIUM 수집 시작")
             
-            # HAR 기반 SECUDIUM 수집기 import 및 실행
+            # HAR 기반 SECUDIUM 수집기 우선 시도
             try:
                 from .har_based_secudium_collector import HarBasedSecudiumCollector
                 # data 디렉토리 경로 전달
@@ -553,6 +553,7 @@ class CollectionManager:
                 collector = HarBasedSecudiumCollector(data_dir=data_dir)
                 
                 # 수집 실행 (HAR 기반 auto_collect 사용)
+                logger.info("HAR 기반 SECUDIUM 수집기 사용")
                 result = collector.auto_collect(db_path=self.db_path)
                 
                 if result.get('success', False):
@@ -566,27 +567,93 @@ class CollectionManager:
                     
                     return {
                         'success': True,
-                        'message': f'SECUDIUM 수집 완료: {ip_count:,}개 IP',
+                        'message': f'SECUDIUM 수집 완료: {ip_count:,}개 IP (HAR 기반)',
                         'source': 'secudium',
                         'timestamp': datetime.now().isoformat(),
                         'details': result
                     }
                 else:
+                    # HAR 기반 수집기 실패 시 일반 수집기로 폴백
+                    logger.warning("HAR 기반 수집기 실패, 일반 수집기로 폴백")
+                    from .secudium_collector import SecudiumCollector
+                    collector = SecudiumCollector(data_dir=data_dir)
+                    
+                    # 웹 수집 시도
+                    collected_data = collector.collect_from_web()
+                    
+                    if collected_data:
+                        # 데이터베이스에 저장
+                        saved_count = self._save_ips_to_database(collected_data, 'SECUDIUM')
+                        
+                        # 수집 성공
+                        self.sources['secudium']['last_collection'] = datetime.now().isoformat()
+                        self.sources['secudium']['status'] = 'active'
+                        
+                        # IP 수 업데이트
+                        ip_count = self._get_source_ip_count('SECUDIUM')
+                        self.sources['secudium']['total_ips'] = ip_count
+                        
+                        return {
+                            'success': True,
+                            'message': f'SECUDIUM 수집 완료: {saved_count:,}개 IP 저장 (총 {ip_count:,}개)',
+                            'source': 'secudium',
+                            'timestamp': datetime.now().isoformat(),
+                            'details': {
+                                'collected': len(collected_data),
+                                'saved': saved_count,
+                                'total_in_db': ip_count,
+                                'collector': 'standard'
+                            }
+                        }
+                    else:
+                        return {
+                            'success': False,
+                            'message': 'SECUDIUM 수집 실패: 모든 방법으로 데이터를 가져오지 못했습니다',
+                            'source': 'secudium',
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    
+            except ImportError as e:
+                # 일반 수집기만 시도
+                logger.warning(f"HAR 기반 수집기 import 실패: {e}, 일반 수집기 사용")
+                from .secudium_collector import SecudiumCollector
+                data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
+                collector = SecudiumCollector(data_dir=data_dir)
+                
+                # 웹 수집 시도
+                collected_data = collector.collect_from_web()
+                
+                if collected_data:
+                    # 데이터베이스에 저장
+                    saved_count = self._save_ips_to_database(collected_data, 'SECUDIUM')
+                    
+                    # 수집 성공
+                    self.sources['secudium']['last_collection'] = datetime.now().isoformat()
+                    self.sources['secudium']['status'] = 'active'
+                    
+                    # IP 수 업데이트
+                    ip_count = self._get_source_ip_count('SECUDIUM')
+                    self.sources['secudium']['total_ips'] = ip_count
+                    
+                    return {
+                        'success': True,
+                        'message': f'SECUDIUM 수집 완료: {saved_count:,}개 IP 저장 (총 {ip_count:,}개)',
+                        'source': 'secudium',
+                        'timestamp': datetime.now().isoformat(),
+                        'details': {
+                            'collected': len(collected_data),
+                            'saved': saved_count,
+                            'total_in_db': ip_count,
+                            'collector': 'standard'
+                        }
+                    }
+                else:
                     return {
                         'success': False,
-                        'message': f'SECUDIUM 수집 실패: {result.get("error", "Unknown error")}',
+                        'message': 'SECUDIUM 수집 실패: 데이터를 가져오지 못했습니다',
                         'source': 'secudium',
                         'timestamp': datetime.now().isoformat()
                     }
-                    
-            except ImportError as e:
-                logger.error(f"SECUDIUM 수집기 import 실패: {e}")
-                return {
-                    'success': False,
-                    'message': f'SECUDIUM 수집기를 찾을 수 없습니다: {e}',
-                    'source': 'secudium',
-                    'timestamp': datetime.now().isoformat()
-                }
                 
         except Exception as e:
             logger.error(f"SECUDIUM 수집 오류: {e}")

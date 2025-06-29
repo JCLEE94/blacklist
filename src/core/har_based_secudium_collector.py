@@ -404,10 +404,45 @@ class HarBasedSecudiumCollector:
             # IP 패턴
             ip_pattern = r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
             
-            # 모든 열에서 IP 찾기
+            # 파일명에서 날짜 추출 시도
+            file_date = self._extract_date_from_filename(excel_path)
+            
+            logger.info(f"Excel 컬럼: {list(df.columns)}")
+            logger.info(f"Excel 행 수: {len(df)}")
+            
+            # 날짜 컬럼 찾기
+            date_columns = []
             for col in df.columns:
-                for value in df[col].dropna():
-                    if isinstance(value, str):
+                col_str = str(col).lower()
+                if any(keyword in col_str for keyword in ['date', '날짜', '등록', '탐지', 'reg', 'detect']):
+                    date_columns.append(col)
+            
+            logger.info(f"발견된 날짜 컬럼: {date_columns}")
+            
+            # 행별로 처리하여 IP와 날짜 매핑
+            for index, row in df.iterrows():
+                row_date = file_date  # 기본값
+                
+                # 행에서 날짜 찾기
+                for date_col in date_columns:
+                    date_value = row.get(date_col)
+                    if pd.notna(date_value):
+                        try:
+                            if isinstance(date_value, pd.Timestamp):
+                                row_date = date_value.strftime('%Y-%m-%d')
+                            elif isinstance(date_value, str):
+                                # 문자열 날짜 파싱
+                                parsed = pd.to_datetime(date_value, errors='coerce')
+                                if pd.notna(parsed):
+                                    row_date = parsed.strftime('%Y-%m-%d')
+                        except:
+                            pass
+                        break
+                
+                # 행에서 IP 찾기
+                for col in df.columns:
+                    value = row.get(col)
+                    if pd.notna(value) and isinstance(value, str):
                         # IP 패턴 매칭
                         ips_found = re.findall(ip_pattern, value)
                         for ip in ips_found:
@@ -416,6 +451,7 @@ class HarBasedSecudiumCollector:
                                 ip_data.append({
                                     'ip': ip,
                                     'source': 'SECUDIUM',
+                                    'detection_date': row_date,
                                     'collected_at': datetime.now().isoformat(),
                                     'from_excel': True
                                 })
@@ -426,6 +462,40 @@ class HarBasedSecudiumCollector:
         except Exception as e:
             logger.error(f"Excel 파싱 중 오류: {e}")
             return []
+    
+    def _extract_date_from_filename(self, filepath: str) -> str:
+        """파일명에서 날짜 추출"""
+        try:
+            filename = Path(filepath).name
+            
+            # 날짜 패턴들
+            date_patterns = [
+                r'(\d{4})(\d{2})(\d{2})',      # YYYYMMDD
+                r'(\d{4})-(\d{2})-(\d{2})',   # YYYY-MM-DD
+                r'(\d{4})_(\d{2})_(\d{2})',   # YYYY_MM_DD
+                r'(\d{4})\.(\d{2})\.(\d{2})', # YYYY.MM.DD
+                r'(\d{2})년\s*(\d{2})월',      # 24년 06월
+            ]
+            
+            for pattern in date_patterns:
+                match = re.search(pattern, filename)
+                if match:
+                    if len(match.groups()) == 3:
+                        year, month, day = match.groups()
+                        return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+                    elif len(match.groups()) == 2:  # 년월 패턴
+                        year, month = match.groups()
+                        # 2024년이라 가정하고 해당 월의 마지막 날 사용
+                        if len(year) == 2:
+                            year = f"20{year}"
+                        return f"{year}-{month.zfill(2)}-01"
+            
+            # 패턴을 찾지 못한 경우 오늘 날짜
+            return datetime.now().strftime('%Y-%m-%d')
+            
+        except Exception as e:
+            logger.warning(f"파일명 날짜 추출 실패: {e}")
+            return datetime.now().strftime('%Y-%m-%d')
     
     def download_excel(self) -> Optional[str]:
         """Excel 파일 다운로드 (HAR에서 확인된 방식)"""
@@ -550,14 +620,19 @@ class HarBasedSecudiumCollector:
             conn = sqlite3.connect(str(db_file_path))
             cursor = conn.cursor()
             
-            # 테이블 생성 (없는 경우)
+            # 테이블 생성 (없는 경우) - 모든 필요한 컬럼 포함
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS blacklist_ip (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     ip_address TEXT NOT NULL,
                     source TEXT NOT NULL,
-                    added_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    country TEXT DEFAULT 'Unknown',
+                    reason TEXT,
+                    detection_date TEXT,
+                    threat_level TEXT DEFAULT 'high',
                     is_active INTEGER DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(ip_address, source)
                 )
             ''')
@@ -567,12 +642,21 @@ class HarBasedSecudiumCollector:
                 "UPDATE blacklist_ip SET is_active = 0 WHERE source = 'SECUDIUM'"
             )
             
-            # 새 데이터 삽입
+            # 새 데이터 삽입 - 오늘 날짜를 detection_date로 사용
+            today_date = datetime.now().strftime('%Y-%m-%d')
             for item in ip_data:
                 cursor.execute('''
-                    INSERT OR REPLACE INTO blacklist_ip (ip_address, source, is_active)
-                    VALUES (?, ?, 1)
-                ''', (item['ip'], 'SECUDIUM'))
+                    INSERT OR REPLACE INTO blacklist_ip 
+                    (ip_address, source, country, reason, detection_date, threat_level, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, 1)
+                ''', (
+                    item['ip'], 
+                    'SECUDIUM',
+                    'Unknown',
+                    'SECUDIUM',
+                    item.get('detection_date', today_date),  # 원본 날짜가 있으면 사용, 없으면 오늘
+                    'high'
+                ))
             
             conn.commit()
             conn.close()
