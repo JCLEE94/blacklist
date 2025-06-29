@@ -86,7 +86,7 @@ class EnhancedRegtechCollector:
         
         logger.info(f"Enhanced REGTECH 수집기 초기화 완료: {self.regtech_dir}")
     
-    def collect_from_web(self, max_pages: int = 5, page_size: int = 100, 
+    def collect_from_web(self, max_pages: int = 25, page_size: int = 100, 
                         parallel_workers: int = 1, start_date: str = None, 
                         end_date: str = None) -> List[BlacklistEntry]:
         """
@@ -563,7 +563,7 @@ class EnhancedRegtechCollector:
                     'endDate': end_date,
                     'findCondition': 'all',
                     'findKeyword': '',
-                    'size': str(page_size)
+                    'size': '1000'  # 페이지당 1000개 요청
                 }
                 
                 # 헤더
