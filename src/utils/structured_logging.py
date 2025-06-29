@@ -375,7 +375,7 @@ def get_logger(name: str) -> StructuredLogger:
 def setup_request_logging(app):
     """Flask 요청 로깅 설정"""
     import uuid
-    from flask import g
+    from flask import g, request
     
     logger = get_logger("request")
     
