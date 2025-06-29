@@ -215,7 +215,7 @@ async function loadSettings() {
     try {
         showSpinner(true);
         
-        const response = await fetch('/settings/api/settings');
+        const response = await fetch('/api/settings');
         const data = await response.json();
         
         if (data.success) {
@@ -453,7 +453,7 @@ async function saveAllSettings() {
     }
     
     try {
-        const response = await fetch('/settings/api/settings', {
+        const response = await fetch('/api/settings', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -482,7 +482,7 @@ async function saveAllSettings() {
 
 async function saveIndividualSetting(key, value, type, category) {
     try {
-        const response = await fetch(`/settings/api/settings/${key}`, {
+        const response = await fetch(`/api/settings/${key}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -513,7 +513,7 @@ async function resetAllSettings() {
     }
     
     try {
-        const response = await fetch('/settings/api/settings/reset', {
+        const response = await fetch('/api/settings/reset', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
