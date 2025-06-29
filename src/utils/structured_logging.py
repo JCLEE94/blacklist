@@ -381,8 +381,16 @@ def setup_request_logging(app):
     
     @app.before_request
     def before_request():
-        g.request_id = str(uuid.uuid4())
-        g.start_time = datetime.utcnow()
+        # request_id가 없을 때만 설정
+        if not hasattr(g, 'request_id'):
+            g.request_id = str(uuid.uuid4())
+        
+        # start_time이 없을 때만 설정 (real_time_monitoring에서 이미 설정할 수 있음)
+        if not hasattr(g, 'start_time'):
+            g.start_time = datetime.utcnow()
+        
+        # 로깅을 위해 시간을 datetime으로 저장
+        g.log_start_time = datetime.utcnow()
         
         logger.info("Request started", 
                    request_id=g.request_id,
@@ -392,8 +400,8 @@ def setup_request_logging(app):
     
     @app.after_request
     def after_request(response):
-        if hasattr(g, 'start_time'):
-            duration = (datetime.utcnow() - g.start_time).total_seconds()
+        if hasattr(g, 'log_start_time'):
+            duration = (datetime.utcnow() - g.log_start_time).total_seconds()
             
             logger.info("Request completed",
                        request_id=getattr(g, 'request_id', 'unknown'),
