@@ -609,7 +609,7 @@ class HarBasedSecudiumCollector:
             return False
     
     def save_to_database(self, ip_data: List[Dict[str, Any]], db_path: str = None) -> bool:
-        """데이터베이스에 저장"""
+        """데이터베이스에 저장 - 기존 스키마 사용 (ip 컬럼)"""
         try:
             if db_path:
                 db_file_path = Path(db_path)
@@ -620,52 +620,47 @@ class HarBasedSecudiumCollector:
             conn = sqlite3.connect(str(db_file_path))
             cursor = conn.cursor()
             
-            # 테이블 생성 (없는 경우) - 모든 필요한 컬럼 포함
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS blacklist_ip (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip_address TEXT NOT NULL,
-                    source TEXT NOT NULL,
-                    country TEXT DEFAULT 'Unknown',
-                    reason TEXT,
-                    detection_date TEXT,
-                    threat_level TEXT DEFAULT 'high',
-                    is_active INTEGER DEFAULT 1,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(ip_address, source)
-                )
-            ''')
-            
-            # 기존 SECUDIUM 데이터 비활성화
+            # 기존 SECUDIUM 데이터 비활성화 (기존 스키마의 ip 컬럼 사용)
             cursor.execute(
                 "UPDATE blacklist_ip SET is_active = 0 WHERE source = 'SECUDIUM'"
             )
             
-            # 새 데이터 삽입 - 오늘 날짜를 detection_date로 사용
-            today_date = datetime.now().strftime('%Y-%m-%d')
+            # 새 데이터 삽입 - Excel에서 추출한 detection_date 사용
+            saved_count = 0
             for item in ip_data:
-                cursor.execute('''
-                    INSERT OR REPLACE INTO blacklist_ip 
-                    (ip_address, source, country, reason, detection_date, threat_level, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, 1)
-                ''', (
-                    item['ip'], 
-                    'SECUDIUM',
-                    'Unknown',
-                    'SECUDIUM',
-                    item.get('detection_date', today_date),  # 원본 날짜가 있으면 사용, 없으면 오늘
-                    'high'
-                ))
+                try:
+                    # 기존 스키마에 맞는 INSERT (ip 컬럼 사용)
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO blacklist_ip 
+                        (ip, source, country, attack_type, detection_date, threat_level, is_active, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
+                    ''', (
+                        item['ip'], 
+                        'SECUDIUM',
+                        'Unknown',
+                        'blacklist',
+                        item.get('detection_date'),  # Excel에서 추출한 원본 날짜 사용
+                        'high'
+                    ))
+                    saved_count += 1
+                    
+                    if saved_count <= 5:  # 처음 5개만 로깅
+                        logger.info(f"SECUDIUM IP 저장: {item['ip']} (detection_date: {item.get('detection_date')})")
+                        
+                except Exception as e:
+                    logger.warning(f"IP 저장 중 오류 ({item.get('ip', 'unknown')}): {e}")
+                    continue
             
             conn.commit()
             conn.close()
             
-            logger.info(f"데이터베이스에 {len(ip_data)}개 IP 저장 완료")
+            logger.info(f"데이터베이스에 {saved_count}개 SECUDIUM IP 저장 완료 (Excel 날짜 포함)")
             return True
             
         except Exception as e:
             logger.error(f"데이터베이스 저장 실패: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
     
     def auto_collect(self, db_path: str = None) -> Dict[str, Any]:
