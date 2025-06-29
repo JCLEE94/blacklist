@@ -1633,7 +1633,7 @@ def get_raw_data():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Query all data
+        # Query all data with detection_date
         query = """
         SELECT 
             id,
@@ -1641,6 +1641,7 @@ def get_raw_data():
             source,
             country,
             attack_type,
+            detection_date,
             created_at,
             extra_data
         FROM blacklist_ip
@@ -1659,7 +1660,8 @@ def get_raw_data():
                 'source': row['source'],
                 'country': row['country'],
                 'attack_type': row['attack_type'],
-                'created_at': row['created_at'],
+                'detection_date': row['detection_date'],  # 원본 등록일 (엑셀 기준)
+                'created_at': row['created_at'],          # 수집일
                 'extra_data': row['extra_data']
             })
         

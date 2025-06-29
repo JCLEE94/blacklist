@@ -527,6 +527,74 @@ class UnifiedBlacklistManager:
             logger.error(f"Failed to get active IPs from database: {e}")
             # Fallback to file-based approach
             return self._get_active_ips_from_files()
+
+    def get_all_active_ips(self) -> List[Dict[str, Any]]:
+        """Get all active IPs with detailed information including detection_date"""
+        try:
+            # Use direct SQLite connection
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row  # Enable column access by name
+            cursor = conn.cursor()
+            
+            # Check if is_active column exists
+            cursor.execute("PRAGMA table_info(blacklist_ip)")
+            columns = [col[1] for col in cursor.fetchall()]
+            
+            # Build query based on available columns
+            base_query = """
+                SELECT ip, source, country, attack_type, detection_date, created_at, 
+                       threat_level, reason, extra_data
+                FROM blacklist_ip
+            """
+            
+            if 'is_active' in columns:
+                query = base_query + " WHERE is_active = 1 ORDER BY created_at DESC"
+            else:
+                query = base_query + " ORDER BY created_at DESC"
+                
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            conn.close()
+            
+            # Convert to list of dictionaries with proper date handling
+            result = []
+            for row in rows:
+                ip_data = {
+                    'ip': row['ip'],
+                    'source': row['source'] or 'Unknown',
+                    'country': row['country'] or 'Unknown', 
+                    'attack_type': row['attack_type'] or 'Unknown',
+                    'detection_date': row['detection_date'],  # 원본 등록일 (엑셀 기준)
+                    'added_date': row['created_at'],          # 시스템 수집일
+                    'threat_level': row['threat_level'] or 'high',
+                    'reason': row['reason'] or row['attack_type'] or 'Unknown',
+                    'extra_data': row['extra_data'],
+                    'risk_score': 0.8  # Default risk score for filtering
+                }
+                result.append(ip_data)
+            
+            logger.info(f"Retrieved {len(result)} active IPs with details from database")
+            return result
+                
+        except Exception as e:
+            logger.error(f"Failed to get detailed active IPs from database: {e}")
+            # Fallback to simple format
+            simple_ips = self.get_active_ips()
+            return [
+                {
+                    'ip': ip,
+                    'source': 'Unknown',
+                    'country': 'Unknown',
+                    'attack_type': 'Unknown', 
+                    'detection_date': datetime.now().strftime('%Y-%m-%d'),
+                    'added_date': datetime.now().isoformat(),
+                    'threat_level': 'high',
+                    'reason': 'Unknown',
+                    'extra_data': None,
+                    'risk_score': 0.8
+                }
+                for ip in simple_ips
+            ]
     
     def _get_active_ips_from_files(self) -> List[str]:
         """Fallback method to get IPs from files"""
