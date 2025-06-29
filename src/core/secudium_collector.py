@@ -338,15 +338,45 @@ class SecudiumCollector:
                                     logger.info(f"엑셀 로드 성공", 
                                               rows=df.shape[0], columns=df.shape[1], file=file_name)
                                     
-                                    # 모든 컬럼에서 IP 찾기
+                                    # 날짜 컬럼 찾기
+                                    date_columns = []
                                     for col in df.columns:
-                                        if df[col].dtype == 'object':
-                                            for value in df[col].dropna():
-                                                str_value = str(value).strip()
+                                        col_str = str(col).lower()
+                                        if any(keyword in col_str for keyword in ['date', '날짜', '등록', '탐지', 'reg', 'detect']):
+                                            date_columns.append(col)
+                                    
+                                    logger.info(f"발견된 날짜 컬럼: {date_columns}")
+                                    
+                                    # 행별로 IP와 날짜 매핑하여 수집
+                                    for index, row in df.iterrows():
+                                        row_date = self._extract_date_from_filename(file_name)  # 기본값
+                                        
+                                        # 행에서 날짜 찾기
+                                        for date_col in date_columns:
+                                            date_value = row.get(date_col)
+                                            if pd.notna(date_value):
+                                                try:
+                                                    if isinstance(date_value, pd.Timestamp):
+                                                        row_date = date_value.strftime('%Y-%m-%d')
+                                                    elif isinstance(date_value, str):
+                                                        # 문자열 날짜 파싱
+                                                        parsed = pd.to_datetime(date_value, errors='coerce')
+                                                        if pd.notna(parsed):
+                                                            row_date = parsed.strftime('%Y-%m-%d')
+                                                except:
+                                                    pass
+                                                break
+                                        
+                                        # 행에서 IP 찾기
+                                        for col in df.columns:
+                                            value = row.get(col)
+                                            if pd.notna(value) and isinstance(value, str):
+                                                str_value = value.strip()
                                                 # IP 패턴 확인
                                                 if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
                                                     if self._is_valid_ip(str_value):
-                                                        collected_ips.add(str_value)
+                                                        # IP와 날짜를 튜플로 저장
+                                                        collected_ips.add((str_value, row_date))
                                     
                                     os.remove(temp_file)
                                     logger.info(f"IP 수집 완료", 
@@ -358,13 +388,43 @@ class SecudiumCollector:
                                     # XLS 형식으로 재시도
                                     try:
                                         df = pd.read_excel(temp_file, engine='xlrd')
+                                        
+                                        # 날짜 컬럼 찾기 (XLS에서도)
+                                        date_columns = []
                                         for col in df.columns:
-                                            if df[col].dtype == 'object':
-                                                for value in df[col].dropna():
-                                                    str_value = str(value).strip()
-                                                    if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
-                                                        if self._is_valid_ip(str_value):
-                                                            collected_ips.add(str_value)
+                                            col_str = str(col).lower()
+                                            if any(keyword in col_str for keyword in ['date', '날짜', '등록', '탐지', 'reg', 'detect']):
+                                                date_columns.append(col)
+                                        
+                                        # 행별로 처리하여 IP와 날짜 매핑
+                                        for index, row in df.iterrows():
+                                            row_date = self._extract_date_from_filename(file_name)  # 기본값
+                                            
+                                            # 행에서 날짜 찾기
+                                            for date_col in date_columns:
+                                                date_value = row.get(date_col)
+                                                if pd.notna(date_value):
+                                                    try:
+                                                        if isinstance(date_value, pd.Timestamp):
+                                                            row_date = date_value.strftime('%Y-%m-%d')
+                                                        elif isinstance(date_value, str):
+                                                            parsed = pd.to_datetime(date_value, errors='coerce')
+                                                            if pd.notna(parsed):
+                                                                row_date = parsed.strftime('%Y-%m-%d')
+                                                    except:
+                                                        pass
+                                                    break
+                                            
+                                            # 행에서 IP 찾기
+                                            for col in df.columns:
+                                                if df[col].dtype == 'object':
+                                                    value = row.get(col)
+                                                    if pd.notna(value):
+                                                        str_value = str(value).strip()
+                                                        if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
+                                                            if self._is_valid_ip(str_value):
+                                                                collected_ips.add((str_value, row_date))
+                                        
                                         logger.info(f"XLS 형식으로 IP 수집 성공", 
                                                   file=file_name, ip_count=len(collected_ips))
                                     except Exception as xe:
@@ -382,15 +442,23 @@ class SecudiumCollector:
                     continue
             
             if collected_ips:
-                # BlacklistEntry 객체로 변환
+                # BlacklistEntry 객체로 변환 - 개별 날짜 사용
                 entries = []
-                for ip in collected_ips:
+                for ip_tuple in collected_ips:
+                    # collected_ips는 이제 (ip, date) 튜플의 집합
+                    if isinstance(ip_tuple, tuple) and len(ip_tuple) == 2:
+                        ip, detection_date = ip_tuple
+                    else:
+                        # 이전 형식 호환성 (단순 IP 문자열)
+                        ip = ip_tuple
+                        detection_date = self._extract_date_from_filename(file_name if 'file_name' in locals() else '')
+                    
                     entry = BlacklistEntry(
                         ip_address=ip,
                         country='Unknown',
                         reason='SECUDIUM',
                         source='SECUDIUM',
-                        reg_date=self._extract_date_from_filename(file_name),
+                        reg_date=detection_date,  # 엑셀에서 추출한 개별 날짜 사용
                         exp_date=None,
                         is_active=True,
                         threat_level='high',
@@ -418,11 +486,22 @@ class SecudiumCollector:
                 result_file = os.path.join(self.secudium_dir, f'collected_{timestamp}.json')
                 
                 with open(result_file, 'w', encoding='utf-8') as f:
+                    # IP 리스트를 적절한 형식으로 변환
+                    if collected_ips and isinstance(next(iter(collected_ips)), tuple):
+                        # 튜플 형태인 경우: (ip, date)
+                        ips_data = [{'ip': ip, 'detection_date': date} for ip, date in sorted(collected_ips)]
+                        ips_list = [ip for ip, date in sorted(collected_ips)]
+                    else:
+                        # 이전 형식 호환성
+                        ips_data = [{'ip': ip, 'detection_date': self._extract_date_from_filename(file_name if 'file_name' in locals() else '')} for ip in sorted(collected_ips)]
+                        ips_list = sorted(collected_ips)
+                    
                     json.dump({
                         'source': 'SECUDIUM',
                         'date': datetime.now().isoformat(),
                         'total_ips': len(collected_ips),
-                        'ips': sorted(collected_ips)
+                        'ips': ips_list,  # 호환성을 위한 단순 IP 리스트
+                        'ips_with_dates': ips_data  # 날짜가 포함된 상세 정보
                     }, f, indent=2, ensure_ascii=False)
                 
                 return entries
