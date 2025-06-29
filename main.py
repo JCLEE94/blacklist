@@ -24,6 +24,60 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# 데이터베이스 스키마 자동 수정
+def ensure_database_schema():
+    """데이터베이스 스키마 확인 및 수정"""
+    import sqlite3
+    
+    db_paths = [
+        '/app/instance/blacklist.db',
+        'instance/blacklist.db',
+        os.path.join(current_dir, 'instance', 'blacklist.db')
+    ]
+    
+    db_path = None
+    for path in db_paths:
+        if os.path.exists(path):
+            db_path = path
+            break
+    
+    if db_path:
+        logger.info(f"데이터베이스 스키마 확인 중: {db_path}")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # 현재 스키마 확인
+            cursor.execute("PRAGMA table_info(blacklist_ip)")
+            columns = cursor.fetchall()
+            column_names = [col[1] for col in columns]
+            
+            # 필요한 컬럼들 확인 및 추가
+            required_columns = {
+                'detection_date': 'TIMESTAMP',
+                'reason': 'TEXT',
+                'threat_level': 'VARCHAR(20)',
+                'is_active': 'BOOLEAN DEFAULT 1',
+                'updated_at': 'TIMESTAMP'
+            }
+            
+            for col_name, col_type in required_columns.items():
+                if col_name not in column_names:
+                    logger.info(f"Adding missing column: {col_name}")
+                    cursor.execute(f"ALTER TABLE blacklist_ip ADD COLUMN {col_name} {col_type}")
+            
+            conn.commit()
+            logger.info("✅ 데이터베이스 스키마 확인 완료")
+            
+        except Exception as e:
+            logger.error(f"스키마 수정 중 오류: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+# 애플리케이션 시작 전 스키마 확인
+ensure_database_schema()
+
 # Use app_compact as primary application
 try:
     from src.core.app_compact import create_compact_app
