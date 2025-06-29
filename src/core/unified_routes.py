@@ -644,11 +644,22 @@ def debug_database():
         
         debug_info = {}
         
+        # 설정에서 데이터베이스 경로 가져오기
+        from ..config.settings import settings
+        
+        db_uri = settings.database_uri
+        if db_uri.startswith('sqlite:///'):
+            primary_db_path = db_uri[10:]  # 'sqlite:///' 제거
+        elif db_uri.startswith('sqlite://'):
+            primary_db_path = db_uri[9:]   # 'sqlite://' 제거
+        else:
+            primary_db_path = str(settings.instance_dir / 'blacklist.db')
+        
         # Check multiple possible database paths
         possible_paths = [
-            '/app/instance/blacklist.db',
-            '/app/instance/secudium.db', 
-            './instance/blacklist.db',
+            primary_db_path,
+            str(settings.instance_dir / 'secudium.db'),
+            './instance/blacklist.db',  # 호환성을 위한 상대 경로
             './instance/secudium.db'
         ]
         

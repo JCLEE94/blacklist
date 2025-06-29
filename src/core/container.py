@@ -223,12 +223,9 @@ class BlacklistContainer(ServiceContainer):
         self.register_factory('metrics_collector', lambda: get_metrics_collector())
         self.register_factory('health_checker', lambda: get_health_checker())
         
-        # Blacklist Manager
-        import os
-        if os.path.exists('/app'):
-            blacklist_db_url = 'sqlite:////app/instance/blacklist.db'  # 4 slashes for absolute path
-        else:
-            blacklist_db_url = 'sqlite:///instance/blacklist.db'
+        # Blacklist Manager - 설정에서 데이터베이스 URI 가져오기
+        from ..config.settings import settings
+        blacklist_db_url = settings.database_uri
         
         self.register(
             'blacklist_manager',
@@ -237,18 +234,20 @@ class BlacklistContainer(ServiceContainer):
             dependencies={'cache': 'cache'}
         )
         
-        # Collection Manager
+        # Collection Manager - 설정 기반 경로 사용
         try:
             from .collection_manager import CollectionManager
-            import os
             
-            # Use absolute path in Docker
-            if os.path.exists('/app'):
-                db_path = '/app/instance/blacklist.db'
-                config_path = '/app/instance/collection_config.json'
+            # 설정에서 경로 가져오기
+            db_uri = settings.database_uri
+            if db_uri.startswith('sqlite:///'):
+                db_path = db_uri[10:]  # 'sqlite:///' 제거
+            elif db_uri.startswith('sqlite://'):
+                db_path = db_uri[9:]   # 'sqlite://' 제거
             else:
-                db_path = 'instance/blacklist.db'
-                config_path = 'instance/collection_config.json'
+                db_path = str(settings.instance_dir / 'blacklist.db')
+            
+            config_path = str(settings.instance_dir / 'collection_config.json')
             
             self.register(
                 'collection_manager',
