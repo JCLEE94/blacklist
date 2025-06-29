@@ -782,17 +782,23 @@ class UnifiedBlacklistService:
     def _save_log_to_db(self, log_entry: Dict[str, Any]):
         """로그를 데이터베이스에 저장"""
         try:
-            # 데이터베이스 경로 결정
+            # 데이터베이스 경로 결정 - 설정에서 가져오기
             db_path = None
             if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
                 db_path = self.blacklist_manager.db_path
             else:
-                # Fallback to default path
-                import os
-                if os.path.exists('/app'):
-                    db_path = '/app/instance/blacklist.db'
+                # 설정에서 데이터베이스 URI 가져오기
+                from ..config.settings import settings
+                
+                db_uri = settings.database_uri
+                # sqlite:///path/to/db.db 형식에서 경로 추출
+                if db_uri.startswith('sqlite:///'):
+                    db_path = db_uri[10:]  # 'sqlite:///' 제거
+                elif db_uri.startswith('sqlite://'):
+                    db_path = db_uri[9:]   # 'sqlite://' 제거
                 else:
-                    db_path = 'instance/blacklist.db'
+                    # Fallback - 설정에서 instance 디렉토리 사용
+                    db_path = str(settings.instance_dir / 'blacklist.db')
             
             # JSON으로 details 직렬화
             details_json = json.dumps(log_entry['details']) if log_entry['details'] else '{}'
@@ -817,17 +823,24 @@ class UnifiedBlacklistService:
     def _load_logs_from_db(self, limit: int = 100) -> list:
         """데이터베이스에서 로그 불러오기"""
         try:
-            # 데이터베이스 경로 결정
+            # 데이터베이스 경로 결정 - 설정에서 가져오기
             db_path = None
             if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
                 db_path = self.blacklist_manager.db_path
             else:
-                # Fallback to default path
-                import os
-                if os.path.exists('/app'):
-                    db_path = '/app/instance/blacklist.db'
+                # 설정에서 데이터베이스 URI 가져오기
+                from ..config.settings import settings
+                import re
+                
+                db_uri = settings.database_uri
+                # sqlite:///path/to/db.db 형식에서 경로 추출
+                if db_uri.startswith('sqlite:///'):
+                    db_path = db_uri[10:]  # 'sqlite:///' 제거
+                elif db_uri.startswith('sqlite://'):
+                    db_path = db_uri[9:]   # 'sqlite://' 제거
                 else:
-                    db_path = 'instance/blacklist.db'
+                    # Fallback - 설정에서 instance 디렉토리 사용
+                    db_path = str(settings.instance_dir / 'blacklist.db')
                     
             query = """
             SELECT timestamp, source, action, details
@@ -863,17 +876,23 @@ class UnifiedBlacklistService:
     def _ensure_log_table(self):
         """로그 테이블이 존재하는지 확인하고 생성"""
         try:
-            # 데이터베이스 경로 결정
+            # 데이터베이스 경로 결정 - 설정에서 가져오기
             db_path = None
             if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
                 db_path = self.blacklist_manager.db_path
             else:
-                # Fallback to default path
-                import os
-                if os.path.exists('/app'):
-                    db_path = '/app/instance/blacklist.db'
+                # 설정에서 데이터베이스 URI 가져오기
+                from ..config.settings import settings
+                
+                db_uri = settings.database_uri
+                # sqlite:///path/to/db.db 형식에서 경로 추출
+                if db_uri.startswith('sqlite:///'):
+                    db_path = db_uri[10:]  # 'sqlite:///' 제거
+                elif db_uri.startswith('sqlite://'):
+                    db_path = db_uri[9:]   # 'sqlite://' 제거
                 else:
-                    db_path = 'instance/blacklist.db'
+                    # Fallback - 설정에서 instance 디렉토리 사용
+                    db_path = str(settings.instance_dir / 'blacklist.db')
             
             query = """
             CREATE TABLE IF NOT EXISTS collection_logs (
