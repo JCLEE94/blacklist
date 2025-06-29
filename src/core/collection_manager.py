@@ -547,14 +547,19 @@ class CollectionManager:
             
             # HAR 기반 SECUDIUM 수집기 우선 시도
             try:
+                logger.info("HAR 기반 SECUDIUM 수집기 import 시도")
                 from .har_based_secudium_collector import HarBasedSecudiumCollector
+                logger.info("HAR 기반 SECUDIUM 수집기 import 성공")
+                
                 # data 디렉토리 경로 전달
                 data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
                 collector = HarBasedSecudiumCollector(data_dir=data_dir)
+                logger.info(f"HAR 기반 SECUDIUM 수집기 인스턴스 생성 완료 (data_dir: {data_dir})")
                 
                 # 수집 실행 (HAR 기반 auto_collect 사용)
-                logger.info("HAR 기반 SECUDIUM 수집기 사용")
+                logger.info("HAR 기반 SECUDIUM 수집기 사용하여 auto_collect 시작")
                 result = collector.auto_collect(db_path=self.db_path)
+                logger.info(f"HAR 기반 SECUDIUM 수집기 결과: {result}")
                 
                 if result.get('success', False):
                     # 수집 성공
@@ -615,10 +620,14 @@ class CollectionManager:
                     
             except ImportError as e:
                 # 일반 수집기만 시도
-                logger.warning(f"HAR 기반 수집기 import 실패: {e}, 일반 수집기 사용")
+                logger.error(f"HAR 기반 수집기 import 실패: {e}")
+                import traceback
+                logger.error(f"Import 실패 상세: {traceback.format_exc()}")
+                logger.warning("일반 수집기로 폴백")
                 from .secudium_collector import SecudiumCollector
                 data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
                 collector = SecudiumCollector(data_dir=data_dir)
+                logger.info(f"일반 SECUDIUM 수집기 인스턴스 생성 완료 (data_dir: {data_dir})")
                 
                 # 웹 수집 시도
                 collected_data = collector.collect_from_web()
