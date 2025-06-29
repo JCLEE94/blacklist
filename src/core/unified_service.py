@@ -781,10 +781,19 @@ class UnifiedBlacklistService:
 
     def _save_log_to_db(self, log_entry: Dict[str, Any]):
         """로그를 데이터베이스에 저장"""
-        if not self.blacklist_manager:
-            return
-            
         try:
+            # 데이터베이스 경로 결정
+            db_path = None
+            if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
+                db_path = self.blacklist_manager.db_path
+            else:
+                # Fallback to default path
+                import os
+                if os.path.exists('/app'):
+                    db_path = '/app/instance/blacklist.db'
+                else:
+                    db_path = 'instance/blacklist.db'
+            
             # JSON으로 details 직렬화
             details_json = json.dumps(log_entry['details']) if log_entry['details'] else '{}'
             
@@ -793,7 +802,7 @@ class UnifiedBlacklistService:
             VALUES (?, ?, ?, ?, datetime('now'))
             """
             
-            with sqlite3.connect(self.blacklist_manager.db_path) as conn:
+            with sqlite3.connect(db_path) as conn:
                 conn.execute(query, (
                     log_entry['timestamp'],
                     log_entry['source'],
@@ -807,10 +816,19 @@ class UnifiedBlacklistService:
             
     def _load_logs_from_db(self, limit: int = 100) -> list:
         """데이터베이스에서 로그 불러오기"""
-        if not self.blacklist_manager:
-            return []
-            
         try:
+            # 데이터베이스 경로 결정
+            db_path = None
+            if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
+                db_path = self.blacklist_manager.db_path
+            else:
+                # Fallback to default path
+                import os
+                if os.path.exists('/app'):
+                    db_path = '/app/instance/blacklist.db'
+                else:
+                    db_path = 'instance/blacklist.db'
+                    
             query = """
             SELECT timestamp, source, action, details
             FROM collection_logs
@@ -818,7 +836,7 @@ class UnifiedBlacklistService:
             LIMIT ?
             """
             
-            with sqlite3.connect(self.blacklist_manager.db_path) as conn:
+            with sqlite3.connect(db_path) as conn:
                 cursor = conn.execute(query, (limit,))
                 rows = cursor.fetchall()
                 
@@ -844,10 +862,19 @@ class UnifiedBlacklistService:
             
     def _ensure_log_table(self):
         """로그 테이블이 존재하는지 확인하고 생성"""
-        if not self.blacklist_manager:
-            return
-            
         try:
+            # 데이터베이스 경로 결정
+            db_path = None
+            if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
+                db_path = self.blacklist_manager.db_path
+            else:
+                # Fallback to default path
+                import os
+                if os.path.exists('/app'):
+                    db_path = '/app/instance/blacklist.db'
+                else:
+                    db_path = 'instance/blacklist.db'
+            
             query = """
             CREATE TABLE IF NOT EXISTS collection_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -859,7 +886,7 @@ class UnifiedBlacklistService:
             )
             """
             
-            with sqlite3.connect(self.blacklist_manager.db_path) as conn:
+            with sqlite3.connect(db_path) as conn:
                 conn.execute(query)
                 conn.commit()
                 
@@ -869,6 +896,8 @@ class UnifiedBlacklistService:
                 ON collection_logs(created_at DESC)
                 """)
                 conn.commit()
+                
+            self.logger.info(f"Collection logs table ensured at: {db_path}")
                 
         except Exception as e:
             self.logger.warning(f"Failed to create log table: {e}")
