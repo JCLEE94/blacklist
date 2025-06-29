@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+
+{% block title %}설정 관리{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .category-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .category-card:hover {
+        box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .category-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .category-title {
+        display: flex;
+        align-items: center;
+        margin: 0;
+    }
+    
+    .category-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+    
+    .category-body {
+        padding: 1.5rem;
+        display: none;
+    }
+    
+    .category-body.active {
+        display: block;
+    }
+    
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .setting-item:last-child {
+        border-bottom: none;
+    }
+    
+    .setting-info {
+        flex: 1;
+        margin-right: 1rem;
+    }
+    
+    .setting-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.25rem;
+    }
+    
+    .setting-description {
+        font-size: 0.875rem;
+        color: #666;
+        margin: 0;
+    }
+    
+    .setting-control {
+        min-width: 200px;
+    }
+    
+    .setting-value {
+        font-family: monospace;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        color: #495057;
+    }
+    
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+    
+    .save-button {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1000;
+        display: none;
+    }
+    
+    .alert {
+        margin-bottom: 1rem;
+    }
+    
+    .stats-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- 헤더 -->
+    <div class="stats-header">
+        <div class="row">
+            <div class="col-md-3 stat-item">
+                <div class="stat-value" id="totalSettings">-</div>
+                <div class="stat-label">총 설정 항목</div>
+            </div>
+            <div class="col-md-3 stat-item">
+                <div class="stat-value" id="activeCategories">-</div>
+                <div class="stat-label">설정 카테고리</div>
+            </div>
+            <div class="col-md-3 stat-item">
+                <div class="stat-value" id="modifiedSettings">0</div>
+                <div class="stat-label">변경된 설정</div>
+            </div>
+            <div class="col-md-3 stat-item">
+                <div class="stat-value">실시간</div>
+                <div class="stat-label">즉시 적용</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 알림 영역 -->
+    <div id="alertContainer"></div>
+
+    <!-- 로딩 스피너 -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">설정을 불러오는 중...</p>
+    </div>
+
+    <!-- 설정 카테고리들 -->
+    <div id="settingsContainer" style="display: none;">
+        <!-- 설정 카테고리들이 여기에 동적으로 로드됩니다 -->
+    </div>
+
+    <!-- 액션 버튼들 -->
+    <div class="d-flex justify-content-between mt-4">
+        <div>
+            <button class="btn btn-outline-secondary" onclick="resetAllSettings()">
+                <i class="bi bi-arrow-counterclockwise"></i> 기본값으로 리셋
+            </button>
+            <button class="btn btn-outline-info" onclick="exportSettings()">
+                <i class="bi bi-download"></i> 설정 내보내기
+            </button>
+        </div>
+        <div>
+            <button class="btn btn-primary" id="saveAllBtn" onclick="saveAllSettings()" style="display: none;">
+                <i class="bi bi-check-circle"></i> 모든 변경사항 저장
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 저장 버튼 (플로팅) -->
+<button class="btn btn-success btn-lg save-button" id="floatingSaveBtn" onclick="saveAllSettings()">
+    <i class="bi bi-check-circle"></i> 저장 (<span id="changedCount">0</span>)
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allSettings = {};
+let categoriesInfo = {};
+let modifiedSettings = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadSettings();
+});
+
+async function loadSettings() {
+    try {
+        showSpinner(true);
+        
+        const response = await fetch('/settings/api/settings');
+        const data = await response.json();
+        
+        if (data.success) {
+            allSettings = data.data.settings;
+            categoriesInfo = data.data.categories;
+            
+            renderSettings();
+            updateStats();
+        } else {
+            showAlert('error', '설정 로드 실패: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Settings load error:', error);
+        showAlert('error', '설정을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        showSpinner(false);
+    }
+}
+
+function renderSettings() {
+    const container = document.getElementById('settingsContainer');
+    container.innerHTML = '';
+    
+    Object.keys(allSettings).forEach(categoryKey => {
+        const categorySettings = allSettings[categoryKey];
+        const categoryInfo = categoriesInfo[categoryKey] || {
+            name: categoryKey,
+            description: '',
+            icon: 'bi-gear'
+        };
+        
+        const categoryCard = createCategoryCard(categoryKey, categoryInfo, categorySettings);
+        container.appendChild(categoryCard);
+    });
+    
+    container.style.display = 'block';
+}
+
+function createCategoryCard(categoryKey, categoryInfo, settings) {
+    const card = document.createElement('div');
+    card.className = 'category-card';
+    
+    card.innerHTML = `
+        <div class="category-header" onclick="toggleCategory('${categoryKey}')">
+            <div class="category-title">
+                <i class="${categoryInfo.icon} category-icon"></i>
+                <div>
+                    <h5 class="mb-0">${categoryInfo.name}</h5>
+                    <small>${categoryInfo.description}</small>
+                </div>
+            </div>
+            <i class="bi bi-chevron-down" id="chevron-${categoryKey}"></i>
+        </div>
+        <div class="category-body" id="body-${categoryKey}">
+            ${Object.keys(settings).map(key => createSettingItem(key, settings[key], categoryKey)).join('')}
+        </div>
+    `;
+    
+    return card;
+}
+
+function createSettingItem(key, value, category) {
+    // 설정 타입 추론
+    const settingType = inferSettingType(key, value);
+    const inputControl = createInputControl(key, value, settingType, category);
+    
+    return `
+        <div class="setting-item">
+            <div class="setting-info">
+                <div class="setting-name">${getSettingDisplayName(key)}</div>
+                <div class="setting-description">${getSettingDescription(key)}</div>
+            </div>
+            <div class="setting-control">
+                ${inputControl}
+            </div>
+        </div>
+    `;
+}
+
+function createInputControl(key, value, type, category) {
+    const inputId = `setting-${key}`;
+    
+    switch (type) {
+        case 'boolean':
+            const checked = value === true || value === 'true' ? 'checked' : '';
+            return `
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="${inputId}" 
+                           ${checked} onchange="onSettingChanged('${key}', this.checked, '${type}', '${category}')">
+                    <label class="form-check-label" for="${inputId}">
+                        ${value === true || value === 'true' ? '활성화' : '비활성화'}
+                    </label>
+                </div>
+            `;
+        
+        case 'integer':
+            return `
+                <input type="number" class="form-control" id="${inputId}" value="${value}"
+                       onchange="onSettingChanged('${key}', parseInt(this.value), '${type}', '${category}')">
+            `;
+        
+        case 'select':
+            const options = getSettingOptions(key);
+            const optionsHtml = options.map(opt => 
+                `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`
+            ).join('');
+            return `
+                <select class="form-select" id="${inputId}" 
+                        onchange="onSettingChanged('${key}', this.value, '${type}', '${category}')">
+                    ${optionsHtml}
+                </select>
+            `;
+            
+        default:
+            return `
+                <input type="text" class="form-control" id="${inputId}" value="${value}"
+                       onchange="onSettingChanged('${key}', this.value, '${type}', '${category}')">
+            `;
+    }
+}
+
+function inferSettingType(key, value) {
+    if (typeof value === 'boolean' || key.includes('enabled') || key.includes('_enabled')) {
+        return 'boolean';
+    }
+    if (typeof value === 'number' || key.includes('_hours') || key.includes('_minutes') || key.includes('_seconds') || key.includes('_count') || key.includes('per_page')) {
+        return 'integer';
+    }
+    if (key === 'timezone') {
+        return 'select';
+    }
+    return 'string';
+}
+
+function getSettingDisplayName(key) {
+    const names = {
+        'app_name': '애플리케이션 이름',
+        'timezone': '시간대',
+        'items_per_page': '페이지당 항목 수',
+        'collection_enabled': '자동 수집 활성화',
+        'collection_interval_hours': '수집 주기 (시간)',
+        'regtech_enabled': 'REGTECH 수집 활성화',
+        'secudium_enabled': 'SECUDIUM 수집 활성화',
+        'session_timeout_minutes': '세션 타임아웃 (분)',
+        'api_rate_limit': 'API 요청 제한',
+        'email_notifications': '이메일 알림',
+        'admin_email': '관리자 이메일',
+        'cache_ttl_seconds': '캐시 TTL (초)',
+        'max_concurrent_collections': '최대 동시 수집 수'
+    };
+    return names[key] || key;
+}
+
+function getSettingDescription(key) {
+    const descriptions = {
+        'app_name': '블랙리스트 관리 시스템의 표시 이름',
+        'timezone': '시스템에서 사용할 시간대',
+        'items_per_page': '목록 페이지에서 한 번에 표시할 항목 수',
+        'collection_enabled': 'REGTECH/SECUDIUM 자동 수집 기능 활성화',
+        'collection_interval_hours': '자동 수집을 실행할 주기 (시간 단위)',
+        'regtech_enabled': 'REGTECH 데이터 수집 기능 활성화',
+        'secudium_enabled': 'SECUDIUM 데이터 수집 기능 활성화',
+        'session_timeout_minutes': '사용자 세션이 만료되는 시간 (분 단위)',
+        'api_rate_limit': '시간당 API 요청 제한 수',
+        'email_notifications': '중요한 이벤트에 대한 이메일 알림 활성화',
+        'admin_email': '알림을 받을 관리자 이메일 주소',
+        'cache_ttl_seconds': '기본 캐시 유지 시간 (초 단위)',
+        'max_concurrent_collections': '동시에 실행할 수 있는 수집 작업 수'
+    };
+    return descriptions[key] || '설정에 대한 설명이 없습니다.';
+}
+
+function getSettingOptions(key) {
+    const options = {
+        'timezone': ['Asia/Seoul', 'UTC', 'Asia/Tokyo', 'America/New_York']
+    };
+    return options[key] || [];
+}
+
+function toggleCategory(categoryKey) {
+    const body = document.getElementById(`body-${categoryKey}`);
+    const chevron = document.getElementById(`chevron-${categoryKey}`);
+    
+    if (body.classList.contains('active')) {
+        body.classList.remove('active');
+        chevron.classList.remove('bi-chevron-up');
+        chevron.classList.add('bi-chevron-down');
+    } else {
+        body.classList.add('active');
+        chevron.classList.remove('bi-chevron-down');
+        chevron.classList.add('bi-chevron-up');
+    }
+}
+
+function onSettingChanged(key, value, type, category) {
+    modifiedSettings[key] = {
+        value: value,
+        type: type,
+        category: category
+    };
+    
+    updateChangedCount();
+    showSaveButton();
+    
+    // 실시간 적용할 설정들
+    if (['collection_enabled', 'regtech_enabled', 'secudium_enabled'].includes(key)) {
+        saveIndividualSetting(key, value, type, category);
+    }
+}
+
+function updateChangedCount() {
+    const count = Object.keys(modifiedSettings).length;
+    document.getElementById('changedCount').textContent = count;
+    document.getElementById('modifiedSettings').textContent = count;
+}
+
+function showSaveButton() {
+    const count = Object.keys(modifiedSettings).length;
+    const floatingBtn = document.getElementById('floatingSaveBtn');
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    
+    if (count > 0) {
+        floatingBtn.style.display = 'block';
+        saveAllBtn.style.display = 'inline-block';
+    } else {
+        floatingBtn.style.display = 'none';
+        saveAllBtn.style.display = 'none';
+    }
+}
+
+async function saveAllSettings() {
+    if (Object.keys(modifiedSettings).length === 0) {
+        showAlert('info', '변경된 설정이 없습니다.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/settings/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(modifiedSettings)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('success', result.message);
+            modifiedSettings = {};
+            updateChangedCount();
+            showSaveButton();
+            
+            // 설정 다시 로드
+            loadSettings();
+        } else {
+            showAlert('error', '설정 저장 실패: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Save settings error:', error);
+        showAlert('error', '설정 저장 중 오류가 발생했습니다.');
+    }
+}
+
+async function saveIndividualSetting(key, value, type, category) {
+    try {
+        const response = await fetch(`/settings/api/settings/${key}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                value: value,
+                type: type,
+                category: category
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 저장 성공 시 modified 목록에서 제거
+            delete modifiedSettings[key];
+            updateChangedCount();
+            showSaveButton();
+        }
+    } catch (error) {
+        console.error('Save individual setting error:', error);
+    }
+}
+
+async function resetAllSettings() {
+    if (!confirm('모든 설정을 기본값으로 리셋하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/settings/api/settings/reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ confirm: true })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('success', result.message);
+            modifiedSettings = {};
+            updateChangedCount();
+            showSaveButton();
+            
+            // 설정 다시 로드
+            loadSettings();
+        } else {
+            showAlert('error', '설정 리셋 실패: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Reset settings error:', error);
+        showAlert('error', '설정 리셋 중 오류가 발생했습니다.');
+    }
+}
+
+function exportSettings() {
+    const dataStr = JSON.stringify(allSettings, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `blacklist-settings-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+}
+
+function updateStats() {
+    const totalSettings = Object.values(allSettings).reduce((sum, category) => sum + Object.keys(category).length, 0);
+    const activeCategories = Object.keys(allSettings).length;
+    
+    document.getElementById('totalSettings').textContent = totalSettings;
+    document.getElementById('activeCategories').textContent = activeCategories;
+}
+
+function showSpinner(show) {
+    document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+    document.getElementById('settingsContainer').style.display = show ? 'none' : 'block';
+}
+
+function showAlert(type, message) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : 'alert-info';
+    
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show`;
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // 5초 후 자동 제거
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

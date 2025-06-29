@@ -263,3 +263,177 @@ def update_secudium_auth():
             'success': False,
             'error': str(e)
         }), 500
+
+
+# ========== 새로운 DB 기반 설정 API ==========
+
+@settings_bp.route('/settings/management')
+def settings_management():
+    """새로운 설정 관리 대시보드"""
+    return render_template('settings/dashboard.html')
+
+
+@settings_bp.route('/api/settings', methods=['GET'])
+def get_all_settings_new():
+    """모든 설정 조회 (카테고리별 그룹화)"""
+    try:
+        from ..models.settings import get_settings_manager, SettingCategory
+        
+        settings_manager = get_settings_manager()
+        settings = settings_manager.get_all_settings()
+        
+        # 카테고리 메타데이터 추가
+        categories_info = {
+            'general': {
+                'name': '일반 설정',
+                'description': '애플리케이션의 기본 설정',
+                'icon': 'bi-gear'
+            },
+            'collection': {
+                'name': '수집 설정',
+                'description': 'REGTECH/SECUDIUM 데이터 수집 관련 설정',
+                'icon': 'bi-download'
+            },
+            'security': {
+                'name': '보안 설정',
+                'description': '보안 및 접근 제어 설정',
+                'icon': 'bi-shield-lock'
+            },
+            'notification': {
+                'name': '알림 설정',
+                'description': '이메일 및 알림 관련 설정',
+                'icon': 'bi-bell'
+            },
+            'performance': {
+                'name': '성능 설정',
+                'description': '캐시 및 성능 최적화 설정',
+                'icon': 'bi-speedometer2'
+            },
+            'integration': {
+                'name': '연동 설정',
+                'description': '외부 시스템 연동 설정',
+                'icon': 'bi-link-45deg'
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'settings': settings,
+                'categories': categories_info
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to get settings: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@settings_bp.route('/api/settings', methods=['POST'])
+def update_settings_bulk():
+    """설정값 일괄 업데이트"""
+    try:
+        from ..models.settings import get_settings_manager
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided'
+            }), 400
+        
+        settings_manager = get_settings_manager()
+        updated_count = 0
+        
+        for key, setting_data in data.items():
+            try:
+                # 설정 데이터 구조 검증
+                if isinstance(setting_data, dict) and 'value' in setting_data:
+                    value = setting_data['value']
+                    setting_type = setting_data.get('type', 'string')
+                    category = setting_data.get('category', 'general')
+                else:
+                    # 단순 값인 경우
+                    value = setting_data
+                    setting_type = 'string'
+                    category = 'general'
+                
+                settings_manager.set_setting(key, value, setting_type, category)
+                updated_count += 1
+                
+            except Exception as e:
+                logger.warning(f"Failed to update setting {key}: {e}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'{updated_count} settings updated successfully'
+        })
+    except Exception as e:
+        logger.error(f"Failed to update settings: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@settings_bp.route('/api/settings/<key>', methods=['PUT'])
+def update_individual_setting(key: str):
+    """개별 설정값 업데이트"""
+    try:
+        from ..models.settings import get_settings_manager
+        
+        data = request.get_json()
+        if not data or 'value' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'No value provided'
+            }), 400
+        
+        value = data['value']
+        setting_type = data.get('type', 'string')
+        category = data.get('category', 'general')
+        
+        settings_manager = get_settings_manager()
+        settings_manager.set_setting(key, value, setting_type, category)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Setting {key} updated successfully'
+        })
+    except Exception as e:
+        logger.error(f"Failed to update setting {key}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@settings_bp.route('/api/settings/reset', methods=['POST'])
+def reset_all_settings():
+    """모든 설정을 기본값으로 리셋"""
+    try:
+        from ..models.settings import get_settings_manager
+        
+        confirm = request.get_json().get('confirm', False) if request.is_json else request.form.get('confirm', 'false').lower() == 'true'
+        
+        if not confirm:
+            return jsonify({
+                'success': False,
+                'error': 'Reset confirmation required'
+            }), 400
+        
+        settings_manager = get_settings_manager()
+        settings_manager.reset_to_defaults()
+        
+        return jsonify({
+            'success': True,
+            'message': 'All settings reset to defaults successfully'
+        })
+    except Exception as e:
+        logger.error(f"Failed to reset settings: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
