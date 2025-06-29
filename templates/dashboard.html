@@ -594,14 +594,14 @@ let collectionLogs = [];
 // Fetch collection logs
 async function loadCollectionLogs() {
     try {
-        const response = await fetch('/api/collection/logs');
+        const response = await fetch('/api/collection/status');
         const result = await response.json();
         
-        if (result.success) {
+        if (result.logs) {
             collectionLogs = result.logs || [];
             updateCollectionLogsDisplay();
         } else {
-            console.error('Collection logs API error:', result.error);
+            console.error('No logs in collection status response');
         }
     } catch (error) {
         console.error('Failed to load collection logs:', error);
