@@ -5,6 +5,7 @@ JSON 형식의 구조화된 로그와 중앙 집중형 로깅 관리
 """
 
 import logging
+import logging.handlers
 import json
 import sys
 import os
@@ -12,7 +13,11 @@ from datetime import datetime
 from typing import Dict, Any, Optional, Union
 from pathlib import Path
 import traceback
-from pythonjsonlogger import jsonlogger
+try:
+    from pythonjsonlogger import jsonlogger
+    HAS_JSON_LOGGER = True
+except ImportError:
+    HAS_JSON_LOGGER = False
 import threading
 from collections import deque
 import sqlite3
@@ -53,10 +58,16 @@ class StructuredLogger:
         logger.handlers.clear()
         
         # JSON 포맷터
-        json_formatter = jsonlogger.JsonFormatter(
-            '%(timestamp)s %(level)s %(name)s %(message)s',
-            timestamp=True
-        )
+        if HAS_JSON_LOGGER:
+            json_formatter = jsonlogger.JsonFormatter(
+                '%(timestamp)s %(level)s %(name)s %(message)s',
+                timestamp=True
+            )
+        else:
+            # Fallback to standard formatter
+            json_formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
         
         # 콘솔 핸들러 (개발 환경)
         if os.getenv('FLASK_ENV') == 'development':
