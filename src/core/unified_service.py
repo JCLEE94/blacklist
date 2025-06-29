@@ -1085,6 +1085,8 @@ class UnifiedBlacklistService:
                                         'threat_type': ip_entry.reason,
                                         'country': ip_entry.country,
                                         'reg_date': ip_entry.reg_date,  # 원본 등록일 추가
+                                        'reason': ip_entry.reason,  # reason 필드 추가
+                                        'threat_level': ip_entry.threat_level,
                                         'confidence': 1.0
                                     })
                                 
@@ -1172,6 +1174,8 @@ class UnifiedBlacklistService:
                                         'threat_type': ip_entry.reason,
                                         'country': ip_entry.country,
                                         'reg_date': ip_entry.reg_date,  # 원본 등록일 추가
+                                        'reason': ip_entry.reason,  # reason 필드 추가
+                                        'threat_level': ip_entry.threat_level,
                                         'confidence': 1.0
                                     })
                                 

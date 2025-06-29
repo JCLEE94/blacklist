@@ -412,28 +412,40 @@ class UnifiedBlacklistManager:
                             SET created_at = ?,
                                 detection_date = COALESCE(?, detection_date),
                                 attack_type = COALESCE(?, attack_type),
-                                country = COALESCE(?, country)
+                                country = COALESCE(?, country),
+                                reason = COALESCE(?, reason),
+                                threat_level = COALESCE(?, threat_level),
+                                is_active = ?,
+                                updated_at = ?
                             WHERE ip = ?
                         """, (
                             datetime.now().isoformat(),
                             ip_data.get('reg_date') or ip_data.get('detection_date'),
                             ip_data.get('threat_type', 'blacklist'),
                             ip_data.get('country'),
+                            ip_data.get('reason') or ip_data.get('threat_type', 'blacklist'),
+                            ip_data.get('threat_level', 'high'),
+                            1,  # is_active = True
+                            datetime.now().isoformat(),
                             ip
                         ))
                     else:
                         # Insert new record
                         cursor.execute("""
                             INSERT INTO blacklist_ip 
-                            (ip, created_at, detection_date, attack_type, country, source)
-                            VALUES (?, ?, ?, ?, ?, ?)
+                            (ip, created_at, detection_date, attack_type, country, source, reason, threat_level, is_active, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, (
                             ip,
                             datetime.now().isoformat(),
-                            ip_data.get('reg_date') or ip_data.get('detection_date'),
+                            ip_data.get('reg_date') or ip_data.get('detection_date') or datetime.now().isoformat(),
                             ip_data.get('threat_type', 'blacklist'),
                             ip_data.get('country'),
-                            ip_data.get('source', source)
+                            ip_data.get('source', source),
+                            ip_data.get('reason') or ip_data.get('threat_type', 'blacklist'),
+                            ip_data.get('threat_level', 'high'),
+                            1,  # is_active = True
+                            datetime.now().isoformat()
                         ))
                     
                     # Record detection
@@ -461,7 +473,8 @@ class UnifiedBlacklistManager:
                 
             # Clear cache after successful import
             if imported > 0:
-                self.cache.clear(pattern="*")
+                # EnhancedSmartCache doesn't support pattern argument
+                self.cache.clear()
                 logger.info(f"Cache cleared: {imported} entries")
             
             duration = time.time() - start_time
@@ -494,7 +507,15 @@ class UnifiedBlacklistManager:
             # Use direct SQLite connection
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            cursor.execute("SELECT DISTINCT ip FROM blacklist_ip ORDER BY ip")
+            # Check if is_active column exists
+            cursor.execute("PRAGMA table_info(blacklist_ip)")
+            columns = [col[1] for col in cursor.fetchall()]
+            
+            if 'is_active' in columns:
+                cursor.execute("SELECT DISTINCT ip FROM blacklist_ip WHERE is_active = 1 ORDER BY ip")
+            else:
+                cursor.execute("SELECT DISTINCT ip FROM blacklist_ip ORDER BY ip")
+                
             result = cursor.fetchall()
             conn.close()
             
