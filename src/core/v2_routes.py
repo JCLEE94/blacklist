@@ -198,7 +198,6 @@ v2_service = None
 
 # Blueprint 라우트들을 모듈 레벨에서 정의
 @v2_bp.route('/blacklist/enhanced', methods=['GET'])
-@unified_monitoring
 @unified_cache(ttl=300, key_prefix='v2:blacklist')
 def get_enhanced_blacklist():
     """향상된 블랙리스트 조회"""
@@ -218,7 +217,6 @@ def get_enhanced_blacklist():
 
 
 @v2_bp.route('/blacklist/batch-check', methods=['POST'])
-@unified_monitoring
 @unified_validation
 @unified_rate_limit(limit=100, per=3600)  # 100 requests per hour
 def batch_ip_check():
@@ -240,7 +238,6 @@ def batch_ip_check():
 
 
 @v2_bp.route('/analytics/<period>', methods=['GET'])
-@unified_monitoring
 @unified_cache(ttl=3600, key_prefix='v2:analytics')
 def get_analytics(period):
     """고급 분석 데이터"""
@@ -255,7 +252,6 @@ def get_analytics(period):
 
 
 @v2_bp.route('/export/<format>', methods=['GET'])
-@unified_monitoring
 def export_data(format):
     """데이터 내보내기"""
     if not v2_service:
@@ -307,7 +303,6 @@ def export_data(format):
 
 
 @v2_bp.route('/health', methods=['GET'])
-@unified_monitoring
 def health_check():
     """V2 헬스체크"""
     if not v2_service:
@@ -356,7 +351,6 @@ def health_check():
 
 
 @v2_bp.route('/performance', methods=['GET'])
-@unified_monitoring
 def get_performance_metrics():
     """성능 메트릭 조회"""
     if not v2_service:
@@ -377,7 +371,6 @@ def get_performance_metrics():
 
 
 @v2_bp.route('/cache/warm', methods=['POST'])
-@unified_monitoring
 def warm_cache():
     """캐시 워밍"""
     if not v2_service:
@@ -409,7 +402,6 @@ def warm_cache():
 
 
 @v2_bp.route('/stream/blacklist', methods=['GET'])
-@unified_monitoring
 def stream_blacklist():
     """블랙리스트 스트리밍"""
     if not v2_service:

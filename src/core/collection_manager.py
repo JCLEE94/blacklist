@@ -425,53 +425,93 @@ class CollectionManager:
         try:
             logger.info(f"REGTECH 수집 시작 (start_date={start_date}, end_date={end_date})")
             
-            # HAR 기반 REGTECH 수집기 import 및 실행
+            # Enhanced REGTECH 수집기 import 및 실행
             try:
-                from .har_based_regtech_collector import HarBasedRegtechCollector
-                # data 디렉토리 경로 전달
-                data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
-                collector = HarBasedRegtechCollector(data_dir=data_dir)
-                
-                # 수집 실행 (HAR 기반 auto_collect 사용)
-                # 날짜 범위가 지정된 경우 collect_from_web 사용
-                if start_date and end_date:
+                # Enhanced 수집기 우선 시도
+                try:
+                    from .regtech_collector_enhanced import EnhancedRegtechCollector
+                    data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
+                    collector = EnhancedRegtechCollector(data_dir=data_dir)
+                    
+                    # 수집 실행
+                    logger.info(f"Enhanced REGTECH 수집기 사용 (start_date={start_date}, end_date={end_date})")
                     ips = collector.collect_from_web(start_date=start_date, end_date=end_date)
-                    result = {
-                        'success': True if ips else False,
-                        'total_collected': len(ips) if ips else 0,
-                        'ips': ips
-                    }
-                else:
-                    result = collector.auto_collect(prefer_web=True, db_path=self.db_path)
-                
-                if result.get('success', False):
-                    # 수집 성공
-                    self.sources['regtech']['last_collection'] = datetime.now().isoformat()
-                    self.sources['regtech']['status'] = 'active'
                     
-                    # IP 수 업데이트
-                    ip_count = self._get_source_ip_count('REGTECH')
-                    self.sources['regtech']['total_ips'] = ip_count
+                    if ips:
+                        # 데이터베이스에 저장
+                        saved_count = self._save_ips_to_database(ips, 'REGTECH')
+                        
+                        # 수집 성공
+                        self.sources['regtech']['last_collection'] = datetime.now().isoformat()
+                        self.sources['regtech']['status'] = 'active'
+                        
+                        # IP 수 업데이트
+                        ip_count = self._get_source_ip_count('REGTECH')
+                        self.sources['regtech']['total_ips'] = ip_count
+                        
+                        return {
+                            'success': True,
+                            'message': f'REGTECH 수집 완료: {saved_count:,}개 IP 저장 (총 {ip_count:,}개)',
+                            'source': 'regtech',
+                            'timestamp': datetime.now().isoformat(),
+                            'details': {
+                                'collected': len(ips),
+                                'saved': saved_count,
+                                'total_in_db': ip_count,
+                                'collector': 'enhanced'
+                            }
+                        }
+                    else:
+                        return {
+                            'success': False,
+                            'message': 'REGTECH 수집 실패: 데이터를 가져오지 못했습니다',
+                            'source': 'regtech',
+                            'timestamp': datetime.now().isoformat()
+                        }
+                        
+                except ImportError:
+                    # HAR 기반 수집기로 폴백
+                    logger.warning("Enhanced 수집기 사용 불가, HAR 기반 수집기로 폴백")
+                    from .har_based_regtech_collector import HarBasedRegtechCollector
+                    data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')
+                    collector = HarBasedRegtechCollector(data_dir=data_dir)
                     
-                    return {
-                        'success': True,
-                        'message': f'REGTECH 수집 완료: {ip_count:,}개 IP',
-                        'source': 'regtech',
-                        'timestamp': datetime.now().isoformat(),
-                        'details': result
-                    }
-                else:
-                    return {
-                        'success': False,
-                        'message': f'REGTECH 수집 실패: {result.get("error", "알 수 없는 오류")}',
-                        'source': 'regtech',
-                        'timestamp': datetime.now().isoformat()
-                    }
+                    if start_date and end_date:
+                        ips = collector.collect_from_web(start_date=start_date, end_date=end_date)
+                        result = {
+                            'success': True if ips else False,
+                            'total_collected': len(ips) if ips else 0,
+                            'ips': ips
+                        }
+                    else:
+                        result = collector.auto_collect(prefer_web=True, db_path=self.db_path)
                     
-            except ImportError:
+                    if result.get('success', False):
+                        self.sources['regtech']['last_collection'] = datetime.now().isoformat()
+                        self.sources['regtech']['status'] = 'active'
+                        ip_count = self._get_source_ip_count('REGTECH')
+                        self.sources['regtech']['total_ips'] = ip_count
+                        
+                        return {
+                            'success': True,
+                            'message': f'REGTECH 수집 완료: {ip_count:,}개 IP',
+                            'source': 'regtech',
+                            'timestamp': datetime.now().isoformat(),
+                            'details': result
+                        }
+                    else:
+                        return {
+                            'success': False,
+                            'message': f'REGTECH 수집 실패: {result.get("error", "알 수 없는 오류")}',
+                            'source': 'regtech',
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    
+            except ImportError as e:
+                logger.error(f"REGTECH 수집기 import 실패: {e}")
                 return {
                     'success': False,
-                    'message': 'REGTECH 수집기 모듈을 찾을 수 없습니다',
+                    'message': f'REGTECH 수집기 모듈을 찾을 수 없습니다: {e}',
                     'source': 'regtech',
                     'timestamp': datetime.now().isoformat()
                 }
@@ -632,6 +672,69 @@ class CollectionManager:
             return count
         except Exception as e:
             logger.error(f"소스 IP 수 조회 오류: {e}")
+            return 0
+    
+    def _save_ips_to_database(self, ips: List[Any], source: str) -> int:
+        """
+        IP 목록을 데이터베이스에 저장
+        
+        Args:
+            ips: BlacklistEntry 객체 목록
+            source: 소스명
+            
+        Returns:
+            저장된 IP 수
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            saved_count = 0
+            
+            for ip_entry in ips:
+                try:
+                    # BlacklistEntry 객체에서 데이터 추출
+                    ip_address = ip_entry.ip_address
+                    country = getattr(ip_entry, 'country', 'Unknown')
+                    reason = getattr(ip_entry, 'reason', '')
+                    reg_date = getattr(ip_entry, 'reg_date', datetime.now().strftime('%Y-%m-%d'))
+                    threat_level = getattr(ip_entry, 'threat_level', 'high')
+                    
+                    # 중복 확인
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM blacklist_ip WHERE ip = ? AND source = ?",
+                        (ip_address, source)
+                    )
+                    
+                    if cursor.fetchone()[0] == 0:
+                        # 새로운 IP 삽입
+                        cursor.execute("""
+                            INSERT INTO blacklist_ip 
+                            (ip, source, country, reason, detection_date, threat_level, is_active, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
+                        """, (ip_address, source, country, reason, reg_date, threat_level))
+                        saved_count += 1
+                    else:
+                        # 기존 IP 업데이트
+                        cursor.execute("""
+                            UPDATE blacklist_ip 
+                            SET country = ?, reason = ?, detection_date = ?, 
+                                threat_level = ?, updated_at = datetime('now')
+                            WHERE ip = ? AND source = ?
+                        """, (country, reason, reg_date, threat_level, ip_address, source))
+                        
+                except Exception as e:
+                    logger.warning(f"IP 저장 중 오류 ({ip_address}): {e}")
+                    continue
+            
+            conn.commit()
+            conn.close()
+            
+            logger.info(f"{source}: {saved_count}개 IP 저장됨")
+            return saved_count
+            
+        except Exception as e:
+            logger.error(f"데이터베이스 저장 오류: {e}")
             return 0
     
     def clear_source_data(self, source: str) -> Dict[str, Any]:
