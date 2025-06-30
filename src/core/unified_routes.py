@@ -457,6 +457,23 @@ def service_status():
 
 @unified_bp.route('/api/blacklist/active', methods=['GET'])
 def get_active_blacklist():
+    """활성 블랙리스트 조회 (JSON 형식)"""
+    try:
+        ips = service.get_active_blacklist_ips()
+        
+        # JSON 형식으로 반환
+        return jsonify({
+            'success': True,
+            'count': len(ips),
+            'ips': ips,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Active blacklist error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/blacklist/active-txt', methods=['GET'])
+def get_active_blacklist_txt():
     """활성 블랙리스트 조회 (플레인 텍스트)"""
     try:
         ips = service.get_active_blacklist_ips()
@@ -474,7 +491,7 @@ def get_active_blacklist():
         )
         return response
     except Exception as e:
-        logger.error(f"Active blacklist error: {e}")
+        logger.error(f"Active blacklist txt error: {e}")
         return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/blacklist/active-simple', methods=['GET'])
