@@ -1995,7 +1995,7 @@ class UnifiedBlacklistService:
         """SECUDIUM 수집 트리거"""
         try:
             # SECUDIUM 수집기 가져오기
-            secudium_collector = self.container.get('secudium_collector')
+            secudium_collector = self.container.resolve('secudium_collector')
             if not secudium_collector:
                 return {
                     'success': False,

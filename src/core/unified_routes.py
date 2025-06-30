@@ -1098,6 +1098,28 @@ def get_source_distribution():
             'error': str(e)
         }), 500
 
+@unified_bp.route('/api/db/clear', methods=['POST'])
+def clear_database():
+    """데이터베이스 클리어"""
+    try:
+        result = service.clear_all_data()
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': '데이터베이스가 성공적으로 클리어되었습니다.'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Unknown error')
+            }), 500
+    except Exception as e:
+        logger.error(f"Database clear error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @unified_bp.route('/api/stats/monthly', methods=['GET'])
 def get_monthly_stats():
     """월별 통계 데이터"""

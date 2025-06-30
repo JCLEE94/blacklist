@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+  namespace: default
+  labels:
+    app: blacklist
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blacklist
+  template:
+    metadata:
+      labels:
+        app: blacklist
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/blacklist:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2541
+          name: http
+        env:
+        - name: PORT
+          value: "2541"
+        - name: FLASK_ENV
+          value: "production"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: TZ
+          value: "Asia/Seoul"
+        - name: REGTECH_USERNAME
+          value: "nextrade"
+        - name: REGTECH_PASSWORD
+          value: "Sprtmxm1@3"
+        - name: SECUDIUM_USERNAME
+          value: "nextrade"
+        - name: SECUDIUM_PASSWORD
+          value: "Sprtmxm1@3"
+        - name: SECRET_KEY
+          value: "your-secret-key-here"
+        - name: JWT_SECRET_KEY
+          value: "your-jwt-secret-key"
+        - name: API_SECRET_KEY
+          value: "your-api-secret-key"
+        volumeMounts:
+        - name: blacklist-data
+          mountPath: /app/instance
+        - name: blacklist-data-dir
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: blacklist-data
+        emptyDir: {}
+      - name: blacklist-data-dir
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist
+  namespace: default
+spec:
+  selector:
+    app: blacklist
+  ports:
+  - port: 2541
+    targetPort: 2541
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blacklist
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  tls:
+  - hosts:
+    - blacklist.jclee.me
+    secretName: blacklist-tls
+  rules:
+  - host: blacklist.jclee.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blacklist
+            port:
+              number: 2541
