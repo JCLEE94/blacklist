@@ -313,6 +313,11 @@ def get_all_settings_new():
                 'name': '연동 설정',
                 'description': '외부 시스템 연동 설정',
                 'icon': 'bi-link-45deg'
+            },
+            'credentials': {
+                'name': '인증 정보',
+                'description': 'REGTECH/SECUDIUM 로그인 인증 정보',
+                'icon': 'bi-key'
             }
         }
         

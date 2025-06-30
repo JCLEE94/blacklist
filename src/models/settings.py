@@ -5,6 +5,7 @@
 """
 import json
 import sqlite3
+import os
 from typing import Any, Dict, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, asdict
@@ -28,6 +29,7 @@ class SettingCategory(Enum):
     NOTIFICATION = "notification" # 알림 설정
     PERFORMANCE = "performance"  # 성능 설정
     INTEGRATION = "integration"  # 외부 연동 설정
+    CREDENTIALS = "credentials"  # 인증 정보
 
 @dataclass
 class SettingDefinition:
@@ -149,6 +151,46 @@ class SettingsManager:
                 category=SettingCategory.COLLECTION,
                 setting_type=SettingType.BOOLEAN,
                 default_value=True
+            ),
+            
+            # 인증 정보 설정
+            SettingDefinition(
+                key="regtech_username",
+                name="REGTECH 사용자명",
+                description="REGTECH 서비스 로그인 사용자명",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.STRING,
+                default_value=os.getenv("REGTECH_USERNAME", ""),
+                required=True
+            ),
+            SettingDefinition(
+                key="regtech_password",
+                name="REGTECH 비밀번호",
+                description="REGTECH 서비스 로그인 비밀번호",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.PASSWORD,
+                default_value=os.getenv("REGTECH_PASSWORD", ""),
+                required=True,
+                encrypted=True
+            ),
+            SettingDefinition(
+                key="secudium_username",
+                name="SECUDIUM 사용자명",
+                description="SECUDIUM 서비스 로그인 사용자명",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.STRING,
+                default_value=os.getenv("SECUDIUM_USERNAME", ""),
+                required=True
+            ),
+            SettingDefinition(
+                key="secudium_password",
+                name="SECUDIUM 비밀번호",
+                description="SECUDIUM 서비스 로그인 비밀번호",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.PASSWORD,
+                default_value=os.getenv("SECUDIUM_PASSWORD", ""),
+                required=True,
+                encrypted=True
             ),
             
             # 보안 설정
