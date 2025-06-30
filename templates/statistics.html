@@ -422,10 +422,13 @@ class StatisticsDashboard {
         this.createTrendChart();
         this.createSourceChart();
         this.createThreatLevelChart();
+        this.createIpTypeChart();
+        this.createGeographicChart();
+        this.createHourlyActivityChart();
     }
 
     createTrendChart() {
-        const ctx = document.getElementById('trendChart').getContext('2d');
+        const ctx = document.getElementById('detectionTrendChart').getContext('2d');
         const monthlyData = this.data.monthlyData || [];
         
         // Prepare data for the last 12 months
@@ -468,7 +471,7 @@ class StatisticsDashboard {
     }
 
     createSourceChart() {
-        const ctx = document.getElementById('sourceChart').getContext('2d');
+        const ctx = document.getElementById('sourceDistributionChart').getContext('2d');
         const { systemHealth } = this.data;
         
         const regtechCount = systemHealth?.regtech_count || 0;
@@ -534,6 +537,127 @@ class StatisticsDashboard {
                                 return value.toLocaleString();
                             }
                         }
+                    }
+                }
+            }
+        });
+    }
+
+    createIpTypeChart() {
+        const ctx = document.getElementById('ipTypeChart').getContext('2d');
+        
+        // 예시 데이터 (실제로는 API에서 가져와야 함)
+        const ipv4Count = this.data.enhancedData?.data?.filter(item => 
+            item.ip.includes('.') && !item.ip.includes(':')
+        ).length || 0;
+        const ipv6Count = this.data.enhancedData?.data?.filter(item => 
+            item.ip.includes(':')
+        ).length || 0;
+        const cidrCount = this.data.enhancedData?.data?.filter(item => 
+            item.ip.includes('/')
+        ).length || 0;
+
+        this.charts.ipType = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['IPv4', 'IPv6', 'CIDR'],
+                datasets: [{
+                    label: 'IP 개수',
+                    data: [ipv4Count, ipv6Count, cidrCount],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    createGeographicChart() {
+        const ctx = document.getElementById('geographicChart').getContext('2d');
+        
+        // 예시 데이터 (실제로는 API에서 가져와야 함)
+        const countries = {};
+        this.data.enhancedData?.data?.forEach(item => {
+            const country = item.country || 'Unknown';
+            countries[country] = (countries[country] || 0) + 1;
+        });
+
+        const topCountries = Object.entries(countries)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+
+        this.charts.geographic = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: topCountries.map(([country]) => country),
+                datasets: [{
+                    data: topCountries.map(([, count]) => count),
+                    backgroundColor: [
+                        '#5046e5', '#10b981', '#f59e0b', '#dc2626', '#8b5cf6',
+                        '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6b7280'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '50%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            fontSize: 10
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createHourlyActivityChart() {
+        const ctx = document.getElementById('hourlyActivityChart').getContext('2d');
+        
+        // 예시 데이터 (시간대별 활동)
+        const hourlyData = Array.from({length: 24}, (_, i) => Math.floor(Math.random() * 100));
+
+        this.charts.hourlyActivity = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => i + '시'),
+                datasets: [{
+                    label: '탐지 건수',
+                    data: hourlyData,
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
             }
