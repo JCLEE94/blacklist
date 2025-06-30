@@ -563,6 +563,7 @@ class UnifiedBlacklistService:
                 'last_collection': None,
                 'last_enabled_at': None,
                 'last_disabled_at': None
+            }
         except Exception as e:
             self.logger.error(f"수집 상태 조회 실패: {e}")
             return {
