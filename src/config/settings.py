@@ -6,6 +6,10 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
 
 class Settings:
     """중앙 집중식 설정 관리 클래스"""

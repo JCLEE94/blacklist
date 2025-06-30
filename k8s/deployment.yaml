@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+  namespace: blacklist
+  labels:
+    app: blacklist
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: blacklist
+  template:
+    metadata:
+      labels:
+        app: blacklist
+    spec:
+      initContainers:
+      - name: init-permissions
+        image: busybox
+        command: ['sh', '-c', 'chmod -R 777 /app/data /app/logs /app/instance || true']
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        - name: logs
+          mountPath: /app/logs
+        - name: instance
+          mountPath: /app/instance
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/blacklist:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2541
+          name: http
+        envFrom:
+        - configMapRef:
+            name: blacklist-config
+        - secretRef:
+            name: blacklist-secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        - name: logs
+          mountPath: /app/logs
+        - name: instance
+          mountPath: /app/instance
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: blacklist-data
+      - name: logs
+        persistentVolumeClaim:
+          claimName: blacklist-logs
+      - name: instance
+        emptyDir: {}

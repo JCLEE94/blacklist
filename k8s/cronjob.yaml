@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: blacklist-daily-collection
+  namespace: blacklist
+spec:
+  schedule: "0 2 * * *"  # 매일 새벽 2시 (KST 11시)
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: collector
+            image: registry.jclee.me/blacklist:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Enable collection
+              curl -X POST http://blacklist:2541/api/collection/enable
+              sleep 5
+              # Trigger REGTECH collection
+              curl -X POST http://blacklist:2541/api/collection/regtech/trigger
+              sleep 5
+              # Trigger SECUDIUM collection  
+              curl -X POST http://blacklist:2541/api/collection/secudium/trigger
+            envFrom:
+            - configMapRef:
+                name: blacklist-config
+            - secretRef:
+                name: blacklist-secret
+          restartPolicy: OnFailure

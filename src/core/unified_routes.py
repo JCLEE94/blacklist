@@ -1242,7 +1242,6 @@ def trigger_manual_collection():
         return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/collection/regtech/trigger', methods=['POST'])
-
 def trigger_regtech_collection():
     """REGTECH 수집 트리거"""
     try:
@@ -1273,7 +1272,6 @@ def trigger_regtech_collection():
         return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/collection/secudium/trigger', methods=['POST'])
-
 def trigger_secudium_collection():
     """SECUDIUM 수집 트리거"""
     try:

@@ -1,0 +1,21 @@
+apiVersion: skaffold/v2beta28
+kind: Config
+metadata:
+  name: blacklist
+build:
+  artifacts:
+  - image: registry.jclee.me/blacklist
+    docker:
+      dockerfile: deployment/Dockerfile
+  tagPolicy:
+    gitCommit: {}
+deploy:
+  kustomize:
+    paths:
+    - k8s
+portForward:
+- resourceType: service
+  resourceName: blacklist
+  namespace: blacklist
+  port: 2541
+  localPort: 2541

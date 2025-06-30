@@ -836,3 +836,47 @@ class UnifiedBlacklistManager:
             "cache": "active" if self.cache else "inactive",
             "monitoring": "active" if self.monitor else "inactive"
         }
+    
+    def clear_all(self) -> Dict[str, Any]:
+        """모든 블랙리스트 데이터 삭제"""
+        try:
+            # 데이터베이스 클리어
+            if self.db_manager:
+                with self.db_manager.get_session() as session:
+                    from sqlalchemy import text
+                    session.execute(text("DELETE FROM blacklist_ip"))
+                    session.execute(text("DELETE FROM ip_detection"))
+                    session.commit()
+                    logger.info("Database cleared successfully")
+            
+            # 파일 시스템 클리어
+            import shutil
+            if os.path.exists(self.data_dir):
+                # by_detection_month 디렉토리 내용 삭제
+                month_dir = os.path.join(self.data_dir, 'by_detection_month')
+                if os.path.exists(month_dir):
+                    shutil.rmtree(month_dir)
+                    os.makedirs(month_dir, exist_ok=True)
+                
+                # regtech, secudium 디렉토리 삭제
+                for subdir in ['regtech', 'secudium']:
+                    dir_path = os.path.join(self.data_dir, subdir)
+                    if os.path.exists(dir_path):
+                        shutil.rmtree(dir_path)
+                        os.makedirs(dir_path, exist_ok=True)
+            
+            # 캐시 클리어
+            if self.cache:
+                self.cache.clear()
+            
+            return {
+                'success': True,
+                'message': '모든 블랙리스트 데이터가 삭제되었습니다.'
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to clear all data: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
