@@ -14,121 +14,128 @@
         </div>
     </div>
 
-    <!-- Collection Control Section -->
+    <!-- Main Control Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="modern-card">
-                <div class="card-header bg-light">
+                <div class="card-header bg-gradient-primary text-white">
                     <div class="d-flex align-items-center justify-content-between">
                         <h5 class="mb-0">
-                            <i class="bi bi-toggles text-primary"></i> 전체 수집 제어
+                            <i class="bi bi-toggles"></i> 수집 제어 센터
                         </h5>
                         <div id="collection-status-badge">
-                            <span class="badge bg-secondary">확인 중...</span>
+                            <span class="badge bg-light text-dark">확인 중...</span>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <p class="mb-0">
-                                수집 기능을 활성화하면 REGTECH와 SECUDIUM에서 자동으로 데이터를 수집합니다.
-                                <br>
-                                <small class="text-warning">
-                                    <i class="bi bi-exclamation-triangle"></i> 
-                                    주의: 수집 활성화 시 기존 데이터가 초기화됩니다.
-                                </small>
-                            </p>
+                    <!-- Collection Status Overview -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="status-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-database"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h4 class="mb-0" id="total-ips">0</h4>
+                                    <small class="text-muted">전체 IP</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4 text-end">
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-success" id="enable-collection" onclick="toggleCollection(true)">
-                                    <i class="bi bi-play-circle"></i> 수집 활성화
-                                </button>
-                                <button class="btn btn-danger" id="disable-collection" onclick="toggleCollection(false)">
-                                    <i class="bi bi-stop-circle"></i> 수집 비활성화
-                                </button>
-                                <button class="btn btn-warning text-white" onclick="clearAllData()" data-bs-toggle="tooltip" title="모든 데이터를 삭제하고 새로 시작">
-                                    <i class="bi bi-trash3"></i> DB 클리어
-                                </button>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="status-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-collection"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h4 class="mb-0" id="active-collectors">0</h4>
+                                    <small class="text-muted">활성 수집기</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="status-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-calendar-day"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h4 class="mb-0" id="today-collected">0</h4>
+                                    <small class="text-muted">오늘 수집</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="status-icon bg-warning text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-clock-history"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h4 class="mb-0" id="last-collection">-</h4>
+                                    <small class="text-muted">마지막 수집</small>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Statistics Overview -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="modern-card border-start border-primary border-5">
-                <div class="card-body">
-                    <h6 class="text-muted mb-2">전체 블랙리스트 IP</h6>
-                    <h3 class="mb-0" id="total-ips">0</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="modern-card border-start border-success border-5">
-                <div class="card-body">
-                    <h6 class="text-muted mb-2">활성 수집기</h6>
-                    <h3 class="mb-0" id="active-collectors">0</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="modern-card border-start border-warning border-5">
-                <div class="card-body">
-                    <h6 class="text-muted mb-2">오늘 수집된 IP</h6>
-                    <h3 class="mb-0" id="today-collected">0</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="modern-card border-start border-info border-5">
-                <div class="card-body">
-                    <h6 class="text-muted mb-2">마지막 수집</h6>
-                    <h3 class="mb-0" id="last-collection">-</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Daily Collection Control -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="modern-card">
-                <div class="card-header bg-light">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="mb-0">
-                            <i class="bi bi-calendar-day text-success"></i> 일일 자동 수집 제어
-                        </h5>
-                        <div id="daily-collection-status-badge">
-                            <span class="badge bg-secondary">확인 중...</span>
+                    <!-- Control Buttons -->
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card h-100 border-0 bg-light">
+                                <div class="card-header bg-transparent border-0">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-power text-primary"></i> 전체 수집 제어
+                                    </h6>
+                                    <small class="text-warning">
+                                        <i class="bi bi-exclamation-triangle"></i> 
+                                        수집 활성화 시 기존 데이터가 초기화됩니다
+                                    </small>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success" id="enable-collection" onclick="toggleCollection(true)">
+                                            <i class="bi bi-play-circle"></i> 수집 활성화
+                                        </button>
+                                        <button class="btn btn-outline-danger" id="disable-collection" onclick="toggleCollection(false)">
+                                            <i class="bi bi-stop-circle"></i> 수집 비활성화
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <p class="mb-0">
-                                일일 자동 수집: 매일 최근 3일간의 데이터를 수집합니다 (중복 제거)
-                                <br>
-                                <small class="text-info">
-                                    <i class="bi bi-info-circle"></i> 
-                                    초기 수집 시: 3개월 이내 모든 데이터 수집, 이후 일일 수집: 3일 데이터만 수집
-                                </small>
-                            </p>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-outline-success" id="enable-daily-collection" onclick="toggleDailyCollection(true)">
-                                    <i class="bi bi-calendar-check"></i> 일일수집 활성화
-                                </button>
-                                <button class="btn btn-outline-danger" id="disable-daily-collection" onclick="toggleDailyCollection(false)">
-                                    <i class="bi bi-calendar-x"></i> 일일수집 비활성화
-                                </button>
+                        <div class="col-lg-6">
+                            <div class="card h-100 border-0 bg-light">
+                                <div class="card-header bg-transparent border-0">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-calendar-check text-success"></i> 일일 자동 수집
+                                        </h6>
+                                        <div id="daily-collection-status-badge">
+                                            <span class="badge bg-secondary">확인 중...</span>
+                                        </div>
+                                    </div>
+                                    <small class="text-info">
+                                        <i class="bi bi-info-circle"></i> 
+                                        매일 최근 3일간 데이터 수집 (중복 제거)
+                                    </small>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success" id="enable-daily-collection" onclick="toggleDailyCollection(true)">
+                                            <i class="bi bi-calendar-check"></i> 일일수집 활성화
+                                        </button>
+                                        <button class="btn btn-outline-danger" id="disable-daily-collection" onclick="toggleDailyCollection(false)">
+                                            <i class="bi bi-calendar-x"></i> 일일수집 비활성화
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -218,57 +225,59 @@
         </div>
     </div>
 
-    <!-- Monthly Data Section -->
-    <div class="modern-card mb-4">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">
-                <i class="bi bi-calendar-month text-primary"></i> 월별 데이터 현황
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover" id="monthly-data-table">
-                    <thead>
-                        <tr>
-                            <th>월</th>
-                            <th>IP 수</th>
-                            <th>첫 검출</th>
-                            <th>마지막 검출</th>
-                            <th>상태</th>
-                            <th>작업</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="6" class="text-center text-muted">데이터 로딩 중...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="row">
+    <!-- Management Actions -->
+    <div class="row mb-4">
         <div class="col-12">
             <div class="modern-card">
-                <div class="card-body text-center">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-primary" onclick="refreshData()">
-                            <i class="bi bi-arrow-clockwise"></i> 데이터 새로고침
-                        </button>
-                        <a href="/api/export/txt" class="btn btn-secondary">
-                            <i class="bi bi-download"></i> TXT 내보내기
-                        </a>
-                        <a href="/api/export/json" class="btn btn-secondary">
-                            <i class="bi bi-download"></i> JSON 내보내기
-                        </a>
-                        <button class="btn btn-warning" onclick="cleanupOldData()">
-                            <i class="bi bi-trash"></i> 오래된 데이터 정리
-                        </button>
-                        <button class="btn btn-danger" onclick="clearAllData()">
-                            <i class="bi bi-trash3-fill"></i> DB 클리어
-                        </button>
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-tools text-primary"></i> 데이터 관리
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-primary" onclick="refreshData()">
+                                    <i class="bi bi-arrow-clockwise"></i> 데이터 새로고침
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="bi bi-download"></i> 내보내기
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/api/export/txt">
+                                            <i class="bi bi-file-text"></i> TXT 형식
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/api/export/json">
+                                            <i class="bi bi-file-code"></i> JSON 형식
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="bi bi-trash"></i> 데이터 정리
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="cleanupOldData()">
+                                            <i class="bi bi-calendar-x"></i> 오래된 데이터 정리
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="clearAllData()">
+                                            <i class="bi bi-trash3-fill"></i> 전체 DB 클리어
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -276,7 +285,7 @@
     </div>
 
     <!-- Collection Logs -->
-    <div class="row mt-4">
+    <div class="row">
         <div class="col-12">
             <div class="modern-card">
                 <div class="card-header bg-light">
@@ -304,10 +313,30 @@
 
 {% block extra_css %}
 <style>
+.modern-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.status-icon {
+    font-size: 1.25rem;
+}
+
 .log-viewer {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem;
     padding: 1rem;
     height: 300px;
     overflow-y: auto;
@@ -346,6 +375,26 @@
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* Card animation */
+.modern-card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.5s ease forwards;
+}
+
+@keyframes slideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stagger animation for cards */
+.modern-card:nth-child(1) { animation-delay: 0.1s; }
+.modern-card:nth-child(2) { animation-delay: 0.2s; }
+.modern-card:nth-child(3) { animation-delay: 0.3s; }
+.modern-card:nth-child(4) { animation-delay: 0.4s; }
 </style>
 {% endblock %}
 
@@ -357,7 +406,6 @@ class UnifiedControl {
         this.statusInterval = null;
         this.logBuffer = [];
         this.maxLogs = 100;
-        this.monthlyData = [];
         
         // localStorage에서 로그 복원
         this.loadLogsFromStorage();
@@ -367,7 +415,6 @@ class UnifiedControl {
     
     init() {
         this.checkCollectionStatus();
-        this.loadMonthlyData();
         this.loadCollectionLogs(); // 서버에서 로그 로드
         this.startStatusPolling();
         this.renderLogs(); // 저장된 로그 표시
@@ -412,12 +459,12 @@ class UnifiedControl {
             this.updateCollectorStatus('secudium', data.sources?.secudium);
             
             // Update buttons
-            document.getElementById('enable-collection').disabled = data.enabled;
-            document.getElementById('disable-collection').disabled = !data.enabled;
+            document.getElementById('enable-collection').disabled = data.collection_enabled;
+            document.getElementById('disable-collection').disabled = !data.collection_enabled;
             
             // Update trigger buttons
-            document.getElementById('regtech-trigger').disabled = !data.enabled;
-            document.getElementById('secudium-trigger').disabled = !data.enabled;
+            document.getElementById('regtech-trigger').disabled = !data.collection_enabled;
+            document.getElementById('secudium-trigger').disabled = !data.collection_enabled;
             
             // Check daily collection status
             this.checkDailyCollectionStatus();
@@ -452,25 +499,24 @@ class UnifiedControl {
         const todayCollected = document.getElementById('today-collected');
         const lastCollection = document.getElementById('last-collection');
         
-        if (data.enabled) {
+        if (data.collection_enabled) {
             statusBadge.className = 'badge bg-success';
             statusBadge.textContent = '수집 활성';
             activeCollectors.textContent = Object.values(data.sources || {})
                 .filter(s => s.enabled).length;
         } else {
-            statusBadge.className = 'badge bg-secondary';
+            statusBadge.className = 'badge bg-light text-dark';
             statusBadge.textContent = '수집 비활성';
             activeCollectors.textContent = '0';
         }
         
         // Update stats
-        if (data.stats) {
-            totalIps.textContent = (data.stats.total_ips || 0).toLocaleString();
-            todayCollected.textContent = (data.stats.today_collected || 0).toLocaleString();
+        if (data.summary) {
+            totalIps.textContent = (data.summary.total_ips_collected || 0).toLocaleString();
         }
         
-        if (data.last_collection) {
-            lastCollection.textContent = this.formatTime(data.last_collection);
+        if (data.last_enabled_at) {
+            lastCollection.textContent = this.formatTime(data.last_enabled_at);
         }
     }
     
@@ -487,13 +533,8 @@ class UnifiedControl {
         
         // Status badge
         if (status.enabled) {
-            if (status.running) {
-                elements.status.className = 'badge bg-primary';
-                elements.status.textContent = '수집 중';
-            } else {
-                elements.status.className = 'badge bg-success';
-                elements.status.textContent = '활성';
-            }
+            elements.status.className = 'badge bg-success';
+            elements.status.textContent = '활성';
         } else {
             elements.status.className = 'badge bg-secondary';
             elements.status.textContent = '비활성';
@@ -508,106 +549,6 @@ class UnifiedControl {
         if (status.total_ips !== undefined) {
             elements.ipCount.textContent = status.total_ips.toLocaleString();
         }
-        
-        // Progress
-        if (status.progress !== undefined) {
-            elements.progress.style.width = `${status.progress}%`;
-            elements.progress.textContent = `${status.progress}%`;
-        }
-    }
-    
-    // Load monthly data
-    async loadMonthlyData() {
-        try {
-            const response = await fetch('/api/monthly-data');
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                this.monthlyData = data.monthly_data;
-                this.displayMonthlyData();
-            } else {
-                // Fallback to stats API if monthly-data fails
-                try {
-                    const statsResponse = await fetch('/api/stats/monthly-data');
-                    const statsData = await statsResponse.json();
-                    
-                    if (statsData && Array.isArray(statsData)) {
-                        this.monthlyData = statsData.map(item => ({
-                            month: item.label || item.month,
-                            ip_count: item.total_ips || item.count || 0,
-                            details: {
-                                first_detection: '-',
-                                last_detection: '-',
-                                status: 'active'
-                            }
-                        }));
-                        this.displayMonthlyData();
-                    } else {
-                        throw new Error('Invalid stats data format');
-                    }
-                } catch (statsError) {
-                    console.error('Stats API also failed:', statsError);
-                    this.generateFallbackMonthlyData();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load monthly data:', error);
-            this.addLog('error', 'Failed to load monthly data');
-            this.generateFallbackMonthlyData();
-        }
-    }
-    
-    // Generate fallback monthly data based on current stats
-    generateFallbackMonthlyData() {
-        try {
-            const currentDate = new Date();
-            const currentMonth = currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
-            
-            // Get current total IPs from dashboard
-            const totalIpsElement = document.getElementById('total-ips');
-            const currentTotal = totalIpsElement ? parseInt(totalIpsElement.textContent) || 0 : 0;
-            
-            this.monthlyData = [{
-                month: currentMonth,
-                ip_count: currentTotal,
-                details: {
-                    first_detection: currentDate.toISOString().split('T')[0],
-                    last_detection: currentDate.toISOString().split('T')[0],
-                    status: 'active'
-                }
-            }];
-            
-            this.displayMonthlyData();
-        } catch (error) {
-            console.error('Failed to generate fallback data:', error);
-            this.monthlyData = [];
-            this.displayMonthlyData();
-        }
-    }
-    
-    // Display monthly data
-    displayMonthlyData() {
-        const tbody = document.querySelector('#monthly-data-table tbody');
-        
-        if (this.monthlyData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">데이터가 없습니다</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = this.monthlyData.map(month => `
-            <tr>
-                <td><strong>${month.month}</strong></td>
-                <td>${month.ip_count.toLocaleString()}</td>
-                <td>${month.details.first_detection || '-'}</td>
-                <td>${month.details.last_detection || '-'}</td>
-                <td><span class="badge bg-success">${month.details.status}</span></td>
-                <td>
-                    <button class="btn btn-sm btn-primary" onclick="viewMonthDetails('${month.month}')">
-                        <i class="bi bi-eye"></i> 상세보기
-                    </button>
-                </td>
-            </tr>
-        `).join('');
     }
     
     // Load collection logs from server
@@ -685,37 +626,6 @@ class UnifiedControl {
         const displayTimestamp = serverTimestamp.toLocaleTimeString('ko-KR');
         const collectorTag = collector ? `[${collector.toUpperCase()}]` : '';
         
-        // 상세 정보 포맷팅
-        let detailsHtml = '';
-        if (details && Object.keys(details).length > 0) {
-            const detailsArray = [];
-            if (details.ip_count !== undefined) {
-                detailsArray.push(`IP 개수: ${details.ip_count.toLocaleString()}개`);
-            }
-            if (details.total_deleted !== undefined) {
-                detailsArray.push(`삭제된 레코드: ${details.total_deleted.toLocaleString()}개`);
-            }
-            if (details.duration !== undefined) {
-                detailsArray.push(`소요시간: ${details.duration}초`);
-            }
-            if (details.file_name) {
-                detailsArray.push(`파일: ${details.file_name}`);
-            }
-            if (details.error) {
-                detailsArray.push(`오류: ${details.error}`);
-            }
-            
-            if (detailsArray.length > 0) {
-                detailsHtml = `
-                    <div class="log-details mt-2">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle"></i> ${detailsArray.join(' | ')}
-                        </small>
-                    </div>
-                `;
-            }
-        }
-        
         const logEntry = {
             timestamp: displayTimestamp,
             fullTimestamp: serverTimestamp.toISOString(),
@@ -728,7 +638,6 @@ class UnifiedControl {
                     <div class="log-main">
                         <strong>${displayTimestamp}</strong> ${collectorTag} ${message}
                     </div>
-                    ${detailsHtml}
                 </div>
             `
         };
@@ -763,49 +672,6 @@ class UnifiedControl {
         const timestamp = now.toLocaleTimeString('ko-KR');
         const collectorTag = collector ? `[${collector.toUpperCase()}]` : '';
         
-        // 상세 정보 포맷팅
-        let detailsHtml = '';
-        if (details && Object.keys(details).length > 0) {
-            const detailsArray = [];
-            if (details.ip_count !== undefined) {
-                detailsArray.push(`IP 개수: ${details.ip_count.toLocaleString()}개`);
-            }
-            if (details.total_deleted !== undefined) {
-                detailsArray.push(`삭제된 레코드: ${details.total_deleted.toLocaleString()}개`);
-            }
-            if (details.cleared_tables) {
-                detailsArray.push(`클리어된 테이블: ${details.cleared_tables.join(', ')}`);
-            }
-            if (details.table_counts) {
-                const tableCounts = Object.entries(details.table_counts)
-                    .map(([table, count]) => `${table}: ${count}개`)
-                    .join(', ');
-                detailsArray.push(`테이블별 삭제: ${tableCounts}`);
-            }
-            if (details.error) {
-                detailsArray.push(`오류: ${details.error}`);
-            }
-            if (details.duration !== undefined) {
-                detailsArray.push(`소요시간: ${details.duration}초`);
-            }
-            if (details.file_name) {
-                detailsArray.push(`파일: ${details.file_name}`);
-            }
-            if (details.source_url) {
-                detailsArray.push(`URL: ${details.source_url}`);
-            }
-            
-            if (detailsArray.length > 0) {
-                detailsHtml = `
-                    <div class="log-details mt-2">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle"></i> ${detailsArray.join(' | ')}
-                        </small>
-                    </div>
-                `;
-            }
-        }
-        
         const logEntry = {
             timestamp,
             fullTimestamp: now.toISOString(),
@@ -818,7 +684,6 @@ class UnifiedControl {
                     <div class="log-main">
                         <strong>${timestamp}</strong> ${collectorTag} ${message}
                     </div>
-                    ${detailsHtml}
                 </div>
             `
         };
@@ -862,13 +727,6 @@ class UnifiedControl {
         
         // Auto scroll
         logContainer.scrollTop = 0;
-    }
-    
-    // Clear logs
-    clearLogs() {
-        this.logBuffer = [];
-        this.renderLogs();
-        this.addLog('info', 'Logs cleared');
     }
     
     // Format time
@@ -950,28 +808,13 @@ async function triggerCollection(collector) {
         const data = await response.json();
         
         if (data.success === true) {
-            showNotification(`${collector.toUpperCase()} 수집 완료 - ${data.ip_count || data.collected_count || 0}개 IP`, 'success');
-            
-            // 상세 정보 추출 및 로그 추가
-            const details = {
-                ip_count: data.ip_count || data.collected_count || 0,
-                duration: data.duration,
-                file_name: data.file_name,
-                source_url: data.source_url,
-                ...data.details
-            };
-            
-            const sourceName = collector === 'regtech' ? 'REGTECH' : 
-                              collector === 'secudium' ? 'SECUDIUM' : collector.toUpperCase();
-            
+            showNotification(`${collector.toUpperCase()} 수집 완료`, 'success');
             unifiedControl.addLog('success', 
-                `${sourceName} 수집 완료: ${details.ip_count.toLocaleString()}개 IP`, 
-                collector, details);
+                `${collector.toUpperCase()} 수집 완료: ${data.details?.collected || 0}개 IP`, 
+                collector);
                 
-            // Refresh status and logs
+            // Refresh status
             unifiedControl.checkCollectionStatus();
-            unifiedControl.loadMonthlyData();
-            unifiedControl.loadCollectionLogs(); // 새로운 로그 로드
         } else {
             throw new Error(data.message || data.error || 'Collection failed');
         }
@@ -987,18 +830,11 @@ async function triggerCollection(collector) {
     }
 }
 
-// View month details
-function viewMonthDetails(month) {
-    // Redirect to data management page with month parameter
-    window.location.href = `/data-management?month=${month}`;
-}
-
 // Refresh data
 async function refreshData() {
-    showNotification('Refreshing data...', 'info');
+    showNotification('데이터를 새로고침합니다...', 'info');
     await unifiedControl.checkCollectionStatus();
-    await unifiedControl.loadMonthlyData();
-    showNotification('Data refreshed successfully', 'success');
+    showNotification('데이터 새로고침 완료', 'success');
 }
 
 // Cleanup old data
@@ -1012,9 +848,8 @@ async function cleanupOldData() {
         const data = await response.json();
         
         if (data.success) {
-            showNotification('Old data cleaned up successfully', 'success');
+            showNotification('오래된 데이터 정리 완료', 'success');
             unifiedControl.addLog('success', `Cleaned up ${data.deleted_count || 0} old records`);
-            await unifiedControl.loadMonthlyData();
         } else {
             throw new Error(data.message || 'Cleanup failed');
         }
@@ -1053,20 +888,9 @@ async function clearAllData() {
         
         if (data.success) {
             showNotification('데이터베이스가 성공적으로 클리어되었습니다.', 'success');
-            
-            // 상세 정보 추출
-            const details = {
-                total_deleted: data.total_deleted,
-                cleared_tables: data.cleared_tables,
-                table_counts: data.table_counts,
-                id_sequences_reset: data.id_sequences_reset,
-                cache_cleared: data.cache_cleared
-            };
-            
-            unifiedControl.addLog('warning', `Database cleared: ${data.message || 'All data removed'}`, null, details);
+            unifiedControl.addLog('warning', `Database cleared: ${data.message || 'All data removed'}`);
             // Refresh all data
             await unifiedControl.checkCollectionStatus();
-            await unifiedControl.loadMonthlyData();
         } else {
             throw new Error(data.message || 'DB 클리어 실패');
         }
@@ -1113,15 +937,9 @@ async function toggleDailyCollection(enable) {
             document.getElementById('enable-daily-collection').disabled = enable;
             document.getElementById('disable-daily-collection').disabled = !enable;
             
-            // Add log entry
-            const details = {
-                strategy: enable ? '3일 데이터 수집' : '비활성화',
-                mode: enable ? '자동 일일 수집' : '수동 수집만'
-            };
-            
             unifiedControl.addLog(enable ? 'success' : 'warning', 
                 `Daily collection ${enable ? 'enabled' : 'disabled'}`, 
-                'system', details);
+                'system');
                 
             // Refresh collection status
             await unifiedControl.checkCollectionStatus();
