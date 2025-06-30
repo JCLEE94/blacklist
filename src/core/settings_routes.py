@@ -333,7 +333,7 @@ def settings_management():
 
 
 @settings_bp.route('/api/settings', methods=['GET'])
-def get_all_settings_new():
+def get_all_settings_api():
     """모든 설정 조회 (카테고리별 그룹화)"""
     # try 블록 제거하고 직접 반환
     settings = {
