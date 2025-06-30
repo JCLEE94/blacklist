@@ -40,7 +40,16 @@ def ensure_database_schema():
         instance_dir = os.path.join(current_dir, 'instance')
     
     # instance 디렉토리 생성
-    os.makedirs(instance_dir, exist_ok=True)
+    try:
+        os.makedirs(instance_dir, exist_ok=True)
+    except Exception as e:
+        logger.warning(f"Failed to create instance directory: {e}")
+    
+    # 데이터베이스가 없으면 init_database 실행
+    if not os.path.exists(db_path):
+        logger.info(f"데이터베이스가 없습니다. 새로 생성합니다: {db_path}")
+        os.system("python3 init_database.py")
+        return
     
     logger.info(f"데이터베이스 스키마 확인 중: {db_path}")
     

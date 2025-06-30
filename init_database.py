@@ -12,18 +12,17 @@ def init_database(force_recreate=False):
     if os.path.exists('/app'):
         db_path = '/app/instance/blacklist.db'
         # Docker 환경에서 디렉토리 생성 및 권한 설정
-        try:
-            os.makedirs('/app/instance', exist_ok=True)
-            os.makedirs('/app/data', exist_ok=True)
-            os.makedirs('/app/logs', exist_ok=True)
-            os.makedirs('/app/data/by_detection_month', exist_ok=True)
-            # 권한 설정 시도
-            os.chmod('/app/instance', 0o777)
-            os.chmod('/app/data', 0o777)
-            os.chmod('/app/logs', 0o777)
-            os.chmod('/app/data/by_detection_month', 0o777)
-        except Exception as e:
-            print(f"Warning: Failed to set permissions: {e}")
+        dirs_to_create = ['/app/instance', '/app/data', '/app/logs', '/app/data/by_detection_month']
+        for directory in dirs_to_create:
+            try:
+                os.makedirs(directory, exist_ok=True)
+                # 권한 설정 시도 (실패해도 계속 진행)
+                try:
+                    os.chmod(directory, 0o777)
+                except:
+                    pass
+            except Exception as e:
+                print(f"Warning: Failed to create {directory}: {e}")
     else:
         db_path = 'instance/blacklist.db'
         os.makedirs('instance', exist_ok=True)
