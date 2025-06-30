@@ -15,9 +15,13 @@ chmod 777 /app/instance /app/data /app/logs /app/data/by_detection_month 2>/dev/
 echo "Directory permissions:"
 ls -la /app/ | grep -E "instance|data|logs"
 
-# Initialize database
-echo "Initializing database..."
-python3 init_database.py || true
+# Remove old database if exists and create new one
+echo "Removing old database files..."
+rm -f /app/instance/blacklist.db /app/instance/secudium.db 2>/dev/null || true
+
+# Initialize database - ALWAYS create fresh
+echo "Initializing fresh database..."
+python3 init_database.py --force-recreate || true
 
 # Start the application
 echo "Starting application..."
