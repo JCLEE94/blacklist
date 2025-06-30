@@ -1099,7 +1099,7 @@ def get_source_distribution():
         }), 500
 
 @unified_bp.route('/api/db/clear', methods=['POST'])
-def clear_database():
+def clear_db():
     """데이터베이스 클리어"""
     try:
         result = service.clear_all_data()
