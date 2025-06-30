@@ -106,7 +106,7 @@ kubectl apply -f k8s/
 - **다중 소스 IP 수집**: REGTECH(금융보안원), SECUDIUM, 공개 위협 정보
 - **FortiGate 연동**: External Connector API 완벽 지원
 - **자동 수집**: 매일 자동 수집 및 업데이트
-- **고가용성**: 4개 레플리카 기본 구성
+- **고가용성**: 멀티 레플리카 구성 지원
 - **데이터 영속성**: PVC 기반 SQLite 데이터베이스
 - **통합 관리**: 웹 기반 대시보드 및 제어판
 
@@ -374,13 +374,13 @@ RUN apk add --no-cache \
     zlib-dev
 ```
 
-### 네트워크 구성 (오프라인)
-- **내부 통신만 허용**
-  - ClusterIP 서비스 타입 사용
-  - NodePort는 관리자 접근용 (32541)
-  - 외부 인터넷 접근 차단
+### 네트워크 구성
+- **서비스 타입**
+  - ClusterIP: 클러스터 내부 통신
+  - NodePort: 외부 접근 (32541)
+  - LoadBalancer/Ingress: 프로덕션 환경
   
-### 보안 강화 (오프라인 환경)
+### 보안 강화
 - **이미지 스캔**: Trivy로 취약점 사전 검사
 - **시크릿 관리**: Kubernetes Secrets 사용
 - **최소 권한**: non-root 사용자 실행
@@ -518,7 +518,6 @@ kubectl logs deployment/blacklist -n blacklist | tail -50
 CPU: 2 cores (4 cores 권장)
 Memory: 4GB (8GB 권장)
 Storage: 20GB SSD (데이터 증가 고려)
-Network: 내부 네트워크만 (오프라인)
 
 # Kubernetes 클러스터
 Master Node: 2 cores, 4GB RAM
@@ -548,17 +547,15 @@ resources:
 ```
 
 ### 성능 특성
-- **IP 처리 용량**: 10만개 이상 동시 관리
-- **일일 수집량**: 22,000+ IP (REGTECH + SECUDIUM)
+- **최대 IP 처리 용량**: 100만개 이상
 - **API 응답 시간**: 
   - 캐시 히트: < 10ms
   - 캐시 미스: < 100ms
   - 대량 조회: < 500ms
 - **메모리 사용량**:
   - 기본 상태: ~300MB
-  - 10만 IP 로드: ~800MB
-  - 피크 시간: < 1.5GB
-- **DB 크기 증가율**: ~10MB/일
+  - 10만 IP: ~800MB
+  - 100만 IP: ~2GB
 
 ### 백업 및 복구
 ```bash
