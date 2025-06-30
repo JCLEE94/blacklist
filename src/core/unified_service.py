@@ -1347,6 +1347,8 @@ class UnifiedBlacklistService:
                 }
             
             import sqlite3
+            
+            # 먼저 데이터 삭제 작업 수행
             with sqlite3.connect(db_path) as conn:
                 cursor = conn.cursor()
                 
@@ -1382,10 +1384,16 @@ class UnifiedBlacklistService:
                         # sqlite_sequence 테이블이 없거나 해당 테이블에 항목이 없으면 무시
                         pass
                 
-                # VACUUM으로 데이터베이스 최적화
-                cursor.execute("VACUUM")
-                
                 conn.commit()
+            
+            # VACUUM은 별도 연결에서 실행 (자동 커밋 모드)
+            try:
+                conn = sqlite3.connect(db_path)
+                conn.execute("VACUUM")
+                conn.close()
+                self.logger.info("Database optimized with VACUUM")
+            except Exception as e:
+                self.logger.warning(f"VACUUM failed: {e}")
                 
                 # 메모리 캐시도 클리어
                 if hasattr(self, 'collection_logs'):

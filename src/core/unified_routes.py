@@ -765,33 +765,54 @@ def search_batch_ips():
 def get_monthly_data():
     """월별 수집 데이터 조회"""
     try:
-        # 데이터베이스에서 월별 집계 데이터 조회
-        from sqlalchemy import func, extract
-        from src.models.blacklist import BlacklistIP
-        from src.core.database import get_db_session
+        # SQLite를 직접 사용하여 월별 집계 데이터 조회
+        import sqlite3
+        from datetime import datetime
+        
+        # 데이터베이스 경로 결정
+        db_path = None
+        if hasattr(service.blacklist_manager, 'db_path'):
+            db_path = service.blacklist_manager.db_path
+        else:
+            from ..config.settings import settings
+            db_uri = settings.database_uri
+            if db_uri.startswith('sqlite:///'):
+                db_path = db_uri[10:]
+            elif db_uri.startswith('sqlite://'):
+                db_path = db_uri[9:]
+            else:
+                db_path = str(settings.instance_dir / 'blacklist.db')
         
         monthly_data = []
         
-        with get_db_session() as session:
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
             # 최근 12개월 데이터 조회
-            results = session.query(
-                func.strftime('%Y-%m', BlacklistIP.created_at).label('month'),
-                func.count(BlacklistIP.id).label('count'),
-                func.min(BlacklistIP.created_at).label('first_detection'),
-                func.max(BlacklistIP.created_at).label('last_detection')
-            ).group_by(
-                func.strftime('%Y-%m', BlacklistIP.created_at)
-            ).order_by(
-                func.strftime('%Y-%m', BlacklistIP.created_at).desc()
-            ).limit(12).all()
+            query = """
+                SELECT 
+                    strftime('%Y-%m', created_at) as month,
+                    COUNT(*) as count,
+                    MIN(created_at) as first_detection,
+                    MAX(created_at) as last_detection
+                FROM blacklist_ip 
+                WHERE created_at IS NOT NULL
+                GROUP BY strftime('%Y-%m', created_at)
+                ORDER BY strftime('%Y-%m', created_at) DESC
+                LIMIT 12
+            """
+            
+            cursor.execute(query)
+            results = cursor.fetchall()
             
             for row in results:
                 monthly_data.append({
-                    'month': row.month,
-                    'ip_count': row.count,
+                    'month': row['month'],
+                    'ip_count': row['count'],
                     'details': {
-                        'first_detection': row.first_detection.strftime('%Y-%m-%d') if row.first_detection else '-',
-                        'last_detection': row.last_detection.strftime('%Y-%m-%d') if row.last_detection else '-',
+                        'first_detection': row['first_detection'][:10] if row['first_detection'] else '-',  # YYYY-MM-DD 추출
+                        'last_detection': row['last_detection'][:10] if row['last_detection'] else '-',  # YYYY-MM-DD 추출
                         'status': 'active'
                     }
                 })
