@@ -96,11 +96,11 @@ class Settings:
     
     @property
     def regtech_username(self) -> str:
-        return os.getenv('REGTECH_USERNAME', 'nextrade')
+        return os.getenv('REGTECH_USERNAME')
     
     @property
     def regtech_password(self) -> str:
-        return os.getenv('REGTECH_PASSWORD', 'Sprtmxm1@3')
+        return os.getenv('REGTECH_PASSWORD')
     
     @property
     def secudium_base_url(self) -> str:
@@ -108,11 +108,11 @@ class Settings:
     
     @property
     def secudium_username(self) -> str:
-        return os.getenv('SECUDIUM_USERNAME', 'nextrade')
+        return os.getenv('SECUDIUM_USERNAME')
     
     @property
     def secudium_password(self) -> str:
-        return os.getenv('SECUDIUM_PASSWORD', 'Sprtmxm1@3')
+        return os.getenv('SECUDIUM_PASSWORD')
     
     @property
     def blacklist_api_url(self) -> str:
