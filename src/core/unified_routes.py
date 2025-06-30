@@ -1519,7 +1519,7 @@ def clear_database():
 # === 일일 수집 제어 API ===
 
 @unified_bp.route('/api/collection/daily/enable', methods=['POST'])
-def enable_daily_collection():
+def api_enable_daily_collection():
     """일일 자동 수집 활성화"""
     try:
         data = request.get_json() or {}
@@ -1548,7 +1548,7 @@ def enable_daily_collection():
         }), 500
 
 @unified_bp.route('/api/collection/daily/disable', methods=['POST'])
-def disable_daily_collection():
+def api_disable_daily_collection():
     """일일 자동 수집 비활성화"""
     try:
         # 일일 수집 설정 비활성화
@@ -1573,7 +1573,7 @@ def disable_daily_collection():
         }), 500
 
 @unified_bp.route('/api/collection/daily/status', methods=['GET'])
-def get_daily_collection_status():
+def api_get_daily_collection_status():
     """일일 자동 수집 상태 조회"""
     try:
         # 일일 수집 설정 조회
