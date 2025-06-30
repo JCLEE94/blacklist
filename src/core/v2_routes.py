@@ -37,7 +37,7 @@ class V2APIService:
         self.executor = ThreadPoolExecutor(max_workers=10)
         
     @optimizer.measure_performance("v2_get_enhanced_blacklist")
-    def get_enhanced_blacklist(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+    def get_enhanced_blacklist_data(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         """향상된 블랙리스트 조회"""
         # 필터 파싱
         limit = filters.get('limit', 1000)
@@ -212,7 +212,7 @@ def get_enhanced_blacklist_v2_route():
         'min_risk_score': request.args.get('min_risk_score', 0, type=float)
     }
     
-    result = v2_service.get_enhanced_blacklist(filters)
+    result = v2_service.get_enhanced_blacklist_data(filters)
     return jsonify(result)
 
 
@@ -267,7 +267,7 @@ def export_data(format):
     }
     
     try:
-        data = v2_service.get_enhanced_blacklist(filters)['data']
+        data = v2_service.get_enhanced_blacklist_data(filters)['data']
         
         if format == 'json':
             return jsonify(data)
@@ -389,7 +389,7 @@ def warm_cache():
     
     # 기본 블랙리스트
     try:
-        v2_service.get_enhanced_blacklist({'limit': 1000, 'offset': 0})
+        v2_service.get_enhanced_blacklist_data({'limit': 1000, 'offset': 0})
         warmed.append('blacklist:default')
     except:
         pass
