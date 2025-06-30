@@ -1,6 +1,6 @@
 # Blacklist Management System
 
-[![CI/CD](https://github.com/jclee/blacklist/actions/workflows/build-deploy.yml/badge.svg)](https://github.com/jclee/blacklist/actions)
+(https://github.com/jclee/blacklist/actions/workflows/build-deploy.yml/badge.svg)](https://github.com/jclee/blacklist/actions)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.24+-blue.svg)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/docker-registry.jclee.me-blue.svg)](https://registry.jclee.me)
 
