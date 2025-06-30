@@ -1651,8 +1651,7 @@ def get_daily_stats():
         return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/stats/expiration', methods=['GET'])
-
-def get_expiration_stats():
+def get_expiration_statistics():
     """만료 관련 통계 조회"""
     try:
         blacklist_manager = service.blacklist_manager
