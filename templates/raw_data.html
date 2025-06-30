@@ -243,7 +243,7 @@ function getFilters() {
         date: document.getElementById('dateFilter').value,
         source: document.getElementById('sourceFilter').value,
         attack_type: document.getElementById('attackTypeFilter').value,
-        ip: document.getElementById('ipSearch').value
+        ip_search: document.getElementById('ipSearch').value
     };
 }
 
@@ -267,7 +267,7 @@ function updateTable(data) {
             <td>${item.country || 'N/A'}</td>
             <td class="date-text">${formatDate(item.detection_date)}</td>
             <td class="date-text">${formatDateTime(item.created_at)}</td>
-            <td><small>${item.metadata ? JSON.stringify(JSON.parse(item.metadata)).substring(0, 50) + '...' : 'N/A'}</small></td>
+            <td><small>${item.extra_data ? JSON.stringify(JSON.parse(item.extra_data)).substring(0, 50) + '...' : 'N/A'}</small></td>
         </tr>
     `).join('');
 }

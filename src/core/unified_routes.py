@@ -2199,9 +2199,20 @@ def raw_data_page():
 
 @unified_bp.route('/api/raw-data', methods=['GET'])
 def get_raw_data():
-    """Raw blacklist data API endpoint"""
+    """Raw blacklist data API endpoint with pagination and filters"""
     try:
-        # Get all blacklist IPs with details
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 100, type=int)
+        date_filter = request.args.get('date')
+        source_filter = request.args.get('source')
+        attack_type_filter = request.args.get('attack_type')
+        ip_search = request.args.get('ip_search')
+        
+        # Calculate offset
+        offset = (page - 1) * limit
+        
+        # Get database connection
         import sqlite3
         import os
         db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
@@ -2209,8 +2220,35 @@ def get_raw_data():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Query all data with detection_date
-        query = """
+        # Build WHERE clause
+        where_conditions = []
+        params = []
+        
+        if date_filter:
+            where_conditions.append("DATE(detection_date) = ?")
+            params.append(date_filter)
+        
+        if source_filter:
+            where_conditions.append("source = ?")
+            params.append(source_filter)
+        
+        if attack_type_filter:
+            where_conditions.append("attack_type = ?")
+            params.append(attack_type_filter)
+        
+        if ip_search:
+            where_conditions.append("ip LIKE ?")
+            params.append(f"%{ip_search}%")
+        
+        where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+        
+        # Get total count
+        count_query = f"SELECT COUNT(*) FROM blacklist_ip{where_clause}"
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()[0]
+        
+        # Get paginated data
+        data_query = f"""
         SELECT 
             id,
             ip,
@@ -2221,10 +2259,12 @@ def get_raw_data():
             created_at,
             extra_data
         FROM blacklist_ip
+        {where_clause}
         ORDER BY id DESC
+        LIMIT ? OFFSET ?
         """
         
-        cursor.execute(query)
+        cursor.execute(data_query, params + [limit, offset])
         rows = cursor.fetchall()
         
         # Convert to list of dicts
@@ -2246,7 +2286,9 @@ def get_raw_data():
         return jsonify({
             'success': True,
             'data': data,
-            'total': len(data),
+            'total': total_count,
+            'page': page,
+            'limit': limit,
             'timestamp': datetime.now().isoformat()
         })
         
