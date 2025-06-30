@@ -98,9 +98,10 @@ jobs:
     
     - name: Configure kubectl
       run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-        chmod 600 ~/.kube/config
+        mkdir -p ${{ github.workspace }}/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ${{ github.workspace }}/.kube/config
+        chmod 600 ${{ github.workspace }}/.kube/config
+        export KUBECONFIG=${{ github.workspace }}/.kube/config
     
     - name: Update image tag
       run: |
@@ -109,12 +110,14 @@ jobs:
     
     - name: Deploy to Kubernetes
       run: |
+        export KUBECONFIG=${{ github.workspace }}/.kube/config
         cd k8s
         kustomize build . | kubectl apply -f -
         kubectl rollout status deployment/blacklist -n blacklist --timeout=300s
     
     - name: Verify deployment
       run: |
+        export KUBECONFIG=${{ github.workspace }}/.kube/config
         kubectl get pods -n blacklist
         kubectl get svc -n blacklist
         
@@ -142,11 +145,13 @@ jobs:
     steps:
     - name: Configure kubectl
       run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-        chmod 600 ~/.kube/config
+        mkdir -p ${{ github.workspace }}/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ${{ github.workspace }}/.kube/config
+        chmod 600 ${{ github.workspace }}/.kube/config
+        export KUBECONFIG=${{ github.workspace }}/.kube/config
     
     - name: Rollback deployment
       run: |
+        export KUBECONFIG=${{ github.workspace }}/.kube/config
         kubectl rollout undo deployment/blacklist -n blacklist
         kubectl rollout status deployment/blacklist -n blacklist --timeout=300s

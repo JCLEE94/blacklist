@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.regtech_collector import RegtechCollector
+from src.core.regtech_collector import RegtechCollector
 from datetime import datetime, timedelta
 
 def test_excel_download():
