@@ -3,9 +3,9 @@
 애플리케이션 설정 모델
 데이터베이스에 저장되는 동적 설정 관리
 """
+import os  # os 모듈을 맨 처음에 import
 import json
 import sqlite3
-import os
 from typing import Any, Dict, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, asdict
