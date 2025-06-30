@@ -67,5 +67,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port (configurable)
 EXPOSE ${PORT:-8541}
 
+# Copy startup script
+COPY --chown=app:app startup.sh /app/startup.sh
+RUN chmod +x /app/startup.sh
+
 # Initialize database if needed and start application
-CMD ["/bin/bash", "-c", "python3 init_database.py || true && python3 main.py"]
+CMD ["/app/startup.sh"]

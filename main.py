@@ -79,6 +79,25 @@ def ensure_database_schema():
         if 'conn' in locals():
             conn.close()
 
+# 권한 문제 해결을 위한 디렉토리 생성 및 권한 설정
+def ensure_directories_with_permissions():
+    """필요한 디렉토리 생성 및 권한 설정"""
+    directories = ['instance', 'data', 'logs', 'data/by_detection_month']
+    
+    for directory in directories:
+        try:
+            os.makedirs(directory, exist_ok=True)
+            # 디렉토리가 이미 존재하더라도 권한 재설정 시도
+            try:
+                os.chmod(directory, 0o777)
+            except Exception as e:
+                logger.warning(f"Failed to set permissions for {directory}: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to create directory {directory}: {e}")
+
+# 권한 설정 먼저 실행
+ensure_directories_with_permissions()
+
 # 애플리케이션 시작 전 스키마 확인
 ensure_database_schema()
 
