@@ -2262,6 +2262,89 @@ def not_found_error(error):
         ]
     }), 404
 
+@unified_bp.route('/system-settings')
+def system_settings_page():
+    """시스템 설정 페이지"""
+    return render_template('system_settings.html')
+
+@unified_bp.route('/api/settings', methods=['GET', 'POST'])
+def api_settings():
+    """시스템 설정 API"""
+    try:
+        if request.method == 'GET':
+            # 현재 설정 반환
+            settings = {
+                'update_interval': int(os.environ.get('UPDATE_INTERVAL', '10800000')),  # 3시간
+                'data_retention': int(os.environ.get('DATA_RETENTION', '90')),  # 90일
+                'cache_ttl': int(os.environ.get('CACHE_TTL', '300')),  # 5분
+                'log_level': os.environ.get('LOG_LEVEL', 'INFO')
+            }
+            return jsonify({
+                'success': True,
+                'settings': settings
+            })
+        
+        elif request.method == 'POST':
+            # 설정 업데이트 (실제로는 환경 변수이므로 재시작 필요)
+            data = request.get_json() or {}
+            
+            # localStorage를 통해 클라이언트 측에서 관리
+            return jsonify({
+                'success': True,
+                'message': '설정이 저장되었습니다. 일부 설정은 재시작 후 적용됩니다.',
+                'settings': data
+            })
+            
+    except Exception as e:
+        logger.error(f"Settings API error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/maintenance/cleanup', methods=['POST'])
+def maintenance_cleanup():
+    """오래된 데이터 정리"""
+    try:
+        # 90일 이상 된 데이터 삭제
+        blacklist_manager = current_app.blacklist_manager
+        retention_days = int(os.environ.get('DATA_RETENTION', '90'))
+        
+        deleted_count = blacklist_manager.cleanup_old_data(retention_days)
+        
+        return jsonify({
+            'success': True,
+            'deleted_count': deleted_count,
+            'message': f'{deleted_count}개의 오래된 레코드가 정리되었습니다.'
+        })
+        
+    except Exception as e:
+        logger.error(f"Maintenance cleanup error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/maintenance/clear-cache', methods=['POST'])
+def maintenance_clear_cache():
+    """캐시 초기화"""
+    try:
+        cache_manager = current_app.cache_manager
+        if cache_manager:
+            cache_manager.clear()
+            
+        return jsonify({
+            'success': True,
+            'message': '캐시가 초기화되었습니다.'
+        })
+        
+    except Exception as e:
+        logger.error(f"Clear cache error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @unified_bp.route('/raw-data')
 def raw_data_page():
     """Raw data 페이지"""

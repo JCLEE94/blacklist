@@ -31,7 +31,7 @@
                 <div class="card-body">
                     <!-- Collection Status Overview -->
                     <div class="row mb-4">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
                                     <div class="status-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
@@ -44,20 +44,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="status-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                        <i class="bi bi-collection"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h4 class="mb-0" id="active-collectors">0</h4>
-                                    <small class="text-muted">활성 수집기</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
                                     <div class="status-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
@@ -70,7 +57,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
                                     <div class="status-icon bg-warning text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
@@ -82,6 +69,19 @@
                                     <small class="text-muted">마지막 수집</small>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Settings Link -->
+                    <div class="alert alert-light border mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <i class="bi bi-info-circle text-primary"></i>
+                                수집기 ON/OFF 제어 및 시스템 설정은 시스템 설정 페이지에서 관리하세요.
+                            </div>
+                            <a href="/system-settings" class="btn btn-sm btn-primary">
+                                <i class="bi bi-gear-fill"></i> 시스템 설정으로 이동
+                            </a>
                         </div>
                     </div>
 
@@ -500,19 +500,15 @@ class UnifiedControl {
     updateOverallStatus(data) {
         const statusBadge = document.querySelector('#collection-status-badge .badge');
         const totalIps = document.getElementById('total-ips');
-        const activeCollectors = document.getElementById('active-collectors');
         const todayCollected = document.getElementById('today-collected');
         const lastCollection = document.getElementById('last-collection');
         
         if (data.collection_enabled) {
             statusBadge.className = 'badge bg-success';
-            statusBadge.textContent = '수집 활성';
-            activeCollectors.textContent = Object.values(data.sources || {})
-                .filter(s => s.enabled).length;
+            statusBadge.textContent = '자동 수집 활성';
         } else {
             statusBadge.className = 'badge bg-light text-dark';
-            statusBadge.textContent = '수집 비활성';
-            activeCollectors.textContent = '0';
+            statusBadge.textContent = '자동 수집 비활성';
         }
         
         // 대시보드와 동일한 통계 데이터 사용
