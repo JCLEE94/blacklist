@@ -23,13 +23,35 @@ def settings_page():
     """설정 페이지 렌더링"""
     container = get_container()
     
-    # 현재 설정 값 가져오기
+    # 데이터베이스에서 설정 가져오기
+    try:
+        from ..models.settings import get_settings_manager
+        settings_manager = get_settings_manager()
+        
+        # 현재 설정 값 가져오기
+        settings_dict = {
+            'regtech_username': settings_manager.get_setting('regtech_username', settings.regtech_username),
+            'regtech_password': settings_manager.get_setting('regtech_password', ''),
+            'secudium_username': settings_manager.get_setting('secudium_username', settings.secudium_username),
+            'secudium_password': settings_manager.get_setting('secudium_password', ''),
+            'data_retention_days': settings_manager.get_setting('data_retention_days', 90),
+            'max_ips_per_source': settings_manager.get_setting('max_ips_per_source', 50000)
+        }
+    except Exception as e:
+        logger.error(f"설정 로드 실패: {e}")
+        # 기본값 사용
+        settings_dict = {
+            'regtech_username': settings.regtech_username,
+            'regtech_password': '',
+            'secudium_username': settings.secudium_username,
+            'secudium_password': '',
+            'data_retention_days': 90,
+            'max_ips_per_source': 50000
+        }
+    
     context = {
-        'regtech_username': settings.regtech_username,
-        'secudium_username': settings.secudium_username,
-        'auto_collection': getattr(settings, 'auto_collection', True),
-        'collection_interval': getattr(settings, 'collection_interval', 6),
-        'data_retention': getattr(settings, 'data_retention', 90),
+        'title': 'Blacklist Manager',
+        'settings': settings_dict,
         'server_uptime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'db_size': '계산 중...',
         'cache_status': '활성',

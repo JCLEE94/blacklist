@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  blacklist:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    container_name: blacklist
+    restart: unless-stopped
+    ports:
+      - "2541:2541"
+    environment:
+      - FLASK_ENV=production
+      - PORT=2541
+      - HOST=0.0.0.0
+      - REGTECH_USERNAME=nextrade
+      - REGTECH_PASSWORD=Sprtmxm1@3
+      - SECUDIUM_USERNAME=nextrade
+      - SECUDIUM_PASSWORD=Sprtmxm1@3
+    volumes:
+      - ./instance:/app/instance
+      - ./data:/app/data
+      - ./logs:/app/logs
