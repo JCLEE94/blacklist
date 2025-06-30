@@ -5,12 +5,15 @@
 ## 🚀 주요 기능
 
 - **다중 소스 통합**: REGTECH, SECUDIUM 등 여러 위협 인텔리전스 소스 통합
+- **실제 탐지일 기반**: 엑셀 데이터에서 추출한 원본 탐지일 저장 및 표시
+- **데이터베이스 기반 설정**: 동적 설정 관리 시스템으로 실시간 설정 변경
 - **자동화된 수집**: 예약된 수집 및 실시간 업데이트
 - **FortiGate 연동**: External Connector API를 통한 직접 통합
 - **성능 최적화**: Redis 캐싱, 비동기 처리, orjson 고속 JSON 처리
 - **컨테이너화**: Docker 기반 배포 및 Watchtower 자동 업데이트
 - **웹 대시보드**: 실시간 모니터링 및 관리 인터페이스
 - **Docker 로그 모니터링**: 컨테이너 로그 스트리밍 인터페이스
+- **HAR 기반 수집**: 안정적인 웹 수집을 위한 HTTP Archive 기반 컬렉터
 
 ## 📋 요구사항
 
@@ -40,7 +43,7 @@ cp .env.example .env
 pip install -r requirements.txt
 
 # 데이터베이스 초기화
-python3 setup_database.py
+python3 init_database.py
 
 # 개발 서버 실행 (기본 포트: 8541)
 python3 main.py
@@ -85,10 +88,10 @@ IMAGE_NAME=blacklist
 APP_PORT=2541
 
 # 외부 서비스 인증
-REGTECH_USERNAME=nextrade
-REGTECH_PASSWORD=Sprtmxm1@3
-SECUDIUM_USERNAME=nextrade
-SECUDIUM_PASSWORD=Sprtmxm1@3
+REGTECH_USERNAME=your_regtech_username
+REGTECH_PASSWORD=your_regtech_password
+SECUDIUM_USERNAME=your_secudium_username
+SECUDIUM_PASSWORD=your_secudium_password
 
 # Redis (선택사항)
 REDIS_URL=redis://redis:6379/0
@@ -105,26 +108,43 @@ API_SECRET_KEY=your-api-secret
 
 ```
 blacklist/
-├── src/                    # 소스 코드
-│   ├── core/              # 핵심 비즈니스 로직
-│   │   ├── container.py   # 의존성 주입 컨테이너
-│   │   ├── app_compact.py # 메인 애플리케이션
+├── src/                         # 소스 코드
+│   ├── core/                   # 핵심 비즈니스 로직
+│   │   ├── container.py        # 의존성 주입 컨테이너
+│   │   ├── app_compact.py      # 메인 애플리케이션 (진입점)
+│   │   ├── unified_routes.py   # 통합 라우트 (모든 API 엔드포인트)
+│   │   ├── unified_service.py  # 통합 서비스 (비즈니스 로직)
 │   │   ├── collection_manager.py # 수집 관리
-│   │   └── ip_sources/    # IP 소스 플러그인
-│   ├── config/            # 설정 관리
-│   ├── utils/             # 유틸리티 함수
-│   └── web/               # 웹 라우트 및 API
-├── deployment/            # 배포 관련 파일
-│   ├── docker-compose.yml # Docker Compose 설정
-│   ├── Dockerfile         # 멀티스테이지 Docker 빌드
-│   └── docker-compose.watchtower.yml  # Watchtower 설정
-├── scripts/               # 유틸리티 스크립트
-├── tests/                 # 테스트 코드
-├── templates/             # HTML 템플릿
-├── static/                # 정적 파일 (CSS, JS)
-├── .github/workflows/     # CI/CD 파이프라인
-├── main.py                # 진입점
-└── CLAUDE.md              # Claude Code 가이드
+│   │   ├── settings_routes.py  # 설정 관리 API
+│   │   ├── v2_routes.py       # V2 고급 API
+│   │   ├── *_collector.py     # 소스별 수집기 (REGTECH, SECUDIUM)
+│   │   └── ip_sources/        # IP 소스 플러그인 시스템
+│   ├── models/                # 데이터 모델
+│   │   └── settings.py        # 설정 데이터 모델
+│   ├── config/                # 설정 관리
+│   │   ├── settings.py        # 기본 설정
+│   │   └── sources.json       # IP 소스 설정
+│   ├── utils/                 # 유틸리티 함수
+│   │   ├── advanced_cache.py  # 고급 캐싱 시스템
+│   │   ├── performance.py     # 성능 최적화
+│   │   └── structured_logging.py # 구조화된 로깅
+│   └── services/              # 서비스 레이어
+├── deployment/                # 배포 관련 파일
+│   ├── docker-compose.yml     # 프로덕션 Docker Compose
+│   ├── Dockerfile             # 멀티스테이지 Docker 빌드
+│   └── docker-compose.watchtower.yml # Watchtower 자동 배포
+├── templates/                 # HTML 템플릿
+│   ├── settings/              # 설정 관리 UI
+│   └── *.html                 # 각종 대시보드 템플릿
+├── static/                    # 정적 파일 (CSS, JS)
+├── scripts/                   # 유틸리티 스크립트
+│   ├── collection/            # 수집 관련 스크립트
+│   └── deployment/            # 배포 스크립트
+├── tests/                     # 테스트 코드
+├── .github/workflows/         # CI/CD 파이프라인
+├── main.py                    # 진입점 (app_compact.py로 위임)
+├── init_database.py           # 데이터베이스 초기화
+└── CLAUDE.md                  # Claude Code 개발자 가이드
 ```
 
 ## 🚢 배포 방식
@@ -191,6 +211,14 @@ docker push registry.jclee.me/blacklist:latest
 - `GET /api/search/{ip}` - 단일 IP 조회 (이력 포함)
 - `POST /api/search` - 배치 IP 검색 (JSON 페이로드)
 - `GET /api/stats/detection-trends` - 탐지 동향 분석
+- `GET /api/raw-data` - 전체 블랙리스트 데이터 (페이지네이션, 필터링 지원)
+
+### 설정 관리
+
+- `GET /api/settings` - 모든 설정 조회 (카테고리별 그룹화)
+- `POST /api/settings` - 설정 일괄 저장
+- `PUT /api/settings/{key}` - 개별 설정 업데이트
+- `POST /api/settings/reset` - 모든 설정을 기본값으로 리셋
 
 ### V2 고급 API
 
@@ -337,6 +365,6 @@ bandit -r src/
 
 ---
 
-**현재 버전**: v3.1.0  
-**마지막 업데이트**: 2025.06.26  
-**유지보수자**: JC Lee# Trigger deployment
+**현재 버전**: v3.2.0  
+**마지막 업데이트**: 2025.06.30  
+**유지보수자**: JC Lee

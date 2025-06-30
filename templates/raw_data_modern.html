@@ -694,7 +694,7 @@ function renderPage(page) {
                 <td><span class="source-badge ${item.source.toLowerCase()}">${item.source}</span></td>
                 <td>${item.country ? `<span class="country-code">${item.country}</span>` : '-'}</td>
                 <td>${item.attack_type ? `<span class="attack-type-badge">${item.attack_type}</span>` : '-'}</td>
-                <td class="date-text">${formatDate(item.created_at)}</td>
+                <td class="date-text">${formatDate(item.detection_date)}</td>
                 <td>
                     <button class="action-btn" onclick="viewDetails(${item.id})" title="상세 보기">
                         <i class="bi bi-eye"></i>

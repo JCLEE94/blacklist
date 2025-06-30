@@ -101,3 +101,8 @@ $SHRIMP_DATA_DIR/
 *.har
 har_analysis/
 archives/
+archive/
+
+# Deprecated files
+archive/deprecated_files/
+archive/deprecated_templates/
