@@ -299,6 +299,351 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Statistics Dashboard Class
+class StatisticsDashboard {
+    constructor() {
+        this.charts = {};
+        this.data = {};
+        this.filters = {
+            dateRange: '30d',
+            source: 'all',
+            ipType: 'all'
+        };
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.loadInitialData();
+        this.initializeCharts();
+    }
+
+    setupEventListeners() {
+        // Filter controls
+        document.getElementById('dateRangeFilter').addEventListener('change', (e) => {
+            this.filters.dateRange = e.target.value;
+            this.refreshAllCharts();
+        });
+
+        document.getElementById('sourceFilter').addEventListener('change', (e) => {
+            this.filters.source = e.target.value;
+            this.refreshAllCharts();
+        });
+
+        document.getElementById('ipTypeFilter').addEventListener('change', (e) => {
+            this.filters.ipType = e.target.value;
+            this.refreshAllCharts();
+        });
+
+        // Export button
+        document.getElementById('exportStats').addEventListener('click', () => {
+            this.exportStatistics();
+        });
+    }
+
+    async loadInitialData() {
+        this.showLoading();
+        try {
+            // Load multiple data sources in parallel
+            const [systemHealth, enhancedData, monthlyData] = await Promise.all([
+                this.fetchSystemHealth(),
+                this.fetchEnhancedBlacklist(),
+                this.fetchMonthlyData()
+            ]);
+
+            this.data = {
+                systemHealth,
+                enhancedData,
+                monthlyData
+            };
+
+            this.updateSummaryCards();
+            this.updateLastRefreshTime();
+            
+        } catch (error) {
+            console.error('Failed to load initial data:', error);
+            this.showError('데이터 로드 실패: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async fetchSystemHealth() {
+        const response = await fetch('/api/stats');
+        if (!response.ok) throw new Error('System health API failed');
+        return response.json();
+    }
+
+    async fetchEnhancedBlacklist() {
+        const params = new URLSearchParams({
+            per_page: 1000,
+            source: this.filters.source !== 'all' ? this.filters.source : ''
+        });
+        
+        const response = await fetch(`/api/blacklist/enhanced?${params}`);
+        if (!response.ok) throw new Error('Enhanced blacklist API failed');
+        return response.json();
+    }
+
+    async fetchMonthlyData() {
+        const response = await fetch('/api/stats/monthly-data');
+        if (!response.ok) throw new Error('Monthly data API failed');
+        return response.json();
+    }
+
+    updateSummaryCards() {
+        const { systemHealth, enhancedData } = this.data;
+        
+        // Update total threats
+        const totalThreats = systemHealth?.total_ips || enhancedData?.pagination?.total || 0;
+        document.getElementById('totalThreats').textContent = totalThreats.toLocaleString();
+
+        // Update active threats
+        const activeThreats = enhancedData?.expiry_stats?.active || systemHealth?.active_ips || 0;
+        document.getElementById('activeThreats').textContent = activeThreats.toLocaleString();
+
+        // Calculate block rate
+        const blockRate = totalThreats > 0 ? Math.round((activeThreats / totalThreats) * 100) : 0;
+        document.getElementById('blockRate').textContent = blockRate + '%';
+
+        // Update data sources count
+        const activeSources = Object.keys(systemHealth?.sources || {}).filter(
+            key => systemHealth.sources[key]?.enabled
+        ).length;
+        document.getElementById('dataSources').textContent = activeSources;
+
+        // Update data points
+        document.getElementById('dataPoints').textContent = (enhancedData?.data?.length || 0).toLocaleString();
+    }
+
+    initializeCharts() {
+        this.createTrendChart();
+        this.createSourceChart();
+        this.createThreatLevelChart();
+    }
+
+    createTrendChart() {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const monthlyData = this.data.monthlyData || [];
+        
+        // Prepare data for the last 12 months
+        const labels = monthlyData.map(item => item.label || item.month).slice(-12);
+        const data = monthlyData.map(item => item.total_ips || item.count || 0).slice(-12);
+
+        this.charts.trend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '블랙리스트 IP 수',
+                    data: data,
+                    borderColor: '#5046e5',
+                    backgroundColor: 'rgba(80, 70, 229, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createSourceChart() {
+        const ctx = document.getElementById('sourceChart').getContext('2d');
+        const { systemHealth } = this.data;
+        
+        const regtechCount = systemHealth?.regtech_count || 0;
+        const secudiumCount = systemHealth?.secudium_count || 0;
+        const publicCount = systemHealth?.public_count || 0;
+
+        this.charts.source = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['REGTECH', 'SECUDIUM', 'Public'],
+                datasets: [{
+                    data: [regtechCount, secudiumCount, publicCount],
+                    backgroundColor: ['#5046e5', '#10b981', '#f59e0b'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    createThreatLevelChart() {
+        const ctx = document.getElementById('threatLevelChart').getContext('2d');
+        const { enhancedData } = this.data;
+        
+        const stats = enhancedData?.expiry_stats || {};
+        const active = stats.active || 0;
+        const warning = stats.warning || 0;
+        const expired = stats.expired || 0;
+
+        this.charts.threatLevel = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['활성', '주의 (7일 내 만료)', '만료됨'],
+                datasets: [{
+                    label: 'IP 수',
+                    data: [active, warning, expired],
+                    backgroundColor: ['#10b981', '#f59e0b', '#dc2626'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async refreshAllCharts() {
+        this.showLoading();
+        try {
+            await this.loadInitialData();
+            
+            // Destroy existing charts
+            Object.values(this.charts).forEach(chart => chart.destroy());
+            this.charts = {};
+            
+            // Recreate charts
+            this.initializeCharts();
+            
+        } catch (error) {
+            console.error('Failed to refresh charts:', error);
+            this.showError('차트 새로고침 실패: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    exportStatistics() {
+        const csvData = this.generateCSVData();
+        const blob = new Blob([csvData], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `blacklist_statistics_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    generateCSVData() {
+        const { enhancedData } = this.data;
+        const headers = ['ID', 'IP', '등록일', '만료일', '소스', '국가', '공격유형', '상태'];
+        
+        let csv = headers.join(',') + '\n';
+        
+        if (enhancedData?.data) {
+            enhancedData.data
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) // 최근 등록일부터 정렬
+                .forEach(item => {
+                    const row = [
+                        item.id,
+                        item.ip,
+                        item.created_at.split('T')[0],
+                        item.expiry_date,
+                        item.source,
+                        item.country,
+                        item.attack_type,
+                        item.expiry_status
+                    ];
+                    csv += row.join(',') + '\n';
+                });
+        }
+        
+        return csv;
+    }
+
+    updateLastRefreshTime() {
+        const now = new Date().toLocaleString('ko-KR');
+        document.getElementById('lastRefreshTime').textContent = now;
+        
+        // Update analysis period
+        const periodMap = {
+            '7d': '7일',
+            '30d': '30일',
+            '90d': '90일',
+            '180d': '6개월',
+            '365d': '1년',
+            'all': '전체'
+        };
+        document.getElementById('analysisPeriod').textContent = periodMap[this.filters.dateRange] || '30일';
+    }
+
+    showLoading() {
+        document.getElementById('statisticsLoading').style.display = 'flex';
+    }
+
+    hideLoading() {
+        document.getElementById('statisticsLoading').style.display = 'none';
+    }
+
+    showError(message) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 end-0 m-3';
+        alert.style.zIndex = '9999';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        setTimeout(() => alert.remove(), 5000);
+    }
+}
+
+// Initialize statistics dashboard
+let statisticsDashboard;
+document.addEventListener('DOMContentLoaded', function() {
+    statisticsDashboard = new StatisticsDashboard();
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
 <script>
 // 페이지 로드 시 통계 대시보드 초기화
 document.addEventListener('DOMContentLoaded', function() {

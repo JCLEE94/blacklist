@@ -503,12 +503,24 @@
             <table class="data-table" id="rawDataTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>IP 주소</th>
-                        <th>소스</th>
-                        <th>국가</th>
-                        <th>공격 유형</th>
-                        <th>등록일</th>
+                        <th onclick="sortTable('id')" style="cursor: pointer;">
+                            ID <i class="bi bi-arrow-down-up" id="sort-id"></i>
+                        </th>
+                        <th onclick="sortTable('ip')" style="cursor: pointer;">
+                            IP 주소 <i class="bi bi-arrow-down-up" id="sort-ip"></i>
+                        </th>
+                        <th onclick="sortTable('source')" style="cursor: pointer;">
+                            소스 <i class="bi bi-arrow-down-up" id="sort-source"></i>
+                        </th>
+                        <th onclick="sortTable('country')" style="cursor: pointer;">
+                            국가 <i class="bi bi-arrow-down-up" id="sort-country"></i>
+                        </th>
+                        <th onclick="sortTable('attack_type')" style="cursor: pointer;">
+                            공격 유형 <i class="bi bi-arrow-down-up" id="sort-attack_type"></i>
+                        </th>
+                        <th onclick="sortTable('created_at')" style="cursor: pointer;">
+                            등록일 <i class="bi bi-arrow-down-short text-primary" id="sort-created_at"></i>
+                        </th>
                         <th>작업</th>
                     </tr>
                 </thead>
@@ -553,6 +565,7 @@ let filteredData = [];
 let currentPage = 1;
 let pageSize = 50;
 let totalPages = 1;
+let currentSort = { field: 'created_at', direction: 'desc' }; // 기본값: 최근 등록일순
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
@@ -567,9 +580,11 @@ async function loadData() {
         
         if (result.success) {
             allData = result.data;
-            filteredData = allData;
+            // 기본 정렬 적용 (최근 등록일순)
+            applySorting();
             updateStatistics(allData);
             populateCountryFilter(allData);
+            updateSortIcons(); // 정렬 아이콘 초기화
             renderPage(1);
         } else {
             showError('데이터 로드 실패');
@@ -664,7 +679,76 @@ function applyFilters() {
     });
     
     updateStatistics(filteredData);
+    applySorting();
     renderPage(1);
+}
+
+// 정렬 함수들
+function sortTable(field) {
+    // 같은 필드를 클릭하면 방향 변경, 다른 필드면 기본값(desc)
+    if (currentSort.field === field) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.field = field;
+        currentSort.direction = field === 'created_at' ? 'desc' : 'asc'; // 등록일은 기본 내림차순
+    }
+    
+    applySorting();
+    updateSortIcons();
+    renderPage(1);
+}
+
+function applySorting() {
+    if (!filteredData || filteredData.length === 0) return;
+    
+    filteredData.sort((a, b) => {
+        let aVal = a[currentSort.field];
+        let bVal = b[currentSort.field];
+        
+        // 날짜 필드 처리
+        if (currentSort.field === 'created_at' || currentSort.field === 'detection_date') {
+            aVal = new Date(aVal || 0);
+            bVal = new Date(bVal || 0);
+        }
+        // 숫자 필드 처리 (ID)
+        else if (currentSort.field === 'id') {
+            aVal = parseInt(aVal) || 0;
+            bVal = parseInt(bVal) || 0;
+        }
+        // 문자열 필드 처리
+        else {
+            aVal = (aVal || '').toString().toLowerCase();
+            bVal = (bVal || '').toString().toLowerCase();
+        }
+        
+        let comparison = 0;
+        if (aVal > bVal) comparison = 1;
+        else if (aVal < bVal) comparison = -1;
+        
+        return currentSort.direction === 'asc' ? comparison : -comparison;
+    });
+}
+
+function updateSortIcons() {
+    // 모든 정렬 아이콘 리셋
+    const sortIcons = ['id', 'ip', 'source', 'country', 'attack_type', 'created_at'];
+    sortIcons.forEach(field => {
+        const icon = document.getElementById(`sort-${field}`);
+        if (icon) {
+            icon.className = 'bi bi-arrow-down-up';
+            icon.classList.remove('text-primary');
+        }
+    });
+    
+    // 현재 정렬 필드 아이콘 업데이트
+    const currentIcon = document.getElementById(`sort-${currentSort.field}`);
+    if (currentIcon) {
+        if (currentSort.direction === 'asc') {
+            currentIcon.className = 'bi bi-arrow-up-short text-primary';
+        } else {
+            currentIcon.className = 'bi bi-arrow-down-short text-primary';
+        }
+    }
 }
 
 function renderPage(page) {

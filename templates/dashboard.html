@@ -677,6 +677,115 @@ function exportData() {
     window.location.href = '/api/export/json';
 }
 
+// Expiration management functions
+async function updateExpirationStatus() {
+    try {
+        const button = document.querySelector('button[onclick="updateExpirationStatus()"]');
+        const originalText = button.innerHTML;
+        
+        // Show loading state
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>업데이트 중...';
+        button.disabled = true;
+        
+        // Call expiration update API
+        const response = await fetch('/api/stats/expiration');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update expiration stats
+            await loadExpirationStats();
+            
+            // Show success message
+            showNotification('만료 상태가 성공적으로 업데이트되었습니다.', 'success');
+        } else {
+            throw new Error(data.error || 'Update failed');
+        }
+    } catch (error) {
+        console.error('Expiration update error:', error);
+        showNotification('만료 상태 업데이트 실패: ' + error.message, 'danger');
+    } finally {
+        // Restore button
+        const button = document.querySelector('button[onclick="updateExpirationStatus()"]');
+        button.innerHTML = '<i class="bi bi-arrow-clockwise me-2"></i>만료 상태 업데이트';
+        button.disabled = false;
+    }
+}
+
+async function loadExpirationStats() {
+    try {
+        const response = await fetch('/api/blacklist/enhanced?per_page=1000');
+        const data = await response.json();
+        
+        if (data.success && data.expiry_stats) {
+            const stats = data.expiry_stats;
+            
+            // Update expiration stats
+            document.getElementById('active-count').textContent = stats.active || 0;
+            document.getElementById('expired-count').textContent = stats.expired || 0;
+            
+            // Calculate expiring soon (30 days or less)
+            const expiringSoon = data.data.filter(item => 
+                !item.is_expired && item.days_until_expiry <= 30 && item.days_until_expiry >= 0
+            ).length;
+            document.getElementById('expiring-soon-count').textContent = expiringSoon;
+            
+            // Update colors based on status
+            updateExpirationColors(stats);
+        }
+    } catch (error) {
+        console.error('Failed to load expiration stats:', error);
+    }
+}
+
+function updateExpirationColors(stats) {
+    const activeElement = document.getElementById('active-count');
+    const expiredElement = document.getElementById('expired-count');
+    const expiringSoonElement = document.getElementById('expiring-soon-count');
+    
+    // Update active count color
+    if (stats.active > 0) {
+        activeElement.className = 'text-success mb-1';
+    } else {
+        activeElement.className = 'text-muted mb-1';
+    }
+    
+    // Update expired count color
+    if (stats.expired > 0) {
+        expiredElement.className = 'text-danger mb-1';
+        expiredElement.parentElement.parentElement.classList.add('border-danger');
+    } else {
+        expiredElement.className = 'text-muted mb-1';
+        expiredElement.parentElement.parentElement.classList.remove('border-danger');
+    }
+    
+    // Update expiring soon count color
+    const expiringSoon = parseInt(document.getElementById('expiring-soon-count').textContent);
+    if (expiringSoon > 0) {
+        expiringSoonElement.className = 'text-warning mb-1';
+        expiringSoonElement.parentElement.parentElement.classList.add('border-warning');
+    } else {
+        expiringSoonElement.className = 'text-muted mb-1';
+        expiringSoonElement.parentElement.parentElement.classList.remove('border-warning');
+    }
+}
+
+// Notification function
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
 // Real-time updates
 let realtimeInterval;
 

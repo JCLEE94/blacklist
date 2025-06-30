@@ -623,7 +623,9 @@ class SecudiumCollector:
                                         
                                         # 완전한 정보를 문자열로 저장 (hashable하게)
                                         full_info = f"{detection_date}|{detection_time or ''}|{country}|{attack_type}|{description}"
-                                        collected_ips.add((ip_address, full_info))
+                                        # 중복 제거를 위해 튜플 형태로 저장
+                                        ip_tuple = (str(ip_address), str(full_info))
+                                        collected_ips.add(ip_tuple)
                                     
                                     os.remove(temp_file)
                                     logger.info(f"IP 수집 완료", 
@@ -775,7 +777,9 @@ class SecudiumCollector:
                                             
                                             # 완전한 정보를 문자열로 저장 (hashable하게)
                                             full_info = f"{detection_date}|{detection_time or ''}|{country}|{attack_type}|{description}"
-                                            collected_ips.add((ip_address, full_info))
+                                            # 중복 제거를 위해 튜플 형태로 저장
+                                            ip_tuple = (str(ip_address), str(full_info))
+                                            collected_ips.add(ip_tuple)
                                         
                                         logger.info(f"XLS 형식으로 IP 수집 성공", 
                                                   file=file_name, ip_count=len(collected_ips))

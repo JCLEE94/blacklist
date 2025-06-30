@@ -512,6 +512,161 @@ def get_blacklist_json():
         logger.error(f"Blacklist JSON error: {e}")
         return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/blacklist/enhanced', methods=['GET'])
+def get_blacklist_enhanced():
+    """블랙리스트 상세 정보 (만료일 포함)"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = min(request.args.get('per_page', 100, type=int), 1000)
+        source = request.args.get('source')
+        include_expired = request.args.get('include_expired', 'false').lower() == 'true'
+        
+        # 데이터베이스에서 상세 정보 조회
+        import sqlite3
+        from datetime import datetime, timedelta
+        
+        # 데이터베이스 경로 결정
+        db_path = None
+        if hasattr(service.blacklist_manager, 'db_path'):
+            db_path = service.blacklist_manager.db_path
+        else:
+            from ..config.settings import settings
+            db_uri = settings.database_uri
+            if db_uri.startswith('sqlite:///'):
+                db_path = db_uri[10:]
+            elif db_uri.startswith('sqlite://'):
+                db_path = db_uri[9:]
+            else:
+                db_path = str(settings.instance_dir / 'blacklist.db')
+        
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # 기본 쿼리
+            base_query = """
+                SELECT 
+                    id, ip, created_at, detection_date, attack_type, 
+                    country, source, confidence_score, is_active
+                FROM blacklist_ip 
+                WHERE 1=1
+            """
+            params = []
+            
+            # 소스 필터링
+            if source:
+                base_query += " AND source = ?"
+                params.append(source.upper())
+            
+            # 만료 여부 필터링 (기본적으로 활성 IP만)
+            if not include_expired:
+                base_query += " AND is_active = 1"
+            
+            # 정렬 및 페이징
+            base_query += " ORDER BY id DESC LIMIT ? OFFSET ?"
+            params.extend([per_page, (page - 1) * per_page])
+            
+            cursor.execute(base_query, params)
+            rows = cursor.fetchall()
+            
+            # 총 개수 조회
+            count_query = "SELECT COUNT(*) FROM blacklist_ip WHERE 1=1"
+            count_params = []
+            if source:
+                count_query += " AND source = ?"
+                count_params.append(source.upper())
+            if not include_expired:
+                count_query += " AND is_active = 1"
+                
+            cursor.execute(count_query, count_params)
+            total_count = cursor.fetchone()[0]
+            
+            # 결과 포맷팅 (만료일 계산 포함)
+            blacklist_data = []
+            for row in rows:
+                try:
+                    # detection_date 파싱 (다양한 형식 지원)
+                    detection_date = None
+                    if row['detection_date']:
+                        date_str = row['detection_date']
+                        # 다양한 날짜 형식 시도
+                        for fmt in ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S', '%Y.%m.%d', '%Y년 %m월 %d일']:
+                            try:
+                                detection_date = datetime.strptime(date_str, fmt)
+                                break
+                            except ValueError:
+                                continue
+                    
+                    # 만료일 계산 (등록일로부터 3개월)
+                    created_at = datetime.fromisoformat(row['created_at']) if row['created_at'] else datetime.now()
+                    expiry_date = created_at + timedelta(days=90)  # 3개월 = 90일
+                    
+                    # 만료 상태 확인
+                    now = datetime.now()
+                    is_expired = now > expiry_date
+                    days_until_expiry = (expiry_date - now).days
+                    
+                    blacklist_data.append({
+                        'id': row['id'],
+                        'ip': row['ip'],
+                        'created_at': row['created_at'],
+                        'detection_date': row['detection_date'],
+                        'attack_type': row['attack_type'] or 'Unknown',
+                        'country': row['country'] or 'Unknown',
+                        'source': row['source'],
+                        'confidence_score': row['confidence_score'],
+                        'is_active': bool(row['is_active']),
+                        'expiry_date': expiry_date.strftime('%Y-%m-%d'),
+                        'is_expired': is_expired,
+                        'days_until_expiry': days_until_expiry,
+                        'expiry_status': 'expired' if is_expired else ('warning' if days_until_expiry <= 7 else 'active')
+                    })
+                except Exception as e:
+                    logger.warning(f"Error processing row {row['id']}: {e}")
+                    # 기본값으로 추가
+                    blacklist_data.append({
+                        'id': row['id'],
+                        'ip': row['ip'],
+                        'created_at': row['created_at'],
+                        'detection_date': row['detection_date'],
+                        'attack_type': row['attack_type'] or 'Unknown',
+                        'country': row['country'] or 'Unknown',
+                        'source': row['source'],
+                        'confidence_score': row['confidence_score'],
+                        'is_active': bool(row['is_active']),
+                        'expiry_date': '미계산',
+                        'is_expired': False,
+                        'days_until_expiry': 0,
+                        'expiry_status': 'unknown'
+                    })
+            
+            # 만료 통계 계산
+            expired_count = sum(1 for item in blacklist_data if item['is_expired'])
+            warning_count = sum(1 for item in blacklist_data if item['expiry_status'] == 'warning')
+            active_count = sum(1 for item in blacklist_data if item['expiry_status'] == 'active')
+            
+            return jsonify({
+                'success': True,
+                'data': blacklist_data,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': total_count,
+                    'pages': (total_count + per_page - 1) // per_page
+                },
+                'expiry_stats': {
+                    'total': len(blacklist_data),
+                    'active': active_count,
+                    'warning': warning_count,
+                    'expired': expired_count
+                },
+                'timestamp': datetime.now().isoformat()
+            })
+            
+    except Exception as e:
+        logger.error(f"Enhanced blacklist error: {e}")
+        return jsonify(create_error_response(e)), 500
+
 @unified_bp.route('/api/search/<ip>', methods=['GET'])
 
 def search_single_ip(ip: str):
@@ -1178,6 +1333,44 @@ def cleanup_old_data():
         return jsonify({
             'success': False,
             'message': str(e)
+        }), 500
+
+@unified_bp.route('/api/database/clear', methods=['POST'])
+
+def clear_database():
+    """전체 데이터베이스 클리어"""
+    try:
+        # 확인 파라미터 확인
+        data = request.get_json() or {}
+        if not data.get('confirm', False):
+            return jsonify({
+                'success': False,
+                'error': 'Confirmation required. Set confirm=true in request body.'
+            }), 400
+        
+        # 데이터베이스 클리어 서비스 호출
+        result = service.clear_all_data()
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': '데이터베이스가 성공적으로 클리어되었습니다.',
+                'cleared_tables': result.get('cleared_tables', []),
+                'total_deleted': result.get('total_deleted', 0),
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('message', 'Database clear failed')
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Database clear error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'DB 클리어 중 오류가 발생했습니다.'
         }), 500
 
 # === 시스템 관리 API ===

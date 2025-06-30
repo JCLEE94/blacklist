@@ -221,6 +221,9 @@
                         <button class="btn btn-warning" onclick="cleanupOldData()">
                             <i class="bi bi-trash"></i> 오래된 데이터 정리
                         </button>
+                        <button class="btn btn-danger" onclick="clearAllData()">
+                            <i class="bi bi-trash3-fill"></i> DB 클리어
+                        </button>
                     </div>
                 </div>
             </div>
@@ -457,10 +460,63 @@ class UnifiedControl {
             if (data.status === 'success') {
                 this.monthlyData = data.monthly_data;
                 this.displayMonthlyData();
+            } else {
+                // Fallback to stats API if monthly-data fails
+                try {
+                    const statsResponse = await fetch('/api/stats/monthly-data');
+                    const statsData = await statsResponse.json();
+                    
+                    if (statsData && Array.isArray(statsData)) {
+                        this.monthlyData = statsData.map(item => ({
+                            month: item.label || item.month,
+                            ip_count: item.total_ips || item.count || 0,
+                            details: {
+                                first_detection: '-',
+                                last_detection: '-',
+                                status: 'active'
+                            }
+                        }));
+                        this.displayMonthlyData();
+                    } else {
+                        throw new Error('Invalid stats data format');
+                    }
+                } catch (statsError) {
+                    console.error('Stats API also failed:', statsError);
+                    this.generateFallbackMonthlyData();
+                }
             }
         } catch (error) {
             console.error('Failed to load monthly data:', error);
             this.addLog('error', 'Failed to load monthly data');
+            this.generateFallbackMonthlyData();
+        }
+    }
+    
+    // Generate fallback monthly data based on current stats
+    generateFallbackMonthlyData() {
+        try {
+            const currentDate = new Date();
+            const currentMonth = currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
+            
+            // Get current total IPs from dashboard
+            const totalIpsElement = document.getElementById('total-ips');
+            const currentTotal = totalIpsElement ? parseInt(totalIpsElement.textContent) || 0 : 0;
+            
+            this.monthlyData = [{
+                month: currentMonth,
+                ip_count: currentTotal,
+                details: {
+                    first_detection: currentDate.toISOString().split('T')[0],
+                    last_detection: currentDate.toISOString().split('T')[0],
+                    status: 'active'
+                }
+            }];
+            
+            this.displayMonthlyData();
+        } catch (error) {
+            console.error('Failed to generate fallback data:', error);
+            this.monthlyData = [];
+            this.displayMonthlyData();
         }
     }
     
@@ -496,11 +552,54 @@ class UnifiedControl {
         }, 10000); // Every 10 seconds
     }
     
-    // Add log entry
-    addLog(level, message, collector = null) {
+    // Add log entry with detailed information
+    addLog(level, message, collector = null, details = null) {
         const now = new Date();
         const timestamp = now.toLocaleTimeString('ko-KR');
         const collectorTag = collector ? `[${collector.toUpperCase()}]` : '';
+        
+        // 상세 정보 포맷팅
+        let detailsHtml = '';
+        if (details && Object.keys(details).length > 0) {
+            const detailsArray = [];
+            if (details.ip_count !== undefined) {
+                detailsArray.push(`IP 개수: ${details.ip_count.toLocaleString()}개`);
+            }
+            if (details.total_deleted !== undefined) {
+                detailsArray.push(`삭제된 레코드: ${details.total_deleted.toLocaleString()}개`);
+            }
+            if (details.cleared_tables) {
+                detailsArray.push(`클리어된 테이블: ${details.cleared_tables.join(', ')}`);
+            }
+            if (details.table_counts) {
+                const tableCounts = Object.entries(details.table_counts)
+                    .map(([table, count]) => `${table}: ${count}개`)
+                    .join(', ');
+                detailsArray.push(`테이블별 삭제: ${tableCounts}`);
+            }
+            if (details.error) {
+                detailsArray.push(`오류: ${details.error}`);
+            }
+            if (details.duration !== undefined) {
+                detailsArray.push(`소요시간: ${details.duration}초`);
+            }
+            if (details.file_name) {
+                detailsArray.push(`파일: ${details.file_name}`);
+            }
+            if (details.source_url) {
+                detailsArray.push(`URL: ${details.source_url}`);
+            }
+            
+            if (detailsArray.length > 0) {
+                detailsHtml = `
+                    <div class="log-details mt-2">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> ${detailsArray.join(' | ')}
+                        </small>
+                    </div>
+                `;
+            }
+        }
         
         const logEntry = {
             timestamp,
@@ -508,9 +607,13 @@ class UnifiedControl {
             level,
             message,
             collector,
+            details,
             html: `
                 <div class="log-entry ${level}">
-                    <strong>${timestamp}</strong> ${collectorTag} ${message}
+                    <div class="log-main">
+                        <strong>${timestamp}</strong> ${collectorTag} ${message}
+                    </div>
+                    ${detailsHtml}
                 </div>
             `
         };
@@ -643,9 +746,19 @@ async function triggerCollection(collector) {
         
         if (data.success === true) {
             showNotification(`${collector.toUpperCase()} collection completed successfully`, 'success');
+            
+            // 상세 정보 추출
+            const details = {
+                ip_count: data.ip_count || data.collected_count || 0,
+                duration: data.duration,
+                file_name: data.file_name,
+                source_url: data.source_url,
+                ...data.details
+            };
+            
             unifiedControl.addLog('success', 
                 `${collector.toUpperCase()} collection completed: ${data.message || 'Success'}`, 
-                collector);
+                collector, details);
             // Refresh status
             unifiedControl.checkCollectionStatus();
             unifiedControl.loadMonthlyData();
@@ -705,6 +818,51 @@ async function cleanupOldData() {
 function clearLogs() {
     if (confirm('모든 로그를 지우시겠습니까?')) {
         unifiedControl.clearLogs();
+    }
+}
+
+// Clear all database data
+async function clearAllData() {
+    if (!confirm('⚠️ 경고: 모든 데이터베이스 데이터가 삭제됩니다.\n\n정말로 계속하시겠습니까?')) {
+        return;
+    }
+    
+    if (!confirm('🚨 최종 확인: 이 작업은 되돌릴 수 없습니다!\n\n모든 IP 데이터, 통계, 로그가 삭제됩니다.\n\n정말로 DB를 클리어하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/database/clear', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ confirm: true })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('데이터베이스가 성공적으로 클리어되었습니다.', 'success');
+            
+            // 상세 정보 추출
+            const details = {
+                total_deleted: data.total_deleted,
+                cleared_tables: data.cleared_tables,
+                table_counts: data.table_counts,
+                id_sequences_reset: data.id_sequences_reset,
+                cache_cleared: data.cache_cleared
+            };
+            
+            unifiedControl.addLog('warning', `Database cleared: ${data.message || 'All data removed'}`, null, details);
+            // Refresh all data
+            await unifiedControl.checkCollectionStatus();
+            await unifiedControl.loadMonthlyData();
+        } else {
+            throw new Error(data.message || 'DB 클리어 실패');
+        }
+    } catch (error) {
+        showNotification(`Error: ${error.message}`, 'danger');
+        unifiedControl.addLog('error', `DB clear failed: ${error.message}`);
     }
 }
 

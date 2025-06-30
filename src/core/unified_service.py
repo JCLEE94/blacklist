@@ -1322,6 +1322,111 @@ class UnifiedBlacklistService:
                 'deleted_count': 0,
                 'message': str(e)
             }
+    
+    def clear_all_data(self) -> Dict[str, Any]:
+        """전체 데이터베이스 클리어 - 모든 테이블의 데이터 삭제 및 ID 시퀀스 리셋"""
+        try:
+            # 데이터베이스 경로 결정
+            db_path = None
+            if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
+                db_path = self.blacklist_manager.db_path
+            else:
+                from ..config.settings import settings
+                db_uri = settings.database_uri
+                if db_uri.startswith('sqlite:///'):
+                    db_path = db_uri[10:]
+                elif db_uri.startswith('sqlite://'):
+                    db_path = db_uri[9:]
+                else:
+                    db_path = str(settings.instance_dir / 'blacklist.db')
+            
+            if not db_path or not os.path.exists(db_path):
+                return {
+                    'success': False,
+                    'error': 'Database file not found'
+                }
+            
+            import sqlite3
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                
+                # 모든 테이블의 데이터 개수 확인
+                table_counts = {}
+                tables_to_clear = ['blacklist_ip', 'ip_detection', 'collection_logs']
+                
+                for table in tables_to_clear:
+                    try:
+                        cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                        count = cursor.fetchone()[0]
+                        table_counts[table] = count
+                    except sqlite3.OperationalError:
+                        # 테이블이 존재하지 않으면 0으로 설정
+                        table_counts[table] = 0
+                
+                total_deleted = sum(table_counts.values())
+                
+                # 모든 테이블 데이터 삭제
+                for table in tables_to_clear:
+                    try:
+                        cursor.execute(f"DELETE FROM {table}")
+                        self.logger.info(f"Cleared {table_counts.get(table, 0)} records from {table}")
+                    except sqlite3.OperationalError as e:
+                        self.logger.warning(f"Could not clear table {table}: {e}")
+                
+                # SQLite 자동 증가 시퀀스 리셋
+                for table in tables_to_clear:
+                    try:
+                        cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table}'")
+                        self.logger.info(f"Reset auto-increment sequence for {table}")
+                    except sqlite3.OperationalError:
+                        # sqlite_sequence 테이블이 없거나 해당 테이블에 항목이 없으면 무시
+                        pass
+                
+                # VACUUM으로 데이터베이스 최적화
+                cursor.execute("VACUUM")
+                
+                conn.commit()
+                
+                # 메모리 캐시도 클리어
+                if hasattr(self, 'collection_logs'):
+                    self.collection_logs = []
+                
+                # 통계 캐시 클리어 (있다면)
+                if self.cache:
+                    try:
+                        # 캐시의 모든 blacklist 관련 키 클리어
+                        self.cache.clear()
+                        self.logger.info("Cache cleared")
+                    except Exception as e:
+                        self.logger.warning(f"Failed to clear cache: {e}")
+                
+                self.logger.info(f"✅ 데이터베이스 완전 클리어 완료: {total_deleted}개 레코드 삭제, ID 시퀀스 리셋")
+                
+                # 수집 로그 추가
+                self.add_collection_log('SYSTEM', 'database_cleared', {
+                    'total_deleted': total_deleted,
+                    'cleared_tables': list(table_counts.keys()),
+                    'table_counts': table_counts
+                })
+                
+                return {
+                    'success': True,
+                    'message': f'데이터베이스가 성공적으로 클리어되었습니다.',
+                    'cleared_tables': list(table_counts.keys()),
+                    'total_deleted': total_deleted,
+                    'table_counts': table_counts,
+                    'id_sequences_reset': True,
+                    'cache_cleared': self.cache is not None,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            self.logger.error(f"데이터베이스 클리어 실패: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'message': f'데이터베이스 클리어 중 오류 발생: {e}'
+            }
 
 # 전역 서비스 인스턴스
 _unified_service = None
