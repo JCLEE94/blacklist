@@ -296,41 +296,17 @@
         </div>
     </div>
 
-    <!-- Quick Actions & System Info -->
+    <!-- 일일 자동 수집 컨트롤 -->
     <div class="row g-4">
         <div class="col-12">
             <div class="modern-card">
                 <div class="card-header bg-transparent border-0">
                     <h5 class="mb-0 fw-semibold">
-                        <i class="bi bi-lightning-fill text-warning"></i> 빠른 작업
+                        <i class="bi bi-calendar-check text-primary"></i> 일일 자동 수집 관리
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <button class="action-button w-100 d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('unified.blacklist_search') }}'">
-                                <i class="bi bi-search me-2"></i> IP 검색
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="action-button w-100 d-flex align-items-center justify-content-center" onclick="refreshData()">
-                                <i class="bi bi-arrow-clockwise me-2"></i> 데이터 새로고침
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="action-button w-100 d-flex align-items-center justify-content-center" onclick="window.location.href='{{ url_for('unified.data_management') }}'">
-                                <i class="bi bi-database me-2"></i> 데이터 관리
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="action-button w-100 d-flex align-items-center justify-content-center" onclick="exportData()">
-                                <i class="bi bi-download me-2"></i> 데이터 내보내기
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- 일일 자동 수집 컨트롤 -->
-                    <div class="mt-4 p-3 bg-light rounded">
+                    <div class="p-3 bg-light rounded">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="mb-1">
