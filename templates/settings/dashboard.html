@@ -328,6 +328,19 @@ function createInputControl(key, value, type, category) {
                     ${optionsHtml}
                 </select>
             `;
+        
+        case 'password':
+            const placeholder = value ? '••••••••' : '비밀번호를 입력하세요';
+            return `
+                <div class="input-group">
+                    <input type="password" class="form-control" id="${inputId}" 
+                           placeholder="${placeholder}" value="${value}"
+                           onchange="onSettingChanged('${key}', this.value, '${type}', '${category}')">
+                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('${inputId}')">
+                        <i class="bi bi-eye" id="eye-${inputId}"></i>
+                    </button>
+                </div>
+            `;
             
         default:
             return `
@@ -347,6 +360,9 @@ function inferSettingType(key, value) {
     if (key === 'timezone') {
         return 'select';
     }
+    if (key.includes('password')) {
+        return 'password';
+    }
     return 'string';
 }
 
@@ -359,6 +375,10 @@ function getSettingDisplayName(key) {
         'collection_interval_hours': '수집 주기 (시간)',
         'regtech_enabled': 'REGTECH 수집 활성화',
         'secudium_enabled': 'SECUDIUM 수집 활성화',
+        'regtech_username': 'REGTECH 사용자명',
+        'regtech_password': 'REGTECH 비밀번호',
+        'secudium_username': 'SECUDIUM 사용자명',
+        'secudium_password': 'SECUDIUM 비밀번호',
         'session_timeout_minutes': '세션 타임아웃 (분)',
         'api_rate_limit': 'API 요청 제한',
         'email_notifications': '이메일 알림',
@@ -378,6 +398,10 @@ function getSettingDescription(key) {
         'collection_interval_hours': '자동 수집을 실행할 주기 (시간 단위)',
         'regtech_enabled': 'REGTECH 데이터 수집 기능 활성화',
         'secudium_enabled': 'SECUDIUM 데이터 수집 기능 활성화',
+        'regtech_username': 'REGTECH 서비스 로그인 사용자명',
+        'regtech_password': 'REGTECH 서비스 로그인 비밀번호',
+        'secudium_username': 'SECUDIUM 서비스 로그인 사용자명',
+        'secudium_password': 'SECUDIUM 서비스 로그인 비밀번호',
         'session_timeout_minutes': '사용자 세션이 만료되는 시간 (분 단위)',
         'api_rate_limit': '시간당 API 요청 제한 수',
         'email_notifications': '중요한 이벤트에 대한 이메일 알림 활성화',
@@ -561,6 +585,21 @@ function updateStats() {
 function showSpinner(show) {
     document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
     document.getElementById('settingsContainer').style.display = show ? 'none' : 'block';
+}
+
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const eyeIcon = document.getElementById(`eye-${inputId}`);
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        eyeIcon.classList.remove('bi-eye');
+        eyeIcon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        eyeIcon.classList.remove('bi-eye-slash');
+        eyeIcon.classList.add('bi-eye');
+    }
 }
 
 function showAlert(type, message) {
