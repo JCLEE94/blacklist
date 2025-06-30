@@ -1516,6 +1516,86 @@ def clear_database():
             'message': 'DB 클리어 중 오류가 발생했습니다.'
         }), 500
 
+# === 일일 수집 제어 API ===
+
+@unified_bp.route('/api/collection/daily/enable', methods=['POST'])
+def enable_daily_collection():
+    """일일 자동 수집 활성화"""
+    try:
+        data = request.get_json() or {}
+        collection_strategy = data.get('collection_strategy', 'daily_3days')
+        
+        # 일일 수집 설정 저장
+        result = service.set_daily_collection_config(
+            enabled=True,
+            strategy=collection_strategy,
+            collection_days=3  # 3일 데이터 수집
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': '일일 자동 수집이 활성화되었습니다.',
+            'strategy': collection_strategy,
+            'data': result
+        })
+        
+    except Exception as e:
+        logger.error(f"Enable daily collection error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': '일일 수집 활성화 중 오류가 발생했습니다.'
+        }), 500
+
+@unified_bp.route('/api/collection/daily/disable', methods=['POST'])
+def disable_daily_collection():
+    """일일 자동 수집 비활성화"""
+    try:
+        # 일일 수집 설정 비활성화
+        result = service.set_daily_collection_config(
+            enabled=False,
+            strategy=None,
+            collection_days=0
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': '일일 자동 수집이 비활성화되었습니다.',
+            'data': result
+        })
+        
+    except Exception as e:
+        logger.error(f"Disable daily collection error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': '일일 수집 비활성화 중 오류가 발생했습니다.'
+        }), 500
+
+@unified_bp.route('/api/collection/daily/status', methods=['GET'])
+def get_daily_collection_status():
+    """일일 자동 수집 상태 조회"""
+    try:
+        # 일일 수집 설정 조회
+        config = service.get_daily_collection_config()
+        
+        return jsonify({
+            'success': True,
+            'daily_collection_enabled': config.get('enabled', False),
+            'strategy': config.get('strategy', 'disabled'),
+            'collection_days': config.get('collection_days', 0),
+            'last_daily_run': config.get('last_daily_run'),
+            'next_scheduled_run': config.get('next_scheduled_run'),
+            'data': config
+        })
+        
+    except Exception as e:
+        logger.error(f"Daily collection status error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 # === 시스템 관리 API ===
 
 @unified_bp.route('/api/system/docker/logs', methods=['GET'])

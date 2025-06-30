@@ -48,6 +48,9 @@
                                 <button class="btn btn-danger" id="disable-collection" onclick="toggleCollection(false)">
                                     <i class="bi bi-stop-circle"></i> 수집 비활성화
                                 </button>
+                                <button class="btn btn-warning text-white" onclick="clearAllData()" data-bs-toggle="tooltip" title="모든 데이터를 삭제하고 새로 시작">
+                                    <i class="bi bi-trash3"></i> DB 클리어
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -87,6 +90,48 @@
                 <div class="card-body">
                     <h6 class="text-muted mb-2">마지막 수집</h6>
                     <h3 class="mb-0" id="last-collection">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Collection Control -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="card-header bg-light">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-day text-success"></i> 일일 자동 수집 제어
+                        </h5>
+                        <div id="daily-collection-status-badge">
+                            <span class="badge bg-secondary">확인 중...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-0">
+                                일일 자동 수집: 매일 최근 3일간의 데이터를 수집합니다 (중복 제거)
+                                <br>
+                                <small class="text-info">
+                                    <i class="bi bi-info-circle"></i> 
+                                    초기 수집 시: 3개월 이내 모든 데이터 수집, 이후 일일 수집: 3일 데이터만 수집
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-success" id="enable-daily-collection" onclick="toggleDailyCollection(true)">
+                                    <i class="bi bi-calendar-check"></i> 일일수집 활성화
+                                </button>
+                                <button class="btn btn-outline-danger" id="disable-daily-collection" onclick="toggleDailyCollection(false)">
+                                    <i class="bi bi-calendar-x"></i> 일일수집 비활성화
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -374,9 +419,28 @@ class UnifiedControl {
             document.getElementById('regtech-trigger').disabled = !data.enabled;
             document.getElementById('secudium-trigger').disabled = !data.enabled;
             
+            // Check daily collection status
+            this.checkDailyCollectionStatus();
+            
         } catch (error) {
             console.error('Status check failed:', error);
             this.addLog('error', 'Failed to check collection status');
+        }
+    }
+    
+    // Check daily collection status
+    async checkDailyCollectionStatus() {
+        try {
+            const response = await fetch('/api/collection/daily/status');
+            const data = await response.json();
+            
+            if (data.success) {
+                updateDailyCollectionStatus(data);
+            } else {
+                console.error('Daily collection status check failed:', data.error);
+            }
+        } catch (error) {
+            console.error('Daily collection status check failed:', error);
         }
     }
     
@@ -1010,6 +1074,83 @@ async function clearAllData() {
         showNotification(`Error: ${error.message}`, 'danger');
         unifiedControl.addLog('error', `DB clear failed: ${error.message}`);
     }
+}
+
+// Toggle daily collection
+async function toggleDailyCollection(enable) {
+    try {
+        const action = enable ? 'enable' : 'disable';
+        const endpoint = `/api/collection/daily/${action}`;
+        
+        const response = await fetch(endpoint, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                enable: enable,
+                collection_strategy: enable ? 'daily_3days' : null 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const message = enable ? '일일 자동 수집이 활성화되었습니다.' : '일일 자동 수집이 비활성화되었습니다.';
+            showNotification(message, 'success');
+            
+            // Update daily collection status badge
+            const dailyBadge = document.querySelector('#daily-collection-status-badge .badge');
+            if (enable) {
+                dailyBadge.className = 'badge bg-success';
+                dailyBadge.textContent = '일일수집 활성';
+            } else {
+                dailyBadge.className = 'badge bg-secondary';
+                dailyBadge.textContent = '일일수집 비활성';
+            }
+            
+            // Update button states
+            document.getElementById('enable-daily-collection').disabled = enable;
+            document.getElementById('disable-daily-collection').disabled = !enable;
+            
+            // Add log entry
+            const details = {
+                strategy: enable ? '3일 데이터 수집' : '비활성화',
+                mode: enable ? '자동 일일 수집' : '수동 수집만'
+            };
+            
+            unifiedControl.addLog(enable ? 'success' : 'warning', 
+                `Daily collection ${enable ? 'enabled' : 'disabled'}`, 
+                'system', details);
+                
+            // Refresh collection status
+            await unifiedControl.checkCollectionStatus();
+        } else {
+            throw new Error(data.message || `Failed to ${action} daily collection`);
+        }
+    } catch (error) {
+        showNotification(`Error: ${error.message}`, 'danger');
+        unifiedControl.addLog('error', `Daily collection toggle failed: ${error.message}`, 'system');
+    }
+}
+
+// Check daily collection status (add to UnifiedControl class method)
+// This will be called from checkCollectionStatus
+function updateDailyCollectionStatus(data) {
+    const dailyBadge = document.querySelector('#daily-collection-status-badge .badge');
+    const dailyEnabled = data.daily_collection_enabled || false;
+    
+    if (dailyEnabled) {
+        dailyBadge.className = 'badge bg-success';
+        dailyBadge.textContent = '일일수집 활성';
+    } else {
+        dailyBadge.className = 'badge bg-secondary';
+        dailyBadge.textContent = '일일수집 비활성';
+    }
+    
+    // Update button states
+    document.getElementById('enable-daily-collection').disabled = dailyEnabled;
+    document.getElementById('disable-daily-collection').disabled = !dailyEnabled;
 }
 
 // Show notification

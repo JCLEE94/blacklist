@@ -1435,6 +1435,106 @@ class UnifiedBlacklistService:
                 'error': str(e),
                 'message': f'데이터베이스 클리어 중 오류 발생: {e}'
             }
+    
+    # === 일일 수집 설정 관리 ===
+    
+    def set_daily_collection_config(self, enabled: bool, strategy: str = None, collection_days: int = 3) -> Dict[str, Any]:
+        """일일 수집 설정 저장"""
+        try:
+            # 설정을 파일이나 데이터베이스에 저장
+            config = {
+                'enabled': enabled,
+                'strategy': strategy,
+                'collection_days': collection_days,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            # 설정을 JSON 파일로 저장 (간단한 구현)
+            config_path = 'daily_collection_config.json'
+            import json
+            try:
+                with open(config_path, 'w') as f:
+                    json.dump(config, f, indent=2)
+                self.logger.info(f"일일 수집 설정 저장: {config}")
+            except Exception as e:
+                self.logger.warning(f"설정 파일 저장 실패: {e}")
+            
+            # 메모리에도 저장
+            if not hasattr(self, '_daily_config'):
+                self._daily_config = {}
+            self._daily_config.update(config)
+            
+            # 수집 로그 추가
+            action = 'daily_collection_enabled' if enabled else 'daily_collection_disabled'
+            self.add_collection_log('SYSTEM', action, {
+                'strategy': strategy,
+                'collection_days': collection_days,
+                'enabled': enabled
+            })
+            
+            return {
+                'success': True,
+                'message': f'일일 수집 설정이 {"활성화" if enabled else "비활성화"}되었습니다.',
+                'config': config
+            }
+            
+        except Exception as e:
+            self.logger.error(f"일일 수집 설정 저장 실패: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def get_daily_collection_config(self) -> Dict[str, Any]:
+        """일일 수집 설정 조회"""
+        try:
+            # 메모리에서 먼저 확인
+            if hasattr(self, '_daily_config') and self._daily_config:
+                return self._daily_config
+            
+            # 파일에서 로드
+            config_path = 'daily_collection_config.json'
+            import json
+            import os
+            
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r') as f:
+                        config = json.load(f)
+                    self._daily_config = config
+                    return config
+                except Exception as e:
+                    self.logger.warning(f"설정 파일 로드 실패: {e}")
+            
+            # 기본 설정 반환
+            default_config = {
+                'enabled': False,
+                'strategy': 'disabled',
+                'collection_days': 0,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            self._daily_config = default_config
+            return default_config
+            
+        except Exception as e:
+            self.logger.error(f"일일 수집 설정 조회 실패: {e}")
+            return {
+                'enabled': False,
+                'strategy': 'disabled',
+                'collection_days': 0,
+                'error': str(e)
+            }
+    
+    def is_daily_collection_enabled(self) -> bool:
+        """일일 수집이 활성화되어 있는지 확인"""
+        config = self.get_daily_collection_config()
+        return config.get('enabled', False)
+    
+    def get_daily_collection_strategy(self) -> str:
+        """일일 수집 전략 조회"""
+        config = self.get_daily_collection_config()
+        return config.get('strategy', 'disabled')
 
 # 전역 서비스 인스턴스
 _unified_service = None

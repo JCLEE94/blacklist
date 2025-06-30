@@ -767,13 +767,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-// 페이지 로드 시 통계 대시보드 초기화
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof initializeStatisticsDashboard === 'function') {
-        window.statisticsDashboard = initializeStatisticsDashboard();
-    }
-});
-</script>
-{% endblock %}
