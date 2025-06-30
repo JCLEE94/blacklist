@@ -494,6 +494,119 @@ def get_active_blacklist_txt():
         logger.error(f"Active blacklist txt error: {e}")
         return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/blacklist/active-simple', methods=['GET'])
+def get_active_blacklist_simple():
+    """활성 블랙리스트 조회 (심플 텍스트 - FortiGate용)"""
+    try:
+        ips = service.get_active_blacklist_ips()
+        
+        # 심플 텍스트 형식으로 반환 (한 줄에 하나씩)
+        ip_list = '\n'.join(ips) if ips else ''
+        
+        response = Response(
+            ip_list,
+            mimetype='text/plain'
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Active blacklist simple error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/fortigate-simple', methods=['GET'])
+def get_fortigate_simple():
+    """FortiGate External Connector 형식 (심플 버전)"""
+    try:
+        ips = service.get_active_blacklist_ips()
+        
+        # FortiGate External Connector 형식
+        data = {
+            "type": "IP",
+            "version": 1,
+            "data": ips
+        }
+        
+        return jsonify(data)
+    except Exception as e:
+        logger.error(f"FortiGate simple error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/export/json', methods=['GET'])
+def export_json():
+    """JSON 형식으로 내보내기"""
+    try:
+        detailed_ips = service.get_all_active_ips()
+        
+        export_data = {
+            "export_time": datetime.now().isoformat(),
+            "total_count": len(detailed_ips),
+            "blacklist_ips": detailed_ips
+        }
+        
+        response = Response(
+            json.dumps(export_data, ensure_ascii=False, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': 'attachment; filename=blacklist_export.json'}
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Export JSON error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/export/txt', methods=['GET'])
+def export_txt():
+    """텍스트 형식으로 내보내기"""
+    try:
+        ips = service.get_active_blacklist_ips()
+        
+        # 헤더 정보 포함한 텍스트 파일
+        header = f"# Blacklist Export\n"
+        header += f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        header += f"# Total IPs: {len(ips)}\n"
+        header += "#" + "="*50 + "\n\n"
+        
+        ip_list = '\n'.join(ips) if ips else ''
+        
+        response = Response(
+            header + ip_list,
+            mimetype='text/plain',
+            headers={'Content-Disposition': 'attachment; filename=blacklist_export.txt'}
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Export TXT error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/database/clear', methods=['POST'])
+def clear_database():
+    """데이터베이스 클리어 (위험 작업)"""
+    try:
+        # 확인 플래그 체크
+        data = request.get_json() or {}
+        if not data.get('confirm', False):
+            return jsonify({
+                'success': False,
+                'error': 'Confirmation required. Send {"confirm": true} to proceed.'
+            }), 400
+        
+        # 모든 데이터 클리어
+        result = service.clear_all_data()
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': 'All data has been cleared successfully.',
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Unknown error occurred')
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Database clear error: {e}")
+        return jsonify(create_error_response(e)), 500
+
 @unified_bp.route('/api/collection/logs', methods=['GET'])
 def get_collection_logs():
     """수집 로그 조회 - 상세 정보 포함"""
@@ -582,23 +695,7 @@ def get_enhanced_blacklist():
         logger.error(f"Enhanced blacklist error: {e}")
         return jsonify(create_error_response(e)), 500
 
-@unified_bp.route('/api/blacklist/active-simple', methods=['GET'])
-def get_active_blacklist_simple():
-    """활성 블랙리스트 조회 (포티게이트 연동용 간단 형식)"""
-    try:
-        ips = service.get_active_blacklist_ips()
-        
-        # JSON 형식으로 반환 (포티게이트 연동용)
-        return jsonify({
-            'success': True,
-            'count': len(ips),
-            'ips': ips,
-            'timestamp': datetime.now().isoformat(),
-            'format': 'simple'
-        })
-    except Exception as e:
-        logger.error(f"Active blacklist simple error: {e}")
-        return jsonify(create_error_response(e)), 500
+# 중복 제거됨 - 위에 이미 정의되어 있음
 
 @unified_bp.route('/api/fortigate', methods=['GET'])
 
@@ -1464,43 +1561,7 @@ def cleanup_old_data():
             'message': str(e)
         }), 500
 
-@unified_bp.route('/api/database/clear', methods=['POST'])
-
-def clear_database():
-    """전체 데이터베이스 클리어"""
-    try:
-        # 확인 파라미터 확인
-        data = request.get_json() or {}
-        if not data.get('confirm', False):
-            return jsonify({
-                'success': False,
-                'error': 'Confirmation required. Set confirm=true in request body.'
-            }), 400
-        
-        # 데이터베이스 클리어 서비스 호출
-        result = service.clear_all_data()
-        
-        if result.get('success'):
-            return jsonify({
-                'success': True,
-                'message': '데이터베이스가 성공적으로 클리어되었습니다.',
-                'cleared_tables': result.get('cleared_tables', []),
-                'total_deleted': result.get('total_deleted', 0),
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': result.get('message', 'Database clear failed')
-            }), 500
-            
-    except Exception as e:
-        logger.error(f"Database clear error: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'message': 'DB 클리어 중 오류가 발생했습니다.'
-        }), 500
+# 중복 제거됨 - 위에 이미 정의되어 있음
 
 # === 일일 수집 제어 API ===
 
