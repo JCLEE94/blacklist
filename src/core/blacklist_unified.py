@@ -893,3 +893,94 @@ class UnifiedBlacklistManager:
                 'success': False,
                 'error': str(e)
             }
+    
+    def update_expiration_status(self) -> Dict[str, Any]:
+        """만료 상태 업데이트 - 탐지일로부터 90일 지난 IP를 만료 처리"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # 90일 이전 날짜 계산
+            expiry_date = datetime.now() - timedelta(days=90)
+            
+            # 만료된 IP를 is_active=0으로 업데이트 (detection_date 기준, 없으면 created_at 기준)
+            cursor.execute("""
+                UPDATE blacklist_ip 
+                SET is_active = 0 
+                WHERE (
+                    (detection_date IS NOT NULL AND detection_date < ?) OR
+                    (detection_date IS NULL AND created_at < ?)
+                ) AND is_active = 1
+            """, (expiry_date.strftime('%Y-%m-%d'), expiry_date.isoformat()))
+            
+            expired_count = cursor.rowcount
+            
+            # 통계 조회
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1")
+            active_count = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 0")
+            expired_total = cursor.fetchone()[0]
+            
+            conn.commit()
+            conn.close()
+            
+            logger.info(f"Expiration update: {expired_count} IPs expired, {active_count} active")
+            
+            return {
+                'success': True,
+                'expired_count': expired_count,
+                'active_ips': active_count,
+                'expired_ips': expired_total,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to update expiration status: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def get_expiration_stats(self) -> Dict[str, Any]:
+        """만료 통계 조회"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # 활성 IP 수
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1")
+            active_count = cursor.fetchone()[0]
+            
+            # 만료된 IP 수
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 0")
+            expired_count = cursor.fetchone()[0]
+            
+            # 30일 내 만료 예정 IP 수
+            warning_date = datetime.now() - timedelta(days=60)  # 90-30 = 60일 전
+            cursor.execute("""
+                SELECT COUNT(*) FROM blacklist_ip 
+                WHERE is_active = 1 AND (
+                    (detection_date IS NOT NULL AND detection_date < ?) OR
+                    (detection_date IS NULL AND created_at < ?)
+                )
+            """, (warning_date.strftime('%Y-%m-%d'), warning_date.isoformat()))
+            warning_count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            return {
+                'active': active_count,
+                'expired': expired_count,
+                'warning': warning_count,
+                'total': active_count + expired_count
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get expiration stats: {e}")
+            return {
+                'active': 0,
+                'expired': 0,
+                'warning': 0,
+                'total': 0
+            }

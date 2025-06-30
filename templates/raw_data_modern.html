@@ -518,8 +518,8 @@
                         <th onclick="sortTable('attack_type')" style="cursor: pointer;">
                             공격 유형 <i class="bi bi-arrow-down-up" id="sort-attack_type"></i>
                         </th>
-                        <th onclick="sortTable('created_at')" style="cursor: pointer;">
-                            등록일 <i class="bi bi-arrow-down-short text-primary" id="sort-created_at"></i>
+                        <th onclick="sortTable('detection_date')" style="cursor: pointer;">
+                            탐지일 <i class="bi bi-arrow-down-short text-primary" id="sort-detection_date"></i>
                         </th>
                         <th onclick="sortTable('expiry_date')" style="cursor: pointer;">
                             만료일 <i class="bi bi-arrow-down-up" id="sort-expiry_date"></i>
@@ -568,7 +568,7 @@ let filteredData = [];
 let currentPage = 1;
 let pageSize = 50;
 let totalPages = 1;
-let currentSort = { field: 'created_at', direction: 'desc' }; // 기본값: 최근 등록일순
+let currentSort = { field: 'detection_date', direction: 'desc' }; // 기본값: 최근 탐지일순
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
@@ -703,7 +703,7 @@ function sortTable(field) {
         currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
     } else {
         currentSort.field = field;
-        currentSort.direction = field === 'created_at' ? 'desc' : 'asc'; // 등록일은 기본 내림차순
+        currentSort.direction = (field === 'created_at' || field === 'detection_date') ? 'desc' : 'asc'; // 날짜는 기본 내림차순
     }
     
     applySorting();
@@ -720,15 +720,20 @@ function applySorting() {
         
         // 날짜 필드 처리
         if (currentSort.field === 'created_at' || currentSort.field === 'detection_date') {
+            // detection_date가 없으면 created_at 사용
+            if (currentSort.field === 'detection_date') {
+                aVal = a.detection_date || a.created_at;
+                bVal = b.detection_date || b.created_at;
+            }
             aVal = new Date(aVal || 0);
             bVal = new Date(bVal || 0);
         }
-        // 만료일 필드 처리 (등록일 + 90일)
+        // 만료일 필드 처리 (탐지일 + 90일)
         else if (currentSort.field === 'expiry_date') {
-            const aCreated = new Date(a.created_at || 0);
-            const bCreated = new Date(b.created_at || 0);
-            aVal = new Date(aCreated.getTime() + (90 * 24 * 60 * 60 * 1000));
-            bVal = new Date(bCreated.getTime() + (90 * 24 * 60 * 60 * 1000));
+            const aDetected = new Date(a.detection_date || a.created_at || 0);
+            const bDetected = new Date(b.detection_date || b.created_at || 0);
+            aVal = new Date(aDetected.getTime() + (90 * 24 * 60 * 60 * 1000));
+            bVal = new Date(bDetected.getTime() + (90 * 24 * 60 * 60 * 1000));
         }
         // 숫자 필드 처리 (ID)
         else if (currentSort.field === 'id') {
@@ -751,7 +756,7 @@ function applySorting() {
 
 function updateSortIcons() {
     // 모든 정렬 아이콘 리셋
-    const sortIcons = ['id', 'ip', 'source', 'country', 'attack_type', 'created_at', 'expiry_date'];
+    const sortIcons = ['id', 'ip', 'source', 'country', 'attack_type', 'detection_date', 'expiry_date'];
     sortIcons.forEach(field => {
         const icon = document.getElementById(`sort-${field}`);
         if (icon) {
@@ -798,8 +803,8 @@ function renderPage(page) {
                 <td><span class="source-badge ${item.source.toLowerCase()}">${item.source}</span></td>
                 <td>${item.country ? `<span class="country-code">${item.country}</span>` : '-'}</td>
                 <td>${item.attack_type ? `<span class="attack-type-badge">${item.attack_type}</span>` : '-'}</td>
-                <td class="date-text">${formatDate(item.created_at)}</td>
-                <td class="date-text">${formatExpiryDate(item.created_at)}</td>
+                <td class="date-text">${formatDate(item.detection_date || item.created_at)}</td>
+                <td class="date-text">${formatExpiryDate(item.detection_date || item.created_at)}</td>
                 <td>
                     <button class="action-btn" onclick="viewDetails(${item.id})" title="상세 보기">
                         <i class="bi bi-eye"></i>
@@ -857,10 +862,10 @@ function formatDate(dateString) {
     });
 }
 
-function formatExpiryDate(createdDateString) {
-    if (!createdDateString) return '-';
-    const createdDate = new Date(createdDateString);
-    const expiryDate = new Date(createdDate.getTime() + (90 * 24 * 60 * 60 * 1000)); // 90일 후
+function formatExpiryDate(detectionDateString) {
+    if (!detectionDateString) return '-';
+    const detectionDate = new Date(detectionDateString);
+    const expiryDate = new Date(detectionDate.getTime() + (90 * 24 * 60 * 60 * 1000)); // 탐지일로부터 90일 후
     return expiryDate.toLocaleString('ko-KR', {
         year: 'numeric',
         month: '2-digit',
@@ -933,7 +938,7 @@ function viewDetails(id) {
     const item = allData.find(d => d.id === id);
     if (item) {
         // You can create a modal here instead of alert
-        alert(`IP 상세 정보:\n\nID: ${item.id}\nIP: ${item.ip}\n소스: ${item.source}\n국가: ${item.country || '없음'}\n공격 유형: ${item.attack_type || '없음'}\n등록일: ${item.created_at}`);
+        alert(`IP 상세 정보:\n\nID: ${item.id}\nIP: ${item.ip}\n소스: ${item.source}\n국가: ${item.country || '없음'}\n공격 유형: ${item.attack_type || '없음'}\n탐지일: ${item.detection_date || item.created_at}\n수집일: ${item.created_at}`);
     }
 }
 

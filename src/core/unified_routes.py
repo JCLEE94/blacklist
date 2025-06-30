@@ -1593,6 +1593,42 @@ def update_expiration_status():
             'error': str(e)
         }), 500
 
+@unified_bp.route('/api/stats/expiration', methods=['GET'])
+def get_expiration_stats():
+    """만료 통계 조회"""
+    try:
+        # 현재 통계 조회
+        stats = service.get_system_health()
+        total_ips = stats.get('total_ips', 0)
+        
+        # 만료된 IP 개수 계산 (is_active=0인 IP들)
+        expired_ips = 0
+        active_ips = stats.get('active_ips', 0)
+        
+        if hasattr(service.blacklist_manager, 'get_expiration_stats'):
+            expiration_stats = service.blacklist_manager.get_expiration_stats()
+            expired_ips = expiration_stats.get('expired', 0)
+        else:
+            # is_active가 false인 IP를 만료된 것으로 간주
+            expired_ips = total_ips - active_ips if total_ips > active_ips else 0
+        
+        return jsonify({
+            'success': True,
+            'current_month_stats': {
+                'total_ips': total_ips,
+                'active_ips': active_ips,
+                'expired_ips': expired_ips
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Expiration stats error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @unified_bp.route('/api/stats/daily', methods=['GET'])
 def get_daily_stats():
     """일별 통계 조회"""
