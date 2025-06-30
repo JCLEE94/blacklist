@@ -318,7 +318,7 @@ class CollectionManager:
                 'last_updated': datetime.now().isoformat()
             }
     
-    def enable_daily_collection(self) -> Dict[str, Any]:
+    def set_daily_collection_enabled(self) -> Dict[str, Any]:
         """
         일일 자동 수집 활성화
         """
@@ -341,7 +341,7 @@ class CollectionManager:
                 'error': str(e)
             }
     
-    def disable_daily_collection(self) -> Dict[str, Any]:
+    def set_daily_collection_disabled(self) -> Dict[str, Any]:
         """
         일일 자동 수집 비활성화
         """
