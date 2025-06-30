@@ -87,6 +87,7 @@ class SettingsManager:
     
     def _load_default_settings(self):
         """기본 설정 로드"""
+        import os  # 메서드 내부에서 os 모듈 import
         default_settings = [
             # 일반 설정
             SettingDefinition(
