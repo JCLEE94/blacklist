@@ -60,6 +60,39 @@ docker exec -it blacklist /bin/bash
 docker-compose -f deployment/docker-compose.yml build --no-cache
 ```
 
+### Kubernetes Operations
+```bash
+# Deploy to Kubernetes
+kubectl apply -f k8s/
+
+# Check deployment status
+kubectl get pods -n blacklist
+kubectl get deployment blacklist -n blacklist
+
+# Scale deployment
+kubectl scale deployment blacklist --replicas=4 -n blacklist
+
+# View logs
+kubectl logs -f deployment/blacklist -n blacklist
+
+# Debug pod issues
+kubectl describe pod <pod-name> -n blacklist
+kubectl exec -it deployment/blacklist -n blacklist -- /bin/bash
+
+# Rolling restart
+kubectl rollout restart deployment/blacklist -n blacklist
+
+# Rollback deployment
+kubectl rollout undo deployment/blacklist -n blacklist
+
+# Registry secret management
+kubectl create secret docker-registry regcred \
+  --docker-server=registry.jclee.me \
+  --docker-username=<username> \
+  --docker-password=<password> \
+  -n blacklist
+```
+
 ### Data Collection Management
 ```bash
 # Collection system status
