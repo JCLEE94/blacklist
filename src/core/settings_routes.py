@@ -81,6 +81,16 @@ def update_regtech_auth():
         
         # 인증 정보 업데이트 및 테스트
         if auth.update_credentials(username, password):
+            # DB에 인증정보 저장
+            try:
+                from ..models.settings import get_settings_manager
+                settings_manager = get_settings_manager()
+                settings_manager.set_setting('regtech_username', username, 'string', 'credentials')
+                settings_manager.set_setting('regtech_password', password, 'password', 'credentials')
+                logger.info("REGTECH 인증정보가 DB에 저장되었습니다.")
+            except Exception as db_error:
+                logger.warning(f"DB 저장 실패: {db_error}")
+            
             # 토큰 정보 가져오기
             token = auth._current_token
             
@@ -93,7 +103,7 @@ def update_regtech_auth():
                 'token': token,
                 'expires_at': payload.get('exp', 0),
                 'username': payload.get('username', username),
-                'message': 'REGTECH 인증 성공'
+                'message': 'REGTECH 인증 성공 및 DB 저장 완료'
             })
         else:
             return jsonify({
@@ -255,28 +265,42 @@ def update_secudium_auth():
                 'error': '사용자명과 비밀번호가 필요합니다.'
             }), 400
         
-        # 설정 업데이트
+        # 설정 업데이트 (메모리)
         settings.secudium_username = username
         settings.secudium_password = password
         
-        # 설정 파일에 저장
-        config_file = Path(settings.data_dir) / ".secudium_credentials.json"
-        config_file.parent.mkdir(parents=True, exist_ok=True)
+        # DB에 인증정보 저장
+        try:
+            from ..models.settings import get_settings_manager
+            settings_manager = get_settings_manager()
+            settings_manager.set_setting('secudium_username', username, 'string', 'credentials')
+            settings_manager.set_setting('secudium_password', password, 'password', 'credentials')
+            logger.info("SECUDIUM 인증정보가 DB에 저장되었습니다.")
+        except Exception as db_error:
+            logger.warning(f"DB 저장 실패: {db_error}")
         
-        config_data = {
-            'username': username,
-            'password': password,
-            'updated_at': datetime.now().isoformat()
-        }
-        
-        with open(config_file, 'w') as f:
-            json.dump(config_data, f, indent=2)
-        
-        os.chmod(config_file, 0o600)
+        # 설정 파일에도 저장 (백업용)
+        try:
+            config_file = Path(settings.data_dir) / ".secudium_credentials.json"
+            config_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            config_data = {
+                'username': username,
+                'password': password,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            with open(config_file, 'w') as f:
+                json.dump(config_data, f, indent=2)
+            
+            os.chmod(config_file, 0o600)
+            logger.info("SECUDIUM 인증정보가 파일에도 저장되었습니다.")
+        except Exception as file_error:
+            logger.warning(f"파일 저장 실패: {file_error}")
         
         return jsonify({
             'success': True,
-            'message': 'SECUDIUM 인증 정보가 저장되었습니다.'
+            'message': 'SECUDIUM 인증 정보가 DB 및 파일에 저장되었습니다.'
         })
         
     except Exception as e:

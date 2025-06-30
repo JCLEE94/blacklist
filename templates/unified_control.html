@@ -451,20 +451,38 @@ class UnifiedControl {
     // Check collection status
     async checkCollectionStatus() {
         try {
-            const response = await fetch('/api/collection/status');
-            const data = await response.json();
+            // 대시보드와 동일한 API 사용하여 일관성 보장
+            const [statusResponse, statsResponse] = await Promise.all([
+                fetch('/api/collection/status'),
+                fetch('/api/stats')
+            ]);
             
-            this.updateOverallStatus(data);
-            this.updateCollectorStatus('regtech', data.sources?.regtech);
-            this.updateCollectorStatus('secudium', data.sources?.secudium);
+            const statusData = await statusResponse.json();
+            const statsData = await statsResponse.json();
+            
+            // 통계 데이터를 우선 사용 (대시보드와 동일한 데이터)
+            const combinedData = {
+                ...statusData,
+                stats: {
+                    total_ips: statsData.details?.total_ips || statusData.stats?.total_ips || 0,
+                    active_ips: statsData.details?.active_ips || statusData.stats?.total_ips || 0,
+                    regtech_count: statsData.details?.regtech_count || 0,
+                    secudium_count: statsData.details?.secudium_count || 0,
+                    today_collected: statusData.stats?.today_collected || 0
+                }
+            };
+            
+            this.updateOverallStatus(combinedData);
+            this.updateCollectorStatus('regtech', statusData.sources?.regtech);
+            this.updateCollectorStatus('secudium', statusData.sources?.secudium);
             
             // Update buttons
-            document.getElementById('enable-collection').disabled = data.collection_enabled;
-            document.getElementById('disable-collection').disabled = !data.collection_enabled;
+            document.getElementById('enable-collection').disabled = statusData.collection_enabled;
+            document.getElementById('disable-collection').disabled = !statusData.collection_enabled;
             
             // Update trigger buttons
-            document.getElementById('regtech-trigger').disabled = !data.collection_enabled;
-            document.getElementById('secudium-trigger').disabled = !data.collection_enabled;
+            document.getElementById('regtech-trigger').disabled = !statusData.collection_enabled;
+            document.getElementById('secudium-trigger').disabled = !statusData.collection_enabled;
             
             // Check daily collection status
             this.checkDailyCollectionStatus();
@@ -510,9 +528,14 @@ class UnifiedControl {
             activeCollectors.textContent = '0';
         }
         
-        // Update stats
-        if (data.summary) {
+        // 대시보드와 동일한 통계 데이터 사용
+        if (data.stats) {
+            totalIps.textContent = (data.stats.total_ips || 0).toLocaleString();
+            todayCollected.textContent = (data.stats.today_collected || 0).toLocaleString();
+        } else if (data.summary) {
+            // 폴백: 기존 summary 데이터 사용
             totalIps.textContent = (data.summary.total_ips_collected || 0).toLocaleString();
+            todayCollected.textContent = '0';
         }
         
         if (data.last_enabled_at) {

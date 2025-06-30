@@ -733,20 +733,20 @@ function showNotification(message, type = 'info') {
 let realtimeInterval;
 
 function startRealtimeUpdates() {
-    // Update stats every 10 seconds
+    // Update stats every 15 seconds (통합관리와 동일한 주기)
     realtimeInterval = setInterval(() => {
-        fetch('/api/realtime/status')
+        fetch('/api/stats')
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // Update stats
-                    updateStatCards(data.stats);
-                    updateSystemInfo(data.stats);
+                if (data.details) {
+                    // Update stats with consistent data source
+                    updateStatCards(data.details);
+                    updateSystemInfo(data.details);
                     updateLastUpdate();
                 }
             })
             .catch(error => console.log('Realtime update error:', error));
-    }, 10000);
+    }, 15000);
     
     // Add real-time feed updates every 5 seconds
     setInterval(() => {
