@@ -1593,7 +1593,7 @@ def update_expiration_status():
             'error': str(e)
         }), 500
 
-@unified_bp.route('/api/stats/expiration', methods=['GET'])
+@unified_bp.route('/api/stats/expiration-summary', methods=['GET'])
 def get_expiration_stats():
     """만료 통계 조회"""
     try:
