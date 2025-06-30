@@ -1773,7 +1773,7 @@ def list_docker_containers():
 
 @unified_bp.route('/api/v2/blacklist/enhanced', methods=['GET'])
 
-def get_enhanced_blacklist():
+def get_enhanced_blacklist_v2():
     """향상된 블랙리스트 (메타데이터 포함)"""
     try:
         page = request.args.get('page', 1, type=int)
