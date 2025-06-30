@@ -40,10 +40,23 @@ class SecudiumCollector:
         self.secudium_dir = os.path.join(data_dir, 'secudium')
         os.makedirs(self.secudium_dir, exist_ok=True)
         
-        # SECUDIUM 웹사이트 설정
+        # SECUDIUM 웹사이트 설정 - 데이터베이스 설정 우선
         self.base_url = settings.secudium_base_url
-        self.username = settings.secudium_username
-        self.password = settings.secudium_password
+        
+        # 데이터베이스에서 인증 정보 읽기
+        try:
+            from ..models.settings import get_settings_manager
+            settings_manager = get_settings_manager()
+            self.username = settings_manager.get_setting('secudium_username', settings.secudium_username)
+            self.password = settings_manager.get_setting('secudium_password', settings.secudium_password)
+            
+            logger.info(f"SECUDIUM 인증 정보 로드", 
+                       username=self.username[:3] + "***" if self.username else "없음",
+                       password="***" if self.password else "없음")
+        except Exception as e:
+            logger.warning(f"데이터베이스 설정 읽기 실패, 환경변수 사용", exception=e)
+            self.username = settings.secudium_username
+            self.password = settings.secudium_password
         
         # 세션 초기화
         self.session = None

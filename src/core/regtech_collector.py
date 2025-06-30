@@ -252,9 +252,20 @@ class RegtechCollector:
     def _perform_login(self, session: requests.Session) -> bool:
         """REGTECH 로그인 수행 - 완전한 세션 인증"""
         try:
-            # 자동 인증 모듈에서 인증 정보 가져오기
-            username = settings.regtech_username
-            password = settings.regtech_password
+            # 데이터베이스에서 인증 정보 가져오기 (우선순위: DB > 환경변수)
+            try:
+                from ..models.settings import get_settings_manager
+                settings_manager = get_settings_manager()
+                username = settings_manager.get_setting('regtech_username', settings.regtech_username)
+                password = settings_manager.get_setting('regtech_password', settings.regtech_password)
+                
+                logger.info(f"REGTECH 인증 정보 로드", 
+                           username=username[:3] + "***" if username else "없음",
+                           password="***" if password else "없음")
+            except Exception as e:
+                logger.warning(f"데이터베이스 설정 읽기 실패, 환경변수 사용", exception=e)
+                username = settings.regtech_username
+                password = settings.regtech_password
             
             try:
                 from .regtech_auto_login import get_regtech_auth
