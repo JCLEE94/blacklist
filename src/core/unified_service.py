@@ -579,6 +579,32 @@ class UnifiedBlacklistService:
             self.logger.warning(f"Failed to get source counts from database: {e}")
         return source_counts
     
+    def get_blacklist_summary(self) -> Dict[str, Any]:
+        """블랙리스트 요약 정보 반환"""
+        try:
+            # Get system health which contains the summary info
+            health = self.get_system_health()
+            return {
+                'total_ips': health.get('total_ips', 0),
+                'active_ips': health.get('active_ips', 0),
+                'regtech_count': health.get('regtech_count', 0),
+                'secudium_count': health.get('secudium_count', 0),
+                'public_count': health.get('public_count', 0),
+                'status': health.get('status', 'unknown'),
+                'last_update': health.get('last_update', None)
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to get blacklist summary: {e}")
+            return {
+                'total_ips': 0,
+                'active_ips': 0,
+                'regtech_count': 0,
+                'secudium_count': 0,
+                'public_count': 0,
+                'status': 'error',
+                'error': str(e)
+            }
+    
     def get_collection_status(self) -> Dict[str, Any]:
         """수집 시스템 상태 조회"""
         try:
