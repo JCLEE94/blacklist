@@ -350,9 +350,9 @@ def get_all_settings_new():
                 'secudium_enabled': True
             },
             'credentials': {
-                'regtech_username': os.getenv('REGTECH_USERNAME', 'nextrade'),
+                'regtech_username': 'nextrade',
                 'regtech_password': '***',
-                'secudium_username': os.getenv('SECUDIUM_USERNAME', 'nextrade'),
+                'secudium_username': 'nextrade',
                 'secudium_password': '***'
             },
             'security': {
