@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>설정 - {{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0a0e27;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 30px;
+        }
+        .card {
+            background-color: #1a1f3a;
+            border: 1px solid #2d3561;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #252b48;
+            border-bottom: 1px solid #2d3561;
+            font-weight: 600;
+        }
+        .form-control, .form-select {
+            background-color: #0a0e27;
+            border: 1px solid #2d3561;
+            color: #e0e0e0;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0a0e27;
+            border-color: #4a5f8a;
+            color: #e0e0e0;
+            box-shadow: 0 0 0 0.2rem rgba(74, 95, 138, 0.25);
+        }
+        .btn-primary {
+            background-color: #4a5f8a;
+            border-color: #4a5f8a;
+        }
+        .btn-primary:hover {
+            background-color: #5a6f9a;
+            border-color: #5a6f9a;
+        }
+        .alert {
+            border: none;
+            border-radius: 8px;
+        }
+        .alert-success {
+            background-color: #1e4620;
+            color: #a8e6a3;
+        }
+        .alert-danger {
+            background-color: #4a1e1e;
+            color: #e6a3a3;
+        }
+        .navbar {
+            background-color: #1a1f3a !important;
+            border-bottom: 1px solid #2d3561;
+            margin-bottom: 30px;
+        }
+        .navbar-brand {
+            color: #e0e0e0 !important;
+            font-weight: 600;
+        }
+        .nav-link {
+            color: #b0b0b0 !important;
+        }
+        .nav-link:hover {
+            color: #e0e0e0 !important;
+        }
+        .password-toggle {
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 38px;
+            color: #6c757d;
+        }
+        .password-wrapper {
+            position: relative;
+        }
+        .text-muted {
+            color: #8a8a8a !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Blacklist Manager</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">대시보드</a>
+                <a class="nav-link" href="/unified-control">통합 제어</a>
+                <a class="nav-link active" href="/settings">설정</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="mb-4">시스템 설정</h2>
+
+        <div id="alerts"></div>
+
+        <form id="settingsForm">
+            <!-- REGTECH 설정 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">REGTECH 인증 정보</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="regtech_username" class="form-label">사용자명</label>
+                        <input type="text" class="form-control" id="regtech_username" name="regtech_username" 
+                               value="{{ settings.regtech_username or '' }}" placeholder="REGTECH 사용자명">
+                    </div>
+                    <div class="mb-3 password-wrapper">
+                        <label for="regtech_password" class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" id="regtech_password" name="regtech_password" 
+                               value="{{ settings.regtech_password or '' }}" placeholder="REGTECH 비밀번호">
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('regtech_password')"></i>
+                    </div>
+                    <small class="text-muted">REGTECH 수집을 위한 로그인 정보입니다.</small>
+                </div>
+            </div>
+
+            <!-- SECUDIUM 설정 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">SECUDIUM 인증 정보</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="secudium_username" class="form-label">사용자명</label>
+                        <input type="text" class="form-control" id="secudium_username" name="secudium_username" 
+                               value="{{ settings.secudium_username or '' }}" placeholder="SECUDIUM 사용자명">
+                    </div>
+                    <div class="mb-3 password-wrapper">
+                        <label for="secudium_password" class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" id="secudium_password" name="secudium_password" 
+                               value="{{ settings.secudium_password or '' }}" placeholder="SECUDIUM 비밀번호">
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('secudium_password')"></i>
+                    </div>
+                    <small class="text-muted">SECUDIUM 수집을 위한 로그인 정보입니다.</small>
+                </div>
+            </div>
+
+            <!-- 기타 설정 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">일반 설정</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="data_retention_days" class="form-label">데이터 보관 기간 (일)</label>
+                        <input type="number" class="form-control" id="data_retention_days" name="data_retention_days" 
+                               value="{{ settings.data_retention_days or 90 }}" min="1" max="365">
+                        <small class="text-muted">오래된 데이터를 자동으로 삭제하는 기간입니다.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="max_ips_per_source" class="form-label">소스별 최대 IP 수</label>
+                        <input type="number" class="form-control" id="max_ips_per_source" name="max_ips_per_source" 
+                               value="{{ settings.max_ips_per_source or 50000 }}" min="100" max="1000000">
+                        <small class="text-muted">각 소스에서 저장할 수 있는 최대 IP 개수입니다.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 설정 저장
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script>
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = field.nextElementSibling;
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.getElementById('alerts').innerHTML = alertHtml;
+            
+            // 5초 후 자동으로 알림 제거
+            setTimeout(() => {
+                const alert = document.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const settings = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (value) {  // 빈 값은 전송하지 않음
+                    settings[key] = value;
+                }
+            }
+            
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('설정이 성공적으로 저장되었습니다.', 'success');
+                    
+                    // 비밀번호 필드 마스킹
+                    if (settings.regtech_password) {
+                        document.getElementById('regtech_password').value = '********';
+                    }
+                    if (settings.secudium_password) {
+                        document.getElementById('secudium_password').value = '********';
+                    }
+                } else {
+                    showAlert(result.message || '설정 저장에 실패했습니다.', 'danger');
+                }
+            } catch (error) {
+                showAlert('설정 저장 중 오류가 발생했습니다: ' + error.message, 'danger');
+            }
+        });
+
+        // 페이지 로드 시 저장된 비밀번호는 마스킹
+        window.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('regtech_password').value) {
+                document.getElementById('regtech_password').value = '********';
+            }
+            if (document.getElementById('secudium_password').value) {
+                document.getElementById('secudium_password').value = '********';
+            }
+        });
+    </script>
+</body>
+</html>
