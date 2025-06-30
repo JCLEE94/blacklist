@@ -849,6 +849,19 @@ class UnifiedBlacklistManager:
                     session.commit()
                     logger.info("Database cleared successfully")
             
+            # SQLite autoincrement 시퀀스 리셋 (직접 연결 사용)
+            try:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                # autoincrement 시퀀스 리셋
+                cursor.execute("DELETE FROM sqlite_sequence WHERE name='blacklist_ip'")
+                cursor.execute("DELETE FROM sqlite_sequence WHERE name='ip_detection'")
+                conn.commit()
+                conn.close()
+                logger.info("SQLite autoincrement sequences reset successfully")
+            except Exception as e:
+                logger.warning(f"Failed to reset SQLite sequences: {e}")
+            
             # 파일 시스템 클리어
             import shutil
             if os.path.exists(self.data_dir):
@@ -871,7 +884,7 @@ class UnifiedBlacklistManager:
             
             return {
                 'success': True,
-                'message': '모든 블랙리스트 데이터가 삭제되었습니다.'
+                'message': '모든 블랙리스트 데이터가 삭제되었습니다. (ID는 1번부터 시작됩니다)'
             }
             
         except Exception as e:

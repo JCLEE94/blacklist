@@ -1281,90 +1281,7 @@ class UnifiedBlacklistService:
         import uuid
         task_id = str(uuid.uuid4())
         self.logger.info(f"Manual collection triggered: {source} (task_id: {task_id})")
-        # TODO: Implement actual collection trigger
-        return task_id
-    
-    
-    def trigger_secudium_collection(self) -> str:
-        """SECUDIUM 수집 트리거"""
-        import uuid
-        task_id = str(uuid.uuid4())
-        self.logger.info(f"SECUDIUM collection triggered (task_id: {task_id})")
-        
-        # 수집 로그 추가
-        self.add_collection_log('SECUDIUM', 'collection_started', {
-            'task_id': task_id
-        })
-        
-        try:
-            # 실제 SECUDIUM 수집 실행
-            secudium_collector = self.container.resolve('secudium_collector')
-            if secudium_collector:
-                # 백그라운드 수집 시작
-                import threading
-                def collect_secudium():
-                    try:
-                        result = secudium_collector.auto_collect()
-                        if isinstance(result, dict) and result.get('success'):
-                            ips = result.get('ips', [])
-                            self.logger.info(f"SECUDIUM collection completed: {len(ips)} IPs collected")
-                            
-                            # 수집 완료 로그 추가
-                            self.add_collection_log('SECUDIUM', 'collection_completed', {
-                                'task_id': task_id,
-                                'ips_collected': len(ips)
-                            })
-                        else:
-                            ips = []
-                            self.logger.warning(f"SECUDIUM collection returned unexpected result: {result}")
-                        
-                        # 수집한 IP를 데이터베이스에 저장
-                        if ips and self.blacklist_manager:
-                            try:
-                                # bulk_import_ips expects a list of dictionaries
-                                ips_data = []
-                                for ip_entry in ips:
-                                    ips_data.append({
-                                        'ip': ip_entry.ip_address,
-                                        'source': 'SECUDIUM',
-                                        'attack_type': ip_entry.reason,  # attack_type 필드 추가
-                                        'threat_type': ip_entry.reason,
-                                        'country': ip_entry.country,
-                                        'reg_date': ip_entry.reg_date,  # 원본 등록일 추가
-                                        'reason': ip_entry.reason,  # reason 필드 추가
-                                        'threat_level': ip_entry.threat_level,
-                                        'confidence': 1.0
-                                    })
-                                
-                                self.logger.info(f"SECUDIUM: Calling bulk_import_ips with {len(ips_data)} IPs")
-                                result = self.blacklist_manager.bulk_import_ips(ips_data, source='SECUDIUM')
-                                if result.get('success'):
-                                    self.logger.info(f"SECUDIUM: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
-                                else:
-                                    self.logger.error(f"SECUDIUM: 데이터베이스 저장 실패 - {result.get('error')}")
-                            except Exception as e:
-                                self.logger.error(f"SECUDIUM: Error saving to database - {e}")
-                                import traceback
-                                self.logger.error(f"SECUDIUM: Traceback - {traceback.format_exc()}")
-                        
-                    except Exception as e:
-                        self.logger.error(f"SECUDIUM collection failed: {e}")
-                        # 수집 실패 로그 추가
-                        self.add_collection_log('SECUDIUM', 'collection_failed', {
-                            'task_id': task_id,
-                            'error': str(e)
-                        })
-                
-                thread = threading.Thread(target=collect_secudium)
-                thread.daemon = True
-                thread.start()
-                self.logger.info(f"SECUDIUM collection started in background")
-            else:
-                self.logger.warning("SECUDIUM collector not available")
-                
-        except Exception as e:
-            self.logger.error(f"Failed to start SECUDIUM collection: {e}")
-            
+        # TODO: Implement actual collection trigger based on source parameter
         return task_id
     
     def get_enhanced_blacklist(self, page: int = 1, per_page: int = 50, include_metadata: bool = True, source_filter: str = None) -> Dict[str, Any]:
@@ -2093,10 +2010,41 @@ class UnifiedBlacklistService:
             
             # 수집 실행
             try:
-                result = secudium_collector.collect_from_web()
+                # collect_from_web()은 List[BlacklistEntry]를 반환함
+                entries = secudium_collector.collect_from_web()
                 
-                if result.get('success'):
-                    ip_count = result.get('total_ips', 0)
+                if entries:  # 리스트가 비어있지 않은 경우
+                    ip_count = len(entries)
+                    
+                    # 수집한 IP를 데이터베이스에 저장
+                    if self.blacklist_manager:
+                        try:
+                            # bulk_import_ips expects a list of dictionaries
+                            ips_data = []
+                            for entry in entries:
+                                ips_data.append({
+                                    'ip': entry.ip_address,
+                                    'source': 'SECUDIUM',
+                                    'attack_type': entry.reason,
+                                    'threat_type': entry.reason,
+                                    'country': entry.country,
+                                    'reg_date': entry.reg_date,  # 원본 등록일
+                                    'detection_date': entry.reg_date,  # detection_date 추가
+                                    'reason': entry.reason,
+                                    'threat_level': entry.threat_level,
+                                    'confidence': 1.0
+                                })
+                            
+                            self.logger.info(f"SECUDIUM: Calling bulk_import_ips with {len(ips_data)} IPs")
+                            result = self.blacklist_manager.bulk_import_ips(ips_data, source='SECUDIUM')
+                            if result.get('success'):
+                                self.logger.info(f"SECUDIUM: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
+                            else:
+                                self.logger.error(f"SECUDIUM: 데이터베이스 저장 실패 - {result.get('error')}")
+                        except Exception as e:
+                            self.logger.error(f"SECUDIUM: Error saving to database - {e}")
+                            import traceback
+                            self.logger.error(f"SECUDIUM: Traceback - {traceback.format_exc()}")
                     
                     # 수집 완료 로그
                     self.add_collection_log('secudium', 'collection_complete', {
@@ -2112,16 +2060,15 @@ class UnifiedBlacklistService:
                         'source': 'secudium'
                     }
                 else:
-                    error_msg = result.get('error', '알 수 없는 오류')
                     self.add_collection_log('secudium', 'collection_failed', {
-                        'error': error_msg,
+                        'error': 'No IPs collected',
                         'triggered_by': 'manual'
                     })
                     
                     return {
                         'success': False,
-                        'error': error_msg,
-                        'message': f'SECUDIUM 수집 실패: {error_msg}'
+                        'error': 'No IPs collected',
+                        'message': 'SECUDIUM 수집 실패: IP를 찾을 수 없습니다'
                     }
                     
             except Exception as e:
