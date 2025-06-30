@@ -456,7 +456,6 @@ def service_status():
         return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/blacklist/active', methods=['GET'])
-
 def get_active_blacklist():
     """활성 블랙리스트 조회 (플레인 텍스트)"""
     try:
@@ -476,6 +475,24 @@ def get_active_blacklist():
         return response
     except Exception as e:
         logger.error(f"Active blacklist error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/blacklist/active-simple', methods=['GET'])
+def get_active_blacklist_simple():
+    """활성 블랙리스트 조회 (포티게이트 연동용 간단 형식)"""
+    try:
+        ips = service.get_active_blacklist_ips()
+        
+        # JSON 형식으로 반환 (포티게이트 연동용)
+        return jsonify({
+            'success': True,
+            'count': len(ips),
+            'ips': ips,
+            'timestamp': datetime.now().isoformat(),
+            'format': 'simple'
+        })
+    except Exception as e:
+        logger.error(f"Active blacklist simple error: {e}")
         return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/fortigate', methods=['GET'])
