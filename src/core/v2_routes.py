@@ -199,7 +199,7 @@ v2_service = None
 # Blueprint 라우트들을 모듈 레벨에서 정의
 @v2_bp.route('/blacklist/enhanced', methods=['GET'])
 @unified_cache(ttl=300, key_prefix='v2:blacklist')
-def get_enhanced_blacklist():
+def get_enhanced_blacklist_v2_route():
     """향상된 블랙리스트 조회"""
     if not v2_service:
         return jsonify({'error': 'Service not initialized'}), 503
