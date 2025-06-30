@@ -52,7 +52,7 @@ class SettingsManager:
     
     def __init__(self, db_path: str = None):
         if db_path is None:
-            from ..config.settings import settings
+            from src.config.settings import settings
             db_uri = settings.database_uri
             if db_uri.startswith('sqlite:///'):
                 self.db_path = db_uri[10:]

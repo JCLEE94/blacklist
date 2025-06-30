@@ -25,7 +25,7 @@ def settings_page():
     
     # 데이터베이스에서 설정 가져오기
     try:
-        from ..models.settings import get_settings_manager
+        from src.models.settings import get_settings_manager
         settings_manager = get_settings_manager()
         
         # 현재 설정 값 가져오기
@@ -96,7 +96,7 @@ def update_regtech_auth():
         if auth.update_credentials(username, password):
             # DB에 인증정보 저장
             try:
-                from ..models.settings import get_settings_manager
+                from src.models.settings import get_settings_manager
                 settings_manager = get_settings_manager()
                 settings_manager.set_setting('regtech_username', username, 'string', 'credentials')
                 settings_manager.set_setting('regtech_password', password, 'password', 'credentials')
