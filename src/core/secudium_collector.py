@@ -517,11 +517,41 @@ class SecudiumCollector:
                                                         if date_value.hour or date_value.minute:
                                                             detection_time = date_value.strftime('%H:%M:%S')
                                                     elif isinstance(date_value, str):
-                                                        parsed = pd.to_datetime(date_value, errors='coerce')
-                                                        if pd.notna(parsed):
-                                                            detection_date = parsed.strftime('%Y-%m-%d')
-                                                            if parsed.hour or parsed.minute:
-                                                                detection_time = parsed.strftime('%H:%M:%S')
+                                                        # 한국어 날짜 형식 처리: "2025. 0 6. 29. 오전 09:00"
+                                                        if '오전' in date_value or '오후' in date_value:
+                                                            try:
+                                                                parts = date_value.split()
+                                                                if len(parts) >= 5:  # 년. 월. 일. 오전/오후 시:분
+                                                                    year = parts[0].replace('.', '')
+                                                                    month = parts[1].replace('.', '').strip().zfill(2)
+                                                                    day = parts[2].replace('.', '').strip().zfill(2)
+                                                                    am_pm = parts[3]
+                                                                    time_part = parts[4] if len(parts) > 4 else "00:00"
+                                                                    
+                                                                    if ':' in time_part:
+                                                                        hour, minute = time_part.split(':')
+                                                                        hour = int(hour)
+                                                                        if am_pm == '오후' and hour != 12:
+                                                                            hour += 12
+                                                                        elif am_pm == '오전' and hour == 12:
+                                                                            hour = 0
+                                                                        
+                                                                        detection_date = f"{year}-{month}-{day}"
+                                                                        detection_time = f"{hour:02d}:{minute}:00"
+                                                            except Exception as e:
+                                                                logger.debug(f"한국어 날짜 파싱 실패: {e}")
+                                                                # 실패시 pandas 파싱 시도
+                                                                parsed = pd.to_datetime(date_value, errors='coerce')
+                                                                if pd.notna(parsed):
+                                                                    detection_date = parsed.strftime('%Y-%m-%d')
+                                                                    if parsed.hour or parsed.minute:
+                                                                        detection_time = parsed.strftime('%H:%M:%S')
+                                                        else:
+                                                            parsed = pd.to_datetime(date_value, errors='coerce')
+                                                            if pd.notna(parsed):
+                                                                detection_date = parsed.strftime('%Y-%m-%d')
+                                                                if parsed.hour or parsed.minute:
+                                                                    detection_time = parsed.strftime('%H:%M:%S')
                                                 except:
                                                     pass
                                                 break
@@ -537,7 +567,31 @@ class SecudiumCollector:
                                                         elif isinstance(time_value, str):
                                                             # 시간 문자열 파싱
                                                             time_str = str(time_value).strip()
-                                                            if ':' in time_str:
+                                                            # 한국어 날짜 형식 처리: "2025. 0 6. 29. 오전 09:00"
+                                                            if '오전' in time_str or '오후' in time_str:
+                                                                try:
+                                                                    # 날짜 부분과 시간 부분 분리
+                                                                    parts = time_str.split()
+                                                                    if len(parts) >= 6:  # 년. 월. 일. 오전/오후 시:분
+                                                                        year = parts[0].replace('.', '')
+                                                                        month = parts[1].replace('.', '').zfill(2)
+                                                                        day = parts[2].replace('.', '').zfill(2)
+                                                                        am_pm = parts[3]
+                                                                        time_part = parts[4]
+                                                                        
+                                                                        if ':' in time_part:
+                                                                            hour, minute = time_part.split(':')
+                                                                            hour = int(hour)
+                                                                            if am_pm == '오후' and hour != 12:
+                                                                                hour += 12
+                                                                            elif am_pm == '오전' and hour == 12:
+                                                                                hour = 0
+                                                                            
+                                                                            detection_date = f"{year}-{month}-{day}"
+                                                                            detection_time = f"{hour:02d}:{minute}:00"
+                                                                except Exception as e:
+                                                                    logger.debug(f"한국어 날짜 파싱 실패: {e}")
+                                                            elif ':' in time_str:
                                                                 detection_time = time_str
                                                     except:
                                                         pass
@@ -640,11 +694,41 @@ class SecudiumCollector:
                                                             if date_value.hour or date_value.minute:
                                                                 detection_time = date_value.strftime('%H:%M:%S')
                                                         elif isinstance(date_value, str):
-                                                            parsed = pd.to_datetime(date_value, errors='coerce')
-                                                            if pd.notna(parsed):
-                                                                detection_date = parsed.strftime('%Y-%m-%d')
-                                                                if parsed.hour or parsed.minute:
-                                                                    detection_time = parsed.strftime('%H:%M:%S')
+                                                            # 한국어 날짜 형식 처리: "2025. 0 6. 29. 오전 09:00"
+                                                            if '오전' in date_value or '오후' in date_value:
+                                                                try:
+                                                                    parts = date_value.split()
+                                                                    if len(parts) >= 5:  # 년. 월. 일. 오전/오후 시:분
+                                                                        year = parts[0].replace('.', '')
+                                                                        month = parts[1].replace('.', '').strip().zfill(2)
+                                                                        day = parts[2].replace('.', '').strip().zfill(2)
+                                                                        am_pm = parts[3]
+                                                                        time_part = parts[4] if len(parts) > 4 else "00:00"
+                                                                        
+                                                                        if ':' in time_part:
+                                                                            hour, minute = time_part.split(':')
+                                                                            hour = int(hour)
+                                                                            if am_pm == '오후' and hour != 12:
+                                                                                hour += 12
+                                                                            elif am_pm == '오전' and hour == 12:
+                                                                                hour = 0
+                                                                            
+                                                                            detection_date = f"{year}-{month}-{day}"
+                                                                            detection_time = f"{hour:02d}:{minute}:00"
+                                                                except Exception as e:
+                                                                    logger.debug(f"한국어 날짜 파싱 실패: {e}")
+                                                                    # 실패시 pandas 파싱 시도
+                                                                    parsed = pd.to_datetime(date_value, errors='coerce')
+                                                                    if pd.notna(parsed):
+                                                                        detection_date = parsed.strftime('%Y-%m-%d')
+                                                                        if parsed.hour or parsed.minute:
+                                                                            detection_time = parsed.strftime('%H:%M:%S')
+                                                            else:
+                                                                parsed = pd.to_datetime(date_value, errors='coerce')
+                                                                if pd.notna(parsed):
+                                                                    detection_date = parsed.strftime('%Y-%m-%d')
+                                                                    if parsed.hour or parsed.minute:
+                                                                        detection_time = parsed.strftime('%H:%M:%S')
                                                     except:
                                                         pass
                                                     break
