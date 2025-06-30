@@ -265,67 +265,300 @@ blacklist/
 └── README.md         # 이 파일
 ```
 
-## 🔧 문제 해결
+## 🛠️ 기술 스택 (오프라인 환경 기준)
 
-### Pod 재시작 문제
-```bash
-# Pod 상태 확인
-kubectl describe pod <pod-name> -n blacklist
-kubectl logs <pod-name> -n blacklist --previous
+### 런타임 환경
+- **Python 3.9**: 안정성과 성능의 균형점
+  - 오프라인 환경에서 추가 패키지 설치 불필요
+  - Alpine 기반 경량 이미지 사용 (python:3.9-slim)
+- **Gunicorn**: Production WSGI 서버
+  - 멀티 워커 지원 (기본 4 workers)
+  - 타임아웃 120초 설정
+  - --reload 옵션 제거로 안정성 확보
 
-# 일반적인 원인:
-# - 메모리 부족: limits 증가
-# - 데이터베이스 권한: init container 확인
-# - 환경 변수 누락: ConfigMap/Secret 확인
+### 웹 프레임워크
+- **Flask 2.3.3**: 경량 웹 프레임워크
+  - 의존성 최소화로 오프라인 환경 적합
+  - Flask-CORS, Flask-Compress 포함
+  - 보안 헤더 자동 설정
+
+### 데이터베이스
+- **SQLite 3**: 파일 기반 임베디드 DB
+  - 별도 DB 서버 불필요 (오프라인 환경 최적)
+  - WAL 모드로 동시성 향상
+  - 자동 백업 및 복구 지원
+  - 3개월 데이터 자동 정리
+
+### 캐싱
+- **Redis 7-alpine**: 인메모리 캐시
+  - 컨테이너 내장으로 외부 의존성 없음
+  - 메모리 캐시 폴백 지원
+  - TTL 기반 자동 만료
+
+### 컨테이너 기술
+- **Docker 20.10+**: 컨테이너화
+  - 멀티스테이지 빌드로 이미지 크기 최적화 (~150MB)
+  - 레이어 캐싱으로 빌드 시간 단축
+  - 루트리스 컨테이너 실행 지원
+
+### 오케스트레이션
+- **Kubernetes 1.24+**: 컨테이너 오케스트레이션
+  - k3s 지원 (경량 Kubernetes)
+  - PVC로 데이터 영속성 보장
+  - ConfigMap/Secret으로 설정 관리
+  - 자동 재시작 및 헬스체크
+
+### 필수 Python 패키지 (requirements.txt)
+```text
+# 웹 프레임워크
+Flask==2.3.3
+Flask-CORS==4.0.0
+Flask-Compress==1.14
+gunicorn==21.2.0
+
+# 데이터 처리
+pandas==2.1.1
+openpyxl==3.1.2  # Excel 파일 처리
+xlrd==2.0.1      # 구형 Excel 지원
+
+# HTTP 통신
+requests==2.31.0
+urllib3==2.0.7
+
+# 캐싱
+redis==5.0.1
+cachetools==5.3.1
+
+# JSON 처리
+orjson==3.9.10  # 고성능 JSON
+
+# 유틸리티
+python-dateutil==2.8.2
+pytz==2023.3
+Werkzeug==2.3.7
+
+# 보안
+cryptography==41.0.7
+certifi==2023.7.22
 ```
 
-### 수집 실패
+### 오프라인 패키지 준비
 ```bash
-# 인증 정보 확인
-kubectl get secret blacklist-secret -n blacklist -o yaml
+# 1. 온라인 환경에서 패키지 다운로드
+pip download -r requirements.txt -d offline-packages/
 
-# 네트워크 연결 테스트
-kubectl exec -it deployment/blacklist -n blacklist -- curl https://www.krcert.or.kr
+# 2. 패키지 파일 압축
+tar czf python-packages.tar.gz offline-packages/
 
-# 수동 수집 트리거
-curl -X POST http://<node-ip>:32541/api/collection/regtech/trigger
+# 3. 오프라인 환경으로 전송
+scp python-packages.tar.gz user@offline-server:/tmp/
+
+# 4. 오프라인 환경에서 설치
+tar xzf python-packages.tar.gz
+pip install --no-index --find-links offline-packages/ -r requirements.txt
 ```
 
-### 스토리지 문제
-```bash
-# PVC 상태 확인
-kubectl get pvc -n blacklist
-kubectl describe pvc blacklist-data -n blacklist
-
-# 데이터베이스 파일 확인
-kubectl exec deployment/blacklist -n blacklist -- ls -la /app/instance/
+### 시스템 의존성 (Alpine Linux)
+```dockerfile
+# Dockerfile에 포함된 시스템 패키지
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers \
+    libffi-dev \
+    openssl-dev \
+    python3-dev \
+    libxml2-dev \
+    libxslt-dev \
+    jpeg-dev \
+    zlib-dev
 ```
 
-### 롤백
+### 네트워크 구성 (오프라인)
+- **내부 통신만 허용**
+  - ClusterIP 서비스 타입 사용
+  - NodePort는 관리자 접근용 (32541)
+  - 외부 인터넷 접근 차단
+  
+### 보안 강화 (오프라인 환경)
+- **이미지 스캔**: Trivy로 취약점 사전 검사
+- **시크릿 관리**: Kubernetes Secrets 사용
+- **최소 권한**: non-root 사용자 실행
+- **네트워크 정책**: 필요 최소한의 포트만 개방
+
+### 모니터링 (오프라인)
+- **내장 헬스체크**: /health 엔드포인트
+- **메트릭 수집**: /api/stats 제공
+- **로그 수집**: stdout/stderr → kubectl logs
+- **리소스 모니터링**: kubectl top
+
+### 백업 및 복구
+- **SQLite 백업**: 파일 단위 백업
+- **설정 백업**: ConfigMap/Secret YAML 저장
+- **전체 백업**: namespace 단위 YAML export
+- **자동화 스크립트**: 크론잡으로 정기 백업
+
+## 🔧 문제 해결 (오프라인 환경 특화)
+
+### 이미지 Pull 실패
 ```bash
-# 배포 히스토리 확인
-kubectl rollout history deployment/blacklist -n blacklist
+# 증상: ImagePullBackOff 에러
+# 원인: 로컬 레지스트리 접근 실패
 
-# 이전 버전으로 롤백
-kubectl rollout undo deployment/blacklist -n blacklist
+# 1. 로컬 레지스트리 상태 확인
+docker ps | grep registry
+curl http://localhost:5000/v2/_catalog
 
-# 특정 리비전으로 롤백
-kubectl rollout undo deployment/blacklist -n blacklist --to-revision=2
+# 2. k3s/k8s 레지스트리 설정 확인
+cat /etc/rancher/k3s/registries.yaml
+# 또는
+cat /etc/containerd/config.toml
+
+# 3. 이미지 태그 확인
+docker images | grep blacklist
+kubectl describe pod <pod-name> -n blacklist | grep Image
+
+# 4. 수동으로 이미지 로드
+docker load -i blacklist.tar
+docker tag <image-id> localhost:5000/blacklist:latest
+docker push localhost:5000/blacklist:latest
+```
+
+### Pod 메모리 부족
+```bash
+# 증상: OOMKilled 상태
+
+# 1. 현재 메모리 사용량 확인
+kubectl top pods -n blacklist
+kubectl describe pod <pod-name> -n blacklist | grep -A5 "Limits:"
+
+# 2. 메모리 한계 증가
+kubectl edit deployment blacklist -n blacklist
+# resources.limits.memory: "2Gi"로 수정
+
+# 3. 대량 데이터 처리 시 배치 크기 조정
+kubectl set env deployment/blacklist BATCH_SIZE=1000 -n blacklist
+```
+
+### 데이터베이스 손상
+```bash
+# 증상: database disk image is malformed
+
+# 1. 백업에서 복구
+kubectl exec deployment/blacklist -n blacklist -- rm /app/instance/blacklist.db
+kubectl cp backup/db-20250630.db blacklist/<pod-name>:/app/instance/blacklist.db -n blacklist
+
+# 2. SQLite 무결성 검사
+kubectl exec deployment/blacklist -n blacklist -- \
+  sqlite3 /app/instance/blacklist.db "PRAGMA integrity_check;"
+
+# 3. 데이터 재구축
+kubectl exec deployment/blacklist -n blacklist -- \
+  python3 init_database.py --force
+```
+
+### 오프라인 환경 네트워크 이슈
+```bash
+# 증상: 외부 API 접근 시도로 타임아웃
+
+# 1. 환경 변수로 오프라인 모드 설정
+kubectl set env deployment/blacklist OFFLINE_MODE=true -n blacklist
+
+# 2. 사전 수집된 데이터 마운트
+kubectl cp offline-data/ blacklist/<pod-name>:/app/offline-data -n blacklist
+
+# 3. hosts 파일 수정으로 외부 접근 차단
+kubectl exec deployment/blacklist -n blacklist -- \
+  sh -c 'echo "127.0.0.1 www.krcert.or.kr" >> /etc/hosts'
+```
+
+### 성능 저하 문제
+```bash
+# 증상: API 응답 시간 증가
+
+# 1. Redis 캐시 상태 확인
+kubectl exec deployment/blacklist-redis -n blacklist -- redis-cli INFO stats
+
+# 2. 캐시 초기화
+kubectl exec deployment/blacklist-redis -n blacklist -- redis-cli FLUSHALL
+
+# 3. DB 인덱스 재구축
+kubectl exec deployment/blacklist -n blacklist -- \
+  sqlite3 /app/instance/blacklist.db "REINDEX;"
+
+# 4. 불필요한 로그 정리
+kubectl exec deployment/blacklist -n blacklist -- \
+  find /app/logs -name "*.log" -mtime +7 -delete
+```
+
+### 롤백 절차 (오프라인)
+```bash
+# 1. 현재 버전 백업
+docker save localhost:5000/blacklist:current -o blacklist-backup.tar
+
+# 2. 이전 버전 복구
+docker load -i blacklist-previous.tar
+docker tag <previous-image> localhost:5000/blacklist:rollback
+docker push localhost:5000/blacklist:rollback
+
+# 3. Deployment 업데이트
+kubectl set image deployment/blacklist \
+  blacklist=localhost:5000/blacklist:rollback -n blacklist
+
+# 4. 롤백 확인
+kubectl rollout status deployment/blacklist -n blacklist
+kubectl logs deployment/blacklist -n blacklist | tail -50
 ```
 
 ## 🏭 프로덕션 운영
 
-### 요구사항
-- Kubernetes 1.24+ (k3s/k8s)
-- 최소 2GB 메모리
-- 10GB 이상 스토리지
-- NodePort 또는 Ingress 접근
+### 최소 시스템 요구사항
+```yaml
+# 단일 노드 환경
+CPU: 2 cores (4 cores 권장)
+Memory: 4GB (8GB 권장)
+Storage: 20GB SSD (데이터 증가 고려)
+Network: 내부 네트워크만 (오프라인)
 
-### 성능
-- 10만개 이상 IP 효율적 처리
-- API 응답 시간 < 100ms
-- Redis 캐싱으로 성능 최적화
-- 일일 22,000+ IP 자동 수집
+# Kubernetes 클러스터
+Master Node: 2 cores, 4GB RAM
+Worker Node: 2 cores, 4GB RAM (최소 2개)
+Storage: NFS 또는 Local PV 20GB+
+```
+
+### 리소스 할당 가이드
+```yaml
+# Pod 리소스 (k8s/deployment.yaml)
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+# Redis 리소스
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+```
+
+### 성능 특성
+- **IP 처리 용량**: 10만개 이상 동시 관리
+- **일일 수집량**: 22,000+ IP (REGTECH + SECUDIUM)
+- **API 응답 시간**: 
+  - 캐시 히트: < 10ms
+  - 캐시 미스: < 100ms
+  - 대량 조회: < 500ms
+- **메모리 사용량**:
+  - 기본 상태: ~300MB
+  - 10만 IP 로드: ~800MB
+  - 피크 시간: < 1.5GB
+- **DB 크기 증가율**: ~10MB/일
 
 ### 백업 및 복구
 ```bash
@@ -343,19 +576,155 @@ kubectl get all,cm,secret,pvc -n blacklist -o yaml > blacklist-backup.yaml
 
 ### 오프라인 환경 운영 가이드
 
-#### 초기 설정
-1. 온라인 환경에서 필요한 모든 이미지 다운로드
-2. 이미지를 tar 파일로 저장
-3. 오프라인 환경으로 전송
-4. 로컬 레지스트리 구축 (선택)
-5. k8s 매니페스트 수정 및 배포
+#### 초기 환경 구축
+```bash
+# 1. 필수 소프트웨어 사전 준비 (온라인)
+## Docker 이미지
+docker pull registry.jclee.me/blacklist:latest
+docker pull redis:7-alpine
+docker pull busybox:latest
+docker pull python:3.9-slim  # 베이스 이미지
 
-#### 업데이트 절차
-1. 온라인에서 새 버전 이미지 준비
-2. 변경사항 문서화
-3. 오프라인 환경 이관
-4. 점진적 롤링 업데이트
-5. 롤백 계획 준비
+## Kubernetes 도구
+curl -LO https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl
+curl -Lo k3s https://github.com/k3s-io/k3s/releases/download/v1.24.17+k3s1/k3s
+
+## Python 패키지
+pip download -r requirements.txt -d offline-packages/
+pip download pytest pytest-cov -d offline-packages/  # 테스트용
+
+# 2. 오프라인 전송 패키지 생성
+tar czf blacklist-offline-bundle.tar.gz \
+  *.tar \
+  offline-packages/ \
+  kubectl \
+  k3s \
+  k8s/ \
+  deployment/ \
+  scripts/
+
+# 3. 오프라인 환경 설치
+## k3s 설치 (에어갭 모드)
+sudo install -m 755 k3s /usr/local/bin/k3s
+sudo k3s server --disable-agent &
+
+## 로컬 레지스트리 구성
+docker run -d -p 5000:5000 --name registry registry:2
+docker load -i blacklist-images.tar
+docker tag registry.jclee.me/blacklist:latest localhost:5000/blacklist:latest
+docker push localhost:5000/blacklist:latest
+```
+
+#### 데이터 소스 오프라인 처리
+```python
+# 오프라인 환경용 설정 (src/config/offline.py)
+OFFLINE_MODE = True
+OFFLINE_DATA_PATH = "/app/offline-data"
+
+# IP 데이터 사전 수집 및 저장
+# 온라인 환경에서 실행
+python scripts/export_offline_data.py
+
+# 오프라인 환경으로 데이터 전송
+scp offline-ip-data-*.json user@offline-server:/data/
+```
+
+#### 업데이트 및 패치 절차
+```bash
+# 1. 온라인 환경에서 패치 준비
+## 변경된 이미지만 export
+docker save registry.jclee.me/blacklist:v2.0 -o blacklist-v2.0.tar
+
+## 변경된 파일만 패치 생성
+git diff v1.0..v2.0 > patch-v1.0-to-v2.0.diff
+
+## 패치 번들 생성
+tar czf patch-bundle-v2.0.tar.gz \
+  blacklist-v2.0.tar \
+  patch-v1.0-to-v2.0.diff \
+  CHANGELOG.md
+
+# 2. 오프라인 환경 적용
+## 이미지 업데이트
+docker load -i blacklist-v2.0.tar
+docker tag registry.jclee.me/blacklist:v2.0 localhost:5000/blacklist:v2.0
+docker push localhost:5000/blacklist:v2.0
+
+## 롤링 업데이트
+kubectl set image deployment/blacklist \
+  blacklist=localhost:5000/blacklist:v2.0 \
+  -n blacklist
+
+## 업데이트 검증
+kubectl rollout status deployment/blacklist -n blacklist
+```
+
+#### 오프라인 모니터링 도구
+```yaml
+# monitoring.yaml - 오프라인 환경용 간단한 모니터링
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-script
+  namespace: blacklist
+data:
+  monitor.sh: |
+    #!/bin/bash
+    while true; do
+      echo "=== $(date) ==="
+      kubectl top pods -n blacklist
+      curl -s http://blacklist:2541/health | jq .
+      sleep 300
+    done
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: health-monitor
+  namespace: blacklist
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: monitor
+            image: busybox
+            command: ["/bin/sh", "/scripts/monitor.sh"]
+            volumeMounts:
+            - name: script
+              mountPath: /scripts
+          volumes:
+          - name: script
+            configMap:
+              name: monitoring-script
+          restartPolicy: OnFailure
+```
+
+#### 오프라인 백업 자동화
+```bash
+#!/bin/bash
+# backup.sh - 일일 자동 백업 스크립트
+BACKUP_DIR="/backup/blacklist"
+DATE=$(date +%Y%m%d)
+
+# DB 백업
+kubectl exec deployment/blacklist -n blacklist -- \
+  sqlite3 /app/instance/blacklist.db ".backup /tmp/backup.db"
+kubectl cp blacklist/deployment/blacklist:/tmp/backup.db \
+  $BACKUP_DIR/db-$DATE.db
+
+# 설정 백업
+kubectl get cm,secret -n blacklist -o yaml > $BACKUP_DIR/config-$DATE.yaml
+
+# 로그 백업
+kubectl logs deployment/blacklist -n blacklist --since=24h \
+  > $BACKUP_DIR/logs-$DATE.log
+
+# 7일 이상 된 백업 삭제
+find $BACKUP_DIR -mtime +7 -delete
+```
 
 ## 🤝 Contributing
 
