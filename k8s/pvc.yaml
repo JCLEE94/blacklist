@@ -9,7 +9,8 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: standard
+  volumeName: blacklist-data-pv
+  storageClassName: ""
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -22,4 +23,5 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  storageClassName: standard
+  volumeName: blacklist-logs-pv
+  storageClassName: ""

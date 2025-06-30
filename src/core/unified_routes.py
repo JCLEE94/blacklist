@@ -534,7 +534,7 @@ def get_fortigate_simple():
 def export_json():
     """JSON 형식으로 내보내기"""
     try:
-        detailed_ips = service.get_all_active_ips()
+        detailed_ips = service.get_active_blacklist_ips()
         
         export_data = {
             "export_time": datetime.now().isoformat(),
