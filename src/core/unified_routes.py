@@ -572,6 +572,54 @@ def search_batch_ips():
         logger.error(f"Batch IP search error: {e}")
         return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/monthly-data', methods=['GET'])
+def get_monthly_data():
+    """월별 수집 데이터 조회"""
+    try:
+        # 데이터베이스에서 월별 집계 데이터 조회
+        from sqlalchemy import func, extract
+        from src.models.blacklist import BlacklistIP
+        from src.core.database import get_db_session
+        
+        monthly_data = []
+        
+        with get_db_session() as session:
+            # 최근 12개월 데이터 조회
+            results = session.query(
+                func.strftime('%Y-%m', BlacklistIP.created_at).label('month'),
+                func.count(BlacklistIP.id).label('count'),
+                func.min(BlacklistIP.created_at).label('first_detection'),
+                func.max(BlacklistIP.created_at).label('last_detection')
+            ).group_by(
+                func.strftime('%Y-%m', BlacklistIP.created_at)
+            ).order_by(
+                func.strftime('%Y-%m', BlacklistIP.created_at).desc()
+            ).limit(12).all()
+            
+            for row in results:
+                monthly_data.append({
+                    'month': row.month,
+                    'ip_count': row.count,
+                    'details': {
+                        'first_detection': row.first_detection.strftime('%Y-%m-%d') if row.first_detection else '-',
+                        'last_detection': row.last_detection.strftime('%Y-%m-%d') if row.last_detection else '-',
+                        'status': 'active'
+                    }
+                })
+        
+        return jsonify({
+            'status': 'success',
+            'monthly_data': monthly_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Monthly data error: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'monthly_data': []
+        }), 500
+
 @unified_bp.route('/api/stats/source-distribution', methods=['GET'])
 def get_source_distribution():
     """소스별 분포 데이터"""
@@ -602,9 +650,9 @@ def get_source_distribution():
             'error': str(e)
         }), 500
 
-@unified_bp.route('/api/stats/monthly-data', methods=['GET'])
-def get_monthly_data():
-    """월별 데이터"""
+@unified_bp.route('/api/stats/monthly-data-old', methods=['GET'])
+def get_monthly_data_old():
+    """월별 데이터 (구버전)"""
     try:
         from datetime import datetime, timedelta
         

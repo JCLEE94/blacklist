@@ -50,11 +50,9 @@ class SecudiumCollector:
             self.username = settings_manager.get_setting('secudium_username', settings.secudium_username)
             self.password = settings_manager.get_setting('secudium_password', settings.secudium_password)
             
-            logger.info(f"SECUDIUM 인증 정보 로드", 
-                       username=self.username[:3] + "***" if self.username else "없음",
-                       password="***" if self.password else "없음")
+            logger.info(f"SECUDIUM 인증 정보 로드 - username: {self.username[:3] + '***' if self.username else '없음'}, password: {'***' if self.password else '없음'}")
         except Exception as e:
-            logger.warning(f"데이터베이스 설정 읽기 실패, 환경변수 사용", exception=e)
+            logger.warning(f"데이터베이스 설정 읽기 실패, 환경변수 사용: {e}")
             self.username = settings.secudium_username
             self.password = settings.secudium_password
         
@@ -437,6 +435,13 @@ class SecudiumCollector:
                                 
                                 # 엑셀에서 IP 추출
                                 try:
+                                    # 먼저 파일 내용을 확인
+                                    with open(temp_file, 'rb') as f:
+                                        content_sample = f.read(1000)
+                                        if b'<html' in content_sample.lower() or b'<!doctype' in content_sample.lower():
+                                            logger.error("다운로드된 파일이 HTML입니다. Excel 파일이 아닙니다.")
+                                            continue
+                                    
                                     df = pd.read_excel(temp_file, engine='openpyxl')
                                     logger.info(f"엑셀 로드 성공", 
                                               rows=df.shape[0], columns=df.shape[1], file=file_name)
@@ -562,15 +567,8 @@ class SecudiumCollector:
                                         if desc_parts:
                                             description = ' | '.join(desc_parts)
                                         
-                                        # 완전한 정보를 튜플로 저장
-                                        full_info = {
-                                            'ip': ip_address,
-                                            'date': detection_date,
-                                            'time': detection_time,
-                                            'country': country,
-                                            'attack_type': attack_type,
-                                            'description': description
-                                        }
+                                        # 완전한 정보를 문자열로 저장 (hashable하게)
+                                        full_info = f"{detection_date}|{detection_time or ''}|{country}|{attack_type}|{description}"
                                         collected_ips.add((ip_address, full_info))
                                     
                                     os.remove(temp_file)
@@ -578,8 +576,7 @@ class SecudiumCollector:
                                               file=file_name, ip_count=len(collected_ips))
                                     
                                 except Exception as e:
-                                    logger.warning(f"XLSX 파싱 실패, XLS 형식 시도", 
-                                                 exception=e, file=file_name)
+                                    logger.warning(f"XLSX 파싱 실패, XLS 형식 시도: {e}")
                                     # XLS 형식으로 재시도
                                     try:
                                         df = pd.read_excel(temp_file, engine='xlrd')
@@ -692,22 +689,14 @@ class SecudiumCollector:
                                             if desc_parts:
                                                 description = ' | '.join(desc_parts)
                                             
-                                            # 완전한 정보를 튜플로 저장
-                                            full_info = {
-                                                'ip': ip_address,
-                                                'date': detection_date,
-                                                'time': detection_time,
-                                                'country': country,
-                                                'attack_type': attack_type,
-                                                'description': description
-                                            }
+                                            # 완전한 정보를 문자열로 저장 (hashable하게)
+                                            full_info = f"{detection_date}|{detection_time or ''}|{country}|{attack_type}|{description}"
                                             collected_ips.add((ip_address, full_info))
                                         
                                         logger.info(f"XLS 형식으로 IP 수집 성공", 
                                                   file=file_name, ip_count=len(collected_ips))
                                     except Exception as xe:
-                                        logger.error(f"Excel 파일 처리 실패", 
-                                                   exception=xe, file=file_name)
+                                        logger.error(f"Excel 파일 처리 실패: {xe}")
                                 finally:
                                     if os.path.exists(temp_file):
                                         os.remove(temp_file)
@@ -715,8 +704,7 @@ class SecudiumCollector:
                                 logger.warning(f"다운로드 실패: {dl_resp.status_code}")
                                 
                 except Exception as e:
-                    logger.error(f"게시글 처리 오류", 
-                              exception=e, row_index=idx, title=title if 'title' in locals() else 'N/A')
+                    logger.error(f"게시글 처리 오류: {e} (row {idx}, title: {title if 'title' in locals() else 'N/A'})")
                     continue
             
             if collected_ips:
@@ -726,15 +714,23 @@ class SecudiumCollector:
                     # collected_ips는 이제 (ip, full_info) 튜플의 집합
                     if isinstance(ip_tuple, tuple) and len(ip_tuple) == 2:
                         ip, info = ip_tuple
-                        if isinstance(info, dict):
-                            # 새로운 형식: 모든 정보 포함
-                            detection_date = info.get('date', '')
-                            detection_time = info.get('time')
-                            country = info.get('country', 'Unknown')
-                            attack_type = info.get('attack_type', 'SECUDIUM')
-                            description = info.get('description', '')
+                        if isinstance(info, str) and '|' in info:
+                            # 새로운 형식: 파이프로 구분된 정보
+                            parts = info.split('|')
+                            if len(parts) >= 5:
+                                detection_date = parts[0]
+                                detection_time = parts[1] or None
+                                country = parts[2]
+                                attack_type = parts[3]
+                                description = '|'.join(parts[4:])  # 나머지는 description
+                            else:
+                                detection_date = str(info)
+                                detection_time = None
+                                country = 'Unknown'
+                                attack_type = 'SECUDIUM'
+                                description = ''
                         else:
-                            # 이전 형식: (ip, date) 튜플
+                            # 이전 형식: 날짜만
                             detection_date = str(info)
                             detection_time = None
                             country = 'Unknown'

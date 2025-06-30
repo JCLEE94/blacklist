@@ -129,17 +129,15 @@ class EnhancedRegtechCollector:
                     self.stats.source_method = method_name.lower().replace(' ', '_')
                     break
                 else:
-                    logger.warning(f"{method_name} 실패 또는 데이터 없음", method=method_name)
+                    logger.warning(f"{method_name} 실패 또는 데이터 없음")
                     
             except CollectionError as e:
-                logger.error(f"{method_name} 수집 오류", 
-                           exception=e, method=method_name)
+                logger.error(f"{method_name} 수집 오류: {e}")
                 self.stats.last_error = str(e)
                 self.stats.error_count += 1
                 continue
             except Exception as e:
-                logger.error(f"{method_name} 중 예상치 못한 오류", 
-                           exception=e, method=method_name)
+                logger.error(f"{method_name} 중 예상치 못한 오류: {e}")
                 self.stats.last_error = str(e)
                 self.stats.error_count += 1
                 continue
@@ -287,9 +285,18 @@ class EnhancedRegtechCollector:
         try:
             self.stats.auth_attempts += 1
             
-            # 인증 정보 확인
-            username = settings.regtech_username
-            password = settings.regtech_password
+            # 데이터베이스에서 인증 정보 가져오기 (우선순위: DB > 환경변수)
+            try:
+                from ..models.settings import get_settings_manager
+                settings_manager = get_settings_manager()
+                username = settings_manager.get_setting('regtech_username', settings.regtech_username)
+                password = settings_manager.get_setting('regtech_password', settings.regtech_password)
+                
+                logger.info(f"REGTECH 인증 정보 로드 - username: {username[:3] + '***' if username else '없음'}, password: {'***' if password else '없음'}")
+            except Exception as e:
+                logger.warning(f"데이터베이스 설정 읽기 실패, 환경변수 사용: {e}")
+                username = settings.regtech_username
+                password = settings.regtech_password
             
             if not username or not password:
                 logger.error("REGTECH 인증 정보 없음")
@@ -518,8 +525,7 @@ class EnhancedRegtechCollector:
                         entries.append(entry)
                         
                     except Exception as e:
-                        logger.debug(f"행 처리 오류", 
-                                   exception=e, row_index=idx, ip=ip if 'ip' in locals() else 'N/A')
+                        logger.debug(f"행 처리 오류: {e}, row_index: {idx}, ip: {ip if 'ip' in locals() else 'N/A'}")
                         continue
                 
                 # 중복 제거
@@ -658,8 +664,7 @@ class EnhancedRegtechCollector:
                                 entries.append(entry)
                                 
                             except Exception as e:
-                                logger.debug(f"HTML 행 파싱 오류", 
-                                          exception=e, row_data=str(cells)[:100])
+                                logger.debug(f"HTML 행 파싱 오류: {e}, row_data: {str(cells)[:100]}")
                                 continue
             
             # 결과가 없으면 다른 구조 시도
