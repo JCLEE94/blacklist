@@ -127,47 +127,137 @@ class SecudiumCollector:
             raise CollectionError("SECUDIUM", f"파일 처리 실패: {str(e)}")
     
     def _process_excel_file(self, filepath: str) -> List[BlacklistEntry]:
-        """Excel 파일 처리"""
+        """Excel 파일 처리 - 향상된 컬럼 매핑 및 정보 추출"""
         try:
-            df = pd.read_excel(filepath)
+            # XLSX와 XLS 모두 지원
+            if filepath.endswith('.xls'):
+                df = pd.read_excel(filepath, engine='xlrd')
+            else:
+                df = pd.read_excel(filepath, engine='openpyxl')
+            
             entries = []
             
-            # IP 컬럼 찾기
-            ip_columns = [col for col in df.columns if 'ip' in str(col).lower()]
+            logger.info(f"Excel 파일 컬럼 분석 시작", file_path=filepath, columns=list(df.columns))
+            
+            # 컬럼 매핑 정의
+            ip_columns = []
+            date_columns = []
+            time_columns = []
+            country_columns = []
+            attack_type_columns = []
+            description_columns = []
+            
+            # 컬럼 분석 및 매핑
+            for col in df.columns:
+                col_str = str(col).lower()
+                
+                # IP 컬럼 찾기
+                if any(keyword in col_str for keyword in ['ip', 'address', '주소', 'addr']):
+                    ip_columns.append(col)
+                
+                # 날짜 컬럼 찾기
+                elif any(keyword in col_str for keyword in ['date', '날짜', '일시', '시간', 'time', '탐지일시', '등록일']):
+                    if any(time_keyword in col_str for time_keyword in ['time', '시간', '분', '초']):
+                        time_columns.append(col)
+                    else:
+                        date_columns.append(col)
+                
+                # 국가 컬럼 찾기
+                elif any(keyword in col_str for keyword in ['country', '국가', 'nation', '소재지', 'location']):
+                    country_columns.append(col)
+                
+                # 공격유형 컬럼 찾기
+                elif any(keyword in col_str for keyword in ['attack', '공격', 'type', '유형', '위험', 'threat', 'severity', '심각도']):
+                    attack_type_columns.append(col)
+                
+                # 설명 컬럼 찾기
+                elif any(keyword in col_str for keyword in ['desc', '설명', '내용', 'content', 'detail', '상세', 'info']):
+                    description_columns.append(col)
+            
+            logger.info(f"컬럼 매핑 결과", 
+                       ip_cols=ip_columns, date_cols=date_columns, time_cols=time_columns,
+                       country_cols=country_columns, attack_cols=attack_type_columns, desc_cols=description_columns)
+            
             if not ip_columns:
                 logger.error("IP 컬럼을 찾을 수 없음", 
                            file_path=filepath, columns=list(df.columns))
                 raise CollectionError("SECUDIUM", "Excel 파일에 IP 컬럼이 없습니다")
             
+            # 첫 번째 IP 컬럼 사용
             ip_column = ip_columns[0]
+            date_column = date_columns[0] if date_columns else None
+            time_column = time_columns[0] if time_columns else None
+            country_column = country_columns[0] if country_columns else None
+            attack_type_column = attack_type_columns[0] if attack_type_columns else None
+            description_column = description_columns[0] if description_columns else None
             
             for idx, row in df.iterrows():
                 try:
                     ip = str(row[ip_column]).strip()
-                    if not ip or ip == 'nan':
+                    if not ip or ip == 'nan' or ip == 'None':
                         continue
+                    
+                    # 날짜 정보 추출
+                    detection_date = None
+                    detection_time = None
+                    
+                    if date_column and pd.notna(row[date_column]):
+                        detection_date_raw = row[date_column]
+                        if isinstance(detection_date_raw, pd.Timestamp):
+                            detection_date = detection_date_raw.strftime('%Y-%m-%d')
+                            detection_time = detection_date_raw.strftime('%H:%M:%S')
+                        else:
+                            detection_date = str(detection_date_raw)[:10]  # YYYY-MM-DD 형식
+                    
+                    if time_column and pd.notna(row[time_column]):
+                        detection_time = str(row[time_column])
+                    
+                    # 국가 정보 추출
+                    country = 'Unknown'
+                    if country_column and pd.notna(row[country_column]):
+                        country = str(row[country_column]).strip()
+                    
+                    # 공격유형 정보 추출
+                    attack_type = 'SECUDIUM'
+                    if attack_type_column and pd.notna(row[attack_type_column]):
+                        attack_type = str(row[attack_type_column]).strip()
+                    
+                    # 설명 정보 추출
+                    description = ''
+                    if description_column and pd.notna(row[description_column]):
+                        description = str(row[description_column]).strip()
+                    
+                    # 원본 출처 세부정보 구성
+                    source_details = {
+                        'type': 'SECUDIUM',
+                        'attack_type': attack_type,
+                        'country': country,
+                        'detection_date': detection_date,
+                        'detection_time': detection_time,
+                        'description': description,
+                        'row_index': idx + 1,
+                        'excel_file': filepath.split('/')[-1]
+                    }
                     
                     entry = BlacklistEntry(
                         ip_address=ip,
-                        country=row.get('country', 'Unknown'),
-                        reason=row.get('attack_type', 'SECUDIUM'),
+                        country=country,
+                        reason=attack_type,  # 엑셀에서 추출한 공격유형 사용
                         source='SECUDIUM',
-                        reg_date=self._parse_detection_date(row.get('detection_date')),
+                        reg_date=detection_date,  # 엑셀에서 추출한 개별 날짜 사용
                         exp_date=None,
                         is_active=True,
-                        threat_level=row.get('threat_level', 'high'),
-                        source_details={
-                            'type': 'SECUDIUM',
-                            'attack': row.get('attack_type', 'Unknown')
-                        }
+                        threat_level='high',
+                        source_details=source_details
                     )
                     entries.append(entry)
+                    
                 except Exception as e:
                     logger.warning(f"Excel 행 처리 스킵", 
                                  exception=e, row_index=idx, ip=ip if 'ip' in locals() else 'N/A')
                     continue
             
-            logger.info(f"Excel에서 {len(entries)}개 IP 로드", 
+            logger.info(f"Excel에서 {len(entries)}개 IP 로드 (향상된 정보 포함)", 
                        file_path=filepath, count=len(entries), total_rows=len(df))
             return entries
             
