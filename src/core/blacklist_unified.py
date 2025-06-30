@@ -117,12 +117,9 @@ class UnifiedBlacklistManager:
                 os.makedirs(directory, exist_ok=True)
                 logger.debug(f"Directory ensured: {directory}")
             except OSError as e:
-                raise DataProcessingError(
-                    f"Failed to create directory: {directory}",
-                    file_path=directory,
-                    operation="create_directories",
-                    cause=e
-                )
+                # Docker 환경에서는 디렉토리 생성 실패를 무시
+                logger.warning(f"Failed to create directory {directory}: {e}")
+                # Continue without raising error
     
     def _setup_cleanup_scheduler(self):
         """Setup automatic cleanup of old data"""
