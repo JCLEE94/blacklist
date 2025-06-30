@@ -335,9 +335,8 @@ def settings_management():
 @settings_bp.route('/api/settings', methods=['GET'])
 def get_all_settings_new():
     """모든 설정 조회 (카테고리별 그룹화)"""
-    try:
-        # 임시 해결책: 직접 설정 반환
-        settings = {
+    # try 블록 제거하고 직접 반환
+    settings = {
             'general': {
                 'app_name': 'Blacklist Management System',
                 'timezone': 'Asia/Seoul',
@@ -408,19 +407,13 @@ def get_all_settings_new():
             }
         }
         
-        return jsonify({
-            'success': True,
-            'data': {
-                'settings': settings,
-                'categories': categories_info
-            }
-        })
-    except Exception as e:
-        logger.error(f"Failed to get settings: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+    return jsonify({
+        'success': True,
+        'data': {
+            'settings': settings,
+            'categories': categories_info
+        }
+    })
 
 
 @settings_bp.route('/api/settings', methods=['POST'])
