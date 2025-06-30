@@ -494,6 +494,22 @@ def get_active_blacklist_txt():
         logger.error(f"Active blacklist txt error: {e}")
         return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/collection/logs', methods=['GET'])
+def get_collection_logs():
+    """수집 로그 조회 - 상세 정보 포함"""
+    try:
+        # 최근 로그 100개 조회
+        logs = service.get_collection_logs(100)
+        
+        return jsonify({
+            'success': True,
+            'logs': logs,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Collection logs error: {e}")
+        return jsonify(create_error_response(e)), 500
+
 @unified_bp.route('/api/blacklist/active-simple', methods=['GET'])
 def get_active_blacklist_simple():
     """활성 블랙리스트 조회 (포티게이트 연동용 간단 형식)"""
