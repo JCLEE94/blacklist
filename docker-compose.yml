@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  blacklist-app:
+  blacklist:
     image: registry.jclee.me/blacklist:latest
     container_name: blacklist
     restart: unless-stopped
@@ -13,16 +13,11 @@ services:
       - FLASK_ENV=production
       - PORT=2541
       - HOST=0.0.0.0
-      - REDIS_URL=redis://blacklist-redis:6379/0
     volumes:
       - ./instance:/app/instance
       - ./data:/app/data
       - ./logs:/app/logs
       - ./.env:/app/.env:ro  # .env 파일을 컨테이너에 마운트 (읽기 전용)
-    depends_on:
-      - blacklist-redis
-    networks:
-      - blacklist-network
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
       - "com.centurylinklabs.watchtower.notification-url=https://api.github.com/repos/JCLEE94/blacklist/dispatches"
@@ -33,25 +28,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  blacklist-redis:
-    image: redis:7-alpine
-    container_name: blacklist-redis
-    restart: unless-stopped
-    volumes:
-      - redis-data:/data
-    networks:
-      - blacklist-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-networks:
-  blacklist-network:
-    driver: bridge
-
-volumes:
-  redis-data:
-    driver: local
