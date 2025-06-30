@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify, Response, render_template, curren
 from typing import Dict, Any
 import logging
 import asyncio
+import json
 from datetime import datetime
 
 from .unified_service import get_unified_service
@@ -589,7 +590,12 @@ def clear_database():
             }), 400
         
         # 모든 데이터 클리어
-        result = service.clear_all_data()
+        try:
+            # Use clear_all_database_data which is simpler
+            result = service.clear_all_database_data()
+        except Exception as e:
+            logger.error(f"Failed to clear database: {e}")
+            result = {'success': False, 'error': str(e)}
         
         if result.get('success'):
             return jsonify({

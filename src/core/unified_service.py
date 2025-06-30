@@ -552,9 +552,7 @@ class UnifiedBlacklistService:
                 'error': str(e)
             }
     
-    def clear_all_data(self) -> Dict[str, Any]:
-        """모든 데이터 삭제 (clear_all_database_data의 별칭)"""
-        return self.clear_all_database_data()
+    # Removed duplicate clear_all_data method - using the comprehensive one at line 1431
     
     def _get_source_counts_from_db(self) -> Dict[str, int]:
         """데이터베이스에서 소스별 IP 개수 조회"""
@@ -854,7 +852,7 @@ class UnifiedBlacklistService:
                 db_path = self.blacklist_manager.db_path
             else:
                 # 설정에서 데이터베이스 URI 가져오기
-                from ..config.settings import settings
+                from src.config.settings import settings
                 
                 db_uri = settings.database_uri
                 # sqlite:///path/to/db.db 형식에서 경로 추출
@@ -895,7 +893,7 @@ class UnifiedBlacklistService:
                 db_path = self.blacklist_manager.db_path
             else:
                 # 설정에서 데이터베이스 URI 가져오기
-                from ..config.settings import settings
+                from src.config.settings import settings
                 import re
                 
                 db_uri = settings.database_uri
@@ -948,7 +946,7 @@ class UnifiedBlacklistService:
                 db_path = self.blacklist_manager.db_path
             else:
                 # 설정에서 데이터베이스 URI 가져오기
-                from ..config.settings import settings
+                from src.config.settings import settings
                 
                 db_uri = settings.database_uri
                 # sqlite:///path/to/db.db 형식에서 경로 추출
@@ -1436,7 +1434,7 @@ class UnifiedBlacklistService:
             if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
                 db_path = self.blacklist_manager.db_path
             else:
-                from ..config.settings import settings
+                from src.config.settings import settings
                 db_uri = settings.database_uri
                 if db_uri.startswith('sqlite:///'):
                     db_path = db_uri[10:]
