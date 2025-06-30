@@ -59,11 +59,19 @@ def init_database(force_recreate=False):
             CREATE TABLE blacklist_ip (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ip VARCHAR(45) UNIQUE NOT NULL,
+                ip_address VARCHAR(45),      -- REGTECH 원본 필드
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 detection_date TIMESTAMP,
+                reg_date TIMESTAMP,          -- REGTECH 등록일
                 attack_type VARCHAR(50),
+                reason VARCHAR(200),         -- REGTECH 사유
                 country VARCHAR(100),
+                threat_level VARCHAR(50),    -- REGTECH 위협 수준
+                as_name VARCHAR(200),        -- AS 이름
+                city VARCHAR(100),           -- 도시
                 source VARCHAR(100),
+                is_active BOOLEAN DEFAULT 1, -- IP 활성 상태
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 업데이트 시간
                 extra_data TEXT
             )
             """)

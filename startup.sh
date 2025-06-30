@@ -16,11 +16,14 @@ echo "Directory permissions:"
 ls -la /app/ | grep -E "instance|data|logs"
 
 # Check if database exists
-if [ -f "/app/instance/blacklist.db" ]; then
-    echo "Database exists, using existing database..."
-else
+if [ ! -f "/app/instance/blacklist.db" ]; then
     echo "Database not found, creating new database..."
     python3 init_database.py || true
+else
+    echo "Database already exists at /app/instance/blacklist.db"
+    # Check database size
+    DB_SIZE=$(stat -c%s "/app/instance/blacklist.db" 2>/dev/null || echo "0")
+    echo "Database size: $DB_SIZE bytes"
 fi
 
 # Start the application

@@ -118,9 +118,16 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
                              exception=e, storage="memory", fallback=True)
                 storage_uri = 'memory://'
         
+        # K8s 헬스 체크를 위한 rate limit key function
+        def get_rate_limit_key():
+            """Rate limiting을 위한 키 생성 (헬스 체크는 제외)"""
+            if request.path in ['/health', '/api/health']:
+                return None  # 헬스 체크는 rate limiting 제외
+            return get_remote_address()
+        
         limiter = Limiter(
             app=app,
-            key_func=get_remote_address,
+            key_func=get_rate_limit_key,
             default_limits=["1000 per hour", "100 per minute"],
             storage_uri=storage_uri
         )

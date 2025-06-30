@@ -21,10 +21,10 @@
                 <div class="card-header bg-gradient-primary text-white">
                     <div class="d-flex align-items-center justify-content-between">
                         <h5 class="mb-0">
-                            <i class="bi bi-toggles"></i> 수집 제어 센터
+                            <i class="bi bi-calendar-week"></i> 일별 IP 데이터 현황
                         </h5>
                         <div id="collection-status-badge">
-                            <span class="badge bg-light text-dark">확인 중...</span>
+                            <span class="badge bg-light text-dark">자동 수집 중</span>
                         </div>
                     </div>
                 </div>
@@ -85,57 +85,40 @@
                         </div>
                     </div>
 
-                    <!-- Control Buttons -->
+                    <!-- Daily Data Table -->
                     <div class="row">
-                        <div class="col-lg-6">
-                            <div class="card h-100 border-0 bg-light">
-                                <div class="card-header bg-transparent border-0">
-                                    <h6 class="mb-0">
-                                        <i class="bi bi-power text-primary"></i> 전체 수집 제어
-                                    </h6>
-                                    <small class="text-warning">
-                                        <i class="bi bi-exclamation-triangle"></i> 
-                                        수집 활성화 시 기존 데이터가 초기화됩니다
-                                    </small>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-grid gap-2">
-                                        <button class="btn btn-success" id="enable-collection" onclick="toggleCollection(true)">
-                                            <i class="bi bi-play-circle"></i> 수집 활성화
-                                        </button>
-                                        <button class="btn btn-outline-danger" id="disable-collection" onclick="toggleCollection(false)">
-                                            <i class="bi bi-stop-circle"></i> 수집 비활성화
-                                        </button>
-                                    </div>
-                                </div>
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th><i class="bi bi-calendar3"></i> 날짜</th>
+                                            <th><i class="bi bi-database"></i> 전체 IP</th>
+                                            <th class="text-primary">REGTECH</th>
+                                            <th class="text-success">SECUDIUM</th>
+                                            <th class="text-info">Public</th>
+                                            <th><i class="bi bi-plus-circle"></i> 신규</th>
+                                            <th><i class="bi bi-x-circle"></i> 만료</th>
+                                            <th>상태</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="daily-stats-tbody">
+                                        <tr>
+                                            <td colspan="8" class="text-center">
+                                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                일별 데이터 로딩 중...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card h-100 border-0 bg-light">
-                                <div class="card-header bg-transparent border-0">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <h6 class="mb-0">
-                                            <i class="bi bi-calendar-check text-success"></i> 일일 자동 수집
-                                        </h6>
-                                        <div id="daily-collection-status-badge">
-                                            <span class="badge bg-secondary">확인 중...</span>
-                                        </div>
-                                    </div>
-                                    <small class="text-info">
-                                        <i class="bi bi-info-circle"></i> 
-                                        매일 최근 3일간 데이터 수집 (중복 제거)
-                                    </small>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-grid gap-2">
-                                        <button class="btn btn-success" id="enable-daily-collection" onclick="toggleDailyCollection(true)">
-                                            <i class="bi bi-calendar-check"></i> 일일수집 활성화
-                                        </button>
-                                        <button class="btn btn-outline-danger" id="disable-daily-collection" onclick="toggleDailyCollection(false)">
-                                            <i class="bi bi-calendar-x"></i> 일일수집 비활성화
-                                        </button>
-                                    </div>
-                                </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    최근 30일간의 일별 수집 데이터를 표시합니다. 데이터는 매일 자동으로 수집되며 중복이 제거됩니다.
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -407,6 +390,9 @@ class UnifiedControl {
         this.logBuffer = [];
         this.maxLogs = 100;
         
+        // 설정에서 업데이트 간격 가져오기 (기본값: 3시간 = 10800000ms)
+        this.updateInterval = parseInt(localStorage.getItem('unifiedControlUpdateInterval')) || 10800000;
+        
         // localStorage에서 로그 복원
         this.loadLogsFromStorage();
         
@@ -416,6 +402,7 @@ class UnifiedControl {
     init() {
         this.checkCollectionStatus();
         this.loadCollectionLogs(); // 서버에서 로그 로드
+        this.loadDailyStats(); // 일별 데이터 로드
         this.startStatusPolling();
         this.renderLogs(); // 저장된 로그 표시
     }
@@ -681,12 +668,99 @@ class UnifiedControl {
         }
     }
     
+    // Load daily stats
+    async loadDailyStats() {
+        try {
+            const response = await fetch('/api/stats/daily?days=30');
+            const data = await response.json();
+            
+            if (data.success && data.stats) {
+                this.renderDailyStats(data.stats);
+            }
+        } catch (error) {
+            console.error('Failed to load daily stats:', error);
+            this.showError('일별 데이터를 불러오는데 실패했습니다.');
+        }
+    }
+    
+    // Render daily stats table
+    renderDailyStats(stats) {
+        const tbody = document.getElementById('daily-stats-tbody');
+        if (!tbody) return;
+        
+        if (stats.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-muted">
+                        일별 데이터가 없습니다.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = stats.map(stat => {
+            const date = new Date(stat.date);
+            const dateStr = date.toLocaleDateString('ko-KR', { 
+                month: '2-digit', 
+                day: '2-digit',
+                weekday: 'short'
+            });
+            
+            const totalIPs = stat.total_ips || 0;
+            const regtech = stat.regtech_count || 0;
+            const secudium = stat.secudium_count || 0;
+            const publicCount = stat.public_count || 0;
+            const newIPs = stat.new_ips || 0;
+            const expiredIPs = stat.expired_ips || 0;
+            
+            const statusBadge = totalIPs > 0 
+                ? '<span class="badge bg-success">수집됨</span>'
+                : '<span class="badge bg-secondary">데이터 없음</span>';
+            
+            return `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td><strong>${totalIPs.toLocaleString()}</strong></td>
+                    <td class="text-primary">${regtech.toLocaleString()}</td>
+                    <td class="text-success">${secudium.toLocaleString()}</td>
+                    <td class="text-info">${publicCount.toLocaleString()}</td>
+                    <td><span class="text-success">+${newIPs.toLocaleString()}</span></td>
+                    <td><span class="text-danger">-${expiredIPs.toLocaleString()}</span></td>
+                    <td>${statusBadge}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
     // Start status polling
     startStatusPolling() {
         this.statusInterval = setInterval(() => {
             this.checkCollectionStatus();
             this.loadCollectionLogs(); // 주기적으로 로그도 업데이트
-        }, 15000); // Every 15 seconds
+            this.loadDailyStats(); // 일별 데이터도 업데이트
+        }, this.updateInterval); // 설정된 간격으로 업데이트
+        
+        // 업데이트 간격 표시
+        this.showUpdateInterval();
+    }
+    
+    // 업데이트 간격 표시
+    showUpdateInterval() {
+        const hours = Math.floor(this.updateInterval / 3600000);
+        const minutes = Math.floor((this.updateInterval % 3600000) / 60000);
+        let intervalText = '';
+        
+        if (hours > 0) {
+            intervalText = `${hours}시간`;
+            if (minutes > 0) {
+                intervalText += ` ${minutes}분`;
+            }
+        } else {
+            intervalText = `${minutes}분`;
+        }
+        
+        console.log(`통합 제어 페이지 자동 업데이트 간격: ${intervalText}`);
     }
     
     // Add log entry with detailed information

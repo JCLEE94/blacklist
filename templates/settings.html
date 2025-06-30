@@ -147,6 +147,55 @@
                 </div>
             </div>
 
+            <!-- 수집 제어 설정 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">수집 제어</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">자동 수집 상태</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="collectionEnabled" 
+                                   {{ 'checked' if collection_enabled else '' }}>
+                            <label class="form-check-label" for="collectionEnabled">
+                                자동 수집 활성화
+                            </label>
+                        </div>
+                        <small class="text-muted">자동 수집을 활성화하면 주기적으로 REGTECH와 SECUDIUM에서 데이터를 수집합니다.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update_interval" class="form-label">업데이트 주기 (시간)</label>
+                        <select class="form-select" id="update_interval" name="update_interval">
+                            <option value="900000" {{ 'selected' if settings.update_interval == 900000 else '' }}>15분</option>
+                            <option value="1800000" {{ 'selected' if settings.update_interval == 1800000 else '' }}>30분</option>
+                            <option value="3600000" {{ 'selected' if settings.update_interval == 3600000 else '' }}>1시간</option>
+                            <option value="10800000" {{ 'selected' if settings.update_interval == 10800000 else '' }}>3시간 (기본값)</option>
+                            <option value="21600000" {{ 'selected' if settings.update_interval == 21600000 else '' }}>6시간</option>
+                            <option value="43200000" {{ 'selected' if settings.update_interval == 43200000 else '' }}>12시간</option>
+                            <option value="86400000" {{ 'selected' if settings.update_interval == 86400000 else '' }}>24시간</option>
+                        </select>
+                        <small class="text-muted">통합 관리 패널의 자동 업데이트 주기입니다.</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-warning w-100" id="enableCollectionBtn">
+                                <i class="fas fa-play"></i> 수집 활성화
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-danger w-100" id="disableCollectionBtn">
+                                <i class="fas fa-stop"></i> 수집 비활성화
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-3 mb-0" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        주의: 수집을 활성화하면 기존 데이터가 모두 삭제되고 새로 수집됩니다.
+                    </div>
+                </div>
+            </div>
+
             <!-- 기타 설정 -->
             <div class="card">
                 <div class="card-header">
@@ -253,6 +302,64 @@
             }
         });
 
+        // 수집 활성화 버튼
+        document.getElementById('enableCollectionBtn').addEventListener('click', async () => {
+            if (confirm('정말로 수집을 활성화하시겠습니까? 기존 데이터가 모두 삭제됩니다.')) {
+                try {
+                    const response = await fetch('/api/collection/enable', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showAlert('수집이 활성화되었습니다.', 'success');
+                        document.getElementById('collectionEnabled').checked = true;
+                        // 업데이트 주기 저장
+                        const updateInterval = document.getElementById('update_interval').value;
+                        localStorage.setItem('unifiedControlUpdateInterval', updateInterval);
+                    } else {
+                        showAlert(result.message || '수집 활성화에 실패했습니다.', 'danger');
+                    }
+                } catch (error) {
+                    showAlert('수집 활성화 중 오류가 발생했습니다: ' + error.message, 'danger');
+                }
+            }
+        });
+
+        // 수집 비활성화 버튼
+        document.getElementById('disableCollectionBtn').addEventListener('click', async () => {
+            if (confirm('정말로 수집을 비활성화하시겠습니까?')) {
+                try {
+                    const response = await fetch('/api/collection/disable', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showAlert('수집이 비활성화되었습니다.', 'success');
+                        document.getElementById('collectionEnabled').checked = false;
+                    } else {
+                        showAlert(result.message || '수집 비활성화에 실패했습니다.', 'danger');
+                    }
+                } catch (error) {
+                    showAlert('수집 비활성화 중 오류가 발생했습니다: ' + error.message, 'danger');
+                }
+            }
+        });
+
+        // 업데이트 주기 변경 시 localStorage에 저장
+        document.getElementById('update_interval').addEventListener('change', (e) => {
+            localStorage.setItem('unifiedControlUpdateInterval', e.target.value);
+        });
+
         // 페이지 로드 시 저장된 비밀번호는 마스킹
         window.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('regtech_password').value) {
@@ -260,6 +367,16 @@
             }
             if (document.getElementById('secudium_password').value) {
                 document.getElementById('secudium_password').value = '********';
+            }
+            
+            // 저장된 업데이트 주기 불러오기
+            const savedInterval = localStorage.getItem('unifiedControlUpdateInterval');
+            if (savedInterval) {
+                document.getElementById('update_interval').value = savedInterval;
+            } else {
+                // 기본값 3시간 설정
+                document.getElementById('update_interval').value = '10800000';
+                localStorage.setItem('unifiedControlUpdateInterval', '10800000');
             }
         });
     </script>

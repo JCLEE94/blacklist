@@ -49,9 +49,22 @@ def settings_page():
             'max_ips_per_source': 50000
         }
     
+    # 수집 상태 가져오기
+    collection_enabled = True
+    try:
+        unified_service = container.resolve('unified_service')
+        if unified_service:
+            collection_enabled = unified_service.collection_enabled
+    except Exception as e:
+        logger.warning(f"수집 상태 확인 실패: {e}")
+    
+    # 업데이트 주기 설정 추가
+    settings_dict['update_interval'] = settings_manager.get_setting('update_interval', 10800000) if 'settings_manager' in locals() else 10800000
+    
     context = {
         'title': 'Blacklist Manager',
         'settings': settings_dict,
+        'collection_enabled': collection_enabled,
         'server_uptime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'db_size': '계산 중...',
         'cache_status': '활성',

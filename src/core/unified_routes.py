@@ -416,9 +416,8 @@ def export_data(format):
 # === 핵심 API 엔드포인트 ===
 
 @unified_bp.route('/health', methods=['GET'])
-
 def health_check():
-    """통합 서비스 헬스 체크"""
+    """통합 서비스 헬스 체크 - K8s probe용 (rate limit 없음)"""
     try:
         health_info = service.get_system_health()
         return jsonify({
@@ -617,17 +616,65 @@ def clear_database():
 def get_collection_logs():
     """수집 로그 조회 - 상세 정보 포함"""
     try:
-        # 최근 로그 100개 조회
-        logs = service.get_collection_logs(100)
+        # 최근 로그 조회 (기본 50개, 최대 200개)
+        limit = min(int(request.args.get('limit', 50)), 200)
+        logs = service.get_collection_logs(limit)
+        
+        # 로그를 읽기 쉽게 포맷팅
+        formatted_logs = []
+        for log in logs:
+            formatted_log = {
+                'timestamp': log.get('timestamp'),
+                'source': log.get('source'),
+                'action': log.get('action'), 
+                'message': log.get('message'),
+                'details': log.get('details', {})
+            }
+            
+            # 상세 정보 추가
+            details = log.get('details', {})
+            if details.get('ip_count'):
+                formatted_log['ip_count'] = details['ip_count']
+            if details.get('error'):
+                formatted_log['error'] = details['error']
+                
+            formatted_logs.append(formatted_log)
         
         return jsonify({
             'success': True,
-            'logs': logs,
+            'logs': formatted_logs,
+            'count': len(formatted_logs),
             'timestamp': datetime.now().isoformat()
         })
     except Exception as e:
         logger.error(f"Collection logs error: {e}")
         return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/collection/logs/realtime', methods=['GET'])
+def get_realtime_logs():
+    """실시간 수집 로그 조회 - 최근 20개"""
+    try:
+        # 최근 20개 로그만 조회
+        logs = service.get_collection_logs(20)
+        
+        # 메시지만 간단하게 추출
+        simple_logs = []
+        for log in logs:
+            simple_logs.append({
+                'time': log.get('timestamp', '').split('T')[1][:8] if 'T' in log.get('timestamp', '') else '',  # HH:MM:SS만
+                'message': log.get('message', ''),
+                'source': log.get('source', '').upper()
+            })
+        
+        return jsonify({
+            'success': True,
+            'logs': simple_logs,
+            'count': len(simple_logs),
+            'last_update': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Realtime logs error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @unified_bp.route('/api/blacklist/enhanced', methods=['GET'])
 def get_enhanced_blacklist():
@@ -1219,254 +1266,234 @@ def init_database():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @unified_bp.route('/api/collection/status', methods=['GET'])
-
 def get_collection_status():
-    """수집 시스템 상태"""
+    """수집 상태 조회"""
     try:
-        result = service.get_collection_status()
+        # 수집 상태 가져오기
+        collection_status = service.get_collection_status()
         
-        # If the result is already properly formatted, add logs and return it
-        if 'enabled' in result:
-            # Add collection logs to the response
-            try:
-                recent_logs = service.get_collection_logs(limit=100)
-                result['logs'] = recent_logs
-            except Exception as e:
-                logger.warning(f"Failed to get collection logs: {e}")
-                result['logs'] = []
-            return jsonify(result)
+        # 일일 수집 현황 가져오기
+        daily_stats = service.get_daily_collection_stats()
         
-        # Otherwise, extract from nested structure (legacy format)
-        if 'status' in result and isinstance(result['status'], dict):
-            status = result['status']
-            result = {
-                'enabled': status.get('collection_enabled', False),
-                'status': status.get('status', 'inactive'),
-                'sources': status.get('sources', {}),
-                'stats': {
-                    'total_ips': status.get('summary', {}).get('total_ips_collected', 0),
-                    'today_collected': 0
-                },
-                'last_collection': status.get('last_updated'),
-                'last_enabled_at': status.get('last_enabled_at'),
-                'last_disabled_at': status.get('last_disabled_at')
-            }
-            # Add logs for legacy format too
-            try:
-                recent_logs = service.get_collection_logs(limit=100)
-                result['logs'] = recent_logs
-            except Exception as e:
-                logger.warning(f"Failed to get collection logs: {e}")
-                result['logs'] = []
-            return jsonify(result)
+        # 오늘 수집 통계 계산
+        from datetime import datetime
+        today = datetime.now().strftime('%Y-%m-%d')
+        today_stats = next((stat for stat in daily_stats if stat['date'] == today), None)
         
-        # Fallback
-        fallback_result = {
-            'enabled': False,
-            'status': 'inactive',
-            'sources': {},
-            'stats': {
-                'total_ips': 0,
-                'today_collected': 0
-            },
-            'last_collection': None
-        }
-        # Add logs for fallback too
+        # 시스템 통계 가져오기
         try:
-            recent_logs = service.get_collection_logs(limit=100)
-            fallback_result['logs'] = recent_logs
+            stats = service.get_system_health()
+        except Exception as e:
+            logger.warning(f"Failed to get system health: {e}")
+            stats = {'total_ips': 0, 'active_ips': 0}
+            
+        # 최근 로그 가져오기
+        try:
+            recent_logs = service.get_collection_logs(limit=10)
         except Exception as e:
             logger.warning(f"Failed to get collection logs: {e}")
-            fallback_result['logs'] = []
-        return jsonify(fallback_result)
+            recent_logs = []
+            
+        return jsonify({
+            'enabled': True,  # 항상 활성화
+            'status': 'active',  # 항상 활성 상태
+            'stats': {
+                'total_ips': stats.get('total_ips', 0),
+                'active_ips': stats.get('active_ips', 0),
+                'today_collected': today_stats['count'] if today_stats else 0,
+                'today_sources': today_stats.get('sources', {}) if today_stats else {}
+            },
+            'daily_collection': {
+                'today': today_stats['count'] if today_stats else 0,
+                'recent_days': daily_stats[:7]  # 최근 7일
+            },
+            'sources': collection_status.get('sources', {}),
+            'logs': recent_logs,
+            'last_collection': collection_status.get('last_updated'),
+            'message': '수집은 항상 활성화 상태입니다'
+        })
     except Exception as e:
         logger.error(f"Collection status error: {e}")
         return jsonify({
             'enabled': False,
             'status': 'error',
             'error': str(e),
+            'stats': {'total_ips': 0, 'active_ips': 0, 'today_collected': 0},
+            'daily_collection': {'today': 0, 'recent_days': []},
             'sources': {}
         }), 500
 
-@unified_bp.route('/api/collection/enable', methods=['POST'])
-
-def enable_collection():
-    """수집 시스템 활성화"""
-    try:
-        result = service.enable_collection()
-        return jsonify({
-            'success': True,
-            'message': '수집이 활성화되었습니다. 기존 데이터가 클리어되었습니다.',
-            'data': result
-        })
-    except Exception as e:
-        logger.error(f"Enable collection error: {e}")
-        return jsonify(create_error_response(e)), 500
-
-@unified_bp.route('/api/collection/disable', methods=['POST'])
-
-def disable_collection():
-    """수집 시스템 비활성화"""
-    try:
-        result = service.disable_collection()
-        return jsonify({
-            'success': True,
-            'message': '수집이 비활성화되었습니다.',
-            'data': result
-        })
-    except Exception as e:
-        logger.error(f"Disable collection error: {e}")
-        return jsonify(create_error_response(e)), 500
-
-@unified_bp.route('/api/collection/trigger', methods=['POST'])
-  
-def trigger_manual_collection():
-    """수동 데이터 수집 트리거"""
-    try:
-        data = request.get_json() or {}
-        source = data.get('source', 'all')
-        
-        if source not in ['all', 'regtech', 'secudium']:
-            return jsonify({
-                'success': False,
-                'error': 'Invalid source. Must be one of: all, regtech, secudium'
-            }), 400
-        
-        # 비동기 수집 시작
-        task_id = service.trigger_collection(source=source)
-        
-        return jsonify({
-            'success': True,
-            'message': f'수집이 시작되었습니다 (소스: {source})',
-            'task_id': task_id
-        })
-    except Exception as e:
-        logger.error(f"Manual collection trigger error: {e}")
-        return jsonify(create_error_response(e)), 500
+# 수집 온오프 기능 제거됨 (사용자 요청: 수집은 항상 활성화 상태)
 
 @unified_bp.route('/api/collection/regtech/trigger', methods=['POST'])
 def trigger_regtech_collection():
     """REGTECH 수집 트리거"""
     try:
-        # JSON과 폼 데이터 둘 다 지원
-        if request.is_json:
-            data = request.get_json() or {}
-        else:
-            data = request.form.to_dict() or {}
+        # 로그 추가
+        service.add_collection_log('regtech', 'collection_triggered', {
+            'triggered_by': 'manual',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # POST 데이터에서 날짜 파라미터 추출
+        data = {}
+        try:
+            if request.is_json:
+                data = request.get_json() or {}
+            else:
+                data = request.form.to_dict() or {}
+        except Exception:
+            data = {}
         
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         
-        # 날짜 파라미터가 있으면 사용, 없으면 기본값
-        task_id = service.trigger_regtech_collection(
-            start_date=start_date,
-            end_date=end_date
-        )
+        # REGTECH 수집 실행
+        result = service.trigger_regtech_collection(start_date=start_date, end_date=end_date)
         
-        return jsonify({
-            'success': True,
-            'message': 'REGTECH 수집이 시작되었습니다.',
-            'task_id': task_id,
-            'start_date': start_date,
-            'end_date': end_date
-        })
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': 'REGTECH 수집이 트리거되었습니다.',
+                'source': 'regtech',
+                'data': result
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('message', 'REGTECH 수집 트리거 실패'),
+                'error': result.get('error')
+            }), 500
+            
     except Exception as e:
-        logger.error(f"REGTECH collection trigger error: {e}")
-        return jsonify(create_error_response(e)), 500
+        logger.error(f"REGTECH trigger error: {e}")
+        service.add_collection_log('regtech', 'collection_failed', {
+            'error': str(e),
+            'triggered_by': 'manual'
+        })
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'REGTECH 수집 트리거 중 오류가 발생했습니다.'
+        }), 500
 
 @unified_bp.route('/api/collection/secudium/trigger', methods=['POST'])
 def trigger_secudium_collection():
     """SECUDIUM 수집 트리거"""
     try:
-        # JSON과 폼 데이터 둘 다 지원 (향후 확장성을 위해)
-        if request.is_json:
-            data = request.get_json() or {}
+        # 로그 추가
+        service.add_collection_log('secudium', 'collection_triggered', {
+            'triggered_by': 'manual',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # SECUDIUM 수집 실행
+        result = service.trigger_secudium_collection()
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': 'SECUDIUM 수집이 트리거되었습니다.',
+                'source': 'secudium',
+                'data': result
+            })
         else:
-            data = request.form.to_dict() or {}
-        
-        task_id = service.trigger_secudium_collection()
-        
-        return jsonify({
-            'success': True,
-            'message': 'SECUDIUM 수집이 시작되었습니다.',
-            'task_id': task_id
-        })
+            return jsonify({
+                'success': False,
+                'message': result.get('message', 'SECUDIUM 수집 트리거 실패'),
+                'error': result.get('error')
+            }), 500
+            
     except Exception as e:
-        logger.error(f"SECUDIUM collection trigger error: {e}")
-        return jsonify(create_error_response(e)), 500
-
-@unified_bp.route('/api/collection/daily/enable', methods=['POST'])
-
-def enable_daily_collection():
-    """일일 자동 수집 활성화"""
-    try:
-        # Service를 통해 활성화
-        result = service.enable_daily_collection()
-        return jsonify({
-            'success': True,
-            'message': '일일 자동 수집이 활성화되었습니다.',
-            'data': result
+        logger.error(f"SECUDIUM trigger error: {e}")
+        service.add_collection_log('secudium', 'collection_failed', {
+            'error': str(e),
+            'triggered_by': 'manual'
         })
-    except Exception as e:
-        logger.error(f"Daily collection enable error: {e}")
-        return jsonify(create_error_response(e)), 500
-
-@unified_bp.route('/api/collection/daily/disable', methods=['POST'])
-
-def disable_daily_collection():
-    """일일 자동 수집 비활성화"""
-    try:
-        # Service를 통해 비활성화
-        result = service.disable_daily_collection()
         return jsonify({
-            'success': True,
-            'message': '일일 자동 수집이 비활성화되었습니다.',
-            'data': result
-        })
-    except Exception as e:
-        logger.error(f"Daily collection disable error: {e}")
-        return jsonify(create_error_response(e)), 500
+            'success': False,
+            'error': str(e),
+            'message': 'SECUDIUM 수집 트리거 중 오류가 발생했습니다.'
+        }), 500
 
-@unified_bp.route('/api/collection/daily/trigger', methods=['POST'])
+# === 간소화된 수집 관리 (자동 수집 + 간격 조절만) ===
 
-def trigger_daily_collection():
-    """일일 자동 수집 실행 (수동)"""
+@unified_bp.route('/api/collection/statistics', methods=['GET'])
+def collection_statistics():
+    """수집 통계 상세 정보"""
     try:
-        # Collection manager를 통해 실행
-        if hasattr(app, 'container') and app.container:
-            collection_manager = app.container.resolve('collection_manager')
-            if collection_manager:
-                result = collection_manager.trigger_daily_collection()
-                return jsonify(result)
+        # 날짜별 수집 통계
+        daily_stats = service.get_daily_collection_stats()
         
-        # Fallback: 오늘 날짜로 수집
-        today = datetime.now()
-        start_date = today.strftime('%Y%m%d')
-        end_date = today.strftime('%Y%m%d')
-        
-        # REGTECH 수집 (하루 단위)
-        regtech_task_id = service.trigger_regtech_collection(
-            start_date=start_date,
-            end_date=end_date
-        )
-        
-        # SECUDIUM 수집
-        secudium_task_id = service.trigger_secudium_collection()
+        # 소스별 통계
+        source_stats = service.get_source_statistics()
         
         return jsonify({
             'success': True,
-            'message': '일일 자동 수집이 시작되었습니다.',
-            'collection_date': start_date,
-            'tasks': {
-                'regtech': regtech_task_id,
-                'secudium': secudium_task_id
+            'daily_stats': daily_stats,
+            'source_stats': source_stats,
+            'summary': {
+                'total_days_collected': len(daily_stats),
+                'total_ips': sum(day.get('count', 0) for day in daily_stats),
+                'regtech_total': source_stats.get('regtech', {}).get('total', 0),
+                'secudium_total': source_stats.get('secudium', {}).get('total', 0)
             }
         })
     except Exception as e:
-        logger.error(f"Daily collection trigger error: {e}")
+        logger.error(f"Collection statistics error: {e}")
         return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/collection/intervals', methods=['GET'])
+def get_collection_intervals():
+    """수집 간격 설정 조회"""
+    try:
+        intervals = service.get_collection_intervals()
+        
+        return jsonify({
+            'success': True,
+            'intervals': intervals,
+            'regtech_days': intervals.get('regtech_days', 90),  # 3개월
+            'secudium_days': intervals.get('secudium_days', 3)   # 3일
+        })
+    except Exception as e:
+        logger.error(f"Get collection intervals error: {e}")
+        return jsonify(create_error_response(e)), 500
 
+@unified_bp.route('/api/collection/intervals', methods=['POST'])
+def update_collection_intervals():
+    """수집 간격 설정 업데이트"""
+    try:
+        data = request.get_json() or {}
+        
+        regtech_days = data.get('regtech_days', 90)
+        secudium_days = data.get('secudium_days', 3)
+        
+        # 유효성 검사
+        if not (1 <= regtech_days <= 365):
+            return jsonify({
+                'success': False,
+                'error': 'REGTECH 수집 간격은 1-365일 사이여야 합니다.'
+            }), 400
+            
+        if not (1 <= secudium_days <= 30):
+            return jsonify({
+                'success': False,
+                'error': 'SECUDIUM 수집 간격은 1-30일 사이여야 합니다.'
+            }), 400
+        
+        result = service.update_collection_intervals(regtech_days, secudium_days)
+        
+        return jsonify({
+            'success': True,
+            'message': '수집 간격이 업데이트되었습니다.',
+            'intervals': {
+                'regtech_days': regtech_days,
+                'secudium_days': secudium_days
+            }
+        })
+    except Exception as e:
+        logger.error(f"Update collection intervals error: {e}")
+        return jsonify(create_error_response(e)), 500
 @unified_bp.route('/api/expiration/update', methods=['POST'])
 
 def update_expiration_status():
@@ -1495,6 +1522,27 @@ def update_expiration_status():
             'success': False,
             'error': str(e)
         }), 500
+
+@unified_bp.route('/api/stats/daily', methods=['GET'])
+def get_daily_stats():
+    """일별 통계 조회"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        if days > 90:
+            days = 90  # 최대 90일
+        
+        # Get daily stats from service
+        daily_stats = service.get_daily_stats(days=days)
+        
+        return jsonify({
+            'success': True,
+            'stats': daily_stats,
+            'days': days,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Daily stats error: {e}")
+        return jsonify(create_error_response(e)), 500
 
 @unified_bp.route('/api/stats/expiration', methods=['GET'])
 

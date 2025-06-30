@@ -738,10 +738,10 @@ function startRealtimeUpdates() {
         fetch('/api/stats')
             .then(response => response.json())
             .then(data => {
-                if (data.details) {
+                if (data.success && data.data) {
                     // Update stats with consistent data source
-                    updateStatCards(data.details);
-                    updateSystemInfo(data.details);
+                    updateStatCards(data.data);
+                    updateSystemInfo(data.data);
                     updateLastUpdate();
                 }
             })
@@ -961,6 +961,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSourcesData();
     loadCollectionLogs();
     setupRealtimeFeed();
+    startRealtimeUpdates();  // Start real-time updates
     
     // Refresh charts every 5 minutes
     setInterval(() => {

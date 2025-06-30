@@ -51,18 +51,18 @@ spec:
           httpGet:
             path: /health
             port: 2541
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 10
-          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 120
+          timeoutSeconds: 15
+          failureThreshold: 10
         readinessProbe:
           httpGet:
             path: /health
             port: 2541
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 60
+          timeoutSeconds: 15
+          failureThreshold: 10
         volumeMounts:
         - name: data
           mountPath: /app/data
@@ -78,4 +78,5 @@ spec:
         persistentVolumeClaim:
           claimName: blacklist-logs
       - name: instance
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: blacklist-instance

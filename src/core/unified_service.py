@@ -792,11 +792,17 @@ class UnifiedBlacklistService:
     
     def add_collection_log(self, source: str, action: str, details: Dict[str, Any] = None):
         """수집 로그 추가 - 메모리와 데이터베이스에 저장"""
+        current_time = datetime.now()
+        
+        # 상세한 메시지 생성
+        detailed_message = self._create_detailed_log_message(source, action, details, current_time)
+        
         log_entry = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': current_time.isoformat(),
             'source': source,
             'action': action,
-            'details': details or {}
+            'details': details or {},
+            'message': detailed_message  # 상세 메시지 추가
         }
         
         # 메모리에 로그 추가
@@ -812,12 +818,54 @@ class UnifiedBlacklistService:
         except Exception as e:
             self.logger.warning(f"Failed to save log to database: {e}")
             
-        # 콘솔에도 출력 (일일 통계 포함)
-        if action in ['collection_complete', 'collection_start']:
-            ip_count = details.get('ip_count', 0) if details else 0
-            self.logger.info(f"📊 {source} {action}: {ip_count}개 IP 처리")
+        # 콘솔에도 출력 (상세 메시지 사용)
+        self.logger.info(f"📝 {detailed_message}")
+    
+    def _create_detailed_log_message(self, source: str, action: str, details: Dict[str, Any], timestamp: datetime) -> str:
+        """상세한 로그 메시지 생성 - 사용자 요청 형식: '2020-00.00 regtech/secudium(에 따라서) **개 아이피 수집됨'"""
+        
+        # 날짜 형식 생성
+        date_str = timestamp.strftime('%Y-%m.%d')
+        
+        # 소스명 정리
+        source_name = source.upper()
+        if source_name == 'REGTECH':
+            source_display = 'REGTECH'
+        elif source_name == 'SECUDIUM':
+            source_display = 'SECUDIUM'
         else:
-            self.logger.info(f"📝 {source}: {action}")
+            source_display = source_name
+            
+        # 액션에 따른 메시지 생성
+        if action == 'collection_complete':
+            ip_count = details.get('ip_count', 0) if details else 0
+            message = f"{date_str} {source_display}에서 {ip_count}개 아이피 수집됨"
+            
+        elif action == 'collection_start':
+            message = f"{date_str} {source_display} 수집 시작"
+            
+        elif action == 'collection_failed':
+            error_msg = details.get('error', '알 수 없는 오류') if details else '알 수 없는 오류'
+            message = f"{date_str} {source_display} 수집 실패: {error_msg}"
+            
+        elif action == 'collection_enabled':
+            message = f"{date_str} {source_display} 수집 활성화됨"
+            
+        elif action == 'collection_disabled':
+            message = f"{date_str} {source_display} 수집 비활성화됨"
+            
+        elif action == 'collection_triggered':
+            message = f"{date_str} {source_display} 수동 수집 트리거됨"
+            
+        elif action == 'collection_progress':
+            progress_msg = details.get('message', '진행 중') if details else '진행 중'
+            message = f"{date_str} {source_display} 진행: {progress_msg}"
+            
+        else:
+            # 기본 형식
+            message = f"{date_str} {source_display}: {action}"
+            
+        return message
     
     def get_collection_logs(self, limit: int = 100) -> list:
         """최근 수집 로그 반환 - 데이터베이스와 메모리에서 통합"""
@@ -1084,6 +1132,83 @@ class UnifiedBlacklistService:
             'timestamp': datetime.now().isoformat()
         }
     
+    def get_daily_stats(self, days: int = 30) -> list:
+        """일별 통계 반환"""
+        from datetime import timedelta
+        
+        stats = []
+        end_date = datetime.now()
+        
+        for i in range(days):
+            date = end_date - timedelta(days=i)
+            date_str = date.strftime('%Y-%m-%d')
+            
+            # Get stats for this specific date
+            daily_stat = {
+                'date': date_str,
+                'total_ips': 0,
+                'regtech_count': 0,
+                'secudium_count': 0,
+                'public_count': 0,
+                'new_ips': 0,
+                'expired_ips': 0
+            }
+            
+            # Try to get data from database
+            if self.blacklist_manager:
+                try:
+                    conn = sqlite3.connect(self.blacklist_manager.db_path)
+                    cursor = conn.cursor()
+                    
+                    # Count total IPs by source for this date (using detection_date)
+                    cursor.execute("""
+                        SELECT source, COUNT(*) 
+                        FROM blacklist_ip 
+                        WHERE DATE(detection_date) = ?
+                        GROUP BY source
+                    """, (date_str,))
+                    
+                    for row in cursor.fetchall():
+                        source = row[0]
+                        count = row[1]
+                        if source == 'REGTECH':
+                            daily_stat['regtech_count'] = count
+                        elif source == 'SECUDIUM':
+                            daily_stat['secudium_count'] = count
+                        elif source == 'PUBLIC':
+                            daily_stat['public_count'] = count
+                        daily_stat['total_ips'] += count
+                    
+                    # Count new IPs for this date (using detection_date)
+                    cursor.execute("""
+                        SELECT COUNT(*) 
+                        FROM blacklist_ip 
+                        WHERE DATE(detection_date) = ?
+                    """, (date_str,))
+                    daily_stat['new_ips'] = cursor.fetchone()[0]
+                    
+                    conn.close()
+                except Exception as e:
+                    self.logger.warning(f"Failed to get daily stats for {date_str}: {e}")
+            
+            # Check collection logs for this date
+            for log in self.collection_logs:
+                if log.get('timestamp', '').startswith(date_str):
+                    if 'collection_completed' in log.get('action', ''):
+                        details = log.get('details', {})
+                        if details.get('ip_count', 0) > 0:
+                            daily_stat['total_ips'] = max(daily_stat['total_ips'], details['ip_count'])
+                            source = log.get('source', '').upper()
+                            if source == 'REGTECH':
+                                daily_stat['regtech_count'] = details['ip_count']
+                            elif source == 'SECUDIUM':
+                                daily_stat['secudium_count'] = details['ip_count']
+            
+            stats.append(daily_stat)
+        
+        # Reverse to show newest first
+        return list(reversed(stats))
+    
     def enable_collection(self) -> Dict[str, Any]:
         """수집 시스템 활성화 (동기 버전)"""
         try:
@@ -1159,101 +1284,6 @@ class UnifiedBlacklistService:
         # TODO: Implement actual collection trigger
         return task_id
     
-    def trigger_regtech_collection(self, start_date: str = None, end_date: str = None) -> str:
-        """REGTECH 수집 트리거"""
-        import uuid
-        task_id = str(uuid.uuid4())
-        self.logger.info(f"REGTECH collection triggered (task_id: {task_id})")
-        
-        # 수집 로그 추가
-        self.add_collection_log('REGTECH', 'collection_started', {
-            'task_id': task_id,
-            'start_date': start_date,
-            'end_date': end_date,
-            'is_daily': start_date == end_date if start_date and end_date else False
-        })
-        
-        try:
-            # 실제 REGTECH 수집 실행
-            self.logger.info(f"Container type: {type(self.container)}")
-            self.logger.info(f"Container methods: {[m for m in dir(self.container) if not m.startswith('_')]}")
-            regtech_collector = self.container.resolve('regtech_collector')
-            if regtech_collector:
-                # 백그라운드 수집 시작
-                import threading
-                def collect_regtech():
-                    try:
-                        ips = regtech_collector.collect_from_web(start_date=start_date, end_date=end_date)
-                        self.logger.info(f"REGTECH collection completed: {len(ips)} IPs collected")
-                        
-                        # 수집 완료 로그 추가
-                        self.add_collection_log('REGTECH', 'collection_completed', {
-                            'task_id': task_id,
-                            'ips_collected': len(ips),
-                            'start_date': start_date,
-                            'end_date': end_date,
-                            'is_daily': start_date == end_date if start_date and end_date else False
-                        })
-                        
-                        # 수집한 IP를 데이터베이스에 저장
-                        if ips and self.blacklist_manager:
-                            try:
-                                # bulk_import_ips expects a list of dictionaries
-                                ips_data = []
-                                for ip_entry in ips:
-                                    ips_data.append({
-                                        'ip': ip_entry.ip_address,
-                                        'source': 'REGTECH',
-                                        'threat_type': ip_entry.reason,
-                                        'country': ip_entry.country,
-                                        'reg_date': ip_entry.reg_date,  # 원본 등록일 추가
-                                        'reason': ip_entry.reason,  # reason 필드 추가
-                                        'threat_level': ip_entry.threat_level,
-                                        'confidence': 1.0
-                                    })
-                                
-                                self.logger.info(f"REGTECH: Calling bulk_import_ips with {len(ips_data)} IPs")
-                                self.logger.info(f"REGTECH: Sample IP data: {ips_data[:3] if ips_data else 'None'}")  # 샘플 확인
-                                result = self.blacklist_manager.bulk_import_ips(ips_data, source='REGTECH')
-                                self.logger.info(f"REGTECH: bulk_import_ips result: {result}")
-                                
-                                if result.get('success'):
-                                    self.logger.info(f"REGTECH: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
-                                    
-                                    # 저장 후 데이터베이스에서 직접 확인
-                                    try:
-                                        source_counts = self._get_source_counts_from_db()
-                                        self.logger.info(f"REGTECH: 저장 후 DB 상태: {source_counts}")
-                                    except Exception as verify_e:
-                                        self.logger.error(f"REGTECH: DB 확인 실패: {verify_e}")
-                                else:
-                                    self.logger.error(f"REGTECH: 데이터베이스 저장 실패 - {result.get('error')}")
-                            except Exception as e:
-                                self.logger.error(f"REGTECH: Error saving to database - {e}")
-                                import traceback
-                                self.logger.error(f"REGTECH: Traceback - {traceback.format_exc()}")
-                        
-                    except Exception as e:
-                        self.logger.error(f"REGTECH collection failed: {e}")
-                        # 수집 실패 로그 추가
-                        self.add_collection_log('REGTECH', 'collection_failed', {
-                            'task_id': task_id,
-                            'error': str(e),
-                            'start_date': start_date,
-                            'end_date': end_date
-                        })
-                
-                thread = threading.Thread(target=collect_regtech)
-                thread.daemon = True
-                thread.start()
-                self.logger.info(f"REGTECH collection started in background")
-            else:
-                self.logger.warning("REGTECH collector not available")
-                
-        except Exception as e:
-            self.logger.error(f"Failed to start REGTECH collection: {e}")
-            
-        return task_id
     
     def trigger_secudium_collection(self) -> str:
         """SECUDIUM 수집 트리거"""
@@ -1275,14 +1305,18 @@ class UnifiedBlacklistService:
                 def collect_secudium():
                     try:
                         result = secudium_collector.auto_collect()
-                        ips = result.get('ips', []) if result.get('success') else []
-                        self.logger.info(f"SECUDIUM collection completed: {len(ips)} IPs collected")
-                        
-                        # 수집 완료 로그 추가
-                        self.add_collection_log('SECUDIUM', 'collection_completed', {
-                            'task_id': task_id,
-                            'ips_collected': len(ips)
-                        })
+                        if isinstance(result, dict) and result.get('success'):
+                            ips = result.get('ips', [])
+                            self.logger.info(f"SECUDIUM collection completed: {len(ips)} IPs collected")
+                            
+                            # 수집 완료 로그 추가
+                            self.add_collection_log('SECUDIUM', 'collection_completed', {
+                                'task_id': task_id,
+                                'ips_collected': len(ips)
+                            })
+                        else:
+                            ips = []
+                            self.logger.warning(f"SECUDIUM collection returned unexpected result: {result}")
                         
                         # 수집한 IP를 데이터베이스에 저장
                         if ips and self.blacklist_manager:
@@ -1638,6 +1672,471 @@ class UnifiedBlacklistService:
         """일일 수집 전략 조회"""
         config = self.get_daily_collection_config()
         return config.get('strategy', 'disabled')
+    
+    # === 자동 수집 시스템 지원 메서드 ===
+    
+    def get_daily_collection_stats(self) -> list:
+        """날짜별 수집 통계 반환"""
+        try:
+            db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # 최근 30일간의 날짜별 수집 통계
+            query = """
+            SELECT 
+                DATE(detection_date) as date,
+                COUNT(*) as count,
+                source
+            FROM blacklist_ip 
+            WHERE detection_date >= DATE('now', '-30 days')
+            GROUP BY DATE(detection_date), source
+            ORDER BY date DESC
+            """
+            
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            conn.close()
+            
+            # 날짜별로 그룹화
+            stats_dict = {}
+            for row in rows:
+                date, count, source = row
+                if date not in stats_dict:
+                    stats_dict[date] = {'date': date, 'count': 0, 'sources': {}}
+                stats_dict[date]['count'] += count
+                stats_dict[date]['sources'][source] = count
+            
+            # 리스트로 변환하여 반환
+            return list(stats_dict.values())
+            
+        except Exception as e:
+            self.logger.error(f"Daily collection stats error: {e}")
+            return []
+    
+    def get_source_statistics(self) -> dict:
+        """소스별 통계 반환"""
+        try:
+            db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # 소스별 총 개수
+            query = """
+            SELECT 
+                source,
+                COUNT(*) as total,
+                MIN(detection_date) as first_detection,
+                MAX(detection_date) as last_detection,
+                COUNT(DISTINCT DATE(detection_date)) as collection_days
+            FROM blacklist_ip 
+            GROUP BY source
+            """
+            
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            conn.close()
+            
+            stats = {}
+            for row in rows:
+                source, total, first_detection, last_detection, collection_days = row
+                stats[source.lower()] = {
+                    'total': total,
+                    'first_detection': first_detection,
+                    'last_detection': last_detection,
+                    'collection_days': collection_days
+                }
+            
+            return stats
+            
+        except Exception as e:
+            self.logger.error(f"Source statistics error: {e}")
+            return {}
+    
+    def get_collection_intervals(self) -> dict:
+        """현재 수집 간격 설정 반환"""
+        try:
+            # 설정 파일 경로
+            config_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/collection_intervals.json')
+            
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                return config
+            else:
+                # 기본값
+                default_config = {
+                    'regtech_days': 90,  # 3개월
+                    'secudium_days': 3,  # 3일
+                    'updated_at': datetime.now().isoformat()
+                }
+                # 기본값을 파일로 저장
+                os.makedirs(os.path.dirname(config_path), exist_ok=True)
+                with open(config_path, 'w') as f:
+                    json.dump(default_config, f, indent=2)
+                return default_config
+                
+        except Exception as e:
+            self.logger.error(f"Get collection intervals error: {e}")
+            return {
+                'regtech_days': 90,
+                'secudium_days': 3,
+                'error': str(e)
+            }
+    
+    def update_collection_intervals(self, regtech_days: int, secudium_days: int) -> dict:
+        """수집 간격 설정 업데이트"""
+        try:
+            config = {
+                'regtech_days': regtech_days,
+                'secudium_days': secudium_days,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            # 설정 파일 저장
+            config_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/collection_intervals.json')
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+            
+            self.logger.info(f"Collection intervals updated: REGTECH={regtech_days}days, SECUDIUM={secudium_days}days")
+            
+            return {
+                'success': True,
+                'regtech_days': regtech_days,
+                'secudium_days': secudium_days,
+                'updated_at': config['updated_at']
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Update collection intervals error: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def get_missing_dates_for_collection(self, source: str, days_back: int) -> list:
+        """수집이 누락된 날짜 목록 반환"""
+        try:
+            from datetime import datetime, timedelta
+            
+            db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # 지정된 기간 내에서 수집된 날짜들 조회
+            start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+            
+            query = """
+            SELECT DISTINCT DATE(detection_date) as date
+            FROM blacklist_ip 
+            WHERE source = ? AND detection_date >= ?
+            ORDER BY date DESC
+            """
+            
+            cursor.execute(query, (source.upper(), start_date))
+            collected_dates = set(row[0] for row in cursor.fetchall())
+            conn.close()
+            
+            # 전체 날짜 범위에서 누락된 날짜 찾기
+            missing_dates = []
+            current_date = datetime.now()
+            
+            for i in range(days_back):
+                check_date = (current_date - timedelta(days=i)).strftime('%Y-%m-%d')
+                if check_date not in collected_dates:
+                    missing_dates.append(check_date)
+            
+            return missing_dates
+            
+        except Exception as e:
+            self.logger.error(f"Get missing dates error: {e}")
+            return []
+    
+    def enable_collection(self) -> dict:
+        """수집 활성화"""
+        try:
+            # CollectionManager를 통해 수집 활성화
+            collection_manager = self.container.get('collection_manager')
+            if not collection_manager:
+                return {
+                    'success': False,
+                    'error': 'Collection manager not available'
+                }
+            
+            # 수집 활성화
+            result = collection_manager.enable_collection()
+            
+            # 로그 추가
+            self.add_collection_log('system', 'collection_enabled', {
+                'message': '수집이 활성화되었습니다',
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            self.logger.info("Collection enabled successfully")
+            
+            return {
+                'success': True,
+                'message': '수집이 활성화되었습니다',
+                'status': 'enabled',
+                'enabled_at': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Enable collection error: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'message': '수집 활성화 실패'
+            }
+    
+    def disable_collection(self) -> dict:
+        """수집 비활성화"""
+        try:
+            # CollectionManager를 통해 수집 비활성화
+            collection_manager = self.container.get('collection_manager')
+            if not collection_manager:
+                return {
+                    'success': False,
+                    'error': 'Collection manager not available'
+                }
+            
+            # 수집 비활성화
+            result = collection_manager.disable_collection()
+            
+            # 로그 추가
+            self.add_collection_log('system', 'collection_disabled', {
+                'message': '수집이 비활성화되었습니다',
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            self.logger.info("Collection disabled successfully")
+            
+            return {
+                'success': True,
+                'message': '수집이 비활성화되었습니다',
+                'status': 'disabled',
+                'disabled_at': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Disable collection error: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'message': '수집 비활성화 실패'
+            }
+    
+    def trigger_regtech_collection(self, start_date: str = None, end_date: str = None) -> dict:
+        """REGTECH 수집 트리거 (데이터베이스 저장 포함)"""
+        import uuid
+        task_id = str(uuid.uuid4())
+        self.logger.info(f"REGTECH collection triggered (task_id: {task_id})")
+        
+        # 수집 로그 추가
+        self.add_collection_log('REGTECH', 'collection_started', {
+            'task_id': task_id,
+            'start_date': start_date,
+            'end_date': end_date,
+            'is_daily': start_date == end_date if start_date and end_date else False
+        })
+        
+        try:
+            # 실제 REGTECH 수집 실행
+            self.logger.info(f"Container type: {type(self.container)}")
+            regtech_collector = self.container.resolve('regtech_collector')
+            if not regtech_collector:
+                self.logger.error("REGTECH collector not available")
+                return {
+                    'success': False,
+                    'error': 'REGTECH collector not available',
+                    'message': 'REGTECH 수집기를 찾을 수 없습니다'
+                }
+            
+            # 실제 수집 실행 (동기적으로 처리)
+            try:
+                ips = regtech_collector.collect_from_web(start_date=start_date, end_date=end_date)
+                self.logger.info(f"REGTECH collection completed: {len(ips)} IPs collected")
+                
+                # 수집 완료 로그 추가
+                self.add_collection_log('REGTECH', 'collection_completed', {
+                    'task_id': task_id,
+                    'ips_collected': len(ips),
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'is_daily': start_date == end_date if start_date and end_date else False
+                })
+                
+                # 수집한 IP를 데이터베이스에 저장
+                if ips and self.blacklist_manager:
+                    try:
+                        # REGTECH 데이터를 모든 필드 포함해서 저장
+                        ips_data = []
+                        for ip_entry in ips:
+                            # IP 주소 추출
+                            ip_addr = None
+                            if hasattr(ip_entry, 'ip_address'):
+                                ip_addr = ip_entry.ip_address
+                            elif hasattr(ip_entry, 'ip'):
+                                ip_addr = ip_entry.ip
+                            elif isinstance(ip_entry, dict):
+                                ip_addr = ip_entry.get('ip_address') or ip_entry.get('ip')
+                            elif isinstance(ip_entry, str):
+                                ip_addr = ip_entry
+                                
+                            if not ip_addr:
+                                continue
+                                
+                            # REGTECH 모든 필드 저장 (스키마에 맞게)
+                            ips_data.append({
+                                'ip': ip_addr,
+                                'ip_address': ip_addr,  # 원본 필드도 저장
+                                'source': 'REGTECH',
+                                'reason': getattr(ip_entry, 'reason', None),
+                                'country': getattr(ip_entry, 'country', None),
+                                'threat_level': getattr(ip_entry, 'threat_level', None),
+                                'as_name': getattr(ip_entry, 'as_name', None),
+                                'city': getattr(ip_entry, 'city', None),
+                                'reg_date': getattr(ip_entry, 'reg_date', None),
+                                'attack_type': getattr(ip_entry, 'reason', None),  # reason을 attack_type으로도 저장
+                                'detection_date': getattr(ip_entry, 'reg_date', None)  # reg_date를 detection_date로도 저장
+                            })
+                        
+                        self.logger.info(f"REGTECH: Calling bulk_import_ips with {len(ips_data)} IPs")
+                        self.logger.info(f"REGTECH: Sample IP data: {ips_data[:3] if ips_data else 'None'}")
+                        
+                        # 실제로 bulk_import_ips 호출하기 전에 blacklist_manager 확인
+                        if not self.blacklist_manager:
+                            self.logger.error("REGTECH: blacklist_manager is None!")
+                            return {
+                                'success': False,
+                                'error': 'blacklist_manager not available',
+                                'message': 'REGTECH 수집 실패: blacklist_manager 없음'
+                            }
+                        
+                        self.logger.info(f"REGTECH: blacklist_manager type: {type(self.blacklist_manager)}")
+                        result = self.blacklist_manager.bulk_import_ips(ips_data, source='REGTECH')
+                        self.logger.info(f"REGTECH: bulk_import_ips result: {result}")
+                        self.logger.info(f"REGTECH: result type: {type(result)}")
+                        
+                        if result.get('success'):
+                            self.logger.info(f"REGTECH: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
+                            
+                            # 저장 후 데이터베이스에서 직접 확인
+                            try:
+                                source_counts = self._get_source_counts_from_db()
+                                self.logger.info(f"REGTECH: 저장 후 DB 상태: {source_counts}")
+                            except Exception as verify_e:
+                                self.logger.error(f"REGTECH: DB 확인 실패: {verify_e}")
+                                
+                            return {
+                                'success': True,
+                                'ip_count': len(ips),
+                                'imported_count': result.get('imported_count', 0),
+                                'message': f'REGTECH 수집 완료: {len(ips)}개 IP 수집됨'
+                            }
+                        else:
+                            self.logger.error(f"REGTECH: 데이터베이스 저장 실패 - {result.get('error')}")
+                            return {
+                                'success': False,
+                                'error': result.get('error'),
+                                'message': 'REGTECH 데이터베이스 저장 실패'
+                            }
+                    except Exception as e:
+                        self.logger.error(f"REGTECH 데이터 저장 중 오류: {e}")
+                        return {
+                            'success': False,
+                            'error': str(e),
+                            'message': 'REGTECH 데이터 저장 실패'
+                        }
+                else:
+                    return {
+                        'success': True,
+                        'ip_count': len(ips) if ips else 0,
+                        'message': f'REGTECH 수집 완료: {len(ips) if ips else 0}개 IP 수집됨 (저장 불가)'
+                    }
+                    
+            except Exception as e:
+                self.logger.error(f"REGTECH 수집 실행 중 오류: {e}")
+                return {
+                    'success': False,
+                    'error': str(e),
+                    'message': 'REGTECH 수집 실행 실패'
+                }
+                
+        except Exception as e:
+            self.logger.error(f"REGTECH trigger error: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'message': 'REGTECH 수집 트리거 실패'
+            }
+    
+    def trigger_secudium_collection(self) -> dict:
+        """SECUDIUM 수집 트리거"""
+        try:
+            # SECUDIUM 수집기 가져오기
+            secudium_collector = self.container.get('secudium_collector')
+            if not secudium_collector:
+                return {
+                    'success': False,
+                    'error': 'SECUDIUM collector not available'
+                }
+            
+            # 수집 시작 로그
+            self.add_collection_log('secudium', 'collection_start', {
+                'triggered_by': 'manual',
+                'start_time': datetime.now().isoformat()
+            })
+            
+            # 수집 실행
+            try:
+                result = secudium_collector.collect_from_web()
+                
+                if result.get('success'):
+                    ip_count = result.get('total_ips', 0)
+                    
+                    # 수집 완료 로그
+                    self.add_collection_log('secudium', 'collection_complete', {
+                        'ip_count': ip_count,
+                        'triggered_by': 'manual',
+                        'end_time': datetime.now().isoformat()
+                    })
+                    
+                    return {
+                        'success': True,
+                        'message': f'SECUDIUM 수집 완료: {ip_count}개 IP 수집됨',
+                        'ip_count': ip_count,
+                        'source': 'secudium'
+                    }
+                else:
+                    error_msg = result.get('error', '알 수 없는 오류')
+                    self.add_collection_log('secudium', 'collection_failed', {
+                        'error': error_msg,
+                        'triggered_by': 'manual'
+                    })
+                    
+                    return {
+                        'success': False,
+                        'error': error_msg,
+                        'message': f'SECUDIUM 수집 실패: {error_msg}'
+                    }
+                    
+            except Exception as e:
+                self.add_collection_log('secudium', 'collection_failed', {
+                    'error': str(e),
+                    'triggered_by': 'manual'
+                })
+                raise e
+            
+        except Exception as e:
+            self.logger.error(f"SECUDIUM trigger error: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'message': 'SECUDIUM 수집 트리거 실패'
+            }
 
 # 전역 서비스 인스턴스
 _unified_service = None
