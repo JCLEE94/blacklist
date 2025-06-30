@@ -26,6 +26,8 @@ services:
       - blacklist-network
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.notification-url=https://api.github.com/repos/jclee/blacklist/dispatches"
+      - "com.centurylinklabs.watchtower.notification-template={{range .}}{{.Message}}{{end}}"
 
   blacklist-redis:
     image: redis:7-alpine

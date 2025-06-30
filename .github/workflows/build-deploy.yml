@@ -189,3 +189,26 @@ jobs:
           else
             echo "🎉 **성공**: 배포가 완료되었습니다!" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Send Success Notification
+        if: needs.verify-deployment.result == 'success'
+        run: |
+          echo "📢 배포 성공 알림 전송 중..."
+          
+          # Watchtower에 성공 알림
+          curl -X POST "https://watchtower.jclee.me/v1/update" \
+            -H "Authorization: Bearer MySuperSecretToken12345" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "type": "deployment_success",
+              "container": "blacklist",
+              "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}",
+              "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
+              "message": "Blacklist 애플리케이션 배포 완료",
+              "status": "success",
+              "url": "https://blacklist.jclee.me"
+            }' || echo "⚠️ Watchtower 알림 실패"
+          
+          echo "✅ 배포 성공 알림 전송 완료"
