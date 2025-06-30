@@ -1,6 +1,6 @@
 # Blacklist Management System
 
-(https://github.com/jclee/blacklist/actions/workflows/build-deploy.yml/badge.svg)](https://github.com/jclee/blacklist/actions)
+[![Build Status](https://github.com/jclee/blacklist/actions/workflows/k8s-deploy.yml/badge.svg)](https://github.com/jclee/blacklist/actions)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.24+-blue.svg)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/docker-registry.jclee.me-blue.svg)](https://registry.jclee.me)
 
@@ -20,9 +20,9 @@ graph TB
         end
     end
     
-    H[GitHub Push] --> I[GitHub Actions]
+    H[GitHub Push] --> I[GitHub Actions<br/>Self-hosted Runner]
     I --> J[Docker Registry<br/>registry.jclee.me]
-    J --> K[Watchtower<br/>Auto Deploy]
+    J --> K[ArgoCD/FluxCD<br/>Auto Rollout]
     K --> C
     
     L[REGTECH API] --> C
@@ -37,7 +37,7 @@ graph TB
 - Kubernetes cluster (k3s/k8s v1.24+)
 - kubectl 설정 완료
 - Docker 및 registry 접근 권한
-- 오프라인 환경의 경우 이미지 사전 준비
+- ArgoCD 또는 FluxCD 설치 (자동 배포용)
 
 ### Kubernetes 배포
 
@@ -46,58 +46,49 @@ graph TB
 git clone https://github.com/jclee/blacklist.git
 cd blacklist
 
-# 2. Namespace 생성
-kubectl create namespace blacklist
+# 2. 초기 배포 (네임스페이스, 시크릿, 볼륨 생성)
+./scripts/k8s-management.sh init
 
-# 3. Registry Secret 생성 (Private Registry 사용 시)
-kubectl create secret docker-registry regcred \
-  --docker-server=registry.jclee.me \
-  --docker-username=<username> \
-  --docker-password=<password> \
-  -n blacklist
+# 3. 애플리케이션 배포
+./scripts/k8s-management.sh deploy
 
-# 4. 환경 변수 및 시크릿 설정
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/secret.yaml
+# 4. 배포 확인
+./scripts/k8s-management.sh status
 
-# 5. 애플리케이션 배포
-kubectl apply -f k8s/
-
-# 6. 배포 확인
-kubectl get all -n blacklist
-kubectl get ingress -n blacklist
+# 또는 수동 배포
+kubectl apply -k k8s/
 ```
 
-### 오프라인 환경 배포
+### ArgoCD를 통한 자동 배포
 
 ```bash
-# 1. 온라인 환경에서 이미지 준비
-docker pull registry.jclee.me/blacklist:latest
-docker pull redis:7-alpine
-docker pull busybox:latest
+# 1. ArgoCD Application 생성
+kubectl apply -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jclee/blacklist
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+EOF
 
-# 2. 이미지 저장
-docker save -o blacklist-images.tar \
-  registry.jclee.me/blacklist:latest \
-  redis:7-alpine \
-  busybox:latest
-
-# 3. 오프라인 환경으로 전송
-scp blacklist-images.tar user@offline-server:/tmp/
-
-# 4. 오프라인 환경에서 이미지 로드
-docker load -i /tmp/blacklist-images.tar
-
-# 5. 로컬 레지스트리에 푸시 (있는 경우)
-docker tag registry.jclee.me/blacklist:latest localhost:5000/blacklist:latest
-docker push localhost:5000/blacklist:latest
-
-# 6. k8s 매니페스트 이미지 경로 수정
-sed -i 's|registry.jclee.me|localhost:5000|g' k8s/deployment.yaml
-sed -i 's|registry.jclee.me|localhost:5000|g' k8s/redis.yaml
-
-# 7. 배포
-kubectl apply -f k8s/
+# 2. 이미지 업데이트 시 자동 롤아웃
+# GitHub Actions가 새 이미지를 registry.jclee.me에 푸시하면
+# ArgoCD가 자동으로 감지하고 롤아웃 수행
 ```
 
 ## 📦 주요 기능
@@ -187,26 +178,43 @@ curl http://<node-ip>:32541/api/stats
 
 ## 🔄 CI/CD 파이프라인
 
-### GitHub Actions → Watchtower 자동 배포
+### GitHub Actions → Kubernetes 자동 배포
 1. **코드 푸시**: main 브랜치에 푸시
-2. **GitHub Actions**: 
-   - 테스트 실행
-   - Docker 이미지 빌드
+2. **GitHub Actions (Self-hosted Runner)**: 
+   - 테스트 실행 (pytest)
+   - Docker 이미지 빌드 (멀티 아키텍처)
    - registry.jclee.me에 푸시
-3. **Watchtower**: 
-   - 새 이미지 감지
-   - 자동으로 컨테이너 업데이트
-   - 무중단 배포
+   - 버전 태그 자동 생성
+3. **ArgoCD/FluxCD**: 
+   - 새 이미지 자동 감지
+   - Rolling Update 수행
+   - 헬스체크 및 자동 롤백
+
+### 이미지 자동 업데이트 설정
+```yaml
+# ArgoCD Image Updater 설정
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+data:
+  registries.conf: |
+    registries:
+    - name: jclee-registry
+      prefix: registry.jclee.me
+      api_url: https://registry.jclee.me
+      credentials: secret:argocd/registry-secret#creds
+      default: true
+```
 
 ### 수동 배포
 ```bash
-# 이미지 빌드 및 푸시
-docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
-docker push registry.jclee.me/blacklist:latest
+# 스크립트를 통한 배포
+./scripts/k8s-management.sh deploy --tag v1.2.3
 
-# Kubernetes 업데이트
-kubectl rollout restart deployment/blacklist -n blacklist
-kubectl rollout status deployment/blacklist -n blacklist
+# 또는 직접 이미지 업데이트
+kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:v1.2.3 -n blacklist
 ```
 
 ## 🧪 테스트
@@ -247,7 +255,7 @@ blacklist/
 │   └── docker-compose.yml # 로컬 개발용
 │
 ├── .github/workflows/    # CI/CD 파이프라인
-│   └── build-deploy.yml  # GitHub Actions
+│   └── k8s-deploy.yml    # GitHub Actions (Self-hosted)
 │
 ├── src/                  # 애플리케이션 소스
 │   ├── core/            # 핵심 비즈니스 로직
@@ -258,6 +266,8 @@ blacklist/
 │   └── utils/           # 유틸리티
 │
 ├── scripts/             # 유틸리티 스크립트
+│   ├── k8s-management.sh    # Kubernetes 관리 (Bash)
+│   └── k8s-management.ps1   # Kubernetes 관리 (PowerShell)
 ├── tests/              # 테스트 코드
 ├── main.py            # 엔트리 포인트
 ├── requirements.txt   # Python 의존성
@@ -265,33 +275,33 @@ blacklist/
 └── README.md         # 이 파일
 ```
 
-## 🛠️ 기술 스택 (오프라인 환경 기준)
+## 🛠️ 기술 스택
 
 ### 런타임 환경
 - **Python 3.9**: 안정성과 성능의 균형점
-  - 오프라인 환경에서 추가 패키지 설치 불필요
   - Alpine 기반 경량 이미지 사용 (python:3.9-slim)
+  - 컨테이너 크기 최적화 (~150MB)
 - **Gunicorn**: Production WSGI 서버
   - 멀티 워커 지원 (기본 4 workers)
   - 타임아웃 120초 설정
-  - --reload 옵션 제거로 안정성 확보
+  - 자동 워커 재시작 기능
 
 ### 웹 프레임워크
 - **Flask 2.3.3**: 경량 웹 프레임워크
-  - 의존성 최소화로 오프라인 환경 적합
+  - RESTful API 설계
   - Flask-CORS, Flask-Compress 포함
   - 보안 헤더 자동 설정
 
 ### 데이터베이스
 - **SQLite 3**: 파일 기반 임베디드 DB
-  - 별도 DB 서버 불필요 (오프라인 환경 최적)
+  - PVC 기반 영구 스토리지
   - WAL 모드로 동시성 향상
   - 자동 백업 및 복구 지원
   - 3개월 데이터 자동 정리
 
 ### 캐싱
 - **Redis 7-alpine**: 인메모리 캐시
-  - 컨테이너 내장으로 외부 의존성 없음
+  - Kubernetes StatefulSet 구성
   - 메모리 캐시 폴백 지원
   - TTL 기반 자동 만료
 
@@ -303,10 +313,12 @@ blacklist/
 
 ### 오케스트레이션
 - **Kubernetes 1.24+**: 컨테이너 오케스트레이션
-  - k3s 지원 (경량 Kubernetes)
+  - k3s/k8s 완벽 지원
   - PVC로 데이터 영속성 보장
   - ConfigMap/Secret으로 설정 관리
   - 자동 재시작 및 헬스체크
+  - HPA 기반 자동 스케일링
+  - ArgoCD/FluxCD 통합
 
 ### 필수 Python 패키지 (requirements.txt)
 ```text
@@ -342,21 +354,17 @@ cryptography==41.0.7
 certifi==2023.7.22
 ```
 
-### 오프라인 패키지 준비
-```bash
-# 1. 온라인 환경에서 패키지 다운로드
-pip download -r requirements.txt -d offline-packages/
-
-# 2. 패키지 파일 압축
-tar czf python-packages.tar.gz offline-packages/
-
-# 3. 오프라인 환경으로 전송
-scp python-packages.tar.gz user@offline-server:/tmp/
-
-# 4. 오프라인 환경에서 설치
-tar xzf python-packages.tar.gz
-pip install --no-index --find-links offline-packages/ -r requirements.txt
-```
+### CI/CD 통합
+- **GitHub Actions**: Self-hosted Runner 기반
+  - 병렬 테스트 실행
+  - 멀티 아키텍처 빌드 (amd64, arm64)
+  - 자동 버전 태깅
+  - 보안 스캔 (Trivy)
+  
+- **ArgoCD Image Updater**: 자동 이미지 업데이트
+  - Registry webhook 통합
+  - 신규 이미지 자동 감지
+  - GitOps 기반 배포
 
 ### 시스템 의존성 (Alpine Linux)
 ```dockerfile
@@ -386,42 +394,44 @@ RUN apk add --no-cache \
 - **최소 권한**: non-root 사용자 실행
 - **네트워크 정책**: 필요 최소한의 포트만 개방
 
-### 모니터링 (오프라인)
+### 모니터링
 - **내장 헬스체크**: /health 엔드포인트
 - **메트릭 수집**: /api/stats 제공
 - **로그 수집**: stdout/stderr → kubectl logs
 - **리소스 모니터링**: kubectl top
+- **Prometheus 연동 가능**: metrics 엔드포인트 제공
 
 ### 백업 및 복구
-- **SQLite 백업**: 파일 단위 백업
+- **SQLite 백업**: CronJob 기반 자동 백업
 - **설정 백업**: ConfigMap/Secret YAML 저장
 - **전체 백업**: namespace 단위 YAML export
-- **자동화 스크립트**: 크론잡으로 정기 백업
+- **Velero 지원**: 클러스터 레벨 백업/복구
 
-## 🔧 문제 해결 (오프라인 환경 특화)
+## 🔧 문제 해결
 
 ### 이미지 Pull 실패
 ```bash
 # 증상: ImagePullBackOff 에러
-# 원인: 로컬 레지스트리 접근 실패
+# 원인: Registry 인증 실패 또는 네트워크 문제
 
-# 1. 로컬 레지스트리 상태 확인
-docker ps | grep registry
-curl http://localhost:5000/v2/_catalog
+# 1. Registry Secret 확인
+kubectl get secret regcred -n blacklist -o yaml
 
-# 2. k3s/k8s 레지스트리 설정 확인
-cat /etc/rancher/k3s/registries.yaml
-# 또는
-cat /etc/containerd/config.toml
+# 2. Registry 접근 테스트
+docker login registry.jclee.me
+docker pull registry.jclee.me/blacklist:latest
 
-# 3. 이미지 태그 확인
-docker images | grep blacklist
-kubectl describe pod <pod-name> -n blacklist | grep Image
+# 3. Pod 이벤트 확인
+kubectl describe pod <pod-name> -n blacklist
+kubectl get events -n blacklist --sort-by='.lastTimestamp'
 
-# 4. 수동으로 이미지 로드
-docker load -i blacklist.tar
-docker tag <image-id> localhost:5000/blacklist:latest
-docker push localhost:5000/blacklist:latest
+# 4. ImagePullSecret 재생성
+kubectl delete secret regcred -n blacklist
+kubectl create secret docker-registry regcred \
+  --docker-server=registry.jclee.me \
+  --docker-username=<username> \
+  --docker-password=<password> \
+  -n blacklist
 ```
 
 ### Pod 메모리 부족
@@ -457,19 +467,25 @@ kubectl exec deployment/blacklist -n blacklist -- \
   python3 init_database.py --force
 ```
 
-### 오프라인 환경 네트워크 이슈
+### 네트워크 연결 이슈
 ```bash
-# 증상: 외부 API 접근 시도로 타임아웃
+# 증상: 외부 API 접근 실패
 
-# 1. 환경 변수로 오프라인 모드 설정
-kubectl set env deployment/blacklist OFFLINE_MODE=true -n blacklist
+# 1. DNS 설정 확인
+kubectl exec deployment/blacklist -n blacklist -- nslookup www.krcert.or.kr
 
-# 2. 사전 수집된 데이터 마운트
-kubectl cp offline-data/ blacklist/<pod-name>:/app/offline-data -n blacklist
+# 2. 네트워크 정책 확인
+kubectl get networkpolicies -n blacklist
 
-# 3. hosts 파일 수정으로 외부 접근 차단
-kubectl exec deployment/blacklist -n blacklist -- \
-  sh -c 'echo "127.0.0.1 www.krcert.or.kr" >> /etc/hosts'
+# 3. Service 엔드포인트 확인
+kubectl get endpoints -n blacklist
+
+# 4. 프록시 설정 (필요시)
+kubectl set env deployment/blacklist \
+  HTTP_PROXY=http://proxy.company.com:8080 \
+  HTTPS_PROXY=http://proxy.company.com:8080 \
+  NO_PROXY=localhost,127.0.0.1,.cluster.local \
+  -n blacklist
 ```
 
 ### 성능 저하 문제
@@ -491,23 +507,24 @@ kubectl exec deployment/blacklist -n blacklist -- \
   find /app/logs -name "*.log" -mtime +7 -delete
 ```
 
-### 롤백 절차 (오프라인)
+### 롤백 절차
 ```bash
-# 1. 현재 버전 백업
-docker save localhost:5000/blacklist:current -o blacklist-backup.tar
+# 1. 롤백 히스토리 확인
+kubectl rollout history deployment/blacklist -n blacklist
 
-# 2. 이전 버전 복구
-docker load -i blacklist-previous.tar
-docker tag <previous-image> localhost:5000/blacklist:rollback
-docker push localhost:5000/blacklist:rollback
+# 2. 이전 버전으로 롤백
+kubectl rollout undo deployment/blacklist -n blacklist
+# 또는 특정 버전으로
+kubectl rollout undo deployment/blacklist --to-revision=2 -n blacklist
 
-# 3. Deployment 업데이트
-kubectl set image deployment/blacklist \
-  blacklist=localhost:5000/blacklist:rollback -n blacklist
-
-# 4. 롤백 확인
+# 3. 롤백 상태 확인
 kubectl rollout status deployment/blacklist -n blacklist
-kubectl logs deployment/blacklist -n blacklist | tail -50
+
+# 4. 스크립트를 통한 롤백
+./scripts/k8s-management.sh rollback
+
+# 5. ArgoCD를 통한 롤백 (GitOps)
+argocd app rollback blacklist --revision 1.2.3
 ```
 
 ## 🏭 프로덕션 운영
@@ -559,168 +576,116 @@ resources:
 
 ### 백업 및 복구
 ```bash
-# 데이터베이스 백업
-kubectl exec deployment/blacklist -n blacklist -- \
-  tar czf - /app/instance/blacklist.db > backup-$(date +%Y%m%d).tar.gz
+# CronJob 기반 자동 백업 (k8s/cronjob.yaml에 정의)
+kubectl apply -f k8s/cronjob.yaml
 
-# 데이터베이스 복구
-cat backup-20250630.tar.gz | \
-  kubectl exec -i deployment/blacklist -n blacklist -- tar xzf - -C /
-
-# 전체 namespace 백업
-kubectl get all,cm,secret,pvc -n blacklist -o yaml > blacklist-backup.yaml
-```
-
-### 오프라인 환경 운영 가이드
-
-#### 초기 환경 구축
-```bash
-# 1. 필수 소프트웨어 사전 준비 (온라인)
-## Docker 이미지
-docker pull registry.jclee.me/blacklist:latest
-docker pull redis:7-alpine
-docker pull busybox:latest
-docker pull python:3.9-slim  # 베이스 이미지
-
-## Kubernetes 도구
-curl -LO https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl
-curl -Lo k3s https://github.com/k3s-io/k3s/releases/download/v1.24.17+k3s1/k3s
-
-## Python 패키지
-pip download -r requirements.txt -d offline-packages/
-pip download pytest pytest-cov -d offline-packages/  # 테스트용
-
-# 2. 오프라인 전송 패키지 생성
-tar czf blacklist-offline-bundle.tar.gz \
-  *.tar \
-  offline-packages/ \
-  kubectl \
-  k3s \
-  k8s/ \
-  deployment/ \
-  scripts/
-
-# 3. 오프라인 환경 설치
-## k3s 설치 (에어갭 모드)
-sudo install -m 755 k3s /usr/local/bin/k3s
-sudo k3s server --disable-agent &
-
-## 로컬 레지스트리 구성
-docker run -d -p 5000:5000 --name registry registry:2
-docker load -i blacklist-images.tar
-docker tag registry.jclee.me/blacklist:latest localhost:5000/blacklist:latest
-docker push localhost:5000/blacklist:latest
-```
-
-#### 데이터 소스 오프라인 처리
-```python
-# 오프라인 환경용 설정 (src/config/offline.py)
-OFFLINE_MODE = True
-OFFLINE_DATA_PATH = "/app/offline-data"
-
-# IP 데이터 사전 수집 및 저장
-# 온라인 환경에서 실행
-python scripts/export_offline_data.py
-
-# 오프라인 환경으로 데이터 전송
-scp offline-ip-data-*.json user@offline-server:/data/
-```
-
-#### 업데이트 및 패치 절차
-```bash
-# 1. 온라인 환경에서 패치 준비
-## 변경된 이미지만 export
-docker save registry.jclee.me/blacklist:v2.0 -o blacklist-v2.0.tar
-
-## 변경된 파일만 패치 생성
-git diff v1.0..v2.0 > patch-v1.0-to-v2.0.diff
-
-## 패치 번들 생성
-tar czf patch-bundle-v2.0.tar.gz \
-  blacklist-v2.0.tar \
-  patch-v1.0-to-v2.0.diff \
-  CHANGELOG.md
-
-# 2. 오프라인 환경 적용
-## 이미지 업데이트
-docker load -i blacklist-v2.0.tar
-docker tag registry.jclee.me/blacklist:v2.0 localhost:5000/blacklist:v2.0
-docker push localhost:5000/blacklist:v2.0
-
-## 롤링 업데이트
-kubectl set image deployment/blacklist \
-  blacklist=localhost:5000/blacklist:v2.0 \
-  -n blacklist
-
-## 업데이트 검증
-kubectl rollout status deployment/blacklist -n blacklist
-```
-
-#### 오프라인 모니터링 도구
-```yaml
-# monitoring.yaml - 오프라인 환경용 간단한 모니터링
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: monitoring-script
-  namespace: blacklist
-data:
-  monitor.sh: |
-    #!/bin/bash
-    while true; do
-      echo "=== $(date) ==="
-      kubectl top pods -n blacklist
-      curl -s http://blacklist:2541/health | jq .
-      sleep 300
-    done
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: health-monitor
-  namespace: blacklist
-spec:
-  schedule: "*/5 * * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: monitor
-            image: busybox
-            command: ["/bin/sh", "/scripts/monitor.sh"]
-            volumeMounts:
-            - name: script
-              mountPath: /scripts
-          volumes:
-          - name: script
-            configMap:
-              name: monitoring-script
-          restartPolicy: OnFailure
-```
-
-#### 오프라인 백업 자동화
-```bash
-#!/bin/bash
-# backup.sh - 일일 자동 백업 스크립트
-BACKUP_DIR="/backup/blacklist"
-DATE=$(date +%Y%m%d)
-
-# DB 백업
+# 수동 데이터베이스 백업
 kubectl exec deployment/blacklist -n blacklist -- \
   sqlite3 /app/instance/blacklist.db ".backup /tmp/backup.db"
-kubectl cp blacklist/deployment/blacklist:/tmp/backup.db \
-  $BACKUP_DIR/db-$DATE.db
+kubectl cp blacklist/<pod-name>:/tmp/backup.db ./backup-$(date +%Y%m%d).db
 
-# 설정 백업
-kubectl get cm,secret -n blacklist -o yaml > $BACKUP_DIR/config-$DATE.yaml
+# 전체 namespace 백업 (Velero 사용)
+velero backup create blacklist-backup --include-namespaces blacklist
 
-# 로그 백업
-kubectl logs deployment/blacklist -n blacklist --since=24h \
-  > $BACKUP_DIR/logs-$DATE.log
+# 복구
+velero restore create --from-backup blacklist-backup
+```
 
-# 7일 이상 된 백업 삭제
-find $BACKUP_DIR -mtime +7 -delete
+### 고급 운영 기능
+
+#### 자동 스케일링 설정
+```yaml
+# HPA (Horizontal Pod Autoscaler) 설정
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: blacklist-hpa
+  namespace: blacklist
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: blacklist
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+```
+
+#### 무중단 업데이트 전략
+```yaml
+# Deployment 롤링 업데이트 설정
+spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    spec:
+      containers:
+      - name: blacklist
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 30
+          periodSeconds: 10
+```
+
+#### 성능 최적화
+```bash
+# 1. 리소스 최적화
+kubectl top pods -n blacklist --sort-by=memory
+kubectl top nodes
+
+# 2. 캐시 성능 튜닝
+kubectl exec deployment/blacklist-redis -n blacklist -- \
+  redis-cli CONFIG SET maxmemory-policy allkeys-lru
+
+# 3. SQLite 최적화
+kubectl exec deployment/blacklist -n blacklist -- \
+  sqlite3 /app/instance/blacklist.db "PRAGMA optimize;"
+
+# 4. 네트워크 최적화
+kubectl annotate service blacklist \
+  service.beta.kubernetes.io/aws-load-balancer-backend-protocol=tcp
+```
+
+#### 모니터링 대시보드 통합
+```yaml
+# Prometheus ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: blacklist-metrics
+  namespace: blacklist
+spec:
+  selector:
+    matchLabels:
+      app: blacklist
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
 ```
 
 ## 🤝 Contributing
@@ -735,12 +700,11 @@ find $BACKUP_DIR -mtime +7 -delete
 
 이 프로젝트는 독점 소프트웨어입니다.
 
-## 🔗 Links
+## 📚 추가 문서
 
-- Production: https://blacklist.jclee.me
-- Registry: https://registry.jclee.me
-- 상세 문서: [CLAUDE.md](./CLAUDE.md)
-- 온라인 대시보드: http://192.168.50.215:32541
+- [CLAUDE.md](./CLAUDE.md) - AI 어시스턴트를 위한 상세 가이드
+- [Kubernetes 관리 스크립트](./scripts/k8s-management.sh) - 배포 자동화
+- [CI/CD 워크플로우](./.github/workflows/k8s-deploy.yml) - GitHub Actions 설정
 
 ---
 

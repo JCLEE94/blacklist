@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+data:
+  # 레지스트리 설정
+  registries.conf: |
+    registries:
+    - name: jclee-registry
+      prefix: registry.jclee.me
+      api_url: https://registry.jclee.me
+      credentials: secret:argocd/registry-secret#creds
+      default: true
+      insecure: no
+  
+  # 이미지 업데이트 정책
+  log.level: info
+  git.user: ArgoCD Image Updater
+  git.email: argocd@jclee.me
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: registry-secret
+  namespace: argocd
+type: Opaque
+stringData:
+  creds: |
+    username=<REGISTRY_USERNAME>
+    password=<REGISTRY_PASSWORD>

@@ -14,11 +14,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Production Infrastructure:**
 - Docker Registry: `registry.jclee.me`
-- Production Server: `192.168.50.215` (port 1111 for SSH, port 2541 for app)
-- Default Ports: DEV=8541, PROD=2541
-- Auto-deployment: Watchtower monitors registry for updates
+- Kubernetes Cluster: Self-hosted k3s/k8s
+- Default Ports: DEV=8541, PROD=2541, NodePort=32541
+- Auto-deployment: ArgoCD/FluxCD monitors registry for updates
 - Production URL: https://blacklist.jclee.me
 - Timezone: Asia/Seoul (KST)
+- Namespace: `blacklist`
 
 **Data Sources:**
 - REGTECH (Financial Security Institute) - Requires authentication, ~1,200 IPs
@@ -47,7 +48,7 @@ gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application
 ### Container Operations
 ```bash
 # Build and deploy to registry
-./manual-deploy.sh                 # Build, push to registry, trigger Watchtower
+./manual-deploy.sh                 # Build, push to registry
 
 # Local container development
 docker-compose -f deployment/docker-compose.yml up -d --build
@@ -62,8 +63,15 @@ docker-compose -f deployment/docker-compose.yml build --no-cache
 
 ### Kubernetes Operations
 ```bash
-# Deploy to Kubernetes
-kubectl apply -f k8s/
+# Quick deployment using management script
+./scripts/k8s-management.sh init      # Initial setup
+./scripts/k8s-management.sh deploy    # Deploy application
+./scripts/k8s-management.sh status    # Check status
+./scripts/k8s-management.sh logs      # View logs
+./scripts/k8s-management.sh rollback  # Rollback to previous version
+
+# Manual Kubernetes operations
+kubectl apply -k k8s/                 # Deploy using Kustomize
 
 # Check deployment status
 kubectl get pods -n blacklist
@@ -235,16 +243,16 @@ class BaseIPSource(ABC):
 
 ### CI/CD Pipeline
 
-**GitHub Actions Workflow** (`.github/workflows/build-deploy.yml`):
+**GitHub Actions Workflow** (`.github/workflows/k8s-deploy.yml`):
 1. **Parallel Quality Checks**: Lint, security scan, tests
 2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me`
-3. **Watchtower Deployment**: Auto-detects and deploys new images
+3. **ArgoCD/FluxCD Deployment**: Auto-detects and deploys new images
 4. **Verification**: Health checks, smoke tests, performance monitoring
 5. **Automatic Rollback**: On failure, reverts to previous version
 
 **Deployment Flow**:
 ```
-Push to main → GitHub Actions → Build & Push to Registry → Watchtower Auto-Deploy → Verify → Rollback on Failure
+Push to main → GitHub Actions → Build & Push to Registry → ArgoCD Auto-Deploy → Verify → Rollback on Failure
 ```
 
 **Self-hosted Runner Compatibility**:
@@ -255,6 +263,12 @@ runs-on: self-hosted
 - uses: docker/setup-buildx-action@v2  # NOT v3
 - uses: docker/build-push-action@v4    # NOT v5
 ```
+
+**ArgoCD Image Updater Configuration**:
+- Monitors `registry.jclee.me/blacklist` for new tags
+- Automatically updates Kubernetes manifests
+- Supports semantic versioning and latest tags
+- GitOps workflow with automatic rollback
 
 ## API Endpoints Reference
 
@@ -413,20 +427,23 @@ conn.close()
 python3 init_database.py --force
 ```
 
-**Watchtower Auto-Deployment Issues**:
+**ArgoCD Auto-Deployment Issues**:
 ```bash
-# Check Watchtower logs
-docker logs watchtower -f
+# Check ArgoCD application status
+argocd app get blacklist
+argocd app sync blacklist
 
-# Manually trigger update check
-docker exec watchtower sh -c 'kill -HUP 1'
+# Check ArgoCD Image Updater logs
+kubectl logs -n argocd deployment/argocd-image-updater
 
-# Verify Watchtower labels on container
-docker inspect blacklist | grep -A 5 "Labels"
+# Manually trigger sync
+argocd app sync blacklist --force
 
-# Watchtower webhook URL
-https://watchtower.jclee.me/v1/update
-# Authorization: Bearer MySuperSecretToken12345
+# Check sync status
+argocd app wait blacklist --health
+
+# Rollback if needed
+argocd app rollback blacklist
 ```
 
 ### Integration Testing
@@ -461,30 +478,31 @@ If CI/CD fails, use manual deployment:
 docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
 docker push registry.jclee.me/blacklist:latest
 
-# On production server
-docker pull registry.jclee.me/blacklist:latest
-docker-compose -f deployment/docker-compose.yml up -d
+# Deploy to Kubernetes
+./scripts/k8s-management.sh deploy --tag latest
 
-# Or use the manual deploy script
-./manual-deploy.sh
+# Or use kubectl directly
+kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:latest -n blacklist
+kubectl rollout status deployment/blacklist -n blacklist
 ```
 
 ## Quick Fix Guide
 
 ### 502 Bad Gateway Fix
 If production returns 502:
-1. Check if `main.py` exists in repository root
-2. Verify container is running: `docker ps | grep blacklist`
-3. Check container logs: `docker logs blacklist -f`
-4. Check if app can find main.py: `docker exec blacklist ls -la /app/main.py`
-5. If main.py is missing, restore from git and push to trigger deployment
+1. Check if pods are running: `kubectl get pods -n blacklist`
+2. Check pod logs: `kubectl logs -f deployment/blacklist -n blacklist`
+3. Check service endpoints: `kubectl get endpoints -n blacklist`
+4. Check ingress status: `kubectl get ingress -n blacklist`
+5. Debug pod: `kubectl describe pod <pod-name> -n blacklist`
 
 ### Memory Issues
 If experiencing high memory usage:
-1. Check system memory: `free -h`
-2. Check Docker stats: `docker stats --no-stream`
-3. Restart container: `docker restart blacklist`
-4. Consider killing unused processes consuming memory
+1. Check pod memory usage: `kubectl top pods -n blacklist`
+2. Check node resources: `kubectl top nodes`
+3. Restart deployment: `kubectl rollout restart deployment/blacklist -n blacklist`
+4. Scale horizontally: `kubectl scale deployment/blacklist --replicas=6 -n blacklist`
+5. Check HPA status: `kubectl get hpa -n blacklist`
 
 ## Collection Logging
 
@@ -533,8 +551,9 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
 - **Backend**: Flask 2.3.3 + Gunicorn
 - **Database**: SQLite with auto-migration support
 - **Cache**: Redis (memory fallback for development)
-- **Container**: Docker/Podman with Watchtower auto-deployment
+- **Container**: Docker/Kubernetes with ArgoCD auto-deployment
 - **CI/CD**: GitHub Actions + Self-hosted Runner
+- **Orchestration**: Kubernetes (k3s/k8s) with Kustomize
 - **Monitoring**: Built-in performance metrics and health checks
 - **JSON**: orjson for high-performance serialization
 - **Data Processing**: pandas + openpyxl for Excel parsing
@@ -549,7 +568,7 @@ python3 main.py --debug
 pytest -v
 
 # Deployment
-./manual-deploy.sh
+./scripts/k8s-management.sh deploy
 
 # Health Check
 curl http://localhost:8541/health
