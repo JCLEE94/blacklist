@@ -284,7 +284,7 @@ def update_secudium_auth():
         
         # DB에 인증정보 저장
         try:
-            from ..models.settings import get_settings_manager
+            from src.models.settings import get_settings_manager
             settings_manager = get_settings_manager()
             settings_manager.set_setting('secudium_username', username, 'string', 'credentials')
             settings_manager.set_setting('secudium_password', password, 'password', 'credentials')
@@ -336,7 +336,7 @@ def settings_management():
 def get_all_settings_new():
     """모든 설정 조회 (카테고리별 그룹화)"""
     try:
-        from ..models.settings import get_settings_manager, SettingCategory
+        from src.models.settings import get_settings_manager, SettingCategory
         
         settings_manager = get_settings_manager()
         settings = settings_manager.get_all_settings()
@@ -399,7 +399,7 @@ def get_all_settings_new():
 def update_settings_bulk():
     """설정값 일괄 업데이트"""
     try:
-        from ..models.settings import get_settings_manager
+        from src.models.settings import get_settings_manager
         
         data = request.get_json()
         if not data:
@@ -446,7 +446,7 @@ def update_settings_bulk():
 def update_individual_setting(key: str):
     """개별 설정값 업데이트"""
     try:
-        from ..models.settings import get_settings_manager
+        from src.models.settings import get_settings_manager
         
         data = request.get_json()
         if not data or 'value' not in data:
@@ -478,7 +478,7 @@ def update_individual_setting(key: str):
 def reset_all_settings():
     """모든 설정을 기본값으로 리셋"""
     try:
-        from ..models.settings import get_settings_manager
+        from src.models.settings import get_settings_manager
         
         confirm = request.get_json().get('confirm', False) if request.is_json else request.form.get('confirm', 'false').lower() == 'true'
         
