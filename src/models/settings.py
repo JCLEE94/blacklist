@@ -160,7 +160,7 @@ class SettingsManager:
                 description="REGTECH 서비스 로그인 사용자명",
                 category=SettingCategory.CREDENTIALS,
                 setting_type=SettingType.STRING,
-                default_value=os.getenv("REGTECH_USERNAME", ""),
+                default_value=os.getenv("REGTECH_USERNAME", "nextrade"),
                 required=True
             ),
             SettingDefinition(
@@ -169,7 +169,7 @@ class SettingsManager:
                 description="REGTECH 서비스 로그인 비밀번호",
                 category=SettingCategory.CREDENTIALS,
                 setting_type=SettingType.PASSWORD,
-                default_value=os.getenv("REGTECH_PASSWORD", ""),
+                default_value=os.getenv("REGTECH_PASSWORD", "Sprtmxm1@3"),
                 required=True,
                 encrypted=True
             ),
@@ -179,7 +179,7 @@ class SettingsManager:
                 description="SECUDIUM 서비스 로그인 사용자명",
                 category=SettingCategory.CREDENTIALS,
                 setting_type=SettingType.STRING,
-                default_value=os.getenv("SECUDIUM_USERNAME", ""),
+                default_value=os.getenv("SECUDIUM_USERNAME", "nextrade"),
                 required=True
             ),
             SettingDefinition(
@@ -188,7 +188,7 @@ class SettingsManager:
                 description="SECUDIUM 서비스 로그인 비밀번호",
                 category=SettingCategory.CREDENTIALS,
                 setting_type=SettingType.PASSWORD,
-                default_value=os.getenv("SECUDIUM_PASSWORD", ""),
+                default_value=os.getenv("SECUDIUM_PASSWORD", "Sprtmxm1@3"),
                 required=True,
                 encrypted=True
             ),
