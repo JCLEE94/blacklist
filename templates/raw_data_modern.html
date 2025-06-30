@@ -578,7 +578,8 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadData() {
     showLoading();
     try {
-        const response = await fetch('/api/raw-data');
+        // 전체 데이터를 가져오기 위해 큰 limit 값 사용
+        const response = await fetch('/api/raw-data?limit=50000');
         const result = await response.json();
         
         // API 응답 구조 확인: result.data가 있으면 사용, 없으면 result 자체가 배열
