@@ -508,6 +508,54 @@ class UnifiedBlacklistService:
                 'error': str(e)
             }
     
+    def clear_all_database_data(self) -> Dict[str, Any]:
+        """모든 데이터베이스 데이터 삭제"""
+        try:
+            # Use blacklist_manager to clear data
+            if self.blacklist_manager:
+                self.blacklist_manager.clear_all()
+                return {
+                    'success': True,
+                    'message': 'All database data cleared'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': 'Blacklist manager not available'
+                }
+        except Exception as e:
+            self.logger.error(f"Failed to clear database data: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def set_daily_collection_config(self, enabled: bool, strategy: str, collection_days: int) -> Dict[str, Any]:
+        """일일 수집 설정"""
+        try:
+            self.daily_collection_enabled = enabled
+            self.add_collection_log('system', 'daily_collection_config', {
+                'enabled': enabled,
+                'strategy': strategy,
+                'collection_days': collection_days
+            })
+            return {
+                'success': True,
+                'enabled': enabled,
+                'strategy': strategy,
+                'collection_days': collection_days
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to set daily collection config: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def clear_all_data(self) -> Dict[str, Any]:
+        """모든 데이터 삭제 (clear_all_database_data의 별칭)"""
+        return self.clear_all_database_data()
+    
     def _get_source_counts_from_db(self) -> Dict[str, int]:
         """데이터베이스에서 소스별 IP 개수 조회"""
         source_counts = {'REGTECH': 0, 'SECUDIUM': 0, 'PUBLIC': 0}

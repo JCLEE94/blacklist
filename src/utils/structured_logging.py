@@ -28,7 +28,11 @@ class StructuredLogger:
     def __init__(self, name: str, log_dir: str = "logs"):
         self.name = name
         self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(exist_ok=True)
+        try:
+            self.log_dir.mkdir(exist_ok=True)
+        except PermissionError:
+            # Docker 환경에서 권한 문제 발생 시 로그 디렉토리 생성 건너뛰기
+            pass
         
         # 로그 버퍼 (메모리)
         self.log_buffer = deque(maxlen=10000)
@@ -69,34 +73,39 @@ class StructuredLogger:
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
             )
         
-        # 콘솔 핸들러 (개발 환경)
-        if os.getenv('FLASK_ENV') == 'development':
-            console_handler = logging.StreamHandler(sys.stdout)
-            console_handler.setLevel(logging.DEBUG)
-            console_handler.setFormatter(json_formatter)
-            logger.addHandler(console_handler)
+        # 콘솔 핸들러 (모든 환경에서 사용)
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.DEBUG if os.getenv('FLASK_ENV') == 'development' else logging.INFO)
+        console_handler.setFormatter(json_formatter)
+        logger.addHandler(console_handler)
         
-        # 파일 핸들러 (JSON 로그)
-        json_file = self.log_dir / f"{self.name}.json"
-        json_handler = logging.handlers.RotatingFileHandler(
-            json_file,
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5
-        )
-        json_handler.setLevel(logging.INFO)
-        json_handler.setFormatter(json_formatter)
-        logger.addHandler(json_handler)
-        
-        # 에러 파일 핸들러
-        error_file = self.log_dir / f"{self.name}_errors.log"
-        error_handler = logging.handlers.RotatingFileHandler(
-            error_file,
-            maxBytes=5 * 1024 * 1024,  # 5MB
-            backupCount=3
-        )
-        error_handler.setLevel(logging.ERROR)
-        error_handler.setFormatter(json_formatter)
-        logger.addHandler(error_handler)
+        # 파일 핸들러는 권한 문제로 인해 일시적으로 비활성화
+        # Docker 환경에서 로그 폴더 권한 설정 후 활성화 필요
+        try:
+            # 파일 핸들러 (JSON 로그)
+            json_file = self.log_dir / f"{self.name}.json"
+            json_handler = logging.handlers.RotatingFileHandler(
+                json_file,
+                maxBytes=10 * 1024 * 1024,  # 10MB
+                backupCount=5
+            )
+            json_handler.setLevel(logging.INFO)
+            json_handler.setFormatter(json_formatter)
+            logger.addHandler(json_handler)
+            
+            # 에러 파일 핸들러
+            error_file = self.log_dir / f"{self.name}_errors.log"
+            error_handler = logging.handlers.RotatingFileHandler(
+                error_file,
+                maxBytes=5 * 1024 * 1024,  # 5MB
+                backupCount=3
+            )
+            error_handler.setLevel(logging.ERROR)
+            error_handler.setFormatter(json_formatter)
+            logger.addHandler(error_handler)
+        except PermissionError:
+            # 파일 권한 문제 발생시 콘솔 로깅만 사용
+            logger.warning("File logging disabled due to permission issues")
         
         # 커스텀 버퍼 핸들러
         buffer_handler = BufferHandler(self)
@@ -107,9 +116,13 @@ class StructuredLogger:
     
     def _setup_log_db(self):
         """로그 데이터베이스 설정"""
-        db_path = self.log_dir / "logs.db"
-        conn = sqlite3.connect(str(db_path))
-        cursor = conn.cursor()
+        try:
+            db_path = self.log_dir / "logs.db"
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+        except (PermissionError, sqlite3.OperationalError):
+            # Docker 환경에서 권한 문제 발생 시 DB 로깅 비활성화
+            return
         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS structured_logs (
