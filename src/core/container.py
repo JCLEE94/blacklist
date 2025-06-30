@@ -234,20 +234,19 @@ class BlacklistContainer(ServiceContainer):
             dependencies={'cache': 'cache'}
         )
         
-        # Collection Manager - 설정 기반 경로 사용
+        # Collection Manager - Docker 환경 기반 경로 사용
         try:
             from .collection_manager import CollectionManager
+            import os
             
-            # 설정에서 경로 가져오기
-            db_uri = settings.database_uri
-            if db_uri.startswith('sqlite:///'):
-                db_path = db_uri[10:]  # 'sqlite:///' 제거
-            elif db_uri.startswith('sqlite://'):
-                db_path = db_uri[9:]   # 'sqlite://' 제거
-            else:
-                db_path = str(settings.instance_dir / 'blacklist.db')
+            # Docker 환경에서는 고정 경로 사용
+            db_path = '/app/instance/blacklist.db'
+            config_path = '/app/instance/collection_config.json'
             
-            config_path = str(settings.instance_dir / 'collection_config.json')
+            # 로컬 개발 환경에서는 상대 경로
+            if not os.path.exists('/app'):
+                db_path = 'instance/blacklist.db'
+                config_path = 'instance/collection_config.json'
             
             self.register(
                 'collection_manager',
@@ -255,7 +254,7 @@ class BlacklistContainer(ServiceContainer):
                 factory=lambda: CollectionManager(db_path=db_path, config_path=config_path),
                 dependencies={}
             )
-            logger.info("Collection Manager registered in container")
+            logger.info(f"Collection Manager registered with db_path: {db_path}")
         except Exception as e:
             logger.warning(f"Collection Manager registration failed: {e}")
         

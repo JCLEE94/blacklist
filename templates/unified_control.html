@@ -480,9 +480,9 @@ class UnifiedControl {
             document.getElementById('enable-collection').disabled = statusData.collection_enabled;
             document.getElementById('disable-collection').disabled = !statusData.collection_enabled;
             
-            // Update trigger buttons
-            document.getElementById('regtech-trigger').disabled = !statusData.collection_enabled;
-            document.getElementById('secudium-trigger').disabled = !statusData.collection_enabled;
+            // Update trigger buttons (수동수집은 항상 활성화)
+            document.getElementById('regtech-trigger').disabled = false;
+            document.getElementById('secudium-trigger').disabled = false;
             
             // Check daily collection status
             this.checkDailyCollectionStatus();

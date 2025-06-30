@@ -1299,18 +1299,12 @@ def trigger_secudium_collection():
 def enable_daily_collection():
     """일일 자동 수집 활성화"""
     try:
-        # Collection manager를 통해 활성화
-        if hasattr(app, 'container') and app.container:
-            collection_manager = app.container.resolve('collection_manager')
-            if collection_manager:
-                result = collection_manager.enable_daily_collection()
-                return jsonify(result)
-        
-        # Fallback
+        # Service를 통해 활성화
+        result = service.enable_daily_collection()
         return jsonify({
             'success': True,
             'message': '일일 자동 수집이 활성화되었습니다.',
-            'daily_collection_enabled': True
+            'data': result
         })
     except Exception as e:
         logger.error(f"Daily collection enable error: {e}")
@@ -1321,18 +1315,12 @@ def enable_daily_collection():
 def disable_daily_collection():
     """일일 자동 수집 비활성화"""
     try:
-        # Collection manager를 통해 비활성화
-        if hasattr(app, 'container') and app.container:
-            collection_manager = app.container.resolve('collection_manager')
-            if collection_manager:
-                result = collection_manager.disable_daily_collection()
-                return jsonify(result)
-        
-        # Fallback
+        # Service를 통해 비활성화
+        result = service.disable_daily_collection()
         return jsonify({
             'success': True,
             'message': '일일 자동 수집이 비활성화되었습니다.',
-            'daily_collection_enabled': False
+            'data': result
         })
     except Exception as e:
         logger.error(f"Daily collection disable error: {e}")

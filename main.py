@@ -29,50 +29,54 @@ def ensure_database_schema():
     """데이터베이스 스키마 확인 및 수정"""
     import sqlite3
     
-    db_paths = [
-        '/app/instance/blacklist.db',
-        'instance/blacklist.db',
-        os.path.join(current_dir, 'instance', 'blacklist.db')
-    ]
+    # Docker 환경 우선 경로 설정
+    if os.path.exists('/app'):
+        # Docker 환경
+        db_path = '/app/instance/blacklist.db'
+        instance_dir = '/app/instance'
+    else:
+        # 로컬 개발 환경
+        db_path = os.path.join(current_dir, 'instance', 'blacklist.db')
+        instance_dir = os.path.join(current_dir, 'instance')
     
-    db_path = None
-    for path in db_paths:
-        if os.path.exists(path):
-            db_path = path
-            break
+    # instance 디렉토리 생성
+    os.makedirs(instance_dir, exist_ok=True)
     
-    if db_path:
-        logger.info(f"데이터베이스 스키마 확인 중: {db_path}")
+    logger.info(f"데이터베이스 스키마 확인 중: {db_path}")
+    
+    try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
-        try:
-            # 현재 스키마 확인
-            cursor.execute("PRAGMA table_info(blacklist_ip)")
-            columns = cursor.fetchall()
-            column_names = [col[1] for col in columns]
-            
-            # 필요한 컬럼들 확인 및 추가
-            required_columns = {
-                'detection_date': 'TIMESTAMP',
-                'reason': 'TEXT',
-                'threat_level': 'VARCHAR(20)',
-                'is_active': 'BOOLEAN DEFAULT 1',
-                'updated_at': 'TIMESTAMP'
-            }
-            
-            for col_name, col_type in required_columns.items():
-                if col_name not in column_names:
-                    logger.info(f"Adding missing column: {col_name}")
-                    cursor.execute(f"ALTER TABLE blacklist_ip ADD COLUMN {col_name} {col_type}")
-            
-            conn.commit()
-            logger.info("✅ 데이터베이스 스키마 확인 완료")
-            
-        except Exception as e:
-            logger.error(f"스키마 수정 중 오류: {e}")
+        # 기본 테이블 생성 (없는 경우)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS blacklist_ip (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address VARCHAR(45) NOT NULL,
+                source VARCHAR(50) NOT NULL,
+                detection_date TIMESTAMP,
+                reason TEXT,
+                threat_level VARCHAR(20),
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP
+            )
+        """)
+        
+        # 인덱스 생성
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ip_address ON blacklist_ip(ip_address)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_source ON blacklist_ip(source)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_is_active ON blacklist_ip(is_active)")
+        
+        conn.commit()
+        logger.info("✅ 데이터베이스 스키마 확인 완료")
+        
+    except Exception as e:
+        logger.error(f"데이터베이스 초기화 오류: {e}")
+        if 'conn' in locals():
             conn.rollback()
-        finally:
+    finally:
+        if 'conn' in locals():
             conn.close()
 
 # 애플리케이션 시작 전 스키마 확인

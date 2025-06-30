@@ -55,6 +55,10 @@ class UnifiedBlacklistService:
         self.collection_logs = []
         self.max_logs = 1000
         
+        # 수집 상태 관리 (메모리)
+        self.collection_enabled = True
+        self.daily_collection_enabled = False
+        
         # Initialize core services immediately
         try:
             self.blacklist_manager = self.container.resolve('blacklist_manager')
@@ -530,63 +534,50 @@ class UnifiedBlacklistService:
     def get_collection_status(self) -> Dict[str, Any]:
         """수집 시스템 상태 조회"""
         try:
-            if self.collection_manager:
-                # Get status from collection manager
-                cm_status = self.collection_manager.get_status()
-                
-                # Return properly formatted response
-                return {
-                    'enabled': cm_status.get('collection_enabled', False),
-                    'status': cm_status.get('status', 'inactive'),
-                    'sources': cm_status.get('sources', {}),
-                    'stats': {
-                        'total_ips': cm_status.get('summary', {}).get('total_ips_collected', 0),
-                        'today_collected': 0  # Placeholder
+            # 메모리 상태와 DB 통계 조합
+            stats = self.get_blacklist_summary()
+            
+            return {
+                'collection_enabled': self.collection_enabled,
+                'daily_collection_enabled': self.daily_collection_enabled,
+                'status': 'active' if self.collection_enabled else 'inactive',
+                'sources': {
+                    'regtech': {
+                        'enabled': True,
+                        'status': 'ready',
+                        'last_collection': None
                     },
-                    'last_collection': cm_status.get('last_updated'),
-                    'last_enabled_at': cm_status.get('last_enabled_at'),
-                    'last_disabled_at': cm_status.get('last_disabled_at')
-                }
-            else:
-                # Fallback when collection_manager is not available
-                # Get actual counts from database
-                source_counts = self._get_source_counts_from_db()
-                total_ips = sum(source_counts.values())
-                
-                return {
-                    'enabled': True,
-                    'status': 'active',
-                    'sources': {
-                        'regtech': {
-                            'enabled': self.config.get('regtech_enabled', True),
-                            'status': 'has_data' if source_counts.get('REGTECH', 0) > 0 else 'no_data',
-                            'total_ips': source_counts.get('REGTECH', 0),
-                            'name': 'REGTECH (금융보안원)',
-                            'manual_only': True,
-                            'last_collection': None
-                        },
-                        'secudium': {
-                            'enabled': self.config.get('secudium_enabled', True),
-                            'status': 'has_data' if source_counts.get('SECUDIUM', 0) > 0 else 'no_data',
-                            'total_ips': source_counts.get('SECUDIUM', 0),
-                            'name': 'SECUDIUM (에스케이인포섹)',
-                            'manual_only': True,
-                            'last_collection': None
-                        }
-                    },
-                    'stats': {
-                        'total_ips': total_ips,
-                        'today_collected': 0
-                    },
-                    'last_collection': datetime.now().isoformat()
-                }
+                    'secudium': {
+                        'enabled': True,
+                        'status': 'ready', 
+                        'last_collection': None
+                    }
+                },
+                'stats': {
+                    'total_ips': stats.get('total_ips', 0),
+                    'active_ips': stats.get('active_ips', 0),
+                    'regtech_count': stats.get('regtech_count', 0),
+                    'secudium_count': stats.get('secudium_count', 0),
+                    'today_collected': 0
+                },
+                'last_collection': None,
+                'last_enabled_at': None,
+                'last_disabled_at': None
         except Exception as e:
             self.logger.error(f"수집 상태 조회 실패: {e}")
             return {
-                'enabled': False,
+                'collection_enabled': False,
+                'daily_collection_enabled': False,
                 'status': 'error',
                 'error': str(e),
-                'sources': {}
+                'sources': {},
+                'stats': {
+                    'total_ips': 0,
+                    'active_ips': 0,
+                    'regtech_count': 0,
+                    'secudium_count': 0,
+                    'today_collected': 0
+                }
             }
     
     def get_system_health(self) -> Dict[str, Any]:
@@ -1023,13 +1014,18 @@ class UnifiedBlacklistService:
     def enable_collection(self) -> Dict[str, Any]:
         """수집 시스템 활성화 (동기 버전)"""
         try:
-            if self.collection_manager:
-                result = self.collection_manager.enable_collection()
-                self.logger.info("✅ 수집 시스템 활성화됨")
-                return result
-            else:
-                self.logger.info("✅ 내장 수집 시스템 활성화됨")
-                return {'success': True, 'message': '내장 수집 시스템이 활성화되었습니다', 'collection_enabled': True}
+            # 기존 데이터 클리어
+            self.clear_all_database_data()
+            
+            # 메모리에서 수집 상태 활성화
+            self.collection_enabled = True
+            
+            self.logger.info("✅ 수집 시스템 활성화됨 (기존 데이터 클리어됨)")
+            return {
+                'success': True, 
+                'message': '수집 시스템이 활성화되었습니다. 기존 데이터가 클리어되었습니다.', 
+                'collection_enabled': True
+            }
         except Exception as e:
             self.logger.error(f"수집 시스템 활성화 실패: {e}")
             return {'success': False, 'error': str(e)}
@@ -1037,15 +1033,49 @@ class UnifiedBlacklistService:
     def disable_collection(self) -> Dict[str, Any]:
         """수집 시스템 비활성화 (동기 버전)"""
         try:
-            if self.collection_manager:
-                result = self.collection_manager.disable_collection()
-                self.logger.info("⏹️ 수집 시스템 비활성화됨")
-                return result
-            else:
-                self.logger.info("⏹️ 내장 수집 시스템 비활성화됨")
-                return {'success': True, 'message': '내장 수집 시스템이 비활성화되었습니다', 'collection_enabled': False}
+            # 메모리에서 수집 상태 비활성화
+            self.collection_enabled = False
+            
+            self.logger.info("⏹️ 수집 시스템 비활성화됨")
+            return {
+                'success': True, 
+                'message': '수집 시스템이 비활성화되었습니다', 
+                'collection_enabled': False
+            }
         except Exception as e:
             self.logger.error(f"수집 시스템 비활성화 실패: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def enable_daily_collection(self) -> Dict[str, Any]:
+        """일일 자동 수집 활성화"""
+        try:
+            # 메모리에서 일일 수집 상태 활성화
+            self.daily_collection_enabled = True
+            
+            self.logger.info("📅 일일 자동 수집 활성화됨")
+            return {
+                'success': True, 
+                'message': '일일 자동 수집이 활성화되었습니다', 
+                'daily_collection_enabled': True
+            }
+        except Exception as e:
+            self.logger.error(f"일일 자동 수집 활성화 실패: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def disable_daily_collection(self) -> Dict[str, Any]:
+        """일일 자동 수집 비활성화"""
+        try:
+            # 메모리에서 일일 수집 상태 비활성화
+            self.daily_collection_enabled = False
+            
+            self.logger.info("📅 일일 자동 수집 비활성화됨")
+            return {
+                'success': True, 
+                'message': '일일 자동 수집이 비활성화되었습니다', 
+                'daily_collection_enabled': False
+            }
+        except Exception as e:
+            self.logger.error(f"일일 자동 수집 비활성화 실패: {e}")
             return {'success': False, 'error': str(e)}
     
     def trigger_collection(self, source: str = 'all') -> str:
