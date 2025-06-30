@@ -338,45 +338,137 @@ class SecudiumCollector:
                                     logger.info(f"엑셀 로드 성공", 
                                               rows=df.shape[0], columns=df.shape[1], file=file_name)
                                     
-                                    # 날짜 컬럼 찾기
+                                    # 컬럼 매핑 정의
+                                    ip_columns = []
                                     date_columns = []
+                                    time_columns = []
+                                    country_columns = []
+                                    attack_type_columns = []
+                                    description_columns = []
+                                    
+                                    # 컬럼 분석 및 매핑
                                     for col in df.columns:
                                         col_str = str(col).lower()
-                                        if any(keyword in col_str for keyword in ['date', '날짜', '등록', '탐지', 'reg', 'detect']):
-                                            date_columns.append(col)
-                                    
-                                    logger.info(f"발견된 날짜 컬럼: {date_columns}")
-                                    
-                                    # 행별로 IP와 날짜 매핑하여 수집
-                                    for index, row in df.iterrows():
-                                        row_date = self._extract_date_from_filename(file_name)  # 기본값
                                         
-                                        # 행에서 날짜 찾기
+                                        # IP 컬럼 찾기
+                                        if any(keyword in col_str for keyword in ['ip', 'address', '주소', 'addr']):
+                                            ip_columns.append(col)
+                                        
+                                        # 날짜 컬럼 찾기
+                                        elif any(keyword in col_str for keyword in ['date', '날짜', '등록', '탐지', 'reg', 'detect']):
+                                            date_columns.append(col)
+                                        
+                                        # 시간 컬럼 찾기
+                                        elif any(keyword in col_str for keyword in ['time', '시간', '시각']):
+                                            time_columns.append(col)
+                                        
+                                        # 국가 컬럼 찾기
+                                        elif any(keyword in col_str for keyword in ['country', '국가', 'nation', 'location']):
+                                            country_columns.append(col)
+                                        
+                                        # 공격유형 컬럼 찾기
+                                        elif any(keyword in col_str for keyword in ['type', '유형', '종류', 'attack', 'threat', 'category']):
+                                            attack_type_columns.append(col)
+                                        
+                                        # 설명/상세정보 컬럼 찾기
+                                        elif any(keyword in col_str for keyword in ['desc', '설명', '상세', 'detail', 'info', 'reason', '사유']):
+                                            description_columns.append(col)
+                                    
+                                    logger.info(f"컬럼 매핑 완료: IP={len(ip_columns)}, 날짜={len(date_columns)}, 시간={len(time_columns)}, 국가={len(country_columns)}, 공격유형={len(attack_type_columns)}")
+                                    
+                                    # 행별로 모든 정보 추출
+                                    for index, row in df.iterrows():
+                                        # 기본값 설정
+                                        ip_address = None
+                                        detection_date = self._extract_date_from_filename(file_name)
+                                        detection_time = None
+                                        country = 'Unknown'
+                                        attack_type = 'SECUDIUM'
+                                        description = ''
+                                        
+                                        # IP 주소 찾기 (우선순위: 전용 컬럼 > 모든 컬럼 스캔)
+                                        for col in ip_columns or df.columns:
+                                            value = row.get(col)
+                                            if pd.notna(value) and isinstance(value, str):
+                                                str_value = value.strip()
+                                                if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
+                                                    if self._is_valid_ip(str_value):
+                                                        ip_address = str_value
+                                                        break
+                                        
+                                        if not ip_address:
+                                            continue  # IP가 없으면 건너뛰기
+                                        
+                                        # 날짜 정보 추출
                                         for date_col in date_columns:
                                             date_value = row.get(date_col)
                                             if pd.notna(date_value):
                                                 try:
                                                     if isinstance(date_value, pd.Timestamp):
-                                                        row_date = date_value.strftime('%Y-%m-%d')
+                                                        detection_date = date_value.strftime('%Y-%m-%d')
+                                                        if date_value.hour or date_value.minute:
+                                                            detection_time = date_value.strftime('%H:%M:%S')
                                                     elif isinstance(date_value, str):
-                                                        # 문자열 날짜 파싱
                                                         parsed = pd.to_datetime(date_value, errors='coerce')
                                                         if pd.notna(parsed):
-                                                            row_date = parsed.strftime('%Y-%m-%d')
+                                                            detection_date = parsed.strftime('%Y-%m-%d')
+                                                            if parsed.hour or parsed.minute:
+                                                                detection_time = parsed.strftime('%H:%M:%S')
                                                 except:
                                                     pass
                                                 break
                                         
-                                        # 행에서 IP 찾기
-                                        for col in df.columns:
-                                            value = row.get(col)
-                                            if pd.notna(value) and isinstance(value, str):
-                                                str_value = value.strip()
-                                                # IP 패턴 확인
-                                                if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
-                                                    if self._is_valid_ip(str_value):
-                                                        # IP와 날짜를 튜플로 저장
-                                                        collected_ips.add((str_value, row_date))
+                                        # 시간 정보 추출 (별도 시간 컬럼이 있는 경우)
+                                        if not detection_time:
+                                            for time_col in time_columns:
+                                                time_value = row.get(time_col)
+                                                if pd.notna(time_value):
+                                                    try:
+                                                        if isinstance(time_value, pd.Timestamp):
+                                                            detection_time = time_value.strftime('%H:%M:%S')
+                                                        elif isinstance(time_value, str):
+                                                            # 시간 문자열 파싱
+                                                            time_str = str(time_value).strip()
+                                                            if ':' in time_str:
+                                                                detection_time = time_str
+                                                    except:
+                                                        pass
+                                                    break
+                                        
+                                        # 국가 정보 추출
+                                        for country_col in country_columns:
+                                            country_value = row.get(country_col)
+                                            if pd.notna(country_value) and str(country_value).strip():
+                                                country = str(country_value).strip()
+                                                break
+                                        
+                                        # 공격유형 추출
+                                        for attack_col in attack_type_columns:
+                                            attack_value = row.get(attack_col)
+                                            if pd.notna(attack_value) and str(attack_value).strip():
+                                                attack_type = str(attack_value).strip()
+                                                break
+                                        
+                                        # 상세설명 추출
+                                        desc_parts = []
+                                        for desc_col in description_columns:
+                                            desc_value = row.get(desc_col)
+                                            if pd.notna(desc_value) and str(desc_value).strip():
+                                                desc_parts.append(str(desc_value).strip())
+                                        
+                                        if desc_parts:
+                                            description = ' | '.join(desc_parts)
+                                        
+                                        # 완전한 정보를 튜플로 저장
+                                        full_info = {
+                                            'ip': ip_address,
+                                            'date': detection_date,
+                                            'time': detection_time,
+                                            'country': country,
+                                            'attack_type': attack_type,
+                                            'description': description
+                                        }
+                                        collected_ips.add((ip_address, full_info))
                                     
                                     os.remove(temp_file)
                                     logger.info(f"IP 수집 완료", 
@@ -389,41 +481,124 @@ class SecudiumCollector:
                                     try:
                                         df = pd.read_excel(temp_file, engine='xlrd')
                                         
-                                        # 날짜 컬럼 찾기 (XLS에서도)
+                                        # 컬럼 매핑 정의 (XLS에서도 동일)
+                                        ip_columns = []
                                         date_columns = []
+                                        time_columns = []
+                                        country_columns = []
+                                        attack_type_columns = []
+                                        description_columns = []
+                                        
+                                        # 컬럼 분석 및 매핑
                                         for col in df.columns:
                                             col_str = str(col).lower()
-                                            if any(keyword in col_str for keyword in ['date', '날짜', '등록', '탐지', 'reg', 'detect']):
+                                            
+                                            if any(keyword in col_str for keyword in ['ip', 'address', '주소', 'addr']):
+                                                ip_columns.append(col)
+                                            elif any(keyword in col_str for keyword in ['date', '날짜', '등록', '탐지', 'reg', 'detect']):
                                                 date_columns.append(col)
+                                            elif any(keyword in col_str for keyword in ['time', '시간', '시각']):
+                                                time_columns.append(col)
+                                            elif any(keyword in col_str for keyword in ['country', '국가', 'nation', 'location']):
+                                                country_columns.append(col)
+                                            elif any(keyword in col_str for keyword in ['type', '유형', '종류', 'attack', 'threat', 'category']):
+                                                attack_type_columns.append(col)
+                                            elif any(keyword in col_str for keyword in ['desc', '설명', '상세', 'detail', 'info', 'reason', '사유']):
+                                                description_columns.append(col)
                                         
-                                        # 행별로 처리하여 IP와 날짜 매핑
+                                        # 행별로 모든 정보 추출 (XLS)
                                         for index, row in df.iterrows():
-                                            row_date = self._extract_date_from_filename(file_name)  # 기본값
+                                            # 기본값 설정
+                                            ip_address = None
+                                            detection_date = self._extract_date_from_filename(file_name)
+                                            detection_time = None
+                                            country = 'Unknown'
+                                            attack_type = 'SECUDIUM'
+                                            description = ''
                                             
-                                            # 행에서 날짜 찾기
-                                            for date_col in date_columns:
-                                                date_value = row.get(date_col)
-                                                if pd.notna(date_value):
-                                                    try:
-                                                        if isinstance(date_value, pd.Timestamp):
-                                                            row_date = date_value.strftime('%Y-%m-%d')
-                                                        elif isinstance(date_value, str):
-                                                            parsed = pd.to_datetime(date_value, errors='coerce')
-                                                            if pd.notna(parsed):
-                                                                row_date = parsed.strftime('%Y-%m-%d')
-                                                    except:
-                                                        pass
-                                                    break
-                                            
-                                            # 행에서 IP 찾기
-                                            for col in df.columns:
+                                            # IP 주소 찾기
+                                            for col in ip_columns or df.columns:
                                                 if df[col].dtype == 'object':
                                                     value = row.get(col)
                                                     if pd.notna(value):
                                                         str_value = str(value).strip()
                                                         if re.match(r'^\d+\.\d+\.\d+\.\d+$', str_value):
                                                             if self._is_valid_ip(str_value):
-                                                                collected_ips.add((str_value, row_date))
+                                                                ip_address = str_value
+                                                                break
+                                            
+                                            if not ip_address:
+                                                continue
+                                            
+                                            # 날짜/시간 정보 추출
+                                            for date_col in date_columns:
+                                                date_value = row.get(date_col)
+                                                if pd.notna(date_value):
+                                                    try:
+                                                        if isinstance(date_value, pd.Timestamp):
+                                                            detection_date = date_value.strftime('%Y-%m-%d')
+                                                            if date_value.hour or date_value.minute:
+                                                                detection_time = date_value.strftime('%H:%M:%S')
+                                                        elif isinstance(date_value, str):
+                                                            parsed = pd.to_datetime(date_value, errors='coerce')
+                                                            if pd.notna(parsed):
+                                                                detection_date = parsed.strftime('%Y-%m-%d')
+                                                                if parsed.hour or parsed.minute:
+                                                                    detection_time = parsed.strftime('%H:%M:%S')
+                                                    except:
+                                                        pass
+                                                    break
+                                            
+                                            # 시간 정보 추출
+                                            if not detection_time:
+                                                for time_col in time_columns:
+                                                    time_value = row.get(time_col)
+                                                    if pd.notna(time_value):
+                                                        try:
+                                                            if isinstance(time_value, pd.Timestamp):
+                                                                detection_time = time_value.strftime('%H:%M:%S')
+                                                            elif isinstance(time_value, str):
+                                                                time_str = str(time_value).strip()
+                                                                if ':' in time_str:
+                                                                    detection_time = time_str
+                                                        except:
+                                                            pass
+                                                        break
+                                            
+                                            # 국가 정보 추출
+                                            for country_col in country_columns:
+                                                country_value = row.get(country_col)
+                                                if pd.notna(country_value) and str(country_value).strip():
+                                                    country = str(country_value).strip()
+                                                    break
+                                            
+                                            # 공격유형 추출
+                                            for attack_col in attack_type_columns:
+                                                attack_value = row.get(attack_col)
+                                                if pd.notna(attack_value) and str(attack_value).strip():
+                                                    attack_type = str(attack_value).strip()
+                                                    break
+                                            
+                                            # 상세설명 추출
+                                            desc_parts = []
+                                            for desc_col in description_columns:
+                                                desc_value = row.get(desc_col)
+                                                if pd.notna(desc_value) and str(desc_value).strip():
+                                                    desc_parts.append(str(desc_value).strip())
+                                            
+                                            if desc_parts:
+                                                description = ' | '.join(desc_parts)
+                                            
+                                            # 완전한 정보를 튜플로 저장
+                                            full_info = {
+                                                'ip': ip_address,
+                                                'date': detection_date,
+                                                'time': detection_time,
+                                                'country': country,
+                                                'attack_type': attack_type,
+                                                'description': description
+                                            }
+                                            collected_ips.add((ip_address, full_info))
                                         
                                         logger.info(f"XLS 형식으로 IP 수집 성공", 
                                                   file=file_name, ip_count=len(collected_ips))
@@ -442,30 +617,58 @@ class SecudiumCollector:
                     continue
             
             if collected_ips:
-                # BlacklistEntry 객체로 변환 - 개별 날짜 사용
+                # BlacklistEntry 객체로 변환 - 모든 정보 포함
                 entries = []
                 for ip_tuple in collected_ips:
-                    # collected_ips는 이제 (ip, date) 튜플의 집합
+                    # collected_ips는 이제 (ip, full_info) 튜플의 집합
                     if isinstance(ip_tuple, tuple) and len(ip_tuple) == 2:
-                        ip, detection_date = ip_tuple
+                        ip, info = ip_tuple
+                        if isinstance(info, dict):
+                            # 새로운 형식: 모든 정보 포함
+                            detection_date = info.get('date', '')
+                            detection_time = info.get('time')
+                            country = info.get('country', 'Unknown')
+                            attack_type = info.get('attack_type', 'SECUDIUM')
+                            description = info.get('description', '')
+                        else:
+                            # 이전 형식: (ip, date) 튜플
+                            detection_date = str(info)
+                            detection_time = None
+                            country = 'Unknown'
+                            attack_type = 'SECUDIUM'
+                            description = ''
                     else:
                         # 이전 형식 호환성 (단순 IP 문자열)
                         ip = ip_tuple
                         detection_date = self._extract_date_from_filename(file_name if 'file_name' in locals() else '')
+                        detection_time = None
+                        country = 'Unknown'
+                        attack_type = 'SECUDIUM'
+                        description = ''
+                    
+                    # 상세 정보 구성
+                    source_details = {
+                        'type': 'SECUDIUM_WEB',
+                        'collection_method': 'excel_download',
+                        'attack_type': attack_type
+                    }
+                    
+                    if detection_time:
+                        source_details['detection_time'] = detection_time
+                    
+                    if description:
+                        source_details['description'] = description
                     
                     entry = BlacklistEntry(
                         ip_address=ip,
-                        country='Unknown',
-                        reason='SECUDIUM',
+                        country=country,
+                        reason=attack_type,  # 엑셀에서 추출한 공격유형 사용
                         source='SECUDIUM',
                         reg_date=detection_date,  # 엑셀에서 추출한 개별 날짜 사용
                         exp_date=None,
                         is_active=True,
                         threat_level='high',
-                        source_details={
-                            'type': 'SECUDIUM_WEB',
-                            'collection_method': 'excel_download'
-                        }
+                        source_details=source_details
                     )
                     entries.append(entry)
                 
