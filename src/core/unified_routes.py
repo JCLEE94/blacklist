@@ -1098,6 +1098,54 @@ def get_source_distribution():
             'error': str(e)
         }), 500
 
+@unified_bp.route('/api/stats/monthly', methods=['GET'])
+def get_monthly_stats():
+    """월별 통계 데이터"""
+    try:
+        from datetime import datetime, timedelta
+        import calendar
+        
+        # 최근 6개월 데이터 생성
+        monthly_data = []
+        current_date = datetime.now()
+        
+        # 각 소스별 데이터를 시뮬레이션 (실제 데이터베이스에서 월별 통계 조회 필요)
+        for i in range(5, -1, -1):  # 6개월 전부터 현재까지
+            month_date = current_date - timedelta(days=30*i)
+            month_name = month_date.strftime('%Y-%m')
+            
+            # 월별 통계 조회 (실제로는 DB에서 조회해야 함)
+            if i == 0:  # 현재 월
+                stats = service.get_system_health()
+                regtech_count = stats.get('regtech_count', 0)
+                secudium_count = stats.get('secudium_count', 0)
+                public_count = stats.get('public_count', 0)
+            else:
+                # 이전 월은 임시 데이터 (실제로는 DB 조회 필요)
+                regtech_count = 0
+                secudium_count = 0
+                public_count = 0
+            
+            monthly_data.append({
+                'month': month_name,
+                'regtech': regtech_count,
+                'secudium': secudium_count,
+                'public': public_count,
+                'total': regtech_count + secudium_count + public_count
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': monthly_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Monthly stats error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @unified_bp.route('/api/stats/monthly-data-old', methods=['GET'])
 def get_monthly_data_old():
     """월별 데이터 (구버전)"""

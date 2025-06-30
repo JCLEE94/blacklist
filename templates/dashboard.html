@@ -312,7 +312,7 @@ let monthlyChart;
 // Fetch real monthly data
 async function loadMonthlyData() {
     try {
-        const response = await fetch('/api/stats/monthly-data');
+        const response = await fetch('/api/stats/monthly');
         const result = await response.json();
         
         if (result.success) {
@@ -334,6 +334,14 @@ function updateMonthlyChart(monthlyData) {
     gradient.addColorStop(0, 'rgba(80, 70, 229, 0.2)');
     gradient.addColorStop(1, 'rgba(80, 70, 229, 0)');
     
+    const gradient2 = monthlyCtx.createLinearGradient(0, 0, 0, 400);
+    gradient2.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+    gradient2.addColorStop(1, 'rgba(16, 185, 129, 0)');
+    
+    const gradient3 = monthlyCtx.createLinearGradient(0, 0, 0, 400);
+    gradient3.addColorStop(0, 'rgba(245, 158, 11, 0.2)');
+    gradient3.addColorStop(1, 'rgba(245, 158, 11, 0)');
+    
     if (monthlyChart) {
         monthlyChart.destroy();
     }
@@ -341,24 +349,47 @@ function updateMonthlyChart(monthlyData) {
     monthlyChart = new Chart(monthlyCtx, {
         type: 'line',
         data: {
-            labels: monthlyData.map(d => d.label || d.month),
+            labels: monthlyData.map(d => d.month),
             datasets: [{
-                label: '차단 IP 수',
-                data: monthlyData.map(d => d.active_ips || d.total_ips || 0),
-            borderColor: '#5046e5',
-            backgroundColor: gradient,
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointRadius: 6,
-            pointHoverRadius: 8,
-            pointBackgroundColor: '#5046e5',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#5046e5',
-            pointHoverBorderWidth: 3
-        }]
+                label: 'REGTECH',
+                data: monthlyData.map(d => d.regtech || 0),
+                borderColor: '#5046e5',
+                backgroundColor: gradient,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#5046e5',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+            }, {
+                label: 'SECUDIUM',
+                data: monthlyData.map(d => d.secudium || 0),
+                borderColor: '#10b981',
+                backgroundColor: gradient2,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#10b981',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+            }, {
+                label: 'Public',
+                data: monthlyData.map(d => d.public || 0),
+                borderColor: '#f59e0b',
+                backgroundColor: gradient3,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#f59e0b',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+            }]
     },
     options: {
         responsive: true,
@@ -369,7 +400,15 @@ function updateMonthlyChart(monthlyData) {
         },
         plugins: {
             legend: {
-                display: false
+                display: true,
+                position: 'top',
+                labels: {
+                    padding: 15,
+                    font: {
+                        size: 12
+                    },
+                    usePointStyle: true
+                }
             },
             tooltip: {
                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -384,7 +423,7 @@ function updateMonthlyChart(monthlyData) {
                 },
                 callbacks: {
                     label: function(context) {
-                        return '차단 IP: ' + context.parsed.y.toLocaleString() + '개';
+                        return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + '개';
                     }
                 }
             }
@@ -421,49 +460,92 @@ function updateMonthlyChart(monthlyData) {
 
 // Source distribution chart
 const sourceCtx = document.getElementById('sourceChart').getContext('2d');
-const sourceDistribution = {{ source_distribution | tojson }} || {};
-const chartData = [
-    sourceDistribution.regtech?.percentage || 0,
-    sourceDistribution.secudium?.percentage || 0,
-    sourceDistribution.public?.percentage || 0
-];
+let sourceChart;
 
-new Chart(sourceCtx, {
-    type: 'doughnut',
-    data: {
-        labels: ['REGTECH Blacklist IP', 'SECUDIUM Blacklist IP', 'Public Sources'],
-        datasets: [{
-            data: chartData,
-            backgroundColor: [
-                '#5046e5',
-                '#10b981',
-                '#f59e0b'
-            ],
-            borderWidth: 0,
-            hoverOffset: 4
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '70%',
-        plugins: {
-            legend: {
-                display: false
+// Initialize source chart with data
+function initializeSourceChart() {
+    const sourceDistribution = {{ source_distribution | tojson }} || {};
+    updateSourceChart({
+        regtech: sourceDistribution.regtech || { count: 0, percentage: 0 },
+        secudium: sourceDistribution.secudium || { count: 0, percentage: 0 },
+        public: sourceDistribution.public || { count: 0, percentage: 0 }
+    });
+}
+
+// Update source chart function
+function updateSourceChart(distribution) {
+    const chartData = [
+        distribution.regtech?.percentage || 0,
+        distribution.secudium?.percentage || 0,
+        distribution.public?.percentage || 0
+    ];
+    
+    if (sourceChart) {
+        sourceChart.data.datasets[0].data = chartData;
+        sourceChart.update();
+    } else {
+        sourceChart = new Chart(sourceCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['REGTECH', 'SECUDIUM', 'Public Sources'],
+                datasets: [{
+                    data: chartData,
+                    backgroundColor: [
+                        '#5046e5',
+                        '#10b981',
+                        '#f59e0b'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
             },
-            tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: 12,
-                cornerRadius: 8,
-                callbacks: {
-                    label: function(context) {
-                        return context.label + ': ' + context.parsed + '%';
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                const labels = ['REGTECH', 'SECUDIUM', 'Public'];
+                                const counts = [
+                                    distribution.regtech?.count || 0,
+                                    distribution.secudium?.count || 0,
+                                    distribution.public?.count || 0
+                                ];
+                                return labels[context.dataIndex] + ': ' + counts[context.dataIndex].toLocaleString() + '개 (' + context.parsed + '%)';
+                            }
+                        }
                     }
                 }
             }
-        }
+        });
     }
-});
+    
+    // Update text display
+    document.querySelectorAll('.col-lg-4 .card-body .d-flex').forEach((el, idx) => {
+        const spans = el.querySelectorAll('span');
+        if (idx === 0 && distribution.regtech) {
+            spans[0].innerHTML = `REGTECH (${distribution.regtech.count}개)`;
+            spans[1].textContent = `${distribution.regtech.percentage}%`;
+        } else if (idx === 1 && distribution.secudium) {
+            spans[0].innerHTML = `SECUDIUM (${distribution.secudium.count}개)`;
+            spans[1].textContent = `${distribution.secudium.percentage}%`;
+        } else if (idx === 2 && distribution.public) {
+            spans[0].innerHTML = `Public Sources (${distribution.public.count}개)`;
+            spans[1].textContent = `${distribution.public.percentage}%`;
+        }
+    });
+}
+
+// Initialize chart on load
+initializeSourceChart();
 
 // Sources distribution chart
 const sourcesCtx = document.getElementById('sourcesChart').getContext('2d');
@@ -770,6 +852,26 @@ function updateStatCards(stats) {
     }
     if (activeElement) {
         animateNumber(activeElement, stats.active_ips);
+    }
+    
+    // Update source distribution
+    if (stats.regtech_count !== undefined && stats.secudium_count !== undefined) {
+        const total = stats.total_ips || 1; // Avoid division by zero
+        const distribution = {
+            regtech: {
+                count: stats.regtech_count,
+                percentage: Math.round((stats.regtech_count / total) * 100)
+            },
+            secudium: {
+                count: stats.secudium_count,
+                percentage: Math.round((stats.secudium_count / total) * 100)
+            },
+            public: {
+                count: stats.public_count || 0,
+                percentage: Math.round(((stats.public_count || 0) / total) * 100)
+            }
+        };
+        updateSourceChart(distribution);
     }
 }
 
