@@ -418,7 +418,7 @@ class UnifiedBlacklistManager:
                         """, (
                             datetime.now().isoformat(),
                             ip_data.get('reg_date') or ip_data.get('detection_date'),
-                            ip_data.get('threat_type', 'blacklist'),
+                            ip_data.get('attack_type') or ip_data.get('threat_type') or ip_data.get('reason'),
                             ip_data.get('country'),
                             ip_data.get('reason') or ip_data.get('threat_type', 'blacklist'),
                             ip_data.get('threat_level', 'high'),
@@ -436,7 +436,7 @@ class UnifiedBlacklistManager:
                             ip,
                             datetime.now().isoformat(),
                             ip_data.get('reg_date') or ip_data.get('detection_date') or datetime.now().isoformat(),
-                            ip_data.get('threat_type', 'blacklist'),
+                            ip_data.get('attack_type') or ip_data.get('threat_type') or ip_data.get('reason'),
                             ip_data.get('country'),
                             ip_data.get('source', source),
                             ip_data.get('reason') or ip_data.get('threat_type', 'blacklist'),

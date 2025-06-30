@@ -1327,6 +1327,7 @@ class UnifiedBlacklistService:
                                     ips_data.append({
                                         'ip': ip_entry.ip_address,
                                         'source': 'SECUDIUM',
+                                        'attack_type': ip_entry.reason,  # attack_type 필드 추가
                                         'threat_type': ip_entry.reason,
                                         'country': ip_entry.country,
                                         'reg_date': ip_entry.reg_date,  # 원본 등록일 추가
