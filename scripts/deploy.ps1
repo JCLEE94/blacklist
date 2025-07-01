@@ -1,19 +1,15 @@
 # Windows 배포 스크립트
 
-# Registry 로그인
-Write-Host "Registry 로그인..." -ForegroundColor Yellow
-docker login registry.jclee.me
-
 # 기존 리소스 정리
 kubectl delete all --all -n blacklist 2>$null
 kubectl create namespace blacklist 2>$null
 
-# Registry Secret 생성
+# Registry Secret 생성 (미리 설정된 환경변수 사용)
 kubectl delete secret regcred -n blacklist 2>$null
 kubectl create secret docker-registry regcred `
   --docker-server=registry.jclee.me `
-  --docker-username=$env:DOCKER_USERNAME `
-  --docker-password=$env:DOCKER_PASSWORD `
+  --docker-username=registry_ `
+  --docker-password=registry_ `
   -n blacklist
 
 # 배포
