@@ -24,6 +24,7 @@ metadata:
 spec:
   accessModes: 
     - ReadWriteOnce
+  storageClassName: ""
   resources:
     requests:
       storage: 1Gi
@@ -36,6 +37,7 @@ metadata:
 spec:
   accessModes: 
     - ReadWriteOnce
+  storageClassName: ""
   resources:
     requests:
       storage: 1Gi
@@ -48,6 +50,7 @@ metadata:
 spec:
   accessModes: 
     - ReadWriteOnce
+  storageClassName: ""
   resources:
     requests:
       storage: 1Gi
