@@ -17,71 +17,78 @@ env:
 
 jobs:
   collect-data:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     
     steps:
-      - name: Trigger collection on production
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          script: |
-            # 수집 스크립트 실행
-            cd /home/docker/blacklist
+      - name: Trigger collection on Kubernetes
+        run: |
+          echo "🚀 Starting scheduled data collection..."
+          
+          # 수집 소스 결정
+          SOURCES="${{ github.event.inputs.sources || 'regtech,secudium' }}"
+          echo "📊 Collection sources: $SOURCES"
+          
+          # NodePort 서비스 정보 가져오기
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          NODE_PORT=$(kubectl get svc blacklist-nodeport -n blacklist -o jsonpath='{.spec.ports[0].nodePort}')
+          BASE_URL="http://$NODE_IP:$NODE_PORT"
+          
+          echo "🔗 API endpoint: $BASE_URL"
+          
+          # 수집 활성화 상태 확인
+          COLLECTION_STATUS=$(curl -s "$BASE_URL/api/collection/status" | grep -o '"enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+          
+          if [ "$COLLECTION_STATUS" != "true" ]; then
+            echo "Collection is disabled. Enabling..."
+            curl -X POST "$BASE_URL/api/collection/enable"
+            sleep 5
+          fi
+          
+          # 각 소스에 대해 수집 트리거
+          IFS=',' read -ra SOURCE_ARRAY <<< "$SOURCES"
+          for source in "${SOURCE_ARRAY[@]}"; do
+            source=$(echo $source | tr -d ' ')  # 공백 제거
+            echo "🔄 Triggering $source collection..."
+            curl -X POST "$BASE_URL/api/collection/$source/trigger"
             
-            # 수집 소스 결정
-            SOURCES="${{ github.event.inputs.sources || 'regtech,secudium' }}"
-            
-            # 수집 활성화 상태 확인
-            COLLECTION_STATUS=$(docker exec blacklist-app-1 curl -s http://localhost:2541/api/collection/status | jq -r '.enabled')
-            
-            if [ "$COLLECTION_STATUS" != "true" ]; then
-              echo "Collection is disabled. Enabling..."
-              docker exec blacklist-app-1 curl -X POST http://localhost:2541/api/collection/enable
-              sleep 5
-            fi
-            
-            # 각 소스에 대해 수집 트리거
-            IFS=',' read -ra SOURCE_ARRAY <<< "$SOURCES"
-            for source in "${SOURCE_ARRAY[@]}"; do
-              echo "Triggering $source collection..."
-              docker exec blacklist-app-1 curl -X POST http://localhost:2541/api/collection/$source/trigger
-              
-              # 수집 완료 대기 (최대 10분)
-              COUNTER=0
-              while [ $COUNTER -lt 60 ]; do
-                STATUS=$(docker exec blacklist-app-1 curl -s http://localhost:2541/api/collection/status | jq -r ".sources.$source.running")
-                if [ "$STATUS" != "true" ]; then
-                  echo "$source collection completed"
-                  break
-                fi
-                sleep 10
-                COUNTER=$((COUNTER+1))
-              done
+            # 수집 완료 대기 (최대 10분)
+            COUNTER=0
+            while [ $COUNTER -lt 60 ]; do
+              STATUS=$(curl -s "$BASE_URL/api/collection/status" | grep -o "\"$source\":{[^}]*" | grep -o '"running":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+              if [ "$STATUS" != "true" ]; then
+                echo "✅ $source collection completed"
+                break
+              fi
+              echo "⏳ $source collection in progress... ($COUNTER/60)"
+              sleep 10
+              COUNTER=$((COUNTER+1))
             done
             
-            # 수집 결과 확인
-            docker exec blacklist-app-1 curl -s http://localhost:2541/api/stats | jq '.'
+            if [ $COUNTER -eq 60 ]; then
+              echo "⚠️ $source collection timed out"
+            fi
+          done
+          
+          # 수집 결과 확인
+          echo "📊 Collection statistics:"
+          curl -s "$BASE_URL/api/stats"
 
       - name: Check collection results
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          script: |
-            cd /home/docker/blacklist
-            
-            # 수집 로그 확인
-            echo "=== Recent collection logs ==="
-            docker logs blacklist-app-1 --since 30m 2>&1 | grep -E "(Collection|REGTECH|SECUDIUM)" | tail -50
-            
-            # 통계 정보
-            echo "=== Collection statistics ==="
-            docker exec blacklist-app-1 curl -s http://localhost:2541/api/v2/analytics/summary | jq '.'
+        run: |
+          echo "📋 Checking collection results..."
+          
+          # NodePort 서비스 정보 가져오기
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          NODE_PORT=$(kubectl get svc blacklist-nodeport -n blacklist -o jsonpath='{.spec.ports[0].nodePort}')
+          BASE_URL="http://$NODE_IP:$NODE_PORT"
+          
+          # 수집 로그 확인
+          echo "=== Recent collection logs ==="
+          kubectl logs deployment/blacklist -n blacklist --since=30m | grep -E "(Collection|REGTECH|SECUDIUM)" | tail -50
+          
+          # 통계 정보
+          echo "=== Collection statistics ==="
+          curl -s "$BASE_URL/api/v2/analytics/trends" || curl -s "$BASE_URL/api/stats"
 
       - name: Log collection status
         if: always()
@@ -91,40 +98,58 @@ jobs:
           echo "Time: $(date)"
 
   backup-data:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: collect-data
     if: success()
     
     steps:
-      - name: Backup collected data
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          script: |
-            cd /home/docker/blacklist
-            
-            # 백업 디렉토리 생성
-            BACKUP_DIR="/backup/blacklist/$(date +%Y%m%d_%H%M%S)"
-            mkdir -p $BACKUP_DIR
-            
-            # 데이터베이스 백업
-            docker exec blacklist-app-1 sqlite3 /app/instance/blacklist.db ".backup /tmp/blacklist_backup.db"
-            docker cp blacklist-app-1:/tmp/blacklist_backup.db $BACKUP_DIR/
-            
-            # 수집 로그 백업
-            docker logs blacklist-app-1 --since 24h > $BACKUP_DIR/collection_logs.txt
-            
-            # 통계 정보 저장
-            docker exec blacklist-app-1 curl -s http://localhost:2541/api/v2/analytics/export > $BACKUP_DIR/statistics.csv
-            
-            # 백업 압축
-            tar -czf $BACKUP_DIR.tar.gz -C $(dirname $BACKUP_DIR) $(basename $BACKUP_DIR)
-            rm -rf $BACKUP_DIR
-            
-            # 오래된 백업 정리 (30일 이상)
+      - name: Backup collected data from Kubernetes
+        run: |
+          echo "💾 Starting data backup..."
+          
+          # 백업 디렉토리 생성
+          BACKUP_DIR="/tmp/blacklist_backup/$(date +%Y%m%d_%H%M%S)"
+          mkdir -p $BACKUP_DIR
+          
+          # 실행 중인 Pod 선택
+          POD_NAME=$(kubectl get pods -n blacklist -l app=blacklist -o jsonpath='{.items[0].metadata.name}')
+          echo "📦 Using pod: $POD_NAME"
+          
+          # 데이터베이스 백업
+          echo "📊 Backing up database..."
+          kubectl exec $POD_NAME -n blacklist -- sqlite3 /app/instance/blacklist.db ".backup /tmp/blacklist_backup.db"
+          kubectl cp blacklist/$POD_NAME:/tmp/blacklist_backup.db $BACKUP_DIR/blacklist.db
+          
+          # 수집 로그 백업
+          echo "📝 Backing up logs..."
+          kubectl logs deployment/blacklist -n blacklist --since=24h > $BACKUP_DIR/collection_logs.txt
+          
+          # 통계 정보 저장
+          echo "📈 Saving statistics..."
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          NODE_PORT=$(kubectl get svc blacklist-nodeport -n blacklist -o jsonpath='{.spec.ports[0].nodePort}')
+          curl -s "http://$NODE_IP:$NODE_PORT/api/stats" > $BACKUP_DIR/statistics.json
+          
+          # Pod 상태 정보 저장
+          kubectl get pods -n blacklist -o wide > $BACKUP_DIR/pod_status.txt
+          kubectl describe deployment blacklist -n blacklist > $BACKUP_DIR/deployment_info.txt
+          
+          # 백업 압축
+          tar -czf $BACKUP_DIR.tar.gz -C $(dirname $BACKUP_DIR) $(basename $BACKUP_DIR)
+          
+          # 영구 저장소로 이동 (선택사항)
+          if [ -d "/backup/blacklist" ]; then
+            mv $BACKUP_DIR.tar.gz /backup/blacklist/
+            echo "✅ Backup saved to: /backup/blacklist/$(basename $BACKUP_DIR).tar.gz"
+          else
+            echo "✅ Backup created: $BACKUP_DIR.tar.gz"
+          fi
+          
+          # 임시 디렉토리 정리
+          rm -rf $BACKUP_DIR
+          
+          # 오래된 백업 정리 (30일 이상)
+          if [ -d "/backup/blacklist" ]; then
             find /backup/blacklist -name "*.tar.gz" -mtime +30 -delete
-            
-            echo "Backup completed: $BACKUP_DIR.tar.gz"
+            echo "🧹 Old backups cleaned up"
+          fi

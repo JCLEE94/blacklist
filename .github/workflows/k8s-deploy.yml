@@ -253,7 +253,7 @@ jobs:
           
           # NodePort로 접속 정보 가져오기
           NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-          NODE_PORT=$(kubectl get svc blacklist -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
+          NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
           
           BASE_URL="http://$NODE_IP:$NODE_PORT"
           echo "🔗 Testing via: $BASE_URL"
@@ -299,7 +299,7 @@ jobs:
           echo "⚡ Running performance checks..."
           
           NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-          NODE_PORT=$(kubectl get svc blacklist -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
+          NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
           BASE_URL="http://$NODE_IP:$NODE_PORT"
           
           # 응답 시간 체크
@@ -323,7 +323,7 @@ jobs:
           # 자동 수집 확인
           echo "🔄 Checking auto-collection status..."
           NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-          NODE_PORT=$(kubectl get svc blacklist -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
+          NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
           
           # 5초 대기 후 수집 상태 확인
           sleep 5
