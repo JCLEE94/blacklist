@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+data:
+  registries.conf: |
+    registries:
+      - name: registry.jclee.me
+        api_url: https://registry.jclee.me/v2
+        prefix: registry.jclee.me
+        insecure: false
+        credentials: secret:argocd/registry-credentials#creds
+        default: true
+  log.level: info
+  applications: |
+    - name: blacklist
+      image_list:
+        - registry.jclee.me/blacklist
+      update_strategy: latest
+      ignore_tags:
+        - sha256
+      write_back_method: git
+      git_branch: main
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: registry-credentials
+  namespace: argocd
+type: Opaque
+stringData:
+  creds: |
+    registry.jclee.me:
+      username: qws9411
+      password: bingogo1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argocd-image-updater
+  template:
+    metadata:
+      labels:
+        app: argocd-image-updater
+    spec:
+      serviceAccountName: argocd-image-updater
+      containers:
+      - name: argocd-image-updater
+        image: argoprojlabs/argocd-image-updater:v0.12.2
+        env:
+        - name: ARGOCD_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: argocd-image-updater-secret
+              key: token
+        - name: ARGOCD_SERVER
+          value: "argocd-server:443"
+        - name: ARGOCD_INSECURE
+          value: "false"
+        - name: ARGOCD_GRPC_WEB
+          value: "true"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        - name: ssh-keys
+          mountPath: /app/ssh-keys
+      volumes:
+      - name: config
+        configMap:
+          name: argocd-image-updater-config
+      - name: ssh-keys
+        secret:
+          secretName: argocd-image-updater-ssh-key
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-image-updater
+rules:
+- apiGroups: [""]
+  resources: ["secrets", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["argoproj.io"]
+  resources: ["applications"]
+  verbs: ["get", "list", "watch", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-image-updater
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-image-updater
+subjects:
+- kind: ServiceAccount
+  name: argocd-image-updater
+  namespace: argocd

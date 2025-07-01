@@ -74,15 +74,24 @@ node_modules/.cache/
 
 # Cleaned up directories
 document/har_backup/
-scripts/deployment/archive/
 scripts/archive/
 instance/backups/*.db
 
 # Temporary and duplicate files
 *_old.*
 *_v2.*
+*.tmp
 *.tmpdocument/
 document/
+.ci-test
+.build_info
+.rebuild_trigger
+.env.regtech
+.gitlab-runner-config.toml
+
+# Legacy script directories (now organized)
+scripts/manual/
+scripts/deployment/
 
 # Watchtower config
 watchtower-config.json

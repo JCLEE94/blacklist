@@ -39,15 +39,36 @@ graph TB
 - Docker 및 registry 접근 권한
 - ArgoCD 또는 FluxCD 설치 (자동 배포용)
 
-### Kubernetes 배포
+### 🎯 자동 배포 (CI/CD)
+
+**GitHub Actions + 자동 이미지 업데이트로 완전 자동화**
 
 ```bash
 # 1. 저장소 클론
-git clone https://github.com/jclee/blacklist.git
+git clone https://github.com/JCLEE94/blacklist.git
 cd blacklist
 
-# 2. 초기 배포 (네임스페이스, 시크릿, 볼륨 생성)
-./scripts/k8s-management.sh init
+# 2. 간단 배포 (Ubuntu/Linux)
+./scripts/deploy.sh
+
+# 3. 자동 이미지 업데이트 활성화 (선택사항)
+kubectl apply -f k8s/auto-updater.yaml
+```
+
+### 🔄 CI/CD Pipeline
+
+**코드 푸시 → 이미지 빌드 → 자동 배포 (2분 이내)**
+
+1. **GitHub Push** → GitHub Actions 자동 트리거
+2. **이미지 빌드** → `registry.jclee.me/blacklist:SHA` 태그로 푸시  
+3. **자동 배포** → CronJob이 2분마다 새 이미지 감지 & 배포
+4. **헬스 체크** → 자동 롤백 지원
+
+```bash
+# CI/CD 상태 확인
+kubectl get cronjob auto-image-updater -n blacklist
+kubectl logs -f job/auto-image-updater-xxx -n blacklist
+```
 
 # 3. 애플리케이션 배포
 ./scripts/k8s-management.sh deploy
