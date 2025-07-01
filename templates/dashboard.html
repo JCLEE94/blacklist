@@ -551,6 +551,30 @@ function updateStatCards(stats) {
         animateNumber(activeElement, stats.active_ips);
     }
     
+    // Update expiration statistics
+    if (stats.expired_ips !== undefined || stats.expiring_soon !== undefined) {
+        const activeCountElement = document.getElementById('active-count');
+        const expiredCountElement = document.getElementById('expired-count');
+        const expiringSoonCountElement = document.getElementById('expiring-soon-count');
+        
+        if (activeCountElement) {
+            animateNumber(activeCountElement, stats.active_ips || 0);
+        }
+        if (expiredCountElement) {
+            animateNumber(expiredCountElement, stats.expired_ips || 0);
+        }
+        if (expiringSoonCountElement) {
+            animateNumber(expiringSoonCountElement, stats.expiring_soon || 0);
+        }
+        
+        // Update colors based on values
+        updateExpirationColors({
+            active: stats.active_ips || 0,
+            expired: stats.expired_ips || 0,
+            expiring_soon: stats.expiring_soon || 0
+        });
+    }
+    
     // Update source distribution
     if (stats.regtech_count !== undefined && stats.secudium_count !== undefined) {
         const total = stats.total_ips || 1; // Avoid division by zero
