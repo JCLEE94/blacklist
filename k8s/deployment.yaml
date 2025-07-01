@@ -50,11 +50,11 @@ spec:
             name: blacklist-secret
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "64Mi"     # Docker Desktop용으로 축소
+            cpu: "50m"         # Docker Desktop용으로 축소
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"    # Docker Desktop용으로 축소
+            cpu: "250m"        # Docker Desktop용으로 축소
         livenessProbe:
           httpGet:
             path: /health
