@@ -14,51 +14,7 @@ kubectl create secret docker-registry regcred `
   --docker-password=registry_password `
   -n blacklist
 
-# PVC 생성
-$pvcYaml = @"
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: blacklist-data
-  namespace: blacklist
-spec:
-  accessModes: 
-    - ReadWriteOnce
-  storageClassName: ""
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: blacklist-logs
-  namespace: blacklist
-spec:
-  accessModes: 
-    - ReadWriteOnce
-  storageClassName: ""
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: blacklist-instance
-  namespace: blacklist
-spec:
-  accessModes: 
-    - ReadWriteOnce
-  storageClassName: ""
-  resources:
-    requests:
-      storage: 1Gi
-"@
-
-$pvcYaml | kubectl apply -f -
-
-# 배포
+# 배포 (PVC 포함)
 kubectl apply -k k8s/
 
 Write-Host "⏳ Pod 초기화 대기 중..." -ForegroundColor Yellow
