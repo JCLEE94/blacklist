@@ -264,11 +264,13 @@ runs-on: self-hosted
 - uses: docker/build-push-action@v4    # NOT v5
 ```
 
-**ArgoCD Image Updater Configuration**:
-- Monitors `registry.jclee.me/blacklist` for new tags
-- Automatically updates Kubernetes manifests
-- Supports semantic versioning and latest tags
-- GitOps workflow with automatic rollback
+**Auto-deployment Options**:
+1. **ArgoCD Image Updater**: Monitors `registry.jclee.me/blacklist` for new tags
+2. **Enhanced CronJob** (`k8s/auto-updater-enhanced.yaml`): 
+   - Runs every 5 minutes to check for new images
+   - Automatically updates deployment with latest image
+   - Includes health checks and rollback on failure
+3. **GitOps workflow**: Automatic rollback support
 
 ## API Endpoints Reference
 
@@ -338,7 +340,7 @@ if isinstance(detection_date_raw, pd.Timestamp):
 ### Environment Variables
 Required for production deployment:
 ```bash
-# Authentication credentials
+# Authentication credentials (store in Kubernetes secrets)
 REGTECH_USERNAME=nextrade
 REGTECH_PASSWORD=Sprtmxm1@3
 SECUDIUM_USERNAME=nextrade  
@@ -358,6 +360,17 @@ DOCKER_USERNAME=your-username
 DOCKER_PASSWORD=your-password
 REGISTRY_USERNAME=registry-username  # For private registry
 REGISTRY_PASSWORD=registry-password
+```
+
+### GitHub Repository Secrets
+Required for CI/CD pipeline:
+```bash
+# Set these in GitHub Settings → Secrets and variables → Actions
+DOCKER_USERNAME         # Docker Hub username
+DOCKER_PASSWORD         # Docker Hub password  
+REGISTRY_USERNAME       # Private registry username (priority)
+REGISTRY_PASSWORD       # Private registry password (priority)
+DEPLOYMENT_WEBHOOK_URL  # Optional webhook for deployment notifications
 ```
 
 ### Date Parameters for REGTECH
@@ -525,6 +538,21 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
 
 ## Recent Implementations (2025.06.28)
 
+### Dependencies Update Alert
+**Dependabot Configuration** (`.github/dependabot.yml`):
+- Automated dependency updates enabled for Python packages
+- Note: `reviewers` field deprecated - use CODEOWNERS file instead
+- Required labels to create: `dependencies`, `python`
+
+### GitHub Actions Compatibility
+**Self-hosted Runner Requirements**:
+```yaml
+# MUST use these specific versions for self-hosted runners:
+- uses: actions/checkout@v3         # NOT v4 (fails on self-hosted)
+- uses: docker/setup-buildx-action@v2  # NOT v3
+- uses: docker/build-push-action@v4    # NOT v5
+```
+
 ### HAR-Based Collectors
 - Added HAR-based REGTECH collector for enhanced compatibility
 - Added HAR-based SECUDIUM collector for robust authentication
@@ -567,7 +595,11 @@ python3 main.py --debug
 # Testing
 pytest -v
 
-# Deployment
+# CI/CD Deployment (Recommended)
+git add . && git commit -m "feat: your changes"
+git push origin main  # Triggers automatic deployment
+
+# Manual Deployment
 ./scripts/k8s-management.sh deploy
 
 # Health Check
@@ -584,4 +616,12 @@ curl -X POST http://localhost:8541/api/collection/secudium/trigger
 curl -X POST http://localhost:8541/api/collection/regtech/trigger \
   -H "Content-Type: application/json" \
   -d '{"start_date": "20250601", "end_date": "20250620"}'
+
+# Check deployment status
+kubectl get pods -n blacklist
+kubectl logs -f deployment/blacklist -n blacklist
+
+# Check auto-updater status  
+kubectl get cronjob auto-updater -n blacklist
+kubectl logs -f job/auto-updater-xxx -n blacklist
 ```
