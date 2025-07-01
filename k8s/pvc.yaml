@@ -25,3 +25,17 @@ spec:
       storage: 5Gi
   volumeName: blacklist-logs-pv
   storageClassName: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blacklist-instance
+  namespace: blacklist
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  volumeName: blacklist-instance-pv
+  storageClassName: ""
