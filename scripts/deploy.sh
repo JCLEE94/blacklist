@@ -27,6 +27,9 @@ kubectl create secret docker-registry regcred \
   --docker-password=bingogo1 \
   -n blacklist
 
+# PV 먼저 생성
+kubectl apply -f k8s/pv.yaml
+
 # 배포 (PVC 포함)
 kubectl apply -k k8s/
 

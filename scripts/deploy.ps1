@@ -22,6 +22,9 @@ kubectl create namespace blacklist
 kubectl delete secret regcred -n blacklist
 kubectl create secret docker-registry regcred --docker-server=registry.jclee.me --docker-username=qws9411 --docker-password=bingogo1 -n blacklist
 
+# PV 먼저 생성
+kubectl apply -f k8s/pv.yaml
+
 # 배포
 kubectl apply -k k8s/
 
