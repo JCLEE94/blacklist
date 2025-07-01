@@ -132,48 +132,91 @@ function initializeSourceChart() {
 
 async function loadDashboardData() {
     try {
-        // Load monthly data
-        const monthlyResponse = await fetch('/api/stats/monthly');
-        const monthlyResult = await monthlyResponse.json();
+        console.log('Starting to load dashboard data...');
         
-        if (monthlyResult.success && window.monthlyChart) {
-            const data = monthlyResult.data;
+        // Load monthly data
+        try {
+            const monthlyResponse = await fetch('/api/stats/monthly');
+            console.log('Monthly API response status:', monthlyResponse.status);
             
-            // Update chart data
-            window.monthlyChart.data.labels = data.map(d => {
-                const [year, month] = d.month.split('-');
-                return parseInt(month) + '월';
-            });
+            if (!monthlyResponse.ok) {
+                throw new Error(`Monthly API failed: ${monthlyResponse.status}`);
+            }
             
-            window.monthlyChart.data.datasets[0].data = data.map(d => d.regtech || 0);
-            window.monthlyChart.data.datasets[1].data = data.map(d => d.secudium || 0);
+            const monthlyResult = await monthlyResponse.json();
+            console.log('Monthly data result:', monthlyResult);
             
-            window.monthlyChart.update();
-            console.log('Monthly chart updated with data');
+            if (monthlyResult.success && monthlyResult.data && window.monthlyChart) {
+                const data = monthlyResult.data;
+                
+                // Update chart data safely
+                const labels = data.map(d => {
+                    try {
+                        const [year, month] = d.month.split('-');
+                        return parseInt(month) + '월';
+                    } catch (e) {
+                        console.error('Error parsing month:', d.month, e);
+                        return d.month;
+                    }
+                });
+                
+                window.monthlyChart.data.labels = labels;
+                window.monthlyChart.data.datasets[0].data = data.map(d => d.regtech || 0);
+                window.monthlyChart.data.datasets[1].data = data.map(d => d.secudium || 0);
+                
+                window.monthlyChart.update();
+                console.log('Monthly chart updated successfully');
+            } else {
+                console.error('Monthly data update failed:', monthlyResult);
+            }
+        } catch (error) {
+            console.error('Error loading monthly data:', error);
         }
         
         // Load stats for source distribution
-        const statsResponse = await fetch('/api/stats');
-        const statsResult = await statsResponse.json();
-        
-        if (statsResult.success && statsResult.data && window.sourceChart) {
-            const stats = statsResult.data;
-            const total = stats.total_ips || 1;
+        try {
+            const statsResponse = await fetch('/api/stats');
+            console.log('Stats API response status:', statsResponse.status);
             
-            window.sourceChart.data.datasets[0].data = [
-                stats.regtech_count || 0,
-                stats.secudium_count || 0,
-                stats.public_count || 0
-            ];
+            if (!statsResponse.ok) {
+                throw new Error(`Stats API failed: ${statsResponse.status}`);
+            }
             
-            window.sourceChart.update();
-            console.log('Source chart updated with data');
+            const statsResult = await statsResponse.json();
+            console.log('Stats data result:', statsResult);
             
-            // Update percentage display
-            updateSourcePercentages(stats);
+            if (statsResult.success && statsResult.data && window.sourceChart) {
+                const stats = statsResult.data;
+                
+                window.sourceChart.data.datasets[0].data = [
+                    stats.regtech_count || 0,
+                    stats.secudium_count || 0,
+                    stats.public_count || 0
+                ];
+                
+                window.sourceChart.update();
+                console.log('Source chart updated successfully');
+                
+                // Update percentage display
+                updateSourcePercentages(stats);
+            } else {
+                console.error('Stats data update failed:', statsResult);
+            }
+        } catch (error) {
+            console.error('Error loading stats data:', error);
         }
+        
+        console.log('Dashboard data loading completed');
+        
     } catch (error) {
-        console.error('Error loading dashboard data:', error);
+        console.error('Error in loadDashboardData:', error);
+        
+        // Show user-friendly error message
+        if (typeof showNotification === 'function') {
+            showNotification('통계 데이터 업데이트에 실패했습니다: ' + error.message, 'danger');
+        } else {
+            console.error('통계 데이터 업데이트 실패:', error.message);
+        }
     }
 }
 
