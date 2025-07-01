@@ -81,7 +81,7 @@
                                         <span class="badge bg-secondary" id="regtech-status">비활성</span>
                                     </div>
                                     <div class="d-flex justify-content-between">
-                                        <span>마지막 수집:</span>
+                                        <span>마지막 수집 시도:</span>
                                         <span id="regtech-last-run">-</span>
                                     </div>
                                 </div>
@@ -108,7 +108,7 @@
                                         <span class="badge bg-secondary" id="secudium-status">비활성</span>
                                     </div>
                                     <div class="d-flex justify-content-between">
-                                        <span>마지막 수집:</span>
+                                        <span>마지막 수집 시도:</span>
                                         <span id="secudium-last-run">-</span>
                                     </div>
                                 </div>
@@ -293,6 +293,7 @@
 // System Settings JavaScript
 class SystemSettings {
     constructor() {
+        this.refreshInterval = null;
         this.init();
     }
     
@@ -300,6 +301,17 @@ class SystemSettings {
         this.loadCurrentSettings();
         this.setupEventListeners();
         this.checkCollectionStatus();
+        
+        // 30초마다 상태 업데이트
+        this.refreshInterval = setInterval(() => {
+            this.checkCollectionStatus();
+        }, 30000);
+    }
+    
+    destroy() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+        }
     }
     
     // Load current settings from server
@@ -359,13 +371,51 @@ class SystemSettings {
     // Check collection status
     async checkCollectionStatus() {
         try {
-            const response = await fetch('/api/collection/status');
-            const data = await response.json();
+            // 로딩 표시
+            this.showLoadingIndicators();
             
-            this.updateCollectionUI(data);
+            // 기본 상태 가져오기
+            const statusResponse = await fetch('/api/collection/status');
+            const statusData = await statusResponse.json();
+            
+            // 상세 소스 정보 가져오기
+            const sourcesResponse = await fetch('/api/v2/sources/status');
+            const sourcesData = await sourcesResponse.json();
+            
+            // 데이터 병합
+            if (sourcesData.success && sourcesData.data) {
+                statusData.sources = sourcesData.data.sources;
+            }
+            
+            this.updateCollectionUI(statusData);
+            
+            // 로딩 숨기기
+            this.hideLoadingIndicators();
         } catch (error) {
             console.error('Failed to check collection status:', error);
+            this.hideLoadingIndicators();
+            showNotification('error', '수집 상태를 가져올 수 없습니다.');
         }
+    }
+    
+    // Show loading indicators
+    showLoadingIndicators() {
+        const elements = ['regtech-last-run', 'secudium-last-run'];
+        elements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.classList.contains('loading')) {
+                el.classList.add('loading');
+                el.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 로딩 중...';
+            }
+        });
+    }
+    
+    // Hide loading indicators
+    hideLoadingIndicators() {
+        const elements = document.querySelectorAll('.loading');
+        elements.forEach(el => {
+            el.classList.remove('loading');
+        });
     }
     
     // Update collection UI
@@ -394,16 +444,53 @@ class SystemSettings {
         const statusBadge = document.getElementById(`${collector}-status`);
         const lastRun = document.getElementById(`${collector}-last-run`);
         
+        // 상태 업데이트
         if (status.enabled) {
-            statusBadge.className = 'badge bg-success';
-            statusBadge.textContent = '활성';
+            if (status.health === 'error') {
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.textContent = '오류';
+            } else {
+                statusBadge.className = 'badge bg-success';
+                statusBadge.textContent = '활성';
+            }
         } else {
             statusBadge.className = 'badge bg-secondary';
             statusBadge.textContent = '비활성';
         }
         
-        if (status.last_collection) {
-            lastRun.textContent = new Date(status.last_collection).toLocaleString('ko-KR');
+        // 마지막 수집 시도 시간 표시
+        // last_collection이 있으면 우선 표시, 없으면 last_error 표시
+        const lastAttempt = status.last_collection || status.last_error || status.last_success;
+        if (lastAttempt) {
+            const date = new Date(lastAttempt);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            let timeAgo = '';
+            if (diffDays > 0) {
+                timeAgo = `${diffDays}일 전`;
+            } else if (diffHours > 0) {
+                timeAgo = `${diffHours}시간 전`;
+            } else if (diffMins > 0) {
+                timeAgo = `${diffMins}분 전`;
+            } else {
+                timeAgo = '방금 전';
+            }
+            
+            lastRun.innerHTML = `<span title="${date.toLocaleString('ko-KR')}">${timeAgo}</span>`;
+            
+            // 오류 상태인 경우 빨간색으로 표시
+            if (status.last_error && (!status.last_success || new Date(status.last_error) > new Date(status.last_success))) {
+                lastRun.classList.add('text-danger');
+            } else {
+                lastRun.classList.remove('text-danger');
+            }
+        } else {
+            lastRun.textContent = '수집 기록 없음';
+            lastRun.classList.add('text-muted');
         }
     }
     
@@ -566,8 +653,17 @@ function showNotification(type, message) {
 }
 
 // Initialize on DOM load
+let systemSettings = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    new SystemSettings();
+    systemSettings = new SystemSettings();
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (systemSettings) {
+        systemSettings.destroy();
+    }
 });
 </script>
 {% endblock %}

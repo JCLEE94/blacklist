@@ -2124,21 +2124,46 @@ def get_sources_status():
         }
         
         # 최근 수집 로그에서 정보 업데이트
-        recent_logs = service.get_collection_logs(limit=100)
-        for log in recent_logs:
-            source = log.get('source', '').lower()
-            if source in sources_detail:
-                action = log.get('action', '')
-                timestamp = log.get('timestamp')
-                
-                if 'complete' in action:
-                    sources_detail[source]['last_success'] = timestamp
-                    sources_detail[source]['last_collection'] = timestamp
-                elif 'error' in action or 'failed' in action:
-                    sources_detail[source]['last_error'] = timestamp
-                    sources_detail[source]['health'] = 'error'
-                elif 'start' in action:
-                    sources_detail[source]['last_collection'] = timestamp
+        recent_logs = service.get_collection_logs(limit=200)
+        
+        # 각 소스별 최신 정보 추적
+        for source_name in sources_detail:
+            last_start = None
+            last_complete = None
+            last_error = None
+            
+            # 로그를 역순으로 순회 (최신 것부터)
+            for log in reversed(recent_logs):
+                source = log.get('source', '').lower()
+                if source == source_name:
+                    action = log.get('action', '')
+                    timestamp = log.get('timestamp')
+                    
+                    if 'start' in action and not last_start:
+                        last_start = timestamp
+                    elif 'complete' in action and not last_complete:
+                        last_complete = timestamp
+                        # 완료된 경우 IP 수 정보도 업데이트
+                        details = log.get('details', {})
+                        if 'ip_count' in details:
+                            sources_detail[source_name]['last_collected_ips'] = details['ip_count']
+                    elif ('error' in action or 'failed' in action) and not last_error:
+                        last_error = timestamp
+                        # 에러 메시지도 저장
+                        details = log.get('details', {})
+                        if 'error' in details:
+                            sources_detail[source_name]['last_error_message'] = details['error']
+            
+            # 가장 최근 수집 시도 시간 설정
+            if last_start:
+                sources_detail[source_name]['last_collection'] = last_start
+            if last_complete:
+                sources_detail[source_name]['last_success'] = last_complete
+            if last_error:
+                sources_detail[source_name]['last_error'] = last_error
+                # 마지막 에러가 마지막 성공보다 최신이면 health를 error로 설정
+                if not last_complete or (last_complete and last_error > last_complete):
+                    sources_detail[source_name]['health'] = 'error'
         
         return jsonify({
             'success': True,
