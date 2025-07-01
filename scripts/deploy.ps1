@@ -14,15 +14,16 @@ kubectl create secret docker-registry regcred `
   --docker-password=registry_password `
   -n blacklist
 
-# PVC 생성 (오류 무시)
-@"
+# PVC 생성
+$pvcYaml = @"
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: blacklist-data
   namespace: blacklist
 spec:
-  accessModes: [ReadWriteOnce]
+  accessModes: 
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
@@ -33,7 +34,8 @@ metadata:
   name: blacklist-logs
   namespace: blacklist
 spec:
-  accessModes: [ReadWriteOnce]
+  accessModes: 
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
@@ -44,11 +46,14 @@ metadata:
   name: blacklist-instance
   namespace: blacklist
 spec:
-  accessModes: [ReadWriteOnce]
+  accessModes: 
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-"@ | kubectl apply -f - 2>$null
+"@
+
+$pvcYaml | kubectl apply -f -
 
 # 배포
 kubectl apply -k k8s/
