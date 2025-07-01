@@ -114,11 +114,13 @@ EOF
 - **데이터 영속성**: PVC 기반 SQLite 데이터베이스
 - **통합 관리**: 웹 기반 대시보드 및 제어판
 - **설정 관리**: `/settings/management` 웹 인터페이스
+- **만료 관리**: 90일 자동 만료 및 상태 추적 (등록일 기준)
 
 ### API 엔드포인트
 - `GET /health` - 상태 확인 및 상세 진단
 - `GET /api/fortigate` - FortiGate External Connector 형식
 - `GET /api/blacklist/active` - 활성 IP 목록 (텍스트)
+- `GET /api/stats` - 시스템 통계 (만료 정보 포함)
 - `GET /api/collection/status` - 수집 서비스 상태
 - `POST /api/collection/enable` - 수집 활성화
 - `POST /api/collection/disable` - 수집 비활성화
@@ -834,16 +836,21 @@ spec:
 - **설정 관리 대시보드**: `/settings/management` 웹 인터페이스 추가
 - **V2 API**: 고급 분석 및 메타데이터 기능 추가 (`/api/v2/*`)
 - **라우트 통합**: 모든 API 라우트를 `unified_routes.py`로 통합
+- **만료 상태 관리**: 대시보드에 만료된 IP 및 30일 내 만료 예정 IP 표시
 
 ### 버그 수정
 - Settings 라우트 충돌 해결 (`/api/settings` → `/api/settings/all`, `/api/settings/bulk`)
 - IndentationError 수정 (`settings_routes.py` line 372)
 - 405 Method Not Allowed 오류 해결
+- **만료일 계산 수정**: 수집일(created_at)이 아닌 등록일(detection_date) 기준으로 계산
+  - 4월 2일 등록 IP → 7월 1일 정확히 만료 처리
+  - 만료된 IP: 118개, 30일 내 만료 예정: 7,715개로 정정
 
 ### 개선사항
 - Kubernetes 배포 최적화 (10개 replica로 증가)
 - API 엔드포인트 정리 및 문서화
 - 빌드 프로세스 개선
+- 데이터베이스 `expires_at` 컬럼 추가 및 만료 로직 구현
 
 ---
 
