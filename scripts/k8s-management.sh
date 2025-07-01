@@ -128,11 +128,21 @@ deploy_app() {
     # 배포
     kubectl apply -k $KUSTOMIZE_DIR
     
-    # 롤아웃 대기
-    log_info "롤아웃 대기 중..."
-    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=1200s
+    # 롤아웃 상태 비동기 확인
+    log_info "배포가 시작되었습니다. 진행 상황 확인 중..."
     
-    log_success "배포 완료!"
+    # 즉시 Pod 상태 확인
+    kubectl get pods -n $NAMESPACE -l app=$APP_NAME
+    
+    # 비동기로 상태 확인 (--watch=false로 즉시 반환)
+    if kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --watch=false; then
+        log_success "배포가 진행 중입니다!"
+    else
+        log_warning "배포가 아직 진행 중입니다. 수동으로 확인하세요:"
+        echo "kubectl rollout status deployment/$APP_NAME -n $NAMESPACE"
+    fi
+    
+    log_info "배포 모니터링: kubectl get pods -n $NAMESPACE -w"
 }
 
 # 디플로이먼트 재시작

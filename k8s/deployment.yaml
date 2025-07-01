@@ -7,15 +7,17 @@ metadata:
     app: blacklist
 spec:
   replicas: 4
-  progressDeadlineSeconds: 1200  # 20분으로 연장 (기본값: 600초)
+  progressDeadlineSeconds: 3600  # 60분으로 대폭 연장
+  minReadySeconds: 0            # Pod이 준비되면 즉시 사용 가능
+  revisionHistoryLimit: 5       # 이전 버전 5개만 유지
   selector:
     matchLabels:
       app: blacklist
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 2           # 동시에 생성할 수 있는 추가 Pod 수
-      maxUnavailable: 1     # 동시에 사용 불가능한 최대 Pod 수
+      maxSurge: 100%           # 모든 Pod을 동시에 생성 가능
+      maxUnavailable: 50%      # 절반까지 동시에 교체 가능
   template:
     metadata:
       labels:
@@ -65,11 +67,11 @@ spec:
           httpGet:
             path: /health
             port: 2541
-          initialDelaySeconds: 10  # 매우 빠른 준비 확인
-          periodSeconds: 5         # 자주 체크
-          timeoutSeconds: 3        # 빠른 응답
+          initialDelaySeconds: 5   # 더 빠른 준비 확인
+          periodSeconds: 2         # 매우 자주 체크
+          timeoutSeconds: 1        # 초고속 응답
           successThreshold: 1      # 한 번만 성공하면 준비 완료
-          failureThreshold: 3      # 3번 실패 시 준비 안됨
+          failureThreshold: 30     # 충분한 재시도 (60초간)
         volumeMounts:
         - name: data
           mountPath: /app/data
