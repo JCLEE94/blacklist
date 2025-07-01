@@ -67,25 +67,38 @@ class CollectionManager:
         try:
             if self.config_path.exists():
                 with open(self.config_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    config = json.load(f)
+                    # 최초 실행 확인
+                    if not config.get('initial_collection_done', False):
+                        logger.info("🔥 최초 실행 감지 - 자동 수집 활성화")
+                        config['collection_enabled'] = True
+                        config['sources'] = {'regtech': True, 'secudium': True}
+                        config['initial_collection_needed'] = True
+                    return config
             else:
+                # 설정 파일이 없으면 최초 실행
+                logger.info("🔥 최초 실행 - 자동 수집 활성화")
                 return {
-                    'collection_enabled': False,
-                    'sources': {'regtech': False, 'secudium': False},
-                    'last_enabled_at': None,
+                    'collection_enabled': True,  # 최초 실행 시 자동 활성화
+                    'sources': {'regtech': True, 'secudium': True},  # 모든 소스 활성화
+                    'last_enabled_at': datetime.now().isoformat(),
                     'last_disabled_at': None,
                     'daily_collection_enabled': False,
-                    'last_daily_collection': None
+                    'last_daily_collection': None,
+                    'initial_collection_done': False,  # 최초 수집 완료 플래그
+                    'initial_collection_needed': True  # 최초 수집 필요
                 }
         except Exception as e:
             logger.error(f"설정 로드 실패: {e}")
             return {
-                'collection_enabled': False,
-                'sources': {'regtech': False, 'secudium': False},
-                'last_enabled_at': None,
+                'collection_enabled': True,  # 오류 시에도 수집 활성화
+                'sources': {'regtech': True, 'secudium': True},
+                'last_enabled_at': datetime.now().isoformat(),
                 'last_disabled_at': None,
                 'daily_collection_enabled': False,
-                'last_daily_collection': None
+                'last_daily_collection': None,
+                'initial_collection_done': False,
+                'initial_collection_needed': True
             }
     
     def _save_collection_config(self):
@@ -410,6 +423,17 @@ class CollectionManager:
                 'success': False,
                 'error': str(e)
             }
+    
+    def mark_initial_collection_done(self):
+        """최초 수집 완료 표시"""
+        self.config['initial_collection_done'] = True
+        self.config['initial_collection_needed'] = False
+        self._save_collection_config()
+        logger.info("✅ 최초 수집 완료 표시")
+    
+    def is_initial_collection_needed(self) -> bool:
+        """최초 수집이 필요한지 확인"""
+        return self.config.get('initial_collection_needed', False)
     
     def trigger_regtech_collection(self, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
         """
