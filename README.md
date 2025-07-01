@@ -59,6 +59,19 @@ cd blacklist
 kubectl apply -k k8s/
 ```
 
+### 개발 환경 실행
+
+```bash
+# 1. 의존성 설치
+pip install -r requirements.txt
+
+# 2. 데이터베이스 초기화
+python3 init_database.py
+
+# 3. 개발 서버 실행
+python3 main.py --debug  # 또는 python3 main.py --port 8541
+```
+
 ### ArgoCD를 통한 자동 배포
 
 ```bash
@@ -100,6 +113,7 @@ EOF
 - **고가용성**: 멀티 레플리카 구성 지원
 - **데이터 영속성**: PVC 기반 SQLite 데이터베이스
 - **통합 관리**: 웹 기반 대시보드 및 제어판
+- **설정 관리**: `/settings/management` 웹 인터페이스
 
 ### API 엔드포인트
 - `GET /health` - 상태 확인 및 상세 진단
@@ -109,7 +123,15 @@ EOF
 - `POST /api/collection/enable` - 수집 활성화
 - `POST /api/collection/disable` - 수집 비활성화
 - `POST /api/collection/{source}/trigger` - 수동 수집 트리거
+- `GET /api/settings/all` - 모든 설정 조회
+- `POST /api/settings/bulk` - 대량 설정 업데이트
 - `GET /unified-control` - 통합 관리 웹 UI
+- `GET /settings/management` - 설정 관리 대시보드
+
+### V2 API 엔드포인트 (고급 기능)
+- `GET /api/v2/blacklist/enhanced` - 메타데이터 포함 블랙리스트
+- `GET /api/v2/analytics/trends` - 고급 분석 및 추세
+- `GET /api/v2/sources/status` - 다중 소스 상세 상태
 
 ### 보안
 - TLS/HTTPS (Ingress 또는 NodePort)
@@ -261,6 +283,10 @@ blacklist/
 │   ├── core/            # 핵심 비즈니스 로직
 │   │   ├── app_compact.py     # 메인 Flask 앱
 │   │   ├── unified_service.py # 통합 서비스
+│   │   ├── unified_routes.py  # 통합 API 라우트
+│   │   ├── settings_routes.py # 설정 관리 라우트
+│   │   ├── v2_routes.py       # V2 API 라우트
+│   │   ├── container.py       # 의존성 주입 컨테이너
 │   │   ├── regtech_collector.py # REGTECH 수집기
 │   │   └── secudium_collector.py # SECUDIUM 수집기
 │   └── utils/           # 유틸리티
@@ -324,34 +350,48 @@ blacklist/
 ```text
 # 웹 프레임워크
 Flask==2.3.3
-Flask-CORS==4.0.0
-Flask-Compress==1.14
-gunicorn==21.2.0
+Flask-CORS==6.0.1
+Flask-Compress==1.13
+Flask-Limiter==3.11.0
+gunicorn==23.0.0
+
+# 데이터베이스
+SQLAlchemy==2.0.41
 
 # 데이터 처리
-pandas==2.1.1
+pandas==2.0.3
 openpyxl==3.1.2  # Excel 파일 처리
 xlrd==2.0.1      # 구형 Excel 지원
+numpy>=1.21.0,<1.25.0
 
 # HTTP 통신
-requests==2.31.0
-urllib3==2.0.7
+requests==2.32.4
+beautifulsoup4==4.12.2
+lxml==5.4.0
 
 # 캐싱
-redis==5.0.1
-cachetools==5.3.1
+redis==4.6.0
+flask-caching==2.1.0
 
 # JSON 처리
-orjson==3.9.10  # 고성능 JSON
+orjson==3.9.7  # 고성능 JSON
+
+# 스케줄링
+APScheduler==3.10.4
+
+# 보안
+PyJWT==2.8.0
 
 # 유틸리티
 python-dateutil==2.8.2
 pytz==2023.3
-Werkzeug==2.3.7
+psutil==5.9.8
 
-# 보안
-cryptography==41.0.7
-certifi==2023.7.22
+# 로깅
+python-json-logger==2.0.7
+
+# 환경 변수
+python-dotenv==1.1.1
 ```
 
 ### CI/CD 통합
@@ -407,7 +447,89 @@ RUN apk add --no-cache \
 - **전체 백업**: namespace 단위 YAML export
 - **Velero 지원**: 클러스터 레벨 백업/복구
 
+## 🎛️ 설정 관리
+
+블랙리스트 시스템은 웹 기반 설정 관리 인터페이스를 제공합니다.
+
+### 설정 관리 대시보드
+
+웹 브라우저에서 `/settings/management` 경로로 접속하여 시스템 설정을 관리할 수 있습니다:
+
+```
+https://blacklist.jclee.me/settings/management
+```
+
+### 주요 설정 카테고리
+
+1. **일반 설정**
+   - 애플리케이션 이름
+   - 시간대 설정
+   - 페이지당 항목 수
+
+2. **수집 설정**
+   - 자동 수집 활성화/비활성화
+   - 수집 주기 (시간 단위)
+   - REGTECH/SECUDIUM 개별 활성화
+
+3. **인증 정보**
+   - REGTECH 사용자명/비밀번호
+   - SECUDIUM 사용자명/비밀번호
+
+4. **성능 설정**
+   - 캐시 TTL (초)
+   - 최대 동시 수집 수
+
+5. **보안 설정**
+   - 세션 타임아웃 (분)
+   - API 요청 제한
+
+### 설정 API 엔드포인트
+
+프로그래밍 방식으로 설정을 관리하려면:
+
+```bash
+# 모든 설정 조회
+curl http://localhost:2541/api/settings/all
+
+# 대량 설정 업데이트
+curl -X POST http://localhost:2541/api/settings/bulk \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collection_enabled": {
+      "value": true,
+      "type": "boolean",
+      "category": "collection"
+    }
+  }'
+
+# 개별 설정 업데이트
+curl -X PUT http://localhost:2541/api/settings/collection_enabled \
+  -H "Content-Type: application/json" \
+  -d '{"value": true}'
+```
+
 ## 🔧 문제 해결
+
+### 설정 페이지 접속 문제
+
+```bash
+# 증상: /settings/management 페이지가 404 오류 반환
+
+# 1. Pod 상태 확인
+kubectl get pods -n blacklist
+kubectl logs deployment/blacklist -n blacklist | grep settings
+
+# 2. 라우트 충돌 확인
+# - unified_routes.py와 settings_routes.py 간 충돌 확인
+# - /api/settings → /api/settings/all, /api/settings/bulk로 변경됨
+
+# 3. 최신 이미지 배포
+kubectl rollout restart deployment/blacklist -n blacklist
+kubectl rollout status deployment/blacklist -n blacklist
+
+# 4. 브라우저 캐시 초기화
+# Ctrl+Shift+R 또는 캐시 비우기
+```
 
 ### 이미지 Pull 실패
 ```bash
@@ -705,6 +827,23 @@ spec:
 - [CLAUDE.md](./CLAUDE.md) - AI 어시스턴트를 위한 상세 가이드
 - [Kubernetes 관리 스크립트](./scripts/k8s-management.sh) - 배포 자동화
 - [CI/CD 워크플로우](./.github/workflows/k8s-deploy.yml) - GitHub Actions 설정
+
+## 🔄 최근 변경사항 (2025.07.01)
+
+### 새로운 기능
+- **설정 관리 대시보드**: `/settings/management` 웹 인터페이스 추가
+- **V2 API**: 고급 분석 및 메타데이터 기능 추가 (`/api/v2/*`)
+- **라우트 통합**: 모든 API 라우트를 `unified_routes.py`로 통합
+
+### 버그 수정
+- Settings 라우트 충돌 해결 (`/api/settings` → `/api/settings/all`, `/api/settings/bulk`)
+- IndentationError 수정 (`settings_routes.py` line 372)
+- 405 Method Not Allowed 오류 해결
+
+### 개선사항
+- Kubernetes 배포 최적화 (10개 replica로 증가)
+- API 엔드포인트 정리 및 문서화
+- 빌드 프로세스 개선
 
 ---
 

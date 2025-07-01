@@ -332,7 +332,7 @@ def settings_management():
     return render_template('settings/dashboard.html')
 
 
-@settings_bp.route('/api/settings', methods=['GET'])
+@settings_bp.route('/api/settings/all', methods=['GET'])
 def get_all_settings_api():
     """모든 설정 조회 (카테고리별 그룹화)"""
     # try 블록 제거하고 직접 반환
@@ -368,8 +368,8 @@ def get_all_settings_api():
             }
         }
         
-        # 카테고리 메타데이터 추가
-        categories_info = {
+    # 카테고리 메타데이터 추가
+    categories_info = {
             'general': {
                 'name': '일반 설정',
                 'description': '애플리케이션의 기본 설정',
@@ -416,7 +416,7 @@ def get_all_settings_api():
     })
 
 
-@settings_bp.route('/api/settings', methods=['POST'])
+@settings_bp.route('/api/settings/bulk', methods=['POST'])
 def update_settings_bulk():
     """설정값 일괄 업데이트"""
     try:

@@ -215,7 +215,7 @@ async function loadSettings() {
     try {
         showSpinner(true);
         
-        const response = await fetch('/api/settings');
+        const response = await fetch('/api/settings/all');
         const data = await response.json();
         
         if (data.success) {
@@ -477,7 +477,7 @@ async function saveAllSettings() {
     }
     
     try {
-        const response = await fetch('/api/settings', {
+        const response = await fetch('/api/settings/bulk', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
