@@ -682,7 +682,7 @@ def get_enhanced_blacklist():
     """향상된 블랙리스트 조회 - 실제 만료일 정보 포함"""
     try:
         # 실제 만료 통계를 데이터베이스에서 조회
-        blacklist_manager = g.container.resolve('blacklist_manager')
+        # blacklist_manager = g.container.resolve('blacklist_manager')  # g 객체 제거
         
         # 현재 시간
         now = datetime.now()
