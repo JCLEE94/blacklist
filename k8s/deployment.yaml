@@ -39,7 +39,7 @@ spec:
       containers:
       - name: blacklist
         image: registry.jclee.me/blacklist:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent  # Always에서 변경하여 로컬 캐시 사용
         ports:
         - containerPort: 2541
           name: http
