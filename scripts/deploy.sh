@@ -3,9 +3,21 @@
 
 echo "🚀 Blacklist 배포 시작..."
 
-# 기존 리소스 정리
+# 기존 리소스 및 네임스페이스 완전 삭제
+echo "🗑️ 기존 리소스 정리 중..."
 kubectl delete all --all -n blacklist 2>/dev/null
-kubectl create namespace blacklist 2>/dev/null
+kubectl delete namespace blacklist --force --grace-period=0 2>/dev/null
+
+# Terminating 상태 해결
+kubectl patch namespace blacklist -p '{"metadata":{"finalizers":null}}' --type=merge 2>/dev/null
+
+# 완전 삭제 대기
+echo "⏳ 네임스페이스 삭제 대기..."
+sleep 5
+
+# 새 네임스페이스 생성
+echo "📦 새 네임스페이스 생성..."
+kubectl create namespace blacklist
 
 # Registry Secret 생성
 kubectl delete secret regcred -n blacklist 2>/dev/null
