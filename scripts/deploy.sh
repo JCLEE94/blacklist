@@ -59,4 +59,4 @@ echo "📊 최종 상태:"
 kubectl get all -n blacklist
 
 echo "📝 초기화 로그:"
-kubectl logs deployment/blacklist -n blacklist --tail=20
+kubectl logs deployment/blacklist -n blacklist -c blacklist --tail=20

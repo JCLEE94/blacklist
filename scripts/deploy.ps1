@@ -32,4 +32,4 @@ Write-Host "📊 배포 상태:" -ForegroundColor Cyan
 kubectl get all -n blacklist
 
 Write-Host "📝 Pod 로그:" -ForegroundColor Cyan
-kubectl logs deployment/blacklist -n blacklist --tail=10
+kubectl logs deployment/blacklist -n blacklist -c blacklist --tail=10
