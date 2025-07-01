@@ -10,8 +10,8 @@ kubectl create namespace blacklist 2>$null
 kubectl delete secret regcred -n blacklist 2>$null
 kubectl create secret docker-registry regcred `
   --docker-server=registry.jclee.me `
-  --docker-username=registry_username `
-  --docker-password=registry_password `
+  --docker-username=qws9411 `
+  --docker-password=bingogo1 `
   -n blacklist
 
 # 배포 (PVC 포함)
