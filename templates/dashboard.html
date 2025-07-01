@@ -346,10 +346,16 @@ function updateMonthlyChart(monthlyData) {
         monthlyChart.destroy();
     }
 
+    // 월 라벨을 더 보기 좋게 변환
+    const monthLabels = monthlyData.map(d => {
+        const [year, month] = d.month.split('-');
+        return `${parseInt(month)}월`;
+    });
+
     monthlyChart = new Chart(monthlyCtx, {
         type: 'line',
         data: {
-            labels: monthlyData.map(d => d.month),
+            labels: monthLabels,
             datasets: [{
                 label: 'REGTECH',
                 data: monthlyData.map(d => d.regtech || 0),
@@ -547,71 +553,7 @@ function updateSourceChart(distribution) {
 // Initialize chart on load
 initializeSourceChart();
 
-// Sources distribution chart
-const sourcesCtx = document.getElementById('sourcesChart').getContext('2d');
-let sourcesChart;
-
-// Fetch sources distribution data
-async function loadSourcesData() {
-    try {
-        const response = await fetch('/api/stats/sources-distribution');
-        const result = await response.json();
-        
-        if (result.success) {
-            const sourcesData = result.data || [];
-            updateSourcesChart(sourcesData);
-        } else {
-            console.error('Sources API error:', result.error);
-            updateSourcesChart([]);
-        }
-    } catch (error) {
-        console.error('Failed to load sources data:', error);
-        updateSourcesChart([]);
-    }
-}
-
-function updateSourcesChart(sourcesData) {
-    if (sourcesChart) {
-        sourcesChart.destroy();
-    }
-
-    const colors = ['#5046e5', '#e74c3c', '#f39c12', '#27ae60', '#9b59b6'];
-    
-    sourcesChart = new Chart(sourcesCtx, {
-        type: 'doughnut',
-        data: {
-            labels: sourcesData.map(d => d.source),
-            datasets: [{
-                data: sourcesData.map(d => d.count),
-                backgroundColor: colors.slice(0, sourcesData.length),
-                borderColor: '#fff',
-                borderWidth: 3,
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: function(context) {
-                            const source = sourcesData[context.dataIndex];
-                            return `${source.source}: ${source.count.toLocaleString()}개 (${source.percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
+// 이 부분은 제거 - sourcesChart는 HTML에 없음
 
 // Collection logs management
 let collectionLogs = [];
@@ -954,35 +896,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el.style.transform = 'translateY(0)';
         }, index * 100);
     });
-    
-    // Start real-time updates
-    startRealtimeUpdates();
-    
-    // Load monthly data
-    loadMonthlyData();
-    
-    
-    // Initialize new UI components
-    
-    // 실시간 대시보드 초기화
-    if (typeof initializeRealtimeDashboard === 'function') {
-        const dashboard = initializeRealtimeDashboard({
-            updateInterval: 5000,
-            enableNotifications: true
-        });
-    }
-    
-    
-    // 토스트 알림 테스트
-    if (typeof toast === 'object') {
-        // 페이지 로드 완료 알림
-        toast.success('대시보드가 성공적으로 로드되었습니다.', {
-            duration: 3000
-        });
-    }
-    
-    // Load expiration statistics on page load
-    loadExpirationStats();
 });
 
 // 만료 상태 업데이트 함수
@@ -1057,18 +970,24 @@ function loadExpirationStats() {
         .catch(error => console.error('Failed to load expiration stats:', error));
 }
 
-// Load initial data on page load
-document.addEventListener('DOMContentLoaded', function() {
+// 페이지 로드 시 차트 초기화
+window.addEventListener('load', function() {
+    // 월별 데이터 로드
     loadMonthlyData();
-    loadSourcesData();
-    loadCollectionLogs();
-    setupRealtimeFeed();
-    startRealtimeUpdates();  // Start real-time updates
     
-    // Refresh charts every 5 minutes
+    // 소스별 분포 차트 초기화
+    initializeSourceChart();
+    
+    // 만료 통계 로드
+    loadExpirationStats();
+    
+    // 실시간 업데이트 시작
+    startRealtimeUpdates();
+    
+    // 5분마다 차트 새로고침
     setInterval(() => {
         loadMonthlyData();
-        loadSourcesData();
+        initializeSourceChart();
     }, 300000);
 });
 
