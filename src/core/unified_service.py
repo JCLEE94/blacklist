@@ -88,74 +88,47 @@ class UnifiedBlacklistService:
         # Mark as running for basic health checks
         self._running = True
         
-        # 최초 실행 시 자동 수집 수행
-        self._check_and_perform_initial_collection()
+        # 최초 실행 시 자동 수집 수행 (즉시 실행)
+        if self.collection_manager and self.collection_manager.is_initial_collection_needed():
+            self.logger.info("🔥 최초 실행 - 즉시 수집 시작")
+            self._perform_initial_collection_now()
         
-    def _check_and_perform_initial_collection(self):
-        """최초 실행 시 자동 수집 수행"""
+    def _perform_initial_collection_now(self):
+        """최초 수집 즉시 실행 (간단 버전)"""
         try:
-            if self.collection_manager and self.collection_manager.is_initial_collection_needed():
-                self.logger.info("🔥 최초 실행 감지 - 자동 수집 시작...")
-                
-                # 수집 활성화 (이미 활성화되어 있지만 확실히)
-                if not self.collection_manager.collection_enabled:
-                    self.collection_manager.enable_collection()
-                
-                # 비동기 작업을 동기적으로 실행
-                import asyncio
-                import threading
-                
-                def run_initial_collection():
-                    try:
-                        # 새 이벤트 루프 생성
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        
-                        # 오늘 날짜로 수집
-                        today = datetime.now()
-                        start_date = (today - timedelta(days=90)).strftime('%Y%m%d')
-                        end_date = today.strftime('%Y%m%d')
-                        
-                        self.logger.info(f"📅 최초 수집 기간: {start_date} ~ {end_date}")
-                        
-                        # REGTECH 수집
-                        self.logger.info("🔄 REGTECH 최초 수집 시작...")
-                        regtech_result = self.collection_manager.trigger_regtech_collection(start_date, end_date)
-                        if regtech_result.get('success'):
-                            self.logger.info(f"✅ REGTECH 수집 성공: {regtech_result.get('message', '')}")
-                        else:
-                            self.logger.warning(f"⚠️ REGTECH 수집 실패: {regtech_result.get('message', '')}")
-                        
-                        # SECUDIUM 수집
-                        self.logger.info("🔄 SECUDIUM 최초 수집 시작...")
-                        secudium_result = self.collection_manager.trigger_secudium_collection()
-                        if secudium_result.get('success'):
-                            self.logger.info(f"✅ SECUDIUM 수집 성공: {secudium_result.get('message', '')}")
-                        else:
-                            self.logger.warning(f"⚠️ SECUDIUM 수집 실패: {secudium_result.get('message', '')}")
-                        
-                        # 최초 수집 완료 표시
-                        self.collection_manager.mark_initial_collection_done()
-                        self.logger.info("🎉 최초 수집 완료!")
-                        
-                        # 수집 로그 추가
-                        self.add_collection_log('system', 'initial_collection_complete', {
-                            'regtech': regtech_result,
-                            'secudium': secudium_result
-                        })
-                        
-                    except Exception as e:
-                        self.logger.error(f"최초 수집 중 오류 발생: {e}")
-                        import traceback
-                        self.logger.error(traceback.format_exc())
-                
-                # 백그라운드 스레드에서 실행
-                collection_thread = threading.Thread(target=run_initial_collection)
-                collection_thread.daemon = True
-                collection_thread.start()
-                
+            self.logger.info("🔄 최초 수집 실행 중...")
+            
+            # 수집 활성화
+            if not self.collection_manager.collection_enabled:
+                self.collection_manager.enable_collection()
+            
+            # 즉시 수집 (최근 7일)
+            today = datetime.now()
+            start_date = (today - timedelta(days=7)).strftime('%Y%m%d')
+            end_date = today.strftime('%Y%m%d')
+            
+            # REGTECH 수집 (간단하게)
+            try:
+                regtech_result = self.collection_manager.trigger_regtech_collection(start_date, end_date)
+                self.logger.info(f"REGTECH 수집: {regtech_result.get('success', False)}")
+            except:
+                self.logger.warning("REGTECH 수집 실패")
+            
+            # SECUDIUM 수집 (간단하게)
+            try:
+                secudium_result = self.collection_manager.trigger_secudium_collection()
+                self.logger.info(f"SECUDIUM 수집: {secudium_result.get('success', False)}")
+            except:
+                self.logger.warning("SECUDIUM 수집 실패")
+            
+            # 완료 표시
+            self.collection_manager.mark_initial_collection_done()
+            self.logger.info("✅ 최초 수집 완료")
+            
         except Exception as e:
-            self.logger.error(f"최초 수집 체크 중 오류: {e}")
+            self.logger.error(f"최초 수집 오류: {e}")
+            # 오류가 있어도 완료 표시 (무한 루프 방지)
+            self.collection_manager.mark_initial_collection_done()
     
     async def start(self) -> None:
         """통합 서비스 시작"""

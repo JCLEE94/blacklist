@@ -1,10 +1,12 @@
 # Windows 배포 스크립트
 
+Write-Host "🚀 Blacklist 배포 시작..." -ForegroundColor Cyan
+
 # 기존 리소스 정리
 kubectl delete all --all -n blacklist 2>$null
 kubectl create namespace blacklist 2>$null
 
-# Registry Secret 생성 (미리 설정된 환경변수 사용)
+# Registry Secret 생성
 kubectl delete secret regcred -n blacklist 2>$null
 kubectl create secret docker-registry regcred `
   --docker-server=registry.jclee.me `
@@ -15,5 +17,38 @@ kubectl create secret docker-registry regcred `
 # 배포
 kubectl apply -k k8s/
 
-Start-Sleep -Seconds 5
+Write-Host "⏳ Pod 초기화 대기 중..." -ForegroundColor Yellow
+
+# Pod이 Running 상태가 될 때까지 모니터링
+while ($true) {
+    try {
+        $podStatus = kubectl get pods -n blacklist -l app=blacklist -o jsonpath='{.items[0].status.phase}' 2>$null
+        $podReady = kubectl get pods -n blacklist -l app=blacklist -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>$null
+        
+        Write-Host "Pod 상태: $podStatus, Ready: $podReady" -ForegroundColor Gray
+        
+        if ($podStatus -eq "Running" -and $podReady -eq "true") {
+            Write-Host "✅ Pod 초기화 완료!" -ForegroundColor Green
+            break
+        }
+        
+        if ($podStatus -eq "Failed" -or $podStatus -eq "CrashLoopBackOff") {
+            Write-Host "❌ Pod 실패!" -ForegroundColor Red
+            kubectl get pods -n blacklist
+            kubectl describe pods -n blacklist
+            exit 1
+        }
+        
+        Start-Sleep -Seconds 2
+    }
+    catch {
+        Write-Host "상태 확인 중..." -ForegroundColor Gray
+        Start-Sleep -Seconds 2
+    }
+}
+
+Write-Host "📊 최종 상태:" -ForegroundColor Cyan
 kubectl get all -n blacklist
+
+Write-Host "📝 초기화 로그:" -ForegroundColor Cyan
+kubectl logs deployment/blacklist -n blacklist --tail=20
