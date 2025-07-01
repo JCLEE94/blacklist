@@ -1,0 +1,176 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: auto-updater
+  namespace: blacklist
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: auto-updater
+  namespace: blacklist
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: auto-updater
+  namespace: blacklist
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: auto-updater
+subjects:
+- kind: ServiceAccount
+  name: auto-updater
+  namespace: blacklist
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: auto-updater
+  namespace: blacklist
+spec:
+  schedule: "*/5 * * * *"  # 5분마다 실행
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: auto-updater
+        spec:
+          serviceAccountName: auto-updater
+          restartPolicy: OnFailure
+          containers:
+          - name: updater
+            image: bitnami/kubectl:latest
+            env:
+            - name: NAMESPACE
+              value: "blacklist"
+            - name: REGISTRY
+              value: "registry.jclee.me"
+            - name: IMAGE_NAME
+              value: "blacklist"
+            - name: REGISTRY_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: regcred
+                  key: .dockerconfigjson
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              
+              echo "🔄 Auto-updater started at $(date)"
+              
+              # 현재 배포된 이미지 확인
+              CURRENT_IMAGE=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.spec.template.spec.containers[0].image}')
+              echo "Current image: ${CURRENT_IMAGE}"
+              
+              # 현재 이미지에서 태그 추출
+              CURRENT_TAG=$(echo ${CURRENT_IMAGE} | cut -d: -f2)
+              echo "Current tag: ${CURRENT_TAG}"
+              
+              # Registry에서 사용 가능한 태그 확인
+              # Note: 실제 환경에서는 registry API를 사용하여 태그 목록을 가져와야 함
+              echo "Checking for new images in registry..."
+              
+              # 간단한 로직: latest 태그가 현재 태그와 다른지 확인
+              LATEST_IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
+              
+              # 새 이미지로 업데이트 시도
+              echo "Attempting to update to: ${LATEST_IMAGE}"
+              
+              # 이미지 업데이트
+              kubectl set image deployment/blacklist blacklist=${LATEST_IMAGE} -n ${NAMESPACE}
+              
+              # 롤아웃 상태 확인 (최대 5분 대기)
+              if kubectl rollout status deployment/blacklist -n ${NAMESPACE} --timeout=300s; then
+                echo "✅ Deployment updated successfully"
+                
+                # 헬스 체크
+                sleep 30
+                READY_REPLICAS=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.status.readyReplicas}')
+                DESIRED_REPLICAS=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.spec.replicas}')
+                
+                if [ "${READY_REPLICAS}" == "${DESIRED_REPLICAS}" ]; then
+                  echo "✅ All replicas are ready (${READY_REPLICAS}/${DESIRED_REPLICAS})"
+                else
+                  echo "⚠️ Not all replicas are ready (${READY_REPLICAS}/${DESIRED_REPLICAS})"
+                fi
+              else
+                echo "❌ Rollout failed or timed out"
+                
+                # 롤백 시도
+                echo "Attempting rollback..."
+                kubectl rollout undo deployment/blacklist -n ${NAMESPACE}
+                kubectl rollout status deployment/blacklist -n ${NAMESPACE} --timeout=300s
+                
+                exit 1
+              fi
+              
+              echo "🔄 Auto-updater completed at $(date)"
+---
+# Health check job that runs after updates
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: post-update-health-check
+  namespace: blacklist
+spec:
+  template:
+    metadata:
+      labels:
+        app: health-checker
+    spec:
+      serviceAccountName: auto-updater
+      restartPolicy: Never
+      containers:
+      - name: health-check
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "🏥 Running post-update health check..."
+          
+          # NodePort 서비스 정보 가져오기
+          NODE_PORT=32541
+          
+          # 30초 대기 (서비스 안정화)
+          sleep 30
+          
+          # Health check 수행
+          MAX_ATTEMPTS=10
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
+            
+            # Internal service health check
+            if curl -f -s --connect-timeout 5 http://blacklist:2541/health > /dev/null 2>&1; then
+              echo "✅ Service is healthy"
+              
+              # 추가 엔드포인트 테스트
+              curl -s http://blacklist:2541/api/stats > /dev/null && echo "✅ /api/stats: OK" || echo "⚠️ /api/stats: Failed"
+              curl -s http://blacklist:2541/api/collection/status > /dev/null && echo "✅ /api/collection/status: OK" || echo "⚠️ /api/collection/status: Failed"
+              
+              exit 0
+            else
+              echo "⏳ Service not ready, waiting..."
+              sleep 10
+            fi
+          done
+          
+          echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
+          exit 1

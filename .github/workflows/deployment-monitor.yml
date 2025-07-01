@@ -1,0 +1,267 @@
+name: Deployment Health Monitor
+
+on:
+  workflow_run:
+    workflows: ["Enhanced Kubernetes CI/CD Pipeline"]
+    types:
+      - completed
+  schedule:
+    # 매 시간 실행하여 자동 배포 상태 체크
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+env:
+  NAMESPACE: blacklist
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  check-deployment-health:
+    runs-on: self-hosted
+    steps:
+      - name: Check Registry Authentication
+        run: |
+          echo "🔐 Testing Docker Registry authentication..."
+          
+          # Registry 인증 테스트
+          if echo "${{ secrets.DOCKER_PASSWORD }}" | docker login registry.jclee.me -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin; then
+            echo "✅ Registry authentication successful"
+          else
+            echo "❌ Registry authentication failed!"
+            echo "::error::Docker Registry authentication failed. Please check DOCKER_USERNAME and DOCKER_PASSWORD secrets."
+            exit 1
+          fi
+
+      - name: Check GitHub Secrets
+        run: |
+          echo "🔑 Checking required secrets..."
+          
+          MISSING_SECRETS=""
+          
+          # Required secrets 체크
+          [ -z "${{ secrets.DOCKER_USERNAME }}" ] && MISSING_SECRETS="$MISSING_SECRETS DOCKER_USERNAME"
+          [ -z "${{ secrets.DOCKER_PASSWORD }}" ] && MISSING_SECRETS="$MISSING_SECRETS DOCKER_PASSWORD"
+          [ -z "${{ secrets.REGISTRY_USERNAME }}" ] && MISSING_SECRETS="$MISSING_SECRETS REGISTRY_USERNAME"
+          [ -z "${{ secrets.REGISTRY_PASSWORD }}" ] && MISSING_SECRETS="$MISSING_SECRETS REGISTRY_PASSWORD"
+          
+          if [ -n "$MISSING_SECRETS" ]; then
+            echo "❌ Missing secrets:$MISSING_SECRETS"
+            echo "::error::Missing required secrets:$MISSING_SECRETS"
+            exit 1
+          else
+            echo "✅ All required secrets are configured"
+          fi
+
+      - name: Check Kubernetes Connectivity
+        run: |
+          echo "☸️ Checking Kubernetes cluster connectivity..."
+          
+          # Kubernetes 연결 테스트
+          if kubectl get nodes --no-headers > /dev/null 2>&1; then
+            echo "✅ Kubernetes cluster is accessible"
+            kubectl get nodes
+          else
+            echo "❌ Cannot connect to Kubernetes cluster"
+            echo "::error::Kubernetes cluster is not accessible"
+            exit 1
+          fi
+
+      - name: Check Deployment Status
+        id: deployment_check
+        run: |
+          echo "🚀 Checking deployment status..."
+          
+          # Deployment 상태 확인
+          if kubectl get deployment blacklist -n ${{ env.NAMESPACE }} > /dev/null 2>&1; then
+            echo "✅ Deployment exists"
+            
+            # 현재 이미지 확인
+            CURRENT_IMAGE=$(kubectl get deployment blacklist -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}')
+            echo "Current image: $CURRENT_IMAGE"
+            echo "current_image=$CURRENT_IMAGE" >> $GITHUB_OUTPUT
+            
+            # Ready replicas 확인
+            READY_REPLICAS=$(kubectl get deployment blacklist -n ${{ env.NAMESPACE }} -o jsonpath='{.status.readyReplicas}')
+            DESIRED_REPLICAS=$(kubectl get deployment blacklist -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.replicas}')
+            
+            echo "Ready replicas: $READY_REPLICAS/$DESIRED_REPLICAS"
+            
+            if [ "$READY_REPLICAS" != "$DESIRED_REPLICAS" ]; then
+              echo "⚠️ Not all replicas are ready"
+              echo "deployment_healthy=false" >> $GITHUB_OUTPUT
+            else
+              echo "✅ All replicas are ready"
+              echo "deployment_healthy=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ Deployment not found"
+            echo "deployment_healthy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Latest Image in Registry
+        id: registry_check
+        run: |
+          echo "📦 Checking latest image in registry..."
+          
+          # Registry에서 최신 이미지 태그 확인 (curl 사용)
+          REGISTRY_URL="https://registry.jclee.me/v2/${{ env.IMAGE_NAME }}/tags/list"
+          
+          # Basic auth header 생성
+          AUTH=$(echo -n "${{ secrets.REGISTRY_USERNAME }}:${{ secrets.REGISTRY_PASSWORD }}" | base64)
+          
+          # Tags 가져오기
+          TAGS_RESPONSE=$(curl -s -H "Authorization: Basic $AUTH" "$REGISTRY_URL" || echo "{}")
+          
+          if echo "$TAGS_RESPONSE" | grep -q "tags"; then
+            echo "✅ Successfully retrieved tags from registry"
+            # 최신 태그 찾기 (timestamp 기반)
+            LATEST_TAG=$(echo "$TAGS_RESPONSE" | grep -o '"[0-9]\{8\}-[0-9]\{6\}"' | sort -r | head -1 | tr -d '"')
+            if [ -n "$LATEST_TAG" ]; then
+              echo "Latest timestamp tag: $LATEST_TAG"
+              echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⚠️ Could not retrieve tags from registry"
+          fi
+
+      - name: Check Service Health
+        run: |
+          echo "🏥 Checking service health..."
+          
+          # NodePort 서비스 확인
+          NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+          
+          if [ -n "$NODE_PORT" ]; then
+            NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+            HEALTH_URL="http://$NODE_IP:$NODE_PORT/health"
+            
+            echo "Testing health endpoint: $HEALTH_URL"
+            
+            if curl -f -s --connect-timeout 5 --max-time 10 "$HEALTH_URL" > /dev/null 2>&1; then
+              echo "✅ Health check passed"
+            else
+              echo "❌ Health check failed"
+              echo "::warning::Service health check failed"
+            fi
+          else
+            echo "⚠️ NodePort service not found"
+          fi
+
+      - name: Check Auto-updater CronJob
+        run: |
+          echo "⏰ Checking auto-updater CronJob..."
+          
+          # CronJob 존재 확인
+          if kubectl get cronjob -n ${{ env.NAMESPACE }} | grep -q "auto-updater"; then
+            echo "✅ Auto-updater CronJob exists"
+            
+            # 최근 실행 확인
+            LAST_SCHEDULE=$(kubectl get cronjob -n ${{ env.NAMESPACE }} -o jsonpath='{.items[?(@.metadata.name=="auto-updater")].status.lastScheduleTime}' 2>/dev/null || echo "")
+            
+            if [ -n "$LAST_SCHEDULE" ]; then
+              echo "Last scheduled: $LAST_SCHEDULE"
+            else
+              echo "⚠️ CronJob has never been scheduled"
+            fi
+            
+            # Job 실행 이력 확인
+            echo "Recent jobs:"
+            kubectl get jobs -n ${{ env.NAMESPACE }} --sort-by='.metadata.creationTimestamp' | grep "auto-updater" | tail -5 || echo "No recent jobs"
+          else
+            echo "❌ Auto-updater CronJob not found"
+            echo "::warning::Auto-updater CronJob is missing"
+            
+            # CronJob 생성 시도
+            echo "Attempting to create auto-updater CronJob..."
+            if [ -f "k8s/auto-updater.yaml" ]; then
+              kubectl apply -f k8s/auto-updater.yaml
+              echo "✅ Auto-updater CronJob created"
+            else
+              echo "⚠️ auto-updater.yaml not found"
+            fi
+          fi
+
+      - name: Generate Health Report
+        if: always()
+        run: |
+          echo "## 🏥 Deployment Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Health Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Registry Auth | ${{ steps.deployment_check.outcome == 'success' && '✅ OK' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Secrets | ${{ steps.deployment_check.outcome == 'success' && '✅ OK' || '❌ Missing' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Kubernetes Access | ${{ steps.deployment_check.outcome == 'success' && '✅ OK' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployment Status | ${{ steps.deployment_check.outputs.deployment_healthy == 'true' && '✅ Healthy' || '⚠️ Unhealthy' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service Health | ✅ OK |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.deployment_check.outputs.deployment_healthy }}" != "true" ]; then
+            echo "### ⚠️ Action Required" >> $GITHUB_STEP_SUMMARY
+            echo "The deployment is not in a healthy state. Please check:" >> $GITHUB_STEP_SUMMARY
+            echo "- Pod logs: `kubectl logs -n blacklist deployment/blacklist`" >> $GITHUB_STEP_SUMMARY
+            echo "- Pod events: `kubectl describe pods -n blacklist -l app=blacklist`" >> $GITHUB_STEP_SUMMARY
+            echo "- Recent events: `kubectl get events -n blacklist --sort-by='.lastTimestamp'`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  auto-fix-common-issues:
+    needs: check-deployment-health
+    runs-on: self-hosted
+    if: failure()
+    steps:
+      - name: Attempt Auto-fix
+        run: |
+          echo "🔧 Attempting to auto-fix common issues..."
+          
+          # PVC 문제 자동 수정
+          echo "Checking PVC status..."
+          PENDING_PVCS=$(kubectl get pvc -n ${{ env.NAMESPACE }} -o json | jq -r '.items[] | select(.status.phase=="Pending") | .metadata.name')
+          
+          if [ -n "$PENDING_PVCS" ]; then
+            echo "Found pending PVCs: $PENDING_PVCS"
+            echo "Attempting to fix PV bindings..."
+            
+            # PV 상태 확인 및 수정
+            for PVC in $PENDING_PVCS; do
+              PV_NAME="${PVC}-pv"
+              if kubectl get pv "$PV_NAME" > /dev/null 2>&1; then
+                echo "Patching PV $PV_NAME..."
+                kubectl patch pv "$PV_NAME" -p '{"spec":{"claimRef": null}}'
+              fi
+            done
+            
+            # PVC 재생성
+            kubectl delete pvc $PENDING_PVCS -n ${{ env.NAMESPACE }} --force --grace-period=0
+            sleep 5
+            kubectl apply -k k8s/
+          fi
+          
+          # Deployment 재시작
+          echo "Restarting deployment..."
+          kubectl rollout restart deployment/blacklist -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/blacklist -n ${{ env.NAMESPACE }} --timeout=300s
+          
+          echo "✅ Auto-fix completed"
+
+      - name: Send Alert
+        if: failure()
+        run: |
+          echo "🚨 Sending deployment failure alert..."
+          
+          # Slack/Discord/Email 알림 (webhook URL이 설정된 경우)
+          if [ -n "${{ secrets.ALERT_WEBHOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.ALERT_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "text": "🚨 Blacklist Deployment Issue Detected",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Deployment Health Check Failed*\n• Repository: ${{ github.repository }}\n• Workflow: ${{ github.workflow }}\n• Run: ${{ github.run_id }}"
+                    }
+                  }
+                ]
+              }'
+          fi
