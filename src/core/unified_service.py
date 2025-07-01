@@ -1160,11 +1160,11 @@ class UnifiedBlacklistService:
                     conn = sqlite3.connect(self.blacklist_manager.db_path)
                     cursor = conn.cursor()
                     
-                    # Count total IPs by source for this date (using created_at - 실제 수집일)
+                    # Count total IPs by source for this date (using detection_date - 실제 등록일)
                     cursor.execute("""
                         SELECT source, COUNT(*) 
                         FROM blacklist_ip 
-                        WHERE DATE(created_at) = ?
+                        WHERE DATE(detection_date) = ?
                         GROUP BY source
                     """, (date_str,))
                     
@@ -1179,11 +1179,11 @@ class UnifiedBlacklistService:
                             daily_stat['public_count'] = count
                         daily_stat['total_ips'] += count
                     
-                    # Count new IPs for this date (using created_at - 실제 수집일)
+                    # Count new IPs for this date (using detection_date - 실제 등록일)
                     cursor.execute("""
                         SELECT COUNT(*) 
                         FROM blacklist_ip 
-                        WHERE DATE(created_at) = ?
+                        WHERE DATE(detection_date) = ?
                     """, (date_str,))
                     daily_stat['new_ips'] = cursor.fetchone()[0]
                     
