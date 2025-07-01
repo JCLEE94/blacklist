@@ -107,7 +107,7 @@ init_deployment() {
     
     # 배포 대기
     log_info "배포 완료 대기 중..."
-    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=300s
+    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=1200s
     
     log_success "초기 배포 완료!"
 }
@@ -130,7 +130,7 @@ deploy_app() {
     
     # 롤아웃 대기
     log_info "롤아웃 대기 중..."
-    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=300s
+    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=1200s
     
     log_success "배포 완료!"
 }
@@ -141,7 +141,7 @@ restart_deployment() {
     kubectl rollout restart deployment/$APP_NAME -n $NAMESPACE
     
     log_info "재시작 완료 대기 중..."
-    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=300s
+    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=1200s
     
     log_success "재시작 완료!"
 }
@@ -152,7 +152,7 @@ rollback_deployment() {
     kubectl rollout undo deployment/$APP_NAME -n $NAMESPACE
     
     log_info "롤백 완료 대기 중..."
-    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=300s
+    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=1200s
     
     log_success "롤백 완료!"
 }
@@ -208,7 +208,7 @@ scale_deployment() {
     kubectl scale deployment/$APP_NAME -n $NAMESPACE --replicas=$replicas
     
     log_info "스케일 조정 완료 대기 중..."
-    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=300s
+    kubectl rollout status deployment/$APP_NAME -n $NAMESPACE --timeout=1200s
     
     log_success "스케일 조정 완료!"
 }
