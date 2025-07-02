@@ -1,8 +1,9 @@
 # Blacklist Management System
 
-[![Build Status](https://github.com/jclee/blacklist/actions/workflows/k8s-deploy.yml/badge.svg)](https://github.com/jclee/blacklist/actions)
+[![Build Status](https://github.com/JCLEE94/blacklist/actions/workflows/k8s-deploy.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.24+-blue.svg)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/docker-registry.jclee.me-blue.svg)](https://registry.jclee.me)
+[![Production](https://img.shields.io/badge/production-blacklist.jclee.me-green.svg)](https://blacklist.jclee.me)
 
 통합 위협 정보 관리 플랫폼 - Kubernetes 네이티브 아키텍처, 다중 소스 데이터 수집, FortiGate External Connector 연동 지원
 
@@ -22,7 +23,7 @@ graph TB
     
     H[GitHub Push] --> I[GitHub Actions<br/>Self-hosted Runner]
     I --> J[Docker Registry<br/>registry.jclee.me]
-    J --> K[ArgoCD/FluxCD<br/>Auto Rollout]
+    J --> K[Auto-updater CronJob<br/>5분마다 체크]
     K --> C
     
     L[REGTECH API] --> C
@@ -37,7 +38,7 @@ graph TB
 - Kubernetes cluster (k3s/k8s v1.24+)
 - kubectl 설정 완료
 - Docker 및 registry 접근 권한
-- ArgoCD 또는 FluxCD 설치 (자동 배포용)
+- Auto-updater CronJob 활성화 (자동 배포용)
 
 ### 🎯 자동 배포 (CI/CD)
 
@@ -51,33 +52,52 @@ cd blacklist
 # 2. 간단 배포 (Ubuntu/Linux)
 ./scripts/deploy.sh
 
-# 3. 자동 이미지 업데이트 활성화 (선택사항)
-kubectl apply -f k8s/auto-updater.yaml
+# 3. 자동 이미지 업데이트 활성화 (필수)
+kubectl apply -f k8s/auto-updater-enhanced.yaml
 ```
 
 ### 🔄 CI/CD Pipeline
 
 **코드 푸시 → 이미지 빌드 → 자동 배포 (2분 이내)**
 
-1. **GitHub Push** → GitHub Actions 자동 트리거
+1. **GitHub Push** → GitHub Actions 자동 트리거 (Self-hosted Runner)
 2. **이미지 빌드** → `registry.jclee.me/blacklist:SHA` 태그로 푸시  
-3. **자동 배포** → CronJob이 2분마다 새 이미지 감지 & 배포
-4. **헬스 체크** → 자동 롤백 지원
+3. **자동 배포** → Enhanced CronJob이 5분마다 새 이미지 감지 & 배포
+4. **헬스 체크** → 자동 롤백 및 실패 복구 지원
 
 ```bash
 # CI/CD 상태 확인
-kubectl get cronjob auto-image-updater -n blacklist
-kubectl logs -f job/auto-image-updater-xxx -n blacklist
+kubectl get cronjob auto-updater -n blacklist
+kubectl logs -f job/auto-updater-xxx -n blacklist
+
+# 최근 CI/CD 실행 상태
+gh run list --limit 5
+
+# 배포 모니터링
+kubectl get events -n blacklist --sort-by='.lastTimestamp'
 ```
 
-# 3. 애플리케이션 배포
-./scripts/k8s-management.sh deploy
+## ⚡ 빠른 배포
 
-# 4. 배포 확인
+### 방법 1: 관리 스크립트 사용 (권장)
+```bash
+# 초기 배포
+./scripts/k8s-management.sh init
+
+# 상태 확인
 ./scripts/k8s-management.sh status
 
-# 또는 수동 배포
+# 롤백 (필요시)
+./scripts/k8s-management.sh rollback
+```
+
+### 방법 2: 수동 배포
+```bash
+# Kubernetes 매니페스트 적용
 kubectl apply -k k8s/
+
+# Auto-updater 활성화
+kubectl apply -f k8s/auto-updater-enhanced.yaml
 ```
 
 ### 개발 환경 실행
@@ -93,37 +113,29 @@ python3 init_database.py
 python3 main.py --debug  # 또는 python3 main.py --port 8541
 ```
 
-### ArgoCD를 통한 자동 배포
+### 자동 배포 실패 방지 시스템
+
+시스템적 재발 방지 대책이 구축되어 있습니다:
 
 ```bash
-# 1. ArgoCD Application 생성
-kubectl apply -f - <<EOF
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: blacklist
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/jclee/blacklist
-    targetRevision: HEAD
-    path: k8s
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: blacklist
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
-EOF
+# 1. 배포 모니터링 워크플로우 (매시간 실행)
+ls .github/workflows/deployment-monitor.yml
 
-# 2. 이미지 업데이트 시 자동 롤아웃
-# GitHub Actions가 새 이미지를 registry.jclee.me에 푸시하면
-# ArgoCD가 자동으로 감지하고 롤아웃 수행
+# 2. 자동 복구 스크립트
+./scripts/setup/auto-deployment-fix.sh
+
+# 3. Enhanced Auto-updater (5분마다 실행, 자동 롤백)
+kubectl get cronjob auto-updater -n blacklist
+
+# 4. 실패 시 즉시 복구
+./scripts/recovery/blacklist-recovery.sh
 ```
+
+**주요 방지 기능:**
+- Docker Registry 인증 실패 자동 복구
+- PVC/PV 바인딩 문제 자동 해결
+- 헬스 체크 실패 시 자동 롤백
+- GitHub Secrets 자동 검증
 
 ## 📦 주요 기능
 
@@ -137,19 +149,25 @@ EOF
 - **설정 관리**: `/settings/management` 웹 인터페이스
 - **만료 관리**: 90일 자동 만료 및 상태 추적 (등록일 기준)
 
-### API 엔드포인트
+### Core API 엔드포인트
+- `GET /` - 메인 대시보드 (활성 IP: 22,740개)
 - `GET /health` - 상태 확인 및 상세 진단
 - `GET /api/fortigate` - FortiGate External Connector 형식
 - `GET /api/blacklist/active` - 활성 IP 목록 (텍스트)
 - `GET /api/stats` - 시스템 통계 (만료 정보 포함)
+- `GET /test` - 간단한 테스트 엔드포인트
+
+### Collection Management API
 - `GET /api/collection/status` - 수집 서비스 상태
-- `POST /api/collection/enable` - 수집 활성화
+- `POST /api/collection/enable` - 수집 활성화 (기존 데이터 정리)
 - `POST /api/collection/disable` - 수집 비활성화
-- `POST /api/collection/{source}/trigger` - 수동 수집 트리거
+- `POST /api/collection/regtech/trigger` - REGTECH 수동 수집
+- `POST /api/collection/secudium/trigger` - SECUDIUM 수동 수집
+
+### Settings Management API
 - `GET /api/settings/all` - 모든 설정 조회
 - `POST /api/settings/bulk` - 대량 설정 업데이트
-- `GET /unified-control` - 통합 관리 웹 UI
-- `GET /settings/management` - 설정 관리 대시보드
+- `GET /settings/management` - 설정 관리 웹 대시보드
 
 ### V2 API 엔드포인트 (고급 기능)
 - `GET /api/v2/blacklist/enhanced` - 메타데이터 포함 블랙리스트
@@ -223,35 +241,47 @@ curl http://<node-ip>:32541/api/stats
 
 ## 🔄 CI/CD 파이프라인
 
-### GitHub Actions → Kubernetes 자동 배포
+### Enhanced GitHub Actions → Kubernetes 자동 배포
 1. **코드 푸시**: main 브랜치에 푸시
-2. **GitHub Actions (Self-hosted Runner)**: 
-   - 테스트 실행 (pytest)
-   - Docker 이미지 빌드 (멀티 아키텍처)
-   - registry.jclee.me에 푸시
-   - 버전 태그 자동 생성
-3. **ArgoCD/FluxCD**: 
-   - 새 이미지 자동 감지
-   - Rolling Update 수행
-   - 헬스체크 및 자동 롤백
+2. **GitHub Actions (Self-hosted Runner)**:
+   - 품질 검사 (병렬): Python 구문 검사, 보안 스캔
+   - Docker 인증: Private Registry 우선, Docker Hub 선택적
+   - 멀티 태그 빌드: latest, SHA-7, SHA-8, branch, timestamp
+   - registry.jclee.me에 안전한 푸시
+3. **Enhanced Auto-updater CronJob**:
+   - 5분마다 새 이미지 자동 감지
+   - Rolling Update with Zero Downtime
+   - 실패 시 자동 롤백 및 복구
+   - 포스트 배포 헬스 체크
 
-### 이미지 자동 업데이트 설정
+### Enhanced Auto-updater 설정
 ```yaml
-# ArgoCD Image Updater 설정
-apiVersion: v1
-kind: ConfigMap
+# Enhanced Auto-updater CronJob
+apiVersion: batch/v1
+kind: CronJob
 metadata:
-  name: argocd-image-updater-config
-  namespace: argocd
-data:
-  registries.conf: |
-    registries:
-    - name: jclee-registry
-      prefix: registry.jclee.me
-      api_url: https://registry.jclee.me
-      credentials: secret:argocd/registry-secret#creds
-      default: true
+  name: auto-updater
+  namespace: blacklist
+spec:
+  schedule: "*/5 * * * *"  # 5분마다 실행
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: auto-updater
+          containers:
+          - name: updater
+            image: bitnami/kubectl:latest
+            # 이미지 업데이트 및 롤백 로직 포함
 ```
+
+**주요 개선사항:**
+- RBAC 기반 ServiceAccount 사용
+- 롤백 실패 시 자동 복구
+- 포스트 업데이트 헬스 체크
+- 상세한 로깅 및 모니터링
 
 ### 수동 배포
 ```bash
@@ -847,31 +877,51 @@ spec:
 
 ## 📚 추가 문서
 
+### 기술 문서
 - [CLAUDE.md](./CLAUDE.md) - AI 어시스턴트를 위한 상세 가이드
-- [Kubernetes 관리 스크립트](./scripts/k8s-management.sh) - 배포 자동화
-- [CI/CD 워크플로우](./.github/workflows/k8s-deploy.yml) - GitHub Actions 설정
+- [자동 배포 실패 방지 가이드](./docs/AUTO_DEPLOYMENT_PREVENTION.md) - 시스템적 재발 방지 대책
+
+### 스크립트 및 도구
+- [Kubernetes 관리 스크립트](./scripts/k8s-management.sh) - 배포 자동화 (Linux/macOS)
+- [자동 배포 수정 스크립트](./scripts/setup/auto-deployment-fix.sh) - 실패 방지 설정
+- [자동 복구 스크립트](./scripts/recovery/blacklist-recovery.sh) - 배포 실패 시 복구
+
+### CI/CD 설정
+- [GitHub Actions 워크플로우](./.github/workflows/k8s-deploy.yml) - 메인 배포 파이프라인
+- [배포 모니터링](./.github/workflows/deployment-monitor.yml) - 매시간 헬스 체크
+- [Enhanced Auto-updater](./k8s/auto-updater-enhanced.yaml) - 5분마다 자동 업데이트
 
 ## 🔄 최근 변경사항 (2025.07.01)
 
-### 새로운 기능
+### 🚀 주요 신규 기능
+- **자동 배포 실패 방지 시스템**: 시스템적 재발 방지 대책 구축
+  - 배포 모니터링 워크플로우 (매시간 실행)
+  - Enhanced Auto-updater CronJob (5분마다, 자동 롤백)
+  - 자동 복구 스크립트 및 완전 자동화 시스템
 - **설정 관리 대시보드**: `/settings/management` 웹 인터페이스 추가
 - **V2 API**: 고급 분석 및 메타데이터 기능 추가 (`/api/v2/*`)
 - **라우트 통합**: 모든 API 라우트를 `unified_routes.py`로 통합
-- **만료 상태 관리**: 대시보드에 만료된 IP 및 30일 내 만료 예정 IP 표시
 
-### 버그 수정
+### 🛠️ 중요 인프라 개선
+- **CI/CD 파이프라인 강화**: Docker Hub 인증 실패 문제 완전 해결
+  - Private Registry 우선순위 변경
+  - 멀티 태그 전략 (SHA-7, SHA-8, timestamp)
+  - 자동 롤백 및 헬스 체크 강화
+- **PVC/PV 바인딩 문제 자동 해결**: Released 상태 자동 복구
+- **Enhanced Auto-updater**: RBAC 기반 ServiceAccount 적용
+
+### 🐛 버그 수정
+- **Docker Registry 인증 실패**: 401 Unauthorized 오류 완전 해결
 - Settings 라우트 충돌 해결 (`/api/settings` → `/api/settings/all`, `/api/settings/bulk`)
-- IndentationError 수정 (`settings_routes.py` line 372)
+- **만료일 계산 수정**: detection_date 기준으로 정확한 90일 만료 계산
+- PVC Terminating 상태 해결 (finalizers 제거)
 - 405 Method Not Allowed 오류 해결
-- **만료일 계산 수정**: 수집일(created_at)이 아닌 등록일(detection_date) 기준으로 계산
-  - 4월 2일 등록 IP → 7월 1일 정확히 만료 처리
-  - 만료된 IP: 118개, 30일 내 만료 예정: 7,715개로 정정
 
-### 개선사항
-- Kubernetes 배포 최적화 (10개 replica로 증가)
-- API 엔드포인트 정리 및 문서화
-- 빌드 프로세스 개선
-- 데이터베이스 `expires_at` 컬럼 추가 및 만료 로직 구현
+### 📊 현재 운영 상태
+- **활성 IP**: 22,740개 (REGTECH: 22,098개, SECUDIUM: 642개)
+- **Pod 상태**: 8개 Pod 모두 Running (4개 replica → 8개로 증가)
+- **배포 상태**: ✅ 정상 운영 중 (https://blacklist.jclee.me)
+- **CI/CD**: ✅ 완전 자동화 (GitHub Actions + Auto-updater)
 
 ---
 

@@ -830,7 +830,21 @@ class UnifiedBlacklistService:
     
     def get_system_stats(self) -> Dict[str, Any]:
         """시스템 통계 반환"""
-        return self.get_system_health()  # Reuse system health data
+        health_data = self.get_system_health()
+        
+        # Convert health data to stats format expected by the API
+        return {
+            'total_ips': health_data.get('total_ips', 0),
+            'active_ips': health_data.get('active_ips', 0),
+            'expired_ips': 0,  # TODO: Implement expired IP count
+            'expiring_soon': 0,  # TODO: Implement expiring soon count
+            'regtech_count': health_data.get('regtech_count', 0),
+            'secudium_count': health_data.get('secudium_count', 0),
+            'public_count': health_data.get('public_count', 0),
+            'cache_hit_rate': 0.0,  # TODO: Implement cache hit rate
+            'last_update': health_data.get('last_update', datetime.now().isoformat()),
+            'status': health_data.get('status', 'healthy')
+        }
     
     def add_collection_log(self, source: str, action: str, details: Dict[str, Any] = None):
         """수집 로그 추가 - 메모리와 데이터베이스에 저장"""
