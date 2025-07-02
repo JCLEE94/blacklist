@@ -1191,11 +1191,7 @@ def get_system_stats():
             'expiring_soon': expiring_soon
         })
         
-        return jsonify({
-            'success': True,
-            'data': enhanced_stats,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+        return jsonify(enhanced_stats)
     except Exception as e:
         logger.error(f"System stats error: {e}")
         return jsonify(create_error_response(e)), 500
