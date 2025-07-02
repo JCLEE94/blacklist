@@ -122,7 +122,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         def get_rate_limit_key():
             """Rate limiting을 위한 키 생성 (헬스 체크는 제외)"""
             if request.path in ['/health', '/api/health']:
-                return None  # 헬스 체크는 rate limiting 제외
+                return "health-check-exempt"  # 헬스 체크용 고정 키 사용
             return get_remote_address()
         
         limiter = Limiter(
