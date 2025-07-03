@@ -7,12 +7,14 @@
 
 통합 위협 정보 관리 플랫폼 - Kubernetes 네이티브 아키텍처, 다중 소스 데이터 수집, FortiGate External Connector 연동 지원
 
+> **최신 업데이트 (2025.07.03)**: Stats API 만료 관리 기능 추가, 네임스페이스 마이그레이션 (`blacklist` → `blacklist-new`)
+
 ## 🏗️ Architecture
 
 ```mermaid
 graph TB
     subgraph "Production Kubernetes Cluster"
-        subgraph "blacklist namespace"
+        subgraph "blacklist-new namespace"
             A[Ingress/NodePort] --> B[Service]
             B --> C[Deployment<br/>4 Replicas]
             C --> D[Redis Cache]
@@ -67,14 +69,14 @@ kubectl apply -f k8s/auto-updater-enhanced.yaml
 
 ```bash
 # CI/CD 상태 확인
-kubectl get cronjob auto-updater -n blacklist
-kubectl logs -f job/auto-updater-xxx -n blacklist
+kubectl get cronjob auto-updater -n blacklist-new
+kubectl logs -f job/auto-updater-xxx -n blacklist-new
 
 # 최근 CI/CD 실행 상태
 gh run list --limit 5
 
 # 배포 모니터링
-kubectl get events -n blacklist --sort-by='.lastTimestamp'
+kubectl get events -n blacklist-new --sort-by='.lastTimestamp'
 ```
 
 ## ⚡ 빠른 배포
@@ -125,7 +127,7 @@ ls .github/workflows/deployment-monitor.yml
 ./scripts/setup/auto-deployment-fix.sh
 
 # 3. Enhanced Auto-updater (5분마다 실행, 자동 롤백)
-kubectl get cronjob auto-updater -n blacklist
+kubectl get cronjob auto-updater -n blacklist-new
 
 # 4. 실패 시 즉시 복구
 ./scripts/recovery/blacklist-recovery.sh
@@ -150,11 +152,15 @@ kubectl get cronjob auto-updater -n blacklist
 - **만료 관리**: 90일 자동 만료 및 상태 추적 (등록일 기준)
 
 ### Core API 엔드포인트
-- `GET /` - 메인 대시보드 (활성 IP: 22,740개)
+- `GET /` - 메인 대시보드 (활성 IP: 22,517개, 총 22,740개)
 - `GET /health` - 상태 확인 및 상세 진단
 - `GET /api/fortigate` - FortiGate External Connector 형식
 - `GET /api/blacklist/active` - 활성 IP 목록 (텍스트)
 - `GET /api/stats` - 시스템 통계 (만료 정보 포함)
+  - `active_ips`: 현재 활성 IP 수
+  - `expired_ips`: 만료된 IP 수
+  - `expiring_soon`: 30일 내 만료 예정 IP 수
+  - `cache_hit_rate`: 캐시 히트율
 - `GET /test` - 간단한 테스트 엔드포인트
 
 ### Collection Management API
@@ -188,7 +194,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: blacklist-config
-  namespace: blacklist
+  namespace: blacklist-new
 data:
   PORT: "2541"
   FLASK_ENV: "production"
@@ -203,7 +209,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: blacklist-secret
-  namespace: blacklist
+  namespace: blacklist-new
 type: Opaque
 stringData:
   REGTECH_USERNAME: "your-username"
@@ -218,16 +224,16 @@ stringData:
 ### Pod 및 리소스 확인
 ```bash
 # Pod 상태
-kubectl get pods -n blacklist
+kubectl get pods -n blacklist-new
 
 # 리소스 사용량
-kubectl top pods -n blacklist
+kubectl top pods -n blacklist-new
 
 # 로그 확인
-kubectl logs -f deployment/blacklist -n blacklist
+kubectl logs -f deployment/blacklist -n blacklist-new
 
 # 이벤트 확인
-kubectl get events -n blacklist --sort-by='.lastTimestamp'
+kubectl get events -n blacklist-new --sort-by='.lastTimestamp'
 ```
 
 ### 수집 상태 모니터링
@@ -261,7 +267,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: auto-updater
-  namespace: blacklist
+  namespace: blacklist-new
 spec:
   schedule: "*/5 * * * *"  # 5분마다 실행
   successfulJobsHistoryLimit: 3
@@ -289,7 +295,7 @@ spec:
 ./scripts/k8s-management.sh deploy --tag v1.2.3
 
 # 또는 직접 이미지 업데이트
-kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:v1.2.3 -n blacklist
+kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:v1.2.3 -n blacklist-new
 ```
 
 ## 🧪 테스트
@@ -891,9 +897,20 @@ spec:
 - [배포 모니터링](./.github/workflows/deployment-monitor.yml) - 매시간 헬스 체크
 - [Enhanced Auto-updater](./k8s/auto-updater-enhanced.yaml) - 5분마다 자동 업데이트
 
-## 🔄 최근 변경사항 (2025.07.01)
+## 🔄 최근 변경사항 (2025.07.03)
 
-### 🚀 주요 신규 기능
+### 🚀 주요 신규 기능 (2025.07.03)
+- **Stats API 만료 관리 기능**: IP 만료 정보 완전 구현
+  - `expired_ips`: 만료된 IP 수 (현재 223개)
+  - `expiring_soon`: 30일 내 만료 예정 IP 수 (현재 7,492개)
+  - `cache_hit_rate`: 캐시 히트율 통계
+  - 데이터베이스 스키마 업데이트 (`expires_at` 컬럼 추가)
+- **네임스페이스 마이그레이션**: `blacklist` → `blacklist-new`
+  - Terminating 상태 문제 해결
+  - 모든 리소스 안전하게 이전 완료
+  - Auto-updater 설정 업데이트
+
+### 🚀 이전 주요 기능 (2025.07.01)
 - **자동 배포 실패 방지 시스템**: 시스템적 재발 방지 대책 구축
   - 배포 모니터링 워크플로우 (매시간 실행)
   - Enhanced Auto-updater CronJob (5분마다, 자동 롤백)
@@ -918,8 +935,12 @@ spec:
 - 405 Method Not Allowed 오류 해결
 
 ### 📊 현재 운영 상태
-- **활성 IP**: 22,740개 (REGTECH: 22,098개, SECUDIUM: 642개)
-- **Pod 상태**: 8개 Pod 모두 Running (4개 replica → 8개로 증가)
+- **활성 IP**: 22,517개 / 총 22,740개 (REGTECH: 22,098개, SECUDIUM: 642개)
+- **만료 상태**: 
+  - 만료된 IP: 223개 (1.0%)
+  - 30일 내 만료 예정: 7,492개 (33.0%)
+- **네임스페이스**: `blacklist-new` (기존 `blacklist`에서 마이그레이션)
+- **Pod 상태**: 4개 Pod 모두 Running (HPA 자동 스케일링)
 - **배포 상태**: ✅ 정상 운영 중 (https://blacklist.jclee.me)
 - **CI/CD**: ✅ 완전 자동화 (GitHub Actions + Auto-updater)
 
