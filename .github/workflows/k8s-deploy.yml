@@ -251,30 +251,35 @@ jobs:
         run: |
           echo "🏥 Running health checks..."
           
-          # NodePort로 접속 정보 가져오기
-          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-          NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
+          # Pod가 Ready 상태가 될 때까지 대기
+          echo "⏳ Waiting for pods to be ready..."
+          kubectl wait --for=condition=ready pod -l app=blacklist -n ${{ env.NAMESPACE }} --timeout=300s
           
-          BASE_URL="http://$NODE_IP:$NODE_PORT"
-          echo "🔗 Testing via: $BASE_URL"
-          
-          # 최대 60번 시도 (10분)
-          MAX_ATTEMPTS=60
+          # 최대 30번 시도 (5분)
+          MAX_ATTEMPTS=30
           ATTEMPT=0
           
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             ATTEMPT=$((ATTEMPT + 1))
             echo "🔍 Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
             
-            # Health 체크
-            if curl -f -s --connect-timeout 5 --max-time 10 "$BASE_URL/health" > /dev/null 2>&1; then
+            # Pod 내부에서 직접 health check
+            if kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --connect-timeout 5 --max-time 10 http://localhost:2541/health > /dev/null 2>&1; then
               echo "✅ Application is healthy!"
               
-              # 추가 엔드포인트 테스트
+              # 추가 엔드포인트 테스트 (Pod 내부에서)
               echo "🧪 Testing additional endpoints..."
-              curl -f -s --max-time 5 "$BASE_URL/api/stats" > /dev/null && echo "✅ /api/stats: OK" || echo "⚠️ /api/stats: Failed"
-              curl -f -s --max-time 5 "$BASE_URL/test" > /dev/null && echo "✅ /test: OK" || echo "⚠️ /test: Failed"
-              curl -f -s --max-time 5 "$BASE_URL/api/collection/status" > /dev/null && echo "✅ /api/collection/status: OK" || echo "⚠️ /api/collection/status: Failed"
+              kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/api/stats > /dev/null && echo "✅ /api/stats: OK" || echo "⚠️ /api/stats: Failed"
+              kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/test > /dev/null && echo "✅ /test: OK" || echo "⚠️ /test: Failed"
+              kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/api/collection/status > /dev/null && echo "✅ /api/collection/status: OK" || echo "⚠️ /api/collection/status: Failed"
+              
+              # NodePort 정보 출력 (참고용)
+              NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+              NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
+              echo ""
+              echo "📌 External access info (NodePort):"
+              echo "   URL: http://$NODE_IP:$NODE_PORT"
+              echo "   Note: NodePort may not be accessible from CI/CD runner"
               
               break
             else
@@ -283,7 +288,7 @@ jobs:
             fi
             
             if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-              echo "❌ Application failed to become healthy after 10 minutes"
+              echo "❌ Application failed to become healthy after 5 minutes"
               echo "📝 Pod logs:"
               kubectl logs deployment/blacklist -n ${{ env.NAMESPACE }} --tail=50
               echo "🔍 Pod description:"
@@ -298,19 +303,17 @@ jobs:
         run: |
           echo "⚡ Running performance checks..."
           
-          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-          NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
-          BASE_URL="http://$NODE_IP:$NODE_PORT"
-          
-          # 응답 시간 체크
-          echo "📊 Checking response times..."
+          # Pod 내부에서 응답 시간 체크
+          echo "📊 Checking response times (from inside pod)..."
           for i in {1..5}; do
-            RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}\n' "$BASE_URL/health")
+            RESPONSE_TIME=$(kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- sh -c "curl -o /dev/null -s -w '%{time_total}' http://localhost:2541/health" 2>/dev/null || echo "0")
             echo "   Response $i: ${RESPONSE_TIME}s"
             
-            # 2초 이상이면 경고
-            if [ "$(echo "$RESPONSE_TIME > 2.0" | bc -l)" -eq 1 ]; then
-              echo "⚠️ Slow response detected: ${RESPONSE_TIME}s"
+            # bc 명령어가 없을 수 있으므로 awk 사용
+            if [ -n "$RESPONSE_TIME" ] && [ "$RESPONSE_TIME" != "0" ]; then
+              if awk "BEGIN {exit !($RESPONSE_TIME > 2.0)}"; then
+                echo "⚠️ Slow response detected: ${RESPONSE_TIME}s"
+              fi
             fi
           done
           
@@ -322,12 +325,10 @@ jobs:
           
           # 자동 수집 확인
           echo "🔄 Checking auto-collection status..."
-          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-          NODE_PORT=$(kubectl get svc blacklist-nodeport -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32541")
           
-          # 5초 대기 후 수집 상태 확인
+          # 5초 대기 후 수집 상태 확인 (Pod 내부에서)
           sleep 5
-          COLLECTION_STATUS=$(curl -s "http://$NODE_IP:$NODE_PORT/api/collection/status" 2>/dev/null || echo "Failed to get status")
+          COLLECTION_STATUS=$(kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -s http://localhost:2541/api/collection/status 2>/dev/null || echo "Failed to get status")
           echo "📊 Collection status: $COLLECTION_STATUS"
           
           # 이전 ReplicaSet 정리 (최신 3개만 유지)
