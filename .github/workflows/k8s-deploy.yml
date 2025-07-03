@@ -20,7 +20,7 @@ on:
 env:
   REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
-  NAMESPACE: blacklist
+  NAMESPACE: blacklist-new
 
 jobs:
   # 빠른 체크들을 병렬로 실행

@@ -4,7 +4,7 @@
 echo "🚀 Blacklist 배포 시작..."
 
 # 환경 변수 설정 (CI/CD에서 전달받거나 기본값 사용)
-NAMESPACE="${NAMESPACE:-blacklist}"
+NAMESPACE="${NAMESPACE:-blacklist-new}"
 REGISTRY="${REGISTRY:-registry.jclee.me}"
 REGISTRY_USER="${REGISTRY_USER:-qws9411}"
 REGISTRY_PASS="${REGISTRY_PASS:-bingogo1}"
@@ -17,19 +17,14 @@ echo "   - 레지스트리: $REGISTRY"
 echo "   - 이미지 태그: $IMAGE_TAG"
 echo "   - 강제 업데이트: $FORCE_UPDATE"
 
-# 1. 기존 네임스페이스 삭제
-echo "🗑️  기존 리소스 정리..."
-kubectl delete namespace $NAMESPACE --force --grace-period=0 2>/dev/null
-
-# Terminating 상태 해결
-kubectl patch namespace $NAMESPACE -p '{"metadata":{"finalizers":null}}' --type=merge 2>/dev/null
-
-# 대기
-sleep 5
-
-# 2. 네임스페이스 생성
-echo "📦 네임스페이스 생성..."
-kubectl create namespace $NAMESPACE
+# 1. 네임스페이스 확인 및 생성
+echo "📦 네임스페이스 확인..."
+if kubectl get namespace $NAMESPACE &>/dev/null; then
+    echo "   - 네임스페이스 $NAMESPACE 이미 존재"
+else
+    echo "   - 네임스페이스 $NAMESPACE 생성 중..."
+    kubectl create namespace $NAMESPACE
+fi
 
 # 3. Registry Secret 생성
 echo "🔐 Registry Secret 생성..."

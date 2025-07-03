@@ -2,13 +2,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: auto-updater
-  namespace: blacklist
+  namespace: blacklist-new
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: auto-updater
-  namespace: blacklist
+  namespace: blacklist-new
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
@@ -21,7 +21,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: auto-updater
-  namespace: blacklist
+  namespace: blacklist-new
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -29,13 +29,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: auto-updater
-  namespace: blacklist
+  namespace: blacklist-new
 ---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: auto-updater
-  namespace: blacklist
+  namespace: blacklist-new
 spec:
   schedule: "*/5 * * * *"  # 5분마다 실행
   successfulJobsHistoryLimit: 3
@@ -125,7 +125,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: post-update-health-check
-  namespace: blacklist
+  namespace: blacklist-new
 spec:
   template:
     metadata:
