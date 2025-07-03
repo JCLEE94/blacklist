@@ -92,6 +92,14 @@ def init_database(force_recreate=False):
         )
         """)
         
+        # expires_at 컬럼 추가 (이미 있으면 무시)
+        try:
+            cursor.execute("ALTER TABLE blacklist_ip ADD COLUMN expires_at TIMESTAMP")
+            print("✅ Added expires_at column to blacklist_ip table")
+        except sqlite3.OperationalError:
+            # 컬럼이 이미 존재하면 무시
+            pass
+        
         # daily_stats 테이블
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS daily_stats (

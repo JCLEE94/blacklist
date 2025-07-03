@@ -81,41 +81,59 @@ spec:
               echo "Current tag: ${CURRENT_TAG}"
               
               # Registry에서 사용 가능한 태그 확인
-              # Note: 실제 환경에서는 registry API를 사용하여 태그 목록을 가져와야 함
               echo "Checking for new images in registry..."
               
-              # 간단한 로직: latest 태그가 현재 태그와 다른지 확인
-              LATEST_IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
+              # SHA 태그도 확인 (GitHub Actions에서 생성하는 태그)
+              # 현재 태그가 SHA 형식인지 확인
+              if [[ "$CURRENT_TAG" =~ ^[a-f0-9]{7,8}$ ]]; then
+                echo "Current tag is a SHA tag: $CURRENT_TAG"
+                # SHA 태그인 경우, latest로 업데이트 시도
+                LATEST_IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
+              else
+                # 그렇지 않으면 latest 태그 사용
+                LATEST_IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
+              fi
               
               # 새 이미지로 업데이트 시도
               echo "Attempting to update to: ${LATEST_IMAGE}"
               
-              # 이미지 업데이트
-              kubectl set image deployment/blacklist blacklist=${LATEST_IMAGE} -n ${NAMESPACE}
-              
-              # 롤아웃 상태 확인 (최대 5분 대기)
-              if kubectl rollout status deployment/blacklist -n ${NAMESPACE} --timeout=300s; then
-                echo "✅ Deployment updated successfully"
-                
-                # 헬스 체크
-                sleep 30
-                READY_REPLICAS=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.status.readyReplicas}')
-                DESIRED_REPLICAS=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.spec.replicas}')
-                
-                if [ "${READY_REPLICAS}" == "${DESIRED_REPLICAS}" ]; then
-                  echo "✅ All replicas are ready (${READY_REPLICAS}/${DESIRED_REPLICAS})"
-                else
-                  echo "⚠️ Not all replicas are ready (${READY_REPLICAS}/${DESIRED_REPLICAS})"
-                fi
+              # 현재 이미지와 비교
+              if [ "${CURRENT_IMAGE}" == "${LATEST_IMAGE}" ] && [[ ! "$CURRENT_TAG" =~ ^[a-f0-9]{7,8}$ ]]; then
+                echo "ℹ️ No update needed - already running latest image"
               else
-                echo "❌ Rollout failed or timed out"
+                echo "🔄 Updating from ${CURRENT_IMAGE} to ${LATEST_IMAGE}"
                 
-                # 롤백 시도
-                echo "Attempting rollback..."
-                kubectl rollout undo deployment/blacklist -n ${NAMESPACE}
-                kubectl rollout status deployment/blacklist -n ${NAMESPACE} --timeout=300s
+                # 이미지 업데이트
+                kubectl set image deployment/blacklist blacklist=${LATEST_IMAGE} -n ${NAMESPACE}
                 
-                exit 1
+                # 롤아웃 상태 확인 (최대 5분 대기)
+                if kubectl rollout status deployment/blacklist -n ${NAMESPACE} --timeout=300s; then
+                  echo "✅ Deployment updated successfully"
+                  
+                  # 헬스 체크
+                  sleep 30
+                  READY_REPLICAS=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.status.readyReplicas}')
+                  DESIRED_REPLICAS=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.spec.replicas}')
+                  
+                  if [ "${READY_REPLICAS}" == "${DESIRED_REPLICAS}" ]; then
+                    echo "✅ All replicas are ready (${READY_REPLICAS}/${DESIRED_REPLICAS})"
+                    
+                    # 업데이트된 이미지 태그 확인
+                    NEW_IMAGE=$(kubectl get deployment blacklist -n ${NAMESPACE} -o jsonpath='{.spec.template.spec.containers[0].image}')
+                    echo "🎯 New image deployed: ${NEW_IMAGE}"
+                  else
+                    echo "⚠️ Not all replicas are ready (${READY_REPLICAS}/${DESIRED_REPLICAS})"
+                  fi
+                else
+                  echo "❌ Rollout failed or timed out"
+                
+                  # 롤백 시도
+                  echo "Attempting rollback..."
+                  kubectl rollout undo deployment/blacklist -n ${NAMESPACE}
+                  kubectl rollout status deployment/blacklist -n ${NAMESPACE} --timeout=300s
+                  
+                  exit 1
+                fi
               fi
               
               echo "🔄 Auto-updater completed at $(date)"

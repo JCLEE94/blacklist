@@ -259,6 +259,13 @@ jobs:
           echo "⏳ Waiting additional 30 seconds for pod stabilization..."
           sleep 30
           
+          # 데이터베이스 초기화 확인
+          echo "🗄️ Checking database initialization..."
+          POD_NAME=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=blacklist -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          if [ -n "$POD_NAME" ]; then
+            kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- python3 -c "import sqlite3; conn = sqlite3.connect('/app/instance/blacklist.db'); cursor = conn.cursor(); cursor.execute('PRAGMA table_info(blacklist_ip)'); columns = [col[1] for col in cursor.fetchall()]; print('✅ Database columns:', columns); conn.close()" || echo "⚠️ Database check skipped"
+          fi
+          
           # 최대 30번 시도 (5분)
           MAX_ATTEMPTS=30
           ATTEMPT=0
@@ -337,6 +344,11 @@ jobs:
           POD_NAME=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=blacklist -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
           COLLECTION_STATUS=$(kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- curl -s http://localhost:2541/api/collection/status 2>/dev/null || echo "Failed to get status")
           echo "📊 Collection status: $COLLECTION_STATUS"
+          
+          # Stats API 상태 확인
+          echo "📈 Checking Stats API..."
+          STATS_RESPONSE=$(kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- curl -s http://localhost:2541/api/stats 2>/dev/null || echo "Failed to get stats")
+          echo "📊 Stats response: $STATS_RESPONSE"
           
           # 이전 ReplicaSet 정리 (replicas가 0인 것들만)
           echo "🧹 Cleaning up old ReplicaSets..."
