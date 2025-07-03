@@ -29,6 +29,6 @@ spec:
   ports:
   - port: 2541
     targetPort: 2541
-    nodePort: 32541
+    nodePort: 32542
     protocol: TCP
     name: http

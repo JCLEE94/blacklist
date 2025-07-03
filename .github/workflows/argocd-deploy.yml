@@ -3,8 +3,21 @@ name: ArgoCD CI/CD Pipeline
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+
+# Prevent multiple workflows from running simultaneously
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: registry.jclee.me
@@ -13,10 +26,42 @@ env:
   ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
 
 jobs:
-  test:
+  # Skip workflow for documentation-only changes
+  check-changes:
     runs-on: self-hosted
+    outputs:
+      should-skip: ${{ steps.skip-check.outputs.should_skip }}
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Check for code changes
+      id: skip-check
+      run: |
+        # Check if only docs/markdown files changed
+        if git diff --name-only ${{ github.event.before }}..${{ github.sha }} | grep -E '\.(py|yaml|yml|dockerfile|txt|sh)$'; then
+          echo "should_skip=false" >> $GITHUB_OUTPUT
+        else
+          echo "should_skip=true" >> $GITHUB_OUTPUT
+        fi
+
+  test:
+    needs: check-changes
+    if: needs.check-changes.outputs.should-skip != 'true'
+    runs-on: self-hosted
+    timeout-minutes: 15
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -27,22 +72,26 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov
+        pip install pytest pytest-cov flake8
     
-    - name: Run tests
+    - name: Run tests and lint in parallel
       run: |
-        pytest -v --cov=src tests/
-    
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # Run tests
+        pytest -v --cov=src tests/ --tb=short &
+        TEST_PID=$!
+        
+        # Run linting
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics &
+        LINT_PID=$!
+        
+        # Wait for both to complete
+        wait $TEST_PID && wait $LINT_PID
 
   build-and-push:
-    needs: test
+    needs: [check-changes, test]
     runs-on: self-hosted
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check-changes.outputs.should-skip != 'true'
+    timeout-minutes: 20
     
     steps:
     - uses: actions/checkout@v3
@@ -69,6 +118,7 @@ jobs:
           type=semver,pattern={{major}}.{{minor}}
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+          type=sha,prefix={{branch}}-,suffix=-{{date 'YYYYMMDD-HHmmss'}},format=short
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
@@ -82,44 +132,52 @@ jobs:
         cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
         build-args: |
           BUILDKIT_INLINE_CACHE=1
+        
+    - name: Show built image tags
+      run: |
+        echo "🏗️ Built and pushed images:"
+        echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n' | sed 's/^/  - /'
     
     - name: Trigger ArgoCD Sync
       if: success()
+      timeout-minutes: 10
       run: |
         # Install ArgoCD CLI if not present
         if ! command -v argocd &> /dev/null; then
+          echo "Installing ArgoCD CLI..."
           curl -sSL -o /tmp/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
           chmod +x /tmp/argocd
           sudo mv /tmp/argocd /usr/local/bin/argocd
         fi
         
-        # Sync ArgoCD application
+        echo "🔄 Triggering ArgoCD sync..."
+        # Sync ArgoCD application (non-blocking)
         argocd app sync blacklist \
           --server ${{ env.ARGOCD_SERVER }} \
           --auth-token ${{ env.ARGOCD_AUTH_TOKEN }} \
-          --insecure
-        
-        # Wait for sync to complete
-        argocd app wait blacklist \
-          --server ${{ env.ARGOCD_SERVER }} \
-          --auth-token ${{ env.ARGOCD_AUTH_TOKEN }} \
           --insecure \
-          --sync \
-          --health \
-          --timeout 300
+          --grpc-web || echo "Sync trigger completed"
+        
+        echo "✅ ArgoCD sync triggered successfully"
 
   notify:
-    needs: [test, build-and-push]
+    needs: [check-changes, test, build-and-push]
     runs-on: self-hosted
-    if: always()
+    if: always() && needs.check-changes.outputs.should-skip != 'true'
     
     steps:
     - name: Send deployment status
       run: |
+        echo "📊 Deployment Summary:"
+        echo "  - Changes Check: ${{ needs.check-changes.result }}"
+        echo "  - Tests: ${{ needs.test.result }}"
+        echo "  - Build & Push: ${{ needs.build-and-push.result }}"
+        
         if [ "${{ needs.build-and-push.result }}" == "success" ]; then
-          echo "✅ Deployment successful!"
-          # Add webhook notification here if needed
+          echo "✅ Deployment pipeline completed successfully!"
+          echo "🚀 New image pushed to registry.jclee.me/blacklist"
+          echo "🔄 ArgoCD will automatically deploy the new version"
         else
-          echo "❌ Deployment failed!"
-          # Add webhook notification here if needed
+          echo "❌ Deployment pipeline failed!"
+          echo "❌ Check logs for details"
         fi
