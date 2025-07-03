@@ -11,29 +11,10 @@ env:
   IMAGE_NAME: blacklist
 
 jobs:
-  # 테스트 단계
-  test:
-    name: Run Tests
-    runs-on: self-hosted
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: |
-          # 시스템 Python 사용
-          python3 -m pip install --upgrade pip --user
-          python3 -m pip install -r requirements.txt --user
-
-      - name: Run tests
-        run: |
-          python3 -m pytest tests/ -v || echo "테스트 실패 - 계속 진행"
-
-  # 빌드 및 푸시 단계
+  # 빌드 및 푸시 단계 (테스트는 Docker 내에서 실행)
   build-and-push:
     name: Build and Push Docker Image
     runs-on: self-hosted
-    needs: test
     if: github.ref == 'refs/heads/main'
     outputs:
       image_tag: ${{ steps.meta.outputs.tags }}
