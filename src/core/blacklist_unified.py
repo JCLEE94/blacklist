@@ -984,3 +984,72 @@ class UnifiedBlacklistManager:
                 'warning': 0,
                 'total': 0
             }
+    
+    def set_ip_expiration(self, ip: str, expires_at: datetime) -> Dict[str, Any]:
+        """특정 IP의 만료 날짜 설정"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                UPDATE blacklist_ip 
+                SET expires_at = ?
+                WHERE ip = ?
+            """, (expires_at.isoformat(), ip))
+            
+            updated = cursor.rowcount > 0
+            conn.commit()
+            conn.close()
+            
+            if updated:
+                logger.info(f"Set expiration for IP {ip} to {expires_at}")
+            
+            return {
+                'success': updated,
+                'ip': ip,
+                'expires_at': expires_at.isoformat() if updated else None
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to set IP expiration: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def get_expiring_ips(self, days: int = 30) -> List[Dict[str, Any]]:
+        """지정된 기간 내에 만료 예정인 IP 목록 조회"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            future_date = datetime.now() + timedelta(days=days)
+            
+            cursor.execute("""
+                SELECT ip, source, detection_date, expires_at, created_at
+                FROM blacklist_ip 
+                WHERE is_active = 1 
+                AND expires_at IS NOT NULL 
+                AND expires_at <= ?
+                ORDER BY expires_at ASC
+                LIMIT 1000
+            """, (future_date.isoformat(),))
+            
+            expiring_ips = []
+            for row in cursor.fetchall():
+                expiring_ips.append({
+                    'ip': row[0],
+                    'source': row[1],
+                    'detection_date': row[2],
+                    'expires_at': row[3],
+                    'created_at': row[4],
+                    'days_until_expiry': (datetime.fromisoformat(row[3]) - datetime.now()).days if row[3] else None
+                })
+            
+            conn.close()
+            
+            return expiring_ips
+            
+        except Exception as e:
+            logger.error(f"Failed to get expiring IPs: {e}")
+            return []

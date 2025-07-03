@@ -2409,6 +2409,79 @@ def get_raw_data():
             'timestamp': datetime.now().isoformat()
         }), 500
 
+@unified_bp.route('/api/expiring-ips', methods=['GET'])
+def get_expiring_ips():
+    """만료 예정인 IP 목록 조회"""
+    try:
+        # 파라미터로 기간 받기 (기본값: 30일)
+        days = request.args.get('days', 30, type=int)
+        if days > 90:
+            days = 90  # 최대 90일
+        
+        blacklist_manager = current_app.blacklist_manager
+        expiring_ips = blacklist_manager.get_expiring_ips(days=days)
+        
+        return jsonify({
+            'success': True,
+            'days': days,
+            'count': len(expiring_ips),
+            'ips': expiring_ips,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Get expiring IPs error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+@unified_bp.route('/api/ip/<ip>/expiration', methods=['PUT'])
+def set_ip_expiration(ip):
+    """특정 IP의 만료 날짜 설정"""
+    try:
+        # IP 유효성 검증
+        validate_ip(ip)
+        
+        # Request body에서 만료 날짜 가져오기
+        data = request.get_json() or {}
+        expires_at_str = data.get('expires_at')
+        
+        if not expires_at_str:
+            return jsonify({
+                'success': False,
+                'error': 'expires_at field is required'
+            }), 400
+        
+        # 날짜 형식 파싱
+        try:
+            expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
+        except Exception:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid date format. Use ISO format (YYYY-MM-DDTHH:MM:SS)'
+            }), 400
+        
+        # 과거 날짜 검증
+        if expires_at < datetime.now():
+            return jsonify({
+                'success': False,
+                'error': 'Expiration date cannot be in the past'
+            }), 400
+        
+        blacklist_manager = current_app.blacklist_manager
+        result = blacklist_manager.set_ip_expiration(ip, expires_at)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 404
+            
+    except ValidationError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+    except Exception as e:
+        logger.error(f"Set IP expiration error: {e}")
+        return jsonify(create_error_response(e)), 500
+
 @unified_bp.errorhandler(404)
 def not_found_error(error):
     """404 에러 핸들러"""
