@@ -54,7 +54,7 @@ spec:
             image: bitnami/kubectl:latest
             env:
             - name: NAMESPACE
-              value: "blacklist"
+              value: "blacklist-new"
             - name: REGISTRY
               value: "registry.jclee.me"
             - name: IMAGE_NAME
