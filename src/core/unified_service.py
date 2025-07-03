@@ -829,19 +829,67 @@ class UnifiedBlacklistService:
             }
     
     def get_system_stats(self) -> Dict[str, Any]:
-        """시스템 통계 반환"""
+        """시스템 통계 반환 - 만료 정보 및 캐시 히트율 포함"""
         health_data = self.get_system_health()
+        
+        # 만료된 IP 및 만료 예정 IP 계산
+        expired_ips = 0
+        expiring_soon = 0
+        
+        try:
+            import sqlite3
+            from datetime import datetime, timedelta
+            
+            # Use blacklist_manager's database path
+            if hasattr(self.blacklist_manager, 'db_path'):
+                db_path = self.blacklist_manager.db_path
+            else:
+                db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
+            
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # 만료된 IP 수 (is_active = 0)
+            cursor.execute('SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 0')
+            expired_ips = cursor.fetchone()[0]
+            
+            # 30일 내 만료 예정 IP 수
+            cursor.execute('''
+                SELECT COUNT(*) FROM blacklist_ip 
+                WHERE is_active = 1 
+                AND expires_at IS NOT NULL 
+                AND expires_at <= datetime('now', '+30 days')
+            ''')
+            expiring_soon = cursor.fetchone()[0]
+            
+            conn.close()
+        except Exception as e:
+            self.logger.warning(f"Failed to get expiration stats: {e}")
+        
+        # 캐시 히트율 계산
+        cache_hit_rate = 0.0
+        try:
+            if self.cache and hasattr(self.cache, 'get_stats'):
+                cache_stats = self.cache.get_stats()
+                if cache_stats and 'hit_rate' in cache_stats:
+                    cache_hit_rate = cache_stats['hit_rate']
+                elif cache_stats and 'hits' in cache_stats and 'misses' in cache_stats:
+                    total_requests = cache_stats['hits'] + cache_stats['misses']
+                    if total_requests > 0:
+                        cache_hit_rate = (cache_stats['hits'] / total_requests) * 100
+        except Exception as e:
+            self.logger.warning(f"Failed to get cache stats: {e}")
         
         # Convert health data to stats format expected by the API
         return {
             'total_ips': health_data.get('total_ips', 0),
             'active_ips': health_data.get('active_ips', 0),
-            'expired_ips': 0,  # TODO: Implement expired IP count
-            'expiring_soon': 0,  # TODO: Implement expiring soon count
+            'expired_ips': expired_ips,
+            'expiring_soon': expiring_soon,
             'regtech_count': health_data.get('regtech_count', 0),
             'secudium_count': health_data.get('secudium_count', 0),
             'public_count': health_data.get('public_count', 0),
-            'cache_hit_rate': 0.0,  # TODO: Implement cache hit rate
+            'cache_hit_rate': round(cache_hit_rate, 2),
             'last_update': health_data.get('last_update', datetime.now().isoformat()),
             'status': health_data.get('status', 'healthy')
         }
