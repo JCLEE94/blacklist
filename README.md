@@ -1,13 +1,15 @@
 # Blacklist Management System
 
 [![Build Status](https://github.com/JCLEE94/blacklist/actions/workflows/k8s-deploy.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
+[![ArgoCD](https://img.shields.io/badge/ArgoCD-Enabled-brightgreen.svg)](https://argo.jclee.me)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.24+-blue.svg)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/docker-registry.jclee.me-blue.svg)](https://registry.jclee.me)
 [![Production](https://img.shields.io/badge/production-blacklist.jclee.me-green.svg)](https://blacklist.jclee.me)
 
 통합 위협 정보 관리 플랫폼 - Kubernetes 네이티브 아키텍처, 다중 소스 데이터 수집, FortiGate External Connector 연동 지원
 
-> **최신 업데이트 (2025.07.03)**: Stats API 만료 관리 기능 추가, 네임스페이스 마이그레이션 (`blacklist` → `blacklist-new`)
+> **최신 업데이트 (2025.07.04)**: ArgoCD CI/CD 파이프라인 통합 완료
+> **이전 업데이트 (2025.07.03)**: Stats API 만료 관리 기능 추가, 네임스페이스 마이그레이션 (`blacklist` → `blacklist-new`)
 
 ## 🏗️ Architecture
 
@@ -120,8 +122,8 @@ python3 main.py --debug  # 또는 python3 main.py --port 8541
 시스템적 재발 방지 대책이 구축되어 있습니다:
 
 ```bash
-# 1. 배포 모니터링 워크플로우 (매시간 실행)
-ls .github/workflows/deployment-monitor.yml
+# 1. 자동 배포 시스템 (CI/CD)
+ls .github/workflows/k8s-deploy.yml
 
 # 2. 자동 복구 스크립트
 ./scripts/setup/auto-deployment-fix.sh
@@ -894,7 +896,7 @@ spec:
 
 ### CI/CD 설정
 - [GitHub Actions 워크플로우](./.github/workflows/k8s-deploy.yml) - 메인 배포 파이프라인
-- [배포 모니터링](./.github/workflows/deployment-monitor.yml) - 매시간 헬스 체크
+- [GitHub Actions 파이프라인](./.github/workflows/k8s-deploy.yml) - 자동화된 CI/CD
 - [Enhanced Auto-updater](./k8s/auto-updater-enhanced.yaml) - 5분마다 자동 업데이트
 
 ## 🔄 최근 변경사항 (2025.07.03)
@@ -912,7 +914,7 @@ spec:
 
 ### 🚀 이전 주요 기능 (2025.07.01)
 - **자동 배포 실패 방지 시스템**: 시스템적 재발 방지 대책 구축
-  - 배포 모니터링 워크플로우 (매시간 실행)
+  - GitHub Actions CI/CD 파이프라인
   - Enhanced Auto-updater CronJob (5분마다, 자동 롤백)
   - 자동 복구 스크립트 및 완전 자동화 시스템
 - **설정 관리 대시보드**: `/settings/management` 웹 인터페이스 추가

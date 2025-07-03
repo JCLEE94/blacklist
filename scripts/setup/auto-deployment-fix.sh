@@ -250,13 +250,13 @@ setup_monitoring() {
         fi
     fi
     
-    # Deployment monitor workflow 활성화
-    echo "Enabling deployment monitor workflow..."
-    if [ -f ".github/workflows/deployment-monitor.yml" ]; then
-        print_status "success" "Deployment monitor workflow exists"
-        echo "  It will run hourly to check deployment health"
+    # GitHub Actions 워크플로우 상태 확인
+    echo "Checking GitHub Actions workflow..."
+    if [ -f ".github/workflows/k8s-deploy.yml" ]; then
+        print_status "success" "K8s deployment workflow exists"
+        echo "  It will automatically deploy on push to main branch"
     else
-        print_status "warning" "Deployment monitor workflow not found"
+        print_status "warning" "K8s deployment workflow not found"
     fi
 }
 

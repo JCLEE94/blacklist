@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: blacklist-new
+namespace: blacklist
 
 resources:
   - namespace.yaml
@@ -14,10 +14,14 @@ resources:
   - ingress.yaml
   - hpa.yaml
   - cronjob.yaml
-  # ArgoCD 관련 파일은 별도로 적용
-  # - argocd-app.yaml
-  # - argocd-image-updater-config.yaml
 
 images:
   - name: registry.jclee.me/blacklist
     newTag: latest
+
+# ArgoCD annotations for automatic image updates
+commonAnnotations:
+  argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist:latest
+  argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+  argocd-image-updater.argoproj.io/write-back-method: git
+  argocd-image-updater.argoproj.io/git-branch: main

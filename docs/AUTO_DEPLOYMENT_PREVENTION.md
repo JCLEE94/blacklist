@@ -62,20 +62,13 @@ kubectl get jobs -n blacklist | grep auto-updater
 
 ## 🛡️ 시스템적 재발 방지 대책
 
-### 1. 배포 모니터링 워크플로우
+### 1. 배포 전 사전 검증
 
-**`deployment-monitor.yml` 주요 기능:**
-- 매시간 자동 실행으로 배포 상태 체크
-- Docker Registry 인증 테스트
+**수동 검증 단계:**
+- Docker Registry 인증 확인
 - GitHub Secrets 검증
 - Kubernetes 연결성 확인
-- 자동 복구 시도
-
-```yaml
-on:
-  schedule:
-    - cron: '0 * * * *'  # 매시간 실행
-```
+- PV/PVC 상태 체크
 
 ### 2. 자동 복구 스크립트
 
@@ -133,8 +126,8 @@ on:
 cp .env.example .env
 # .env 파일 편집하여 인증 정보 입력
 
-# 모니터링 워크플로우 활성화 확인
-ls -la .github/workflows/deployment-monitor.yml
+# GitHub Actions 워크플로우 확인
+ls -la .github/workflows/
 
 # 수동 복구 (필요시)
 ./scripts/recovery/blacklist-recovery.sh
@@ -144,7 +137,7 @@ ls -la .github/workflows/deployment-monitor.yml
 
 ### GitHub Actions 대시보드
 - Workflow runs: https://github.com/JCLEE94/blacklist/actions
-- Deployment monitor: "Deployment Health Monitor" workflow
+- CI/CD Pipeline: "Enhanced Kubernetes CI/CD Pipeline" workflow
 
 ### Kubernetes 모니터링
 ```bash
