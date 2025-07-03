@@ -32,7 +32,7 @@ kubectl create secret docker-registry regcred \
     --docker-server=$REGISTRY \
     --docker-username=$REGISTRY_USER \
     --docker-password=$REGISTRY_PASS \
-    -n $NAMESPACE
+    -n $NAMESPACE 2>/dev/null || echo "   - Registry secret already exists"
 
 # 4. PV 생성 (k8s 폴더에 있으면)
 if [ -f "k8s/pv.yaml" ]; then

@@ -253,7 +253,11 @@ jobs:
           
           # Pod가 Ready 상태가 될 때까지 대기
           echo "⏳ Waiting for pods to be ready..."
-          kubectl wait --for=condition=ready pod -l app=blacklist -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=blacklist -n ${{ env.NAMESPACE }} --timeout=300s || true
+          
+          # 추가 대기 시간 (Pod가 완전히 시작되도록)
+          echo "⏳ Waiting additional 30 seconds for pod stabilization..."
+          sleep 30
           
           # 최대 30번 시도 (5분)
           MAX_ATTEMPTS=30
@@ -263,15 +267,16 @@ jobs:
             ATTEMPT=$((ATTEMPT + 1))
             echo "🔍 Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
             
-            # Pod 내부에서 직접 health check
-            if kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --connect-timeout 5 --max-time 10 http://localhost:2541/health > /dev/null 2>&1; then
+            # Pod 내부에서 직접 health check (첫 번째 실행 가능한 Pod 선택)
+            POD_NAME=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=blacklist -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+            if [ -n "$POD_NAME" ] && kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- curl -f -s --connect-timeout 5 --max-time 10 http://localhost:2541/health > /dev/null 2>&1; then
               echo "✅ Application is healthy!"
               
               # 추가 엔드포인트 테스트 (Pod 내부에서)
               echo "🧪 Testing additional endpoints..."
-              kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/api/stats > /dev/null && echo "✅ /api/stats: OK" || echo "⚠️ /api/stats: Failed"
-              kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/test > /dev/null && echo "✅ /test: OK" || echo "⚠️ /test: Failed"
-              kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/api/collection/status > /dev/null && echo "✅ /api/collection/status: OK" || echo "⚠️ /api/collection/status: Failed"
+              kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/api/stats > /dev/null && echo "✅ /api/stats: OK" || echo "⚠️ /api/stats: Failed"
+              kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/test > /dev/null && echo "✅ /test: OK" || echo "⚠️ /test: Failed"
+              kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- curl -f -s --max-time 5 http://localhost:2541/api/collection/status > /dev/null && echo "✅ /api/collection/status: OK" || echo "⚠️ /api/collection/status: Failed"
               
               # NodePort 정보 출력 (참고용)
               NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
@@ -305,8 +310,9 @@ jobs:
           
           # Pod 내부에서 응답 시간 체크
           echo "📊 Checking response times (from inside pod)..."
+          POD_NAME=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=blacklist -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
           for i in {1..5}; do
-            RESPONSE_TIME=$(kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- sh -c "curl -o /dev/null -s -w '%{time_total}' http://localhost:2541/health" 2>/dev/null || echo "0")
+            RESPONSE_TIME=$(kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- sh -c "curl -o /dev/null -s -w '%{time_total}' http://localhost:2541/health" 2>/dev/null || echo "0")
             echo "   Response $i: ${RESPONSE_TIME}s"
             
             # bc 명령어가 없을 수 있으므로 awk 사용
@@ -328,12 +334,15 @@ jobs:
           
           # 5초 대기 후 수집 상태 확인 (Pod 내부에서)
           sleep 5
-          COLLECTION_STATUS=$(kubectl exec deployment/blacklist -n ${{ env.NAMESPACE }} -- curl -s http://localhost:2541/api/collection/status 2>/dev/null || echo "Failed to get status")
+          POD_NAME=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=blacklist -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          COLLECTION_STATUS=$(kubectl exec $POD_NAME -n ${{ env.NAMESPACE }} -- curl -s http://localhost:2541/api/collection/status 2>/dev/null || echo "Failed to get status")
           echo "📊 Collection status: $COLLECTION_STATUS"
           
-          # 이전 ReplicaSet 정리 (최신 3개만 유지)
+          # 이전 ReplicaSet 정리 (replicas가 0인 것들만)
           echo "🧹 Cleaning up old ReplicaSets..."
-          kubectl delete rs -n ${{ env.NAMESPACE }} -l app=blacklist --field-selector='status.replicas=0' || echo "No old ReplicaSets to clean"
+          kubectl get rs -n ${{ env.NAMESPACE }} -l app=blacklist -o json | \
+            jq -r '.items[] | select(.status.replicas == 0) | .metadata.name' | \
+            xargs -I {} kubectl delete rs {} -n ${{ env.NAMESPACE }} 2>/dev/null || echo "No old ReplicaSets to clean"
           
           echo "✅ Post-deployment tasks completed"
 
