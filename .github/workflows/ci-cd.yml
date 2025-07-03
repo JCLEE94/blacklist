@@ -23,8 +23,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Enable Docker Buildx
+        run: |
+          # 기존 buildx가 있는지 확인하고 사용
+          docker buildx version || echo "Buildx not available, using regular docker build"
 
       - name: Log in to Docker Registry
         uses: docker/login-action@v2
@@ -45,16 +47,17 @@ jobs:
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./deployment/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+        run: |
+          # 단일 아키텍처 빌드 (self-hosted runner 환경)
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -f ./deployment/Dockerfile .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # SHA 태그도 푸시
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${SHORT_SHA}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${SHORT_SHA}
+          
+          echo "digest=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest | cut -d'@' -f2)" >> $GITHUB_OUTPUT
 
   # 배포 단계
   deploy:
