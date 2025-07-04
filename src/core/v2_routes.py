@@ -190,6 +190,49 @@ class V2APIService:
         self.cache.set(cache_key, result, ttl=3600)  # 1시간
         
         return result
+    
+    def get_analytics_summary(self) -> Dict[str, Any]:
+        """분석 요약 데이터"""
+        # 캐시 확인
+        cache_key = "v2:analytics:summary"
+        cached_data = self.cache.get(cache_key)
+        if cached_data:
+            return cached_data
+        
+        # 기본 통계 가져오기
+        stats = self.blacklist_manager.get_statistics()
+        all_data = self.blacklist_manager.get_all_active_ips()
+        
+        # 요약 데이터 생성
+        result = {
+            'total_ips': stats.get('total_ips', 0),
+            'active_ips': stats.get('active_ips', 0),
+            'regtech_count': stats.get('regtech_count', 0),
+            'secudium_count': stats.get('secudium_count', 0),
+            'public_count': stats.get('public_count', 0),
+            'last_update': stats.get('last_update'),
+            'source_distribution': {
+                'regtech': {
+                    'count': stats.get('regtech_count', 0),
+                    'percentage': round((stats.get('regtech_count', 0) / max(stats.get('total_ips', 1), 1)) * 100, 1)
+                },
+                'secudium': {
+                    'count': stats.get('secudium_count', 0),
+                    'percentage': round((stats.get('secudium_count', 0) / max(stats.get('total_ips', 1), 1)) * 100, 1)
+                },
+                'public': {
+                    'count': stats.get('public_count', 0),
+                    'percentage': round((stats.get('public_count', 0) / max(stats.get('total_ips', 1), 1)) * 100, 1)
+                }
+            },
+            'status': 'healthy' if stats.get('total_ips', 0) > 0 else 'no_data',
+            'generated_at': datetime.utcnow().isoformat()
+        }
+        
+        # 캐시 저장 (5분)
+        self.cache.set(cache_key, result, ttl=300)
+        
+        return result
 
 
 # 서비스 인스턴스 (Flask app context에서 초기화됨)
@@ -234,6 +277,17 @@ def batch_ip_check():
         return jsonify({'error': 'Too many IPs (max 10000)'}), 400
     
     result = v2_service.batch_ip_check(ips)
+    return jsonify(result)
+
+
+@v2_bp.route('/analytics/summary', methods=['GET'])
+@unified_cache(ttl=300, key_prefix='v2:analytics:summary')
+def get_analytics_summary():
+    """분석 요약 데이터"""
+    if not v2_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+    
+    result = v2_service.get_analytics_summary()
     return jsonify(result)
 
 
