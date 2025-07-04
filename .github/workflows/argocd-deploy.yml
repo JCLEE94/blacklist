@@ -28,7 +28,7 @@ env:
 jobs:
   # Skip workflow for documentation-only changes
   check-changes:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       should-skip: ${{ steps.skip-check.outputs.should_skip }}
     steps:
@@ -49,7 +49,7 @@ jobs:
   test:
     needs: check-changes
     if: needs.check-changes.outputs.should-skip != 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     
     steps:
@@ -89,7 +89,7 @@ jobs:
 
   build-and-push:
     needs: [check-changes, test]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check-changes.outputs.should-skip != 'true'
     timeout-minutes: 20
     
@@ -197,7 +197,7 @@ jobs:
 
   notify:
     needs: [check-changes, test, build-and-push]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: always() && needs.check-changes.outputs.should-skip != 'true'
     
     steps:
