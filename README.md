@@ -1,5 +1,7 @@
 # Blacklist Management System
 
+> 🚀 **Enterprise CI/CD Pipeline with Full ArgoCD GitOps Integration** 
+
 [![Build Status](https://github.com/JCLEE94/blacklist/actions/workflows/argocd-deploy.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
 [![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-brightgreen.svg)](https://argo.jclee.me/applications/blacklist)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.24+-blue.svg)](https://kubernetes.io/)
