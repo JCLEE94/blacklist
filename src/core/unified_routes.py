@@ -8,6 +8,9 @@ import logging
 import asyncio
 import json
 import os
+
+# 의도적인 구문 에러 추가 - CI/CD 테스트용
+test_undefined_variable
 from datetime import datetime
 
 from .unified_service import get_unified_service
