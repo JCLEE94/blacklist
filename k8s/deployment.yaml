@@ -81,11 +81,8 @@ spec:
           mountPath: /app/instance
       volumes:
       - name: data
-        persistentVolumeClaim:
-          claimName: blacklist-data
+        emptyDir: {}
       - name: logs
-        persistentVolumeClaim:
-          claimName: blacklist-logs
+        emptyDir: {}
       - name: instance
-        persistentVolumeClaim:
-          claimName: blacklist-instance
+        emptyDir: {}
