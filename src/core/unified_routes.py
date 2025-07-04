@@ -80,22 +80,9 @@ def _get_dashboard_data():
     return template_data
 
 @unified_bp.route('/', methods=['GET'])
-def index():
-    """메인페이지 - 대시보드"""
-    try:
-        return render_template('dashboard.html', **_get_dashboard_data())
-    except Exception as e:
-        logger.error(f"Dashboard template error: {e}")
-        return jsonify({
-            'error': 'Dashboard rendering failed',
-            'message': str(e),
-            'fallback': 'Try /test for a simple page'
-        }), 500
-
-@unified_bp.route('/', methods=['GET'])
 @unified_bp.route('/dashboard', methods=['GET'])
 def dashboard():
-    """대시보드 (메인페이지와 동일)"""
+    """메인페이지 - 대시보드"""
     try:
         return render_template('dashboard.html', **_get_dashboard_data())
     except Exception as e:
