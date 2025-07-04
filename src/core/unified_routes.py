@@ -2,7 +2,7 @@
 통합 API 라우트
 모든 블랙리스트 API를 하나로 통합한 라우트 시스템
 """
-from flask import Blueprint, request, jsonify, Response, render_template, current_app
+from flask import Blueprint, request, jsonify, Response, render_template, current_app, redirect, url_for
 from typing import Dict, Any
 import logging
 import asyncio

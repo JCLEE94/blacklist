@@ -10,7 +10,7 @@ import json
 import sqlite3
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .container import get_container
 from .regtech_collector import RegtechCollector
