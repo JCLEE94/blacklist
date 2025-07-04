@@ -50,28 +50,28 @@ spec:
             name: blacklist-secret
         resources:
           requests:
-            memory: "64Mi"     # Docker Desktop용으로 축소
-            cpu: "50m"         # Docker Desktop용으로 축소
+            memory: "128Mi"    # 안정성을 위해 메모리 증가
+            cpu: "100m"        # 안정성을 위해 CPU 증가
           limits:
-            memory: "256Mi"    # Docker Desktop용으로 축소
-            cpu: "250m"        # Docker Desktop용으로 축소
+            memory: "512Mi"    # 메모리 제한 증가
+            cpu: "500m"        # CPU 제한 증가
         livenessProbe:
           httpGet:
             path: /health
             port: 2541
-          initialDelaySeconds: 30  # 빠른 시작을 위해 축소
-          periodSeconds: 10        # 더 자주 체크
-          timeoutSeconds: 5        # 빠른 응답
-          failureThreshold: 3      # 빠른 재시작
+          initialDelaySeconds: 60  # 애플리케이션 완전 시작 대기
+          periodSeconds: 30        # 덜 자주 체크로 부하 감소
+          timeoutSeconds: 10       # 응답 시간 여유
+          failureThreshold: 3      # 실패 허용 횟수
         readinessProbe:
           httpGet:
             path: /health
             port: 2541
-          initialDelaySeconds: 5   # 더 빠른 준비 확인
-          periodSeconds: 2         # 매우 자주 체크
-          timeoutSeconds: 1        # 초고속 응답
-          successThreshold: 1      # 한 번만 성공하면 준비 완료
-          failureThreshold: 30     # 충분한 재시도 (60초간)
+          initialDelaySeconds: 10  # 초기 대기시간 증가
+          periodSeconds: 5         # 적절한 체크 주기
+          timeoutSeconds: 3        # 응답 시간 여유
+          successThreshold: 1      # 한 번 성공하면 준비 완료
+          failureThreshold: 6      # 더 많은 재시도 허용
         volumeMounts:
         - name: data
           mountPath: /app/data
