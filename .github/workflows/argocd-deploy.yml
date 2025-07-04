@@ -19,6 +19,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
 env:
   REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
@@ -229,10 +234,4 @@ jobs:
       workflow_name: "ArgoCD CI/CD Pipeline"
       run_id: ${{ github.run_id }}
       run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      failed_jobs: |
-        [
-          {"name": "test", "result": "${{ needs.test.result }}"},
-          {"name": "build-and-push", "result": "${{ needs.build-and-push.result }}"}
-        ]
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      failed_jobs: '[{"name": "test", "result": "${{ needs.test.result }}"}, {"name": "build-and-push", "result": "${{ needs.build-and-push.result }}"}]'

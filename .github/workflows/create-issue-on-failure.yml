@@ -20,21 +20,30 @@ on:
         type: string
         description: 'JSON string of failed jobs'
         default: '[]'
-    secrets:
-      GITHUB_TOKEN:
-        required: true
+    # secrets는 workflow_call에서 자동으로 상속됨
 
 jobs:
   create-issue:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Debug information
+      run: |
+        echo "Workflow: ${{ inputs.workflow_name }}"
+        echo "Run ID: ${{ inputs.run_id }}"
+        echo "Run URL: ${{ inputs.run_url }}"
+        echo "Failed Jobs: ${{ inputs.failed_jobs }}"
+        echo "GitHub Token available: ${{ github.token != '' }}"
     
     - name: Check for existing issues
       id: check-issues
       uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ github.token }}
         script: |
           // 최근 24시간 이내에 생성된 동일한 워크플로우 관련 이슈 확인
           const existingIssues = await github.rest.issues.listForRepo({
@@ -64,7 +73,7 @@ jobs:
       id: get-logs
       uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ github.token }}
         script: |
           const runId = ${{ inputs.run_id }};
           let errorLogs = '';
@@ -120,7 +129,7 @@ jobs:
       if: steps.check-issues.outputs.duplicate_found == 'false'
       uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ github.token }}
         script: |
           const issueTitle = `🚨 CI/CD Failure: ${{ inputs.workflow_name }}`;
           const runUrl = '${{ inputs.run_url }}';
@@ -191,7 +200,7 @@ jobs:
       if: steps.check-issues.outputs.duplicate_found == 'true'
       uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ github.token }}
         script: |
           const issueNumber = ${{ steps.check-issues.outputs.issue_number }};
           const runUrl = '${{ inputs.run_url }}';
