@@ -1,0 +1,694 @@
+name: Offline Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag for the release'
+        required: true
+        default: 'v1.0.0'
+
+# Prevent multiple workflows from running simultaneously
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  ARGOCD_SERVER: argo.jclee.me
+  ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+
+jobs:
+  # Step 1: Run tests and quality checks
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8
+    
+    - name: Run tests and lint in parallel
+      run: |
+        # Run tests
+        pytest -v --cov=src tests/ --tb=short &
+        TEST_PID=$!
+        
+        # Run linting
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics &
+        LINT_PID=$!
+        
+        # Security scan for hardcoded credentials
+        grep -r -E "(password|secret|key|token)\s*=\s*['\"][^'\"]*['\"]" --include="*.py" src/ || true &
+        SCAN_PID=$!
+        
+        # Wait for all to complete
+        wait $TEST_PID && wait $LINT_PID && wait $SCAN_PID
+
+  # Step 2: Build and push to NAS registry
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 20
+    outputs:
+      image-tag: ${{ steps.tag.outputs.tag }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Generate version tag
+      id: tag
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          TAG="${{ github.event.inputs.version }}"
+        else
+          TAG="v$(date +'%Y%m%d.%H%M%S')-${GITHUB_SHA::8}"
+        fi
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Log in to Private Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./deployment/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
+        labels: |
+          org.opencontainers.image.version=${{ steps.tag.outputs.tag }}
+          org.opencontainers.image.created=${{ steps.timestamp.outputs.timestamp }}
+          org.opencontainers.image.revision=${{ github.sha }}
+        cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+        cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+    
+    - name: Export Docker image for offline use
+      run: |
+        echo "📦 Exporting Docker image for offline deployment..."
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+        docker save -o blacklist-${{ steps.tag.outputs.tag }}.tar \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+        gzip blacklist-${{ steps.tag.outputs.tag }}.tar
+        echo "✅ Docker image exported: blacklist-${{ steps.tag.outputs.tag }}.tar.gz"
+    
+    - name: Upload Docker image artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: docker-image-${{ steps.tag.outputs.tag }}
+        path: blacklist-${{ steps.tag.outputs.tag }}.tar.gz
+        retention-days: 30
+
+  # Step 3: Deploy to Staging (ArgoCD)
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Update Kubernetes manifests for staging
+      run: |
+        # Update image tag in kustomization.yaml
+        sed -i "s|newTag: .*|newTag: ${{ needs.build-and-push.outputs.image-tag }}|" k8s/kustomization.yaml
+        
+        # Commit changes
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add k8s/kustomization.yaml
+        git commit -m "chore: update staging image to ${{ needs.build-and-push.outputs.image-tag }}"
+        git push
+    
+    - name: Trigger ArgoCD Sync for Staging
+      run: |
+        # Install ArgoCD CLI
+        curl -sSL -o /tmp/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        chmod +x /tmp/argocd
+        sudo mv /tmp/argocd /usr/local/bin/argocd
+        
+        echo "🔄 Triggering ArgoCD sync for staging..."
+        argocd app sync blacklist-staging \
+          --server ${{ env.ARGOCD_SERVER }} \
+          --auth-token ${{ env.ARGOCD_AUTH_TOKEN }} \
+          --insecure \
+          --grpc-web \
+          --timeout 300
+        
+        # Wait for deployment to be healthy
+        argocd app wait blacklist-staging \
+          --server ${{ env.ARGOCD_SERVER }} \
+          --auth-token ${{ env.ARGOCD_AUTH_TOKEN }} \
+          --insecure \
+          --grpc-web \
+          --health \
+          --timeout 300
+        
+        echo "✅ Staging deployment completed successfully"
+
+  # Step 4: Create offline deployment package
+  create-offline-package:
+    needs: [build-and-push, deploy-staging]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download Docker image artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: docker-image-${{ needs.build-and-push.outputs.image-tag }}
+        path: ./offline-package/images
+    
+    - name: Prepare Kubernetes manifests
+      run: |
+        mkdir -p offline-package/manifests
+        
+        # Copy and update Kubernetes manifests
+        cp -r k8s/* offline-package/manifests/
+        
+        # Update image tag in manifests
+        find offline-package/manifests -name "*.yaml" -type f -exec \
+          sed -i "s|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:.*|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}|g" {} \;
+        
+        # Create offline-specific kustomization
+        cat > offline-package/manifests/kustomization-offline.yaml << EOF
+        apiVersion: kustomize.config.k8s.io/v1beta1
+        kind: Kustomization
+        
+        resources:
+          - deployment.yaml
+          - service.yaml
+          - configmap.yaml
+          - secrets.yaml
+          - ingress.yaml
+        
+        namespace: blacklist-prod
+        
+        images:
+          - name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            newTag: ${{ needs.build-and-push.outputs.image-tag }}
+        
+        replicas:
+          - name: blacklist
+            count: 3
+        
+        configMapGenerator:
+          - name: blacklist-config
+            behavior: merge
+            literals:
+              - ENVIRONMENT=production
+              - PORT=2541
+        EOF
+    
+    - name: Create deployment scripts
+      run: |
+        mkdir -p offline-package/scripts
+        
+        # Main deployment script
+        cat > offline-package/scripts/deploy.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
+        
+        echo "🚀 Offline Production Deployment Script"
+        echo "======================================"
+        echo "Package Version: ${{ needs.build-and-push.outputs.image-tag }}"
+        echo "Target Environment: Production (Offline)"
+        echo ""
+        
+        # Function to check prerequisites
+        check_prerequisites() {
+            echo "🔍 Checking prerequisites..."
+            
+            # Check for Docker
+            if ! command -v docker &> /dev/null; then
+                echo "❌ Docker is not installed"
+                exit 1
+            fi
+            
+            # Check for kubectl
+            if ! command -v kubectl &> /dev/null; then
+                echo "❌ kubectl is not installed"
+                exit 1
+            fi
+            
+            # Check Kubernetes connectivity
+            if ! kubectl cluster-info &> /dev/null; then
+                echo "❌ Cannot connect to Kubernetes cluster"
+                exit 1
+            fi
+            
+            echo "✅ All prerequisites satisfied"
+        }
+        
+        # Function to load Docker images
+        load_docker_images() {
+            echo "📦 Loading Docker images..."
+            
+            for image in "$PACKAGE_DIR"/images/*.tar.gz; do
+                if [ -f "$image" ]; then
+                    echo "Loading: $(basename "$image")"
+                    gunzip -c "$image" | docker load
+                fi
+            done
+            
+            echo "✅ Docker images loaded successfully"
+        }
+        
+        # Function to create namespace
+        create_namespace() {
+            echo "🏗️ Creating namespace..."
+            kubectl create namespace blacklist-prod --dry-run=client -o yaml | kubectl apply -f -
+            echo "✅ Namespace ready"
+        }
+        
+        # Function to apply Kubernetes manifests
+        apply_manifests() {
+            echo "📋 Applying Kubernetes manifests..."
+            
+            # Apply secrets first
+            if [ -f "$PACKAGE_DIR/manifests/secrets.yaml" ]; then
+                kubectl apply -f "$PACKAGE_DIR/manifests/secrets.yaml" -n blacklist-prod
+            fi
+            
+            # Apply configmaps
+            if [ -f "$PACKAGE_DIR/manifests/configmap.yaml" ]; then
+                kubectl apply -f "$PACKAGE_DIR/manifests/configmap.yaml" -n blacklist-prod
+            fi
+            
+            # Apply main resources using kustomize
+            kubectl apply -k "$PACKAGE_DIR/manifests/" -n blacklist-prod
+            
+            echo "✅ Kubernetes resources applied"
+        }
+        
+        # Function to wait for deployment
+        wait_for_deployment() {
+            echo "⏳ Waiting for deployment to be ready..."
+            kubectl rollout status deployment/blacklist -n blacklist-prod --timeout=600s
+            echo "✅ Deployment is ready"
+        }
+        
+        # Function to verify deployment
+        verify_deployment() {
+            echo "🔍 Verifying deployment..."
+            
+            # Check pod status
+            kubectl get pods -n blacklist-prod -l app=blacklist
+            
+            # Check service endpoints
+            kubectl get endpoints -n blacklist-prod
+            
+            # Run health check
+            POD_NAME=$(kubectl get pods -n blacklist-prod -l app=blacklist -o jsonpath="{.items[0].metadata.name}")
+            if [ -n "$POD_NAME" ]; then
+                echo "Running health check on pod: $POD_NAME"
+                kubectl exec -n blacklist-prod "$POD_NAME" -- curl -s http://localhost:2541/health || echo "Health check failed"
+            fi
+            
+            echo "✅ Deployment verification completed"
+        }
+        
+        # Main deployment flow
+        main() {
+            echo "Starting offline deployment process..."
+            
+            check_prerequisites
+            load_docker_images
+            create_namespace
+            apply_manifests
+            wait_for_deployment
+            verify_deployment
+            
+            echo ""
+            echo "🎉 Deployment completed successfully!"
+            echo "Application is now running in production"
+            echo ""
+            echo "Access the application:"
+            echo "  - Internal: http://blacklist.blacklist-prod.svc.cluster.local:2541"
+            echo "  - External: Configure your ingress/nodeport as needed"
+        }
+        
+        # Run main function
+        main "$@"
+        EOF
+        
+        # Rollback script
+        cat > offline-package/scripts/rollback.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "🔄 Production Rollback Script"
+        echo "============================"
+        
+        # Get previous revision
+        PREVIOUS_REVISION=$(kubectl rollout history deployment/blacklist -n blacklist-prod | tail -n 3 | head -n 1 | awk '{print $1}')
+        
+        if [ -z "$PREVIOUS_REVISION" ]; then
+            echo "❌ No previous revision found"
+            exit 1
+        fi
+        
+        echo "Rolling back to revision: $PREVIOUS_REVISION"
+        kubectl rollout undo deployment/blacklist -n blacklist-prod --to-revision=$PREVIOUS_REVISION
+        
+        # Wait for rollback
+        kubectl rollout status deployment/blacklist -n blacklist-prod --timeout=300s
+        
+        echo "✅ Rollback completed successfully"
+        EOF
+        
+        # Health check script
+        cat > offline-package/scripts/health-check.sh << 'EOF'
+        #!/bin/bash
+        
+        echo "🏥 Production Health Check"
+        echo "========================"
+        
+        # Check deployment status
+        echo "📊 Deployment Status:"
+        kubectl get deployment blacklist -n blacklist-prod
+        
+        # Check pod status
+        echo -e "\n📦 Pod Status:"
+        kubectl get pods -n blacklist-prod -l app=blacklist
+        
+        # Check service
+        echo -e "\n🌐 Service Status:"
+        kubectl get service blacklist -n blacklist-prod
+        
+        # Run application health check
+        echo -e "\n💊 Application Health:"
+        POD_NAME=$(kubectl get pods -n blacklist-prod -l app=blacklist -o jsonpath="{.items[0].metadata.name}")
+        if [ -n "$POD_NAME" ]; then
+            kubectl exec -n blacklist-prod "$POD_NAME" -- curl -s http://localhost:2541/health | jq . || echo "Health check failed"
+        fi
+        EOF
+        
+        # Make scripts executable
+        chmod +x offline-package/scripts/*.sh
+    
+    - name: Create README for offline package
+      run: |
+        cat > offline-package/README.md << 'EOF'
+        # Blacklist Offline Production Deployment Package
+        
+        Version: ${{ needs.build-and-push.outputs.image-tag }}
+        Build Date: $(date +'%Y-%m-%d %H:%M:%S')
+        Git Commit: ${{ github.sha }}
+        
+        ## Package Contents
+        
+        ```
+        offline-package/
+        ├── images/              # Docker images (compressed)
+        │   └── blacklist-*.tar.gz
+        ├── manifests/          # Kubernetes YAML files
+        │   ├── deployment.yaml
+        │   ├── service.yaml
+        │   ├── configmap.yaml
+        │   ├── secrets.yaml
+        │   ├── ingress.yaml
+        │   └── kustomization-offline.yaml
+        ├── scripts/            # Deployment scripts
+        │   ├── deploy.sh       # Main deployment script
+        │   ├── rollback.sh     # Rollback script
+        │   └── health-check.sh # Health check script
+        └── README.md          # This file
+        ```
+        
+        ## Prerequisites
+        
+        1. **Kubernetes Cluster**: Production cluster must be accessible
+        2. **Docker**: Required for loading images
+        3. **kubectl**: Configured with production cluster access
+        4. **Namespace**: `blacklist-prod` (will be created automatically)
+        
+        ## Deployment Instructions
+        
+        ### 1. Transfer Package to Production Environment
+        
+        Transfer this entire package to your offline production environment using secure media.
+        
+        ### 2. Extract Package
+        
+        ```bash
+        tar -xzf blacklist-offline-${{ needs.build-and-push.outputs.image-tag }}.tar.gz
+        cd blacklist-offline-${{ needs.build-and-push.outputs.image-tag }}
+        ```
+        
+        ### 3. Deploy Application
+        
+        ```bash
+        ./scripts/deploy.sh
+        ```
+        
+        This script will:
+        - Verify prerequisites
+        - Load Docker images into local registry
+        - Create namespace and resources
+        - Deploy the application
+        - Verify deployment health
+        
+        ### 4. Verify Deployment
+        
+        ```bash
+        ./scripts/health-check.sh
+        ```
+        
+        ## Configuration
+        
+        ### Environment Variables
+        
+        Update `manifests/configmap.yaml` if needed:
+        - `REGTECH_USERNAME`: REGTECH authentication username
+        - `REGTECH_PASSWORD`: REGTECH authentication password (in secrets.yaml)
+        - `SECUDIUM_USERNAME`: SECUDIUM authentication username
+        - `SECUDIUM_PASSWORD`: SECUDIUM authentication password (in secrets.yaml)
+        - `PORT`: Application port (default: 2541)
+        
+        ### Scaling
+        
+        To scale the deployment:
+        ```bash
+        kubectl scale deployment/blacklist --replicas=5 -n blacklist-prod
+        ```
+        
+        ### Monitoring
+        
+        View logs:
+        ```bash
+        kubectl logs -f deployment/blacklist -n blacklist-prod
+        ```
+        
+        ## Rollback Procedure
+        
+        If issues occur, rollback to previous version:
+        ```bash
+        ./scripts/rollback.sh
+        ```
+        
+        ## Troubleshooting
+        
+        ### Image Loading Failed
+        - Ensure Docker daemon is running
+        - Check available disk space
+        - Verify image file integrity
+        
+        ### Deployment Failed
+        - Check Kubernetes cluster connectivity
+        - Verify namespace permissions
+        - Review pod events: `kubectl describe pod -n blacklist-prod`
+        
+        ### Application Not Accessible
+        - Check service endpoints: `kubectl get endpoints -n blacklist-prod`
+        - Verify ingress configuration
+        - Check pod logs for errors
+        
+        ## Security Notes
+        
+        1. **Secrets Management**: Ensure secrets.yaml contains proper credentials
+        2. **Network Policies**: Apply appropriate network policies for production
+        3. **RBAC**: Configure proper role-based access control
+        4. **Image Scanning**: Images have been scanned for vulnerabilities
+        
+        ## Support
+        
+        For issues or questions:
+        - Check application logs
+        - Review Kubernetes events
+        - Contact: [your-support-email]
+        
+        ---
+        Generated by GitHub Actions CI/CD Pipeline
+        EOF
+    
+    - name: Create offline deployment package
+      run: |
+        # Create final package
+        cd offline-package
+        tar -czf ../blacklist-offline-${{ needs.build-and-push.outputs.image-tag }}.tar.gz .
+        cd ..
+        
+        # Calculate checksums
+        sha256sum blacklist-offline-${{ needs.build-and-push.outputs.image-tag }}.tar.gz > checksums.txt
+        
+        echo "📦 Offline package created successfully"
+        ls -lh blacklist-offline-*.tar.gz
+    
+    - name: Upload offline package as release
+      uses: actions/upload-artifact@v3
+      with:
+        name: offline-deployment-package-${{ needs.build-and-push.outputs.image-tag }}
+        path: |
+          blacklist-offline-${{ needs.build-and-push.outputs.image-tag }}.tar.gz
+          checksums.txt
+        retention-days: 90
+
+  # Step 5: Create GitHub Release
+  create-release:
+    needs: [build-and-push, create-offline-package]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download offline package
+      uses: actions/download-artifact@v3
+      with:
+        name: offline-deployment-package-${{ needs.build-and-push.outputs.image-tag }}
+        path: ./release-assets
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ needs.build-and-push.outputs.image-tag }}
+        release_name: Release ${{ needs.build-and-push.outputs.image-tag }}
+        body: |
+          ## 🚀 Blacklist Application Release
+          
+          **Version**: ${{ needs.build-and-push.outputs.image-tag }}
+          **Type**: Production Release (Offline Package Included)
+          
+          ### 📦 Deployment Options
+          
+          1. **Online Staging (ArgoCD)**: Automatically deployed to staging environment
+          2. **Offline Production**: Download the offline package below
+          
+          ### 🔄 Changes
+          - Docker image: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}`
+          - Git commit: ${{ github.sha }}
+          
+          ### 📥 Offline Deployment Package
+          
+          The offline package includes:
+          - Pre-built Docker images
+          - Kubernetes manifests
+          - Deployment scripts
+          - Complete documentation
+          
+          **Download**: See assets below
+          
+          ### 🛠️ Deployment Instructions
+          
+          1. Download the offline package
+          2. Transfer to production environment
+          3. Extract and run `./scripts/deploy.sh`
+          
+          See README.md in the package for detailed instructions.
+          
+          ---
+          *Generated by CI/CD Pipeline*
+        draft: false
+        prerelease: false
+    
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./release-assets/blacklist-offline-${{ needs.build-and-push.outputs.image-tag }}.tar.gz
+        asset_name: blacklist-offline-${{ needs.build-and-push.outputs.image-tag }}.tar.gz
+        asset_content_type: application/gzip
+
+  # Step 6: Notify completion
+  notify:
+    needs: [test, build-and-push, deploy-staging, create-offline-package, create-release]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Send deployment summary
+      run: |
+        echo "📊 Offline Production CI/CD Pipeline Summary"
+        echo "=========================================="
+        echo "  - Tests: ${{ needs.test.result }}"
+        echo "  - Build & Push: ${{ needs.build-and-push.result }}"
+        echo "  - Staging Deployment: ${{ needs.deploy-staging.result }}"
+        echo "  - Offline Package: ${{ needs.create-offline-package.result }}"
+        echo "  - GitHub Release: ${{ needs.create-release.result }}"
+        echo ""
+        
+        if [ "${{ needs.create-release.result }}" == "success" ]; then
+          echo "✅ Pipeline completed successfully!"
+          echo "📦 Offline deployment package is ready"
+          echo "🚀 Staging environment has been updated"
+          echo "📥 Download package from GitHub Releases"
+        else
+          echo "❌ Pipeline failed!"
+          echo "Check the logs for details"
+        fi
