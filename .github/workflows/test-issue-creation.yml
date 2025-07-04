@@ -1,0 +1,26 @@
+name: Test Issue Creation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  test-failure:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Fail intentionally
+      run: exit 1
+  
+  create-issue:
+    needs: test-failure
+    if: always() && needs.test-failure.result == 'failure'
+    uses: ./.github/workflows/create-issue-on-failure.yml
+    with:
+      workflow_name: "Test Issue Creation"
+      run_id: ${{ github.run_id }}
+      run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      failed_jobs: '[{"name": "test-failure", "result": "failure"}]'
