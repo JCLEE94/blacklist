@@ -94,7 +94,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Generate version tag
+    - name: Generate version tag and timestamp
       id: tag
       run: |
         if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -102,7 +102,9 @@ jobs:
         else
           TAG="v$(date +'%Y%m%d.%H%M%S')-${GITHUB_SHA::8}"
         fi
+        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         echo "tag=${TAG}" >> $GITHUB_OUTPUT
+        echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -127,7 +129,7 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
         labels: |
           org.opencontainers.image.version=${{ steps.tag.outputs.tag }}
-          org.opencontainers.image.created=${{ steps.timestamp.outputs.timestamp }}
+          org.opencontainers.image.created=${{ steps.tag.outputs.timestamp }}
           org.opencontainers.image.revision=${{ github.sha }}
         cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
         cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
