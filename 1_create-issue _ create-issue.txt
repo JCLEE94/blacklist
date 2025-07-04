@@ -1,0 +1,129 @@
+﻿2025-07-04T04:12:57.1567775Z Current runner version: '2.325.0'
+2025-07-04T04:12:57.1624481Z ##[group]Operating System
+2025-07-04T04:12:57.1625699Z Ubuntu
+2025-07-04T04:12:57.1636599Z 24.04.2
+2025-07-04T04:12:57.1637476Z LTS
+2025-07-04T04:12:57.1638224Z ##[endgroup]
+2025-07-04T04:12:57.1639232Z ##[group]Runner Image
+2025-07-04T04:12:57.1640105Z Image: ubuntu-24.04
+2025-07-04T04:12:57.1640945Z Version: 20250629.1.0
+2025-07-04T04:12:57.1642904Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250629.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-07-04T04:12:57.1645450Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250629.1
+2025-07-04T04:12:57.1647360Z ##[endgroup]
+2025-07-04T04:12:57.1648375Z ##[group]Runner Image Provisioner
+2025-07-04T04:12:57.1649422Z 2.0.449.1
+2025-07-04T04:12:57.1650175Z ##[endgroup]
+2025-07-04T04:12:57.1652125Z ##[group]GITHUB_TOKEN Permissions
+2025-07-04T04:12:57.1654632Z Actions: read
+2025-07-04T04:12:57.1655607Z Issues: write
+2025-07-04T04:12:57.1677255Z Metadata: read
+2025-07-04T04:12:57.1678266Z ##[endgroup]
+2025-07-04T04:12:57.1681126Z Secret source: Actions
+2025-07-04T04:12:57.1682207Z Prepare workflow directory
+2025-07-04T04:12:57.2625210Z Prepare all required actions
+2025-07-04T04:12:57.2775095Z Getting action download info
+2025-07-04T04:12:57.6097400Z ##[group]Download immutable action package 'actions/checkout@v3'
+2025-07-04T04:12:57.6099402Z Version: 3.6.0
+2025-07-04T04:12:57.6102493Z Digest: sha256:942562b9c7d4b1f2557f1da21f4d3eb4eb4fd01f2ad78b2a6e187d1b193e0a0f
+2025-07-04T04:12:57.6104337Z Source commit SHA: f43a0e5ff2bd294095638e18286ca9a3d1956744
+2025-07-04T04:12:57.6105057Z ##[endgroup]
+2025-07-04T04:12:57.7407212Z ##[group]Download immutable action package 'actions/github-script@v6'
+2025-07-04T04:12:57.7408099Z Version: 6.4.1
+2025-07-04T04:12:57.7408801Z Digest: sha256:c493e77940bce2b1f3c9cb8e34f9a4c963412fab10227de97afd5905dec76e82
+2025-07-04T04:12:57.7409798Z Source commit SHA: d7906e4ad0b1822421a7e6a35d5ca353c962f410
+2025-07-04T04:12:57.7410539Z ##[endgroup]
+2025-07-04T04:12:57.9973062Z Uses: JCLEE94/blacklist/.github/workflows/create-issue-on-failure.yml@refs/heads/main (49ee09cb64a70cd3f542a69e9b8ab3e1ccb05b93)
+2025-07-04T04:12:57.9977829Z ##[group] Inputs
+2025-07-04T04:12:57.9978317Z   workflow_name: Test Issue Creation
+2025-07-04T04:12:57.9978799Z   run_id: 16065668594
+2025-07-04T04:12:57.9979368Z   run_url: https://github.com/JCLEE94/blacklist/actions/runs/16065668594
+2025-07-04T04:12:57.9980129Z   failed_jobs: [{"name": "test-failure", "result": "failure"}]
+2025-07-04T04:12:57.9980711Z ##[endgroup]
+2025-07-04T04:12:57.9981131Z Complete job name: create-issue / create-issue
+2025-07-04T04:12:58.0751636Z ##[group]Run actions/checkout@v3
+2025-07-04T04:12:58.0752461Z with:
+2025-07-04T04:12:58.0752847Z   repository: JCLEE94/blacklist
+2025-07-04T04:12:58.0753475Z   token: ***
+2025-07-04T04:12:58.0753851Z   ssh-strict: true
+2025-07-04T04:12:58.0754254Z   persist-credentials: true
+2025-07-04T04:12:58.0754692Z   clean: true
+2025-07-04T04:12:58.0755097Z   sparse-checkout-cone-mode: true
+2025-07-04T04:12:58.0755566Z   fetch-depth: 1
+2025-07-04T04:12:58.0755936Z   fetch-tags: false
+2025-07-04T04:12:58.0756598Z   lfs: false
+2025-07-04T04:12:58.0756961Z   submodules: false
+2025-07-04T04:12:58.0757358Z   set-safe-directory: true
+2025-07-04T04:12:58.0758083Z ##[endgroup]
+2025-07-04T04:12:58.3375931Z Syncing repository: JCLEE94/blacklist
+2025-07-04T04:12:58.3378111Z ##[group]Getting Git version info
+2025-07-04T04:12:58.3378863Z Working directory is '/home/runner/work/blacklist/blacklist'
+2025-07-04T04:12:58.3381015Z [command]/usr/bin/git version
+2025-07-04T04:12:58.3408697Z git version 2.49.0
+2025-07-04T04:12:58.3443133Z ##[endgroup]
+2025-07-04T04:12:58.3459829Z Temporarily overriding HOME='/home/runner/work/_temp/1a1d2530-e0ea-405f-be25-e0f68e2fa669' before making global git config changes
+2025-07-04T04:12:58.3463148Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-04T04:12:58.3469754Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/blacklist/blacklist
+2025-07-04T04:12:58.3511307Z Deleting the contents of '/home/runner/work/blacklist/blacklist'
+2025-07-04T04:12:58.3518107Z ##[group]Initializing the repository
+2025-07-04T04:12:58.3525162Z [command]/usr/bin/git init /home/runner/work/blacklist/blacklist
+2025-07-04T04:12:58.3669215Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-07-04T04:12:58.3673512Z hint: is subject to change. To configure the initial branch name to use in all
+2025-07-04T04:12:58.3675172Z hint: of your new repositories, which will suppress this warning, call:
+2025-07-04T04:12:58.3677001Z hint:
+2025-07-04T04:12:58.3679264Z hint: 	git config --global init.defaultBranch <name>
+2025-07-04T04:12:58.3680318Z hint:
+2025-07-04T04:12:58.3681318Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-07-04T04:12:58.3683206Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-07-04T04:12:58.3684730Z hint:
+2025-07-04T04:12:58.3685557Z hint: 	git branch -m <name>
+2025-07-04T04:12:58.3688469Z Initialized empty Git repository in /home/runner/work/blacklist/blacklist/.git/
+2025-07-04T04:12:58.3694841Z [command]/usr/bin/git remote add origin https://github.com/JCLEE94/blacklist
+2025-07-04T04:12:58.3741618Z ##[endgroup]
+2025-07-04T04:12:58.3744486Z ##[group]Disabling automatic garbage collection
+2025-07-04T04:12:58.3745652Z [command]/usr/bin/git config --local gc.auto 0
+2025-07-04T04:12:58.3773223Z ##[endgroup]
+2025-07-04T04:12:58.3776380Z ##[group]Setting up auth
+2025-07-04T04:12:58.3778735Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-04T04:12:58.3810129Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-04T04:12:58.4173154Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-04T04:12:58.4204303Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-04T04:12:58.4440377Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-07-04T04:12:58.4475932Z ##[endgroup]
+2025-07-04T04:12:58.4479345Z ##[group]Fetching the repository
+2025-07-04T04:12:58.4486586Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +49ee09cb64a70cd3f542a69e9b8ab3e1ccb05b93:refs/remotes/origin/main
+2025-07-04T04:12:58.5960756Z remote: Repository not found.
+2025-07-04T04:12:58.5989210Z ##[error]fatal: repository 'https://github.com/JCLEE94/blacklist/' not found
+2025-07-04T04:12:58.5998224Z The process '/usr/bin/git' failed with exit code 128
+2025-07-04T04:12:58.5999564Z Waiting 18 seconds before trying again
+2025-07-04T04:13:16.6074749Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +49ee09cb64a70cd3f542a69e9b8ab3e1ccb05b93:refs/remotes/origin/main
+2025-07-04T04:13:16.7066634Z remote: Repository not found.
+2025-07-04T04:13:16.7068814Z ##[error]fatal: repository 'https://github.com/JCLEE94/blacklist/' not found
+2025-07-04T04:13:16.7089842Z The process '/usr/bin/git' failed with exit code 128
+2025-07-04T04:13:16.7091667Z Waiting 20 seconds before trying again
+2025-07-04T04:13:36.7172358Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +49ee09cb64a70cd3f542a69e9b8ab3e1ccb05b93:refs/remotes/origin/main
+2025-07-04T04:13:36.8047290Z remote: Repository not found.
+2025-07-04T04:13:36.8052518Z ##[error]fatal: repository 'https://github.com/JCLEE94/blacklist/' not found
+2025-07-04T04:13:36.8125907Z ##[error]The process '/usr/bin/git' failed with exit code 128
+2025-07-04T04:13:36.8341785Z ##[group]Run if [ "" == "false" ]; then
+2025-07-04T04:13:36.8342131Z [36;1mif [ "" == "false" ]; then[0m
+2025-07-04T04:13:36.8342406Z [36;1m  echo "📧 New issue created: #"[0m
+2025-07-04T04:13:36.8342666Z [36;1m  echo "🔗 Issue URL: "[0m
+2025-07-04T04:13:36.8342899Z [36;1melse[0m
+2025-07-04T04:13:36.8343123Z [36;1m  echo "📧 Updated existing issue: #"[0m
+2025-07-04T04:13:36.8343372Z [36;1mfi[0m
+2025-07-04T04:13:36.8449729Z shell: /usr/bin/bash -e {0}
+2025-07-04T04:13:36.8449979Z ##[endgroup]
+2025-07-04T04:13:36.8548438Z 📧 Updated existing issue: #
+2025-07-04T04:13:36.8618161Z Post job cleanup.
+2025-07-04T04:13:36.9336941Z [command]/usr/bin/git version
+2025-07-04T04:13:36.9375165Z git version 2.49.0
+2025-07-04T04:13:36.9422810Z Temporarily overriding HOME='/home/runner/work/_temp/cd37eb72-fc9e-4502-879b-d35f5a20116b' before making global git config changes
+2025-07-04T04:13:36.9425817Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-04T04:13:36.9428350Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/blacklist/blacklist
+2025-07-04T04:13:36.9462561Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-04T04:13:36.9494954Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-04T04:13:36.9731841Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-04T04:13:36.9754251Z http.https://github.com/.extraheader
+2025-07-04T04:13:36.9768099Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-07-04T04:13:36.9799987Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-04T04:13:37.0132148Z Cleaning up orphan processes

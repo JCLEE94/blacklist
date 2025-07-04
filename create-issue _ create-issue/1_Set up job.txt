@@ -1,0 +1,42 @@
+﻿2025-07-04T04:12:57.1566750Z Current runner version: '2.325.0'
+2025-07-04T04:12:57.1624453Z ##[group]Operating System
+2025-07-04T04:12:57.1625679Z Ubuntu
+2025-07-04T04:12:57.1636576Z 24.04.2
+2025-07-04T04:12:57.1637461Z LTS
+2025-07-04T04:12:57.1638214Z ##[endgroup]
+2025-07-04T04:12:57.1639221Z ##[group]Runner Image
+2025-07-04T04:12:57.1640098Z Image: ubuntu-24.04
+2025-07-04T04:12:57.1640935Z Version: 20250629.1.0
+2025-07-04T04:12:57.1642774Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250629.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-07-04T04:12:57.1645424Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250629.1
+2025-07-04T04:12:57.1647336Z ##[endgroup]
+2025-07-04T04:12:57.1648356Z ##[group]Runner Image Provisioner
+2025-07-04T04:12:57.1649407Z 2.0.449.1
+2025-07-04T04:12:57.1650157Z ##[endgroup]
+2025-07-04T04:12:57.1652104Z ##[group]GITHUB_TOKEN Permissions
+2025-07-04T04:12:57.1654607Z Actions: read
+2025-07-04T04:12:57.1655587Z Issues: write
+2025-07-04T04:12:57.1676998Z Metadata: read
+2025-07-04T04:12:57.1678253Z ##[endgroup]
+2025-07-04T04:12:57.1681102Z Secret source: Actions
+2025-07-04T04:12:57.1682193Z Prepare workflow directory
+2025-07-04T04:12:57.2625185Z Prepare all required actions
+2025-07-04T04:12:57.2775068Z Getting action download info
+2025-07-04T04:12:57.6097373Z ##[group]Download immutable action package 'actions/checkout@v3'
+2025-07-04T04:12:57.6098928Z Version: 3.6.0
+2025-07-04T04:12:57.6102467Z Digest: sha256:942562b9c7d4b1f2557f1da21f4d3eb4eb4fd01f2ad78b2a6e187d1b193e0a0f
+2025-07-04T04:12:57.6104320Z Source commit SHA: f43a0e5ff2bd294095638e18286ca9a3d1956744
+2025-07-04T04:12:57.6105052Z ##[endgroup]
+2025-07-04T04:12:57.7407183Z ##[group]Download immutable action package 'actions/github-script@v6'
+2025-07-04T04:12:57.7408093Z Version: 6.4.1
+2025-07-04T04:12:57.7408796Z Digest: sha256:c493e77940bce2b1f3c9cb8e34f9a4c963412fab10227de97afd5905dec76e82
+2025-07-04T04:12:57.7409774Z Source commit SHA: d7906e4ad0b1822421a7e6a35d5ca353c962f410
+2025-07-04T04:12:57.7410534Z ##[endgroup]
+2025-07-04T04:12:57.9973037Z Uses: JCLEE94/blacklist/.github/workflows/create-issue-on-failure.yml@refs/heads/main (49ee09cb64a70cd3f542a69e9b8ab3e1ccb05b93)
+2025-07-04T04:12:57.9977807Z ##[group] Inputs
+2025-07-04T04:12:57.9978312Z   workflow_name: Test Issue Creation
+2025-07-04T04:12:57.9978794Z   run_id: 16065668594
+2025-07-04T04:12:57.9979365Z   run_url: https://github.com/JCLEE94/blacklist/actions/runs/16065668594
+2025-07-04T04:12:57.9980125Z   failed_jobs: [{"name": "test-failure", "result": "failure"}]
+2025-07-04T04:12:57.9980708Z ##[endgroup]
+2025-07-04T04:12:57.9981124Z Complete job name: create-issue / create-issue

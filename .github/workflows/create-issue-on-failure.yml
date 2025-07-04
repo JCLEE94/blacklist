@@ -29,8 +29,6 @@ jobs:
       issues: write
       actions: read
     steps:
-    - uses: actions/checkout@v3
-    
     - name: Debug information
       run: |
         echo "Workflow: ${{ inputs.workflow_name }}"
