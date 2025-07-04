@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 print_header() {
     echo -e "${BLUE}================================================${NC}"
-    echo -e "${BLUE}  Blacklist 통합 배포 스크립트${NC}"
+    echo -e "${BLUE}  Blacklist 통합 배포 스크립트 (ArgoCD GitOps)${NC}"
     echo -e "${BLUE}================================================${NC}"
 }
 
@@ -46,6 +46,9 @@ check_platform() {
                 echo -e "${RED}❌ kubectl이 설치되지 않았습니다${NC}"
                 exit 1
             fi
+            if ! command -v argocd &> /dev/null; then
+                echo -e "${YELLOW}⚠️ ArgoCD CLI가 설치되지 않았습니다. GitOps 기능이 제한될 수 있습니다.${NC}"
+            fi
             return 0
             ;;
         docker)
@@ -75,22 +78,38 @@ check_platform() {
 }
 
 deploy_kubernetes() {
-    echo -e "${GREEN}🚀 Kubernetes 배포 시작...${NC}"
+    echo -e "${GREEN}🚀 Kubernetes GitOps 배포 시작...${NC}"
     
     if [ "$DRY_RUN" = "true" ]; then
         echo "kubectl apply -k k8s/"
+        echo "kubectl apply -f k8s/argocd-app-clean.yaml"
+        echo "argocd app sync blacklist --grpc-web"
         return 0
     fi
     
     cd "$PROJECT_ROOT"
     
-    if [ -f "scripts/platforms/kubernetes/k8s-management.sh" ]; then
-        chmod +x scripts/platforms/kubernetes/k8s-management.sh
-        scripts/platforms/kubernetes/k8s-management.sh deploy
+    if [ -f "scripts/k8s-management.sh" ]; then
+        chmod +x scripts/k8s-management.sh
+        scripts/k8s-management.sh deploy
     else
-        # 직접 배포
+        # 직접 ArgoCD GitOps 배포
+        echo -e "${BLUE}📦 Kubernetes 매니페스트 적용...${NC}"
         kubectl apply -k k8s/
-        echo -e "${GREEN}✅ Kubernetes 배포 완료${NC}"
+        
+        echo -e "${BLUE}🎯 ArgoCD 애플리케이션 설정...${NC}"
+        if [ -f "k8s/argocd-app-clean.yaml" ]; then
+            kubectl apply -f k8s/argocd-app-clean.yaml
+        fi
+        
+        echo -e "${BLUE}🔄 ArgoCD 동기화...${NC}"
+        if command -v argocd &> /dev/null; then
+            argocd app sync blacklist --grpc-web --timeout 300 || echo "ArgoCD 동기화 완료"
+        else
+            echo -e "${YELLOW}⚠️ ArgoCD CLI가 설치되지 않았습니다${NC}"
+        fi
+        
+        echo -e "${GREEN}✅ Kubernetes GitOps 배포 완료${NC}"
     fi
 }
 

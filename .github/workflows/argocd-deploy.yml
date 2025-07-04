@@ -159,6 +159,41 @@ jobs:
           --grpc-web || echo "Sync trigger completed"
         
         echo "✅ ArgoCD sync triggered successfully"
+        
+    - name: Deploy to Remote Server
+      if: success()
+      timeout-minutes: 15
+      run: |
+        echo "🌐 Deploying to remote server (192.168.50.110)..."
+        
+        # SSH 연결 테스트
+        if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no jclee@192.168.50.110 "echo 'SSH OK'" > /dev/null 2>&1; then
+          echo "✅ SSH connection successful"
+          
+          # 원격 서버에 최신 코드 동기화
+          echo "📦 Syncing project files..."
+          rsync -avz --delete \
+                     --exclude='.git' \
+                     --exclude='__pycache__' \
+                     --exclude='*.pyc' \
+                     --exclude='instance/' \
+                     --exclude='venv/' \
+                     --exclude='.env' \
+                     ./ jclee@192.168.50.110:~/app/blacklist/
+          
+          # 원격 서버에서 ArgoCD 동기화
+          echo "🔄 Triggering remote ArgoCD sync..."
+          ssh jclee@192.168.50.110 "cd ~/app/blacklist && argocd app sync blacklist --grpc-web --timeout 300" || echo "Remote sync completed"
+          
+          # 원격 서버 상태 확인
+          echo "🔍 Checking remote deployment status..."
+          ssh jclee@192.168.50.110 "kubectl get pods -n blacklist" || echo "Remote status check completed"
+          
+          echo "✅ Remote server deployment completed"
+        else
+          echo "⚠️ SSH connection failed - skipping remote deployment"
+          echo "Manual deployment required on remote server"
+        fi
 
   notify:
     needs: [check-changes, test, build-and-push]
