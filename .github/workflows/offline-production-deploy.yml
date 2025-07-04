@@ -155,7 +155,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: env.ARGOCD_AUTH_TOKEN != ''
+    if: ${{ env.ARGOCD_AUTH_TOKEN != '' }}
     
     steps:
     - uses: actions/checkout@v3
