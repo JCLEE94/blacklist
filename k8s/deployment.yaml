@@ -67,11 +67,11 @@ spec:
           httpGet:
             path: /health
             port: 2541
-          initialDelaySeconds: 10  # 초기 대기시간 증가
-          periodSeconds: 5         # 적절한 체크 주기
-          timeoutSeconds: 3        # 응답 시간 여유
-          successThreshold: 1      # 한 번 성공하면 준비 완료
-          failureThreshold: 6      # 더 많은 재시도 허용
+          initialDelaySeconds: 120  # 초기 데이터 수집 완료까지 충분한 대기
+          periodSeconds: 10         # 체크 주기 증가
+          timeoutSeconds: 5         # 응답 시간 더 여유롭게
+          successThreshold: 1       # 한 번 성공하면 준비 완료
+          failureThreshold: 12      # 2분간 재시도 허용
         volumeMounts:
         - name: data
           mountPath: /app/data
