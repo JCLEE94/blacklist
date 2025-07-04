@@ -150,14 +150,31 @@ jobs:
         path: blacklist-${{ steps.tag.outputs.tag }}.tar.gz
         retention-days: 30
 
-  # Step 3: Deploy to Staging (ArgoCD)
+  # Step 3: Deploy to Staging (ArgoCD) - Optional
   deploy-staging:
     needs: build-and-push
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: env.ARGOCD_AUTH_TOKEN != ''
     
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Check ArgoCD Server Connectivity
+      run: |
+        echo "🔍 Checking ArgoCD server connectivity..."
+        if [ -z "${{ env.ARGOCD_AUTH_TOKEN }}" ]; then
+          echo "❌ ARGOCD_AUTH_TOKEN is not set. Skipping staging deployment."
+          exit 1
+        fi
+        
+        # Test ArgoCD server connectivity
+        if ! curl -s --connect-timeout 10 https://${{ env.ARGOCD_SERVER }}/healthz; then
+          echo "❌ Cannot connect to ArgoCD server: ${{ env.ARGOCD_SERVER }}"
+          exit 1
+        fi
+        
+        echo "✅ ArgoCD server is accessible"
     
     - name: Update Kubernetes manifests for staging
       run: |
@@ -199,7 +216,8 @@ jobs:
 
   # Step 4: Create offline deployment package
   create-offline-package:
-    needs: [build-and-push, deploy-staging]
+    needs: [build-and-push]
+    if: always() && needs.build-and-push.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
@@ -696,7 +714,7 @@ jobs:
       always() && 
       (needs.test.result == 'failure' || 
        needs.build-and-push.result == 'failure' || 
-       needs.deploy-staging.result == 'failure' ||
+       (needs.deploy-staging.result == 'failure' && needs.deploy-staging.result != 'skipped') ||
        needs.create-offline-package.result == 'failure' ||
        needs.create-release.result == 'failure')
     uses: ./.github/workflows/create-issue-on-failure.yml
