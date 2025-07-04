@@ -465,7 +465,7 @@ jobs:
     
     - name: Create README for offline package
       run: |
-        cat > offline-package/README.md << 'EOF'
+        cat > offline-package/README.md << EOF
         # Blacklist Offline Production Deployment Package
         
         Version: ${{ needs.build-and-push.outputs.image-tag }}
