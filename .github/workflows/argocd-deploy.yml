@@ -216,3 +216,23 @@ jobs:
           echo "❌ Deployment pipeline failed!"
           echo "❌ Check logs for details"
         fi
+
+  # Create issue on failure
+  create-issue-on-failure:
+    needs: [check-changes, test, build-and-push]
+    if: |
+      always() && 
+      needs.check-changes.outputs.should-skip != 'true' &&
+      (needs.test.result == 'failure' || needs.build-and-push.result == 'failure')
+    uses: ./.github/workflows/create-issue-on-failure.yml
+    with:
+      workflow_name: "ArgoCD CI/CD Pipeline"
+      run_id: ${{ github.run_id }}
+      run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      failed_jobs: |
+        [
+          {"name": "test", "result": "${{ needs.test.result }}"},
+          {"name": "build-and-push", "result": "${{ needs.build-and-push.result }}"}
+        ]
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

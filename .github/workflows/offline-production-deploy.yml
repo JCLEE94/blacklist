@@ -692,3 +692,29 @@ jobs:
           echo "❌ Pipeline failed!"
           echo "Check the logs for details"
         fi
+
+  # Create issue on failure
+  create-issue-on-failure:
+    needs: [test, build-and-push, deploy-staging, create-offline-package, create-release, notify]
+    if: |
+      always() && 
+      (needs.test.result == 'failure' || 
+       needs.build-and-push.result == 'failure' || 
+       needs.deploy-staging.result == 'failure' ||
+       needs.create-offline-package.result == 'failure' ||
+       needs.create-release.result == 'failure')
+    uses: ./.github/workflows/create-issue-on-failure.yml
+    with:
+      workflow_name: "Offline Production CI/CD Pipeline"
+      run_id: ${{ github.run_id }}
+      run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      failed_jobs: |
+        [
+          {"name": "test", "result": "${{ needs.test.result }}"},
+          {"name": "build-and-push", "result": "${{ needs.build-and-push.result }}"},
+          {"name": "deploy-staging", "result": "${{ needs.deploy-staging.result }}"},
+          {"name": "create-offline-package", "result": "${{ needs.create-offline-package.result }}"},
+          {"name": "create-release", "result": "${{ needs.create-release.result }}"}
+        ]
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
