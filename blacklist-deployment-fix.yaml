@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+  namespace: blacklist
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blacklist
+  template:
+    metadata:
+      labels:
+        app: blacklist
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 8.8.4.4
+        searches:
+          - blacklist.svc.cluster.local
+          - svc.cluster.local
+          - cluster.local
+        options:
+          - name: ndots
+            value: "2"
+          - name: edns0
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/blacklist:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2541
+        envFrom:
+        - configMapRef:
+            name: blacklist-config
+        - secretRef:
+            name: blacklist-secret
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 6
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      imagePullSecrets:
+      - name: regcred

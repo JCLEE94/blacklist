@@ -13,6 +13,9 @@ from flask import jsonify, request, current_app
 from werkzeug.exceptions import HTTPException
 import json
 
+# GitHub 이슈 리포터 import
+from src.utils.github_issue_reporter import report_error_to_github
+
 logger = logging.getLogger(__name__)
 
 
@@ -158,7 +161,7 @@ class ErrorHandler:
         return response, status_code
     
     def log_error(self, error: Exception, context: Optional[Dict] = None):
-        """에러 로깅 및 통계 수집"""
+        """에러 로깅, 통계 수집 및 GitHub 이슈 생성"""
         error_type = type(error).__name__
         error_code = getattr(error, 'code', 'UNKNOWN_ERROR')
         
@@ -191,17 +194,33 @@ class ErrorHandler:
         if len(self.error_logs) > self.max_error_logs:
             self.error_logs.pop(0)
         
-        # 로거에 기록
+        # GitHub 이슈 생성 (심각한 에러만)
+        should_create_issue = False
         if isinstance(error, BaseError):
+            # 500번대 에러만 GitHub 이슈로 생성
             if error.status_code >= 500:
+                should_create_issue = True
                 logger.error(f"{error_code}: {error.message}", 
                            extra={"error_details": error.details, "context": context})
             else:
                 logger.warning(f"{error_code}: {error.message}", 
                              extra={"error_details": error.details, "context": context})
         else:
+            # 예상치 못한 예외는 모두 GitHub 이슈로 생성
+            should_create_issue = True
             logger.error(f"Unexpected error: {error}", 
                         exc_info=True, extra={"context": context})
+        
+        # GitHub 이슈 생성
+        if should_create_issue:
+            try:
+                issue_url = report_error_to_github(error, context)
+                if issue_url:
+                    logger.info(f"GitHub issue created for error {error_code}: {issue_url}")
+                    # 에러 로그에 이슈 URL 추가
+                    error_log["github_issue"] = issue_url
+            except Exception as github_error:
+                logger.error(f"Failed to create GitHub issue: {github_error}")
     
     def get_error_stats(self) -> Dict[str, Any]:
         """에러 통계 조회"""

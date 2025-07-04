@@ -2487,3 +2487,107 @@ def internal_error(error):
         'error': 'Internal server error',
         'message': 'An unexpected error occurred'
     }), 500
+
+# === GitHub 이슈 리포팅 테스트 엔드포인트 ===
+
+@unified_bp.route('/api/test/github-issue', methods=['POST'])
+def test_github_issue():
+    """GitHub 이슈 자동 생성 테스트"""
+    try:
+        from src.utils.github_issue_reporter import report_error_to_github
+        
+        # 요청 데이터 확인
+        data = request.get_json() or {}
+        error_type = data.get('error_type', 'TestError')
+        error_message = data.get('error_message', 'GitHub 이슈 자동 생성 테스트')
+        
+        # 테스트 예외 생성
+        if error_type == 'ValueError':
+            raise ValueError(error_message)
+        elif error_type == 'RuntimeError':
+            raise RuntimeError(error_message)
+        elif error_type == 'DatabaseError':
+            from src.utils.error_handler import DatabaseError
+            raise DatabaseError('test_operation', error_message)
+        else:
+            # 일반 예외
+            raise Exception(error_message)
+            
+    except Exception as e:
+        # 에러는 기존 에러 핸들러가 자동으로 GitHub 이슈를 생성함
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'GitHub 이슈가 자동으로 생성됩니다 (에러 핸들러에 의해)'
+        }), 500
+
+@unified_bp.route('/api/test/manual-github-issue', methods=['POST'])
+def test_manual_github_issue():
+    """수동 GitHub 이슈 생성 테스트"""
+    try:
+        from src.utils.github_issue_reporter import report_error_to_github
+        
+        data = request.get_json() or {}
+        error_message = data.get('error_message', '수동 GitHub 이슈 생성 테스트')
+        
+        # 테스트 예외 생성
+        test_exception = Exception(error_message)
+        
+        # 컨텍스트 정보 추가
+        context = {
+            'test_type': 'manual_test',
+            'request_data': data,
+            'user_agent': request.headers.get('User-Agent'),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # GitHub 이슈 수동 생성
+        issue_url = report_error_to_github(test_exception, context)
+        
+        if issue_url:
+            return jsonify({
+                'success': True,
+                'message': 'GitHub 이슈가 성공적으로 생성되었습니다',
+                'issue_url': issue_url
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'GitHub 이슈 생성에 실패했습니다 (토큰 설정 확인 필요)'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Manual GitHub issue test error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/errors/github-status', methods=['GET'])
+def github_issue_status():
+    """GitHub 이슈 리포터 상태 확인"""
+    try:
+        from src.utils.github_issue_reporter import get_github_reporter
+        
+        reporter = get_github_reporter()
+        
+        status = {
+            'github_token_configured': bool(reporter.github_token),
+            'repo_owner': reporter.repo_owner,
+            'repo_name': reporter.repo_name,
+            'base_url': reporter.base_url,
+            'error_cache_size': len(reporter.error_cache),
+            'cache_timeout_hours': reporter.cache_timeout.total_seconds() / 3600
+        }
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+        
+    except Exception as e:
+        logger.error(f"GitHub status check error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
