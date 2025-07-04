@@ -1,0 +1,86 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base 리소스 참조
+resources:
+  - ../../base
+  - secrets.yaml
+  - ingress-production.yaml
+  - network-policy.yaml  # 프로덕션 전용 네트워크 정책
+
+# 네임스페이스 설정
+namespace: blacklist-prod
+
+# 이미지 태그 설정 (오프라인 배포 시 수동 업데이트)
+images:
+  - name: registry.jclee.me/blacklist
+    newTag: v1.0.0  # 수동으로 관리되는 버전
+
+# 프로덕션 레플리카 수
+replicas:
+  - name: blacklist
+    count: 3
+
+# 프로덕션 ConfigMap 설정
+configMapGenerator:
+  - name: blacklist-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=production
+      - PORT=2541
+      - LOG_LEVEL=info
+      - COLLECTION_ENABLED=true
+      - REDIS_URL=redis://redis-prod:6379/0
+      - SECURE_COOKIES=true
+      - SESSION_TIMEOUT=3600
+
+# 프로덕션 라벨
+commonLabels:
+  environment: production
+  deployment-type: offline
+
+# 프로덕션 어노테이션
+commonAnnotations:
+  deployment.kubernetes.io/revision: "1"
+
+# HPA 설정 (더 보수적)
+patchesStrategicMerge:
+  - hpa-production.yaml
+  - pdb.yaml  # Pod Disruption Budget
+
+# 프로덕션 리소스 제한 (더 높은 리소스)
+patches:
+  - target:
+      kind: Deployment
+      name: blacklist
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+      - op: add
+        path: /spec/template/spec/containers/0/livenessProbe
+        value:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+      - op: add
+        path: /spec/template/spec/containers/0/readinessProbe
+        value:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3

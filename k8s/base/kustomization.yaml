@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 공통 리소스
+resources:
+  - ../deployment.yaml
+  - ../service.yaml
+  - ../configmap.yaml
+
+# 공통 라벨
+commonLabels:
+  app: blacklist
+  managed-by: argocd
+
+# 공통 어노테이션
+commonAnnotations:
+  version: "1.0"

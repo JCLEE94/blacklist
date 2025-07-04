@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+data:
+  # 레지스트리 설정
+  registries.conf: |
+    registries:
+    - name: custom-registry
+      api_url: https://registry.jclee.me
+      prefix: registry.jclee.me
+      ping: yes
+      insecure: no
+      credentials: pullsecret:argocd/registry-credentials
+      defaultns: library
+      limit: 50
+  
+  # 로그 레벨 설정
+  log.level: "info"
+  
+  # Git 커밋 설정
+  git.commit-message-template: |
+    build: automatic image update
+    
+    {{range .Images}}
+    - {{.Image}}:{{.Tag}}
+    {{end}}
+    
+    🤖 Updated by ArgoCD Image Updater
+  
+  # 업데이트 간격 (초)
+  interval: "120"  # 2분마다 체크
+  
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: registry-credentials
+  namespace: argocd
+type: kubernetes.io/dockerconfigjson
+data:
+  # base64로 인코딩된 docker config
+  # 실제 사용 시 아래 명령으로 생성:
+  # kubectl create secret docker-registry registry-credentials \
+  #   --docker-server=registry.jclee.me \
+  #   --docker-username=<username> \
+  #   --docker-password=<password> \
+  #   -n argocd --dry-run=client -o yaml
+  .dockerconfigjson: <base64-encoded-docker-config>
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  verbs:
+  - get
+  - list
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argocd-image-updater
+subjects:
+- kind: ServiceAccount
+  name: argocd-image-updater
+  namespace: argocd
