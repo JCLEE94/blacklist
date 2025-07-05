@@ -130,8 +130,6 @@ jobs:
             - 코드 품질 개선
             - 테스트 커버리지 향상
             
-          # 모델 설정
-          model: "claude-3-7-sonnet-20250110"
           
           # MCP 서버 설정 (Self-hosted runner 최적화)
           mcp_servers: |

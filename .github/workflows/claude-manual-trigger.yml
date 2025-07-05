@@ -1,0 +1,100 @@
+name: Claude Manual Trigger
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task for Claude to perform'
+        required: true
+        default: 'Please review and improve the codebase'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  claude-manual:
+    name: Claude Manual Task
+    # @claude 멘션이나 수동 실행일 때만 실행
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Manual Task
+        uses: grll/claude-code-base-action@beta
+        with:
+          use_oauth: "true"
+          claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
+          claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
+          claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
+          secrets_admin_pat: ${{ secrets.SECRETS_ADMIN_PAT }}
+          
+          prompt: |
+            당신은 Blacklist 위협 인텔리전스 플랫폼의 전문 개발자입니다.
+            
+            {% if github.event_name == 'workflow_dispatch' %}
+            **수동 실행 작업**: {{ github.event.inputs.task }}
+            {% else %}
+            **GitHub에서 요청된 작업을 수행해주세요.**
+            {% endif %}
+            
+            ## 프로젝트 컨텍스트
+            - **시스템**: Enterprise threat intelligence platform
+            - **아키텍처**: GitOps 기반 배포, 멀티소스 데이터 수집, FortiGate 연동
+            - **기술스택**: Flask 2.3.3 + Gunicorn, SQLite, Redis, Docker/K8s, ArgoCD
+            
+            ## 핵심 컴포넌트
+            - **의존성 주입**: src/core/container.py 중앙 서비스 관리
+            - **데이터 수집**: REGTECH, SECUDIUM 멀티소스 수집기
+            - **GitOps 배포**: ArgoCD + GitHub Actions CI/CD
+            - **캐싱**: Redis primary + memory fallback
+            
+            ## 개발 지침
+            1. **보안 우선**: 하드코딩 금지, 환경변수 사용
+            2. **성능 최적화**: orjson, 연결 풀링, 압축 활용
+            3. **에러 처리**: 구조화된 예외 처리 및 로깅
+            4. **테스트**: 모든 변경사항에 대한 테스트 필수
+            5. **GitOps**: Git 커밋 기반 배포 자동화
+            
+            항상 프로덕션 준비된 보안 코드를 제공해주세요.
+            한국어로 명확하게 설명하고 응답해주세요.
+          
+          allowed_tools: "Bash(git:*,docker:*,kubectl:*,python:*,npm:*,curl:*,find:*,grep:*),View,Edit,MultiEdit,Write,GlobTool,GrepTool,BatchTool"
+          auto_commit: "true"
+          commit_message: "🤖 Claude 수동 작업 완료"
+          create_pr: "true"
+          pr_title: "🤖 Claude 수동 작업 결과"
+          pr_body: |
+            Claude가 수행한 수동 작업 결과입니다.
+            
+            **작업 내용**: 
+            {% if github.event_name == 'workflow_dispatch' %}
+            {{ github.event.inputs.task }}
+            {% else %}
+            GitHub Issues/PR에서 요청된 작업
+            {% endif %}
+            
+            **변경사항 검토 후 승인해주세요.**
+          
+          max_conversation_turns: 15
+          timeout_minutes: 45
