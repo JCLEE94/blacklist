@@ -10,6 +10,13 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Health endpoint exemption from rate limiting
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location ~* ^/(health|healthz|ready|api/health)$ {
+        access_log off;
+        limit_req off;
+        limit_rate off;
+      }
 spec:
   ingressClassName: nginx
   # TLS 임시 비활성화 (cert-manager 미설치)

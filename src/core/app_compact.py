@@ -104,20 +104,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         # Rate limiting with container-managed cache
         cache = container.resolve('cache')
         
-        # Determine storage URI for rate limiter based on Redis availability
-        storage_uri = 'memory://'
-        if hasattr(config, 'REDIS_URL') and config.REDIS_URL:
-            # Check if Redis is actually accessible
-            try:
-                import redis
-                r = redis.from_url(config.REDIS_URL)
-                r.ping()
-                storage_uri = config.REDIS_URL
-                logger.info("Rate limiter using Redis storage", storage="redis", status="connected")
-            except Exception as e:
-                logger.warning("Redis not available for rate limiter, falling back to memory", 
-                             exception=e, storage="memory", fallback=True)
-                storage_uri = 'memory://'
+        # Rate limiting completely disabled - no storage URI needed
         
         # Rate limiting 완전 비활성화로 인해 불필요
         # def get_rate_limit_key():
@@ -181,12 +168,12 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         security_manager = get_security_manager()
         app.security_manager = security_manager
         
-        # Initialize unified decorators with container services
+        # Initialize unified decorators with container services (rate limiting disabled)
         from src.utils.unified_decorators import initialize_decorators
         initialize_decorators(
             cache=container.resolve('cache'),
             auth_manager=container.resolve('auth_manager'),
-            rate_limiter=container.resolve('rate_limiter'),
+            rate_limiter=None,  # Rate limiting completely disabled
             metrics=container.resolve('metrics_collector')
         )
         
@@ -280,8 +267,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         
         # REGTECH 분석 메뉴 제거됨 (사용자 요청)
         
-        # Store limiter in app
-        app.limiter = limiter
+        # Limiter removed - no longer stored in app
         
         # Performance monitoring setup
         profiler = get_profiler()

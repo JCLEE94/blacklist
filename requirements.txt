@@ -45,3 +45,5 @@ python-json-logger==2.0.7
 
 # Environment
 python-dotenv==1.1.1
+
+# NOTE: Flask-Limiter completely removed - rebuild required
