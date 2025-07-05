@@ -91,6 +91,10 @@ class ServiceContainer:
             raise RuntimeError(f"Circular dependency detected: {name}")
         
         if name not in self._services:
+            # Special handling for disabled rate_limiter
+            if name == 'rate_limiter':
+                logger.warning(f"Rate limiter service disabled, returning None")
+                return None
             raise KeyError(f"Service '{name}' not registered")
         
         service_def = self._services[name]
@@ -212,12 +216,12 @@ class BlacklistContainer(ServiceContainer):
         # Authentication
         self.register('auth_manager', AuthManager)
         
-        # Rate Limiter
-        self.register(
-            'rate_limiter',
-            RateLimiter,
-            dependencies={'cache_manager': 'cache'}
-        )
+        # Rate Limiter - COMPLETELY DISABLED FOR STABILITY
+        # self.register(
+        #     'rate_limiter',
+        #     RateLimiter,
+        #     dependencies={'cache_manager': 'cache'}
+        # )
         
         # Monitoring
         self.register_factory('metrics_collector', lambda: get_metrics_collector())
