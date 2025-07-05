@@ -22,8 +22,8 @@ class DevelopmentConfig(BaseConfig):
     # Verbose logging for development
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG').upper()
     
-    # Relaxed rate limiting for development
-    RATELIMIT_DEFAULT = ["10000 per hour", "1000 per minute"]
+    # Rate limiting 비활성화 (개발환경)
+    RATELIMIT_DEFAULT = []
     
     # Database optimizations for development
     SQLALCHEMY_ENGINE_OPTIONS = {

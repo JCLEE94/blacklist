@@ -52,10 +52,10 @@ class BaseConfig:
     CORS_ALLOW_HEADERS = ['Content-Type', 'Authorization', 'X-API-Key']
     CORS_EXPOSE_HEADERS = ['X-Total-IPs', 'X-Active-Months', 'X-Cache']
     
-    # Rate Limiting
+    # Rate Limiting 비활성화 (안정화를 위해)
     RATELIMIT_STORAGE_URL = REDIS_URL if REDIS_URL else 'memory://'
-    RATELIMIT_DEFAULT = ["1000 per hour", "100 per minute"]
-    RATELIMIT_HEADERS_ENABLED = True
+    RATELIMIT_DEFAULT = []
+    RATELIMIT_HEADERS_ENABLED = False
     
     # Blacklist API Configuration  
     BLACKLIST_BASE_URL = os.environ.get('BLACKLIST_BASE_URL', 'https://platform.blacklist.io')

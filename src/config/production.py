@@ -25,8 +25,8 @@ class ProductionConfig(BaseConfig):
     # Production logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
     
-    # Enhanced rate limiting for production
-    RATELIMIT_DEFAULT = ["500 per hour", "50 per minute"]
+    # Rate limiting 비활성화 (안정화를 위해)
+    RATELIMIT_DEFAULT = []
     
     # Performance optimizations
     SQLALCHEMY_ENGINE_OPTIONS = {
