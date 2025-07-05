@@ -1,6 +1,12 @@
 name: Claude Max Code Base Action
 
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/ci-optimized.yml'
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -18,8 +24,9 @@ permissions:
 
 jobs:
   claude-max-action:
-    # @claude 멘션이 있을 때만 실행
+    # Push 이벤트이거나 @claude 멘션이 있을 때 실행
     if: |
+      github.event_name == 'push' ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
@@ -33,19 +40,37 @@ jobs:
           fetch-depth: 0
 
       - name: Run Claude Max Code Base Action
-        uses: anthropics/claude-code-base-action@beta
+        uses: grll/claude-code-base-action@beta
         with:
-          # Claude Max 인증 토큰 (우선순위 높음)
+          # OAuth 사용 설정
+          use_oauth: "true"
+          
+          # Claude Max 인증 토큰
           claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
           claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
           claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
           
           # GitHub 토큰
-          github_token: ${{ secrets.SECRETS_ADMIN_PAT }}
+          secrets_admin_pat: ${{ secrets.SECRETS_ADMIN_PAT }}
           
           # 프롬프트 설정
           prompt: |
             당신은 Blacklist 위협 인텔리전스 플랫폼의 전문 개발자입니다.
+            
+            ## 자동 코드 개선 모드
+            {% if github.event_name == 'push' %}
+            **메인 브랜치에 푸시가 감지되었습니다. 자동 코드 분석 및 개선을 수행하세요:**
+            
+            1. **보안 스캔**: 하드코딩된 시크릿, SQL 인젝션, XSS 취약점 확인
+            2. **성능 최적화**: 느린 쿼리, 캐싱 누락, 메모리 누수 확인  
+            3. **코드 품질**: 타입 힌트, docstring, 에러 핸들링 개선
+            4. **테스트 커버리지**: 누락된 테스트 케이스 추가
+            5. **의존성 업데이트**: 보안 취약점이 있는 패키지 업데이트
+            
+            발견된 문제들을 자동으로 수정하고 PR을 생성해주세요.
+            {% else %}
+            GitHub Issues나 PR에서 요청된 작업을 수행해주세요.
+            {% endif %}
             
             ## 프로젝트 컨텍스트
             - **시스템**: Enterprise threat intelligence platform
@@ -70,20 +95,11 @@ jobs:
             - /api/fortigate: FortiGate External Connector 형식
             - /api/collection/*: 데이터 수집 관리
             
-            GitHub Issues나 PR에서 요청된 작업을 수행하고, 
             항상 프로덕션 준비된 보안 코드를 제공해주세요.
             한국어로 명확하게 설명하고 응답해주세요.
           
           # 허용된 도구 설정
-          allowed_tools: |
-            Bash(git:*,docker:*,kubectl:*,python:*,npm:*,curl:*)
-            View
-            Edit
-            MultiEdit
-            Write
-            GlobTool
-            GrepTool
-            BatchTool
+          allowed_tools: "Bash(git:*,docker:*,kubectl:*,python:*,npm:*,curl:*),View,Edit,MultiEdit,Write,GlobTool,GrepTool,BatchTool"
             
           # 모델 설정
           model: "claude-3-5-sonnet-20241022"
