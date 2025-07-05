@@ -40,40 +40,51 @@ jobs:
           timeout_minutes: "60"
           
           # MCP 서버 설정 (Model Context Protocol)
-          mcp_servers: |
-            filesystem:
-              command: npx
-              args: ["@modelcontextprotocol/server-filesystem", "/tmp"]
-            
-            memory:
-              command: npx  
-              args: ["@modelcontextprotocol/server-memory"]
-            
-            github:
-              command: npx
-              args: ["@modelcontextprotocol/server-github"]
-              env:
-                GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            
-            brave-search:
-              command: npx
-              args: ["@modelcontextprotocol/server-brave-search"]
-              env:
-                BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+          mcp_config: |
+            {
+              "mcpServers": {
+                "filesystem": {
+                  "command": "npx",
+                  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/github/workspace"]
+                },
+                "memory": {
+                  "command": "npx",
+                  "args": ["-y", "@modelcontextprotocol/server-memory"]
+                },
+                "sequential-thinking": {
+                  "command": "npx", 
+                  "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+                },
+                "brave-search": {
+                  "command": "npx",
+                  "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+                  "env": {
+                    "BRAVE_API_KEY": "${{ secrets.BRAVE_API_KEY }}"
+                  }
+                }
+              }
+            }
           
-          # 허용된 도구 설정
-          allowed_tools:
-            - read_file
-            - write_file
-            - edit_file
-            - list_directory
-            - create_repository
-            - create_or_update_file
-            - get_file_contents
-            - create_issue
-            - create_pull_request
-            - search_repositories
-            - web_search
+          # 허용된 도구 설정 (MCP 네임스페이스 포함)
+          allowed_tools: |
+            read_file
+            write_file
+            edit_file
+            list_directory
+            create_repository
+            create_or_update_file
+            get_file_contents
+            create_issue
+            create_pull_request
+            search_repositories
+            mcp__filesystem__read_file
+            mcp__filesystem__write_file
+            mcp__filesystem__list_directory
+            mcp__memory__create_entities
+            mcp__memory__search_nodes
+            mcp__memory__read_graph
+            mcp__sequential-thinking__sequentialthinking
+            mcp__brave-search__brave_web_search
           
           # 프로젝트별 컨텍스트 설정
           system_message: |
