@@ -4,6 +4,8 @@ metadata:
   name: blacklist
   namespace: blacklist
   annotations:
+    # ArgoCD Health Check Override
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"

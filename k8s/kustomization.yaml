@@ -24,3 +24,7 @@ commonAnnotations:
   argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
   argocd-image-updater.argoproj.io/write-back-method: git
   argocd-image-updater.argoproj.io/git-branch: main
+
+# Patches for ArgoCD
+patchesStrategicMerge:
+  - patches/ingress-health.yaml
