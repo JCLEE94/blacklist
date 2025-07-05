@@ -2,8 +2,8 @@
 # Stage 1: Builder for production dependencies
 FROM python:3.9 AS builder
 
-# Build arguments - Force rebuild: 2025-07-06T02:06:00Z
-ARG BUILD_TIME="2025-07-06T02:06:00Z"  
+# Build arguments - Force rebuild: 2025-07-06T03:11:00Z
+ARG BUILD_TIME="2025-07-06T03:11:00Z"  
 ENV BUILD_TIME=${BUILD_TIME}
 ENV TZ=Asia/Seoul
 
