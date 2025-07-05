@@ -1394,6 +1394,7 @@ class UnifiedBlacklistService:
             # 데이터베이스에서 실제 소스 정보와 함께 IP 조회
             import sqlite3
             db_path = '/app/instance/blacklist.db'
+            self.logger.info(f"[DEBUG] Enhanced API: Opening database at {db_path}")
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             
@@ -1417,6 +1418,7 @@ class UnifiedBlacklistService:
             
             all_results = cursor.fetchall()
             total_count = len(all_results)
+            self.logger.info(f"[DEBUG] Enhanced API: Found {total_count} total records")
             
             # 페이지네이션 적용
             start = (page - 1) * per_page
@@ -1430,6 +1432,7 @@ class UnifiedBlacklistService:
                 data = []
                 for row in paginated_results:
                     ip, source, added_date, expires_at, is_active = row
+                    self.logger.info(f"[DEBUG] Enhanced API: Processing IP {ip} with source {source}")
                     
                     # 위협 수준 결정 (소스별로 다르게 설정)
                     threat_level = 'high' if source in ['REGTECH', 'SECUDIUM'] else 'medium'
