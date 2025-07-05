@@ -125,10 +125,10 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
                 return None  # 헬스 체크는 rate limiting 완전 제외
             return get_remote_address()
         
-        # Rate limiting 임시 비활성화 (헬스체크 안정화)
+        # Rate limiting 완전 비활성화 (안정화를 위해)
         limiter = Limiter(
             app=app,
-            key_func=get_rate_limit_key,
+            key_func=lambda: None,  # 모든 요청을 rate limiting에서 제외
             default_limits=[],  # 기본 제한 비활성화
             storage_uri=storage_uri
         )
