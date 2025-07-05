@@ -1,0 +1,64 @@
+name: Claude Code Action
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, edited, synchronize]
+  pull_request_review_comment:
+    types: [created, edited]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  claude-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Claude Max Code Base Action
+        uses: claude-max/code-base-action@v1
+        with:
+          claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
+          claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
+          claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
+          github_token: ${{ secrets.SECRETS_ADMIN_PAT }}
+          # Optional: Customize the action behavior
+          max_tokens: 4000
+          model: "claude-3-5-sonnet-20241022"
+          temperature: 0.1
+          # Include project context
+          include_file_tree: true
+          max_file_size: 100000
+          excluded_paths: |
+            node_modules/
+            .git/
+            dist/
+            build/
+            __pycache__/
+            *.log
+            *.pyc
+            .env
+            instance/
+            venv/
+            .pytest_cache/
+          # Custom prompt additions
+          system_prompt: |
+            You are an expert Python/Flask developer working on a blacklist management system.
+            This is a threat intelligence platform with GitOps deployment and multi-source data collection.
+            
+            Key technologies:
+            - Flask 2.3.3 + Gunicorn
+            - SQLite with auto-migration
+            - Redis caching
+            - Docker/Kubernetes with ArgoCD
+            - GitHub Actions CI/CD
+            
+            Always provide:
+            - Secure, production-ready code
+            - Proper error handling
+            - Performance considerations
+            - Testing recommendations
