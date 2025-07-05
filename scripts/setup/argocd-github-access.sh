@@ -7,7 +7,7 @@ echo "🔐 Setting up ArgoCD GitHub repository access..."
 
 # ArgoCD 서버 정보
 ARGOCD_SERVER="argo.jclee.me"
-REPO_URL="https://github.com/jclee/blacklist.git"
+REPO_URL="https://github.com/JCLEE94/blacklist.git"
 
 # 색상 코드
 GREEN='\033[0;32m'
@@ -42,6 +42,7 @@ echo -e "${GREEN}Adding GitHub repository with authentication...${NC}"
 argocd repo add $REPO_URL \
   --username oauth2 \
   --password $GITHUB_TOKEN \
+  --upsert \
   --grpc-web
 
 # 저장소 연결 테스트

@@ -9,7 +9,7 @@ echo "🔧 Fixing ArgoCD Application Configuration..."
 ARGOCD_SERVER="argo.jclee.me"
 APP_NAME="blacklist"
 NAMESPACE="blacklist"
-REPO_URL="https://github.com/jclee/blacklist.git"
+REPO_URL="https://github.com/JCLEE94/blacklist.git"
 K8S_PATH="k8s"
 
 # 색상 코드
