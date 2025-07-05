@@ -14,10 +14,13 @@ from typing import Dict, List, Optional, Any
 class CICDTroubleshooter:
     """CI/CD 파이프라인 자동 트러블슈팅 및 복구"""
     
-    def __init__(self, gateway_url="http://192.168.50.120:5678", api_key="super-secret-ai-key"):
-        self.base_url = gateway_url
+    def __init__(self, gateway_url=None, api_key=None):
+        import os
+        self.gateway_url = gateway_url or os.environ.get('AI_GATEWAY_URL', 'http://192.168.50.120:5678')
+        self.api_key = api_key or os.environ.get('AI_GATEWAY_API_KEY', 'default-key')
+        self.base_url = self.gateway_url
         self.headers = {
-            "X-API-Key": api_key,
+            "X-API-Key": self.api_key,
             "Content-Type": "application/json"
         }
         self.session = requests.Session()

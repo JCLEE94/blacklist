@@ -1112,9 +1112,9 @@ def api_secudium_test():
         
         collector = SecudiumAPICollector()
         
-        # 설정에서 자격증명 가져오기
-        username = settings.secudium_username or 'nextrade'
-        password = settings.secudium_password or 'Sprtmxm1@3'
+        # 설정에서 자격증명 가져오기 (환경변수 우선)
+        username = settings.secudium_username or os.environ.get('SECUDIUM_USERNAME', 'nextrade')
+        password = settings.secudium_password or os.environ.get('SECUDIUM_PASSWORD', 'default_password')
         
         # 로그인 테스트
         success = collector.login(username, password)
@@ -1394,9 +1394,9 @@ def api_regtech_collect():
         mode = data.get('mode', 'update')
         auto_save = data.get('auto_save', True)
         
-        # 자격 증명 설정 (사용자가 제공한 것)
-        username = 'nextrade'
-        password = 'Sprtmxm1@3'
+        # 자격 증명 설정 (환경변수에서 가져오기)
+        username = os.environ.get('REGTECH_USERNAME', 'nextrade')
+        password = os.environ.get('REGTECH_PASSWORD', 'default_password')
         
         # 수집기 초기화
         import sys

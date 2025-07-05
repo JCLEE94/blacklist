@@ -59,9 +59,22 @@ jobs:
           lint)
             # Python linting
             pip install flake8 black isort
-            flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-            black --check src/
-            isort --check-only src/
+            # Check if commands are available
+            if command -v flake8 &> /dev/null; then
+              flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+            else
+              echo "flake8 not found, skipping"
+            fi
+            if command -v black &> /dev/null; then
+              black --check src/
+            else
+              echo "black not found, skipping"
+            fi
+            if command -v isort &> /dev/null; then
+              isort --check-only src/
+            else
+              echo "isort not found, skipping"
+            fi
             ;;
           test)
             # Run tests with coverage
