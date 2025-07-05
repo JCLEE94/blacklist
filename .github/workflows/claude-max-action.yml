@@ -1,0 +1,125 @@
+name: Claude Max Code Base Action
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  claude-max-action:
+    # @claude 멘션이 있을 때만 실행
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Max Code Base Action
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          # Claude Max 인증 토큰 (우선순위 높음)
+          claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
+          claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
+          claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
+          
+          # GitHub 토큰
+          github_token: ${{ secrets.SECRETS_ADMIN_PAT }}
+          
+          # 프롬프트 설정
+          prompt: |
+            당신은 Blacklist 위협 인텔리전스 플랫폼의 전문 개발자입니다.
+            
+            ## 프로젝트 컨텍스트
+            - **시스템**: Enterprise threat intelligence platform
+            - **아키텍처**: GitOps 기반 배포, 멀티소스 데이터 수집, FortiGate 연동
+            - **기술스택**: Flask 2.3.3 + Gunicorn, SQLite, Redis, Docker/K8s, ArgoCD
+            
+            ## 핵심 컴포넌트
+            - **의존성 주입**: src/core/container.py 중앙 서비스 관리
+            - **데이터 수집**: REGTECH, SECUDIUM 멀티소스 수집기
+            - **GitOps 배포**: ArgoCD + GitHub Actions CI/CD
+            - **캐싱**: Redis primary + memory fallback
+            
+            ## 개발 지침
+            1. **보안 우선**: 하드코딩 금지, 환경변수 사용
+            2. **성능 최적화**: orjson, 연결 풀링, 압축 활용
+            3. **에러 처리**: 구조화된 예외 처리 및 로깅
+            4. **테스트**: 모든 변경사항에 대한 테스트 필수
+            5. **GitOps**: Git 커밋 기반 배포 자동화
+            
+            ## 주요 엔드포인트
+            - /api/blacklist/active: 활성 IP 목록
+            - /api/fortigate: FortiGate External Connector 형식
+            - /api/collection/*: 데이터 수집 관리
+            
+            GitHub Issues나 PR에서 요청된 작업을 수행하고, 
+            항상 프로덕션 준비된 보안 코드를 제공해주세요.
+            한국어로 명확하게 설명하고 응답해주세요.
+          
+          # 허용된 도구 설정
+          allowed_tools: |
+            Bash(git:*,docker:*,kubectl:*,python:*,npm:*,curl:*)
+            View
+            Edit
+            MultiEdit
+            Write
+            GlobTool
+            GrepTool
+            BatchTool
+            
+          # 모델 설정
+          model: "claude-3-5-sonnet-20241022"
+          
+          # 환경 변수
+          claude_env: |
+            PROJECT_NAME=blacklist
+            REGISTRY=registry.jclee.me
+            ARGOCD_SERVER=argo.jclee.me
+            PRODUCTION_URL=https://blacklist.jclee.me
+            
+          # 시스템 프롬프트 (추가 지침)
+          system_prompt: |
+            당신은 blacklist 프로젝트의 전문 개발자입니다.
+            
+            중요한 규칙:
+            1. 모든 변경사항은 git으로 커밋하기 전에 반드시 테스트
+            2. 환경변수 사용 강제 - 하드코딩 절대 금지
+            3. 보안 우선 - SQL 인젝션, XSS 등 취약점 방지
+            4. 성능 고려 - 캐싱, 인덱싱, 연결 풀링 적용
+            5. 에러 핸들링 - 예외 상황에 대한 적절한 처리
+            
+            코드 스타일:
+            - Python: PEP 8 준수
+            - SQL: 파라미터화된 쿼리 사용
+            - Docker: 멀티스테이지 빌드 활용
+            - K8s: 리소스 제한 및 헬스체크 포함
+            
+            응답 시:
+            - 변경 이유와 근거 명확히 설명
+            - 테스트 방법 제시
+            - 잠재적 부작용 언급
+            - 한국어로 친절하고 상세하게 설명
+          
+          # 대화 턴 제한 (복잡한 작업을 위해)
+          max_conversation_turns: 10
+          
+          # 타임아웃 설정
+          timeout_minutes: 30
