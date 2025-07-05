@@ -1391,36 +1391,73 @@ class UnifiedBlacklistService:
     def get_enhanced_blacklist(self, page: int = 1, per_page: int = 50, include_metadata: bool = True, source_filter: str = None) -> Dict[str, Any]:
         """향상된 블랙리스트 조회"""
         try:
-            ips = self.get_active_blacklist_ips()
+            # 데이터베이스에서 실제 소스 정보와 함께 IP 조회
+            import sqlite3
+            db_path = '/app/instance/blacklist.db'
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
             
-            # Simple pagination
+            # 소스 필터 적용
+            if source_filter:
+                query = """
+                    SELECT ip, source, added_date, expires_at, is_active 
+                    FROM blacklist_ip 
+                    WHERE is_active = 1 AND source = ?
+                    ORDER BY added_date DESC
+                """
+                cursor.execute(query, (source_filter,))
+            else:
+                query = """
+                    SELECT ip, source, added_date, expires_at, is_active 
+                    FROM blacklist_ip 
+                    WHERE is_active = 1
+                    ORDER BY added_date DESC
+                """
+                cursor.execute(query)
+            
+            all_results = cursor.fetchall()
+            total_count = len(all_results)
+            
+            # 페이지네이션 적용
             start = (page - 1) * per_page
             end = start + per_page
-            paginated_ips = ips[start:end]
+            paginated_results = all_results[start:end]
             
-            # Add metadata if requested
+            conn.close()
+            
+            # 메타데이터 포함 여부에 따라 데이터 구성
             if include_metadata:
-                data = [
-                    {
+                data = []
+                for row in paginated_results:
+                    ip, source, added_date, expires_at, is_active = row
+                    
+                    # 위협 수준 결정 (소스별로 다르게 설정)
+                    threat_level = 'high' if source in ['REGTECH', 'SECUDIUM'] else 'medium'
+                    
+                    # 카테고리 결정
+                    category = 'financial' if source == 'REGTECH' else 'malicious'
+                    
+                    data.append({
                         'ip': ip,
-                        'source': 'unknown',
-                        'added_date': datetime.now().isoformat(),
-                        'threat_level': 'high',
-                        'category': 'malicious'
-                    }
-                    for ip in paginated_ips
-                ]
+                        'source': source or 'unknown',
+                        'added_date': added_date,
+                        'expires_at': expires_at,
+                        'threat_level': threat_level,
+                        'category': category,
+                        'is_active': bool(is_active)
+                    })
             else:
-                data = paginated_ips
+                data = [row[0] for row in paginated_results]  # IP만 반환
             
             return {
                 'page': page,
                 'per_page': per_page,
-                'total': len(ips),
-                'pages': (len(ips) + per_page - 1) // per_page,
+                'total': total_count,
+                'pages': (total_count + per_page - 1) // per_page,
                 'data': data,
                 'metadata_included': include_metadata
             }
+            
         except Exception as e:
             self.logger.error(f"Failed to get enhanced blacklist: {e}")
             return {
