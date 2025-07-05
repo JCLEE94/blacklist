@@ -54,34 +54,89 @@ class V2APIService:
         if cached_data:
             return cached_data
         
-        # 데이터 조회
-        all_ips = self.blacklist_manager.get_all_active_ips()
+        # 데이터베이스에서 직접 조회 (소스 정보 포함)
+        import sqlite3
+        db_path = '/app/instance/blacklist.db'
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
         
-        # 필터링
+        # 소스 필터 적용한 쿼리
+        query = """
+            SELECT ip, source, country, attack_type, detection_date, created_at, 
+                   threat_level, reason, extra_data, is_active 
+            FROM blacklist_ip 
+            WHERE is_active = 1
+        """
+        params = []
+        
+        if source:
+            query += " AND source = ?"
+            params.append(source)
+        if country:
+            query += " AND country = ?"
+            params.append(country)
+            
+        query += " ORDER BY created_at DESC"
+        
+        if offset:
+            query += " LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+        else:
+            query += " LIMIT ?"
+            params.append(limit)
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        
+        # 총 개수 조회
+        count_query = "SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1"
+        count_params = []
+        if source:
+            count_query += " AND source = ?"
+            count_params.append(source)
+        if country:
+            count_query += " AND country = ?"
+            count_params.append(country)
+            
+        cursor.execute(count_query, count_params)
+        total = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        # 결과 변환
         filtered_ips = []
-        for ip_data in all_ips:
-            if source and ip_data.get('source') != source:
-                continue
-            if country and ip_data.get('country') != country:
-                continue
-            if ip_data.get('risk_score', 0) < min_risk_score:
-                continue
-            filtered_ips.append(ip_data)
-        
-        # 페이지네이션
-        total = len(filtered_ips)
-        filtered_ips = filtered_ips[offset:offset + limit]
+        for row in rows:
+            ip_data = {
+                'ip': row['ip'],
+                'source': row['source'] or 'unknown',
+                'country': row['country'] or 'Unknown',
+                'attack_type': row['attack_type'] or 'Unknown',
+                'detection_date': row['detection_date'],
+                'added_date': row['created_at'],
+                'threat_level': row['threat_level'] or 'high',
+                'reason': row['reason'] or row['attack_type'] or 'Unknown',
+                'extra_data': row['extra_data'],
+                'risk_score': 0.8,
+                'category': 'financial' if row['source'] == 'REGTECH' else 'malicious',
+                'is_active': bool(row['is_active'])
+            }
+            
+            # 위험점수 필터링
+            if ip_data.get('risk_score', 0) >= min_risk_score:
+                filtered_ips.append(ip_data)
         
         # 메타데이터 추가
         result = {
-            'data': filtered_ips,
-            'meta': {
+            'data': {
+                'data': filtered_ips,
+                'page': (offset // limit) + 1 if limit > 0 else 1,
+                'per_page': limit,
                 'total': total,
-                'limit': limit,
-                'offset': offset,
-                'filters_applied': filters
+                'pages': (total + limit - 1) // limit if limit > 0 else 1,
+                'metadata_included': True
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'success': True
         }
         
         # 캐시 저장

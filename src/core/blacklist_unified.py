@@ -558,7 +558,7 @@ class UnifiedBlacklistManager:
             for row in rows:
                 ip_data = {
                     'ip': row['ip'],
-                    'source': row['source'] or 'Unknown',
+                    'source': row['source'] or 'unknown',
                     'country': row['country'] or 'Unknown', 
                     'attack_type': row['attack_type'] or 'Unknown',
                     'detection_date': row['detection_date'],  # 원본 등록일 (엑셀 기준)
