@@ -216,6 +216,15 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             logger.error("Failed to register V2 API routes", 
                        exception=e, blueprint="v2_bp")
         
+        # Register debug routes for troubleshooting
+        try:
+            from .debug_routes import debug_bp
+            app.register_blueprint(debug_bp)
+            logger.info("Debug routes registered successfully")
+        except Exception as e:
+            logger.error("Failed to register debug routes", 
+                       exception=e, blueprint="debug_bp")
+        
         # NOTE: Removed duplicate route registrations to prevent conflicts
         # All core API routes are now centralized in unified_routes.py:
         # - /health, /api/health
