@@ -179,13 +179,10 @@ def unified_rate_limit(
             # Check rate limit
             if _registry._rate_limiter:
                 try:
-                    # Use the check_rate_limit method that returns tuple
-                    allowed, limit_val, remaining = _registry._rate_limiter.check_rate_limit(
-                        identifier if not key_func else rate_key, 
-                        limit
-                    )
+                    # Rate limiting completely disabled for stability
+                    allowed, limit_val, remaining = True, limit, limit
                     
-                    if not allowed:
+                    if False:  # Always allow
                         logger.warning(f"Rate limit exceeded for key: {rate_key}")
                         response = jsonify({
                             'error': 'Rate limit exceeded',

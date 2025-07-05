@@ -405,6 +405,8 @@ def export_data(format):
 # === 핵심 API 엔드포인트 ===
 
 @unified_bp.route('/health', methods=['GET'])
+@unified_bp.route('/healthz', methods=['GET'])
+@unified_bp.route('/ready', methods=['GET'])
 def health_check():
     """통합 서비스 헬스 체크 - K8s probe용 (rate limit 없음)"""
     try:
