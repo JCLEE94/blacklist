@@ -67,7 +67,8 @@ jobs:
             4. **테스트 커버리지**: 누락된 테스트 케이스 추가
             5. **의존성 업데이트**: 보안 취약점이 있는 패키지 업데이트
             
-            발견된 문제들을 자동으로 수정하고 PR을 생성해주세요.
+            발견된 문제들을 즉시 수정하고 커밋해주세요. 
+            중요한 변경사항이 있으면 별도 브랜치에서 PR을 생성해주세요.
             {% else %}
             GitHub Issues나 PR에서 요청된 작업을 수행해주세요.
             {% endif %}
@@ -98,8 +99,20 @@ jobs:
             항상 프로덕션 준비된 보안 코드를 제공해주세요.
             한국어로 명확하게 설명하고 응답해주세요.
           
-          # 허용된 도구 설정
+          # 허용된 도구 설정 (코드 수정 권한 포함)
           allowed_tools: "Bash(git:*,docker:*,kubectl:*,python:*,npm:*,curl:*),View,Edit,MultiEdit,Write,GlobTool,GrepTool,BatchTool"
+          
+          # 자동 수정 및 커밋 활성화
+          auto_commit: "true"
+          commit_message: "🤖 Claude Max 자동 코드 개선"
+          create_pr: "true"
+          pr_title: "🤖 Claude Max 자동 코드 개선"
+          pr_body: |
+            Claude Max가 자동으로 감지하고 수정한 항목들:
+            - 보안 취약점 수정
+            - 성능 최적화
+            - 코드 품질 개선
+            - 테스트 커버리지 향상
             
           # 모델 설정
           model: "claude-3-5-sonnet-20241022"
