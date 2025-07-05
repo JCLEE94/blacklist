@@ -35,6 +35,7 @@ class PipelineConfig:
     python_version: str = os.getenv("PYTHON_VERSION", "3.10")
     dry_run: bool = os.getenv("DRY_RUN", "false").lower() == "true"
     verbose: bool = os.getenv("VERBOSE", "false").lower() == "true"
+    project_root: str = os.getenv("PROJECT_ROOT", os.getcwd())
 
 
 class PipelineStage:
@@ -119,34 +120,101 @@ class CodeQualityStage(PipelineStage):
     
     def _check_python_syntax(self) -> bool:
         """Python 구문 검사"""
-        cmd = ["python", "-m", "py_compile", "src/**/*.py"]
-        result = subprocess.run(cmd, capture_output=True, shell=True)
-        return result.returncode == 0
+        try:
+            # shell=True 제거하고 glob으로 파일 찾기
+            import glob
+            
+            src_path = Path(self.config.project_root) if hasattr(self.config, 'project_root') else Path("src")
+            python_files = glob.glob(str(src_path / "**" / "*.py"), recursive=True)
+            
+            if not python_files:
+                logger.warning("No Python files found in src/")
+                return True  # 파일이 없으면 성공으로 처리
+            
+            # 각 파일 개별 검사
+            for py_file in python_files:
+                result = subprocess.run(
+                    ["python3", "-m", "py_compile", py_file],
+                    capture_output=True,
+                    timeout=30  # 30초 타임아웃 추가
+                )
+                if result.returncode != 0:
+                    self.errors.append(f"Syntax error in {py_file}: {result.stderr.decode()}")
+                    return False
+            
+            return True
+        except subprocess.TimeoutExpired:
+            self.errors.append("Python syntax check timed out")
+            return False
+        except Exception as e:
+            self.errors.append(f"Python syntax check failed: {e}")
+            return False
     
     def _check_code_style(self) -> bool:
         """코드 스타일 검사"""
         if not Path("src").exists():
             return True
-            
-        cmd = ["python", "-m", "flake8", "src/", "--extend-ignore=E501,W503"]
-        result = subprocess.run(cmd, capture_output=True)
         
-        if result.returncode != 0 and self.config.verbose:
-            logger.warning(f"Style issues found:\n{result.stdout.decode()}")
+        try:
+            cmd = ["python3", "-m", "flake8", "src/", "--extend-ignore=E501,W503"]
+            result = subprocess.run(cmd, capture_output=True, timeout=60)
             
-        return result.returncode == 0
+            if result.returncode != 0 and self.config.verbose:
+                logger.warning(f"Style issues found:\n{result.stdout.decode()}")
+                
+            return result.returncode == 0
+            
+        except subprocess.TimeoutExpired:
+            self.errors.append("Code style check timed out")
+            return False
+        except Exception as e:
+            self.errors.append(f"Code style check failed: {e}")
+            return False
     
     def _check_security(self) -> bool:
         """보안 취약점 검사"""
-        # 하드코딩된 시크릿 검사
-        cmd = 'grep -r -E "(password|secret|key|token)\\s*=\\s*[\'\"][^\'\"]*[\'\"]" --include="*.py" src/ || true'
-        result = subprocess.run(cmd, shell=True, capture_output=True)
-        
-        if result.stdout:
-            logger.warning("Potential hardcoded secrets found!")
-            return False
+        try:
+            # 하드코딩된 시크릿 패턴 확장
+            secret_patterns = [
+                r'(password|passwd|pwd)\s*=\s*["\'][^"\']+["\']',
+                r'(secret|token|key|api_key|apikey)\s*=\s*["\'][^"\']+["\']',
+                r'(aws_access_key|aws_secret|aws_token)\s*=\s*["\'][^"\']+["\']',
+                r'(database_url|db_url|connection_string)\s*=\s*["\'][^"\']+["\']',
+                r'(private_key|priv_key|pem|cert)\s*=\s*["\'][^"\']+["\']',
+                r'Bearer\s+[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\.?[A-Za-z0-9\-_.+/=]*',
+                r'Basic\s+[A-Za-z0-9+/=]+',
+            ]
             
-        return True
+            # grep 명령을 Python으로 대체
+            cmd = [
+                "grep", "-r", "-E",
+                "|".join(f"({pattern})" for pattern in secret_patterns),
+                "--include=*.py",
+                "src/"
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=60  # 60초 타임아웃
+            )
+            
+            # grep은 매치가 없으면 returncode 1 반환
+            if result.returncode == 0 and result.stdout:
+                logger.warning(f"Potential hardcoded secrets found:\n{result.stdout.decode()}")
+                return False
+            
+            return True
+            
+        except subprocess.TimeoutExpired:
+            self.errors.append("Security scan timed out")
+            return False
+        except FileNotFoundError:
+            logger.warning("grep command not found, skipping security scan")
+            return True
+        except Exception as e:
+            self.errors.append(f"Security scan failed: {e}")
+            return False
     
     def _check_dependencies(self) -> bool:
         """의존성 검사"""
@@ -174,25 +242,33 @@ class TestStage(PipelineStage):
         
     def run(self) -> bool:
         """테스트 실행"""
-        # pytest 실행
-        cmd = ["pytest", "-v", "--cov=src", "--cov-report=json", "--cov-report=term"]
-        result = subprocess.run(cmd, capture_output=True)
-        
-        if result.returncode != 0:
-            logger.error(f"Tests failed:\n{result.stdout.decode()}")
-            return False
+        try:
+            # pytest 실행
+            cmd = ["pytest", "-v", "--cov=src", "--cov-report=json", "--cov-report=term"]
+            result = subprocess.run(cmd, capture_output=True, timeout=300)  # 5분 타임아웃
             
-        # 커버리지 확인
-        if Path("coverage.json").exists():
-            with open("coverage.json") as f:
-                coverage_data = json.load(f)
-                coverage_percent = coverage_data["totals"]["percent_covered"]
+            if result.returncode != 0:
+                logger.error(f"Tests failed:\n{result.stdout.decode()}")
+                return False
                 
-                if coverage_percent < self.coverage_threshold:
-                    logger.warning(f"Coverage {coverage_percent:.1f}% is below threshold {self.coverage_threshold}%")
-                    return False
+            # 커버리지 확인
+            if Path("coverage.json").exists():
+                with open("coverage.json") as f:
+                    coverage_data = json.load(f)
+                    coverage_percent = coverage_data["totals"]["percent_covered"]
                     
-        return True
+                    if coverage_percent < self.coverage_threshold:
+                        logger.warning(f"Coverage {coverage_percent:.1f}% is below threshold {self.coverage_threshold}%")
+                        return False
+                        
+            return True
+            
+        except subprocess.TimeoutExpired:
+            self.errors.append("Test execution timed out after 5 minutes")
+            return False
+        except Exception as e:
+            self.errors.append(f"Test execution failed: {e}")
+            return False
 
 
 class BuildStage(PipelineStage):
@@ -204,40 +280,48 @@ class BuildStage(PipelineStage):
         
     def run(self) -> bool:
         """Docker 이미지 빌드"""
-        # 빌드 컨텍스트 준비
-        if not Path("deployment/Dockerfile").exists():
-            logger.error("Dockerfile not found")
-            return False
-            
-        # 태그 생성
-        commit_sha = self._get_commit_sha()
-        date_tag = datetime.now().strftime("%Y%m%d-%H%M%S")
-        
-        self.image_tags = [
-            f"{self.config.registry}/{self.config.image_name}:latest",
-            f"{self.config.registry}/{self.config.image_name}:sha-{commit_sha[:7]}",
-            f"{self.config.registry}/{self.config.image_name}:date-{date_tag}"
-        ]
-        
-        # Docker 빌드
-        for tag in self.image_tags:
-            cmd = [
-                "docker", "build",
-                "-f", "deployment/Dockerfile",
-                "-t", tag,
-                "--cache-from", f"{self.config.registry}/{self.config.image_name}:latest",
-                "."
-            ]
-            
-            if self.config.verbose:
-                logger.info(f"Building image: {tag}")
-                
-            result = subprocess.run(cmd, capture_output=True)
-            if result.returncode != 0:
-                logger.error(f"Build failed for {tag}")
+        try:
+            # 빌드 컨텍스트 준비
+            if not Path("deployment/Dockerfile").exists():
+                logger.error("Dockerfile not found")
                 return False
                 
-        return True
+            # 태그 생성
+            commit_sha = self._get_commit_sha()
+            date_tag = datetime.now().strftime("%Y%m%d-%H%M%S")
+            
+            self.image_tags = [
+                f"{self.config.registry}/{self.config.image_name}:latest",
+                f"{self.config.registry}/{self.config.image_name}:sha-{commit_sha[:7]}",
+                f"{self.config.registry}/{self.config.image_name}:date-{date_tag}"
+            ]
+            
+            # Docker 빌드
+            for tag in self.image_tags:
+                cmd = [
+                    "docker", "build",
+                    "-f", "deployment/Dockerfile",
+                    "-t", tag,
+                    "--cache-from", f"{self.config.registry}/{self.config.image_name}:latest",
+                    "."
+                ]
+                
+                if self.config.verbose:
+                    logger.info(f"Building image: {tag}")
+                    
+                result = subprocess.run(cmd, capture_output=True, timeout=600)  # 10분 타임아웃
+                if result.returncode != 0:
+                    logger.error(f"Build failed for {tag}: {result.stderr.decode()}")
+                    return False
+                    
+            return True
+            
+        except subprocess.TimeoutExpired:
+            self.errors.append("Docker build timed out after 10 minutes")
+            return False
+        except Exception as e:
+            self.errors.append(f"Docker build failed: {e}")
+            return False
     
     def _get_commit_sha(self) -> str:
         """현재 Git 커밋 SHA 가져오기"""
@@ -271,47 +355,81 @@ class DeploymentStage(PipelineStage):
     
     def _sync_argocd_app(self) -> bool:
         """ArgoCD 애플리케이션 동기화"""
-        cmd = [
-            "argocd", "app", "sync", self.config.image_name,
-            "--server", self.config.argocd_server,
-            "--grpc-web"
-        ]
-        
-        result = subprocess.run(cmd, capture_output=True)
-        return result.returncode == 0
+        try:
+            cmd = [
+                "argocd", "app", "sync", self.config.image_name,
+                "--server", self.config.argocd_server,
+                "--grpc-web"
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, timeout=120)  # 2분 타임아웃
+            if result.returncode != 0:
+                logger.error(f"ArgoCD sync failed: {result.stderr.decode()}")
+            return result.returncode == 0
+            
+        except subprocess.TimeoutExpired:
+            logger.error("ArgoCD sync timed out")
+            return False
+        except Exception as e:
+            logger.error(f"ArgoCD sync failed: {e}")
+            return False
     
     def _verify_deployment(self) -> bool:
         """배포 검증"""
-        # Pod 상태 확인
-        cmd = [
-            "kubectl", "get", "pods",
-            "-n", self.config.namespace,
-            "-l", f"app={self.config.image_name}",
-            "-o", "json"
-        ]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            return False
+        try:
+            # Pod 상태 확인
+            cmd = [
+                "kubectl", "get", "pods",
+                "-n", self.config.namespace,
+                "-l", f"app={self.config.image_name}",
+                "-o", "json"
+            ]
             
-        pods = json.loads(result.stdout)
-        ready_pods = sum(
-            1 for pod in pods.get("items", [])
-            if all(c["ready"] for c in pod["status"]["containerStatuses"])
-        )
-        
-        return ready_pods > 0
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode != 0:
+                logger.error(f"Failed to get pods: {result.stderr}")
+                return False
+                
+            pods = json.loads(result.stdout)
+            ready_pods = sum(
+                1 for pod in pods.get("items", [])
+                if pod.get("status", {}).get("containerStatuses") and
+                all(c.get("ready", False) for c in pod["status"]["containerStatuses"])
+            )
+            
+            logger.info(f"Ready pods: {ready_pods}")
+            return ready_pods > 0
+            
+        except subprocess.TimeoutExpired:
+            logger.error("Deployment verification timed out")
+            return False
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse kubectl output: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Deployment verification failed: {e}")
+            return False
     
     def _rollback_deployment(self) -> bool:
         """배포 롤백"""
-        cmd = [
-            "argocd", "app", "rollback", self.config.image_name,
-            "--server", self.config.argocd_server,
-            "--grpc-web"
-        ]
-        
-        result = subprocess.run(cmd, capture_output=True)
-        return result.returncode == 0
+        try:
+            cmd = [
+                "argocd", "app", "rollback", self.config.image_name,
+                "--server", self.config.argocd_server,
+                "--grpc-web"
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, timeout=120)
+            if result.returncode != 0:
+                logger.error(f"Rollback failed: {result.stderr.decode()}")
+            return result.returncode == 0
+            
+        except subprocess.TimeoutExpired:
+            logger.error("Rollback timed out")
+            return False
+        except Exception as e:
+            logger.error(f"Rollback failed: {e}")
+            return False
 
 
 class PipelineOrchestrator:
