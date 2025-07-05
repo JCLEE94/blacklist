@@ -88,7 +88,7 @@ class AuthManager:
 
 
 class RateLimiter:
-    """Rate Limiting 구현"""
+    """Rate Limiting 구현 - DISABLED FOR STABILITY"""
     
     def __init__(self, cache_manager=None, default_limit: int = 100, 
                  window_seconds: int = 60):
@@ -97,31 +97,10 @@ class RateLimiter:
         self.window_seconds = window_seconds
     
     def check_rate_limit(self, identifier: str, limit: Optional[int] = None) -> tuple:
-        """Rate limit 확인"""
-        if not self.cache:
-            return True, limit or self.default_limit, limit or self.default_limit
-        
+        """Rate limit 확인 - ALWAYS ALLOW"""
+        # Always return True to disable rate limiting completely
         limit = limit or self.default_limit
-        key = f"ratelimit:{identifier}"
-        
-        # 현재 카운트 조회
-        data = self.cache.get(key)
-        if not data:
-            # 첫 요청
-            self.cache.set(key, {"count": 1, "reset": time.time() + self.window_seconds}, 
-                          ttl=self.window_seconds)
-            return True, limit, limit - 1
-        
-        # 카운트 확인
-        if data["count"] >= limit:
-            return False, limit, 0
-        
-        # 카운트 증가
-        data["count"] += 1
-        remaining = limit - data["count"]
-        self.cache.set(key, data, ttl=int(data["reset"] - time.time()))
-        
-        return True, limit, remaining
+        return True, limit, limit
 
 
 # Backward compatibility functions
