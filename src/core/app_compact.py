@@ -10,8 +10,9 @@ from typing import Optional
 from flask import Flask, g, request
 from flask_cors import CORS
 from flask_compress import Compress
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+# Rate limiting 비활성화로 인해 주석 처리
+# from flask_limiter import Limiter
+# from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.middleware.profiler import ProfilerMiddleware
 
@@ -118,20 +119,24 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
                              exception=e, storage="memory", fallback=True)
                 storage_uri = 'memory://'
         
-        # K8s 헬스 체크를 위한 rate limit key function
-        def get_rate_limit_key():
-            """Rate limiting을 위한 키 생성 (헬스 체크는 제외)"""
-            if request.path in ['/health', '/api/health']:
-                return None  # 헬스 체크는 rate limiting 완전 제외
-            return get_remote_address()
+        # Rate limiting 완전 비활성화로 인해 불필요
+        # def get_rate_limit_key():
         
         # Rate limiting 완전 비활성화 (안정화를 위해)
-        limiter = Limiter(
-            app=app,
-            key_func=lambda: None,  # 모든 요청을 rate limiting에서 제외
-            default_limits=[],  # 기본 제한 비활성화
-            storage_uri=storage_uri
-        )
+        # Flask-Limiter를 아예 설정하지 않음
+        app.config['RATELIMIT_ENABLED'] = False
+        
+        # 더미 limiter 객체 생성 (다른 코드에서 참조할 수 있음)
+        class DummyLimiter:
+            def limit(self, *args, **kwargs):
+                def decorator(f):
+                    return f
+                return decorator
+            
+            def exempt(self, f):
+                return f
+                
+        limiter = DummyLimiter()
         
         # Configure Flask app with container
         container.configure_flask_app(app)
