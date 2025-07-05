@@ -1,0 +1,96 @@
+# syntax=docker/dockerfile:1.4
+# Optimized multi-stage Dockerfile for Blacklist Management System
+
+# Stage 1: Dependencies
+FROM python:3.10-slim as deps
+
+WORKDIR /deps
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        libpq-dev \
+        && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --user --no-warn-script-location -r requirements.txt
+
+# Stage 2: Builder
+FROM python:3.10-slim as builder
+
+WORKDIR /build
+
+# Copy dependencies from previous stage
+COPY --from=deps /root/.local /root/.local
+
+# Copy application code
+COPY . .
+
+# Compile Python files for faster startup
+RUN python -m compileall -b src/ && \
+    find src/ -name "*.py" -delete
+
+# Remove unnecessary files
+RUN find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find . -type f -name "*.pyc" -delete && \
+    rm -rf .git .github docs scripts legacy tests
+
+# Stage 3: Final image
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/* && \
+    # Create non-root user
+    useradd -m -u 1000 -s /bin/bash appuser && \
+    mkdir -p /app/instance /app/data /app/logs && \
+    chown -R appuser:appuser /app
+
+# Copy dependencies and application
+COPY --from=deps --chown=appuser:appuser /root/.local /home/appuser/.local
+COPY --from=builder --chown=appuser:appuser /build .
+
+# Set environment variables
+ENV PATH=/home/appuser/.local/bin:$PATH \
+    PYTHONPATH=/app:$PYTHONPATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8541 \
+    FLASK_APP=main:application
+
+# Create volume mount points
+VOLUME ["/app/instance", "/app/data", "/app/logs"]
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8541
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8541/health || exit 1
+
+# Pre-compile any remaining Python files at runtime
+RUN python -c "import compileall; compileall.compile_dir('/app', force=True)" 2>/dev/null || true
+
+# Run the application
+CMD ["gunicorn", \
+     "--workers", "4", \
+     "--threads", "2", \
+     "--worker-class", "sync", \
+     "--worker-tmp-dir", "/dev/shm", \
+     "--bind", "0.0.0.0:8541", \
+     "--timeout", "120", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info", \
+     "main:application"]
