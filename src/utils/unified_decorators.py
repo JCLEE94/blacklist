@@ -176,45 +176,14 @@ def unified_rate_limit(
                 
                 rate_key = f"rate_limit:{func.__name__}:{identifier}"
             
-            # Check rate limit
-            if _registry._rate_limiter:
-                try:
-                    # Rate limiting completely disabled for stability
-                    allowed, limit_val, remaining = True, limit, limit
-                    
-                    if False:  # Always allow
-                        logger.warning(f"Rate limit exceeded for key: {rate_key}")
-                        response = jsonify({
-                            'error': 'Rate limit exceeded',
-                            'limit': limit_val,
-                            'retry_after': per
-                        }), 429
-                        
-                        # Add rate limit headers
-                        response[0].headers['X-RateLimit-Limit'] = str(limit_val)
-                        response[0].headers['X-RateLimit-Remaining'] = '0'
-                        response[0].headers['Retry-After'] = str(per)
-                        
-                        return response
-                    
-                    # For successful requests, we'll add headers after the function executes
-                    g._rate_limit_info = {
-                        'limit': limit_val,
-                        'remaining': remaining
-                    }
-                    
-                except Exception as e:
-                    logger.error(f"Rate limit check error: {e}")
-                    # Continue without rate limiting on error
+            # Rate limiting completely disabled for stability
+            # Skip all rate limiting logic to prevent health check failures
+            pass
             
             # Execute the function
             result = func(*args, **kwargs)
             
-            # Add rate limit headers to successful responses
-            if hasattr(g, '_rate_limit_info') and hasattr(result, 'headers'):
-                result.headers['X-RateLimit-Limit'] = str(g._rate_limit_info['limit'])
-                result.headers['X-RateLimit-Remaining'] = str(g._rate_limit_info['remaining'])
-            
+            # Rate limiting headers disabled for stability
             return result
         return rate_limit_wrapper
     return rate_limit_decorator
