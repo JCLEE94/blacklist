@@ -38,8 +38,8 @@ spec:
           mountPath: /app/instance
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:latest
-        imagePullPolicy: IfNotPresent  # Always에서 변경하여 로컬 캐시 사용
+        image: registry.jclee.me/blacklist:fix-502-20250706-172417
+        imagePullPolicy: Always  # Force pull the new image
         ports:
         - containerPort: 2541
           name: http
