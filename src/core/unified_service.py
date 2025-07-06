@@ -94,18 +94,21 @@ class UnifiedBlacklistService:
             self._perform_initial_collection_now()
         
     def _perform_initial_collection_now(self):
-        """최초 수집 즉시 실행 (간단 버전)"""
+        """최초 수집 즉시 실행 - 3개월 데이터 수집"""
         try:
-            self.logger.info("🔄 최초 수집 실행 중...")
+            self.logger.info("🔄 최초 3개월 데이터 수집 실행 중...")
             
             # 수집 활성화
             if not self.collection_manager.collection_enabled:
                 self.collection_manager.enable_collection()
             
-            # 즉시 수집 (최근 7일)
+            # 3개월 범위 수집
             today = datetime.now()
-            start_date = (today - timedelta(days=7)).strftime('%Y%m%d')
+            three_months_ago = today - timedelta(days=90)
+            start_date = three_months_ago.strftime('%Y%m%d')
             end_date = today.strftime('%Y%m%d')
+            
+            self.logger.info(f"📅 최초 수집 기간: {three_months_ago.strftime('%Y-%m-%d')} ~ {today.strftime('%Y-%m-%d')}")
             
             # REGTECH 수집 (간단하게)
             try:
@@ -123,7 +126,7 @@ class UnifiedBlacklistService:
             
             # 완료 표시
             self.collection_manager.mark_initial_collection_done()
-            self.logger.info("✅ 최초 수집 완료")
+            self.logger.info("✅ 최초 3개월 데이터 수집 완료")
             
         except Exception as e:
             self.logger.error(f"최초 수집 오류: {e}")
@@ -211,7 +214,7 @@ class UnifiedBlacklistService:
         self.logger.info("✅ 백그라운드 작업 시작 완료")
     
     async def _periodic_collection(self):
-        """주기적 데이터 수집"""
+        """주기적 데이터 수집 - 3개월 범위의 데이터 자동 수집"""
         while self._running:
             try:
                 # 일일 자동 수집이 활성화된 경우만 실행
@@ -220,25 +223,30 @@ class UnifiedBlacklistService:
                         # 마지막 수집이 오늘이 아니면 수집 실행
                         last_collection = self.collection_manager.last_daily_collection
                         if not last_collection or not last_collection.startswith(datetime.now().strftime('%Y-%m-%d')):
-                            self.logger.info("🔄 일일 자동 수집 시작...")
+                            self.logger.info("🔄 3개월 범위 자동 수집 시작...")
                             
-                            # 오늘 날짜로 수집
+                            # 3개월 전부터 오늘까지 수집
                             today = datetime.now()
-                            start_date = today.strftime('%Y%m%d')
+                            three_months_ago = today - timedelta(days=90)
+                            
+                            # 날짜 범위 설정 (3개월 전 ~ 오늘)
+                            start_date = three_months_ago.strftime('%Y%m%d')
                             end_date = today.strftime('%Y%m%d')
                             
-                            # REGTECH 수집 (하루 단위)
+                            self.logger.info(f"📅 수집 기간: {three_months_ago.strftime('%Y-%m-%d')} ~ {today.strftime('%Y-%m-%d')}")
+                            
+                            # REGTECH 수집 (3개월 단위)
                             result = await self._collect_regtech_data_with_date(start_date, end_date)
                             
                             if result.get('success'):
-                                self.logger.info(f"✅ 일일 자동 수집 완료: {result.get('total_collected', 0)}개 IP")
+                                self.logger.info(f"✅ 3개월 자동 수집 완료: {result.get('total_collected', 0)}개 IP")
                                 
                                 # 마지막 수집 시간 업데이트
                                 self.collection_manager.last_daily_collection = datetime.now().isoformat()
                                 self.collection_manager.config['last_daily_collection'] = self.collection_manager.last_daily_collection
                                 self.collection_manager._save_collection_config()
                             else:
-                                self.logger.warning("⚠️ 일일 자동 수집 실패")
+                                self.logger.warning("⚠️ 3개월 자동 수집 실패")
                 
                 # 다음 체크까지 대기 (1시간)
                 await asyncio.sleep(3600)
