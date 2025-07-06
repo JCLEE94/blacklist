@@ -26,7 +26,7 @@ jobs:
   # Stage 1: Code Quality & Security
   code-quality:
     name: Code Quality & Security
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     outputs:
       quality-passed: ${{ steps.quality-check.outputs.passed }}
     
@@ -159,7 +159,7 @@ jobs:
   # Stage 2: Testing
   test:
     name: Run Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     needs: code-quality
     outputs:
       test-passed: ${{ steps.test-result.outputs.passed }}
@@ -246,7 +246,7 @@ jobs:
   # Stage 3: Build Docker Image
   build:
     name: Build Docker Image
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     needs: [code-quality, test]
     # Build if push to main/develop branches
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
@@ -320,7 +320,7 @@ jobs:
   # Stage 4: Security Scan
   security-scan:
     name: Container Security Scan
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     needs: build
     # Always run but don't block deployment
     continue-on-error: true
@@ -347,7 +347,7 @@ jobs:
   # Stage 5: Deploy to Staging
   deploy-staging:
     name: Deploy to Staging
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     needs: [build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment: staging
@@ -373,7 +373,7 @@ jobs:
   # Stage 6: Deploy to Production
   deploy-production:
     name: Deploy to Production
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     needs: [build]
     # Deploy if build succeeds
     if: needs.build.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -437,7 +437,7 @@ jobs:
   # Stage 7: Claude Max Auto-Improvement (Optional)
   claude-auto-improve:
     name: Claude Auto Code Improvement
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     needs: [test]
     # Only run if explicitly enabled
     if: false && github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -489,7 +489,7 @@ jobs:
   # Stage 8: Notification
   notify:
     name: Send Notification
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     needs: [code-quality, test, build, deploy-production]
     if: always()
     
