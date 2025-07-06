@@ -16,7 +16,7 @@ resources:
 
 images:
   - name: registry.jclee.me/blacklist
-    newTag: v3-20250707-075536
+    newTag: latest
 
 # ArgoCD annotations for automatic image updates
 commonAnnotations:
