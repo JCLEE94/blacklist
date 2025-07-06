@@ -1152,8 +1152,14 @@ def get_system_stats():
         cursor.execute('SELECT COUNT(*) FROM blacklist_ip')
         total_ips = cursor.fetchone()[0]
         
-        # 활성 IP 수
-        cursor.execute('SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1')
+        # 활성 IP 수 (최근 90일 내 탐지된 IP)
+        from datetime import datetime, timedelta
+        ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+        cursor.execute('''
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
+            WHERE detection_date >= ? 
+               OR (detection_date IS NULL AND created_at >= ?)
+        ''', (ninety_days_ago, ninety_days_ago))
         active_ips = cursor.fetchone()[0]
         
         # 만료된 IP 수

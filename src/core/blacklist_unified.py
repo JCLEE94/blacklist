@@ -504,20 +504,24 @@ class UnifiedBlacklistManager:
             # Use direct SQLite connection
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            # Check if is_active column exists
-            cursor.execute("PRAGMA table_info(blacklist_ip)")
-            columns = [col[1] for col in cursor.fetchall()]
             
-            if 'is_active' in columns:
-                cursor.execute("SELECT DISTINCT ip FROM blacklist_ip WHERE is_active = 1 ORDER BY ip")
-            else:
-                cursor.execute("SELECT DISTINCT ip FROM blacklist_ip ORDER BY ip")
+            # Get all IPs from the last 90 days regardless of is_active status
+            ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+            
+            # Query for IPs detected within the last 90 days
+            cursor.execute("""
+                SELECT DISTINCT ip 
+                FROM blacklist_ip 
+                WHERE detection_date >= ? 
+                   OR (detection_date IS NULL AND created_at >= ?)
+                ORDER BY ip
+            """, (ninety_days_ago, ninety_days_ago))
                 
             result = cursor.fetchall()
             conn.close()
             
             ips = [row[0] for row in result]
-            logger.info(f"Retrieved {len(ips)} active IPs from database")
+            logger.info(f"Retrieved {len(ips)} active IPs from last 90 days")
             return ips
                 
         except Exception as e:
@@ -813,14 +817,18 @@ class UnifiedBlacklistManager:
             with self.db_manager.get_session() as session:
                 from sqlalchemy import text
                 
+                # Get all IPs from the last 90 days
+                ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+                
                 query = text("""
                     SELECT DISTINCT ip 
                     FROM blacklist_ip 
-                    WHERE is_active = 1
+                    WHERE detection_date >= :ninety_days_ago
+                       OR (detection_date IS NULL AND created_at >= :ninety_days_ago)
                     ORDER BY ip
                 """)
                 
-                result = session.execute(query)
+                result = session.execute(query, {'ninety_days_ago': ninety_days_ago})
                 return [row[0] for row in result]
                 
         except Exception as e:
