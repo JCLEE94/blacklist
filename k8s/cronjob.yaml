@@ -19,8 +19,12 @@ spec:
               # Enable collection
               curl -X POST http://blacklist:2541/api/collection/enable
               sleep 5
-              # Trigger REGTECH collection
-              curl -X POST http://blacklist:2541/api/collection/regtech/trigger
+              # Trigger REGTECH collection with 3-month range
+              END_DATE=$(date +%Y%m%d)
+              START_DATE=$(date -d "90 days ago" +%Y%m%d 2>/dev/null || date -v-90d +%Y%m%d)
+              curl -X POST http://blacklist:2541/api/collection/regtech/trigger \
+                -H "Content-Type: application/json" \
+                -d "{\"start_date\": \"${START_DATE}\", \"end_date\": \"${END_DATE}\"}"
               sleep 5
               # Trigger SECUDIUM collection  
               curl -X POST http://blacklist:2541/api/collection/secudium/trigger
