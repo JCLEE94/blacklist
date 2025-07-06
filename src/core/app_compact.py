@@ -202,6 +202,9 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         # Register V2 API routes (advanced features under /api/v2)
         try:
             from .v2_routes import register_v2_routes
+            # Resolve services from container
+            blacklist_manager = container.resolve('blacklist_manager')
+            cache_manager = container.resolve('cache_manager')
             register_v2_routes(app, blacklist_manager, cache_manager)
             logger.info("V2 API routes registered successfully")
         except Exception as e:
