@@ -151,7 +151,7 @@ class SettingsManager:
                 description="SECUDIUM 데이터 수집 기능 활성화",
                 category=SettingCategory.COLLECTION,
                 setting_type=SettingType.BOOLEAN,
-                default_value=True
+                default_value=False  # Secudium 수집기 비활성화
             ),
             
             # 인증 정보 설정

@@ -54,11 +54,11 @@ class CollectionManager:
             },
             'secudium': {
                 'name': 'SECUDIUM (에스케이인포섹)',
-                'status': 'inactive', 
+                'status': 'disabled', 
                 'last_collection': None,
                 'total_ips': 0,
                 'manual_only': True,
-                'enabled': self.config.get('sources', {}).get('secudium', False)
+                'enabled': False  # Secudium 수집기 비활성화
             }
         }
     
@@ -72,7 +72,7 @@ class CollectionManager:
                     if not config.get('initial_collection_done', False):
                         logger.info("🔥 최초 실행 감지 - 자동 수집 활성화")
                         config['collection_enabled'] = True
-                        config['sources'] = {'regtech': True, 'secudium': True}
+                        config['sources'] = {'regtech': True, 'secudium': False}  # Secudium 비활성화
                         config['initial_collection_needed'] = True
                     return config
             else:
@@ -80,7 +80,7 @@ class CollectionManager:
                 logger.info("🔥 최초 실행 - 자동 수집 활성화")
                 return {
                     'collection_enabled': True,  # 최초 실행 시 자동 활성화
-                    'sources': {'regtech': True, 'secudium': True},  # 모든 소스 활성화
+                    'sources': {'regtech': True, 'secudium': False},  # Secudium 비활성화
                     'last_enabled_at': datetime.now().isoformat(),
                     'last_disabled_at': None,
                     'daily_collection_enabled': False,
@@ -92,7 +92,7 @@ class CollectionManager:
             logger.error(f"설정 로드 실패: {e}")
             return {
                 'collection_enabled': True,  # 오류 시에도 수집 활성화
-                'sources': {'regtech': True, 'secudium': True},
+                'sources': {'regtech': True, 'secudium': False},  # Secudium 비활성화
                 'last_enabled_at': datetime.now().isoformat(),
                 'last_disabled_at': None,
                 'daily_collection_enabled': False,
