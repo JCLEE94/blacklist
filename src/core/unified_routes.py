@@ -1175,15 +1175,41 @@ def get_system_stats():
         ''')
         expiring_soon = cursor.fetchone()[0]
         
+        # 소스별 90일 내 활성 IP 통계
+        cursor.execute('''
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
+            WHERE source = 'regtech' 
+            AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
+        ''', (ninety_days_ago, ninety_days_ago))
+        regtech_count = cursor.fetchone()[0]
+        
+        cursor.execute('''
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
+            WHERE source = 'secudium' 
+            AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
+        ''', (ninety_days_ago, ninety_days_ago))
+        secudium_count = cursor.fetchone()[0]
+        
+        cursor.execute('''
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
+            WHERE source NOT IN ('regtech', 'secudium') 
+            AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
+        ''', (ninety_days_ago, ninety_days_ago))
+        public_count = cursor.fetchone()[0]
+        
         conn.close()
         
-        # 기존 통계에 만료 정보 추가
+        # 기존 통계에 만료 정보 추가 (90일 필터링된 데이터 사용)
         enhanced_stats = stats.copy()
         enhanced_stats.update({
-            'total_ips': total_ips,
+            'total_ips': active_ips,  # 90일 내 활성 IP를 total로 표시
             'active_ips': active_ips,
             'expired_ips': expired_ips,
-            'expiring_soon': expiring_soon
+            'expiring_soon': expiring_soon,
+            'regtech_count': regtech_count,  # 90일 내 REGTECH IP
+            'secudium_count': secudium_count,  # 90일 내 SECUDIUM IP
+            'public_count': public_count,  # 90일 내 기타 IP
+            'db_total_ips': total_ips  # 전체 DB 데이터는 별도 필드로 제공
         })
         
         return jsonify(enhanced_stats)
