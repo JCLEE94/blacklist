@@ -23,7 +23,7 @@ spec:
       labels:
         app: blacklist
       annotations:
-        deployment.kubernetes.io/revision: "1751847207"
+        deployment.kubernetes.io/revision: "1751923538"
     spec:
       imagePullSecrets:
       - name: regcred
