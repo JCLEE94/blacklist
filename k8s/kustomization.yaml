@@ -12,7 +12,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
-  # - hpa.yaml  # 완전 비활성화 - 파일명을 hpa.yaml.disabled로 변경
+  - hpa.yaml  # 수정됨 - minReplicas=1, maxReplicas=1로 단일 Pod 강제
   - cronjob.yaml
 
 images:
