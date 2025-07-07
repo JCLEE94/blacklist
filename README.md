@@ -2,7 +2,7 @@
 
 > 🚀 **Enterprise CI/CD Pipeline with Full ArgoCD GitOps Integration** 
 
-[![Build Status](https://github.com/JCLEE94/blacklist/actions/workflows/argocd-deploy.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
+[![Build Status](https://github.com/JCLEE94/blacklist/actions/workflows/streamlined-cicd.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
 [![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-brightgreen.svg)](https://argo.jclee.me/applications/blacklist)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.24+-blue.svg)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/registry-registry.jclee.me-blue.svg)](https://registry.jclee.me)
@@ -10,9 +10,9 @@
 
 **Enterprise-grade** 위협 정보 통합 관리 플랫폼 - **GitOps** 기반 자동 배포, 다중 소스 데이터 수집, FortiGate External Connector 연동
 
-> **🚀 최신 업데이트 (2025.07.07)**: CI/CD 파이프라인 완전 재구축 - 72% 코드 감소, 89% 파일 감소
+> **🚀 최신 업데이트 (2025.07.07)**: Secudium 수집기 비활성화, NodePort 32452 변경, 문서 현행화
 > 
-> **📋 이전 업데이트**: ArgoCD GitOps 통합, API 일관성 문제 해결, 단일 Pod 운영으로 안정화
+> **📋 이전 업데이트**: CI/CD 파이프라인 완전 재구축 - 72% 코드 감소, ArgoCD GitOps 통합, 단일 Pod 안정화
 
 ## 🏗️ Architecture
 
@@ -26,7 +26,7 @@ graph TB
         end
         
         subgraph "Kubernetes Cluster (blacklist namespace)"
-            A[Ingress/NodePort:32542] --> B[Service]
+            A[Ingress/NodePort:32452] --> B[Service]
             B --> C[Deployment<br/>1 Pod (단일 운영)]
             C --> D[Redis Cache]
             C --> E[SQLite DB]
@@ -174,7 +174,7 @@ argocd app rollback blacklist
 ## 📦 주요 기능
 
 ### 핵심 기능
-- **다중 소스 IP 수집**: REGTECH(금융보안원), SECUDIUM, 공개 위협 정보
+- **다중 소스 IP 수집**: REGTECH(금융보안원) ✅, SECUDIUM ❌ 비활성화, 공개 위협 정보
 - **FortiGate 연동**: External Connector API 완벽 지원
 - **자동 수집**: 매일 자동 수집 및 업데이트
 - **고가용성**: 멀티 레플리카 구성 지원
@@ -200,7 +200,7 @@ argocd app rollback blacklist
 - `POST /api/collection/enable` - 수집 활성화 (기존 데이터 정리)
 - `POST /api/collection/disable` - 수집 비활성화
 - `POST /api/collection/regtech/trigger` - REGTECH 수동 수집
-- `POST /api/collection/secudium/trigger` - SECUDIUM 수동 수집
+- `POST /api/collection/secudium/trigger` - SECUDIUM 수동 수집 (현재 비활성화)
 
 ### Settings Management API
 - `GET /api/settings/all` - 모든 설정 조회
@@ -270,11 +270,11 @@ kubectl get events -n blacklist --sort-by='.lastTimestamp'
 
 ### 수집 상태 모니터링
 ```bash
-# API를 통한 상태 확인 (NodePort 32542)
-curl http://<node-ip>:32542/api/collection/status
+# API를 통한 상태 확인 (NodePort 32452)
+curl http://<node-ip>:32452/api/collection/status
 
 # 통계 확인
-curl http://<node-ip>:32542/api/stats
+curl http://<node-ip>:32452/api/stats
 
 # ArgoCD 애플리케이션 상태
 argocd app get blacklist --grpc-web

@@ -20,15 +20,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Primary: Self-hosted k3s/k8s (local)
   - Secondary: 192.168.50.110 (remote server)
 - ArgoCD Server: `argo.jclee.me`
-- Default Ports: DEV=8541, PROD=2541, NodePort=32542
+- Default Ports: DEV=8541, PROD=2541, NodePort=32452
 - Auto-deployment: ArgoCD Image Updater monitors registry
 - Production URL: https://blacklist.jclee.me
 - Timezone: Asia/Seoul (KST)
 - Namespace: `blacklist` (consolidated from `blacklist-new`)
 
 **Data Sources:**
-- REGTECH (Financial Security Institute) - Requires authentication, ~1,200 IPs
-- SECUDIUM - Standard authentication with POST-based login and Excel download
+- REGTECH (Financial Security Institute) - Requires authentication, ~1,200 IPs ✅ Active
+- SECUDIUM - Standard authentication with POST-based login and Excel download ❌ Disabled (account issues)
 - Public Threat Intelligence - Automated collection
 
 ## Development Commands
