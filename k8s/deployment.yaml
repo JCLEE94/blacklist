@@ -17,13 +17,13 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 100%           # 모든 Pod을 동시에 생성 가능
-      maxUnavailable: 100%     # 즉시 모든 Pod 교체
+      maxUnavailable: 100%     # 모든 Pod 즉시 교체
   template:
     metadata:
       labels:
         app: blacklist
       annotations:
-        deployment.kubernetes.io/revision: "1751924240"
+        deployment.kubernetes.io/revision: "1751925854"
     spec:
       imagePullSecrets:
       - name: regcred
