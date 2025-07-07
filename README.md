@@ -10,9 +10,9 @@
 
 **Enterprise-grade** 위협 정보 통합 관리 플랫폼 - **GitOps** 기반 자동 배포, 다중 소스 데이터 수집, FortiGate External Connector 연동
 
-> **🚀 최신 업데이트 (2025.07.04)**: ArgoCD GitOps 파이프라인 완전 통합 - 50% 빠른 배포, 자동 롤백 지원
+> **🚀 최신 업데이트 (2025.07.07)**: CI/CD 파이프라인 완전 재구축 - 72% 코드 감소, 89% 파일 감소
 > 
-> **📋 이전 업데이트**: Stats API 만료 관리, 네임스페이스 정리 (`blacklist-new` → `blacklist`)
+> **📋 이전 업데이트**: ArgoCD GitOps 통합, API 일관성 문제 해결, 단일 Pod 운영으로 안정화
 
 ## 🏗️ Architecture
 
@@ -27,9 +27,9 @@ graph TB
         
         subgraph "Kubernetes Cluster (blacklist namespace)"
             A[Ingress/NodePort:32542] --> B[Service]
-            B --> C[Deployment<br/>4 Replicas + HPA]
+            B --> C[Deployment<br/>1 Pod (단일 운영)]
             C --> D[Redis Cache]
-            C --> E[PVC - SQLite DB]
+            C --> E[SQLite DB]
             F[Collection Manager] --> C
         end
     end
@@ -57,7 +57,7 @@ graph TB
 - Kubernetes cluster (k3s/k8s v1.24+)
 - kubectl 설정 완료
 - Docker 및 registry 접근 권한
-- Auto-updater CronJob 활성화 (자동 배포용)
+- ArgoCD 설치 및 설정 (GitOps 자동 배포용)
 
 ### 🎯 GitOps 자동 배포 (ArgoCD)
 
@@ -79,13 +79,13 @@ cd blacklist
 ./scripts/all-clusters-deploy.sh       # 모든 클러스터에 배포
 ```
 
-### 🔄 GitOps CI/CD Pipeline
+### 🔄 GitOps CI/CD Pipeline (Streamlined)
 
-**코드 푸시 → 이미지 빌드 → ArgoCD 자동 배포 (90초 이내)**
+**코드 푸시 → 이미지 빌드 → ArgoCD 자동 배포 (7분 이내)**
 
-1. **GitHub Push** → GitHub Actions 자동 트리거 (최적화된 워크플로우)
-2. **병렬 검증** → 테스트, 린트, 보안 스캔 동시 실행
-3. **Docker 빌드** → `registry.jclee.me/blacklist` 다중 태그 푸시
+1. **GitHub Push** → Streamlined CI/CD 워크플로우 트리거 (150줄, 3 jobs)
+2. **통합 품질 검사** → Quality & Testing job에서 모든 검증 수행
+3. **Docker 빌드** → `registry.jclee.me/blacklist` 4개 태그 푸시
 4. **ArgoCD 배포** → Image Updater가 자동 감지 & GitOps 배포
 5. **헬스 체크** → 자동 롤백 및 실패 복구 지원
 
@@ -184,11 +184,11 @@ argocd app rollback blacklist
 - **만료 관리**: 90일 자동 만료 및 상태 추적 (등록일 기준)
 
 ### Core API 엔드포인트
-- `GET /` - 메인 대시보드 (활성 IP: 22,517개, 총 22,740개)
+- `GET /` - 메인 대시보드 (활성 IP: 17,818개)
 - `GET /health` - 상태 확인 및 상세 진단
 - `GET /api/fortigate` - FortiGate External Connector 형식
-- `GET /api/blacklist/active` - 활성 IP 목록 (텍스트)
-- `GET /api/stats` - 시스템 통계 (만료 정보 포함)
+- `GET /api/blacklist/active` - 활성 IP 목록 (JSON 형식)
+- `GET /api/stats` - 시스템 통계 (90일 필터링 적용)
   - `active_ips`: 현재 활성 IP 수
   - `expired_ips`: 만료된 IP 수
   - `expiring_soon`: 30일 내 만료 예정 IP 수
@@ -379,7 +379,9 @@ blacklist/
 │   └── docker-compose.yml # 로컬 개발용
 │
 ├── .github/workflows/    # CI/CD 파이프라인
-│   └── k8s-deploy.yml    # GitHub Actions (Self-hosted)
+│   ├── streamlined-cicd.yml  # 메인 CI/CD (150줄)
+│   ├── pr-checks.yml         # PR 검증
+│   └── legacy/               # 이전 워크플로우 (17개)
 │
 ├── src/                  # 애플리케이션 소스
 │   ├── core/            # 핵심 비즈니스 로직

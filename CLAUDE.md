@@ -291,7 +291,7 @@ class BaseIPSource(ABC):
 
 ### CI/CD Pipeline (ArgoCD GitOps)
 
-**GitHub Actions Workflow** (`.github/workflows/argocd-deploy.yml`):
+**GitHub Actions Workflow** (`.github/workflows/streamlined-cicd.yml`):
 1. **Parallel Quality Checks**: Lint, security scan, tests
 2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me`
 3. **Multi-tag Push**: `latest`, `sha-<hash>`, `date-<timestamp>`

@@ -115,3 +115,4 @@ archive/
 # Deprecated files
 archive/deprecated_files/
 archive/deprecated_templates/
+.serena/cache/
