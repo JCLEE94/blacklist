@@ -12,7 +12,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
-  - hpa.yaml
+  # - hpa.yaml  # 임시 비활성화 - API 일관성 문제 해결 위해
   - cronjob.yaml
 
 images:
