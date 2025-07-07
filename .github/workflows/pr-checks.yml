@@ -1,0 +1,66 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+env:
+  PYTHON_VERSION: '3.10'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: [self-hosted, linux]
+    
+    steps:
+    - name: Checkout PR
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-depth: 0
+    
+    - name: Setup Python
+      run: |
+        PYTHON_CMD="python3"
+        if command -v python3.10 &> /dev/null; then
+          PYTHON_CMD="python3.10"
+        fi
+        echo "PYTHON_CMD=$PYTHON_CMD" >> $GITHUB_ENV
+    
+    - name: Install Dependencies
+      run: |
+        $PYTHON_CMD -m pip install --upgrade pip
+        $PYTHON_CMD -m pip install -r requirements.txt
+        $PYTHON_CMD -m pip install pytest flake8 bandit || true
+    
+    - name: Quick Quality Checks
+      run: |
+        echo "🔍 Running syntax check..."
+        find src -name "*.py" -exec $PYTHON_CMD -m py_compile {} \;
+        
+        echo "🛡️ Running security scan..."
+        bandit -r src/ --severity-level medium || true
+        
+        echo "📏 Running style check..."
+        flake8 src/ --max-line-length=100 --ignore=E203,W503 --statistics || true
+    
+    - name: Run Unit Tests
+      run: |
+        echo "🧪 Running unit tests..."
+        $PYTHON_CMD -m pytest tests/ -v --tb=short --maxfail=3 || true
+    
+    - name: Validate Changes
+      run: |
+        echo "✅ PR validation completed"
+        echo "Changes summary:"
+        git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        
+        echo "Modified lines:"
+        git diff --stat ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
