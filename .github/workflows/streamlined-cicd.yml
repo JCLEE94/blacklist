@@ -134,6 +134,21 @@ jobs:
           VCS_REF=${{ github.sha }}
           VERSION=${{ github.run_number }}
     
+    - name: Check Kubernetes Connection
+      run: |
+        echo "🔍 Kubernetes 클러스터 연결 확인..."
+        
+        # kubectl 연결 테스트
+        if ! kubectl cluster-info &> /dev/null; then
+          echo "❌ Kubernetes 클러스터에 연결할 수 없습니다"
+          echo "클러스터 상태를 확인하고 수동으로 시작해주세요"
+          exit 1
+        else
+          echo "✅ Kubernetes 클러스터 연결 성공"
+          kubectl get nodes
+          kubectl version --client
+        fi
+    
     - name: Deploy via ArgoCD
       run: |
         echo "Triggering ArgoCD deployment..."
