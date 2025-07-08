@@ -776,25 +776,46 @@ class UnifiedBlacklistService:
                     self.logger.info("Database tables created successfully!")
                 
                 if table_exists or True:  # Always check after potential creation
-                    # First check if table exists and has data
-                    cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
-                    total_in_db = cursor.fetchone()[0]
-                    self.logger.info(f"Total IPs in database: {total_in_db}")
+                    # 탐지일 기준 90일 내 활성 IP만 계산
+                    from datetime import datetime, timedelta
+                    ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
                     
-                    # 더 상세한 디버깅 정보
+                    # 90일 내 탐지된 IP 수 계산
+                    cursor.execute("""
+                        SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
+                        WHERE detection_date >= ? 
+                           OR (detection_date IS NULL AND created_at >= ?)
+                    """, (ninety_days_ago, ninety_days_ago))
+                    total_in_db = cursor.fetchone()[0]
+                    self.logger.info(f"Active IPs in database (90 days): {total_in_db}")
+                    
+                    # 소스별 90일 내 활성 IP 통계
                     if total_in_db > 0:
-                        cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
+                        cursor.execute("""
+                            SELECT UPPER(source), COUNT(DISTINCT ip) 
+                            FROM blacklist_ip 
+                            WHERE detection_date >= ? 
+                               OR (detection_date IS NULL AND created_at >= ?)
+                            GROUP BY UPPER(source)
+                        """, (ninety_days_ago, ninety_days_ago))
                         for row in cursor.fetchall():
                             source_name = row[0]
                             count = row[1]
-                            self.logger.info(f"Source {source_name}: {count} IPs")
+                            self.logger.info(f"Active Source {source_name} (90 days): {count} IPs")
                             # 모든 소스를 source_counts에 추가 (동적으로)
                             source_counts[source_name] = count
                         
-                        # 최근 추가된 데이터 확인
-                        cursor.execute("SELECT ip, source, created_at FROM blacklist_ip ORDER BY created_at DESC LIMIT 5")
+                        # 최근 추가된 데이터 확인 (90일 내)
+                        cursor.execute("""
+                            SELECT ip, source, detection_date, created_at 
+                            FROM blacklist_ip 
+                            WHERE detection_date >= ? 
+                               OR (detection_date IS NULL AND created_at >= ?)
+                            ORDER BY COALESCE(detection_date, created_at) DESC 
+                            LIMIT 5
+                        """, (ninety_days_ago, ninety_days_ago))
                         recent_ips = cursor.fetchall()
-                        self.logger.info(f"Recent IPs added: {recent_ips}")
+                        self.logger.info(f"Recent active IPs added (90 days): {recent_ips}")
                     else:
                         self.logger.warning("No IPs found in database - checking table structure...")
                         cursor.execute("PRAGMA table_info(blacklist_ip)")
@@ -1247,7 +1268,7 @@ class UnifiedBlacklistService:
         }
     
     def get_daily_stats(self, days: int = 30) -> list:
-        """일별 통계 반환"""
+        """일별 통계 반환 (탐지일 기준)"""
         from datetime import timedelta
         
         stats = []
@@ -1274,12 +1295,12 @@ class UnifiedBlacklistService:
                     conn = sqlite3.connect(self.blacklist_manager.db_path)
                     cursor = conn.cursor()
                     
-                    # Count total IPs by source for this date (using detection_date - 실제 등록일)
+                    # Count total distinct IPs by source for this date (using detection_date - 실제 등록일)
                     cursor.execute("""
-                        SELECT source, COUNT(*) 
+                        SELECT UPPER(source), COUNT(DISTINCT ip) 
                         FROM blacklist_ip 
-                        WHERE DATE(detection_date) = ?
-                        GROUP BY source
+                        WHERE DATE(COALESCE(detection_date, created_at)) = ?
+                        GROUP BY UPPER(source)
                     """, (date_str,))
                     
                     for row in cursor.fetchall():
@@ -1293,11 +1314,11 @@ class UnifiedBlacklistService:
                             daily_stat['public_count'] = count
                         daily_stat['total_ips'] += count
                     
-                    # Count new IPs for this date (using detection_date - 실제 등록일)
+                    # Count new distinct IPs for this date (using detection_date - 실제 등록일)
                     cursor.execute("""
-                        SELECT COUNT(*) 
+                        SELECT COUNT(DISTINCT ip) 
                         FROM blacklist_ip 
-                        WHERE DATE(detection_date) = ?
+                        WHERE DATE(COALESCE(detection_date, created_at)) = ?
                     """, (date_str,))
                     daily_stat['new_ips'] = cursor.fetchone()[0]
                     
@@ -1748,21 +1769,21 @@ class UnifiedBlacklistService:
     # === 자동 수집 시스템 지원 메서드 ===
     
     def get_daily_collection_stats(self) -> list:
-        """날짜별 수집 통계 반환"""
+        """날짜별 수집 통계 반환 (탐지일 기준, 중복 제거)"""
         try:
             db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             
-            # 최근 30일간의 날짜별 수집 통계
+            # 최근 30일간의 날짜별 수집 통계 (탐지일 기준, 중복 IP 제거)
             query = """
             SELECT 
-                DATE(detection_date) as date,
-                COUNT(*) as count,
-                source
+                DATE(COALESCE(detection_date, created_at)) as date,
+                COUNT(DISTINCT ip) as count,
+                UPPER(source) as source
             FROM blacklist_ip 
-            WHERE detection_date >= DATE('now', '-30 days')
-            GROUP BY DATE(detection_date), source
+            WHERE DATE(COALESCE(detection_date, created_at)) >= DATE('now', '-30 days')
+            GROUP BY DATE(COALESCE(detection_date, created_at)), UPPER(source)
             ORDER BY date DESC
             """
             
@@ -1787,25 +1808,31 @@ class UnifiedBlacklistService:
             return []
     
     def get_source_statistics(self) -> dict:
-        """소스별 통계 반환"""
+        """소스별 통계 반환 (90일 내 활성 IP 기준)"""
         try:
+            from datetime import datetime, timedelta
+            
             db_path = os.path.join('/app' if os.path.exists('/app') else '.', 'instance/blacklist.db')
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             
-            # 소스별 총 개수
+            # 90일 내 활성 IP 기준 소스별 통계
+            ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+            
             query = """
             SELECT 
-                source,
-                COUNT(*) as total,
-                MIN(detection_date) as first_detection,
-                MAX(detection_date) as last_detection,
-                COUNT(DISTINCT DATE(detection_date)) as collection_days
+                UPPER(source) as source,
+                COUNT(DISTINCT ip) as total,
+                MIN(COALESCE(detection_date, created_at)) as first_detection,
+                MAX(COALESCE(detection_date, created_at)) as last_detection,
+                COUNT(DISTINCT DATE(COALESCE(detection_date, created_at))) as collection_days
             FROM blacklist_ip 
-            GROUP BY source
+            WHERE detection_date >= ? 
+               OR (detection_date IS NULL AND created_at >= ?)
+            GROUP BY UPPER(source)
             """
             
-            cursor.execute(query)
+            cursor.execute(query, (ninety_days_ago, ninety_days_ago))
             rows = cursor.fetchall()
             conn.close()
             
