@@ -11,7 +11,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Cloudflare API 설정
-CF_API_TOKEN="${CF_API_TOKEN:-19OuO8pBp83XDkJsUf2TRmDPKd6ZySIXrGJbh5Uk}"
+CF_API_TOKEN="${CF_API_TOKEN:-}"
 CF_API_URL="https://api.cloudflare.com/client/v4"
 
 # 기본값 설정

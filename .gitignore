@@ -20,6 +20,7 @@ data/temp/
 
 # Development
 .env
+.env.cloudflare
 .vscode/
 .idea/
 *.log

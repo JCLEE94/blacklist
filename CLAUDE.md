@@ -513,7 +513,8 @@ DOCKER_PASSWORD         # Docker Hub password
 REGISTRY_USERNAME       # Private registry username (priority)
 REGISTRY_PASSWORD       # Private registry password (priority)
 DEPLOYMENT_WEBHOOK_URL  # Optional webhook for deployment notifications
-CLOUDFLARE_TUNNEL_TOKEN # Cloudflare Zero Trust tunnel token (optional)
+CLOUDFLARE_TUNNEL_TOKEN # Cloudflare Zero Trust tunnel token (required for Cloudflare)
+CF_API_TOKEN           # Cloudflare API token for DNS management (required for Cloudflare)
 ```
 
 ### Date Parameters for REGTECH
