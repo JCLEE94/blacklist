@@ -279,21 +279,11 @@ main() {
         exit 1
     fi
     
-    # 3. 터널 사용 강제 설정 (사용자 요청)
-    print_step "터널 ID를 환경변수에서 가져오는 중..."
+    # 3. 터널 도메인으로 DNS 레코드 생성 (사용자 지정)
+    TUNNEL_DOMAIN="8ea78906-1a05-44fb-a1bb-e512172cb5ab.cfargotunnel.com"
+    print_step "터널 도메인 대상: $TUNNEL_DOMAIN"
     
-    # 환경변수에서 터널 ID 직접 가져오기 또는 기본값 사용
-    if [ -n "$TUNNEL_ID" ]; then
-        print_success "터널 ID 발견: $TUNNEL_ID"
-    else
-        # 기본 터널 ID 설정 (blacklist 터널)
-        TUNNEL_ID="8ea78906-1a05-44fb-a1bb-e512172cb5ab"
-        print_warning "환경변수에서 터널 ID를 찾을 수 없어 기본값을 사용합니다: $TUNNEL_ID"
-    fi
-    
-    # 터널 도메인으로 CNAME 레코드 생성
-    TUNNEL_DOMAIN="${TUNNEL_ID}.cfargotunnel.com"
-    print_step "터널 도메인: $TUNNEL_DOMAIN"
+    # blacklist.jclee.me -> 8ea78906-1a05-44fb-a1bb-e512172cb5ab.cfargotunnel.com
     create_dns_record "$SUBDOMAIN.$DOMAIN" "$TUNNEL_DOMAIN" "CNAME" true
     
     # 터널 라우트 설정 (계정 ID 필요한 경우에만)
