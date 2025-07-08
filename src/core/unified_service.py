@@ -785,9 +785,11 @@ class UnifiedBlacklistService:
                     if total_in_db > 0:
                         cursor.execute("SELECT source, COUNT(*) FROM blacklist_ip GROUP BY source")
                         for row in cursor.fetchall():
-                            self.logger.info(f"Source {row[0]}: {row[1]} IPs")
-                            if row[0] in source_counts:
-                                source_counts[row[0]] = row[1]
+                            source_name = row[0]
+                            count = row[1]
+                            self.logger.info(f"Source {source_name}: {count} IPs")
+                            # 모든 소스를 source_counts에 추가 (동적으로)
+                            source_counts[source_name] = count
                         
                         # 최근 추가된 데이터 확인
                         cursor.execute("SELECT ip, source, created_at FROM blacklist_ip ORDER BY created_at DESC LIMIT 5")
