@@ -69,24 +69,9 @@ def test_regtech_collection():
         print(f"✗ REGTECH 수집 실패: {e}")
 
 def test_secudium_collection():
-    """SECUDIUM 수집 테스트"""
+    """SECUDIUM 수집 테스트 - 비활성화됨"""
     print("\n=== 4. SECUDIUM 수집 테스트 ===")
-    try:
-        response = requests.post(f"{BASE_URL}/api/collection/secudium/trigger")
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('success'):
-                print("✓ SECUDIUM 수집 트리거 성공")
-                print(f"  수집된 IP 수: {data.get('ip_count', 0)}")
-                print(f"  메시지: {data.get('message')}")
-            else:
-                print(f"✗ SECUDIUM 수집 실패: {data.get('error')}")
-                print(f"  메시지: {data.get('message')}")
-        else:
-            print(f"✗ SECUDIUM 수집 실패: {response.status_code}")
-            print(f"  응답: {response.text}")
-    except Exception as e:
-        print(f"✗ SECUDIUM 수집 실패: {e}")
+    print("✓ SECUDIUM 수집이 비활성화되었습니다 (사용자 요청)")
 
 def test_final_stats():
     """최종 통계 확인"""

@@ -103,31 +103,8 @@ class IntegrationTester:
             self.log_test("REGTECH 수집", False, f"오류: {e}")
     
     def test_secudium_collection(self):
-        """SECUDIUM 수집기 테스트"""
-        try:
-            response = self.session.post(
-                f"{self.base_url}/api/collection/secudium/trigger",
-                timeout=60
-            )
-            
-            if response.status_code in [200, 400]:
-                data = response.json()
-                success = data.get('success', False)
-                message = data.get('message', 'No message')
-                
-                if success:
-                    self.log_test("SECUDIUM 수집", True, message)
-                else:
-                    # 자격증명 없음은 예상된 결과
-                    if "자격증명" in message or "로그인" in message:
-                        self.log_test("SECUDIUM 수집", True, f"예상된 자격증명 오류: {message}")
-                    else:
-                        self.log_test("SECUDIUM 수집", False, message)
-            else:
-                self.log_test("SECUDIUM 수집", False, f"HTTP {response.status_code}")
-                
-        except Exception as e:
-            self.log_test("SECUDIUM 수집", False, f"오류: {e}")
+        """SECUDIUM 수집기 테스트 - 비활성화됨"""
+        self.log_test("SECUDIUM 수집", True, "SECUDIUM 수집이 비활성화되었습니다 (사용자 요청)")
     
     def test_api_endpoints(self):
         """주요 API 엔드포인트 테스트"""

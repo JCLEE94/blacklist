@@ -1137,115 +1137,25 @@ def api_secudium_test():
             'error': str(e)
         }), 500
 
+# SECUDIUM 수집 트리거 비활성화됨 (사용자 요청)
 @web_bp.route('/api/collection/secudium/trigger', methods=['POST'])
 def api_secudium_trigger():
-    """Trigger SECUDIUM collection"""
-    try:
-        data = request.get_json() or {}
-        collection_type = data.get('collection_type', 'blackip')
-        start_date = data.get('start_date', '')
-        end_date = data.get('end_date', '')
-        
-        # 환경변수 설정
-        import os
-        os.environ['SECUDIUM_USERNAME'] = 'nextrade'
-        os.environ['SECUDIUM_PASSWORD'] = 'Sprtmxm1@3'
-        
-        # 비동기 수집 시작
-        import subprocess
-        import sys
-        
-        cmd = [sys.executable, 'scripts/secudium_api_collector.py']
-        cmd.extend(['--type', collection_type])
-        
-        if collection_type == 'blackip' and start_date and end_date:
-            cmd.extend(['--start-date', start_date])
-            cmd.extend(['--end-date', end_date])
-            
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=os.environ.copy()
-        )
-        
-        # 프로세스 ID 저장 (상태 확인용)
-        import tempfile
-        pid_file = os.path.join(tempfile.gettempdir(), 'secudium_collector.pid')
-        with open(pid_file, 'w') as f:
-            f.write(str(process.pid))
-        
-        return jsonify({
-            'success': True,
-            'message': 'SECUDIUM collection started',
-            'process_id': process.pid,
-            'collection_type': collection_type
-        })
-        
-    except Exception as e:
-        logger.error(f"SECUDIUM trigger error: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+    """SECUDIUM 수집 트리거 (비활성화됨)"""
+    return jsonify({
+        'success': False,
+        'message': 'SECUDIUM 수집이 비활성화되었습니다.',
+        'error': 'SECUDIUM collection has been disabled'
+    }), 503
 
 @web_bp.route('/api/collection/secudium/progress')
 def api_secudium_progress():
-    """Get SECUDIUM collection progress"""
-    try:
-        import tempfile
-        import os
-        
-        # 로그 파일에서 진행 상황 읽기
-        log_file = os.path.join(tempfile.gettempdir(), 'secudium_collector.log')
-        
-        if os.path.exists(log_file):
-            with open(log_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-                
-            # 마지막 상태 확인
-            if lines:
-                last_line = lines[-1].strip()
-                
-                if 'SUCCESS' in last_line and '수집 완료' in last_line:
-                    # 결과 파싱
-                    import re
-                    match = re.search(r'총 (\d+)개', last_line)
-                    total_ips = int(match.group(1)) if match else 0
-                    
-                    return jsonify({
-                        'status': 'completed',
-                        'progress': 100,
-                        'message': '수집 완료',
-                        'total_ips': total_ips
-                    })
-                elif 'ERROR' in last_line:
-                    return jsonify({
-                        'status': 'error',
-                        'error': last_line.split('ERROR: ')[-1]
-                    })
-                else:
-                    # 진행 중
-                    progress = 50  # 임시 진행률
-                    return jsonify({
-                        'status': 'running',
-                        'progress': progress,
-                        'message': '수집 진행 중...'
-                    })
-        
-        return jsonify({
-            'status': 'idle',
-            'progress': 0,
-            'message': '대기 중'
-        })
-        
-    except Exception as e:
-        logger.error(f"SECUDIUM progress error: {e}")
-        return jsonify({
-            'status': 'error',
-            'error': str(e)
-        }), 500
+    """SECUDIUM 수집 진행 상황 (비활성화됨)"""
+    return jsonify({
+        'status': 'disabled',
+        'progress': 0,
+        'message': 'SECUDIUM 수집이 비활성화되었습니다.',
+        'error': 'SECUDIUM collection has been disabled'
+    }), 503
 
 @web_bp.route('/api/collection/secudium/logs')
 def api_secudium_logs():

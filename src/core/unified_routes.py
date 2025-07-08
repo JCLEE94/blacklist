@@ -1364,44 +1364,7 @@ def trigger_regtech_collection():
             'message': 'REGTECH 수집 트리거 중 오류가 발생했습니다.'
         }), 500
 
-@unified_bp.route('/api/collection/secudium/trigger', methods=['POST'])
-def trigger_secudium_collection():
-    """SECUDIUM 수집 트리거"""
-    try:
-        # 로그 추가
-        service.add_collection_log('secudium', 'collection_triggered', {
-            'triggered_by': 'manual',
-            'timestamp': datetime.now().isoformat()
-        })
-        
-        # SECUDIUM 수집 실행
-        result = service.trigger_secudium_collection()
-        
-        if result.get('success'):
-            return jsonify({
-                'success': True,
-                'message': 'SECUDIUM 수집이 트리거되었습니다.',
-                'source': 'secudium',
-                'data': result
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': result.get('message', 'SECUDIUM 수집 트리거 실패'),
-                'error': result.get('error')
-            }), 500
-            
-    except Exception as e:
-        logger.error(f"SECUDIUM trigger error: {e}")
-        service.add_collection_log('secudium', 'collection_failed', {
-            'error': str(e),
-            'triggered_by': 'manual'
-        })
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'message': 'SECUDIUM 수집 트리거 중 오류가 발생했습니다.'
-        }), 500
+# SECUDIUM 수집 트리거 비활성화됨 (사용자 요청)
 
 # === 간소화된 수집 관리 (자동 수집 + 간격 조절만) ===
 

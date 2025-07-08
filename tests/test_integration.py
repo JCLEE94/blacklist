@@ -97,20 +97,9 @@ class IntegrationTest:
         return response.status_code == 200
     
     def test_secudium_trigger(self):
-        """SECUDIUM 수집 트리거 테스트"""
-        response = self.session.post(
-            f"{self.base_url}/api/collection/secudium/trigger",
-            headers={"Content-Type": "application/json"},
-            json={}
-        )
-        self.log(f"Status: {response.status_code}")
-        if response.status_code == 200:
-            data = response.json()
-            self.log(f"Success: {data.get('success', False)}")
-            self.log(f"Task ID: {data.get('task_id', '')}")
-        else:
-            self.log(f"Error response: {response.text}")
-        return response.status_code == 200
+        """SECUDIUM 수집 트리거 테스트 - 비활성화됨"""
+        self.log("SECUDIUM 수집이 비활성화되었습니다 (사용자 요청)")
+        return True
     
     def test_fortigate_api(self):
         """FortiGate API 테스트"""
