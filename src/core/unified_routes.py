@@ -1178,21 +1178,21 @@ def get_system_stats():
         # 소스별 90일 내 활성 IP 통계
         cursor.execute('''
             SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-            WHERE source = 'regtech' 
+            WHERE UPPER(source) = 'REGTECH' 
             AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
         ''', (ninety_days_ago, ninety_days_ago))
         regtech_count = cursor.fetchone()[0]
         
         cursor.execute('''
             SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-            WHERE source = 'secudium' 
+            WHERE UPPER(source) = 'SECUDIUM' 
             AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
         ''', (ninety_days_ago, ninety_days_ago))
         secudium_count = cursor.fetchone()[0]
         
         cursor.execute('''
             SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-            WHERE source NOT IN ('regtech', 'secudium') 
+            WHERE UPPER(source) NOT IN ('REGTECH', 'SECUDIUM') 
             AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
         ''', (ninety_days_ago, ninety_days_ago))
         public_count = cursor.fetchone()[0]
