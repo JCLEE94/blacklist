@@ -22,6 +22,7 @@ IMAGE_NAME="blacklist"
 ENABLE_CLOUDFLARED="${ENABLE_CLOUDFLARED:-true}"
 CLOUDFLARE_TUNNEL_TOKEN="${CLOUDFLARE_TUNNEL_TOKEN:-eyJhIjoiYThkOWM2N2Y1ODZhY2RkMTVlZWJjYzY1Y2EzYWE1YmIiLCJ0IjoiOGVhNzg5MDYtMWEwNS00NGZiLWExYmItZTUxMjE3MmNiNWFiIiwicyI6Ill6RXlZVEUwWWpRdE1tVXlNUzAwWmpRMExXSTVaR0V0WkdNM09UY3pOV1ExT1RGbSJ9}"
 CLOUDFLARE_HOSTNAME="${CLOUDFLARE_HOSTNAME:-blacklist.jclee.me}"
+CF_API_TOKEN="${CF_API_TOKEN:-19OuO8pBp83XDkJsUf2TRmDPKd6ZySIXrGJbh5Uk}"
 
 print_step() {
     echo -e "${BLUE}[STEP]${NC} $1"
@@ -159,6 +160,14 @@ init_deployment() {
     if [ "${ENABLE_CLOUDFLARED:-true}" = "true" ]; then
         print_step "Cloudflare Tunnel 설정 중..."
         if [ -f "scripts/setup/install-cloudflared.sh" ]; then
+            # DNS 먼저 설정
+            if [ -f "scripts/setup/cloudflare-dns-setup.sh" ]; then
+                print_step "Cloudflare DNS 설정 중..."
+                export CF_API_TOKEN
+                bash scripts/setup/cloudflare-dns-setup.sh setup
+            fi
+            
+            # Tunnel 설치
             bash scripts/setup/install-cloudflared.sh all
             print_success "Cloudflare Tunnel 설정 완료"
         else

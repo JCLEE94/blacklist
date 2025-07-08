@@ -16,7 +16,24 @@ Cloudflare Tunnel을 사용하면:
 2. Cloudflare에 등록된 도메인
 3. Kubernetes 클러스터에 배포된 Blacklist 서비스
 
-## 설정 단계
+## 자동 설정 (권장)
+
+모든 설정이 자동화되어 있습니다:
+
+```bash
+# 배포 시 자동으로 DNS 레코드 생성 및 Tunnel 설정
+./scripts/k8s-management.sh init
+
+# 또는 CI/CD 파이프라인 사용
+git push origin main
+```
+
+자동으로 설정되는 항목:
+- DNS 레코드: blacklist.jclee.me → Cloudflare Tunnel
+- Cloudflare Tunnel 토큰 및 연결
+- Kubernetes Secret 및 Deployment
+
+## 설정 단계 (수동)
 
 ### 1. Cloudflare Zero Trust 대시보드에서 터널 생성
 

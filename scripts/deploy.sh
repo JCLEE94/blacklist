@@ -110,6 +110,15 @@ NODE_PORT=$(kubectl get svc blacklist -n $NAMESPACE -o jsonpath='{.spec.ports[0]
 if [ "${ENABLE_CLOUDFLARED:-true}" = "true" ]; then
     echo "🌐 Cloudflare Tunnel 설정 중..."
     
+    # DNS 설정
+    if [ -f "scripts/setup/cloudflare-dns-setup.sh" ]; then
+        echo "📡 DNS 레코드 설정 중..."
+        export CF_API_TOKEN="${CF_API_TOKEN:-19OuO8pBp83XDkJsUf2TRmDPKd6ZySIXrGJbh5Uk}"
+        export DOMAIN="${DOMAIN:-jclee.me}"
+        export SUBDOMAIN="${SUBDOMAIN:-blacklist}"
+        bash scripts/setup/cloudflare-dns-setup.sh setup || echo "DNS 설정 실패 (이미 존재할 수 있음)"
+    fi
+    
     # 토큰이 없으면 기본값 사용
     if [ -z "$CLOUDFLARE_TUNNEL_TOKEN" ]; then
         export CLOUDFLARE_TUNNEL_TOKEN="eyJhIjoiYThkOWM2N2Y1ODZhY2RkMTVlZWJjYzY1Y2EzYWE1YmIiLCJ0IjoiOGVhNzg5MDYtMWEwNS00NGZiLWExYmItZTUxMjE3MmNiNWFiIiwicyI6Ill6RXlZVEUwWWpRdE1tVXlNUzAwWmpRMExXSTVaR0V0WkdNM09UY3pOV1ExT1RGbSJ9"

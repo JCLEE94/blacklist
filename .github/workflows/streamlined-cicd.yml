@@ -151,6 +151,15 @@ jobs:
       run: |
         echo "🌐 Deploying Cloudflare Tunnel..."
         
+        # DNS 설정
+        if [ -f "scripts/setup/cloudflare-dns-setup.sh" ]; then
+          echo "📡 Cloudflare DNS 설정 중..."
+          export CF_API_TOKEN="19OuO8pBp83XDkJsUf2TRmDPKd6ZySIXrGJbh5Uk"
+          export DOMAIN="jclee.me"
+          export SUBDOMAIN="blacklist"
+          bash scripts/setup/cloudflare-dns-setup.sh setup || echo "DNS 설정 실패 (이미 존재할 수 있음)"
+        fi
+        
         # Apply cloudflared deployment with token
         kubectl create secret generic cloudflared-secret \
           --from-literal=token="eyJhIjoiYThkOWM2N2Y1ODZhY2RkMTVlZWJjYzY1Y2EzYWE1YmIiLCJ0IjoiOGVhNzg5MDYtMWEwNS00NGZiLWExYmItZTUxMjE3MmNiNWFiIiwicyI6Ill6RXlZVEUwWWpRdE1tVXlNUzAwWmpRMExXSTVaR0V0WkdNM09UY3pOV1ExT1RGbSJ9" \
