@@ -146,19 +146,40 @@ jobs:
         
         echo "Deployment triggered. ArgoCD will handle the rollout."
     
+    - name: Setup Cloudflare DNS
+      if: always()  # 항상 실행
+      run: |
+        echo "📡 Cloudflare DNS 설정 시작..."
+        
+        # jq 설치 확인 (DNS 설정 스크립트에 필요)
+        if ! command -v jq &> /dev/null; then
+          echo "jq 설치 중..."
+          sudo apt-get update && sudo apt-get install -y jq
+        fi
+        
+        # DNS 설정 스크립트 실행
+        if [ -f "scripts/setup/cloudflare-dns-setup.sh" ]; then
+          export CF_API_TOKEN="${{ secrets.CF_API_TOKEN }}"
+          export DOMAIN="jclee.me"
+          export SUBDOMAIN="blacklist"
+          
+          # DNS 레코드 생성/업데이트
+          bash scripts/setup/cloudflare-dns-setup.sh setup
+          
+          # DNS 설정 확인
+          echo "🔍 DNS 레코드 확인 중..."
+          bash scripts/setup/cloudflare-dns-setup.sh list | grep -E "blacklist.jclee.me" || echo "DNS 레코드 목록 조회 실패"
+        else
+          echo "❌ DNS 설정 스크립트를 찾을 수 없습니다"
+          exit 1
+        fi
+        
+        echo "✅ Cloudflare DNS 설정 완료"
+    
     - name: Deploy Cloudflare Tunnel
       if: always()  # 항상 실행
       run: |
         echo "🌐 Deploying Cloudflare Tunnel..."
-        
-        # DNS 설정
-        if [ -f "scripts/setup/cloudflare-dns-setup.sh" ]; then
-          echo "📡 Cloudflare DNS 설정 중..."
-          export CF_API_TOKEN="${{ secrets.CF_API_TOKEN }}"
-          export DOMAIN="jclee.me"
-          export SUBDOMAIN="blacklist"
-          bash scripts/setup/cloudflare-dns-setup.sh setup || echo "DNS 설정 실패 (이미 존재할 수 있음)"
-        fi
         
         # Apply cloudflared deployment with token
         kubectl create secret generic cloudflared-secret \
@@ -172,24 +193,56 @@ jobs:
         # Wait for cloudflared to be ready
         kubectl wait --for=condition=ready pod -l app=cloudflared -n blacklist --timeout=300s || true
         
+        # Cloudflared 로그 확인
+        echo "📋 Cloudflared 초기 로그:"
+        kubectl logs -l app=cloudflared -n blacklist --tail=20 || echo "로그 조회 실패"
+        
         echo "✅ Cloudflare Tunnel deployment complete"
     
-    - name: Deployment Verification
+    - name: Verify DNS and Deployment
+      if: always()
       run: |
-        echo "Waiting for deployment to stabilize..."
-        sleep 30
+        echo "🔍 DNS 및 배포 검증 시작..."
         
-        # Health check
-        for i in {1..6}; do
-          if curl -f -s https://blacklist.jclee.me/health > /dev/null; then
-            echo "✅ Deployment successful - health check passed"
-            exit 0
+        # DNS 전파 확인
+        echo "📡 DNS 레코드 전파 확인 중..."
+        for i in {1..5}; do
+          if nslookup blacklist.jclee.me 8.8.8.8 | grep -q "Address"; then
+            echo "✅ DNS 레코드 확인됨"
+            break
           fi
-          echo "⏳ Waiting for deployment... (attempt $i/6)"
+          echo "⏳ DNS 전파 대기 중... (시도 $i/5)"
           sleep 10
         done
         
-        echo "⚠️ Deployment verification timeout - check ArgoCD manually"
+        # Cloudflare Tunnel 상태 확인
+        echo "🌐 Cloudflare Tunnel 상태 확인..."
+        kubectl get pods -l app=cloudflared -n blacklist || echo "Cloudflared pods 조회 실패"
+        
+        # 배포 안정화 대기
+        echo "⏳ 배포 안정화 대기 중..."
+        sleep 30
+        
+        # Health check
+        echo "🏥 Health Check 시작..."
+        for i in {1..6}; do
+          if curl -f -s https://blacklist.jclee.me/health > /dev/null 2>&1; then
+            echo "✅ 배포 성공 - Health check 통과"
+            # 최종 확인
+            echo "📊 최종 상태:"
+            echo "- URL: https://blacklist.jclee.me"
+            echo "- DNS: $(nslookup blacklist.jclee.me 8.8.8.8 | grep Address | tail -1)"
+            echo "- Tunnel: $(kubectl get pods -l app=cloudflared -n blacklist -o jsonpath='{.items[0].status.phase}')"
+            exit 0
+          fi
+          echo "⏳ 배포 대기 중... (시도 $i/6)"
+          sleep 10
+        done
+        
+        echo "⚠️ 배포 검증 타임아웃 - ArgoCD 수동 확인 필요"
+        echo "디버깅 정보:"
+        echo "- Cloudflared 로그:"
+        kubectl logs -l app=cloudflared -n blacklist --tail=50 || echo "로그 조회 실패"
         exit 1
 
   # Post-Deploy Notifications

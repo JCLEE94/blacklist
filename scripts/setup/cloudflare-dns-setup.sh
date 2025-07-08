@@ -10,16 +10,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Cloudflare API 설정
-CF_API_TOKEN="${CF_API_TOKEN:-}"
-CF_API_URL="https://api.cloudflare.com/client/v4"
-
-# 기본값 설정
-DOMAIN="${DOMAIN:-jclee.me}"
-SUBDOMAIN="${SUBDOMAIN:-blacklist}"
-TUNNEL_ID="${TUNNEL_ID:-}"
-RECORD_TYPE="${RECORD_TYPE:-CNAME}"
-
+# 색상 함수 정의
 print_step() {
     echo -e "${BLUE}[STEP]${NC} $1"
 }
@@ -35,6 +26,48 @@ print_error() {
 print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
+
+# Cloudflare API 설정
+CF_API_TOKEN="${CF_API_TOKEN:-}"
+CF_API_URL="https://api.cloudflare.com/client/v4"
+
+# 필수 도구 확인
+check_requirements() {
+    # API 토큰 확인
+    if [ -z "$CF_API_TOKEN" ]; then
+        print_error "CF_API_TOKEN이 설정되지 않았습니다"
+        echo "환경 변수를 설정하거나 GitHub Secrets를 확인하세요"
+        exit 1
+    fi
+    
+    # jq 확인 및 설치
+    if ! command -v jq &> /dev/null; then
+        print_warning "jq가 설치되지 않았습니다. 설치를 시도합니다..."
+        if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y jq
+        elif command -v yum &> /dev/null; then
+            sudo yum install -y jq
+        else
+            print_error "jq를 설치할 수 없습니다. 수동으로 설치해주세요"
+            exit 1
+        fi
+    fi
+    
+    # curl 확인
+    if ! command -v curl &> /dev/null; then
+        print_error "curl이 설치되지 않았습니다"
+        exit 1
+    fi
+}
+
+# 초기 요구사항 확인
+check_requirements
+
+# 기본값 설정
+DOMAIN="${DOMAIN:-jclee.me}"
+SUBDOMAIN="${SUBDOMAIN:-blacklist}"
+TUNNEL_ID="${TUNNEL_ID:-}"
+RECORD_TYPE="${RECORD_TYPE:-CNAME}"
 
 # Zone ID 가져오기
 get_zone_id() {
