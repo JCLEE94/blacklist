@@ -18,6 +18,11 @@ ARGOCD_SERVER="argo.jclee.me"
 REGISTRY="registry.jclee.me"
 IMAGE_NAME="blacklist"
 
+# Cloudflare Tunnel 기본 설정
+ENABLE_CLOUDFLARED="${ENABLE_CLOUDFLARED:-true}"
+CLOUDFLARE_TUNNEL_TOKEN="${CLOUDFLARE_TUNNEL_TOKEN:-eyJhIjoiYThkOWM2N2Y1ODZhY2RkMTVlZWJjYzY1Y2EzYWE1YmIiLCJ0IjoiOGVhNzg5MDYtMWEwNS00NGZiLWExYmItZTUxMjE3MmNiNWFiIiwicyI6Ill6RXlZVEUwWWpRdE1tVXlNUzAwWmpRMExXSTVaR0V0WkdNM09UY3pOV1ExT1RGbSJ9}"
+CLOUDFLARE_HOSTNAME="${CLOUDFLARE_HOSTNAME:-blacklist.jclee.me}"
+
 print_step() {
     echo -e "${BLUE}[STEP]${NC} $1"
 }
@@ -149,6 +154,17 @@ init_deployment() {
     
     # ArgoCD 애플리케이션 생성
     setup_argocd_application
+    
+    # Cloudflare Tunnel 설정 (선택적)
+    if [ "${ENABLE_CLOUDFLARED:-true}" = "true" ]; then
+        print_step "Cloudflare Tunnel 설정 중..."
+        if [ -f "scripts/setup/install-cloudflared.sh" ]; then
+            bash scripts/setup/install-cloudflared.sh all
+            print_success "Cloudflare Tunnel 설정 완료"
+        else
+            print_warning "Cloudflare Tunnel 설치 스크립트를 찾을 수 없습니다"
+        fi
+    fi
     
     print_success "초기 배포 설정 완료"
 }

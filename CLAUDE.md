@@ -149,6 +149,29 @@ kubectl create secret docker-registry regcred \
 ssh jclee@192.168.50.110 "cd ~/app/blacklist && ./scripts/k8s-management.sh deploy"
 ```
 
+### Cloudflare Tunnel Integration
+```bash
+# Install cloudflared on host system
+./scripts/setup/install-cloudflared.sh install
+
+# Deploy Cloudflare Tunnel to Kubernetes
+export CLOUDFLARE_TUNNEL_TOKEN="your-tunnel-token"
+./scripts/setup/cloudflared-k8s-setup.sh deploy
+
+# Integration with deployment pipeline
+ENABLE_CLOUDFLARED=true ./scripts/k8s-management.sh init
+ENABLE_CLOUDFLARED=true ./scripts/deploy.sh
+
+# Check tunnel status
+./scripts/setup/cloudflared-k8s-setup.sh status
+
+# View tunnel logs
+kubectl logs -l app=cloudflared -n blacklist -f
+
+# Remove tunnel
+./scripts/setup/cloudflared-k8s-setup.sh delete
+```
+
 ### Data Collection Management
 ```bash
 # Collection system status
@@ -474,6 +497,11 @@ DOCKER_USERNAME=your-username
 DOCKER_PASSWORD=your-password
 REGISTRY_USERNAME=registry-username  # For private registry
 REGISTRY_PASSWORD=registry-password
+
+# Cloudflare Tunnel (optional)
+ENABLE_CLOUDFLARED=false            # Enable Cloudflare Tunnel deployment
+CLOUDFLARE_TUNNEL_TOKEN=your-token  # Cloudflare Zero Trust tunnel token
+CLOUDFLARE_HOSTNAME=blacklist.yourdomain.com  # External hostname
 ```
 
 ### GitHub Repository Secrets
@@ -485,6 +513,7 @@ DOCKER_PASSWORD         # Docker Hub password
 REGISTRY_USERNAME       # Private registry username (priority)
 REGISTRY_PASSWORD       # Private registry password (priority)
 DEPLOYMENT_WEBHOOK_URL  # Optional webhook for deployment notifications
+CLOUDFLARE_TUNNEL_TOKEN # Cloudflare Zero Trust tunnel token (optional)
 ```
 
 ### Date Parameters for REGTECH

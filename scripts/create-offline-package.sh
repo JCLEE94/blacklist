@@ -109,6 +109,11 @@ build_and_save_docker_image() {
     log "Docker 이미지를 파일로 저장 중..."
     docker save "${FULL_IMAGE}" "${REGISTRY}/${IMAGE_NAME}:latest" | gzip > "$PACKAGE_DIR/images/blacklist-${VERSION}.tar.gz"
     
+    # Cloudflare 이미지도 저장
+    log "Cloudflare 이미지를 파일로 저장 중..."
+    docker pull cloudflare/cloudflared:latest
+    docker save cloudflare/cloudflared:latest | gzip > "$PACKAGE_DIR/images/cloudflared-latest.tar.gz"
+    
     if [ $? -eq 0 ]; then
         success "Docker 이미지 저장 완료: blacklist-${VERSION}.tar.gz"
         ls -lh "$PACKAGE_DIR/images/blacklist-${VERSION}.tar.gz"
@@ -136,6 +141,7 @@ resources:
   - configmap.yaml
   - secrets.yaml
   - ingress.yaml
+  - cloudflared-deployment.yaml
 
 namespace: blacklist-prod
 

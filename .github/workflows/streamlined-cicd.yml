@@ -146,6 +146,25 @@ jobs:
         
         echo "Deployment triggered. ArgoCD will handle the rollout."
     
+    - name: Deploy Cloudflare Tunnel
+      if: always()  # 항상 실행
+      run: |
+        echo "🌐 Deploying Cloudflare Tunnel..."
+        
+        # Apply cloudflared deployment with token
+        kubectl create secret generic cloudflared-secret \
+          --from-literal=token="eyJhIjoiYThkOWM2N2Y1ODZhY2RkMTVlZWJjYzY1Y2EzYWE1YmIiLCJ0IjoiOGVhNzg5MDYtMWEwNS00NGZiLWExYmItZTUxMjE3MmNiNWFiIiwicyI6Ill6RXlZVEUwWWpRdE1tVXlNUzAwWmpRMExXSTVaR0V0WkdNM09UY3pOV1ExT1RGbSJ9" \
+          -n blacklist \
+          --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Apply cloudflared deployment
+        kubectl apply -f k8s/cloudflared-deployment.yaml
+        
+        # Wait for cloudflared to be ready
+        kubectl wait --for=condition=ready pod -l app=cloudflared -n blacklist --timeout=300s || true
+        
+        echo "✅ Cloudflare Tunnel deployment complete"
+    
     - name: Deployment Verification
       run: |
         echo "Waiting for deployment to stabilize..."

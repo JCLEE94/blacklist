@@ -106,10 +106,34 @@ echo "🏷️  현재 이미지: $CURRENT_IMAGE"
 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
 NODE_PORT=$(kubectl get svc blacklist -n $NAMESPACE -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "32542")
 
+# 11. Cloudflare Tunnel 설정 (선택적)
+if [ "${ENABLE_CLOUDFLARED:-true}" = "true" ]; then
+    echo "🌐 Cloudflare Tunnel 설정 중..."
+    
+    # 토큰이 없으면 기본값 사용
+    if [ -z "$CLOUDFLARE_TUNNEL_TOKEN" ]; then
+        export CLOUDFLARE_TUNNEL_TOKEN="eyJhIjoiYThkOWM2N2Y1ODZhY2RkMTVlZWJjYzY1Y2EzYWE1YmIiLCJ0IjoiOGVhNzg5MDYtMWEwNS00NGZiLWExYmItZTUxMjE3MmNiNWFiIiwicyI6Ill6RXlZVEUwWWpRdE1tVXlNUzAwWmpRMExXSTVaR0V0WkdNM09UY3pOV1ExT1RGbSJ9"
+    fi
+    
+    # Cloudflare secret 생성
+    kubectl create secret generic cloudflared-secret \
+        --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+        -n $NAMESPACE \
+        --dry-run=client -o yaml | kubectl apply -f -
+    
+    # Cloudflare deployment 적용
+    if [ -f "k8s/cloudflared-deployment.yaml" ]; then
+        kubectl apply -f k8s/cloudflared-deployment.yaml
+        echo "✅ Cloudflare Tunnel 설정 완료"
+    else
+        echo "⚠️ Cloudflare Tunnel 설치 스크립트를 찾을 수 없습니다"
+    fi
+fi
+
 echo "
 =====================================
 ✅ GitOps 배포 완료!
-=====================================
+====================================
 🏷️  이미지: $CURRENT_IMAGE
 🌐 접속 URL: http://$NODE_IP:$NODE_PORT
 📊 대시보드: http://$NODE_IP:$NODE_PORT/
