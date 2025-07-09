@@ -46,9 +46,7 @@ jobs:
             network=host
           buildkitd-flags: --debug
       
-      - name: Login to Private Registry
-        run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login registry.jclee.me -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+      # No login needed - registry is open access
       
       - name: Docker meta
         id: meta
