@@ -40,6 +40,7 @@ configMapGenerator:
 
 images:
   - name: blacklist
+    newName: registry.jclee.me/blacklist
     newTag: stable
 
 replicas:

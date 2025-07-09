@@ -28,10 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Create Docker config
-        run: |
-          mkdir -p ~/.docker
-          echo '${{ secrets.DOCKER_AUTH_CONFIG }}' > ~/.docker/config.json
+      # No authentication needed - registry is open access
       
       - name: Validate image exists
         run: |
