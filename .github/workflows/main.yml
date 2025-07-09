@@ -46,10 +46,26 @@ jobs:
             network=host
           buildkitd-flags: --debug
       
-      - name: Login to Private Registry
+      - name: Configure Docker for Cloudflare Access
         run: |
-          # Login to private registry
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login registry.jclee.me -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+          # Create Docker config with auth and Service Token headers
+          mkdir -p ~/.docker
+          cat > ~/.docker/config.json << EOF
+          {
+            "auths": {
+              "registry.jclee.me": {
+                "auth": "$(echo -n "${{ secrets.REGISTRY_USERNAME }}:${{ secrets.REGISTRY_PASSWORD }}" | base64)"
+              }
+            },
+            "HttpHeaders": {
+              "CF-Access-Client-Id": "${{ secrets.CF_ACCESS_CLIENT_ID }}",
+              "CF-Access-Client-Secret": "${{ secrets.CF_ACCESS_CLIENT_SECRET }}"
+            }
+          }
+          EOF
+          
+          # Verify config
+          cat ~/.docker/config.json
       
       - name: Docker meta
         id: meta
@@ -72,8 +88,9 @@ jobs:
           platforms: linux/amd64
           provenance: false
           sbom: false
-          cache-from: type=inline
-          cache-to: type=inline
+          build-args: |
+            CF_ACCESS_CLIENT_ID=${{ secrets.CF_ACCESS_CLIENT_ID }}
+            CF_ACCESS_CLIENT_SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
   deploy:
     needs: build
