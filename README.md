@@ -79,58 +79,77 @@ cd blacklist
 ./scripts/all-clusters-deploy.sh       # 모든 클러스터에 배포
 ```
 
-### 🔄 GitOps CI/CD Pipeline (Streamlined)
+### 🔄 새로운 CI/CD 파이프라인 (2025.07.09)
 
-**코드 푸시 → 이미지 빌드 → ArgoCD 자동 배포 (7분 이내)**
+**간소화된 실용적 배포 시스템**
 
-1. **GitHub Push** → Streamlined CI/CD 워크플로우 트리거 (150줄, 3 jobs)
-2. **통합 품질 검사** → Quality & Testing job에서 모든 검증 수행
-3. **Docker 빌드** → `registry.jclee.me/blacklist` 4개 태그 푸시
-4. **ArgoCD 배포** → Image Updater가 자동 감지 & GitOps 배포
-5. **헬스 체크** → 자동 롤백 및 실패 복구 지원
+#### 자동 배포 플로우
+1. **코드 푸시** → GitHub Actions 트리거
+2. **테스트 & 빌드** → Docker 이미지 생성 및 푸시
+3. **자동 배포** → main 브랜치 시 프로덕션 배포
+4. **검증** → 헬스 체크 및 상태 확인
+
+#### 수동 배포 플로우
+1. **GitHub Actions UI** → Deploy to Production
+2. **전략 선택** → Rolling/Blue-Green/Canary
+3. **승인 및 배포** → 환경별 배포 실행
+4. **모니터링** → 실시간 상태 확인
 
 ```bash
-# ArgoCD 애플리케이션 상태 확인
-argocd app get blacklist --grpc-web
+# 현재 배포 상태 확인
+./scripts/simple-deploy.sh production status
 
-# CI/CD 상태 확인
-gh run list --limit 5
+# 전체 환경 헬스 체크
+for env in development staging production; do
+  ./scripts/simple-deploy.sh $env health
+done
 
-# 배포 모니터링
-kubectl get pods -n blacklist
-kubectl logs -f deployment/blacklist -n blacklist
+# 배포 히스토리 확인
+kubectl rollout history deployment/blacklist -n blacklist
 ```
 
 ## ⚡ 빠른 배포
 
-### 방법 1: ArgoCD GitOps (권장)
+### 방법 1: 간단한 스크립트 배포 (권장)
 ```bash
-# ArgoCD 애플리케이션 배포
-argocd app create blacklist \
-  --repo https://github.com/JCLEE94/blacklist.git \
-  --path k8s \
-  --dest-server https://kubernetes.default.svc \
-  --dest-namespace blacklist \
-  --sync-policy automated
+# 프로덕션 배포 (기본 Rolling Update)
+./scripts/simple-deploy.sh production
 
-# 또는 관리 스크립트 사용 (ArgoCD GitOps)
-./scripts/k8s-management.sh init
+# 특정 이미지 태그로 배포
+IMAGE_TAG=v1.2.3 ./scripts/simple-deploy.sh production
 
-# 상태 확인
-./scripts/k8s-management.sh status
+# 스테이징 배포
+./scripts/simple-deploy.sh staging
 
-# 롤백 (필요시)
-./scripts/k8s-management.sh rollback
+# 개발 환경 배포
+./scripts/simple-deploy.sh development
 ```
 
-### 방법 2: 수동 배포
+### 방법 2: GitHub Actions 수동 배포
 ```bash
-# ArgoCD GitOps 배포
-./scripts/deploy.sh
+# 1. GitHub 저장소 → Actions 탭
+# 2. "Deploy to Production" 선택
+# 3. 배포 전략 선택 (rolling/blue-green/canary)
+# 4. 이미지 태그 입력 (예: latest, v1.2.3)
+# 5. "Run workflow" 실행
 
-# 또는 직접 Kubernetes 매니페스트 적용
-kubectl apply -k k8s/
-kubectl apply -f k8s/argocd-app-clean.yaml
+# 진행 상황 모니터링
+gh run list --limit 1
+gh run watch
+```
+
+### 방법 3: 직접 Kubernetes 배포
+```bash
+# Kustomize 사용
+kubectl apply -k k8s/overlays/production
+
+# 직접 이미지 업데이트
+kubectl set image deployment/blacklist \
+  blacklist=registry.jclee.me/blacklist:latest \
+  -n blacklist --record
+
+# 배포 상태 확인
+kubectl rollout status deployment/blacklist -n blacklist
 ```
 
 ### 개발 환경 실행
@@ -146,30 +165,35 @@ python3 init_database.py
 python3 main.py --debug  # 또는 python3 main.py --port 8541
 ```
 
-### ArgoCD GitOps 안정성 시스템
+### 새로운 CI/CD 특징 (2025.07.09)
 
-실전 검증된 GitOps 배포 시스템이 구축되어 있습니다:
+**간소화되고 실용적인 배포 시스템**
 
 ```bash
-# 1. ArgoCD GitOps 파이프라인
-ls .github/workflows/argocd-deploy.yml
+# 1. 환경별 워크플로우 분리
+ls .github/workflows/
+# - main.yml (메인 파이프라인)
+# - deploy-staging.yml (스테이징 자동 배포)
+# - deploy-production.yml (프로덕션 수동 배포)
+# - security-scan.yml (보안 스캔)
+# - cleanup.yml (리소스 정리)
+# - manual-rollback.yml (수동 롤백)
 
-# 2. ArgoCD 애플리케이션 관리
-argocd app list --grpc-web
+# 2. 간단한 배포 스크립트
+./scripts/simple-deploy.sh production status
 
-# 3. 자동 동기화 및 복구
-kubectl get application blacklist -n argocd
-
-# 4. 실패 시 즉시 롤백
-argocd app rollback blacklist
+# 3. 다양한 배포 전략 지원
+# - Rolling Update (기본)
+# - Blue-Green (즉시 전환)
+# - Canary (점진적 배포)
 ```
 
-**주요 GitOps 기능:**
-- Git을 유일한 신뢰 소스로 사용
-- ArgoCD Image Updater로 자동 이미지 업데이트
-- 자동 동기화 및 Self-Healing
-- 실패 시 자동 롤백 및 복구
-- 50% 빠른 배포 (워크플로우 최적화)
+**주요 개선사항:**
+- 🚀 **단순화**: 복잡한 ArgoCD 설정 제거
+- 🎯 **실용성**: 환경별 맞춤형 워크플로우
+- 🔒 **안정성**: 수동 승인 기반 프로덕션 배포
+- 📊 **모니터링**: 실시간 상태 확인 및 롤백
+- 🛡️ **보안**: 자동 보안 스캔 및 정리 작업
 
 ## 📦 주요 기능
 
@@ -280,20 +304,54 @@ curl http://<node-ip>:32452/api/stats
 argocd app get blacklist --grpc-web
 ```
 
-## 🔄 ArgoCD GitOps 파이프라인
+## 🔄 현대적 CI/CD 파이프라인
 
-### GitHub Actions → ArgoCD 자동 배포
-1. **코드 푸시**: main 브랜치에 푸시
-2. **GitHub Actions (최적화된 워크플로우)**:
-   - 병렬 검증: 테스트, 린트, 보안 스캔 동시 실행
-   - Docker 빌드: Private Registry 우선, 다중 태그
-   - 쫠시 최적화: 50% 빠른 빌드 시간
-   - registry.jclee.me에 안전한 푸시
-3. **ArgoCD GitOps 배포**:
-   - Image Updater가 새 이미지 자동 감지
-   - Git 기반 선언적 배포
-   - 자동 동기화 및 Self-Healing
-   - 실패 시 자동 롤백
+### 새로운 GitHub Actions 워크플로우 (2025.07.09)
+**실용적이고 간소화된 CI/CD 파이프라인**
+
+#### 워크플로우 구성
+1. **메인 파이프라인** (`main.yml`)
+   - 트리거: main/develop 브랜치 푸시, PR
+   - 테스트 → 빌드 → 자동 배포 (main 브랜치)
+   
+2. **환경별 배포**
+   - `deploy-staging.yml`: develop 브랜치 → 스테이징 자동 배포
+   - `deploy-production.yml`: 수동 프로덕션 배포 (3가지 전략)
+
+3. **배포 전략**
+   - **Rolling Update**: 무중단 점진적 업데이트
+   - **Blue-Green**: 즉시 전환 및 빠른 롤백
+   - **Canary**: 오류 감지 시 자동 롤백
+
+4. **보안 및 유지보수**
+   - `security-scan.yml`: 매일 자동 보안 스캔
+   - `cleanup.yml`: 주간 리소스 정리
+   - `manual-rollback.yml`: 수동 롤백 도구
+
+#### 간단한 배포 명령어
+```bash
+# 프로덕션 배포
+./scripts/simple-deploy.sh production
+
+# 스테이징 상태 확인
+./scripts/simple-deploy.sh staging status
+
+# 헬스 체크
+./scripts/simple-deploy.sh production health
+
+# 롤백
+./scripts/simple-deploy.sh production rollback
+```
+
+#### GitHub UI 수동 배포
+1. **Actions 탭** → **Deploy to Production**
+2. **이미지 태그**와 **배포 전략** 선택
+3. **Run workflow** 실행
+
+### 환경 구성
+- **Development**: `blacklist-dev` (최소 리소스, 수동 배포)
+- **Staging**: `blacklist-staging` (중간 리소스, 자동 배포)
+- **Production**: `blacklist` (최대 리소스, 수동 승인)
 
 ### ArgoCD 애플리케이션 설정
 ```yaml

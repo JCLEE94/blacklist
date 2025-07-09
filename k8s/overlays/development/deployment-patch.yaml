@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: blacklist
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        env:
+        - name: FLASK_ENV
+          value: development
+        - name: DEBUG
+          value: "true"

@@ -1,0 +1,57 @@
+name: Cleanup Old Resources
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Weekly on Sunday at 3 AM
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  cleanup-images:
+    runs-on: self-hosted
+    steps:
+      - name: Create Docker config
+        run: |
+          mkdir -p ~/.docker
+          echo '${{ secrets.DOCKER_AUTH_CONFIG }}' > ~/.docker/config.json
+      
+      - name: Clean up old images
+        run: |
+          # Keep last 10 images per branch
+          # This is a simplified version - adjust based on your registry API
+          echo "Cleaning up old Docker images..."
+          
+          # Local cleanup
+          docker image prune -af --filter "until=168h" || true
+          docker container prune -f || true
+          docker volume prune -f || true
+      
+      - name: Clean up Kubernetes resources
+        run: |
+          # Delete completed jobs older than 7 days
+          kubectl delete jobs --field-selector status.successful=1 \
+            --all-namespaces || true
+          
+          # Delete failed pods older than 1 day
+          kubectl get pods --all-namespaces -o json | \
+            jq -r '.items[] | select(.status.phase == "Failed") | 
+            select(.metadata.creationTimestamp | fromdateiso8601 < (now - 86400)) |
+            "\(.metadata.namespace) \(.metadata.name)"' | \
+            while read ns pod; do
+              kubectl delete pod $pod -n $ns || true
+            done
+      
+      - name: Clean up old deployments
+        run: |
+          # List all revisions and keep only last 5
+          for deployment in $(kubectl get deployments -n blacklist -o name); do
+            kubectl rollout history $deployment -n blacklist | \
+              tail -n +2 | head -n -5 | awk '{print $1}' | \
+              while read revision; do
+                echo "Would delete revision $revision of $deployment"
+                # kubectl rollout history $deployment -n blacklist --revision=$revision
+              done
+          done

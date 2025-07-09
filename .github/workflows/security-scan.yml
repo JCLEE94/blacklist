@@ -1,0 +1,85 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'requirements*.txt'
+      - 'deployment/Dockerfile'
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  dependency-scan:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Run Safety check
+        run: |
+          pip install safety
+          safety check --json || true
+      
+      - name: Run Bandit
+        run: |
+          pip install bandit
+          bandit -r src/ -f json -o bandit-report.json || true
+      
+      - name: Check for secrets
+        run: |
+          # Simple secret detection
+          grep -r -E "(password|secret|key|token)\s*=\s*['\"][^'\"]*['\"]" \
+            --include="*.py" src/ || echo "No hardcoded secrets found"
+
+  container-scan:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Create Docker config
+        run: |
+          mkdir -p ~/.docker
+          echo '${{ secrets.DOCKER_AUTH_CONFIG }}' > ~/.docker/config.json
+      
+      - name: Run Trivy scan
+        run: |
+          # Install Trivy if not exists
+          if ! command -v trivy &> /dev/null; then
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+            echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+            sudo apt-get update && sudo apt-get install trivy
+          fi
+          
+          # Scan latest image
+          trivy image --severity HIGH,CRITICAL \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || true
+      
+      - name: Create security report
+        run: |
+          echo "# Security Scan Report" > security-report.md
+          echo "Date: $(date)" >> security-report.md
+          echo "" >> security-report.md
+          
+          if [ -f bandit-report.json ]; then
+            echo "## Bandit Results" >> security-report.md
+            echo '```json' >> security-report.md
+            cat bandit-report.json >> security-report.md
+            echo '```' >> security-report.md
+          fi
+      
+      - name: Upload reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            security-report.md
+            bandit-report.json

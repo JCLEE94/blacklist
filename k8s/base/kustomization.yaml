@@ -1,17 +1,46 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# 공통 리소스
-resources:
-  - ../deployment.yaml
-  - ../service.yaml
-  - ../configmap.yaml
+namespace: blacklist
 
-# 공통 라벨
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - servicemonitor.yaml
+
 commonLabels:
   app: blacklist
-  managed-by: argocd
+  version: v1
+  managed-by: kustomize
 
-# 공통 어노테이션
-commonAnnotations:
-  version: "1.0"
+configMapGenerator:
+  - name: blacklist-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=info
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=sqlite:///app/instance/blacklist.db
+      - PORT=8541
+
+secretGenerator:
+  - name: blacklist-secrets
+    type: Opaque
+    behavior: merge
+    literals:
+      - SECRET_KEY=change-me-in-production
+      - JWT_SECRET_KEY=change-me-in-production
+
+images:
+  - name: blacklist
+    newName: registry.jclee.me/blacklist
+    newTag: latest
+
+replicas:
+  - name: blacklist
+    count: 2

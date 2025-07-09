@@ -1,56 +1,46 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Base 리소스 참조
-resources:
-  - ../../base
-  - secrets.yaml
-  - ingress-staging.yaml
-
-# 네임스페이스 설정
 namespace: blacklist-staging
 
-# 이미지 태그 설정
-images:
-  - name: registry.jclee.me/blacklist
-    newTag: staging  # ArgoCD Image Updater가 자동 업데이트
+resources:
+  - ../../base
+  - ingress.yaml
 
-# 레플리카 수 조정
-replicas:
-  - name: blacklist
-    count: 2
+namePrefix: staging-
+nameSuffix: ""
 
-# 환경별 ConfigMap 설정
+commonLabels:
+  environment: staging
+  tier: backend
+
+commonAnnotations:
+  environment: staging
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+  - service-patch.yaml
+
 configMapGenerator:
   - name: blacklist-config
     behavior: merge
     literals:
-      - ENVIRONMENT=staging
-      - PORT=8541
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=info
+      - FLASK_ENV=staging
+      - ENABLE_METRICS=true
       - COLLECTION_ENABLED=true
       - REDIS_URL=redis://redis-staging:6379/0
 
-# 환경별 라벨
-commonLabels:
-  environment: staging
+secretGenerator:
+  - name: blacklist-secrets
+    behavior: merge
+    files:
+      - secrets.env
 
-# HPA 설정
-patchesStrategicMerge:
-  - hpa.yaml
+images:
+  - name: blacklist
+    newTag: staging-latest
 
-# 리소스 제한
-patches:
-  - target:
-      kind: Deployment
-      name: blacklist
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/resources
-        value:
-          limits:
-            cpu: 1000m
-            memory: 1Gi
-          requests:
-            cpu: 100m
-            memory: 256Mi
+replicas:
+  - name: blacklist
+    count: 2

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+spec:
+  template:
+    spec:
+      containers:
+      - name: blacklist
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          initialDelaySeconds: 20
+        readinessProbe:
+          initialDelaySeconds: 10

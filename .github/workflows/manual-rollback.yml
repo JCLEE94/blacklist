@@ -1,0 +1,60 @@
+name: Manual Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - production
+          - staging
+      revision:
+        description: 'Revision number to rollback to (optional, defaults to previous)'
+        required: false
+
+jobs:
+  rollback:
+    runs-on: self-hosted
+    steps:
+      - name: Set environment variables
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "NAMESPACE=blacklist" >> $GITHUB_ENV
+            echo "DEPLOYMENT=blacklist" >> $GITHUB_ENV
+          else
+            echo "NAMESPACE=blacklist-staging" >> $GITHUB_ENV
+            echo "DEPLOYMENT=staging-blacklist" >> $GITHUB_ENV
+          fi
+      
+      - name: Get rollout history
+        run: |
+          echo "=== Rollout History ==="
+          kubectl rollout history deployment/${{ env.DEPLOYMENT }} -n ${{ env.NAMESPACE }}
+      
+      - name: Perform rollback
+        run: |
+          if [ -z "${{ github.event.inputs.revision }}" ]; then
+            echo "Rolling back to previous revision..."
+            kubectl rollout undo deployment/${{ env.DEPLOYMENT }} -n ${{ env.NAMESPACE }}
+          else
+            echo "Rolling back to revision ${{ github.event.inputs.revision }}..."
+            kubectl rollout undo deployment/${{ env.DEPLOYMENT }} -n ${{ env.NAMESPACE }} \
+              --to-revision=${{ github.event.inputs.revision }}
+          fi
+      
+      - name: Wait for rollback
+        run: |
+          kubectl rollout status deployment/${{ env.DEPLOYMENT }} -n ${{ env.NAMESPACE }} --timeout=5m
+      
+      - name: Verify rollback
+        run: |
+          echo "=== Current Status ==="
+          kubectl get deployment ${{ env.DEPLOYMENT }} -n ${{ env.NAMESPACE }}
+          kubectl get pods -l app=blacklist -n ${{ env.NAMESPACE }}
+          
+          # Health check
+          kubectl run rollback-verify --rm -i --restart=Never \
+            --image=curlimages/curl:latest -n ${{ env.NAMESPACE }} -- \
+            curl -f http://${{ env.DEPLOYMENT }}:8541/health || echo "Health check failed"
