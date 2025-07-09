@@ -48,7 +48,6 @@ jobs:
       
       - name: Login to Private Registry
         run: |
-          # Simple login without Cloudflare Access headers (they don't work with Docker)
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login registry.jclee.me -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
       
       - name: Docker meta
