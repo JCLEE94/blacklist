@@ -18,7 +18,7 @@ on:
           - production
 
 env:
-  REGISTRY: registry.jclee.me
+  REGISTRY: http://registry.jclee.me
   IMAGE_NAME: blacklist
 
 jobs:
