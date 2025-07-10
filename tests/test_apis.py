@@ -9,6 +9,7 @@ import requests
 import os
 from pathlib import Path
 import sys
+import pytest
 from datetime import datetime
 
 # 프로젝트 루트 경로 설정
