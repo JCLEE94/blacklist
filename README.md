@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/JCLEE94/blacklist/actions/workflows/streamlined-cicd.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
 [![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-brightgreen.svg)](https://argo.jclee.me/applications/blacklist)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.24+-blue.svg)](https://kubernetes.io/)
-[![Docker](https://img.shields.io/badge/registry-registry.jclee.me-blue.svg)](https://registry.jclee.me)
+[![Docker](https://img.shields.io/badge/registry-ghcr.io-blue.svg)](https://ghcr.io)
 [![Production](https://img.shields.io/badge/production-blacklist.jclee.me-green.svg)](https://blacklist.jclee.me)
 
 **Enterprise-grade** 위협 정보 통합 관리 플랫폼 - **GitOps** 기반 자동 배포, 다중 소스 데이터 수집, FortiGate External Connector 연동
@@ -35,7 +35,7 @@ graph TB
     end
     
     H[GitHub Push] --> I[GitHub Actions<br/>다중 태그 빌드]
-    I --> J[Docker Registry<br/>registry.jclee.me]
+    I --> J[Docker Registry<br/>ghcr.io]
     J --> IMG
     IMG --> APP
     APP --> |GitOps 동기화| C
@@ -145,7 +145,7 @@ kubectl apply -k k8s/overlays/production
 
 # 직접 이미지 업데이트
 kubectl set image deployment/blacklist \
-  blacklist=registry.jclee.me/blacklist:latest \
+  blacklist=ghcr.io/blacklist:latest \
   -n blacklist --record
 
 # 배포 상태 확인
@@ -362,7 +362,7 @@ metadata:
   name: blacklist
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist:latest
+    argocd-image-updater.argoproj.io/image-list: blacklist=ghcr.io/blacklist:latest
     argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
     argocd-image-updater.argoproj.io/write-back-method: git
 spec:
@@ -396,7 +396,7 @@ argocd app sync blacklist --grpc-web
 ./scripts/k8s-management.sh deploy --tag v1.2.3
 
 # 직접 이미지 업데이트 (권장하지 않음)
-kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:v1.2.3 -n blacklist
+kubectl set image deployment/blacklist blacklist=ghcr.io/blacklist:v1.2.3 -n blacklist
 ```
 
 ## 🧪 테스트
@@ -702,8 +702,8 @@ kubectl rollout status deployment/blacklist -n blacklist
 kubectl get secret regcred -n blacklist -o yaml
 
 # 2. Registry 접근 테스트
-docker login registry.jclee.me
-docker pull registry.jclee.me/blacklist:latest
+docker login ghcr.io
+docker pull ghcr.io/blacklist:latest
 
 # 3. Pod 이벤트 확인
 kubectl describe pod <pod-name> -n blacklist
@@ -712,7 +712,7 @@ kubectl get events -n blacklist --sort-by='.lastTimestamp'
 # 4. ImagePullSecret 재생성
 kubectl delete secret regcred -n blacklist
 kubectl create secret docker-registry regcred \
-  --docker-server=registry.jclee.me \
+  --docker-server=ghcr.io \
   --docker-username=<username> \
   --docker-password=<password> \
   -n blacklist

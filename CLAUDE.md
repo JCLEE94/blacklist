@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Container-First**: Docker/Podman deployment with automated CI/CD
 
 **Production Infrastructure:**
-- Docker Registry: `registry.jclee.me`
+- Docker Registry: `ghcr.io` (GitHub Container Registry)
 - Kubernetes Clusters: 
   - Primary: Self-hosted k3s/k8s (local)
   - Secondary: 192.168.50.110 (remote server)
@@ -131,7 +131,7 @@ kubectl rollout restart deployment/blacklist -n blacklist
 
 # Registry secret management
 kubectl create secret docker-registry regcred \
-  --docker-server=registry.jclee.me \
+  --docker-server=ghcr.io/jclee94 \
   --docker-username=<username> \
   --docker-password=<password> \
   -n blacklist
@@ -316,7 +316,7 @@ class BaseIPSource(ABC):
 
 **GitHub Actions Workflow** (`.github/workflows/streamlined-cicd.yml`):
 1. **Parallel Quality Checks**: Lint, security scan, tests
-2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me`
+2. **Docker Build**: Multi-stage build with caching to `ghcr.io/jclee94`
 3. **Multi-tag Push**: `latest`, `sha-<hash>`, `date-<timestamp>`
 4. **ArgoCD Deployment**: Image Updater auto-detects and deploys
 5. **Remote Server Deploy**: Parallel deployment to 192.168.50.110
@@ -656,14 +656,14 @@ ssh jclee@192.168.50.110 "kubectl logs -f deployment/blacklist -n blacklist"
 If CI/CD fails, use manual deployment:
 ```bash
 # Build and push manually
-docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
-docker push registry.jclee.me/blacklist:latest
+docker build -f deployment/Dockerfile -t ghcr.io/jclee94/blacklist:latest .
+docker push ghcr.io/jclee94/blacklist:latest
 
 # Deploy with ArgoCD
 argocd app sync blacklist --grpc-web
 
 # Or use kubectl directly (not recommended with GitOps)
-kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:latest -n blacklist
+kubectl set image deployment/blacklist blacklist=ghcr.io/jclee94/blacklist:latest -n blacklist
 kubectl rollout status deployment/blacklist -n blacklist
 ```
 
