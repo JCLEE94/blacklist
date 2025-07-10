@@ -274,142 +274,43 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           network: host
 
-  # Kubernetes 배포
-  deploy:
+  # 배포 알림 (ArgoCD Image Updater가 자동 배포)
+  notify-deployment:
     needs: build
     if: |
       github.ref == 'refs/heads/main' && 
       github.event_name == 'push' &&
       needs.build.result == 'success'
     runs-on: self-hosted
-    continue-on-error: true  # 배포 실패 시에도 워크플로우 완료
-    environment:
-      name: production
-      url: https://blacklist.jclee.me
-    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Install required tools
+      - name: Deployment notification
         run: |
-          # Skip if already installed
-          command -v kubectl >/dev/null || {
-            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-          }
-          
-          command -v argocd >/dev/null || {
-            curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-            sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-            rm argocd-linux-amd64
-          }
-      
-      - name: Configure kubectl
-        run: |
-          # GitHub Actions에서 실행 중인 경우
-          if [ -n "${{ secrets.KUBE_CONFIG }}" ]; then
-            mkdir -p $HOME/.kube
-            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-            chmod 600 $HOME/.kube/config
-          else
-            # Self-hosted runner에서 기존 kubeconfig 사용
-            echo "Using existing kubeconfig on self-hosted runner"
-            # 기본 kubeconfig가 없으면 로컬 k3s 설정
-            if [ ! -s "$HOME/.kube/config" ]; then
-              if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
-                mkdir -p $HOME/.kube
-                sudo cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
-                sudo chown $(id -u):$(id -g) $HOME/.kube/config
-                chmod 600 $HOME/.kube/config
-                sed -i 's/127.0.0.1/localhost/g' $HOME/.kube/config
-              fi
-            fi
-          fi
-          
-          # Test connection
-          kubectl cluster-info || echo "Warning: kubectl connection failed, deployment may fail"
-      
-      - name: Deploy with ArgoCD
-        env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER || 'argo.jclee.me' }}
-          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
-        run: |
-          # ArgoCD 설정 확인
-          if [ -z "$ARGOCD_AUTH_TOKEN" ]; then
-            echo "⚠️ ARGOCD_AUTH_TOKEN not set, trying local auth..."
-            # Self-hosted runner에서 로컬 인증 시도
-            if command -v argocd &> /dev/null; then
-              argocd login $ARGOCD_SERVER --grpc-web --skip-test || echo "ArgoCD login failed"
-            fi
-          fi
-          
-          # ArgoCD sync with retry
-          for i in {1..3}; do
-            if [ -n "$ARGOCD_AUTH_TOKEN" ]; then
-              argocd app sync blacklist \
-                --server $ARGOCD_SERVER \
-                --auth-token $ARGOCD_AUTH_TOKEN \
-                --grpc-web \
-                --async && break
-            else
-              argocd app sync blacklist \
-                --grpc-web \
-                --async && break
-            fi || {
-              echo "Retry $i/3 failed, waiting..."
-              sleep 10
-            }
-          done
-          
-          # Wait for sync with timeout
-          if [ -n "$ARGOCD_AUTH_TOKEN" ]; then
-            argocd app wait blacklist \
-              --server $ARGOCD_SERVER \
-              --auth-token $ARGOCD_AUTH_TOKEN \
-              --grpc-web \
-              --timeout 300 \
-              --health || echo "ArgoCD sync completed with warnings"
-          else
-            argocd app wait blacklist \
-              --grpc-web \
-              --timeout 300 \
-              --health || echo "ArgoCD sync completed with warnings"
-          fi
-      
-      - name: Verify deployment
-        run: |
-          # Wait for rollout
-          kubectl rollout status deployment/blacklist -n blacklist --timeout=10m || {
-            echo "⚠️ Rollout timeout, checking pod status..."
-            kubectl get pods -n blacklist -l app=blacklist
-            kubectl describe pods -n blacklist -l app=blacklist | tail -50
-          }
-          
-          # Health check
-          for i in {1..5}; do
-            kubectl run health-check-$i --rm -i --restart=Never \
-              --image=curlimages/curl:latest -n blacklist -- \
-              curl -f http://blacklist:2541/health && {
-              echo "✅ Health check passed"
-              break
-            } || {
-              echo "Health check attempt $i/5 failed"
-              sleep 10
-            }
-          done
-      
-      - name: Deployment summary
-        if: always()
-        run: |
-          echo "📊 Deployment Summary"
-          echo "===================="
-          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}"
+          echo "🚀 New image pushed to registry!"
+          echo "=================================="
+          echo "Registry: ${{ env.REGISTRY }}"
+          echo "Image: ${{ env.IMAGE_NAME }}"
+          echo "Tag: ${{ needs.build.outputs.image-tag }}"
+          echo "Digest: ${{ needs.build.outputs.image-digest }}"
           echo "Commit: ${{ github.sha }}"
           echo "Author: ${{ github.actor }}"
           echo "Time: $(date)"
+          echo ""
+          echo "🔄 ArgoCD Image Updater will automatically deploy this image."
+          echo "Monitor deployment at: https://argo.jclee.me"
           
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed or incomplete"
-          fi
+      - name: Create deployment marker
+        run: |
+          # Create a marker file for tracking
+          mkdir -p /tmp/deployments
+          cat > /tmp/deployments/blacklist-${{ github.sha }}.json << EOF
+          {
+            "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}",
+            "digest": "${{ needs.build.outputs.image-digest }}",
+            "commit": "${{ github.sha }}",
+            "author": "${{ github.actor }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "message": "${{ github.event.head_commit.message }}"
+          }
+          EOF
+          
+          echo "✅ Image successfully pushed. ArgoCD will handle deployment."
