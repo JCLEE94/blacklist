@@ -134,6 +134,8 @@ def test_secudium_apis():
                     for param in params:
                         print(f"      - {param.get('key')}: {param.get('value', '')}")
 
+@pytest.mark.integration
+@pytest.mark.skip(reason="External API test - skip in CI/CD")
 def test_regtech_login():
     """
     REGTECH 로그인 테스트
