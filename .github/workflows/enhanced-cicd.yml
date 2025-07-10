@@ -152,9 +152,12 @@ jobs:
         with:
           driver-opts: |
             image=moby/buildkit:v0.12.0
-          config-inline: |
+            network=host
+          buildkitd-config-inline: |
             [worker.oci]
               max-parallelism = 4
+            [registry."registry.jclee.me"]
+              insecure = true
       
       - name: Extract metadata
         id: meta
