@@ -18,8 +18,8 @@ on:
           - production
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/blacklist
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
 
 jobs:
   # 병렬 실행을 위한 코드 품질 검사
@@ -156,12 +156,12 @@ jobs:
             [worker.oci]
               max-parallelism = 4
       
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Private Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: registry.jclee.me
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
       
       - name: Extract metadata
         id: meta
