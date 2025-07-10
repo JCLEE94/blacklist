@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: http://registry.jclee.me
+  REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
 
 jobs:

@@ -18,7 +18,7 @@ on:
           - production
 
 env:
-  REGISTRY: http://registry.jclee.me
+  REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
 
 jobs:
@@ -158,6 +158,7 @@ jobs:
               max-parallelism = 4
             [registry."registry.jclee.me"]
               insecure = true
+              http = true
       
       - name: Extract metadata
         id: meta
