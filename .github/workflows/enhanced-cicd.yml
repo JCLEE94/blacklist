@@ -148,7 +148,16 @@ jobs:
         uses: docker/setup-qemu-action@v3
       
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+            image=moby/buildkit:latest
+          config-inline: |
+            [registry."registry.jclee.me"]
+              http = true
+              insecure = true
       
       - name: Extract metadata
         id: meta
@@ -160,10 +169,9 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value={{date 'YYYYMMDD-HHmmss' tz='Asia/Seoul'}}
+            type=raw,value={{date 'YYYYMMDDHHmmss' tz='Asia/Seoul'}}
       
       - name: Build and push Docker image
         id: build
@@ -173,7 +181,7 @@ jobs:
           context: .
           file: deployment/Dockerfile
           platforms: linux/amd64
-          push: false
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -183,8 +191,11 @@ jobs:
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             GIT_COMMIT=${{ github.sha }}
             VERSION=${{ steps.meta.outputs.version }}
-          provenance: true
-          sbom: true
+          provenance: false
+          sbom: false
+          buildx-version: latest
+          builder: ${{ steps.buildx.outputs.name }}
+          network: host
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
