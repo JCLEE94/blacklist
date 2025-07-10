@@ -14,7 +14,7 @@ NC='\033[0m'
 
 # 기본 설정
 NAMESPACE="blacklist"
-ARGOCD_SERVER="argo.jclee.me"
+ARGOCD_SERVER="${ARGOCD_SERVER:-argo.jclee.me}"
 REGISTRY="ghcr.io"
 IMAGE_NAME="jclee94/blacklist"
 GITHUB_USERNAME="${GITHUB_USERNAME:-}"
@@ -139,12 +139,23 @@ init_deployment() {
     # 애플리케이션 시크릿 생성
     print_step "애플리케이션 시크릿 설정 중..."
     if ! kubectl get secret blacklist-secret -n $NAMESPACE &> /dev/null; then
+        # 환경 변수 체크
+        if [ -z "$REGTECH_USERNAME" ] || [ -z "$REGTECH_PASSWORD" ] || [ -z "$SECUDIUM_USERNAME" ] || [ -z "$SECUDIUM_PASSWORD" ]; then
+            print_error "필수 환경 변수가 설정되지 않았습니다."
+            echo "다음 환경 변수를 설정하세요:"
+            echo "  export REGTECH_USERNAME='your-regtech-username'"
+            echo "  export REGTECH_PASSWORD='your-regtech-password'"
+            echo "  export SECUDIUM_USERNAME='your-secudium-username'"
+            echo "  export SECUDIUM_PASSWORD='your-secudium-password'"
+            exit 1
+        fi
+        
         kubectl create secret generic blacklist-secret \
-            --from-literal=REGTECH_USERNAME="nextrade" \
-            --from-literal=REGTECH_PASSWORD="Sprtmxm1@3" \
-            --from-literal=SECUDIUM_USERNAME="nextrade" \
-            --from-literal=SECUDIUM_PASSWORD="Sprtmxm1@3" \
-            --from-literal=SECRET_KEY="k8s-secret-key-$(date +%s)" \
+            --from-literal=REGTECH_USERNAME="${REGTECH_USERNAME}" \
+            --from-literal=REGTECH_PASSWORD="${REGTECH_PASSWORD}" \
+            --from-literal=SECUDIUM_USERNAME="${SECUDIUM_USERNAME}" \
+            --from-literal=SECUDIUM_PASSWORD="${SECUDIUM_PASSWORD}" \
+            --from-literal=SECRET_KEY="${SECRET_KEY:-k8s-secret-key-$(date +%s)}" \
             -n $NAMESPACE
         print_success "애플리케이션 시크릿 생성 완료"
     else

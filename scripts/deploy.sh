@@ -41,13 +41,23 @@ fi
 
 # 3. 애플리케이션 Secret 생성
 echo "🔑 애플리케이션 Secret 생성..."
-kubectl create secret generic blacklist-secret \
-    --from-literal=REGTECH_USERNAME="nextrade" \
-    --from-literal=REGTECH_PASSWORD="Sprtmxm1@3" \
-    --from-literal=SECUDIUM_USERNAME="nextrade" \
-    --from-literal=SECUDIUM_PASSWORD="Sprtmxm1@3" \
-    --from-literal=SECRET_KEY="deploy-secret-key-$(date +%s)" \
-    -n $NAMESPACE 2>/dev/null || echo "   - Application secret already exists"
+# 환경 변수 체크
+if [ -z "$REGTECH_USERNAME" ] || [ -z "$REGTECH_PASSWORD" ] || [ -z "$SECUDIUM_USERNAME" ] || [ -z "$SECUDIUM_PASSWORD" ]; then
+    echo "   - ⚠️  필수 환경 변수가 설정되지 않았습니다."
+    echo "   - 다음 환경 변수를 설정하세요:"
+    echo "     export REGTECH_USERNAME='your-regtech-username'"
+    echo "     export REGTECH_PASSWORD='your-regtech-password'"
+    echo "     export SECUDIUM_USERNAME='your-secudium-username'"
+    echo "     export SECUDIUM_PASSWORD='your-secudium-password'"
+else
+    kubectl create secret generic blacklist-secret \
+        --from-literal=REGTECH_USERNAME="${REGTECH_USERNAME}" \
+        --from-literal=REGTECH_PASSWORD="${REGTECH_PASSWORD}" \
+        --from-literal=SECUDIUM_USERNAME="${SECUDIUM_USERNAME}" \
+        --from-literal=SECUDIUM_PASSWORD="${SECUDIUM_PASSWORD}" \
+        --from-literal=SECRET_KEY="${SECRET_KEY:-deploy-secret-key-$(date +%s)}" \
+        -n $NAMESPACE 2>/dev/null || echo "   - Application secret already exists"
+fi
 
 # 4. ArgoCD GitOps 배포
 if [ -d "k8s" ] && [ -f "k8s/kustomization.yaml" ]; then
