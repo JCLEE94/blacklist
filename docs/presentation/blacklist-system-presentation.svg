@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1920" height="5400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define gradients and styles -->
+  <defs>
+    <!-- Gradient for slide backgrounds -->
+    <linearGradient id="slideGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient for headers -->
+    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0f3460;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#533483;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Accent gradient -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e94560;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f27121;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Box shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
+      <feOffset dx="0" dy="5" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.3"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Slide 1: Title Slide -->
+  <g id="slide1">
+    <rect x="0" y="0" width="1920" height="1080" fill="url(#slideGradient)"/>
+    
+    <!-- Title -->
+    <text x="960" y="400" text-anchor="middle" fill="white" font-size="80" font-weight="bold" font-family="Arial, sans-serif">
+      Blacklist Management System
+    </text>
+    
+    <!-- Subtitle -->
+    <text x="960" y="500" text-anchor="middle" fill="#e0e0e0" font-size="40" font-family="Arial, sans-serif">
+      엔터프라이즈 위협 인텔리전스 플랫폼
+    </text>
+    
+    <!-- Tech stack badges -->
+    <g transform="translate(480, 600)">
+      <rect x="0" y="0" width="200" height="60" rx="30" fill="#2e86de" opacity="0.8"/>
+      <text x="100" y="40" text-anchor="middle" fill="white" font-size="24" font-family="Arial">Kubernetes</text>
+    </g>
+    
+    <g transform="translate(740, 600)">
+      <rect x="0" y="0" width="200" height="60" rx="30" fill="#ff6b6b" opacity="0.8"/>
+      <text x="100" y="40" text-anchor="middle" fill="white" font-size="24" font-family="Arial">ArgoCD</text>
+    </g>
+    
+    <g transform="translate(1000, 600)">
+      <rect x="0" y="0" width="200" height="60" rx="30" fill="#4834d4" opacity="0.8"/>
+      <text x="100" y="40" text-anchor="middle" fill="white" font-size="24" font-family="Arial">Docker</text>
+    </g>
+    
+    <!-- Footer -->
+    <text x="960" y="1000" text-anchor="middle" fill="#a0a0a0" font-size="24" font-family="Arial">
+      GitOps 기반 자동화 배포 시스템
+    </text>
+  </g>
+  
+  <!-- Slide 2: System Overview -->
+  <g id="slide2" transform="translate(0, 1080)">
+    <rect x="0" y="0" width="1920" height="1080" fill="url(#slideGradient)"/>
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="1920" height="120" fill="url(#headerGradient)"/>
+    <text x="960" y="80" text-anchor="middle" fill="white" font-size="60" font-weight="bold" font-family="Arial">
+      시스템 개요
+    </text>
+    
+    <!-- Main features -->
+    <g transform="translate(200, 200)">
+      <!-- Feature 1 -->
+      <g transform="translate(0, 0)">
+        <circle cx="50" cy="50" r="40" fill="url(#accentGradient)"/>
+        <text x="50" y="60" text-anchor="middle" fill="white" font-size="36" font-weight="bold">1</text>
+        <text x="120" y="40" fill="white" font-size="32" font-weight="bold">다중 소스 데이터 수집</text>
+        <text x="120" y="80" fill="#e0e0e0" font-size="24">REGTECH, SECUDIUM 등 위협 정보 자동 수집</text>
+      </g>
+      
+      <!-- Feature 2 -->
+      <g transform="translate(0, 150)">
+        <circle cx="50" cy="50" r="40" fill="url(#accentGradient)"/>
+        <text x="50" y="60" text-anchor="middle" fill="white" font-size="36" font-weight="bold">2</text>
+        <text x="120" y="40" fill="white" font-size="32" font-weight="bold">GitOps 자동 배포</text>
+        <text x="120" y="80" fill="#e0e0e0" font-size="24">ArgoCD + Image Updater 기반 무중단 배포</text>
+      </g>
+      
+      <!-- Feature 3 -->
+      <g transform="translate(0, 300)">
+        <circle cx="50" cy="50" r="40" fill="url(#accentGradient)"/>
+        <text x="50" y="60" text-anchor="middle" fill="white" font-size="36" font-weight="bold">3</text>
+        <text x="120" y="40" fill="white" font-size="32" font-weight="bold">FortiGate 통합</text>
+        <text x="120" y="80" fill="#e0e0e0" font-size="24">External Connector API 실시간 제공</text>
+      </g>
+      
+      <!-- Feature 4 -->
+      <g transform="translate(0, 450)">
+        <circle cx="50" cy="50" r="40" fill="url(#accentGradient)"/>
+        <text x="50" y="60" text-anchor="middle" fill="white" font-size="36" font-weight="bold">4</text>
+        <text x="120" y="40" fill="white" font-size="32" font-weight="bold">고가용성 아키텍처</text>
+        <text x="120" y="80" fill="#e0e0e0" font-size="24">자동 복구, 멀티 클러스터 지원</text>
+      </g>
+    </g>
+    
+    <!-- Architecture diagram -->
+    <g transform="translate(1000, 250)">
+      <rect x="0" y="0" width="700" height="600" rx="20" fill="#2c3e50" opacity="0.5" filter="url(#shadow)"/>
+      
+      <!-- Diagram components -->
+      <rect x="50" y="50" width="200" height="80" rx="10" fill="#3498db"/>
+      <text x="150" y="100" text-anchor="middle" fill="white" font-size="20">Data Sources</text>
+      
+      <rect x="250" y="250" width="200" height="80" rx="10" fill="#e74c3c"/>
+      <text x="350" y="300" text-anchor="middle" fill="white" font-size="20">Blacklist Core</text>
+      
+      <rect x="450" y="450" width="200" height="80" rx="10" fill="#2ecc71"/>
+      <text x="550" y="500" text-anchor="middle" fill="white" font-size="20">API Server</text>
+      
+      <!-- Arrows -->
+      <path d="M 150 130 L 350 250" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+      <path d="M 350 330 L 550 450" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+    </g>
+    
+    <!-- Arrow marker definition -->
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="white"/>
+      </marker>
+    </defs>
+  </g>
+  
+  <!-- Slide 3: Architecture Details -->
+  <g id="slide3" transform="translate(0, 2160)">
+    <rect x="0" y="0" width="1920" height="1080" fill="url(#slideGradient)"/>
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="1920" height="120" fill="url(#headerGradient)"/>
+    <text x="960" y="80" text-anchor="middle" fill="white" font-size="60" font-weight="bold" font-family="Arial">
+      시스템 아키텍처
+    </text>
+    
+    <!-- Architecture components -->
+    <g transform="translate(100, 180)">
+      <!-- Data Sources -->
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="350" height="200" rx="15" fill="#34495e" filter="url(#shadow)"/>
+        <text x="175" y="40" text-anchor="middle" fill="white" font-size="28" font-weight="bold">Data Sources</text>
+        <text x="20" y="80" fill="#ecf0f1" font-size="20">• REGTECH API</text>
+        <text x="20" y="110" fill="#ecf0f1" font-size="20">• SECUDIUM API</text>
+        <text x="20" y="140" fill="#ecf0f1" font-size="20">• Public Threat Intel</text>
+        <text x="20" y="170" fill="#ecf0f1" font-size="20">• File/URL Sources</text>
+      </g>
+      
+      <!-- Application Core -->
+      <g transform="translate(500, 0)">
+        <rect x="0" y="0" width="350" height="300" rx="15" fill="#2c3e50" filter="url(#shadow)"/>
+        <text x="175" y="40" text-anchor="middle" fill="white" font-size="28" font-weight="bold">Application Core</text>
+        <text x="20" y="80" fill="#ecf0f1" font-size="20">• Collection Manager</text>
+        <text x="20" y="110" fill="#ecf0f1" font-size="20">• Blacklist Manager</text>
+        <text x="20" y="140" fill="#ecf0f1" font-size="20">• Cache Layer (Redis)</text>
+        <text x="20" y="170" fill="#ecf0f1" font-size="20">• API Server (Flask)</text>
+        <text x="20" y="200" fill="#ecf0f1" font-size="20">• Dependency Injection</text>
+        <text x="20" y="230" fill="#ecf0f1" font-size="20">• Plugin System</text>
+        <text x="20" y="260" fill="#ecf0f1" font-size="20">• SQLite Database</text>
+      </g>
+      
+      <!-- Infrastructure -->
+      <g transform="translate(900, 0)">
+        <rect x="0" y="0" width="350" height="200" rx="15" fill="#16a085" filter="url(#shadow)"/>
+        <text x="175" y="40" text-anchor="middle" fill="white" font-size="28" font-weight="bold">Infrastructure</text>
+        <text x="20" y="80" fill="#ecf0f1" font-size="20">• Kubernetes (K3s/K8s)</text>
+        <text x="20" y="110" fill="#ecf0f1" font-size="20">• ArgoCD GitOps</text>
+        <text x="20" y="140" fill="#ecf0f1" font-size="20">• Private Registry</text>
+        <text x="20" y="170" fill="#ecf0f1" font-size="20">• Multi-cluster Support</text>
+      </g>
+      
+      <!-- Consumers -->
+      <g transform="translate(1300, 0)">
+        <rect x="0" y="0" width="350" height="200" rx="15" fill="#8e44ad" filter="url(#shadow)"/>
+        <text x="175" y="40" text-anchor="middle" fill="white" font-size="28" font-weight="bold">Consumers</text>
+        <text x="20" y="80" fill="#ecf0f1" font-size="20">• FortiGate Firewall</text>
+        <text x="20" y="110" fill="#ecf0f1" font-size="20">• Web Dashboard</text>
+        <text x="20" y="140" fill="#ecf0f1" font-size="20">• REST API Clients</text>
+        <text x="20" y="170" fill="#ecf0f1" font-size="20">• Monitoring Systems</text>
+      </g>
+    </g>
+    
+    <!-- Flow diagram -->
+    <g transform="translate(200, 500)">
+      <rect x="0" y="0" width="1520" height="400" rx="20" fill="#1a1a2e" opacity="0.7" filter="url(#shadow)"/>
+      
+      <!-- Flow title -->
+      <text x="760" y="50" text-anchor="middle" fill="white" font-size="32" font-weight="bold">데이터 처리 흐름</text>
+      
+      <!-- Flow boxes -->
+      <g transform="translate(100, 100)">
+        <!-- Step 1 -->
+        <rect x="0" y="0" width="200" height="80" rx="10" fill="#3498db"/>
+        <text x="100" y="50" text-anchor="middle" fill="white" font-size="20">수집</text>
+        
+        <!-- Arrow -->
+        <path d="M 200 40 L 280 40" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+        
+        <!-- Step 2 -->
+        <rect x="280" y="0" width="200" height="80" rx="10" fill="#e74c3c"/>
+        <text x="380" y="50" text-anchor="middle" fill="white" font-size="20">정규화</text>
+        
+        <!-- Arrow -->
+        <path d="M 480 40 L 560 40" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+        
+        <!-- Step 3 -->
+        <rect x="560" y="0" width="200" height="80" rx="10" fill="#f39c12"/>
+        <text x="660" y="50" text-anchor="middle" fill="white" font-size="20">저장</text>
+        
+        <!-- Arrow -->
+        <path d="M 760 40 L 840 40" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+        
+        <!-- Step 4 -->
+        <rect x="840" y="0" width="200" height="80" rx="10" fill="#2ecc71"/>
+        <text x="940" y="50" text-anchor="middle" fill="white" font-size="20">API 제공</text>
+        
+        <!-- Arrow -->
+        <path d="M 1040 40 L 1120 40" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+        
+        <!-- Step 5 -->
+        <rect x="1120" y="0" width="200" height="80" rx="10" fill="#9b59b6"/>
+        <text x="1220" y="50" text-anchor="middle" fill="white" font-size="20">활용</text>
+      </g>
+      
+      <!-- Flow details -->
+      <g transform="translate(100, 220)">
+        <text x="100" y="30" text-anchor="middle" fill="#bdc3c7" font-size="18">자동/수동</text>
+        <text x="100" y="50" text-anchor="middle" fill="#bdc3c7" font-size="18">스케줄링</text>
+        
+        <text x="380" y="30" text-anchor="middle" fill="#bdc3c7" font-size="18">중복 제거</text>
+        <text x="380" y="50" text-anchor="middle" fill="#bdc3c7" font-size="18">검증</text>
+        
+        <text x="660" y="30" text-anchor="middle" fill="#bdc3c7" font-size="18">SQLite</text>
+        <text x="660" y="50" text-anchor="middle" fill="#bdc3c7" font-size="18">3개월 보관</text>
+        
+        <text x="940" y="30" text-anchor="middle" fill="#bdc3c7" font-size="18">REST API</text>
+        <text x="940" y="50" text-anchor="middle" fill="#bdc3c7" font-size="18">다양한 포맷</text>
+        
+        <text x="1220" y="30" text-anchor="middle" fill="#bdc3c7" font-size="18">FortiGate</text>
+        <text x="1220" y="50" text-anchor="middle" fill="#bdc3c7" font-size="18">Dashboard</text>
+      </g>
+    </g>
+  </g>
+  
+  <!-- Slide 4: CI/CD Pipeline -->
+  <g id="slide4" transform="translate(0, 3240)">
+    <rect x="0" y="0" width="1920" height="1080" fill="url(#slideGradient)"/>
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="1920" height="120" fill="url(#headerGradient)"/>
+    <text x="960" y="80" text-anchor="middle" fill="white" font-size="60" font-weight="bold" font-family="Arial">
+      CI/CD 파이프라인
+    </text>
+    
+    <!-- Pipeline overview -->
+    <g transform="translate(100, 180)">
+      <rect x="0" y="0" width="1720" height="300" rx="20" fill="#2c3e50" opacity="0.7" filter="url(#shadow)"/>
+      
+      <!-- Pipeline title -->
+      <text x="860" y="50" text-anchor="middle" fill="white" font-size="36" font-weight="bold">GitOps 자동화 파이프라인</text>
+      
+      <!-- Pipeline stages -->
+      <g transform="translate(60, 100)">
+        <!-- Stage 1 -->
+        <g transform="translate(0, 0)">
+          <rect x="0" y="0" width="240" height="120" rx="15" fill="#3498db"/>
+          <text x="120" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">Push</text>
+          <text x="120" y="70" text-anchor="middle" fill="white" font-size="18">Git Commit</text>
+          <text x="120" y="95" text-anchor="middle" fill="white" font-size="18">to Main Branch</text>
+        </g>
+        
+        <!-- Arrow -->
+        <path d="M 240 60 L 300 60" stroke="white" stroke-width="4" fill="none" marker-end="url(#arrowhead2)"/>
+        
+        <!-- Stage 2 -->
+        <g transform="translate(300, 0)">
+          <rect x="0" y="0" width="240" height="120" rx="15" fill="#e74c3c"/>
+          <text x="120" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">Test</text>
+          <text x="120" y="70" text-anchor="middle" fill="white" font-size="18">Unit/Integration</text>
+          <text x="120" y="95" text-anchor="middle" fill="white" font-size="18">Code Quality</text>
+        </g>
+        
+        <!-- Arrow -->
+        <path d="M 540 60 L 600 60" stroke="white" stroke-width="4" fill="none" marker-end="url(#arrowhead2)"/>
+        
+        <!-- Stage 3 -->
+        <g transform="translate(600, 0)">
+          <rect x="0" y="0" width="240" height="120" rx="15" fill="#f39c12"/>
+          <text x="120" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">Build</text>
+          <text x="120" y="70" text-anchor="middle" fill="white" font-size="18">Docker Image</text>
+          <text x="120" y="95" text-anchor="middle" fill="white" font-size="18">Multi-tag Push</text>
+        </g>
+        
+        <!-- Arrow -->
+        <path d="M 840 60 L 900 60" stroke="white" stroke-width="4" fill="none" marker-end="url(#arrowhead2)"/>
+        
+        <!-- Stage 4 -->
+        <g transform="translate(900, 0)">
+          <rect x="0" y="0" width="240" height="120" rx="15" fill="#2ecc71"/>
+          <text x="120" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">Deploy</text>
+          <text x="120" y="70" text-anchor="middle" fill="white" font-size="18">ArgoCD Sync</text>
+          <text x="120" y="95" text-anchor="middle" fill="white" font-size="18">Auto Update</text>
+        </g>
+        
+        <!-- Arrow -->
+        <path d="M 1140 60 L 1200 60" stroke="white" stroke-width="4" fill="none" marker-end="url(#arrowhead2)"/>
+        
+        <!-- Stage 5 -->
+        <g transform="translate(1200, 0)">
+          <rect x="0" y="0" width="240" height="120" rx="15" fill="#9b59b6"/>
+          <text x="120" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">Monitor</text>
+          <text x="120" y="70" text-anchor="middle" fill="white" font-size="18">Health Check</text>
+          <text x="120" y="95" text-anchor="middle" fill="white" font-size="18">Auto Rollback</text>
+        </g>
+      </g>
+    </g>
+    
+    <!-- Key features -->
+    <g transform="translate(200, 550)">
+      <text x="0" y="0" fill="white" font-size="36" font-weight="bold">주요 특징</text>
+      
+      <!-- Feature list -->
+      <g transform="translate(0, 60)">
+        <g transform="translate(0, 0)">
+          <circle cx="20" cy="20" r="15" fill="url(#accentGradient)"/>
+          <text x="20" y="27" text-anchor="middle" fill="white" font-size="20" font-weight="bold">✓</text>
+          <text x="60" y="25" fill="white" font-size="24">Self-hosted Runner 전용 최적화</text>
+        </g>
+        
+        <g transform="translate(0, 60)">
+          <circle cx="20" cy="20" r="15" fill="url(#accentGradient)"/>
+          <text x="20" y="27" text-anchor="middle" fill="white" font-size="20" font-weight="bold">✓</text>
+          <text x="60" y="25" fill="white" font-size="24">Private Registry (registry.jclee.me) 사용</text>
+        </g>
+        
+        <g transform="translate(0, 120)">
+          <circle cx="20" cy="20" r="15" fill="url(#accentGradient)"/>
+          <text x="20" y="27" text-anchor="middle" fill="white" font-size="20" font-weight="bold">✓</text>
+          <text x="60" y="25" fill="white" font-size="24">병렬 테스트 및 품질 검사 (Matrix Strategy)</text>
+        </g>
+        
+        <g transform="translate(0, 180)">
+          <circle cx="20" cy="20" r="15" fill="url(#accentGradient)"/>
+          <text x="20" y="27" text-anchor="middle" fill="white" font-size="20" font-weight="bold">✓</text>
+          <text x="60" y="25" fill="white" font-size="24">자동 취소 기능 (동일 브랜치 중복 실행 방지)</text>
+        </g>
+        
+        <g transform="translate(0, 240)">
+          <circle cx="20" cy="20" r="15" fill="url(#accentGradient)"/>
+          <text x="20" y="27" text-anchor="middle" fill="white" font-size="20" font-weight="bold">✓</text>
+          <text x="60" y="25" fill="white" font-size="24">문서 변경 시 빌드 스킵</text>
+        </g>
+      </g>
+    </g>
+    
+    <!-- ArgoCD Integration -->
+    <g transform="translate(1000, 550)">
+      <rect x="0" y="0" width="700" height="350" rx="20" fill="#34495e" opacity="0.8" filter="url(#shadow)"/>
+      <text x="350" y="50" text-anchor="middle" fill="white" font-size="32" font-weight="bold">ArgoCD Image Updater</text>
+      
+      <g transform="translate(50, 100)">
+        <text x="0" y="0" fill="#ecf0f1" font-size="22">• 2분마다 새 이미지 자동 감지</text>
+        <text x="0" y="40" fill="#ecf0f1" font-size="22">• 태그 전략: latest, sha-*, date-*</text>
+        <text x="0" y="80" fill="#ecf0f1" font-size="22">• 자동 동기화 및 배포</text>
+        <text x="0" y="120" fill="#ecf0f1" font-size="22">• Self-healing 활성화</text>
+        <text x="0" y="160" fill="#ecf0f1" font-size="22">• 실패 시 자동 롤백</text>
+        <text x="0" y="200" fill="#ecf0f1" font-size="22">• Multi-cluster 지원</text>
+      </g>
+    </g>
+    
+    <!-- Arrow marker definition -->
+    <defs>
+      <marker id="arrowhead2" markerWidth="15" markerHeight="10" refX="14" refY="5" orient="auto">
+        <polygon points="0 0, 15 5, 0 10" fill="white"/>
+      </marker>
+    </defs>
+  </g>
+  
+  <!-- Slide 5: Summary & Benefits -->
+  <g id="slide5" transform="translate(0, 4320)">
+    <rect x="0" y="0" width="1920" height="1080" fill="url(#slideGradient)"/>
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="1920" height="120" fill="url(#headerGradient)"/>
+    <text x="960" y="80" text-anchor="middle" fill="white" font-size="60" font-weight="bold" font-family="Arial">
+      시스템 장점 및 활용
+    </text>
+    
+    <!-- Benefits section -->
+    <g transform="translate(100, 200)">
+      <text x="0" y="0" fill="white" font-size="40" font-weight="bold">핵심 장점</text>
+      
+      <!-- Benefit cards -->
+      <g transform="translate(0, 80)">
+        <!-- Card 1 -->
+        <g transform="translate(0, 0)">
+          <rect x="0" y="0" width="800" height="150" rx="20" fill="#2980b9" opacity="0.8" filter="url(#shadow)"/>
+          <text x="30" y="50" fill="white" font-size="28" font-weight="bold">🚀 완전 자동화</text>
+          <text x="30" y="90" fill="#ecf0f1" font-size="22">• Git Push만으로 전체 배포 프로세스 자동 실행</text>
+          <text x="30" y="120" fill="#ecf0f1" font-size="22">• 인프라 변경 없이 애플리케이션 업데이트</text>
+        </g>
+        
+        <!-- Card 2 -->
+        <g transform="translate(0, 180)">
+          <rect x="0" y="0" width="800" height="150" rx="20" fill="#27ae60" opacity="0.8" filter="url(#shadow)"/>
+          <text x="30" y="50" fill="white" font-size="28" font-weight="bold">🛡️ 고가용성</text>
+          <text x="30" y="90" fill="#ecf0f1" font-size="22">• Multi-cluster 배포로 장애 대응력 강화</text>
+          <text x="30" y="120" fill="#ecf0f1" font-size="22">• 자동 복구 및 롤백 메커니즘</text>
+        </g>
+        
+        <!-- Card 3 -->
+        <g transform="translate(0, 360)">
+          <rect x="0" y="0" width="800" height="150" rx="20" fill="#e74c3c" opacity="0.8" filter="url(#shadow)"/>
+          <text x="30" y="50" fill="white" font-size="28" font-weight="bold">📊 실시간 위협 대응</text>
+          <text x="30" y="90" fill="#ecf0f1" font-size="22">• 다중 소스에서 위협 정보 자동 수집</text>
+          <text x="30" y="120" fill="#ecf0f1" font-size="22">• FortiGate 방화벽 즉시 업데이트</text>
+        </g>
+      </g>
+    </g>
+    
+    <!-- Use cases -->
+    <g transform="translate(1000, 200)">
+      <text x="0" y="0" fill="white" font-size="40" font-weight="bold">활용 사례</text>
+      
+      <g transform="translate(0, 80)">
+        <rect x="0" y="0" width="800" height="600" rx="20" fill="#34495e" opacity="0.7" filter="url(#shadow)"/>
+        
+        <g transform="translate(40, 50)">
+          <text x="0" y="0" fill="white" font-size="28" font-weight="bold">1. 엔터프라이즈 보안</text>
+          <text x="20" y="40" fill="#bdc3c7" font-size="22">• 실시간 위협 IP 차단</text>
+          <text x="20" y="70" fill="#bdc3c7" font-size="22">• 자동화된 보안 정책 적용</text>
+          
+          <text x="0" y="130" fill="white" font-size="28" font-weight="bold">2. 금융 보안</text>
+          <text x="20" y="170" fill="#bdc3c7" font-size="22">• 금융보안원 데이터 연동</text>
+          <text x="20" y="200" fill="#bdc3c7" font-size="22">• 실시간 사기 IP 차단</text>
+          
+          <text x="0" y="260" fill="white" font-size="28" font-weight="bold">3. 인프라 보호</text>
+          <text x="20" y="300" fill="#bdc3c7" font-size="22">• DDoS 공격 IP 자동 차단</text>
+          <text x="20" y="330" fill="#bdc3c7" font-size="22">• 다중 데이터센터 동기화</text>
+          
+          <text x="0" y="390" fill="white" font-size="28" font-weight="bold">4. 컴플라이언스</text>
+          <text x="20" y="430" fill="#bdc3c7" font-size="22">• 감사 추적 기능</text>
+          <text x="20" y="460" fill="#bdc3c7" font-size="22">• 3개월 데이터 보관</text>
+        </g>
+      </g>
+    </g>
+    
+    <!-- Contact info -->
+    <g transform="translate(960, 950)">
+      <rect x="-400" y="0" width="800" height="80" rx="40" fill="url(#accentGradient)" opacity="0.8"/>
+      <text x="0" y="50" text-anchor="middle" fill="white" font-size="32" font-weight="bold">
+        Production URL: https://blacklist.jclee.me
+      </text>
+    </g>
+  </g>
+</svg>
