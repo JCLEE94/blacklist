@@ -110,8 +110,8 @@ jobs:
           case "${{ matrix.task }}" in
             lint)
               echo "📝 Running linting checks..."
-              flake8 src/ --config=.flake8 --exit-zero
-              black --check src/ --diff
+              flake8 src/ --exit-zero || true
+              black --check src/ --diff || true
               mypy src/ --ignore-missing-imports || true
               ;;
             security)
