@@ -10,11 +10,12 @@
 ## 🚀 주요 기능
 
 - **GitOps 배포**: ArgoCD 기반 지속적 배포 및 자동 이미지 업데이트
-- **다중 서버 지원**: 로컬 및 원격 Kubernetes 클러스터 병렬 배포
-- **GitHub Container Registry**: GHCR을 통한 안전한 컨테이너 이미지 관리
+- **다중 서버 지원**: 로컬 및 원격 Kubernetes 클러스터 병렬 배포  
+- **Private Registry 지원**: `registry.jclee.me` 및 GHCR 듀얼 레지스트리 지원
 - **자동화된 데이터 수집**: REGTECH, SECUDIUM 등 다중 소스 통합
 - **FortiGate 연동**: External Connector API 제공
 - **고가용성 아키텍처**: 자동 복구, 상태 모니터링, 성능 최적화
+- **통합 CI/CD 파이프라인**: 병렬 테스트, 자동 빌드, ArgoCD Image Updater 연동
 
 ## 📋 빠른 시작
 
@@ -31,16 +32,13 @@ nano .env
 source scripts/load-env.sh
 ```
 
-### 2. GitHub Container Registry 설정
+### 2. Registry 설정
 
+#### Private Registry (registry.jclee.me)
 ```bash
-# GitHub Personal Access Token 생성 (read:packages, write:packages 권한 필요)
-# https://github.com/settings/tokens
-
-# GHCR 시크릿 설정
-export GITHUB_USERNAME="your-github-username"
-export GITHUB_TOKEN="your-personal-access-token"
-./scripts/setup-ghcr-secret.sh
+# 인증 불필요 - 자동으로 설정됨
+# CI/CD 파이프라인에서 기본으로 사용
+# IPv6 연결 문제 시 네트워크 설정 확인 필요
 ```
 
 ### 3. 배포
@@ -105,9 +103,9 @@ graph TB
 - **Backend**: Flask 2.3.3 + Gunicorn
 - **Database**: SQLite with auto-migration
 - **Cache**: Redis (memory fallback)
-- **Container**: Docker / GitHub Container Registry
+- **Container**: Docker / Private Registry (registry.jclee.me)
 - **Orchestration**: Kubernetes + ArgoCD
-- **CI/CD**: GitHub Actions
+- **CI/CD**: GitHub Actions (Self-hosted runner)
 - **Monitoring**: Built-in health checks and metrics
 
 ## 📦 주요 스크립트
@@ -120,7 +118,7 @@ graph TB
 | `scripts/k8s-management.sh` | ArgoCD GitOps 관리 도구 |
 | `scripts/multi-deploy.sh` | 다중 서버 동시 배포 |
 | `scripts/load-env.sh` | 환경 변수 로드 |
-| `scripts/setup-ghcr-secret.sh` | GHCR 인증 설정 |
+| `scripts/setup-kubeconfig.sh` | kubectl 설정 도우미 |
 
 ### ArgoCD 명령어
 
@@ -157,7 +155,7 @@ python3 main.py --debug
 
 ```bash
 # 이미지 빌드
-docker build -f deployment/Dockerfile -t ghcr.io/$GITHUB_USERNAME/blacklist:latest .
+docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
 
 # 컨테이너 실행
 docker-compose -f deployment/docker-compose.yml up -d
@@ -188,11 +186,32 @@ docker-compose -f deployment/docker-compose.yml up -d
 
 ## 🔒 보안
 
-- GitHub Container Registry를 통한 안전한 이미지 관리
+- Private Registry를 통한 내부 이미지 관리
 - 환경 변수를 통한 민감 정보 관리
 - Kubernetes Secrets 활용
-- Trivy를 통한 취약점 스캔
-- SBOM (Software Bill of Materials) 생성
+- 코드 스캔을 통한 보안 검사
+- Self-hosted runner로 CI/CD 보안 강화
+
+## 🔄 CI/CD 파이프라인
+
+### 통합 파이프라인 (`.github/workflows/cicd.yml`)
+
+- **병렬 실행**: 코드 품질(lint/security) 및 테스트(unit/integration) 병렬 처리
+- **자동 취소**: 동일 브랜치에서 새 푸시 시 기존 실행 자동 취소
+- **스킵 조건**: 문서만 변경 시 빌드 생략
+- **재시도 로직**: ArgoCD 배포 3회 재시도, Health check 5회 재시도
+- **Private Registry**: `registry.jclee.me` 기본 사용 (인증 불필요)
+
+### 워크플로우 구조
+```yaml
+1. Pre-check → 2. Code Quality (병렬) → 3. Tests (병렬) → 4. Build & Push → 5. ArgoCD Image Updater
+```
+
+### 수동 배포 스킵
+```bash
+# GitHub Actions UI에서 workflow_dispatch 실행 시
+# skip_tests: true 선택하여 긴급 배포 가능
+```
 
 ## 📊 모니터링
 
@@ -207,12 +226,16 @@ kubectl get deployment blacklist -n blacklist
 
 # 서비스 상태
 curl https://blacklist.jclee.me/health
+
+# CI/CD 파이프라인 상태
+gh run list --workflow=cicd.yml --limit=5
 ```
 
 ### ArgoCD 대시보드
 
 - URL: https://argo.jclee.me
 - Application: blacklist
+- Image Updater: 2분마다 새 이미지 체크
 
 ## 🚨 문제 해결
 
@@ -220,9 +243,10 @@ curl https://blacklist.jclee.me/health
 
 1. **이미지 풀 실패**
    ```bash
-   # GHCR 시크릿 재생성
-   kubectl delete secret ghcr-secret -n blacklist
-   ./scripts/setup-ghcr-secret.sh
+   # Registry 연결 확인
+   curl -v http://registry.jclee.me/v2/
+   # Pod 이벤트 확인
+   kubectl describe pod <pod-name> -n blacklist
    ```
 
 2. **ArgoCD 동기화 실패**
@@ -240,11 +264,10 @@ curl https://blacklist.jclee.me/health
 
 필수 환경 변수는 `.env.example` 파일을 참조하세요:
 
-- `GITHUB_USERNAME`: GitHub 사용자명
-- `GITHUB_TOKEN`: Personal Access Token
 - `REGTECH_USERNAME/PASSWORD`: REGTECH 인증 정보
 - `SECUDIUM_USERNAME/PASSWORD`: SECUDIUM 인증 정보
 - `ARGOCD_SERVER`: ArgoCD 서버 주소
+- `REGISTRY`: Private registry 주소 (기본: registry.jclee.me)
 
 ## 🤝 기여
 
@@ -261,5 +284,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 감사의 말
 
 - [ArgoCD](https://argoproj.github.io/argo-cd/) - GitOps 도구
-- [GitHub Container Registry](https://docs.github.com/en/packages) - 컨테이너 레지스트리
 - [Kubernetes](https://kubernetes.io/) - 컨테이너 오케스트레이션
+- [Docker](https://www.docker.com/) - 컨테이너화 플랫폼

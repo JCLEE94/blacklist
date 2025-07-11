@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Container-First**: Docker/Podman deployment with automated CI/CD
 
 **Production Infrastructure:**
-- Docker Registry: `ghcr.io` (GitHub Container Registry)
+- Docker Registry: `registry.jclee.me` (Private registry, no auth required)
 - Kubernetes Clusters: 
   - Primary: Self-hosted k3s/k8s (local)
   - Secondary: 192.168.50.110 (remote server)
@@ -129,12 +129,8 @@ kubectl exec -it deployment/blacklist -n blacklist -- /bin/bash
 kubectl rollout restart deployment/blacklist -n blacklist
 
 
-# Registry secret management
-kubectl create secret docker-registry regcred \
-  --docker-server=ghcr.io/jclee94 \
-  --docker-username=<username> \
-  --docker-password=<password> \
-  -n blacklist
+# Registry secret management (not needed for registry.jclee.me)
+# Only required if using authenticated registries
 ```
 
 ### Remote Server Management
@@ -314,18 +310,27 @@ class BaseIPSource(ABC):
 
 ### CI/CD Pipeline (ArgoCD GitOps)
 
-**GitHub Actions Workflow** (`.github/workflows/streamlined-cicd.yml`):
-1. **Parallel Quality Checks**: Lint, security scan, tests
-2. **Docker Build**: Multi-stage build with caching to `ghcr.io/jclee94`
-3. **Multi-tag Push**: `latest`, `sha-<hash>`, `date-<timestamp>`
-4. **ArgoCD Deployment**: Image Updater auto-detects and deploys
-5. **Remote Server Deploy**: Parallel deployment to 192.168.50.110
-6. **Verification**: Health checks, smoke tests, performance monitoring
-7. **Automatic Rollback**: On failure, ArgoCD reverts to previous version
+**GitHub Actions Workflow** (`.github/workflows/cicd.yml`):
+1. **Parallel Quality Checks**: Lint, security scan, tests (matrix strategy)
+2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me`
+3. **Multi-tag Push**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
+4. **ArgoCD Image Updater**: Automatically detects and deploys new images
+5. **Deployment Notification**: Push-only strategy, ArgoCD handles deployment
+6. **Concurrency Control**: Auto-cancels previous runs on same branch
+7. **Skip Conditions**: Skips build for documentation-only changes
+
+**Unified Pipeline Features**:
+- **Single workflow file**: Consolidated from multiple workflows
+- **Self-hosted runners only**: Optimized for private infrastructure
+- **Parallel execution**: Matrix builds for tests and quality checks
+- **Fail-fast disabled**: Continues other jobs even if one fails
+- **Continue-on-error**: Non-critical steps don't block pipeline
+- **Cached dependencies**: Speeds up repeated builds
+- **Network mode host**: For private registry access
 
 **Deployment Flow**:
 ```
-Push to main → GitHub Actions → Build & Push (3 tags) → ArgoCD Auto-Deploy → Verify → Remote Deploy
+Push to main → GitHub Actions → Build & Push → ArgoCD Image Updater → Auto Deploy
 ```
 
 **Self-hosted Runner Compatibility**:
@@ -655,15 +660,15 @@ ssh jclee@192.168.50.110 "kubectl logs -f deployment/blacklist -n blacklist"
 ### Manual Deployment (Fallback)
 If CI/CD fails, use manual deployment:
 ```bash
-# Build and push manually
-docker build -f deployment/Dockerfile -t ghcr.io/jclee94/blacklist:latest .
-docker push ghcr.io/jclee94/blacklist:latest
+# Build and push manually to private registry
+docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
+docker push registry.jclee.me/blacklist:latest
 
 # Deploy with ArgoCD
 argocd app sync blacklist --grpc-web
 
 # Or use kubectl directly (not recommended with GitOps)
-kubectl set image deployment/blacklist blacklist=ghcr.io/jclee94/blacklist:latest -n blacklist
+kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:latest -n blacklist
 kubectl rollout status deployment/blacklist -n blacklist
 ```
 
@@ -703,6 +708,38 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
         'action': action,
         'details': details or {}
     }
+```
+
+## Recent Implementations (2025.07.11)
+
+### CI/CD Pipeline Consolidation
+**Unified CI/CD Pipeline**:
+- Consolidated multiple workflow files into single `cicd.yml`
+- Removed `enhanced-cicd.yml`, `main.yml`, and other duplicates
+- Configured for self-hosted runners exclusively
+- Switched to private registry `registry.jclee.me` (no auth required)
+- Removed deployment logic - push only, ArgoCD handles deployment
+
+**Key Changes**:
+- **Concurrency control**: Auto-cancels previous runs on same branch
+- **Skip conditions**: Skips builds for documentation-only changes
+- **Matrix strategy**: Parallel execution for tests and quality checks
+- **Continue-on-error**: Non-critical steps don't block pipeline
+- **Private registry**: Configured buildx for insecure registry support
+
+### Private Registry Configuration
+**registry.jclee.me**:
+- Primary registry for all Docker images
+- No authentication required
+- Configured with insecure registry support in buildx
+- IPv6 connectivity issues resolved with network=host
+
+**Buildx Configuration**:
+```yaml
+config-inline: |
+  [registry."registry.jclee.me"]
+    http = true
+    insecure = true
 ```
 
 ## Recent Implementations (2025.07.04)
