@@ -75,16 +75,17 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.local
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ matrix.task }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-
-            ${{ runner.os }}-pip-
+      # Cache step temporarily disabled due to self-hosted runner issues
+      # - name: Cache dependencies
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       ~/.cache/pip
+      #       ~/.local
+      #     key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ matrix.task }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-
+      #       ${{ runner.os }}-pip-
       
       - name: Install dependencies
         run: |
@@ -155,15 +156,16 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       
-      - name: Cache test dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/pip
-            .pytest_cache
-          key: ${{ runner.os }}-test-${{ hashFiles('**/requirements.txt') }}-${{ matrix.test-type }}
-          restore-keys: |
-            ${{ runner.os }}-test-
+      # Cache step temporarily disabled due to self-hosted runner issues
+      # - name: Cache test dependencies
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       ~/.cache/pip
+      #       .pytest_cache
+      #     key: ${{ runner.os }}-test-${{ hashFiles('**/requirements.txt') }}-${{ matrix.test-type }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-test-
       
       - name: Install dependencies
         run: |
