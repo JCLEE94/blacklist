@@ -131,6 +131,7 @@ jobs:
             *-report.json
             *.log
           retention-days: 7
+          if-no-files-found: ignore
 
   # 병렬 테스트
   test:
@@ -206,6 +207,7 @@ jobs:
             .coverage
             test-results/
           retention-days: 7
+          if-no-files-found: ignore
 
   # Docker 빌드
   build:
