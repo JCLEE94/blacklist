@@ -1353,6 +1353,15 @@ def disable_collection():
 def trigger_regtech_collection():
     """REGTECH 수집 트리거"""
     try:
+        # 컨테이너에서 progress_tracker 가져오기
+        from .container import get_container
+        container = get_container()
+        progress_tracker = container.get('progress_tracker')
+        
+        # 진행 상황 추적 시작
+        if progress_tracker:
+            progress_tracker.start_collection('regtech')
+        
         # 로그 추가
         service.add_collection_log('regtech', 'collection_triggered', {
             'triggered_by': 'manual',
@@ -1375,22 +1384,42 @@ def trigger_regtech_collection():
         # REGTECH 수집 실행
         result = service.trigger_regtech_collection(start_date=start_date, end_date=end_date)
         
+        # 진행 상황 정보 추가
+        progress_info = None
+        if progress_tracker:
+            progress = progress_tracker.get_progress('regtech')
+            if progress:
+                progress_info = {
+                    'status': progress.status.value,
+                    'current': progress.current,
+                    'total': progress.total,
+                    'percentage': progress.percentage,
+                    'message': progress.message
+                }
+        
         if result.get('success'):
             return jsonify({
                 'success': True,
                 'message': 'REGTECH 수집이 트리거되었습니다.',
                 'source': 'regtech',
-                'data': result
+                'data': result,
+                'progress': progress_info
             })
         else:
+            if progress_tracker:
+                progress_tracker.fail_collection('regtech', result.get('message', 'REGTECH 수집 트리거 실패'))
             return jsonify({
                 'success': False,
                 'message': result.get('message', 'REGTECH 수집 트리거 실패'),
-                'error': result.get('error')
+                'error': result.get('error'),
+                'progress': progress_info
             }), 500
             
     except Exception as e:
         logger.error(f"REGTECH trigger error: {e}")
+        # 진행 상황 실패 처리
+        if progress_tracker:
+            progress_tracker.fail_collection('regtech', str(e))
         service.add_collection_log('regtech', 'collection_failed', {
             'error': str(e),
             'triggered_by': 'manual'
@@ -1407,7 +1436,15 @@ def trigger_regtech_collection():
 def trigger_secudium_collection():
     """SECUDIUM 수집 트리거 (현재 비활성화됨)"""
     try:
+        # 컨테이너에서 progress_tracker 가져오기
+        from .container import get_container
+        container = get_container()
+        progress_tracker = container.get('progress_tracker')
+        
         # SECUDIUM은 현재 계정 문제로 비활성화됨
+        if progress_tracker:
+            progress_tracker.fail_collection('secudium', 'SECUDIUM 수집은 현재 비활성화되어 있습니다.')
+        
         return jsonify({
             'success': False,
             'message': 'SECUDIUM 수집은 현재 비활성화되어 있습니다.',
@@ -1424,6 +1461,49 @@ def trigger_secudium_collection():
         }), 500
 
 # === 간소화된 수집 관리 (자동 수집 + 간격 조절만) ===
+
+@unified_bp.route('/api/collection/progress/<source>', methods=['GET'])
+def get_collection_progress(source):
+    """특정 소스의 수집 진행 상황 조회"""
+    try:
+        from .container import get_container
+        container = get_container()
+        progress_tracker = container.get('progress_tracker')
+        
+        if not progress_tracker:
+            return jsonify({
+                'success': False,
+                'message': 'Progress tracker not available'
+            }), 503
+        
+        progress = progress_tracker.get_progress(source)
+        if progress:
+            return jsonify({
+                'success': True,
+                'source': source,
+                'progress': {
+                    'status': progress.status.value,
+                    'current': progress.current,
+                    'total': progress.total,
+                    'percentage': progress.percentage,
+                    'message': progress.message,
+                    'started_at': progress.started_at.isoformat() if progress.started_at else None,
+                    'updated_at': progress.updated_at.isoformat() if progress.updated_at else None
+                }
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'source': source,
+                'progress': None,
+                'message': f'No active collection for {source}'
+            })
+    except Exception as e:
+        logger.error(f"Progress check error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @unified_bp.route('/api/collection/statistics', methods=['GET'])
 def collection_statistics():

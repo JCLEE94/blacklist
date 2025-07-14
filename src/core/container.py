@@ -300,6 +300,20 @@ class BlacklistContainer(ServiceContainer):
         except Exception as e:
             logger.warning(f"SECUDIUM Collector registration failed: {e}")
         
+        # Collection Progress Tracker
+        try:
+            from .collection_progress import get_progress_tracker
+            self.register(
+                'progress_tracker',
+                type(get_progress_tracker()),  # Get the actual class type
+                factory=lambda: get_progress_tracker(),  # Singleton instance
+                singleton=True,
+                dependencies={}
+            )
+            logger.info("Collection Progress Tracker registered in container")
+        except Exception as e:
+            logger.warning(f"Progress Tracker registration failed: {e}")
+        
         # API Routes
         # Blueprint registration is handled in app creation, not container
     

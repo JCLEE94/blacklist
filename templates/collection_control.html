@@ -119,7 +119,7 @@
                         </div>
                     </div>
                     
-                    <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress mb-3" style="height: 20px; display: none;">
                         <div class="progress-bar bg-primary" id="regtech-progress" 
                              role="progressbar" style="width: 0%">0%</div>
                     </div>
@@ -166,7 +166,7 @@
                         </div>
                     </div>
                     
-                    <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress mb-3" style="height: 20px; display: none;">
                         <div class="progress-bar bg-success" id="secudium-progress" 
                              role="progressbar" style="width: 0%">0%</div>
                     </div>
@@ -598,8 +598,19 @@ async function triggerCollection(collector) {
     
     try {
         const button = document.getElementById(`${collector}-trigger`);
+        const progressBar = document.getElementById(`${collector}-progress`);
+        const progressContainer = progressBar?.parentElement;
+        
         button.disabled = true;
         button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 수집 중...';
+        
+        // 진행 상황 표시 준비
+        if (progressContainer) {
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+        }
         
         const response = await fetch(`/api/collection/${collector}/trigger`, { 
             method: 'POST',
@@ -610,12 +621,74 @@ async function triggerCollection(collector) {
         });
         const data = await response.json();
         
-        if (data.success === true) {
-            showNotification(`${collector.toUpperCase()} 수집이 완료되었습니다.`, 'success');
-            collectionControl.addLog('success', 
-                `${collector.toUpperCase()} 수집 완료: ${data.message || '성공'}`);
-            // 상태 업데이트
-            collectionControl.checkCollectionStatus();
+        // 수집 시작 성공 시 진행 상황 폴링 시작
+        if (data.success === true || data.progress) {
+            collectionControl.addLog('info', 
+                `${collector.toUpperCase()} 수집 시작됨`);
+            
+            // 진행 상황 폴링
+            const progressInterval = setInterval(async () => {
+                try {
+                    const progressResponse = await fetch(`/api/collection/progress/${collector}`);
+                    const progressData = await progressResponse.json();
+                    
+                    if (progressData.success && progressData.progress) {
+                        const progress = progressData.progress;
+                        
+                        // 진행률 업데이트
+                        if (progressBar) {
+                            progressBar.style.width = `${progress.percentage}%`;
+                            progressBar.textContent = `${progress.percentage}%`;
+                        }
+                        
+                        // 상태별 처리
+                        if (progress.status === 'completed') {
+                            clearInterval(progressInterval);
+                            showNotification(`${collector.toUpperCase()} 수집이 완료되었습니다.`, 'success');
+                            collectionControl.addLog('success', 
+                                `${collector.toUpperCase()} ${progress.message}`);
+                            
+                            // 진행바 성공 표시
+                            if (progressBar) {
+                                progressBar.className = 'progress-bar bg-success';
+                            }
+                            
+                            // 상태 업데이트
+                            collectionControl.checkCollectionStatus();
+                            
+                            // 3초 후 진행바 숨기기
+                            setTimeout(() => {
+                                if (progressContainer) {
+                                    progressContainer.style.display = 'none';
+                                }
+                            }, 3000);
+                        } else if (progress.status === 'failed') {
+                            clearInterval(progressInterval);
+                            throw new Error(progress.message || '수집 실패');
+                        }
+                    } else if (!progressData.progress) {
+                        // 진행 상황이 없으면 완료된 것으로 간주
+                        clearInterval(progressInterval);
+                        showNotification(`${collector.toUpperCase()} 수집이 완료되었습니다.`, 'success');
+                        collectionControl.checkCollectionStatus();
+                        
+                        if (progressContainer) {
+                            progressContainer.style.display = 'none';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Progress check error:', error);
+                }
+            }, 1000); // 1초마다 체크
+            
+            // 타임아웃 설정 (5분)
+            setTimeout(() => {
+                clearInterval(progressInterval);
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
+                }
+            }, 300000);
+            
         } else {
             throw new Error(data.message || data.error || '수집 시작 실패');
         }
@@ -623,6 +696,21 @@ async function triggerCollection(collector) {
         showNotification(`오류: ${error.message}`, 'danger');
         collectionControl.addLog('error', 
             `${collector.toUpperCase()} 수집 시작 실패: ${error.message}`);
+        
+        // 진행바 에러 표시
+        const progressBar = document.getElementById(`${collector}-progress`);
+        if (progressBar) {
+            progressBar.className = 'progress-bar bg-danger';
+            progressBar.style.width = '100%';
+            progressBar.textContent = 'Error';
+            
+            // 3초 후 숨기기
+            setTimeout(() => {
+                if (progressBar.parentElement) {
+                    progressBar.parentElement.style.display = 'none';
+                }
+            }, 3000);
+        }
     } finally {
         const button = document.getElementById(`${collector}-trigger`);
         button.disabled = false;

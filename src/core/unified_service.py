@@ -2033,6 +2033,9 @@ class UnifiedBlacklistService:
         task_id = str(uuid.uuid4())
         self.logger.info(f"REGTECH collection triggered (task_id: {task_id})")
         
+        # Progress tracker 가져오기
+        progress_tracker = self.container.get('progress_tracker')
+        
         # 수집 로그 추가
         self.add_collection_log('REGTECH', 'collection_started', {
             'task_id': task_id,
@@ -2047,16 +2050,26 @@ class UnifiedBlacklistService:
             regtech_collector = self.container.resolve('regtech_collector')
             if not regtech_collector:
                 self.logger.error("REGTECH collector not available")
+                if progress_tracker:
+                    progress_tracker.fail_collection('regtech', 'REGTECH collector not available')
                 return {
                     'success': False,
                     'error': 'REGTECH collector not available',
                     'message': 'REGTECH 수집기를 찾을 수 없습니다'
                 }
             
+            # 진행 상황 업데이트
+            if progress_tracker:
+                progress_tracker.update_progress('regtech', 0, 100, "REGTECH 수집 시작...")
+            
             # 실제 수집 실행 (동기적으로 처리)
             try:
                 ips = regtech_collector.collect_from_web(start_date=start_date, end_date=end_date)
                 self.logger.info(f"REGTECH collection completed: {len(ips)} IPs collected")
+                
+                # 진행 상황 업데이트 - 수집 완료
+                if progress_tracker:
+                    progress_tracker.update_progress('regtech', 50, 100, f"{len(ips)}개 IP 수집 완료, 데이터베이스 저장 중...")
                 
                 # 수집 완료 로그 추가
                 self.add_collection_log('REGTECH', 'collection_completed', {
@@ -2122,6 +2135,10 @@ class UnifiedBlacklistService:
                         if result.get('success'):
                             self.logger.info(f"REGTECH: {result['imported_count']}개 IP가 데이터베이스에 저장됨")
                             
+                            # 진행 상황 완료
+                            if progress_tracker:
+                                progress_tracker.complete_collection('regtech', f"REGTECH 수집 완료: {result['imported_count']}개 IP 저장됨")
+                            
                             # 저장 후 데이터베이스에서 직접 확인
                             try:
                                 source_counts = self._get_source_counts_from_db()
@@ -2137,6 +2154,8 @@ class UnifiedBlacklistService:
                             }
                         else:
                             self.logger.error(f"REGTECH: 데이터베이스 저장 실패 - {result.get('error')}")
+                            if progress_tracker:
+                                progress_tracker.fail_collection('regtech', f"데이터베이스 저장 실패: {result.get('error')}")
                             return {
                                 'success': False,
                                 'error': result.get('error'),
@@ -2144,12 +2163,17 @@ class UnifiedBlacklistService:
                             }
                     except Exception as e:
                         self.logger.error(f"REGTECH 데이터 저장 중 오류: {e}")
+                        if progress_tracker:
+                            progress_tracker.fail_collection('regtech', f"데이터 저장 오류: {str(e)}")
                         return {
                             'success': False,
                             'error': str(e),
                             'message': 'REGTECH 데이터 저장 실패'
                         }
                 else:
+                    # 진행 상황 완료 (저장 없이)
+                    if progress_tracker:
+                        progress_tracker.complete_collection('regtech', f"REGTECH 수집 완료: {len(ips) if ips else 0}개 IP (저장 안 함)")
                     return {
                         'success': True,
                         'ip_count': len(ips) if ips else 0,
@@ -2158,6 +2182,8 @@ class UnifiedBlacklistService:
                     
             except Exception as e:
                 self.logger.error(f"REGTECH 수집 실행 중 오류: {e}")
+                if progress_tracker:
+                    progress_tracker.fail_collection('regtech', f"수집 실행 오류: {str(e)}")
                 return {
                     'success': False,
                     'error': str(e),
@@ -2166,6 +2192,8 @@ class UnifiedBlacklistService:
                 
         except Exception as e:
             self.logger.error(f"REGTECH trigger error: {e}")
+            if progress_tracker:
+                progress_tracker.fail_collection('regtech', f"트리거 오류: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),

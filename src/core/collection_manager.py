@@ -70,17 +70,17 @@ class CollectionManager:
                     config = json.load(f)
                     # 최초 실행 확인
                     if not config.get('initial_collection_done', False):
-                        logger.info("🔥 최초 실행 감지 - 자동 수집 활성화")
-                        config['collection_enabled'] = True
-                        config['sources'] = {'regtech': True, 'secudium': False}  # Secudium 비활성화
-                        config['initial_collection_needed'] = True
+                        logger.info("🔥 최초 실행 감지 - 수집은 기본 OFF")
+                        config['collection_enabled'] = False  # 기본 OFF
+                        config['sources'] = {'regtech': False, 'secudium': False}  # 모두 OFF
+                        config['initial_collection_needed'] = False
                     return config
             else:
                 # 설정 파일이 없으면 최초 실행
                 logger.info("🔥 최초 실행 - 자동 수집 활성화")
                 return {
-                    'collection_enabled': True,  # 최초 실행 시 자동 활성화
-                    'sources': {'regtech': True, 'secudium': False},  # Secudium 비활성화
+                    'collection_enabled': False,  # 기본값 OFF
+                    'sources': {'regtech': False, 'secudium': False},  # 모두 OFF
                     'last_enabled_at': datetime.now().isoformat(),
                     'last_disabled_at': None,
                     'daily_collection_enabled': False,
@@ -91,8 +91,8 @@ class CollectionManager:
         except Exception as e:
             logger.error(f"설정 로드 실패: {e}")
             return {
-                'collection_enabled': True,  # 오류 시에도 수집 활성화
-                'sources': {'regtech': True, 'secudium': False},  # Secudium 비활성화
+                'collection_enabled': False,  # 오류 시에도 OFF
+                'sources': {'regtech': False, 'secudium': False},  # 모두 OFF
                 'last_enabled_at': datetime.now().isoformat(),
                 'last_disabled_at': None,
                 'daily_collection_enabled': False,

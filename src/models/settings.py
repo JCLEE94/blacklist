@@ -125,7 +125,7 @@ class SettingsManager:
                 description="REGTECH/SECUDIUM 자동 수집 기능 활성화",
                 category=SettingCategory.COLLECTION,
                 setting_type=SettingType.BOOLEAN,
-                default_value=True
+                default_value=False  # 기본값 OFF로 변경
             ),
             SettingDefinition(
                 key="collection_interval_hours",
@@ -143,7 +143,7 @@ class SettingsManager:
                 description="REGTECH 데이터 수집 기능 활성화",
                 category=SettingCategory.COLLECTION,
                 setting_type=SettingType.BOOLEAN,
-                default_value=True
+                default_value=False  # 기본값 OFF로 변경
             ),
             SettingDefinition(
                 key="secudium_enabled",
