@@ -1,0 +1,182 @@
+name: GitOps Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/**'
+      - '*.txt'
+      - 'LICENSE'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# 동시 실행 제어
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # 1. 코드 품질 검사
+  quality-check:
+    runs-on: self-hosted
+    outputs:
+      quality-passed: ${{ steps.quality.outputs.passed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 black isort bandit safety
+
+      - name: Code quality checks
+        id: quality
+        run: |
+          echo "Running code quality checks..."
+          
+          # Linting
+          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503
+          
+          # Code formatting
+          black --check src/
+          
+          # Import sorting
+          isort src/ --check-only
+          
+          # Security scan
+          bandit -r src/ -ll
+          
+          # Dependency check
+          safety check
+          
+          echo "passed=true" >> $GITHUB_OUTPUT
+
+  # 2. 테스트
+  test:
+    runs-on: self-hosted
+    needs: quality-check
+    if: needs.quality-check.outputs.quality-passed == 'true'
+    outputs:
+      test-passed: ${{ steps.test.outputs.passed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run tests
+        id: test
+        run: |
+          echo "Running tests..."
+          
+          # Unit tests
+          pytest tests/ -m "not integration" --cov=src --cov-report=xml
+          
+          echo "passed=true" >> $GITHUB_OUTPUT
+
+  # 3. Docker 빌드 및 Push
+  build-and-push:
+    runs-on: self-hosted
+    needs: [quality-check, test]
+    if: |
+      needs.quality-check.outputs.quality-passed == 'true' &&
+      needs.test.outputs.test-passed == 'true' &&
+      github.event_name == 'push'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+          config-inline: |
+            [registry."registry.jclee.me"]
+              http = true
+              insecure = true
+
+      - name: Generate metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{date 'YYYYMMDD-HHmmss' tz='Asia/Seoul'}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+
+  # 4. ArgoCD 배포 알림
+  deploy-notify:
+    runs-on: self-hosted
+    needs: build-and-push
+    if: |
+      needs.build-and-push.result == 'success' &&
+      github.ref == 'refs/heads/main'
+    steps:
+      - name: ArgoCD 배포 알림
+        run: |
+          echo "🚀 GitOps 배포 시작"
+          echo "==================="
+          echo "Registry: ${{ env.REGISTRY }}"
+          echo "Image: ${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Time: $(date)"
+          echo ""
+          echo "ArgoCD Image Updater가 자동으로 배포를 처리합니다."
+          echo "배포 상태: https://argo.jclee.me"
+          echo "서비스 확인: https://blacklist.jclee.me/health"
+
+      - name: 배포 로그 생성
+        run: |
+          mkdir -p /tmp/deployments
+          cat > /tmp/deployments/blacklist-${{ github.sha }}.log << EOF
+          Deployment: blacklist
+          Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+          Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          Message: ${{ github.event.head_commit.message }}
+          EOF

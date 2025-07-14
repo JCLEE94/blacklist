@@ -25,8 +25,7 @@ spec:
       annotations:
         deployment.kubernetes.io/revision: "1751925854"
     spec:
-      imagePullSecrets:
-      - name: regcred
+      # imagePullSecrets 불필요 (registry.jclee.me는 public)
       initContainers:
       - name: init-permissions
         image: busybox

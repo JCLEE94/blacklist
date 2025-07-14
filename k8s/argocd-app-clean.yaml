@@ -4,10 +4,15 @@ metadata:
   name: blacklist
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist:latest
+    # ArgoCD Image Updater 설정
+    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist
     argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+    argocd-image-updater.argoproj.io/blacklist.allow-tags: regexp:^(latest|sha-.*|[0-9]{8}-[0-9]{6})$
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/blacklist.pull-secret: argocd:registry-credentials
+    # GitOps 자동화 설정
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: blacklist-deploy
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

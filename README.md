@@ -292,4 +292,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [ArgoCD](https://argoproj.github.io/argo-cd/) - GitOps 도구
 - [Kubernetes](https://kubernetes.io/) - 컨테이너 오케스트레이션
-- [Docker](https://www.docker.com/) - 컨테이너화 플랫폼
+- [Docker](https://www.docker.com/) - 컨테이너화 플랫폼# GitOps Pipeline Test 2025. 07. 14. (월) 16:52:28 KST
