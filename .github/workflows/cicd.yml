@@ -338,45 +338,9 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           network: host
 
-  # 오프라인 패키지 생성
-  create-offline-package:
-    needs: build
-    if: |
-      github.ref == 'refs/heads/main' && 
-      github.event_name == 'push' &&
-      needs.build.result == 'success'
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Create offline package
-        run: |
-          set -e
-          
-          export IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
-          export REGISTRY="${{ env.REGISTRY }}"
-          export IMAGE_NAME="${{ env.IMAGE_NAME }}"
-          
-          echo "Creating offline package with:"
-          echo "  Registry: ${REGISTRY}"
-          echo "  Image: ${IMAGE_NAME}"
-          echo "  Tag: ${IMAGE_TAG}"
-          
-          ./scripts/create-offline-package.sh
-      
-      - name: Upload offline package
-        uses: actions/upload-artifact@v4
-        with:
-          name: offline-package-${{ needs.build.outputs.image-tag }}
-          path: blacklist-offline-*.tar.gz
-          retention-days: 30
-          if-no-files-found: warn
-
   # 배포 알림 (ArgoCD Image Updater가 자동 배포)
   notify-deployment:
-    needs: [build, create-offline-package]
+    needs: build
     if: |
       github.ref == 'refs/heads/main' && 
       github.event_name == 'push' &&
