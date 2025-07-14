@@ -145,17 +145,18 @@ jobs:
           esac
           echo "✅ ${{ matrix.task }} completed"
       
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.task }}-report-${{ github.run_number }}
-          path: |
-            *-report.json
-            *-report.txt
-            *.log
-          retention-days: 1
-          if-no-files-found: ignore
+      # Artifact upload disabled due to storage quota
+      # - name: Upload artifacts
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ matrix.task }}-report-${{ github.run_number }}
+      #     path: |
+      #       *-report.json
+      #       *-report.txt
+      #       *.log
+      #     retention-days: 1
+      #     if-no-files-found: ignore
       
       - name: Security scan summary
         if: matrix.task == 'security' && always()
@@ -246,17 +247,18 @@ jobs:
           esac
           echo "✅ ${{ matrix.test-type }} tests completed"
       
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.test-type }}-test-results
-          path: |
-            coverage.xml
-            .coverage
-            test-results/
-          retention-days: 1
-          if-no-files-found: ignore
+      # Test results upload disabled due to storage quota
+      # - name: Upload test results
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ matrix.test-type }}-test-results
+      #     path: |
+      #       coverage.xml
+      #       .coverage
+      #       test-results/
+      #     retention-days: 1
+      #     if-no-files-found: ignore
 
   # Docker 빌드
   build:
