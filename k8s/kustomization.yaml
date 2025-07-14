@@ -16,16 +16,16 @@ resources:
   - cronjob.yaml
 
 images:
-  - name: ghcr.io/jclee94/blacklist
+  - name: registry.jclee.me/blacklist
     newTag: latest
 
 # ArgoCD annotations for automatic image updates
 commonAnnotations:
-  argocd-image-updater.argoproj.io/image-list: blacklist=ghcr.io/jclee94/blacklist:latest
+  argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist:latest
   argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
   argocd-image-updater.argoproj.io/write-back-method: git
   argocd-image-updater.argoproj.io/git-branch: main
-  argocd-image-updater.argoproj.io/blacklist.pull-secret: secret:blacklist/ghcr-secret
+  argocd-image-updater.argoproj.io/blacklist.pull-secret: secret:blacklist/regcred
 
 # Patches for ArgoCD
 patchesStrategicMerge:

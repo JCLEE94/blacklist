@@ -1311,6 +1311,43 @@ def get_collection_status():
         }), 500
 
 # 수집 온오프 기능 제거됨 (사용자 요청: 수집은 항상 활성화 상태)
+# API 호환성을 위해 엔드포인트는 유지하되 항상 활성화 상태 반환
+
+@unified_bp.route('/api/collection/enable', methods=['POST'])
+def enable_collection():
+    """수집 활성화 (항상 활성화 상태이므로 성공 반환)"""
+    try:
+        # 수집은 항상 활성화 상태이므로 즉시 성공 반환
+        return jsonify({
+            'success': True,
+            'message': '수집은 항상 활성화 상태입니다.',
+            'collection_enabled': True,
+            'cleared_data': False  # 데이터는 지우지 않음
+        })
+    except Exception as e:
+        logger.error(f"Enable collection error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@unified_bp.route('/api/collection/disable', methods=['POST'])
+def disable_collection():
+    """수집 비활성화 (항상 활성화 상태이므로 경고 반환)"""
+    try:
+        # 수집은 항상 활성화 상태이므로 비활성화할 수 없음을 알림
+        return jsonify({
+            'success': True,
+            'message': '수집은 항상 활성화 상태로 유지됩니다. 비활성화할 수 없습니다.',
+            'collection_enabled': True,
+            'warning': '수집 비활성화는 지원하지 않습니다.'
+        })
+    except Exception as e:
+        logger.error(f"Disable collection error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @unified_bp.route('/api/collection/regtech/trigger', methods=['POST'])
 def trigger_regtech_collection():
@@ -1365,6 +1402,26 @@ def trigger_regtech_collection():
         }), 500
 
 # SECUDIUM 수집 트리거 비활성화됨 (사용자 요청)
+
+@unified_bp.route('/api/collection/secudium/trigger', methods=['POST'])
+def trigger_secudium_collection():
+    """SECUDIUM 수집 트리거 (현재 비활성화됨)"""
+    try:
+        # SECUDIUM은 현재 계정 문제로 비활성화됨
+        return jsonify({
+            'success': False,
+            'message': 'SECUDIUM 수집은 현재 비활성화되어 있습니다.',
+            'reason': '계정 문제로 인해 일시적으로 사용할 수 없습니다.',
+            'source': 'secudium',
+            'disabled': True
+        }), 503  # Service Unavailable
+    except Exception as e:
+        logger.error(f"SECUDIUM trigger error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'SECUDIUM 수집 트리거 중 오류가 발생했습니다.'
+        }), 500
 
 # === 간소화된 수집 관리 (자동 수집 + 간격 조절만) ===
 
@@ -2588,3 +2645,287 @@ def github_issue_status():
             'success': False,
             'error': str(e)
         }), 500
+
+# ===============================
+# INLINE INTEGRATION TESTS (Rust-style)
+# ===============================
+
+def _test_collection_endpoints():
+    """Inline integration tests for collection endpoints
+    
+    These tests verify the collection management endpoints work correctly
+    in an integrated environment with the Flask app and blueprints.
+    """
+    import json
+    from flask import Flask
+    from unittest.mock import Mock, patch
+    import tempfile
+    import os
+    
+    print("\n🧪 Running inline integration tests for collection endpoints...")
+    
+    # Create minimal test app
+    test_app = Flask(__name__)
+    test_app.config['TESTING'] = True
+    test_app.config['SECRET_KEY'] = 'test-secret-key'
+    
+    # Mock the service to avoid database dependencies
+    mock_service = Mock()
+    mock_service.get_collection_status.return_value = {
+        'enabled': True,
+        'sources': {'regtech': {'enabled': True}, 'secudium': {'enabled': False}},
+        'last_updated': '2025-07-11T12:00:00'
+    }
+    mock_service.get_daily_collection_stats.return_value = [
+        {'date': '2025-07-11', 'count': 100, 'sources': {'regtech': 100}}
+    ]
+    mock_service.get_system_health.return_value = {
+        'total_ips': 1000,
+        'active_ips': 950
+    }
+    mock_service.get_collection_logs.return_value = [
+        {'timestamp': '2025-07-11T12:00:00', 'source': 'regtech', 'action': 'collected', 'details': {}}
+    ]
+    mock_service.add_collection_log.return_value = None
+    mock_service.trigger_regtech_collection.return_value = {
+        'success': True,
+        'collected': 50,
+        'message': 'Collection completed'
+    }
+    
+    # Patch the service in the module
+    with patch('src.core.unified_routes.service', mock_service):
+        # Register blueprint
+        test_app.register_blueprint(unified_bp)
+        
+        with test_app.test_client() as client:
+            # Test 1: Collection status endpoint
+            print("  ✓ Testing GET /api/collection/status")
+            response = client.get('/api/collection/status')
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+            data = response.get_json()
+            assert data['enabled'] is True, "Collection should always be enabled"
+            assert data['status'] == 'active', "Status should be active"
+            assert 'stats' in data, "Response should include stats"
+            assert data['stats']['total_ips'] == 1000, "Should have correct total IPs"
+            assert data['message'] == '수집은 항상 활성화 상태입니다', "Should have correct message"
+            
+            # Test 2: Collection enable endpoint
+            print("  ✓ Testing POST /api/collection/enable")
+            response = client.post('/api/collection/enable',
+                                 headers={'Content-Type': 'application/json'})
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+            data = response.get_json()
+            assert data['success'] is True, "Enable should always succeed"
+            assert data['collection_enabled'] is True, "Should be enabled"
+            assert data['cleared_data'] is False, "Should not clear data"
+            assert data['message'] == '수집은 항상 활성화 상태입니다.', "Should have correct message"
+            
+            # Test 3: Collection disable endpoint
+            print("  ✓ Testing POST /api/collection/disable")
+            response = client.post('/api/collection/disable',
+                                 headers={'Content-Type': 'application/json'})
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+            data = response.get_json()
+            assert data['success'] is True, "Should return success with warning"
+            assert data['collection_enabled'] is True, "Should still be enabled"
+            assert 'warning' in data, "Should include warning"
+            assert data['warning'] == '수집 비활성화는 지원하지 않습니다.', "Should have correct warning"
+            
+            # Test 4: REGTECH trigger endpoint
+            print("  ✓ Testing POST /api/collection/regtech/trigger")
+            response = client.post('/api/collection/regtech/trigger',
+                                 json={'start_date': '20250601', 'end_date': '20250630'},
+                                 headers={'Content-Type': 'application/json'})
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+            data = response.get_json()
+            assert data['success'] is True, "REGTECH trigger should succeed"
+            assert data['source'] == 'regtech', "Source should be regtech"
+            assert 'data' in data, "Should include collection data"
+            
+            # Test 5: REGTECH trigger with form data
+            print("  ✓ Testing POST /api/collection/regtech/trigger (form data)")
+            response = client.post('/api/collection/regtech/trigger',
+                                 data={'start_date': '20250601', 'end_date': '20250630'})
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+            
+            # Test 6: SECUDIUM trigger endpoint (disabled)
+            print("  ✓ Testing POST /api/collection/secudium/trigger")
+            response = client.post('/api/collection/secudium/trigger',
+                                 headers={'Content-Type': 'application/json'})
+            assert response.status_code == 503, f"Expected 503, got {response.status_code}"
+            data = response.get_json()
+            assert data['success'] is False, "SECUDIUM should be disabled"
+            assert data['disabled'] is True, "Should indicate disabled status"
+            assert data['source'] == 'secudium', "Source should be secudium"
+            assert 'reason' in data, "Should include reason for being disabled"
+            
+            # Test 7: Error handling - test exception in enable
+            print("  ✓ Testing error handling in collection endpoints")
+            mock_service.get_collection_status.side_effect = Exception("Test error")
+            response = client.get('/api/collection/status')
+            assert response.status_code == 500, f"Expected 500, got {response.status_code}"
+            data = response.get_json()
+            assert data['enabled'] is False, "Should be disabled on error"
+            assert data['status'] == 'error', "Status should be error"
+            
+    print("\n✅ All inline integration tests passed!")
+    return True
+
+
+def _test_collection_state_consistency():
+    """Test that collection state remains consistent across operations"""
+    from flask import Flask
+    from unittest.mock import Mock, patch
+    
+    print("\n🧪 Testing collection state consistency...")
+    
+    test_app = Flask(__name__)
+    test_app.config['TESTING'] = True
+    test_app.config['SECRET_KEY'] = 'test-secret-key'
+    
+    # Track state changes
+    state_log = []
+    
+    mock_service = Mock()
+    mock_service.get_collection_status.return_value = {
+        'enabled': True,
+        'sources': {},
+        'last_updated': None
+    }
+    
+    def log_state_change(action, **kwargs):
+        state_log.append({'action': action, 'kwargs': kwargs})
+    
+    mock_service.add_collection_log.side_effect = log_state_change
+    
+    with patch('src.core.unified_routes.service', mock_service):
+        test_app.register_blueprint(unified_bp)
+        
+        with test_app.test_client() as client:
+            # Perform multiple operations
+            print("  ✓ Testing state consistency across multiple operations")
+            
+            # Enable multiple times - should be idempotent
+            for i in range(3):
+                response = client.post('/api/collection/enable')
+                assert response.status_code == 200
+                data = response.get_json()
+                assert data['collection_enabled'] is True
+            
+            # Disable attempts should not change state
+            for i in range(2):
+                response = client.post('/api/collection/disable')
+                assert response.status_code == 200
+                data = response.get_json()
+                assert data['collection_enabled'] is True
+            
+            # Status should always show enabled
+            response = client.get('/api/collection/status')
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['enabled'] is True
+            
+    print("✅ Collection state consistency test passed!")
+    return True
+
+
+def _test_concurrent_requests():
+    """Test handling of concurrent collection requests"""
+    from flask import Flask
+    from unittest.mock import Mock, patch
+    import threading
+    import time
+    
+    print("\n🧪 Testing concurrent request handling...")
+    
+    test_app = Flask(__name__)
+    test_app.config['TESTING'] = True
+    test_app.config['SECRET_KEY'] = 'test-secret-key'
+    
+    # Track concurrent calls
+    concurrent_calls = {'count': 0, 'max_concurrent': 0, 'errors': []}
+    lock = threading.Lock()
+    
+    def slow_trigger(**kwargs):
+        with lock:
+            concurrent_calls['count'] += 1
+            concurrent_calls['max_concurrent'] = max(
+                concurrent_calls['max_concurrent'],
+                concurrent_calls['count']
+            )
+        
+        # Simulate slow operation
+        time.sleep(0.1)
+        
+        with lock:
+            concurrent_calls['count'] -= 1
+        
+        return {'success': True, 'collected': 10}
+    
+    mock_service = Mock()
+    mock_service.trigger_regtech_collection.side_effect = slow_trigger
+    mock_service.add_collection_log.return_value = None
+    
+    with patch('src.core.unified_routes.service', mock_service):
+        test_app.register_blueprint(unified_bp)
+        
+        with test_app.test_client() as client:
+            print("  ✓ Sending concurrent requests...")
+            
+            threads = []
+            results = []
+            
+            def make_request():
+                try:
+                    response = client.post('/api/collection/regtech/trigger')
+                    results.append(response.status_code)
+                except Exception as e:
+                    concurrent_calls['errors'].append(str(e))
+            
+            # Start 5 concurrent requests
+            for i in range(5):
+                t = threading.Thread(target=make_request)
+                threads.append(t)
+                t.start()
+            
+            # Wait for all to complete
+            for t in threads:
+                t.join()
+            
+            # Verify results
+            assert len(results) == 5, f"Expected 5 results, got {len(results)}"
+            assert all(r == 200 for r in results), f"Some requests failed: {results}"
+            assert len(concurrent_calls['errors']) == 0, f"Errors occurred: {concurrent_calls['errors']}"
+            
+            print(f"  ✓ Max concurrent requests: {concurrent_calls['max_concurrent']}")
+            print(f"  ✓ All requests completed successfully")
+    
+    print("✅ Concurrent request handling test passed!")
+    return True
+
+
+# Run tests if module is executed directly
+if __name__ == "__main__":
+    import sys
+    
+    try:
+        # Run all inline tests
+        tests_passed = True
+        
+        tests_passed &= _test_collection_endpoints()
+        tests_passed &= _test_collection_state_consistency()
+        tests_passed &= _test_concurrent_requests()
+        
+        if tests_passed:
+            print("\n🎉 All integration tests passed!")
+            sys.exit(0)
+        else:
+            print("\n❌ Some tests failed!")
+            sys.exit(1)
+            
+    except Exception as e:
+        print(f"\n❌ Test execution failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

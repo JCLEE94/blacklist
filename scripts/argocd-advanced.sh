@@ -117,7 +117,7 @@ set_image() {
     
     # Kustomize를 사용하여 이미지 업데이트
     cd k8s
-    kustomize edit set image ghcr.io/jclee94/blacklist:latest=ghcr.io/jclee94/blacklist:$tag
+    kustomize edit set image registry.jclee.me/blacklist:latest=registry.jclee.me/blacklist:$tag
     
     # Git commit & push
     git add .

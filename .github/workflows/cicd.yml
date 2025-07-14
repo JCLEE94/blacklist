@@ -95,10 +95,10 @@ jobs:
           # Task-specific dependencies
           case "${{ matrix.task }}" in
             lint)
-              pip install flake8 black mypy
+              pip install flake8 black mypy isort
               ;;
             security)
-              pip install bandit safety
+              pip install bandit safety semgrep
               ;;
           esac
       
@@ -110,14 +110,37 @@ jobs:
           case "${{ matrix.task }}" in
             lint)
               echo "📝 Running linting checks..."
-              flake8 src/ --exit-zero || true
-              black --check src/ --diff || true
-              mypy src/ --ignore-missing-imports || true
+              echo "::group::Flake8 Analysis"
+              flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 --exit-zero --output-file=flake8-report.txt || true
+              echo "::endgroup::"
+              
+              echo "::group::Black Formatting Check"
+              black --check src/ --diff --color || true
+              echo "::endgroup::"
+              
+              echo "::group::Import Sorting Check"
+              isort src/ --check-only --diff --color || true
+              echo "::endgroup::"
+              
+              echo "::group::MyPy Type Analysis"
+              mypy src/ --ignore-missing-imports --no-error-summary || true
+              echo "::endgroup::"
               ;;
             security)
               echo "🔒 Running security scan..."
-              bandit -r src/ -f json -o bandit-report.json || true
-              safety check --json || true
+              echo "::group::Bandit Security Analysis"
+              bandit -r src/ -f json -o bandit-report.json -ll || true
+              bandit -r src/ -f txt || true
+              echo "::endgroup::"
+              
+              echo "::group::Safety Dependency Check"
+              safety check --json --output safety-report.json || true
+              safety check || true
+              echo "::endgroup::"
+              
+              echo "::group::Semgrep Code Analysis"
+              semgrep --config=auto src/ --json --output=semgrep-report.json || true
+              echo "::endgroup::"
               ;;
           esac
           echo "✅ ${{ matrix.task }} completed"
@@ -126,12 +149,38 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.task }}-report
+          name: ${{ matrix.task }}-report-${{ github.run_number }}
           path: |
             *-report.json
+            *-report.txt
             *.log
-          retention-days: 7
+          retention-days: 30
           if-no-files-found: ignore
+      
+      - name: Security scan summary
+        if: matrix.task == 'security' && always()
+        run: |
+          echo "🔒 Security Scan Summary"
+          echo "========================"
+          
+          if [ -f bandit-report.json ]; then
+            HIGH_ISSUES=$(jq -r '.results | map(select(.issue_severity == "HIGH")) | length' bandit-report.json 2>/dev/null || echo "0")
+            MEDIUM_ISSUES=$(jq -r '.results | map(select(.issue_severity == "MEDIUM")) | length' bandit-report.json 2>/dev/null || echo "0")
+            echo "Bandit: High: $HIGH_ISSUES, Medium: $MEDIUM_ISSUES"
+            
+            if [ "$HIGH_ISSUES" != "0" ]; then
+              echo "⚠️ High severity security issues found!"
+            fi
+          fi
+          
+          if [ -f safety-report.json ]; then
+            VULNERABILITIES=$(jq -r 'length' safety-report.json 2>/dev/null || echo "0")
+            echo "Safety: $VULNERABILITIES vulnerabilities found"
+            
+            if [ "$VULNERABILITIES" != "0" ]; then
+              echo "⚠️ Dependency vulnerabilities found!"
+            fi
+          fi
 
   # 병렬 테스트
   test:
@@ -312,6 +361,9 @@ jobs:
           echo ""
           echo "🔄 ArgoCD Image Updater will automatically deploy this image."
           echo "Monitor deployment at: https://argo.jclee.me"
+          echo ""
+          echo "🏥 Production Health Check: https://blacklist.jclee.me/health"
+          echo "📊 Application Dashboard: https://blacklist.jclee.me"
           
       - name: Create deployment marker
         run: |

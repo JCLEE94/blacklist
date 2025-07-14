@@ -1,7 +1,7 @@
 # Blacklist Management System
 
-[![CI/CD](https://github.com/JCLEE94/blacklist/actions/workflows/main.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io-blue.svg)](https://github.com/JCLEE94/blacklist/pkgs/container/blacklist)
+[![CI/CD](https://github.com/JCLEE94/blacklist/actions/workflows/cicd.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
+[![Docker](https://img.shields.io/badge/Docker-registry.jclee.me-blue.svg)](https://registry.jclee.me)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-brightgreen.svg)](https://kubernetes.io/)
 [![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-orange.svg)](https://argoproj.github.io/argo-cd/)
 
@@ -15,7 +15,8 @@
 - **자동화된 데이터 수집**: REGTECH, SECUDIUM 등 다중 소스 통합
 - **FortiGate 연동**: External Connector API 제공
 - **고가용성 아키텍처**: 자동 복구, 상태 모니터링, 성능 최적화
-- **통합 CI/CD 파이프라인**: 병렬 테스트, 자동 빌드, ArgoCD Image Updater 연동
+- **통합 CI/CD 파이프라인**: 병렬 테스트, 보안 스캔, 자동 빌드, ArgoCD Image Updater 연동
+- **포괄적 테스트 스위트**: 통합 테스트, 성능 벤치마크, Rust 스타일 인라인 테스트
 
 ## 📋 빠른 시작
 
@@ -229,6 +230,12 @@ curl https://blacklist.jclee.me/health
 
 # CI/CD 파이프라인 상태
 gh run list --workflow=cicd.yml --limit=5
+
+# 통합 테스트 실행
+python3 tests/integration/run_integration_tests.py
+
+# 성능 벤치마크
+python3 tests/integration/performance_benchmark.py
 ```
 
 ### ArgoCD 대시보드

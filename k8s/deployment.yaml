@@ -26,7 +26,7 @@ spec:
         deployment.kubernetes.io/revision: "1751925854"
     spec:
       imagePullSecrets:
-      - name: ghcr-secret
+      - name: regcred
       initContainers:
       - name: init-permissions
         image: busybox
@@ -40,7 +40,7 @@ spec:
           mountPath: /app/instance
       containers:
       - name: blacklist
-        image: ghcr.io/jclee94/blacklist:latest
+        image: registry.jclee.me/blacklist:latest
         imagePullPolicy: Always  # Force pull the new image
         ports:
         - containerPort: 2541

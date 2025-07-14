@@ -20,7 +20,7 @@ APP_NAMESPACE="blacklist"
 GITHUB_REPO="https://github.com/JCLEE94/blacklist.git"
 GITHUB_BRANCH="main"
 K8S_PATH="k8s"
-REGISTRY="ghcr.io"
+REGISTRY="registry.jclee.me"
 IMAGE_NAME="jclee94/blacklist"
 
 echo -e "${BLUE}=== ArgoCD CLI 설정 시작 ===${NC}"

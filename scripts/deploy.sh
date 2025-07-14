@@ -5,7 +5,7 @@ echo "🚀 Blacklist GitOps 배포 시작..."
 
 # 환경 변수 설정 (ArgoCD GitOps 방식)
 NAMESPACE="${NAMESPACE:-blacklist}"
-REGISTRY="${REGISTRY:-ghcr.io}"
+REGISTRY="${REGISTRY:-registry.jclee.me}"
 GITHUB_USERNAME="${GITHUB_USERNAME:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
@@ -28,16 +28,10 @@ fi
 
 # 2. Registry Secret 생성
 echo "🔐 Registry Secret 생성..."
-if [ -n "$GITHUB_USERNAME" ] && [ -n "$GITHUB_TOKEN" ]; then
-    kubectl create secret docker-registry ghcr-secret \
-        --docker-server=ghcr.io \
-        --docker-username="$GITHUB_USERNAME" \
-        --docker-password="$GITHUB_TOKEN" \
-        --docker-email="${GITHUB_EMAIL:-noreply@github.com}" \
-        -n $NAMESPACE 2>/dev/null || echo "   - GHCR secret already exists"
-else
-    echo "   - ⚠️  GITHUB_USERNAME and GITHUB_TOKEN not set. Please run setup-ghcr-secret.sh first"
-fi
+# registry.jclee.me는 인증이 필요하지 않으므로 기본 regcred 사용
+echo "   - registry.jclee.me는 인증이 필요하지 않은 private registry입니다"
+echo "   - 기존 regcred secret을 사용합니다"
+kubectl apply -f k8s/registry-secret.yaml 2>/dev/null || echo "   - Registry secret already exists"
 
 # 3. 애플리케이션 Secret 생성
 echo "🔑 애플리케이션 Secret 생성..."

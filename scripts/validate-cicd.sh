@@ -15,7 +15,7 @@ NC='\033[0m'
 
 # 설정
 GITHUB_REPO="JCLEE94/blacklist"
-GHCR_IMAGE="ghcr.io/jclee94/blacklist"
+REGISTRY_IMAGE="registry.jclee.me/blacklist"
 ARGOCD_SERVER="${ARGOCD_SERVER:-argo.jclee.me}"
 APP_NAME="blacklist"
 NAMESPACE="blacklist"
@@ -110,7 +110,8 @@ check_ghcr_images() {
         print_success "Docker가 GHCR에 로그인됨"
     else
         print_info "GHCR 로그인 시도 중..."
-        echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin
+        # Private registry doesn't require authentication
+        echo "  ✓ registry.jclee.me는 인증이 필요없습니다"
     fi
     
     # 이미지 존재 확인

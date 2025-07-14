@@ -15,8 +15,8 @@ NC='\033[0m'
 # 기본 설정
 NAMESPACE="blacklist"
 ARGOCD_SERVER="${ARGOCD_SERVER:-argo.jclee.me}"
-REGISTRY="ghcr.io"
-IMAGE_NAME="jclee94/blacklist"
+REGISTRY="registry.jclee.me"
+IMAGE_NAME="blacklist"
 GITHUB_USERNAME="${GITHUB_USERNAME:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 

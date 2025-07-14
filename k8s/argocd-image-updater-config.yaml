@@ -11,8 +11,8 @@ data:
       api_url: https://registry.jclee.me
       prefix: registry.jclee.me
       ping: yes
-      insecure: no
-      credentials: pullsecret:argocd/registry-credentials
+      insecure: yes
+      # No credentials required for registry.jclee.me
       defaultns: library
       limit: 50
   

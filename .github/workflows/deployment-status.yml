@@ -1,0 +1,248 @@
+name: Deployment Status Monitor
+
+on:
+  schedule:
+    # Check deployment status every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of health check'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - 'full'
+          - 'basic'
+          - 'argocd'
+
+env:
+  PRODUCTION_URL: https://blacklist.jclee.me
+  ARGOCD_URL: https://argo.jclee.me
+  
+jobs:
+  monitor-deployment:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    steps:
+      - name: Check Application Health
+        id: health_check
+        run: |
+          echo "🏥 Checking application health..."
+          
+          # Check main application
+          if curl -f -s "${{ env.PRODUCTION_URL }}/health" > /tmp/health.json; then
+            echo "app_status=healthy" >> $GITHUB_OUTPUT
+            echo "✅ Application is healthy"
+            
+            # Extract health details
+            STATUS=$(cat /tmp/health.json | jq -r '.status // "unknown"')
+            UPTIME=$(cat /tmp/health.json | jq -r '.uptime // "unknown"')
+            VERSION=$(cat /tmp/health.json | jq -r '.version // "unknown"')
+            
+            echo "Status: $STATUS"
+            echo "Uptime: $UPTIME"
+            echo "Version: $VERSION"
+            
+          else
+            echo "app_status=unhealthy" >> $GITHUB_OUTPUT
+            echo "❌ Application health check failed"
+          fi
+          
+          # Check basic connectivity
+          if curl -f -s "${{ env.PRODUCTION_URL }}/test" | grep -q "Test response"; then
+            echo "connectivity=ok" >> $GITHUB_OUTPUT
+            echo "✅ Basic connectivity OK"
+          else
+            echo "connectivity=failed" >> $GITHUB_OUTPUT
+            echo "❌ Basic connectivity failed"
+          fi
+
+      - name: Check ArgoCD Application Status
+        id: argocd_check
+        if: github.event.inputs.check_type != 'basic'
+        run: |
+          echo "🔄 Checking ArgoCD application status..."
+          
+          # Try to get application status via kubectl (if available)
+          if command -v kubectl >/dev/null; then
+            if kubectl get application blacklist -n argocd -o json > /tmp/argocd-app.json 2>/dev/null; then
+              SYNC_STATUS=$(cat /tmp/argocd-app.json | jq -r '.status.sync.status // "unknown"')
+              HEALTH_STATUS=$(cat /tmp/argocd-app.json | jq -r '.status.health.status // "unknown"')
+              
+              echo "argocd_sync=$SYNC_STATUS" >> $GITHUB_OUTPUT
+              echo "argocd_health=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+              
+              echo "ArgoCD Sync Status: $SYNC_STATUS"
+              echo "ArgoCD Health Status: $HEALTH_STATUS"
+              
+              if [ "$SYNC_STATUS" = "Synced" ] && [ "$HEALTH_STATUS" = "Healthy" ]; then
+                echo "✅ ArgoCD application is synced and healthy"
+              else
+                echo "⚠️ ArgoCD application may have issues"
+              fi
+            else
+              echo "argocd_status=unavailable" >> $GITHUB_OUTPUT
+              echo "⚠️ Cannot check ArgoCD status (kubectl not available or no access)"
+            fi
+          else
+            echo "argocd_status=no_kubectl" >> $GITHUB_OUTPUT
+            echo "⚠️ kubectl not available for ArgoCD status check"
+          fi
+
+      - name: Check API Endpoints
+        id: api_check
+        if: github.event.inputs.check_type == 'full'
+        run: |
+          echo "🔌 Testing API endpoints..."
+          
+          ENDPOINTS=(
+            "/api/blacklist/active:GET"
+            "/api/fortigate:GET"
+            "/api/stats:GET"
+            "/api/collection/status:GET"
+          )
+          
+          FAILED_ENDPOINTS=0
+          
+          for endpoint_method in "${ENDPOINTS[@]}"; do
+            IFS=':' read -r endpoint method <<< "$endpoint_method"
+            
+            echo "Testing $method $endpoint"
+            if curl -f -s -X "$method" "${{ env.PRODUCTION_URL }}$endpoint" >/dev/null; then
+              echo "✅ $endpoint OK"
+            else
+              echo "❌ $endpoint FAILED"
+              FAILED_ENDPOINTS=$((FAILED_ENDPOINTS + 1))
+            fi
+          done
+          
+          echo "failed_endpoints=$FAILED_ENDPOINTS" >> $GITHUB_OUTPUT
+          echo "Total failed endpoints: $FAILED_ENDPOINTS"
+
+      - name: Performance Check
+        id: perf_check
+        if: github.event.inputs.check_type == 'full'
+        run: |
+          echo "🚀 Running performance check..."
+          
+          # Test response time
+          RESPONSE_TIME=$(curl -w "%{time_total}" -s -o /dev/null "${{ env.PRODUCTION_URL }}/health")
+          echo "Response time: ${RESPONSE_TIME}s"
+          
+          # Convert to milliseconds for easier comparison
+          RESPONSE_TIME_MS=$(echo "$RESPONSE_TIME * 1000" | bc -l | cut -d. -f1)
+          echo "response_time_ms=$RESPONSE_TIME_MS" >> $GITHUB_OUTPUT
+          
+          if [ "$RESPONSE_TIME_MS" -lt 500 ]; then
+            echo "✅ Response time excellent (${RESPONSE_TIME_MS}ms)"
+            echo "perf_status=excellent" >> $GITHUB_OUTPUT
+          elif [ "$RESPONSE_TIME_MS" -lt 1000 ]; then
+            echo "⚠️ Response time acceptable (${RESPONSE_TIME_MS}ms)"
+            echo "perf_status=acceptable" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Response time slow (${RESPONSE_TIME_MS}ms)"
+            echo "perf_status=slow" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate Status Report
+        if: always()
+        run: |
+          echo "📊 Deployment Status Report"
+          echo "=========================="
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Check Type: ${{ github.event.inputs.check_type || 'scheduled' }}"
+          echo ""
+          
+          # Application Status
+          echo "🏥 Application Health"
+          echo "Status: ${{ steps.health_check.outputs.app_status }}"
+          echo "Connectivity: ${{ steps.health_check.outputs.connectivity }}"
+          echo ""
+          
+          # ArgoCD Status (if checked)
+          if [ "${{ steps.argocd_check.outputs.argocd_sync }}" != "" ]; then
+            echo "🔄 ArgoCD Status"
+            echo "Sync: ${{ steps.argocd_check.outputs.argocd_sync }}"
+            echo "Health: ${{ steps.argocd_check.outputs.argocd_health }}"
+            echo ""
+          fi
+          
+          # API Status (if checked)
+          if [ "${{ steps.api_check.outputs.failed_endpoints }}" != "" ]; then
+            echo "🔌 API Endpoints"
+            echo "Failed: ${{ steps.api_check.outputs.failed_endpoints }}"
+            echo ""
+          fi
+          
+          # Performance (if checked)
+          if [ "${{ steps.perf_check.outputs.response_time_ms }}" != "" ]; then
+            echo "🚀 Performance"
+            echo "Response Time: ${{ steps.perf_check.outputs.response_time_ms }}ms"
+            echo "Status: ${{ steps.perf_check.outputs.perf_status }}"
+            echo ""
+          fi
+
+      - name: Alert on Critical Issues
+        if: |
+          steps.health_check.outputs.app_status == 'unhealthy' ||
+          steps.health_check.outputs.connectivity == 'failed' ||
+          (steps.argocd_check.outputs.argocd_health == 'Degraded' || steps.argocd_check.outputs.argocd_health == 'Suspended') ||
+          steps.api_check.outputs.failed_endpoints > '2' ||
+          steps.perf_check.outputs.perf_status == 'slow'
+        run: |
+          echo "🚨 CRITICAL DEPLOYMENT ISSUES DETECTED"
+          echo "======================================"
+          
+          if [ "${{ steps.health_check.outputs.app_status }}" = "unhealthy" ]; then
+            echo "❌ Application health check failed"
+          fi
+          
+          if [ "${{ steps.health_check.outputs.connectivity }}" = "failed" ]; then
+            echo "❌ Basic connectivity failed"
+          fi
+          
+          if [ "${{ steps.argocd_check.outputs.argocd_health }}" = "Degraded" ] || [ "${{ steps.argocd_check.outputs.argocd_health }}" = "Suspended" ]; then
+            echo "❌ ArgoCD application health degraded"
+          fi
+          
+          if [ "${{ steps.api_check.outputs.failed_endpoints }}" -gt "2" ]; then
+            echo "❌ Multiple API endpoints failing (${{ steps.api_check.outputs.failed_endpoints }})"
+          fi
+          
+          if [ "${{ steps.perf_check.outputs.perf_status }}" = "slow" ]; then
+            echo "❌ Poor performance detected (${{ steps.perf_check.outputs.response_time_ms }}ms)"
+          fi
+          
+          echo ""
+          echo "🔧 Recommended Actions:"
+          echo "1. Check application logs: kubectl logs -f deployment/blacklist -n blacklist"
+          echo "2. Check ArgoCD application: https://argo.jclee.me"
+          echo "3. Verify Kubernetes pod status: kubectl get pods -n blacklist"
+          echo "4. Review recent deployments: kubectl rollout history deployment/blacklist -n blacklist"
+
+      - name: Store Status History
+        if: always()
+        run: |
+          # Create status history directory
+          mkdir -p /tmp/blacklist-status-history
+          
+          # Create status entry
+          cat > "/tmp/blacklist-status-history/$(date +%Y%m%d-%H%M%S).json" << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "check_type": "${{ github.event.inputs.check_type || 'scheduled' }}",
+            "app_status": "${{ steps.health_check.outputs.app_status }}",
+            "connectivity": "${{ steps.health_check.outputs.connectivity }}",
+            "argocd_sync": "${{ steps.argocd_check.outputs.argocd_sync }}",
+            "argocd_health": "${{ steps.argocd_check.outputs.argocd_health }}",
+            "failed_endpoints": "${{ steps.api_check.outputs.failed_endpoints }}",
+            "response_time_ms": "${{ steps.perf_check.outputs.response_time_ms }}",
+            "perf_status": "${{ steps.perf_check.outputs.perf_status }}"
+          }
+          EOF
+          
+          # Clean up old status files (keep last 100)
+          ls -t /tmp/blacklist-status-history/*.json 2>/dev/null | tail -n +101 | xargs -r rm -f
+          
+          echo "✅ Status history updated"
