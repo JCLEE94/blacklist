@@ -353,12 +353,14 @@ jobs:
       
       - name: Create offline deployment package
         run: |
-          echo "📦 Creating offline deployment package..."
+          echo "Creating offline deployment package..."
           
           # 출력 디렉토리 생성
           OFFLINE_DIR="offline-package"
           rm -rf ${OFFLINE_DIR}
-          mkdir -p ${OFFLINE_DIR}/{images,k8s,scripts}
+          mkdir -p ${OFFLINE_DIR}/images
+          mkdir -p ${OFFLINE_DIR}/k8s
+          mkdir -p ${OFFLINE_DIR}/scripts
           
           # 이미지 태그 정보
           IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
@@ -366,7 +368,7 @@ jobs:
           IMAGE_NAME="${{ env.IMAGE_NAME }}"
           
           # Docker 이미지 저장
-          echo "🐳 Saving Docker images..."
+          echo "Saving Docker images..."
           
           # Blacklist 이미지
           docker pull ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} || echo "Using local image"
@@ -381,55 +383,55 @@ jobs:
           docker save busybox -o ${OFFLINE_DIR}/images/busybox.tar
           
           # Kubernetes 매니페스트 복사
-          echo "📋 Copying Kubernetes manifests..."
+          echo "Copying Kubernetes manifests..."
           cp -r k8s/* ${OFFLINE_DIR}/k8s/
           
           # 이미지 태그 업데이트
-          sed -i "s|${REGISTRY}/${IMAGE_NAME}:latest|${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" ${OFFLINE_DIR}/k8s/deployment.yaml
+          if [ -f "${OFFLINE_DIR}/k8s/deployment.yaml" ]; then
+            sed -i "s|${REGISTRY}/${IMAGE_NAME}:latest|${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" ${OFFLINE_DIR}/k8s/deployment.yaml
+          fi
           
           # 설치 스크립트 생성
-          cat > ${OFFLINE_DIR}/install.sh << 'INSTALL_SCRIPT'
+          cat > ${OFFLINE_DIR}/install.sh << 'EOF'
           #!/bin/bash
           set -e
-          echo "🚀 Blacklist 오프라인 설치 시작..."
+          echo "Blacklist offline installation starting..."
           
           # Docker 이미지 로드
-          echo "🐳 Docker 이미지 로드 중..."
+          echo "Loading Docker images..."
           docker load -i images/blacklist.tar
           docker load -i images/redis.tar
           docker load -i images/busybox.tar
           
           # Kubernetes 배포
-          echo "☸️  Kubernetes 배포 중..."
+          echo "Deploying to Kubernetes..."
           kubectl create namespace blacklist --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -k k8s/
           
-          echo "✅ 설치 완료!"
-          echo "접속: http://<노드IP>:32452"
-          INSTALL_SCRIPT
+          echo "Installation complete!"
+          echo "Access: http://<node-ip>:32452"
+          EOF
           
           chmod +x ${OFFLINE_DIR}/install.sh
           
           # README 생성
-          cat > ${OFFLINE_DIR}/README.md << EOF
-          # Blacklist Offline Package
-          
-          - Version: ${IMAGE_TAG}
-          - Commit: ${{ github.sha }}
-          - Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          
-          ## Installation
-          \\\`\\\`\\\`bash
-          ./install.sh
-          \\\`\\\`\\\`
-          EOF
+          echo "# Blacklist Offline Package" > ${OFFLINE_DIR}/README.md
+          echo "" >> ${OFFLINE_DIR}/README.md
+          echo "- Version: ${IMAGE_TAG}" >> ${OFFLINE_DIR}/README.md
+          echo "- Commit: ${{ github.sha }}" >> ${OFFLINE_DIR}/README.md
+          echo "- Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> ${OFFLINE_DIR}/README.md
+          echo "" >> ${OFFLINE_DIR}/README.md
+          echo "## Installation" >> ${OFFLINE_DIR}/README.md
+          echo '```bash' >> ${OFFLINE_DIR}/README.md
+          echo "./install.sh" >> ${OFFLINE_DIR}/README.md
+          echo '```' >> ${OFFLINE_DIR}/README.md
           
           # tar 파일 생성
           PACKAGE_NAME="blacklist-offline-${IMAGE_TAG}.tar.gz"
-          tar -czf ${PACKAGE_NAME} -C . ${OFFLINE_DIR}
+          tar -czf ${PACKAGE_NAME} ${OFFLINE_DIR}
           
-          echo "✅ Offline package created: ${PACKAGE_NAME}"
-          echo "📏 Size: $(du -h ${PACKAGE_NAME} | cut -f1)"
+          echo "Offline package created: ${PACKAGE_NAME}"
+          echo "Size: $(du -h ${PACKAGE_NAME} | cut -f1)"
       
       - name: Upload offline package
         uses: actions/upload-artifact@v4
