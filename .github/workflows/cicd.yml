@@ -419,14 +419,14 @@ jobs:
           - Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)
           
           ## Installation
-          \`\`\`bash
+          \\\`\\\`\\\`bash
           ./install.sh
-          \`\`\`
+          \\\`\\\`\\\`
           EOF
           
           # tar 파일 생성
           PACKAGE_NAME="blacklist-offline-${IMAGE_TAG}.tar.gz"
-          tar -czf ${PACKAGE_NAME} ${OFFLINE_DIR}
+          tar -czf ${PACKAGE_NAME} -C . ${OFFLINE_DIR}
           
           echo "✅ Offline package created: ${PACKAGE_NAME}"
           echo "📏 Size: $(du -h ${PACKAGE_NAME} | cut -f1)"
