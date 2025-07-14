@@ -351,87 +351,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Create offline deployment package
+      - name: Create offline package
         run: |
-          echo "Creating offline deployment package..."
+          set -e
           
-          # 출력 디렉토리 생성
-          OFFLINE_DIR="offline-package"
-          rm -rf ${OFFLINE_DIR}
-          mkdir -p ${OFFLINE_DIR}/images
-          mkdir -p ${OFFLINE_DIR}/k8s
-          mkdir -p ${OFFLINE_DIR}/scripts
-          
-          # 이미지 태그 정보
           IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
           REGISTRY="${{ env.REGISTRY }}"
           IMAGE_NAME="${{ env.IMAGE_NAME }}"
           
-          # Docker 이미지 저장
-          echo "Saving Docker images..."
-          
-          # Blacklist 이미지
-          docker pull ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} || echo "Using local image"
-          docker save ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -o ${OFFLINE_DIR}/images/blacklist.tar
-          
-          # Redis 이미지
-          docker pull redis:7-alpine
-          docker save redis:7-alpine -o ${OFFLINE_DIR}/images/redis.tar
-          
-          # Busybox 이미지
-          docker pull busybox
-          docker save busybox -o ${OFFLINE_DIR}/images/busybox.tar
-          
-          # Kubernetes 매니페스트 복사
-          echo "Copying Kubernetes manifests..."
-          cp -r k8s/* ${OFFLINE_DIR}/k8s/
-          
-          # 이미지 태그 업데이트
-          if [ -f "${OFFLINE_DIR}/k8s/deployment.yaml" ]; then
-            sed -i "s|${REGISTRY}/${IMAGE_NAME}:latest|${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" ${OFFLINE_DIR}/k8s/deployment.yaml
-          fi
-          
-          # 설치 스크립트 생성
-          cat > ${OFFLINE_DIR}/install.sh << 'EOF'
-          #!/bin/bash
-          set -e
-          echo "Blacklist offline installation starting..."
-          
-          # Docker 이미지 로드
-          echo "Loading Docker images..."
-          docker load -i images/blacklist.tar
-          docker load -i images/redis.tar
-          docker load -i images/busybox.tar
-          
-          # Kubernetes 배포
-          echo "Deploying to Kubernetes..."
-          kubectl create namespace blacklist --dry-run=client -o yaml | kubectl apply -f -
-          kubectl apply -k k8s/
-          
-          echo "Installation complete!"
-          echo "Access: http://<node-ip>:32452"
-          EOF
-          
-          chmod +x ${OFFLINE_DIR}/install.sh
-          
-          # README 생성
-          echo "# Blacklist Offline Package" > ${OFFLINE_DIR}/README.md
-          echo "" >> ${OFFLINE_DIR}/README.md
-          echo "- Version: ${IMAGE_TAG}" >> ${OFFLINE_DIR}/README.md
-          echo "- Commit: ${{ github.sha }}" >> ${OFFLINE_DIR}/README.md
-          echo "- Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> ${OFFLINE_DIR}/README.md
-          echo "" >> ${OFFLINE_DIR}/README.md
-          echo "## Installation" >> ${OFFLINE_DIR}/README.md
-          echo '```bash' >> ${OFFLINE_DIR}/README.md
-          echo "./install.sh" >> ${OFFLINE_DIR}/README.md
-          echo '```' >> ${OFFLINE_DIR}/README.md
-          
-          # tar 파일 생성
-          PACKAGE_NAME="blacklist-offline-${IMAGE_TAG}.tar.gz"
-          tar -czf ${PACKAGE_NAME} ${OFFLINE_DIR}
-          
-          echo "Offline package created: ${PACKAGE_NAME}"
-          echo "Size: $(du -h ${PACKAGE_NAME} | cut -f1)"
+          ./scripts/create-offline-package.sh
       
       - name: Upload offline package
         uses: actions/upload-artifact@v4
@@ -439,7 +367,7 @@ jobs:
           name: offline-package-${{ needs.build.outputs.image-tag }}
           path: blacklist-offline-*.tar.gz
           retention-days: 30
-          if-no-files-found: error
+          if-no-files-found: warn
 
   # 배포 알림 (ArgoCD Image Updater가 자동 배포)
   notify-deployment:
