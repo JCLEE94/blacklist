@@ -15,13 +15,20 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # 설정
-REGISTRY="registry.jclee.me"
-IMAGE_NAME="blacklist"
+REGISTRY="${REGISTRY:-registry.jclee.me}"
+IMAGE_NAME="${IMAGE_NAME:-blacklist}"
+IMAGE_TAG="${IMAGE_TAG:-latest}"
 REDIS_IMAGE="redis:7-alpine"
 BUSYBOX_IMAGE="busybox"
 OUTPUT_DIR="offline-package"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-PACKAGE_NAME="blacklist-offline-${TIMESTAMP}.tar.gz"
+
+# CI/CD에서 IMAGE_TAG가 전달되면 사용, 아니면 timestamp 사용
+if [ -n "$IMAGE_TAG" ] && [ "$IMAGE_TAG" != "latest" ]; then
+    PACKAGE_NAME="blacklist-offline-${IMAGE_TAG}.tar.gz"
+else
+    PACKAGE_NAME="blacklist-offline-${TIMESTAMP}.tar.gz"
+fi
 
 # 출력 디렉토리 생성
 echo -e "${BLUE}📁 출력 디렉토리 생성...${NC}"
@@ -32,11 +39,11 @@ mkdir -p ${OUTPUT_DIR}/{images,k8s,scripts}
 echo -e "${BLUE}🐳 Docker 이미지 저장 중...${NC}"
 
 # Blacklist 이미지
-echo "  - ${REGISTRY}/${IMAGE_NAME}:latest"
-docker pull ${REGISTRY}/${IMAGE_NAME}:latest || {
-    echo -e "${YELLOW}⚠️  최신 이미지를 pull할 수 없습니다. 로컬 이미지 사용...${NC}"
+echo "  - ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+docker pull ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} || {
+    echo -e "${YELLOW}⚠️  이미지를 pull할 수 없습니다. 로컬 이미지 사용...${NC}"
 }
-docker save ${REGISTRY}/${IMAGE_NAME}:latest -o ${OUTPUT_DIR}/images/blacklist.tar
+docker save ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -o ${OUTPUT_DIR}/images/blacklist.tar
 
 # Redis 이미지
 echo "  - ${REDIS_IMAGE}"
@@ -138,7 +145,7 @@ cat > ${OUTPUT_DIR}/README.md << EOF
 - 커밋: $(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 ## 포함된 Docker 이미지
-- ${REGISTRY}/${IMAGE_NAME}:latest
+- ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
 - ${REDIS_IMAGE}
 - ${BUSYBOX_IMAGE}
 

@@ -355,9 +355,14 @@ jobs:
         run: |
           set -e
           
-          IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
-          REGISTRY="${{ env.REGISTRY }}"
-          IMAGE_NAME="${{ env.IMAGE_NAME }}"
+          export IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+          export REGISTRY="${{ env.REGISTRY }}"
+          export IMAGE_NAME="${{ env.IMAGE_NAME }}"
+          
+          echo "Creating offline package with:"
+          echo "  Registry: ${REGISTRY}"
+          echo "  Image: ${IMAGE_NAME}"
+          echo "  Tag: ${IMAGE_TAG}"
           
           ./scripts/create-offline-package.sh
       
