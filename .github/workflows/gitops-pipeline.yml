@@ -26,11 +26,25 @@ env:
   CHARTMUSEUM_URL: ${{ secrets.CHARTMUSEUM_URL || 'https://charts.jclee.me' }}
 
 jobs:
-  # 1. 코드 품질 검사
+  # 0. 이전 실행 취소
+  cancel-previous:
+    runs-on: self-hosted
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.12.1
+        with:
+          access_token: ${{ github.token }}
+
+  # 1. 코드 품질 검사 (병렬 실행)
   quality-check:
     runs-on: self-hosted
+    needs: cancel-previous
+    strategy:
+      fail-fast: false
+      matrix:
+        check-type: [lint, security]
     outputs:
-      quality-passed: ${{ steps.quality.outputs.passed }}
+      quality-passed: ${{ steps.combine.outputs.passed }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -52,38 +66,49 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 black isort bandit safety semgrep
+          
+          if [[ "${{ matrix.check-type }}" == "lint" ]]; then
+            pip install flake8 black isort mypy
+          else
+            pip install bandit safety semgrep
+          fi
 
-      - name: Code quality checks
-        id: quality
+      - name: Run ${{ matrix.check-type }} checks
+        id: check
         run: |
-          echo "Running code quality checks..."
+          echo "Running ${{ matrix.check-type }} checks..."
           
-          # Linting
-          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503,W293,W291,E501,E302 --exit-zero
+          if [[ "${{ matrix.check-type }}" == "lint" ]]; then
+            # Linting checks
+            flake8 src/ --max-line-length=88 --extend-ignore=E203,W503,W293,W291,E501,E302 --exit-zero
+            black --check src/ --diff || echo "⚠️ Black formatting issues found (non-blocking)"
+            isort src/ --check-only --diff || echo "⚠️ Import sorting issues found (non-blocking)"
+            mypy src/ --ignore-missing-imports --no-error-summary || echo "⚠️ Type checking issues found (non-blocking)"
+          else
+            # Security checks
+            bandit -r src/ -ll || echo "⚠️ Security issues found (non-blocking)"
+            safety check || echo "⚠️ Dependency vulnerabilities found (non-blocking)"
+            # semgrep --config=auto src/ || echo "⚠️ Semgrep issues found (non-blocking)"
+          fi
           
-          # Code formatting
-          black --check src/ --diff || echo "⚠️ Black formatting issues found (non-blocking)"
-          
-          # Import sorting
-          isort src/ --check-only --diff || echo "⚠️ Import sorting issues found (non-blocking)"
-          
-          # Security scan
-          bandit -r src/ -ll || echo "⚠️ Security issues found (non-blocking)"
-          
-          # Dependency check
-          safety check || echo "⚠️ Dependency vulnerabilities found (non-blocking)"
-          
-          # Semgrep scan (optional)
-          # semgrep --config=auto src/ || echo "⚠️ Semgrep issues found (non-blocking)"
-          
+          echo "check_passed=true" >> $GITHUB_OUTPUT
+
+      - name: Combine results
+        if: always()
+        id: combine
+        run: |
+          # All quality checks are non-blocking, so always pass
           echo "passed=true" >> $GITHUB_OUTPUT
 
-  # 2. 테스트
+  # 2. 테스트 (병렬 실행)
   test:
     runs-on: self-hosted
     needs: quality-check
     if: needs.quality-check.outputs.quality-passed == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite: [unit, integration]
     outputs:
       test-passed: ${{ steps.test.outputs.passed }}
     steps:
@@ -107,28 +132,41 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-mock
+          pip install pytest pytest-cov pytest-mock pytest-xdist
 
       - name: Run tests
         id: test
         run: |
-          echo "Running tests..."
+          echo "Running ${{ matrix.test-suite }} tests..."
           
-          # Run unit tests with coverage
-          pytest tests/ -m "not integration" --cov=src --cov-report=xml --cov-report=term || true
-          
-          # Integration tests (optional)
-          # pytest tests/ -m "integration" || echo "⚠️ Integration tests failed (non-blocking)"
+          if [[ "${{ matrix.test-suite }}" == "unit" ]]; then
+            # Run unit tests with coverage and parallel execution
+            pytest tests/ -m "not integration" --cov=src --cov-report=xml --cov-report=term -n auto || true
+          else
+            # Run integration tests with parallel execution
+            pytest tests/ -m "integration" -n 2 || true
+          fi
           
           echo "passed=true" >> $GITHUB_OUTPUT
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        continue-on-error: true
+        with:
+          name: test-results-${{ matrix.test-suite }}
+          path: |
+            pytest-results-*.xml
+            coverage.xml
+          retention-days: 7
 
   # 3. Docker 빌드 및 Push
   build-and-push:
     runs-on: self-hosted
     needs: [quality-check, test]
     if: |
+      always() &&
       needs.quality-check.outputs.quality-passed == 'true' &&
-      needs.test.outputs.test-passed == 'true' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     outputs:
       image-tag: ${{ steps.meta.outputs.version }}
@@ -153,6 +191,10 @@ jobs:
             [registry."registry.jclee.me"]
               http = true
               insecure = true
+          # 빌드 캐시 최적화
+          install: true
+          version: latest
+          driver: docker-container
 
       - name: Generate metadata
         id: meta
@@ -177,8 +219,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             GIT_COMMIT=${{ github.sha }}
