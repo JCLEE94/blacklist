@@ -30,7 +30,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:latest
+        image: blacklist:latest
         imagePullPolicy: Always
         ports:
         - name: http

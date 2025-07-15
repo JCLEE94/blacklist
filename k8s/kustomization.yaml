@@ -19,7 +19,8 @@ resources:
   - cronjob.yaml
 
 images:
-  - name: registry.jclee.me/blacklist
+  - name: blacklist
+    newName: registry.jclee.me/blacklist
     newTag: latest
 
 # ArgoCD annotations for automatic image updates
