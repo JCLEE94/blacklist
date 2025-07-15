@@ -49,14 +49,24 @@ def settings_page():
             'max_ips_per_source': 50000
         }
     
-    # 수집 상태 가져오기
-    collection_enabled = True
+    # 수집 상태 가져오기 - 기본값 False로 변경
+    collection_enabled = False
     try:
-        unified_service = container.resolve('unified_service')
-        if unified_service:
-            collection_enabled = unified_service.collection_enabled
+        # Collection Manager에서 직접 상태 확인
+        collection_manager = container.resolve('collection_manager')
+        if collection_manager:
+            status = collection_manager.get_status()
+            collection_enabled = status.get('collection_enabled', False)
+            logger.info(f"수집 상태: {collection_enabled}, sources: {status.get('sources', {})}")
     except Exception as e:
-        logger.warning(f"수집 상태 확인 실패: {e}")
+        logger.warning(f"Collection Manager에서 수집 상태 확인 실패: {e}")
+        # Unified Service로 폴백
+        try:
+            unified_service = container.resolve('unified_service')
+            if unified_service:
+                collection_enabled = unified_service.collection_enabled
+        except Exception as e2:
+            logger.warning(f"Unified Service에서 수집 상태 확인 실패: {e2}")
     
     # 업데이트 주기 설정 추가
     settings_dict['update_interval'] = settings_manager.get_setting('update_interval', 10800000) if 'settings_manager' in locals() else 10800000
@@ -492,6 +502,58 @@ def update_individual_setting(key: str):
         return jsonify({
             'success': False,
             'error': str(e)
+        }), 500
+
+
+@settings_bp.route('/api/settings', methods=['POST'])
+def save_settings():
+    """설정 저장 API"""
+    try:
+        from src.models.settings import get_settings_manager
+        settings_manager = get_settings_manager()
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No data provided'
+            }), 400
+        
+        # 각 설정값 저장
+        for key, value in data.items():
+            if value is not None and value != '':
+                try:
+                    # 패스워드 필드는 특별 처리
+                    if 'password' in key:
+                        # 마스킹된 값이면 무시
+                        if value == '********':
+                            continue
+                        setting_type = 'password'
+                        category = 'credentials'
+                    elif key in ['data_retention_days', 'max_ips_per_source', 'update_interval']:
+                        setting_type = 'integer'
+                        category = 'general'
+                        value = int(value)
+                    else:
+                        setting_type = 'string'
+                        category = 'credentials' if 'username' in key else 'general'
+                    
+                    settings_manager.set_setting(key, value, setting_type, category)
+                    logger.info(f"설정 저장됨: {key} = {'***' if 'password' in key else value}")
+                    
+                except Exception as e:
+                    logger.warning(f"설정 저장 실패 {key}: {e}")
+        
+        return jsonify({
+            'success': True,
+            'message': '설정이 성공적으로 저장되었습니다.'
+        })
+        
+    except Exception as e:
+        logger.error(f"설정 저장 오류: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'설정 저장 실패: {str(e)}'
         }), 500
 
 

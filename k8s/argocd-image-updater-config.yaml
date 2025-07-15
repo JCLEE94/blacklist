@@ -4,14 +4,14 @@ metadata:
   name: argocd-image-updater-config
   namespace: argocd
 data:
-  # Private Registry 설정 (인증 불필요)
+  # Private Registry 설정 (인증 사용)
   registries.conf: |
     registries:
     - name: private-registry
-      api_url: http://registry.jclee.me
+      api_url: https://registry.jclee.me
       prefix: registry.jclee.me
       ping: yes
-      insecure: yes
+      insecure: no
       credentials: pullsecret:argocd/registry-credentials
       defaultns: library
       limit: 100
@@ -41,8 +41,8 @@ metadata:
   namespace: argocd
 type: kubernetes.io/dockerconfigjson
 data:
-  # registry.jclee.me는 인증이 필요없지만 placeholder로 유지
-  .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5qY2xlZS5tZSI6eyJ1c2VybmFtZSI6IiIsInBhc3N3b3JkIjoiIiwiYXV0aCI6IiJ9fX0=
+  # registry.jclee.me 인증 정보 (admin:bingogo1)
+  .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5qY2xlZS1tZSI6eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJiaW5nb2dvMSIsImF1dGgiOiJZV1J0YVc0NlltbHVaMjluYnpFPSJ9fX0=
 ---
 apiVersion: v1
 kind: ServiceAccount

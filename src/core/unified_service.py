@@ -2137,7 +2137,16 @@ class UnifiedBlacklistService:
                             
                             # 진행 상황 완료
                             if progress_tracker:
-                                progress_tracker.complete_collection('regtech', f"REGTECH 수집 완료: {result['imported_count']}개 IP 저장됨")
+                                try:
+                                    self.logger.info(f"DEBUG: About to call complete_collection with tracker: {type(progress_tracker)}")
+                                    progress_tracker.complete_collection('regtech', f"REGTECH 수집 완료: {result['imported_count']}개 IP 저장됨")
+                                    self.logger.info(f"DEBUG: complete_collection completed successfully")
+                                except Exception as complete_error:
+                                    self.logger.error(f"DEBUG: Error in complete_collection: {complete_error}")
+                                    import traceback
+                                    complete_tb = traceback.format_exc()
+                                    self.logger.error(f"DEBUG: complete_collection traceback: {complete_tb}")
+                                    raise
                             
                             # 저장 후 데이터베이스에서 직접 확인
                             try:
@@ -2146,12 +2155,22 @@ class UnifiedBlacklistService:
                             except Exception as verify_e:
                                 self.logger.error(f"REGTECH: DB 확인 실패: {verify_e}")
                                 
-                            return {
-                                'success': True,
-                                'ip_count': len(ips),
-                                'imported_count': result.get('imported_count', 0),
-                                'message': f'REGTECH 수집 완료: {len(ips)}개 IP 수집됨'
-                            }
+                            self.logger.info(f"DEBUG: About to return success result")
+                            try:
+                                return_value = {
+                                    'success': True,
+                                    'ip_count': len(ips),
+                                    'imported_count': result.get('imported_count', 0),
+                                    'message': f'REGTECH 수집 완료: {len(ips)}개 IP 수집됨'
+                                }
+                                self.logger.info(f"DEBUG: Return value created successfully: {return_value}")
+                                return return_value
+                            except Exception as return_error:
+                                self.logger.error(f"DEBUG: Error creating return value: {return_error}")
+                                import traceback
+                                return_tb = traceback.format_exc()
+                                self.logger.error(f"DEBUG: Return creation traceback: {return_tb}")
+                                raise
                         else:
                             self.logger.error(f"REGTECH: 데이터베이스 저장 실패 - {result.get('error')}")
                             if progress_tracker:
