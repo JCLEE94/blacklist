@@ -19,11 +19,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: registry.jclee.me
+  REGISTRY: ${{ secrets.REGISTRY_URL || 'your-registry.example.com' }}
   IMAGE_NAME: blacklist
   PYTHON_VERSION: '3.11'
   HELM_VERSION: 'v3.12.0'
-  CHARTMUSEUM_URL: https://charts.jclee.me
+  CHARTMUSEUM_URL: ${{ secrets.CHARTMUSEUM_URL || 'https://your-charts.example.com' }}
 
 jobs:
   # 1. 코드 품질 검사
@@ -226,17 +226,20 @@ jobs:
 
       - name: Push to ChartMuseum
         run: |
-          cd charts/blacklist
-          
-          # Configure ChartMuseum repo
-          helm repo add chartmuseum ${{ env.CHARTMUSEUM_URL }} \
-            --username ${{ secrets.CHARTMUSEUM_USERNAME || 'admin' }} \
-            --password ${{ secrets.CHARTMUSEUM_PASSWORD || 'bingogo1' }} \
-            --insecure-skip-tls-verify \
-            --force-update
-          
-          # Push chart
-          helm cm-push blacklist-*.tgz chartmuseum --insecure
+          # Configure ChartMuseum repo (if URL is configured)
+          if [[ "${{ env.CHARTMUSEUM_URL }}" != "https://your-charts.example.com" ]]; then
+            helm repo add chartmuseum ${{ env.CHARTMUSEUM_URL }} \
+              --username ${{ secrets.CHARTMUSEUM_USERNAME || 'admin' }} \
+              --password ${{ secrets.CHARTMUSEUM_PASSWORD || 'admin' }} \
+              --insecure-skip-tls-verify \
+              --force-update
+            
+            # Push chart from charts/blacklist directory
+            cd charts/blacklist
+            helm cm-push . chartmuseum --insecure
+          else
+            echo "⚠️ ChartMuseum URL not configured, skipping chart push"
+          fi
           
           echo "📦 Helm Chart pushed successfully!"
           echo "Chart Version: ${{ steps.package.outputs.version }}"

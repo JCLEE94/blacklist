@@ -1,7 +1,7 @@
 # Blacklist Management System
 
-[![CI/CD](https://github.com/JCLEE94/blacklist/actions/workflows/cicd.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
-[![Docker](https://img.shields.io/badge/Docker-registry.jclee.me-blue.svg)](https://registry.jclee.me)
+[![CI/CD](https://github.com/JCLEE94/blacklist/actions/workflows/gitops-pipeline.yml/badge.svg)](https://github.com/JCLEE94/blacklist/actions)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-brightgreen.svg)](https://kubernetes.io/)
 [![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-orange.svg)](https://argoproj.github.io/argo-cd/)
 
@@ -11,12 +11,13 @@
 
 - **GitOps 배포**: ArgoCD 기반 지속적 배포 및 자동 이미지 업데이트
 - **다중 서버 지원**: 로컬 및 원격 Kubernetes 클러스터 병렬 배포  
-- **Private Registry 지원**: `registry.jclee.me` 및 GHCR 듀얼 레지스트리 지원
+- **Private Registry 지원**: 프라이빗 레지스트리 및 GHCR 듀얼 레지스트리 지원
 - **자동화된 데이터 수집**: REGTECH, SECUDIUM 등 다중 소스 통합
 - **FortiGate 연동**: External Connector API 제공
 - **고가용성 아키텍처**: 자동 복구, 상태 모니터링, 성능 최적화
 - **통합 CI/CD 파이프라인**: 병렬 테스트, 보안 스캔, 자동 빌드, ArgoCD Image Updater 연동
 - **포괄적 테스트 스위트**: 통합 테스트, 성능 벤치마크, Rust 스타일 인라인 테스트
+- **오프라인 패키지**: Air-gap 환경을 위한 오프라인 배포 패키지 생성
 
 ## 📋 빠른 시작
 
@@ -35,11 +36,15 @@ source scripts/load-env.sh
 
 ### 2. Registry 설정
 
-#### Private Registry (registry.jclee.me)
+#### Private Registry 설정
 ```bash
-# 인증 불필요 - 자동으로 설정됨
-# CI/CD 파이프라인에서 기본으로 사용
-# IPv6 연결 문제 시 네트워크 설정 확인 필요
+# 환경 변수 설정
+export REGISTRY=your-registry.example.com
+export REGISTRY_USERNAME=your-username
+export REGISTRY_PASSWORD=your-password
+
+# Docker 로그인
+docker login $REGISTRY
 ```
 
 ### 3. 배포
@@ -72,7 +77,7 @@ graph TB
     
     subgraph "Infrastructure"
         H[GitHub Actions]
-        I[GHCR]
+        I[Container Registry]
         J[ArgoCD]
         K[Kubernetes]
     end
@@ -104,7 +109,7 @@ graph TB
 - **Backend**: Flask 2.3.3 + Gunicorn
 - **Database**: SQLite with auto-migration
 - **Cache**: Redis (memory fallback)
-- **Container**: Docker / Private Registry (registry.jclee.me)
+- **Container**: Docker / Private Registry
 - **Orchestration**: Kubernetes + ArgoCD
 - **CI/CD**: GitHub Actions (Self-hosted runner)
 - **Monitoring**: Built-in health checks and metrics
@@ -156,7 +161,7 @@ python3 main.py --debug
 
 ```bash
 # 이미지 빌드
-docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
+docker build -f deployment/Dockerfile -t $REGISTRY/blacklist:latest .
 
 # 컨테이너 실행
 docker-compose -f deployment/docker-compose.yml up -d
@@ -201,7 +206,7 @@ docker-compose -f deployment/docker-compose.yml up -d
 - **자동 취소**: 동일 브랜치에서 새 푸시 시 기존 실행 자동 취소
 - **스킵 조건**: 문서만 변경 시 빌드 생략
 - **재시도 로직**: ArgoCD 배포 3회 재시도, Health check 5회 재시도
-- **Private Registry**: `registry.jclee.me` 기본 사용 (인증 불필요)
+- **Private Registry**: 프라이빗 레지스트리 기본 사용
 
 ### 워크플로우 구조
 ```yaml
@@ -226,7 +231,7 @@ kubectl get pods -n blacklist
 kubectl get deployment blacklist -n blacklist
 
 # 서비스 상태
-curl https://blacklist.jclee.me/health
+curl http://localhost:8541/health
 
 # CI/CD 파이프라인 상태
 gh run list --workflow=cicd.yml --limit=5
@@ -240,32 +245,141 @@ python3 tests/integration/performance_benchmark.py
 
 ### ArgoCD 대시보드
 
-- URL: https://argo.jclee.me
 - Application: blacklist
 - Image Updater: 2분마다 새 이미지 체크
+- CLI 명령어: `argocd app get blacklist --grpc-web`
 
 ## 🚨 문제 해결
+
+### ArgoCD 디버깅
+
+```bash
+# ArgoCD 애플리케이션 상태 확인
+argocd app get blacklist --grpc-web
+
+# ArgoCD 동기화 상태 확인
+argocd app sync blacklist --dry-run --grpc-web
+
+# 강제 동기화
+argocd app sync blacklist --force --grpc-web
+
+# ArgoCD 로그 확인
+kubectl logs -n argocd deployment/argocd-application-controller -f
+kubectl logs -n argocd deployment/argocd-image-updater -f
+
+# ArgoCD 애플리케이션 상세 정보
+kubectl get application blacklist -n argocd -o yaml
+
+# ArgoCD 상태 및 Health 확인
+argocd app wait blacklist --health --grpc-web
+```
+
+### CI/CD 파이프라인 디버깅
+
+```bash
+# GitHub Actions 워크플로우 상태 확인
+gh run list --workflow=gitops-pipeline.yml --limit=10
+
+# 특정 워크플로우 로그 확인
+gh run view --log
+
+# Docker 빌드 로그 확인
+docker buildx ls
+docker buildx inspect
+
+# 로컬에서 동일한 빌드 테스트
+docker build -f deployment/Dockerfile -t test-build .
+
+# Registry 푸시 테스트
+docker tag test-build $REGISTRY/blacklist:test
+docker push $REGISTRY/blacklist:test
+
+# Helm 차트 검증
+helm lint charts/blacklist/
+helm template blacklist charts/blacklist/ --debug
+
+# ChartMuseum 연결 테스트
+helm repo add chartmuseum $CHARTMUSEUM_URL --insecure-skip-tls-verify
+helm search repo chartmuseum/blacklist
+```
 
 ### 일반적인 문제
 
 1. **이미지 풀 실패**
    ```bash
    # Registry 연결 확인
-   curl -v http://registry.jclee.me/v2/
+   curl -v http://$REGISTRY/v2/
    # Pod 이벤트 확인
    kubectl describe pod <pod-name> -n blacklist
+   # Registry Secret 확인
+   kubectl get secret regcred -n blacklist -o yaml
    ```
 
 2. **ArgoCD 동기화 실패**
    ```bash
    # 강제 동기화
    ./scripts/k8s-management.sh sync --force
+   # 애플리케이션 재생성
+   kubectl delete application blacklist -n argocd
+   ./scripts/k8s-management.sh init
    ```
 
-3. **Pod 재시작**
+3. **Pod 재시작 및 스케일링**
    ```bash
    ./scripts/k8s-management.sh restart
+   kubectl scale deployment blacklist --replicas=3 -n blacklist
    ```
+
+4. **Helm Chart 문제**
+   ```bash
+   # 차트 의존성 업데이트
+   cd charts/blacklist && helm dependency update
+   # 차트 패키징 테스트
+   helm package . --debug
+   # ChartMuseum 푸시 테스트
+   helm cm-push . chartmuseum --insecure
+   ```
+
+## 📦 오프라인 패키지 배포
+
+CI/CD 파이프라인은 자동으로 air-gap 환경을 위한 오프라인 패키지를 생성합니다.
+
+### 오프라인 패키지 다운로드
+
+```bash
+# GitHub Actions Artifacts에서 다운로드
+gh run list --workflow=gitops-pipeline.yml --limit=5
+gh run download <run-id> --name blacklist-offline-<timestamp>.tar.gz
+
+# 또는 GitHub 웹 UI에서 직접 다운로드
+# https://github.com/your-repo/blacklist/actions
+```
+
+### 오프라인 환경에서 배포
+
+```bash
+# 패키지 압축 해제
+tar -xzf blacklist-offline-*.tar.gz
+cd blacklist-offline-*/
+
+# Docker 이미지 로드
+docker load < blacklist-image.tar.gz
+
+# Kubernetes 배포
+kubectl create namespace blacklist
+kubectl apply -k k8s/
+
+# 또는 Helm 차트 사용
+helm install blacklist blacklist-*.tgz -n blacklist
+```
+
+### 패키지 구성 요소
+
+- **소스 코드**: 전체 애플리케이션 소스
+- **Docker 이미지**: 압축된 컨테이너 이미지
+- **Kubernetes 매니페스트**: 배포를 위한 YAML 파일
+- **Helm 차트**: 패키징된 Helm 차트
+- **설치 가이드**: `OFFLINE_INSTALL.md` 참조
 
 ## 📝 환경 변수
 
@@ -274,7 +388,8 @@ python3 tests/integration/performance_benchmark.py
 - `REGTECH_USERNAME/PASSWORD`: REGTECH 인증 정보
 - `SECUDIUM_USERNAME/PASSWORD`: SECUDIUM 인증 정보
 - `ARGOCD_SERVER`: ArgoCD 서버 주소
-- `REGISTRY`: Private registry 주소 (기본: registry.jclee.me)
+- `REGISTRY`: Private registry 주소
+- `CHARTMUSEUM_URL`: Helm Chart repository 주소
 
 ## 🤝 기여
 
@@ -292,4 +407,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [ArgoCD](https://argoproj.github.io/argo-cd/) - GitOps 도구
 - [Kubernetes](https://kubernetes.io/) - 컨테이너 오케스트레이션
-- [Docker](https://www.docker.com/) - 컨테이너화 플랫폼# GitOps Pipeline Test 2025. 07. 14. (월) 16:52:28 KST
+- [Docker](https://www.docker.com/) - 컨테이너화 플랫폼

@@ -2,7 +2,7 @@ apiVersion: v2
 name: blacklist
 description: Enterprise threat intelligence platform with GitOps deployment
 type: application
-version: 1.0.0
+version: 1.0.3
 appVersion: "1.0.0"
 keywords:
   - blacklist
@@ -14,16 +14,3 @@ sources:
 maintainers:
   - name: JC Lee
     email: jclee@example.com
-dependencies:
-  - name: redis
-    version: "17.3.14"
-    repository: "https://charts.bitnami.com/bitnami"
-    condition: redis.enabled
-  - name: prometheus
-    version: "19.0.1"
-    repository: "https://prometheus-community.github.io/helm-charts"
-    condition: prometheus.enabled
-  - name: grafana
-    version: "6.48.0"
-    repository: "https://grafana.github.io/helm-charts"
-    condition: grafana.enabled

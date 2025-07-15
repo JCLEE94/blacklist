@@ -24,7 +24,7 @@ spec:
     # ChartMuseum 사용
     repoURL: https://charts.jclee.me
     chart: blacklist
-    targetRevision: "1.0.1"  # 템플릿이 포함된 버전
+    targetRevision: "1.0.2"  # regcred secret 포함된 버전
     helm:
       values: |
         # 이미지 설정
