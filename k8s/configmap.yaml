@@ -14,3 +14,5 @@ data:
   APP_VERSION: "3.0.0"
   ENVIRONMENT: "production"
   TIMEZONE: "Asia/Seoul"
+  LOG_LEVEL: "INFO"
+  DATABASE_URL: "sqlite:////app/instance/blacklist.db"

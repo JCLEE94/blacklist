@@ -5,11 +5,14 @@ namespace: blacklist
 
 resources:
   - namespace.yaml
+  - components/security/serviceaccount.yaml
   - configmap.yaml
+  - blacklist-secrets.yaml
+  - blacklist-credentials.yaml
   - secret.yaml
   - registry-secret.yaml
   - redis.yaml
-  - deployment.yaml
+  - base/deployment.yaml
   - service.yaml
   - ingress.yaml
   - hpa.yaml  # 수정됨 - minReplicas=1, maxReplicas=1로 단일 Pod 강제
