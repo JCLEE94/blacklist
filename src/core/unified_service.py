@@ -94,42 +94,21 @@ class UnifiedBlacklistService:
             self._perform_initial_collection_now()
         
     def _perform_initial_collection_now(self):
-        """최초 수집 즉시 실행 - 3개월 데이터 수집"""
+        """최초 실행 - 수집은 수동으로 진행"""
         try:
-            self.logger.info("🔄 최초 3개월 데이터 수집 실행 중...")
+            self.logger.info("🔥 최초 실행 감지 - 수집은 수동으로 활성화해주세요")
+            self.logger.info("📋 웹 UI (http://localhost:8541)에서 수집 활성화 후 데이터 수집을 시작할 수 있습니다")
+            self.logger.info("🔧 환경 변수 REGTECH_USERNAME, REGTECH_PASSWORD, SECUDIUM_USERNAME, SECUDIUM_PASSWORD를 설정하세요")
             
-            # 수집 활성화
-            if not self.collection_manager.collection_enabled:
-                self.collection_manager.enable_collection()
+            # 수집은 활성화하지 않음 - 수동 제어
+            self.logger.info("⚠️ 자동 수집이 비활성화되었습니다. 수동으로 수집을 시작하세요.")
             
-            # 3개월 범위 수집
-            today = datetime.now()
-            three_months_ago = today - timedelta(days=90)
-            start_date = three_months_ago.strftime('%Y%m%d')
-            end_date = today.strftime('%Y%m%d')
-            
-            self.logger.info(f"📅 최초 수집 기간: {three_months_ago.strftime('%Y-%m-%d')} ~ {today.strftime('%Y-%m-%d')}")
-            
-            # REGTECH 수집 (간단하게)
-            try:
-                regtech_result = self.collection_manager.trigger_regtech_collection(start_date, end_date)
-                self.logger.info(f"REGTECH 수집: {regtech_result.get('success', False)}")
-            except:
-                self.logger.warning("REGTECH 수집 실패")
-            
-            # SECUDIUM 수집 (간단하게)
-            try:
-                secudium_result = self.collection_manager.trigger_secudium_collection()
-                self.logger.info(f"SECUDIUM 수집: {secudium_result.get('success', False)}")
-            except:
-                self.logger.warning("SECUDIUM 수집 실패")
-            
-            # 완료 표시
+            # 완료 표시 (자동 수집 시도 방지)
             self.collection_manager.mark_initial_collection_done()
-            self.logger.info("✅ 최초 3개월 데이터 수집 완료")
+            self.logger.info("✅ 초기 설정 완료 - 수집은 수동으로 진행하세요")
             
         except Exception as e:
-            self.logger.error(f"최초 수집 오류: {e}")
+            self.logger.error(f"초기 설정 오류: {e}")
             # 오류가 있어도 완료 표시 (무한 루프 방지)
             self.collection_manager.mark_initial_collection_done()
     

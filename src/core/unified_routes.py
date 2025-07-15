@@ -1314,19 +1314,30 @@ def get_collection_status():
             'sources': {}
         }), 500
 
-# 수집 온오프 기능 제거됨 (사용자 요청: 수집은 항상 활성화 상태)
-# API 호환성을 위해 엔드포인트는 유지하되 항상 활성화 상태 반환
+# 수집 온오프 기능 복원 - 사용자가 수동으로 제어할 수 있도록 함
 
 @unified_bp.route('/api/collection/enable', methods=['POST'])
 def enable_collection():
-    """수집 활성화 (항상 활성화 상태이므로 성공 반환)"""
+    """수집 활성화 - 기존 데이터 클리어 후 신규 수집 시작"""
     try:
-        # 수집은 항상 활성화 상태이므로 즉시 성공 반환
+        container = get_container()
+        collection_manager = container.get('collection_manager')
+        
+        if not collection_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Collection manager not available'
+            }), 500
+        
+        # 수집 활성화 (데이터 클리어 포함)
+        result = collection_manager.enable_collection()
+        
         return jsonify({
             'success': True,
-            'message': '수집은 항상 활성화 상태입니다.',
+            'message': '수집이 활성화되었습니다. 모든 기존 데이터가 삭제되었습니다.',
             'collection_enabled': True,
-            'cleared_data': False  # 데이터는 지우지 않음
+            'cleared_data': True,
+            'sources': result.get('sources', {})
         })
     except Exception as e:
         logger.error(f"Enable collection error: {e}")
@@ -1337,14 +1348,25 @@ def enable_collection():
 
 @unified_bp.route('/api/collection/disable', methods=['POST'])
 def disable_collection():
-    """수집 비활성화 (항상 활성화 상태이므로 경고 반환)"""
+    """수집 비활성화"""
     try:
-        # 수집은 항상 활성화 상태이므로 비활성화할 수 없음을 알림
+        container = get_container()
+        collection_manager = container.get('collection_manager')
+        
+        if not collection_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Collection manager not available'
+            }), 500
+        
+        # 수집 비활성화
+        result = collection_manager.disable_collection()
+        
         return jsonify({
             'success': True,
-            'message': '수집은 항상 활성화 상태로 유지됩니다. 비활성화할 수 없습니다.',
-            'collection_enabled': True,
-            'warning': '수집 비활성화는 지원하지 않습니다.'
+            'message': '수집이 비활성화되었습니다.',
+            'collection_enabled': False,
+            'sources': result.get('sources', {})
         })
     except Exception as e:
         logger.error(f"Disable collection error: {e}")

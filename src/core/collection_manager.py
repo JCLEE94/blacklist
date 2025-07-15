@@ -77,7 +77,7 @@ class CollectionManager:
                     return config
             else:
                 # 설정 파일이 없으면 최초 실행
-                logger.info("🔥 최초 실행 - 자동 수집 활성화")
+                logger.info("🔥 최초 실행 - 수집은 수동으로 활성화하세요")
                 return {
                     'collection_enabled': False,  # 기본값 OFF
                     'sources': {'regtech': False, 'secudium': False},  # 모두 OFF
