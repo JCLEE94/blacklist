@@ -37,11 +37,12 @@ jobs:
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           
-          # Build and push with multiple tags
-          docker build -f deployment/Dockerfile \
-            -t $REGISTRY/$IMAGE_NAME:latest \
-            -t $REGISTRY/$IMAGE_NAME:$TIMESTAMP \
-            -t $REGISTRY/$IMAGE_NAME:sha-$SHORT_SHA .
+          # Build image
+          docker build -f deployment/Dockerfile -t $REGISTRY/$IMAGE_NAME:latest .
+          
+          # Tag and push
+          docker tag $REGISTRY/$IMAGE_NAME:latest $REGISTRY/$IMAGE_NAME:$TIMESTAMP
+          docker tag $REGISTRY/$IMAGE_NAME:latest $REGISTRY/$IMAGE_NAME:sha-$SHORT_SHA
           
           docker push $REGISTRY/$IMAGE_NAME:latest
           docker push $REGISTRY/$IMAGE_NAME:$TIMESTAMP

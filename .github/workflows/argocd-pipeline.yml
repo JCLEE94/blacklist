@@ -1,0 +1,51 @@
+name: ArgoCD GitOps Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy via ArgoCD
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+          config-inline: |
+            [registry."registry.jclee.me"]
+              http = true
+              insecure = true
+
+      - name: Login to Registry
+        run: |
+          echo "bingogo1" | docker login $REGISTRY -u admin --password-stdin
+
+      - name: Build and Push Image
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          
+          # Build and push
+          docker build -f deployment/Dockerfile -t $REGISTRY/$IMAGE_NAME:$TIMESTAMP .
+          docker push $REGISTRY/$IMAGE_NAME:$TIMESTAMP
+          
+          # Also update latest
+          docker tag $REGISTRY/$IMAGE_NAME:$TIMESTAMP $REGISTRY/$IMAGE_NAME:latest
+          docker push $REGISTRY/$IMAGE_NAME:latest
+          
+          echo "✅ Image pushed: $REGISTRY/$IMAGE_NAME:$TIMESTAMP"
+
+      - name: Notify ArgoCD
+        run: |
+          echo "🔄 ArgoCD will automatically detect the new image"
+          echo "📦 Image: $REGISTRY/$IMAGE_NAME:latest"
+          echo "🌐 ArgoCD: https://argo.jclee.me/applications/blacklist"
