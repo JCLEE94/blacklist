@@ -26,6 +26,10 @@ jobs:
               http = true
               insecure = true
 
+      - name: Login to Registry
+        run: |
+          echo "bingogo1" | docker login $REGISTRY -u admin --password-stdin
+
       - name: Build and Push
         run: |
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
