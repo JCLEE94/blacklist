@@ -22,7 +22,7 @@ env:
   REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
   PYTHON_VERSION: '3.11'
-  CHARTS_REPO: https://github.com/jclee/charts.git
+  CHARTS_REPO: ${{ vars.CHARTS_REPO || 'https://github.com/jclee/charts.git' }}
   CHARTS_PATH: charts/blacklist
 
 jobs:
