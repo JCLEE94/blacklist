@@ -1,0 +1,109 @@
+name: Charts Deployment Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  CHARTS_REPO_URL: https://charts.jclee.me
+  CHARTS_REPO_PATH: /home/jclee/charts
+
+jobs:
+  build-and-deploy:
+    name: Build Image and Update Charts
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+          config-inline: |
+            [registry."registry.jclee.me"]
+              http = true
+              insecure = true
+
+      - name: Login to Registry
+        run: |
+          echo "bingogo1" | docker login $REGISTRY -u admin --password-stdin
+
+      - name: Build and Push Image
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          
+          # Build and push with multiple tags
+          docker build -f deployment/Dockerfile \
+            -t $REGISTRY/$IMAGE_NAME:latest \
+            -t $REGISTRY/$IMAGE_NAME:$TIMESTAMP \
+            -t $REGISTRY/$IMAGE_NAME:sha-$SHORT_SHA .
+          
+          docker push $REGISTRY/$IMAGE_NAME:latest
+          docker push $REGISTRY/$IMAGE_NAME:$TIMESTAMP
+          docker push $REGISTRY/$IMAGE_NAME:sha-$SHORT_SHA
+          
+          echo "✅ Docker image pushed:"
+          echo "  - $REGISTRY/$IMAGE_NAME:latest"
+          echo "  - $REGISTRY/$IMAGE_NAME:$TIMESTAMP"
+          echo "  - $REGISTRY/$IMAGE_NAME:sha-$SHORT_SHA"
+          
+          # Export for next steps
+          echo "IMAGE_TAG=$TIMESTAMP" >> $GITHUB_ENV
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+
+      - name: Update Local Charts Repository
+        run: |
+          echo "📦 Updating charts repository..."
+          
+          # Check if charts directory exists
+          if [ -d "$CHARTS_REPO_PATH" ]; then
+            cd $CHARTS_REPO_PATH
+            
+            # Update blacklist chart
+            if [ -d "charts/blacklist" ]; then
+              echo "📝 Updating blacklist chart values..."
+              
+              # Update values.yaml with new image tag
+              sed -i "s|tag:.*|tag: \"${{ env.IMAGE_TAG }}\"|g" charts/blacklist/values.yaml
+              
+              # Update Chart.yaml version
+              CHART_VERSION="1.0.${{ github.run_number }}"
+              sed -i "s|version:.*|version: $CHART_VERSION|g" charts/blacklist/Chart.yaml
+              sed -i "s|appVersion:.*|appVersion: \"${{ env.IMAGE_TAG }}\"|g" charts/blacklist/Chart.yaml
+              
+              echo "✅ Chart updated:"
+              echo "  - Chart Version: $CHART_VERSION"
+              echo "  - Image Tag: ${{ env.IMAGE_TAG }}"
+              
+              # Package the chart
+              helm package charts/blacklist -d .
+              
+              # Update index.yaml
+              helm repo index . --url $CHARTS_REPO_URL
+              
+              echo "📦 Chart packaged and index updated"
+            else
+              echo "❌ blacklist chart not found in $CHARTS_REPO_PATH/charts/"
+              exit 1
+            fi
+          else
+            echo "❌ Charts repository not found at $CHARTS_REPO_PATH"
+            echo "Please ensure the charts repository is cloned to the correct location"
+            exit 1
+          fi
+
+      - name: Trigger ArgoCD Sync
+        run: |
+          echo "🔄 ArgoCD will automatically detect and sync the new chart version"
+          echo ""
+          echo "📊 Deployment Summary:"
+          echo "  - Image: $REGISTRY/$IMAGE_NAME:${{ env.IMAGE_TAG }}"
+          echo "  - Chart Repository: $CHARTS_REPO_URL"
+          echo "  - ArgoCD: https://argo.jclee.me/applications/argocd/blacklist"
+          echo ""
+          echo "✅ Deployment pipeline completed successfully!"
