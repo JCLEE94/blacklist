@@ -151,7 +151,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
           name: test-results-${{ matrix.test-suite }}
@@ -397,7 +397,7 @@ jobs:
           echo "✅ 오프라인 패키지 생성 완료: $PACKAGE_NAME.tar.gz"
 
       - name: Upload offline package artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.filename }}
           path: offline-packages/${{ steps.package.outputs.filename }}
