@@ -15,15 +15,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Container-First**: Docker/Podman deployment with automated CI/CD
 
 **Production Infrastructure:**
-- Docker Registry: `registry.jclee.me` (Private registry, no auth required)
+- Docker Registry: Private registry (configure based on your setup)
 - Kubernetes Clusters: 
   - Primary: Self-hosted k3s/k8s (local)
-  - Secondary: 192.168.50.110 (remote server)
-- ArgoCD Server: `argo.jclee.me`
+  - Secondary: Remote server (configure as needed)
+- ArgoCD Server: Configure based on your environment
 - Default Ports: DEV=8541, PROD=2541, NodePort=32452
 - Auto-deployment: ArgoCD Image Updater monitors registry
-- Production URL: https://blacklist.jclee.me
-- Timezone: Asia/Seoul (KST)
+- Production URL: Configure based on your domain
+- Timezone: Configure based on your location
 - Namespace: `blacklist` (consolidated from `blacklist-new`)
 
 **Data Sources:**
@@ -97,7 +97,7 @@ docker-compose -f deployment/docker-compose.yml build --no-cache
 ./scripts/k8s-management.sh restart   # Rolling restart
 
 # Multi-server deployment
-./scripts/multi-deploy.sh             # Deploy to local + remote (192.168.50.110)
+./scripts/multi-deploy.sh             # Deploy to local + remote clusters
 ./scripts/all-clusters-deploy.sh     # Deploy to all registered K8s clusters
 
 # Cluster management
@@ -135,14 +135,14 @@ kubectl rollout restart deployment/blacklist -n blacklist
 
 ### Remote Server Management
 ```bash
-# Initial remote server setup (192.168.50.110)
+# Initial remote server setup
 ./scripts/setup/remote-server-setup.sh
 
 # Check remote server status
 ./scripts/check-remote-status.sh
 
 # Deploy to specific server
-ssh jclee@192.168.50.110 "cd ~/app/blacklist && ./scripts/k8s-management.sh deploy"
+ssh user@remote-server "cd ~/app/blacklist && ./scripts/k8s-management.sh deploy"
 ```
 
 ### Cloudflare Tunnel Integration
@@ -346,11 +346,19 @@ class BaseIPSource(ABC):
 - **Continue-on-error**: Non-critical steps don't block pipeline
 - **Cached dependencies**: Speeds up repeated builds
 - **Network mode host**: For private registry access
+- **Offline Package Generation**: Creates complete offline deployment package
 
 **Deployment Flow**:
 ```
-Push to main → GitHub Actions → Build & Push → ArgoCD Image Updater → Auto Deploy
+Push to main → GitHub Actions → Build & Push → Helm Chart → Offline Package → ArgoCD Auto Deploy
 ```
+
+**Offline Package Features**:
+- **Complete Deployment Bundle**: Source code, Docker image, Helm charts
+- **Self-contained**: All dependencies included for air-gapped environments
+- **Multiple Install Options**: Kubernetes, Helm, or standalone deployment
+- **Installation Guide**: Detailed instructions for offline deployment
+- **Metadata**: Version info, checksums, and deployment details
 
 **Self-hosted Runner Compatibility**:
 ```yaml
@@ -696,18 +704,42 @@ argocd app logs blacklist --grpc-web
 ssh jclee@192.168.50.110 "kubectl logs -f deployment/blacklist -n blacklist"
 ```
 
+### Offline Package Deployment
+Download and deploy offline packages for air-gapped environments:
+```bash
+# Download offline package from GitHub Actions artifacts
+# Extract package
+tar -xzf blacklist-offline-YYYYMMDD-HHMMSS.tar.gz
+cd blacklist-offline-YYYYMMDD-HHMMSS/
+
+# Load Docker image
+docker load < blacklist-image.tar.gz
+
+# Deploy with Kubernetes
+kubectl create namespace blacklist
+kubectl apply -k k8s/
+
+# Or deploy with Helm
+helm install blacklist blacklist-*.tgz -n blacklist
+
+# Or run locally
+pip install -r requirements.txt
+python3 init_database.py
+python3 main.py
+```
+
 ### Manual Deployment (Fallback)
 If CI/CD fails, use manual deployment:
 ```bash
 # Build and push manually to private registry
-docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
-docker push registry.jclee.me/blacklist:latest
+docker build -f deployment/Dockerfile -t your-registry/blacklist:latest .
+docker push your-registry/blacklist:latest
 
 # Deploy with ArgoCD
 argocd app sync blacklist --grpc-web
 
 # Or use kubectl directly (not recommended with GitOps)
-kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:latest -n blacklist
+kubectl set image deployment/blacklist blacklist=your-registry/blacklist:latest -n blacklist
 kubectl rollout status deployment/blacklist -n blacklist
 ```
 
@@ -960,8 +992,12 @@ kubectl logs -f deployment/blacklist -n blacklist
 argocd app get blacklist --grpc-web
 argocd app sync blacklist --grpc-web
 
+# Offline Package Download
+# Available in GitHub Actions artifacts after pipeline completion
+# Package includes: source code + Docker image + Helm charts + install guide
+
 # Remote server status
-ssh jclee@192.168.50.110 "kubectl get pods -n blacklist"
+ssh user@remote-server "kubectl get pods -n blacklist"
 ```
 
 ## GitOps Best Practices

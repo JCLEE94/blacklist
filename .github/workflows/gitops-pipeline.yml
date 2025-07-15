@@ -242,10 +242,118 @@ jobs:
           echo "Chart Version: ${{ steps.package.outputs.version }}"
           echo "App Version: ${{ needs.build-and-push.outputs.image-tag }}"
 
-  # 5. 배포 알림 및 정리
-  deploy-notify:
+  # 5. 오프라인 패키지 생성
+  offline-package:
     runs-on: self-hosted
     needs: [build-and-push, helm-chart]
+    if: |
+      needs.build-and-push.result == 'success' &&
+      needs.helm-chart.result == 'success' &&
+      github.ref == 'refs/heads/main'
+    outputs:
+      package-name: ${{ steps.package.outputs.filename }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Create offline package
+        id: package
+        run: |
+          # 패키지 이름 생성
+          PACKAGE_NAME="blacklist-offline-$(date +%Y%m%d-%H%M%S)"
+          PACKAGE_DIR="offline-packages/$PACKAGE_NAME"
+          
+          echo "🗂️ 오프라인 패키지 생성 중..."
+          mkdir -p "$PACKAGE_DIR"
+          
+          # 1. 소스 코드 복사
+          echo "📁 소스 코드 복사..."
+          cp -r src/ "$PACKAGE_DIR/"
+          cp -r deployment/ "$PACKAGE_DIR/"
+          cp -r k8s/ "$PACKAGE_DIR/"
+          cp -r charts/ "$PACKAGE_DIR/"
+          cp -r scripts/ "$PACKAGE_DIR/"
+          cp requirements.txt main.py init_database.py "$PACKAGE_DIR/"
+          
+          # 2. Docker 이미지 저장
+          echo "🐳 Docker 이미지 저장..."
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }} \
+            | gzip > "$PACKAGE_DIR/blacklist-image.tar.gz"
+          
+          # 3. Helm 차트 복사
+          echo "📦 Helm 차트 복사..."
+          cp charts/blacklist/blacklist-*.tgz "$PACKAGE_DIR/" || true
+          
+          # 4. 설치 가이드 생성
+          echo "📋 설치 가이드 생성..."
+          cat > "$PACKAGE_DIR/OFFLINE_INSTALL.md" << 'EOF'
+          # 오프라인 설치 가이드
+          
+          ## 1. Docker 이미지 로드
+          ```bash
+          docker load < blacklist-image.tar.gz
+          ```
+          
+          ## 2. Kubernetes 배포
+          ```bash
+          # 네임스페이스 생성
+          kubectl create namespace blacklist
+          
+          # Kustomize로 배포
+          kubectl apply -k k8s/
+          ```
+          
+          ## 3. Helm 차트 설치 (선택사항)
+          ```bash
+          helm install blacklist blacklist-*.tgz -n blacklist
+          ```
+          
+          ## 4. 로컬 실행
+          ```bash
+          # 의존성 설치
+          pip install -r requirements.txt
+          
+          # 데이터베이스 초기화
+          python3 init_database.py
+          
+          # 애플리케이션 실행
+          python3 main.py
+          ```
+          EOF
+          
+          # 5. 패키지 압축
+          echo "🗜️ 패키지 압축 중..."
+          cd offline-packages
+          tar -czf "$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME/"
+          
+          # 6. 메타데이터 생성
+          cat > "$PACKAGE_NAME.json" << EOF
+          {
+            "package_name": "$PACKAGE_NAME",
+            "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "version": "${{ needs.build-and-push.outputs.image-tag }}",
+            "git_commit": "${{ github.sha }}",
+            "git_branch": "${{ github.ref_name }}",
+            "docker_image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}",
+            "helm_chart": "blacklist-${{ needs.helm-chart.outputs.chart-version }}.tgz",
+            "size_mb": $(du -m "$PACKAGE_NAME.tar.gz" | cut -f1)
+          }
+          EOF
+          
+          echo "filename=$PACKAGE_NAME.tar.gz" >> $GITHUB_OUTPUT
+          echo "✅ 오프라인 패키지 생성 완료: $PACKAGE_NAME.tar.gz"
+
+      - name: Upload offline package artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.package.outputs.filename }}
+          path: offline-packages/${{ steps.package.outputs.filename }}
+          retention-days: 30
+
+  # 6. 배포 알림 및 정리
+  deploy-notify:
+    runs-on: self-hosted
+    needs: [build-and-push, helm-chart, offline-package]
     if: |
       always() &&
       needs.build-and-push.result == 'success'
@@ -264,10 +372,14 @@ jobs:
           echo "  Repository: ${{ env.CHARTMUSEUM_URL }}"
           echo "  Version: ${{ needs.helm-chart.outputs.chart-version || 'N/A' }}"
           echo ""
+          echo "📦 Offline Package"
+          echo "  Package: ${{ needs.offline-package.outputs.package-name || 'N/A' }}"
+          echo "  Available for download in GitHub Actions Artifacts"
+          echo ""
           echo "🔗 Links"
-          echo "  ArgoCD: https://argo.jclee.me"
-          echo "  Service: https://blacklist.jclee.me"
-          echo "  Health: https://blacklist.jclee.me/health"
+          echo "  ArgoCD: Configure based on your environment"
+          echo "  Service: Configure based on your domain"
+          echo "  Health: Configure based on your domain"
           echo ""
           echo "📝 Commit"
           echo "  SHA: ${{ github.sha }}"
@@ -286,16 +398,17 @@ jobs:
           # Buildx 캐시 정리 (optional)
           docker buildx prune --keep-storage 10GB -f || true
 
-  # 6. 실패 시 알림 (optional)
+  # 7. 실패 시 알림 (optional)
   notify-failure:
     runs-on: self-hosted
-    needs: [quality-check, test, build-and-push, helm-chart]
+    needs: [quality-check, test, build-and-push, helm-chart, offline-package]
     if: |
       always() &&
       (needs.quality-check.result == 'failure' ||
        needs.test.result == 'failure' ||
        needs.build-and-push.result == 'failure' ||
-       needs.helm-chart.result == 'failure')
+       needs.helm-chart.result == 'failure' ||
+       needs.offline-package.result == 'failure')
     steps:
       - name: 실패 알림
         run: |
@@ -307,5 +420,6 @@ jobs:
           [[ "${{ needs.test.result }}" == "failure" ]] && echo "  - Test"
           [[ "${{ needs.build-and-push.result }}" == "failure" ]] && echo "  - Build & Push"
           [[ "${{ needs.helm-chart.result }}" == "failure" ]] && echo "  - Helm Chart"
+          [[ "${{ needs.offline-package.result }}" == "failure" ]] && echo "  - Offline Package"
           echo ""
           echo "GitHub Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
