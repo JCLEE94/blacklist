@@ -20,7 +20,7 @@ spec:
         app: blacklist
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8541"
+        prometheus.io/port: "2541"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: blacklist
@@ -30,11 +30,11 @@ spec:
         fsGroup: 1000
       containers:
       - name: blacklist
-        image: blacklist:latest
+        image: registry.jclee.me/blacklist:latest
         imagePullPolicy: Always
         ports:
         - name: http
-          containerPort: 8541
+          containerPort: 2541
           protocol: TCP
         env:
         - name: PORT
