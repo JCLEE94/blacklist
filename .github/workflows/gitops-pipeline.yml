@@ -403,7 +403,7 @@ jobs:
           path: offline-packages/${{ steps.package.outputs.filename }}
           retention-days: 30
 
-  # 6. 배포 알림 및 정리
+  # 6. ArgoCD 자동 동기화 및 배포 알림
   deploy-notify:
     runs-on: self-hosted
     needs: [build-and-push, helm-chart, offline-package]
@@ -411,6 +411,35 @@ jobs:
       always() &&
       needs.build-and-push.result == 'success'
     steps:
+      - name: ArgoCD 자동 동기화 트리거
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          echo "🔄 ArgoCD 동기화 트리거..."
+          
+          # ArgoCD CLI 설치 확인
+          if ! command -v argocd &> /dev/null; then
+            echo "⚠️ ArgoCD CLI not installed, using API instead"
+            
+            # ArgoCD API를 통한 동기화 (옵션)
+            if [[ -n "${{ secrets.ARGOCD_TOKEN }}" ]]; then
+              curl -k -X POST \
+                -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+                -H "Content-Type: application/json" \
+                -d '{"prune": true, "dryRun": false}' \
+                "https://argo.jclee.me/api/v1/applications/blacklist/sync" || echo "⚠️ ArgoCD API sync failed"
+            fi
+          else
+            # ArgoCD CLI로 동기화
+            if [[ -n "${{ secrets.ARGOCD_TOKEN }}" ]]; then
+              export ARGOCD_AUTH_TOKEN="${{ secrets.ARGOCD_TOKEN }}"
+              argocd app sync blacklist --grpc-web --server argo.jclee.me || echo "⚠️ ArgoCD CLI sync failed"
+              argocd app wait blacklist --health --grpc-web --server argo.jclee.me --timeout 300 || echo "⚠️ ArgoCD health check timeout"
+            fi
+          fi
+          
+          echo "✅ ArgoCD 동기화 요청 완료"
+      
       - name: 배포 정보 출력
         run: |
           echo "🚀 GitOps 배포 준비 완료"
@@ -430,9 +459,9 @@ jobs:
           echo "  Available for download in GitHub Actions Artifacts"
           echo ""
           echo "🔗 Links"
-          echo "  ArgoCD: Configure based on your environment"
-          echo "  Service: Configure based on your domain"
-          echo "  Health: Configure based on your domain"
+          echo "  ArgoCD: https://argo.jclee.me"
+          echo "  Service: https://blacklist.jclee.me"
+          echo "  Health: https://blacklist.jclee.me/health"
           echo ""
           echo "📝 Commit"
           echo "  SHA: ${{ github.sha }}"
