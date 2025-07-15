@@ -163,13 +163,13 @@ networkPolicy:
   enabled: true
   ingress:
     - from:
-      - namespaceSelector:
-          matchLabels:
-            name: ingress-nginx
-      - podSelector: {}
-    ports:
-    - protocol: TCP
-      port: 8541
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8541
 
 # ServiceMonitor for Prometheus Operator
 serviceMonitor:

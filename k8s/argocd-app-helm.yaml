@@ -1,0 +1,122 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist-helm
+  namespace: argocd
+  annotations:
+    # ArgoCD Image Updater 설정 - Helm values 자동 업데이트
+    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist
+    argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+    argocd-image-updater.argoproj.io/blacklist.allow-tags: regexp:^(latest|sha-.*|[0-9]{8}-[0-9]{6})$
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/blacklist.pull-secret: argocd:registry-credentials
+    # Helm values 업데이트 설정
+    argocd-image-updater.argoproj.io/blacklist.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/blacklist.helm.image-tag: image.tag
+    # GitOps 자동화 설정
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: blacklist-deploy
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # ChartMuseum 사용
+    repoURL: https://charts.jclee.me
+    chart: blacklist
+    targetRevision: "1.0.*"  # 1.0.x 버전 중 최신 사용
+    helm:
+      values: |
+        # 이미지 설정
+        image:
+          repository: registry.jclee.me/blacklist
+          tag: latest  # ArgoCD Image Updater가 자동 업데이트
+          pullPolicy: Always
+        
+        # 이미지 풀 시크릿
+        imagePullSecrets:
+          - name: regcred
+        
+        # 서비스 설정
+        service:
+          type: ClusterIP
+          port: 8541
+        
+        # Ingress 설정
+        ingress:
+          enabled: true
+          className: nginx
+          hosts:
+            - host: blacklist.jclee.me
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: blacklist-tls
+              hosts:
+                - blacklist.jclee.me
+        
+        # 리소스 설정
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        
+        # HPA 설정
+        autoscaling:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 10
+          targetCPUUtilizationPercentage: 80
+          targetMemoryUtilizationPercentage: 80
+        
+        # Redis 설정
+        redis:
+          enabled: false  # 외부 Redis 사용 시
+        
+        # 환경 변수
+        env:
+          - name: PORT
+            value: "8541"
+          - name: LOG_LEVEL
+            value: "INFO"
+          - name: REDIS_URL
+            value: "redis://redis-service:6379/0"
+          - name: DATABASE_URL
+            value: "sqlite:///app/instance/blacklist.db"
+        
+        # ConfigMap과 Secret 참조
+        envFrom:
+          - configMapRef:
+              name: blacklist-config
+          - secretRef:
+              name: blacklist-secrets
+          - secretRef:
+              name: blacklist-credentials
+              optional: true
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  revisionHistoryLimit: 3

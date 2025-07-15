@@ -151,10 +151,58 @@ jobs:
             GIT_COMMIT=${{ github.sha }}
             VERSION=${{ steps.meta.outputs.version }}
 
-  # 4. ArgoCD 배포 알림
-  deploy-notify:
+  # 4. Helm Chart 푸시
+  push-helm-chart:
     runs-on: self-hosted
     needs: build-and-push
+    if: |
+      needs.build-and-push.result == 'success' &&
+      github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Helm
+        run: |
+          if ! command -v helm &> /dev/null; then
+            curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz | tar xz
+            sudo mv linux-amd64/helm /usr/local/bin/
+          fi
+
+      - name: Add helm-push plugin
+        run: |
+          helm plugin install https://github.com/chartmuseum/helm-push || true
+
+      - name: Package Helm Chart
+        run: |
+          cd charts/blacklist
+          # Update chart version with timestamp
+          CHART_VERSION="1.0.0-$(date +%Y%m%d%H%M%S)"
+          sed -i "s/^version:.*/version: $CHART_VERSION/" Chart.yaml
+          # Update app version to match image tag
+          sed -i "s/^appVersion:.*/appVersion: \"${{ needs.build-and-push.outputs.image-tag }}\"/" Chart.yaml
+          helm package .
+          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
+
+      - name: Push to ChartMuseum
+        run: |
+          cd charts/blacklist
+          # Add ChartMuseum repository
+          helm repo add chartmuseum https://charts.jclee.me \
+            --username admin \
+            --password bingogo1
+          
+          # Push chart
+          helm cm-push blacklist-*.tgz chartmuseum
+          
+          echo "📦 Helm Chart pushed successfully!"
+          echo "Chart: blacklist:${{ env.CHART_VERSION }}"
+          echo "ChartMuseum: https://charts.jclee.me"
+
+  # 5. ArgoCD 배포 알림
+  deploy-notify:
+    runs-on: self-hosted
+    needs: [build-and-push, push-helm-chart]
     if: |
       needs.build-and-push.result == 'success' &&
       github.ref == 'refs/heads/main'
