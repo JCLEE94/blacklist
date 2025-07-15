@@ -408,3 +408,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ArgoCD](https://argoproj.github.io/argo-cd/) - GitOps 도구
 - [Kubernetes](https://kubernetes.io/) - 컨테이너 오케스트레이션
 - [Docker](https://www.docker.com/) - 컨테이너화 플랫폼
+
+> 🚀 CI/CD 파이프라인이 자동으로 빌드하고 배포합니다
