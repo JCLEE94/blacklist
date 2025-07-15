@@ -295,11 +295,12 @@ jobs:
           echo "Chart Version: ${{ steps.package.outputs.version }}"
           echo "App Version: ${{ needs.build-and-push.outputs.image-tag }}"
 
-  # 5. 오프라인 패키지 생성
+  # 5. 오프라인 패키지 생성 (스토리지 할당량으로 인해 임시 비활성화)
   offline-package:
     runs-on: self-hosted
     needs: [build-and-push, helm-chart]
     if: |
+      false &&
       needs.build-and-push.result == 'success' &&
       needs.helm-chart.result == 'success' &&
       github.ref == 'refs/heads/main'
