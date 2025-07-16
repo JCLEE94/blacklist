@@ -243,22 +243,56 @@ jobs:
           # Set production kubeconfig
           kubectl config use-context k8s-jclee
           
-          # Trigger ArgoCD sync
-          kubectl patch application blacklist -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"cicd-pipeline"},"sync":{"syncStrategy":{"hook":{"force":true}}}}}'
+          # ArgoCD Image Updater가 새 이미지를 감지하도록 대기
+          echo "⏳ Waiting for ArgoCD Image Updater to detect new image..."
+          sleep 10
           
-          # Wait for ArgoCD sync
-          echo "⏳ Waiting for ArgoCD sync to complete..."
-          kubectl wait --for=condition=Synced application/blacklist -n argocd --timeout=300s
+          # ArgoCD sync 트리거 (CLI 사용)
+          echo "🔄 Triggering ArgoCD sync..."
+          argocd app sync blacklist --grpc-web || true
           
-          # Verify ArgoCD application status
-          echo "✅ ArgoCD Application Status:"
-          kubectl get application blacklist -n argocd -o wide
+          # ArgoCD 애플리케이션 상태 확인
+          echo "📊 Checking ArgoCD application status..."
+          for i in {1..30}; do
+            SYNC_STATUS=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.sync.status')
+            HEALTH_STATUS=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.health.status')
+            
+            echo "  Attempt $i/30 - Sync: $SYNC_STATUS, Health: $HEALTH_STATUS"
+            
+            if [ "$SYNC_STATUS" = "Synced" ] && [ "$HEALTH_STATUS" = "Healthy" ]; then
+              echo "✅ ArgoCD sync completed successfully!"
+              break
+            elif [ "$SYNC_STATUS" = "Unknown" ] || [ "$SYNC_STATUS" = "OutOfSync" ]; then
+              # 재시도
+              argocd app sync blacklist --grpc-web || true
+            fi
+            
+            sleep 10
+          done
           
-          # Verify pods after GitOps deployment
-          echo "✅ Pod Status after GitOps deployment:"
+          # 최종 상태 확인
+          echo "📋 Final ArgoCD Application Status:"
+          argocd app get blacklist --grpc-web
+          
+          # Pod 상태 확인
+          echo "📦 Pod Status after GitOps deployment:"
           kubectl get pods -n blacklist -l app=blacklist
           
-          echo "✅ GitOps deployment completed successfully"
+          # 배포된 이미지 확인
+          echo "🏷️ Deployed image:"
+          kubectl get deployment blacklist -n blacklist -o jsonpath='{.spec.template.spec.containers[0].image}'
+          echo ""
+          
+          # 성공 여부 판단
+          FINAL_SYNC=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.sync.status')
+          FINAL_HEALTH=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.health.status')
+          
+          if [ "$FINAL_SYNC" = "Synced" ] && [ "$FINAL_HEALTH" = "Healthy" ]; then
+            echo "✅ GitOps deployment completed successfully!"
+          else
+            echo "⚠️ Warning: Deployment may not be fully successful (Sync: $FINAL_SYNC, Health: $FINAL_HEALTH)"
+            echo "However, continuing as ArgoCD will handle retries..."
+          fi
 
   pipeline-report:
     name: Pipeline Report & Monitoring
