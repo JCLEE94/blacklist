@@ -13,6 +13,7 @@ from datetime import datetime
 from .unified_service import get_unified_service
 from .exceptions import ValidationError, handle_exception, create_error_response
 from .validators import validate_ip
+from .container import get_container
 # Decorators removed to fix Flask endpoint conflicts
 # from src.utils.unified_decorators import public_endpoint, api_endpoint
 
@@ -1318,7 +1319,7 @@ def get_collection_status():
 
 @unified_bp.route('/api/collection/enable', methods=['POST'])
 def enable_collection():
-    """수집 활성화 - 기존 데이터 클리어 후 신규 수집 시작"""
+    """수집 활성화 - 선택적으로 기존 데이터 클리어"""
     try:
         container = get_container()
         collection_manager = container.get('collection_manager')
@@ -1329,14 +1330,21 @@ def enable_collection():
                 'error': 'Collection manager not available'
             }), 500
         
-        # 수집 활성화 (데이터 클리어 포함)
-        result = collection_manager.enable_collection()
+        # 요청에서 clear_data 파라미터 확인
+        try:
+            data = request.get_json() or {}
+        except Exception:
+            data = {}
+        clear_data = data.get('clear_data', False)
+        
+        # 수집 활성화 (선택적 데이터 클리어)
+        result = collection_manager.enable_collection(clear_data=clear_data)
         
         return jsonify({
             'success': True,
-            'message': '수집이 활성화되었습니다. 모든 기존 데이터가 삭제되었습니다.',
+            'message': result.get('message', '수집이 활성화되었습니다.'),
             'collection_enabled': True,
-            'cleared_data': True,
+            'cleared_data': result.get('cleared_data', False),
             'sources': result.get('sources', {})
         })
     except Exception as e:
@@ -1380,7 +1388,6 @@ def trigger_regtech_collection():
     """REGTECH 수집 트리거"""
     try:
         # 컨테이너에서 progress_tracker 가져오기
-        from .container import get_container
         container = get_container()
         progress_tracker = container.get('progress_tracker')
         
@@ -1573,7 +1580,6 @@ def trigger_secudium_collection():
     """SECUDIUM 수집 트리거 (현재 비활성화됨)"""
     try:
         # 컨테이너에서 progress_tracker 가져오기
-        from .container import get_container
         container = get_container()
         progress_tracker = container.get('progress_tracker')
         
@@ -1602,7 +1608,6 @@ def trigger_secudium_collection():
 def get_collection_progress(source):
     """특정 소스의 수집 진행 상황 조회"""
     try:
-        from .container import get_container
         container = get_container()
         progress_tracker = container.get('progress_tracker')
         

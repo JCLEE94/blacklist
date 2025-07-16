@@ -136,7 +136,12 @@ class TestCollectionEndpointsIntegration:
     def test_collection_enable_is_idempotent(self, client, mock_service):
         """Test that enable endpoint can be called multiple times safely"""
         with patch('src.core.unified_routes.service', mock_service):
-            # Call enable multiple times
+            # First disable collection to ensure we start from disabled state
+            response = client.post('/api/collection/disable',
+                                 headers={'Content-Type': 'application/json'})
+            assert response.status_code == 200
+            
+            # Call enable multiple times (without clear_data flag)
             for i in range(3):
                 response = client.post('/api/collection/enable',
                                      headers={'Content-Type': 'application/json'})
@@ -146,8 +151,29 @@ class TestCollectionEndpointsIntegration:
                 
                 assert data['success'] is True
                 assert data['collection_enabled'] is True
+                
+                # Without clear_data flag, data should never be cleared
                 assert data['cleared_data'] is False
-                assert data['message'] == '수집은 항상 활성화 상태입니다.'
+                if i == 0:
+                    assert data['message'] == '수집이 활성화되었습니다.'
+                else:
+                    assert data['message'] == '수집은 이미 활성화 상태입니다.'
+    
+    def test_collection_enable_with_clear_data(self, client, mock_service):
+        """Test that enable endpoint with clear_data flag clears data"""
+        with patch('src.core.unified_routes.service', mock_service):
+            # Enable collection with clear_data flag
+            response = client.post('/api/collection/enable',
+                                 headers={'Content-Type': 'application/json'},
+                                 json={'clear_data': True})
+            
+            assert response.status_code == 200
+            data = response.get_json()
+            
+            assert data['success'] is True
+            assert data['collection_enabled'] is True
+            assert data['cleared_data'] is True
+            assert '기존 데이터가 클리어되었습니다' in data['message']
     
     def test_collection_disable_returns_warning(self, client, mock_service):
         """Test that disable endpoint returns appropriate warning"""

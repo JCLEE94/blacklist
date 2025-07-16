@@ -430,6 +430,79 @@ class TestServiceErrorRecovery:
     """Test service error recovery and resilience"""
     
     @pytest.fixture
+    def temp_db(self):
+        """Create temporary database for testing"""
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        db_path = temp_file.name
+        temp_file.close()
+        
+        # Initialize database schema
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS blacklist_ip (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address VARCHAR(45) NOT NULL,
+                source VARCHAR(50) NOT NULL,
+                detection_date TIMESTAMP,
+                reason TEXT,
+                threat_level VARCHAR(20),
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP
+            )
+        """)
+        conn.commit()
+        conn.close()
+        
+        yield db_path
+        
+        # Cleanup
+        try:
+            os.unlink(db_path)
+        except:
+            pass
+    
+    @pytest.fixture
+    def mock_container(self, temp_db):
+        """Create mock container with test dependencies"""
+        container = Mock(spec=BlacklistContainer)
+        
+        # Mock blacklist manager
+        blacklist_manager = Mock()
+        blacklist_manager.get_active_ips.return_value = (['1.1.1.1', '2.2.2.2'], 2)
+        blacklist_manager.add_ip.return_value = True
+        blacklist_manager.get_all_ips.return_value = [
+            {
+                'ip': '1.1.1.1',
+                'source': 'REGTECH',
+                'detection_date': '2025-01-01',
+                'is_active': True
+            }
+        ]
+        
+        # Mock cache manager
+        cache_manager = Mock()
+        cache_manager.get.return_value = None
+        cache_manager.set.return_value = True
+        
+        # Mock collection manager
+        collection_manager = Mock()
+        collection_manager.get_status.return_value = {
+            'regtech': {'enabled': True, 'count': 1},
+            'secudium': {'enabled': True, 'count': 1}
+        }
+        
+        # Wire up container
+        container.get.side_effect = lambda name: {
+            'blacklist_manager': blacklist_manager,
+            'cache_manager': cache_manager,
+            'collection_manager': collection_manager
+        }[name]
+        
+        return container
+    
+    @pytest.fixture
     def failing_service(self, mock_container):
         """Create service with components that fail intermittently"""
         # Make components fail on first call, succeed on retry

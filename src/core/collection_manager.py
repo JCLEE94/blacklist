@@ -110,16 +110,23 @@ class CollectionManager:
         except Exception as e:
             logger.error(f"설정 저장 실패: {e}")
     
-    def enable_collection(self, sources: Optional[Dict[str, bool]] = None) -> Dict[str, Any]:
-        """수집 활성화 - 기존 데이터 클리어 후 신규 수집 시작"""
+    def enable_collection(self, sources: Optional[Dict[str, bool]] = None, clear_data: bool = False) -> Dict[str, Any]:
+        """수집 활성화 - 선택적으로 기존 데이터 클리어"""
         try:
-            # 기존 데이터 클리어
-            clear_result = self.clear_all_data()
-            if not clear_result.get('success', False):
-                return {
-                    'success': False,
-                    'message': f'데이터 클리어 실패: {clear_result.get("message")}'
-                }
+            # 이미 활성화되어 있는지 확인
+            was_already_enabled = self.config.get('collection_enabled', False)
+            cleared_data = False
+            clear_result = {'cleared_items': []}
+            
+            # 명시적으로 요청된 경우에만 데이터 클리어
+            if clear_data:
+                clear_result = self.clear_all_data()
+                if not clear_result.get('success', False):
+                    return {
+                        'success': False,
+                        'message': f'데이터 클리어 실패: {clear_result.get("message")}'
+                    }
+                cleared_data = True
             
             # 수집 활성화
             self.config['collection_enabled'] = True
@@ -141,13 +148,20 @@ class CollectionManager:
             
             logger.info("수집이 활성화되었습니다. 모든 기존 데이터가 삭제되었습니다.")
             
+            message = '수집이 활성화되었습니다.'
+            if cleared_data:
+                message += ' 기존 데이터가 클리어되었습니다.'
+            elif was_already_enabled:
+                message = '수집은 이미 활성화 상태입니다.'
+            
             return {
                 'success': True,
-                'message': '수집이 활성화되었습니다. 기존 데이터가 클리어되었습니다.',
+                'message': message,
                 'collection_enabled': True,
+                'cleared_data': cleared_data,
                 'sources': self.config['sources'],
                 'enabled_at': self.config['last_enabled_at'],
-                'cleared_items': clear_result.get('cleared_items', [])
+                'cleared_items': clear_result.get('cleared_items', []) if cleared_data else []
             }
             
         except Exception as e:

@@ -39,7 +39,29 @@ jobs:
         id: meta
         run: |
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          SHORT_SHA=${GITHUB_SHA::8}
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          
+          # Environment 기반 태그 결정
+          case "$BRANCH_NAME" in
+            main)
+              ENV_TAG="latest"
+              ;;
+            develop)
+              ENV_TAG="development-latest"
+              ;;
+            staging)
+              ENV_TAG="staging-latest"
+              ;;
+            *)
+              ENV_TAG="feature-${BRANCH_NAME}-latest"
+              ;;
+          esac
+          
           echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "env_tag=$ENV_TAG" >> $GITHUB_OUTPUT
           echo "image_tag=$TIMESTAMP" >> $GITHUB_OUTPUT
 
       - name: Build and Push
@@ -50,8 +72,10 @@ jobs:
           file: deployment/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.env_tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.timestamp }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.short_sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch }}-${{ steps.meta.outputs.timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
