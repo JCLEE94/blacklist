@@ -1,29 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: blacklist
+  name: blacklist-ingress
   namespace: blacklist
   annotations:
-    # ArgoCD Health Check Override
-    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    # Health endpoint exemption from rate limiting
-    nginx.ingress.kubernetes.io/server-snippet: |
-      location ~* ^/(health|healthz|ready|api/health)$ {
-        access_log off;
-        limit_req off;
-        limit_rate off;
-      }
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: nginx
-  # TLS 임시 비활성화 (cert-manager 미설치)
-  # tls:
-  # - hosts:
-  #   - blacklist.jclee.me
-  #   secretName: blacklist-tls
+  tls:
+  - hosts:
+    - blacklist.jclee.me
+    secretName: blacklist-tls
   rules:
   - host: blacklist.jclee.me
     http:
@@ -34,4 +22,5 @@ spec:
           service:
             name: blacklist
             port:
-              number: 2541
+              number: 8541
+EOF < /dev/null

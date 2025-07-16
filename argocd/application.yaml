@@ -15,19 +15,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/jclee/charts.git
+    repoURL: https://github.com/jclee/blacklist.git
     targetRevision: HEAD
-    path: charts/blacklist
-    helm:
-      valueFiles:
-        - values.yaml
-      parameters:
-        - name: image.tag
-          value: "latest"
-        - name: replicaCount
-          value: "3"
-        - name: environment
-          value: "production"
+    path: k8s/overlays/production
   destination:
     server: https://kubernetes.default.svc
     namespace: blacklist
@@ -69,7 +59,7 @@ metadata:
 type: Opaque
 stringData:
   type: git
-  url: https://github.com/jclee/charts.git
+  url: https://github.com/jclee/blacklist.git
   # GitHub Personal Access Token이 필요한 경우 아래 주석 해제
   # password: <GITHUB_TOKEN>
   # username: <GITHUB_USERNAME>
@@ -82,7 +72,6 @@ metadata:
 spec:
   description: Blacklist Management System Project
   sourceRepos:
-    - https://github.com/jclee/charts.git
     - https://github.com/jclee/blacklist.git
   destinations:
     - namespace: blacklist

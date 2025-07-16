@@ -85,15 +85,15 @@ jobs:
           echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.timestamp }}"
 
-  update-charts:
-    name: Update Helm Charts
+  gitops-deploy:
+    name: GitOps Deployment via ArgoCD
     runs-on: self-hosted
     needs: build-and-push
     if: success()
     steps:
-      - name: Update Charts Repository
+      - name: Update Charts Repository for GitOps
         run: |
-          CHARTS_DIR="/home/jclee/charts"
+          CHARTS_DIR="/home/jclee/charts.jclee.me"
           if [ -d "$CHARTS_DIR" ]; then
             cd $CHARTS_DIR
             
@@ -111,14 +111,21 @@ jobs:
               helm repo index . --url https://charts.jclee.me
               
               echo "✅ Chart updated to version $CHART_VERSION"
+              
+              # Commit and push changes for GitOps
+              git add .
+              git commit -m "feat: update blacklist chart to ${{ needs.build-and-push.outputs.image_tag }}"
+              git push origin main
+              
+              echo "✅ GitOps chart changes pushed to repository"
             fi
           else
             echo "⚠️ Charts directory not found, skipping chart update"
           fi
 
-      - name: Deploy to Production Kubernetes
+      - name: ArgoCD Sync and Deployment
         run: |
-          echo "🚀 Production Kubernetes Deployment:"
+          echo "🚀 ArgoCD GitOps Deployment:"
           echo "  - Cluster: k8s.jclee.me"
           echo "  - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
           echo "  - Namespace: blacklist"
@@ -127,16 +134,19 @@ jobs:
           # Set production kubeconfig
           kubectl config use-context k8s-jclee
           
-          # Update deployment image
-          kubectl set image deployment/blacklist blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} -n blacklist
+          # Trigger ArgoCD sync
+          kubectl patch application blacklist -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"cicd-pipeline"},"sync":{"syncStrategy":{"hook":{"force":true}}}}}'
           
-          # Wait for rollout
-          echo "⏳ Waiting for rollout to complete..."
-          kubectl rollout status deployment/blacklist -n blacklist --timeout=300s
+          # Wait for ArgoCD sync
+          echo "⏳ Waiting for ArgoCD sync to complete..."
+          kubectl wait --for=condition=Synced application/blacklist -n argocd --timeout=300s
           
-          # Verify deployment
-          echo "✅ Deployment Status:"
-          kubectl get deployment blacklist -n blacklist -o wide
+          # Verify ArgoCD application status
+          echo "✅ ArgoCD Application Status:"
+          kubectl get application blacklist -n argocd -o wide
+          
+          # Verify pods after GitOps deployment
+          echo "✅ Pod Status after GitOps deployment:"
           kubectl get pods -n blacklist -l app=blacklist
           
-          echo "✅ Production deployment completed successfully"
+          echo "✅ GitOps deployment completed successfully"
