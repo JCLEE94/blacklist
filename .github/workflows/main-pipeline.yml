@@ -1,0 +1,103 @@
+name: Main CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: self-hosted
+    outputs:
+      image_tag: ${{ steps.build.outputs.image_tag }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+          config-inline: |
+            [registry."registry.jclee.me"]
+              http = true
+              insecure = true
+
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: admin
+          password: bingogo1
+
+      - name: Generate metadata
+        id: meta
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "image_tag=$TIMESTAMP" >> $GITHUB_OUTPUT
+
+      - name: Build and Push
+        id: build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.timestamp }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify Push
+        run: |
+          echo "✅ Successfully pushed:"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.timestamp }}"
+
+  update-charts:
+    name: Update Helm Charts
+    runs-on: self-hosted
+    needs: build-and-push
+    if: success()
+    steps:
+      - name: Update Charts Repository
+        run: |
+          CHARTS_DIR="/home/jclee/charts"
+          if [ -d "$CHARTS_DIR" ]; then
+            cd $CHARTS_DIR
+            
+            # Update blacklist chart
+            if [ -d "charts/blacklist" ]; then
+              # Update image tag in values.yaml
+              sed -i "s|tag:.*|tag: \"${{ needs.build-and-push.outputs.image_tag }}\"|g" charts/blacklist/values.yaml
+              
+              # Update Chart version
+              CHART_VERSION="1.0.$(date +%s)"
+              sed -i "s|version:.*|version: $CHART_VERSION|g" charts/blacklist/Chart.yaml
+              
+              # Package and index
+              helm package charts/blacklist -d .
+              helm repo index . --url https://charts.jclee.me
+              
+              echo "✅ Chart updated to version $CHART_VERSION"
+            fi
+          else
+            echo "⚠️ Charts directory not found, skipping chart update"
+          fi
+
+      - name: Notify ArgoCD
+        run: |
+          echo "🔄 ArgoCD Configuration:"
+          echo "  - Application: blacklist"
+          echo "  - Chart: https://charts.jclee.me/blacklist"
+          echo "  - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
+          echo "  - ArgoCD URL: https://argo.jclee.me/applications/blacklist"
+          echo ""
+          echo "✅ ArgoCD will automatically detect and deploy the new version"
