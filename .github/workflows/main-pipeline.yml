@@ -116,22 +116,27 @@ jobs:
             echo "⚠️ Charts directory not found, skipping chart update"
           fi
 
-      - name: Trigger ArgoCD Sync
+      - name: Deploy to Production Kubernetes
         run: |
-          echo "🔄 ArgoCD Configuration:"
-          echo "  - Application: blacklist"
-          echo "  - Chart: https://charts.jclee.me/blacklist"
+          echo "🚀 Production Kubernetes Deployment:"
+          echo "  - Cluster: k8s.jclee.me"
           echo "  - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
-          echo "  - ArgoCD URL: https://argo.jclee.me/applications/blacklist"
+          echo "  - Namespace: blacklist"
           echo ""
           
-          # Trigger ArgoCD sync
-          if command -v argocd &> /dev/null; then
-            echo "🔄 Triggering ArgoCD sync..."
-            argocd app sync blacklist --grpc-web || echo "⚠️ ArgoCD sync failed, but will retry automatically"
-            argocd app wait blacklist --health --grpc-web --timeout 300 || echo "⚠️ Health check timeout"
-          else
-            echo "⚠️ ArgoCD CLI not available, relying on auto-sync"
-          fi
+          # Set production kubeconfig
+          kubectl config use-context k8s-jclee
           
-          echo "✅ Deployment completed"
+          # Update deployment image
+          kubectl set image deployment/blacklist blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} -n blacklist
+          
+          # Wait for rollout
+          echo "⏳ Waiting for rollout to complete..."
+          kubectl rollout status deployment/blacklist -n blacklist --timeout=300s
+          
+          # Verify deployment
+          echo "✅ Deployment Status:"
+          kubectl get deployment blacklist -n blacklist -o wide
+          kubectl get pods -n blacklist -l app=blacklist
+          
+          echo "✅ Production deployment completed successfully"
