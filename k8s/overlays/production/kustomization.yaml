@@ -9,24 +9,22 @@ resources:
   - redis.yaml
   - vpa.yaml
 
-commonLabels:
-  environment: production
-  tier: backend
-  version: stable
-
-commonAnnotations:
-  environment: production
-
 patchesStrategicMerge:
   - deployment-patch.yaml
   - service-patch.yaml
   - hpa-patch.yaml
   - pdb-patch.yaml
 
+images:
+  - name: blacklist
+    newName: registry.jclee.me/blacklist
+    newTag: latest  # ArgoCD Image Updater가 자동 업데이트
+
 configMapGenerator:
   - name: blacklist-config
     behavior: merge
     literals:
+      - NODE_ENV=production
       - LOG_LEVEL=warning
       - FLASK_ENV=production
       - ENABLE_METRICS=true
@@ -38,14 +36,11 @@ configMapGenerator:
       - SECURE_COOKIES=true
       - SESSION_TIMEOUT=3600
 
-images:
-  - name: blacklist
-    newName: registry.jclee.me/blacklist
-    newTag: stable
-
-replicas:
-  - name: blacklist
-    count: 3
+secretGenerator:
+  - name: blacklist-secret
+    behavior: merge
+    envs:
+      - .env.secret  # 민감 정보 파일 (Git에 포함하지 않음)
 
 components:
   - ../../components/security
