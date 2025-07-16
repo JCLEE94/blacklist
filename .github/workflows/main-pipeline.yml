@@ -92,7 +92,7 @@ jobs:
             echo "⚠️ Charts directory not found, skipping chart update"
           fi
 
-      - name: Notify ArgoCD
+      - name: Trigger ArgoCD Sync
         run: |
           echo "🔄 ArgoCD Configuration:"
           echo "  - Application: blacklist"
@@ -100,4 +100,14 @@ jobs:
           echo "  - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
           echo "  - ArgoCD URL: https://argo.jclee.me/applications/blacklist"
           echo ""
-          echo "✅ ArgoCD will automatically detect and deploy the new version"
+          
+          # Trigger ArgoCD sync
+          if command -v argocd &> /dev/null; then
+            echo "🔄 Triggering ArgoCD sync..."
+            argocd app sync blacklist --grpc-web || echo "⚠️ ArgoCD sync failed, but will retry automatically"
+            argocd app wait blacklist --health --grpc-web --timeout 300 || echo "⚠️ Health check timeout"
+          else
+            echo "⚠️ ArgoCD CLI not available, relying on auto-sync"
+          fi
+          
+          echo "✅ Deployment completed"
