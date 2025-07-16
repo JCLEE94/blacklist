@@ -36,7 +36,7 @@ class CollectionManager:
         # 수집 설정 로드
         self.config = self._load_collection_config()
         
-        # collection_enabled 속성 추가
+        # collection_enabled 속성 추가 - 기본값을 False로 설정 (수집 비활성화)
         self.collection_enabled = self.config.get('collection_enabled', False)
         
         # 일일 자동 수집 설정
@@ -50,7 +50,7 @@ class CollectionManager:
                 'last_collection': None,
                 'total_ips': 0,
                 'manual_only': True,
-                'enabled': self.config.get('sources', {}).get('regtech', False)
+                'enabled': self.config.get('sources', {}).get('regtech', False)  # 기본값 False (비활성화)
             },
             'secudium': {
                 'name': 'SECUDIUM (에스케이인포섹)',

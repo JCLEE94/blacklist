@@ -1302,7 +1302,7 @@ def get_collection_status():
             'sources': collection_status.get('sources', {}),
             'logs': recent_logs,
             'last_collection': collection_status.get('last_updated'),
-            'message': '수집은 항상 활성화 상태입니다'
+            'message': f'수집 상태: {"활성화" if collection_manager.collection_enabled else "비활성화"}'
         })
     except Exception as e:
         logger.error(f"Collection status error: {e}")

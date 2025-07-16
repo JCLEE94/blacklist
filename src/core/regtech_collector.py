@@ -73,6 +73,7 @@ class RegtechCollector:
         REGTECH Excel 다운로드 방식으로 데이터 수집
         """
         logger.info(f"🔄 REGTECH Excel 다운로드 수집 시작")
+        logger.info(f"📝 수집 진행 상황을 상세히 로깅합니다")
         
         # 일일 수집 여부 확인
         is_daily_collection = False
@@ -109,12 +110,16 @@ class RegtechCollector:
             })
             
             # 로그인 수행
+            logger.info("🔐 REGTECH 로그인 시도 중...")
             if not self._perform_login(session):
-                logger.error("REGTECH 로그인 실패")
+                logger.error("❌ REGTECH 로그인 실패")
                 return []
+            logger.info("✅ REGTECH 로그인 성공")
             
             # Excel 다운로드 방식으로 데이터 수집
+            logger.info("📊 Excel 데이터 다운로드 시작...")
             collected_ips = self._download_excel_data(session, start_date, end_date)
+            logger.info(f"📋 Excel 데이터 다운로드 완료: {len(collected_ips)}개 IP 수집")
             
             if collected_ips:
                 self.stats.total_collected = len(collected_ips)
@@ -155,13 +160,13 @@ class RegtechCollector:
                 # caption이 "요주의 IP 목록"인 테이블 찾기
                 caption = table.find('caption')
                 if caption and '요주의 IP' in caption.text:
-                    logger.info("요주의 IP 테이블 발견")
+                    logger.info("📋 요주의 IP 테이블 발견")
                     
                     # tbody의 모든 tr 찾기
                     tbody = table.find('tbody')
                     if tbody:
                         rows = tbody.find_all('tr')
-                        logger.info(f"테이블에서 {len(rows)}개의 행 발견")
+                        logger.info(f"📊 테이블에서 {len(rows)}개의 행 발견")
                         
                         for row in rows:
                             cells = row.find_all('td')
