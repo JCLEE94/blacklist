@@ -93,9 +93,11 @@ jobs:
     steps:
       - name: Update Charts Repository for GitOps
         run: |
-          CHARTS_DIR="/home/jclee/charts.jclee.me"
-          if [ -d "$CHARTS_DIR" ]; then
-            cd $CHARTS_DIR
+          echo "🔄 Updating charts.jclee.me repository for GitOps deployment"
+          
+          # charts.jclee.me 저장소를 사용하여 Helm 차트 업데이트
+          if [ -d "/home/jclee/charts.jclee.me" ]; then
+            cd /home/jclee/charts.jclee.me
             
             # Update blacklist chart
             if [ -d "charts/blacklist" ]; then
@@ -110,17 +112,19 @@ jobs:
               helm package charts/blacklist -d .
               helm repo index . --url https://charts.jclee.me
               
-              echo "✅ Chart updated to version $CHART_VERSION"
+              echo "✅ Chart updated to version $CHART_VERSION with image tag ${{ needs.build-and-push.outputs.image_tag }}"
               
               # Commit and push changes for GitOps
               git add .
               git commit -m "feat: update blacklist chart to ${{ needs.build-and-push.outputs.image_tag }}"
               git push origin main
               
-              echo "✅ GitOps chart changes pushed to repository"
+              echo "✅ GitOps chart changes pushed to charts.jclee.me repository"
+            else
+              echo "⚠️ charts/blacklist directory not found"
             fi
           else
-            echo "⚠️ Charts directory not found, skipping chart update"
+            echo "⚠️ charts.jclee.me directory not found, skipping chart update"
           fi
 
       - name: ArgoCD Sync and Deployment
