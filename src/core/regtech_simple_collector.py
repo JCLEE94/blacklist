@@ -136,8 +136,8 @@ class RegtechSimpleCollector:
                     'endDate': end_date,
                     'findCondition': 'all',
                     'findKeyword': '',
-                    'size': '100',
-                    'rows': '100',
+                    'size': '9999',
+                    'rows': '9999',
                     'excelDownload': '',
                     'cveId': '',
                     'ipId': '',
@@ -175,7 +175,7 @@ class RegtechSimpleCollector:
                         tbody = table.find('tbody')
                         if tbody:
                             rows = tbody.find_all('tr')
-                            logger.info(f"페이지 {page + 1} 테이블 행 수: {len(rows)}")
+                            logger.info(f"페이지 {page + 1} 테이블 행 수: {len(rows)} (페이지당 최대 9999개)")
                             
                             for row in rows:
                                 cells = row.find_all('td')
@@ -217,7 +217,7 @@ class RegtechSimpleCollector:
                     unique_ips.append(ip_data)
                     seen.add(ip_data['ip'])
             
-            logger.info(f"총 수집된 IP: {len(unique_ips)}개 (중복 제거 후, {max_pages}페이지 탐색)")
+            logger.info(f"총 수집된 IP: {len(unique_ips)}개 (중복 제거 후, 페이지당 최대 9999개, 최대 {max_pages}페이지 탐색)")
             return unique_ips
             
         except Exception as e:
