@@ -1287,8 +1287,8 @@ def get_collection_status():
             recent_logs = []
             
         return jsonify({
-            'enabled': True,  # 항상 활성화
-            'status': 'active',  # 항상 활성 상태
+            'enabled': service.collection_enabled,
+            'status': 'active' if service.collection_enabled else 'inactive',
             'stats': {
                 'total_ips': stats.get('total_ips', 0),
                 'active_ips': stats.get('active_ips', 0),
@@ -1302,7 +1302,7 @@ def get_collection_status():
             'sources': collection_status.get('sources', {}),
             'logs': recent_logs,
             'last_collection': collection_status.get('last_updated'),
-            'message': f'수집 상태: {"활성화" if collection_manager.collection_enabled else "비활성화"}'
+            'message': f'수집 상태: {"활성화" if service.collection_enabled else "비활성화"}'
         })
     except Exception as e:
         logger.error(f"Collection status error: {e}")
@@ -1340,6 +1340,9 @@ def enable_collection():
         # 수집 활성화 (선택적 데이터 클리어)
         result = collection_manager.enable_collection(clear_data=clear_data)
         
+        # UnifiedService의 상태도 동기화
+        service.collection_enabled = True
+        
         return jsonify({
             'success': True,
             'message': result.get('message', '수집이 활성화되었습니다.'),
@@ -1369,6 +1372,9 @@ def disable_collection():
         
         # 수집 비활성화
         result = collection_manager.disable_collection()
+        
+        # UnifiedService의 상태도 동기화
+        service.collection_enabled = False
         
         return jsonify({
             'success': True,

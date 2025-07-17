@@ -66,6 +66,9 @@ class UnifiedBlacklistService:
             # Try to get collection_manager
             try:
                 self.collection_manager = self.container.resolve('collection_manager')
+                # CollectionManager의 상태와 동기화
+                if self.collection_manager:
+                    self.collection_enabled = self.collection_manager.collection_enabled
             except Exception as e:
                 self.logger.warning(f"Collection Manager not available: {e}")
                 self.collection_manager = None

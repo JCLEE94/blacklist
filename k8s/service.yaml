@@ -8,10 +8,10 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: blacklist
+    app.kubernetes.io/name: blacklist
   ports:
-  - port: 2541
-    targetPort: 2541
+  - port: 8541
+    targetPort: 8541
     protocol: TCP
     name: http
 ---
@@ -25,10 +25,10 @@ metadata:
 spec:
   type: NodePort
   selector:
-    app: blacklist
+    app.kubernetes.io/name: blacklist
   ports:
-  - port: 2541
-    targetPort: 2541
-    nodePort: 32452
+  - port: 8541
+    targetPort: 8541
+    nodePort: 32542
     protocol: TCP
     name: http
