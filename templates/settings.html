@@ -105,45 +105,63 @@
         <div id="alerts"></div>
 
         <form id="settingsForm">
-            <!-- REGTECH 설정 -->
+            <!-- 인증 설정 -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">REGTECH 인증 정보</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> 인증 설정
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label for="regtech_username" class="form-label">사용자명</label>
-                        <input type="text" class="form-control" id="regtech_username" name="regtech_username" 
-                               value="{{ settings.regtech_username or '' }}" placeholder="REGTECH 사용자명">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-university text-primary"></i> REGTECH
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="regtech_username" class="form-label">사용자명</label>
+                                    <input type="text" class="form-control" id="regtech_username" name="regtech_username" 
+                                           value="{{ settings.regtech_username or '' }}" placeholder="사용자명">
+                                </div>
+                                <div class="mb-3 password-wrapper">
+                                    <label for="regtech_password" class="form-label">비밀번호</label>
+                                    <input type="password" class="form-control" id="regtech_password" name="regtech_password" 
+                                           value="{{ settings.regtech_password or '' }}" placeholder="비밀번호">
+                                    <i class="fas fa-eye password-toggle" onclick="togglePassword('regtech_password')"></i>
+                                </div>
+                                <div class="alert alert-info py-2 mb-0">
+                                    <small>
+                                        <i class="fas fa-info-circle"></i> 금융보안원 위협 정보 수집용
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 opacity-50">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-shield-alt text-danger"></i> SECUDIUM
+                                    <span class="badge bg-danger ms-2">비활성</span>
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="secudium_username" class="form-label">사용자명</label>
+                                    <input type="text" class="form-control" id="secudium_username" name="secudium_username" 
+                                           value="{{ settings.secudium_username or '' }}" placeholder="사용자명" disabled>
+                                </div>
+                                <div class="mb-3 password-wrapper">
+                                    <label for="secudium_password" class="form-label">비밀번호</label>
+                                    <input type="password" class="form-control" id="secudium_password" name="secudium_password" 
+                                           value="{{ settings.secudium_password or '' }}" placeholder="비밀번호" disabled>
+                                    <i class="fas fa-eye password-toggle" onclick="togglePassword('secudium_password')"></i>
+                                </div>
+                                <div class="alert alert-warning py-2 mb-0">
+                                    <small>
+                                        <i class="fas fa-exclamation-triangle"></i> 현재 서비스 이용 불가
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3 password-wrapper">
-                        <label for="regtech_password" class="form-label">비밀번호</label>
-                        <input type="password" class="form-control" id="regtech_password" name="regtech_password" 
-                               value="{{ settings.regtech_password or '' }}" placeholder="REGTECH 비밀번호">
-                        <i class="fas fa-eye password-toggle" onclick="togglePassword('regtech_password')"></i>
-                    </div>
-                    <small class="text-muted">REGTECH 수집을 위한 로그인 정보입니다.</small>
-                </div>
-            </div>
-
-            <!-- SECUDIUM 설정 -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">SECUDIUM 인증 정보</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="secudium_username" class="form-label">사용자명</label>
-                        <input type="text" class="form-control" id="secudium_username" name="secudium_username" 
-                               value="{{ settings.secudium_username or '' }}" placeholder="SECUDIUM 사용자명">
-                    </div>
-                    <div class="mb-3 password-wrapper">
-                        <label for="secudium_password" class="form-label">비밀번호</label>
-                        <input type="password" class="form-control" id="secudium_password" name="secudium_password" 
-                               value="{{ settings.secudium_password or '' }}" placeholder="SECUDIUM 비밀번호">
-                        <i class="fas fa-eye password-toggle" onclick="togglePassword('secudium_password')"></i>
-                    </div>
-                    <small class="text-muted">SECUDIUM 수집을 위한 로그인 정보입니다.</small>
                 </div>
             </div>
 
@@ -289,58 +307,7 @@
             }
         });
 
-        // 수집 활성화 버튼
-        document.getElementById('enableCollectionBtn').addEventListener('click', async () => {
-            if (confirm('정말로 수집을 활성화하시겠습니까? 기존 데이터가 모두 삭제됩니다.')) {
-                try {
-                    const response = await fetch('/api/collection/enable', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        showAlert('수집이 활성화되었습니다.', 'success');
-                        document.getElementById('collectionEnabled').checked = true;
-                        // 업데이트 주기 저장
-                        const updateInterval = document.getElementById('update_interval').value;
-                        localStorage.setItem('unifiedControlUpdateInterval', updateInterval);
-                    } else {
-                        showAlert(result.message || '수집 활성화에 실패했습니다.', 'danger');
-                    }
-                } catch (error) {
-                    showAlert('수집 활성화 중 오류가 발생했습니다: ' + error.message, 'danger');
-                }
-            }
-        });
-
-        // 수집 비활성화 버튼
-        document.getElementById('disableCollectionBtn').addEventListener('click', async () => {
-            if (confirm('정말로 수집을 비활성화하시겠습니까?')) {
-                try {
-                    const response = await fetch('/api/collection/disable', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        showAlert('수집이 비활성화되었습니다.', 'success');
-                        document.getElementById('collectionEnabled').checked = false;
-                    } else {
-                        showAlert(result.message || '수집 비활성화에 실패했습니다.', 'danger');
-                    }
-                } catch (error) {
-                    showAlert('수집 비활성화 중 오류가 발생했습니다: ' + error.message, 'danger');
-                }
-            }
-        });
+        // 수집 버튼 이벤트 리스너 제거 (수집 제어는 통합 관리 패널에서 처리)
 
         // 업데이트 주기 변경 시 localStorage에 저장
         document.getElementById('update_interval').addEventListener('change', (e) => {

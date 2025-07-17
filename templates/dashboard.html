@@ -255,27 +255,11 @@
                                     </span>
                                 </div>
                                 
-                                <!-- REGTECH Login Info -->
+                                <!-- REGTECH Status -->
                                 <div class="mb-3 bg-light rounded p-2">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <small class="text-muted">인증 정보:</small>
-                                        <button class="btn btn-link btn-sm p-0" onclick="toggleLoginInfo('regtech')">
-                                            <i id="regtech-toggle-icon" class="bi bi-eye-slash"></i>
-                                        </button>
-                                    </div>
-                                    <div id="regtech-login-info" style="display: none;">
-                                        <small class="d-block">
-                                            <i class="bi bi-person"></i> 
-                                            <span class="font-monospace">nextrade</span>
-                                        </small>
-                                        <small class="d-block">
-                                            <i class="bi bi-key"></i> 
-                                            <span class="font-monospace">Sprtmxm1@3</span>
-                                        </small>
-                                    </div>
-                                    <div id="regtech-cookie-status" class="mt-1">
-                                        <small class="text-success">
-                                            <i class="bi bi-shield-check"></i> 쿠키 인증 활성
+                                    <div id="regtech-status-info">
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-info-circle"></i> 준비 상태
                                         </small>
                                     </div>
                                 </div>
@@ -286,11 +270,10 @@
                                             id="regtech-trigger-btn">
                                         <i class="bi bi-arrow-clockwise"></i> 수동 수집
                                     </button>
-                                    <button class="btn btn-outline-secondary btn-sm" 
-                                            onclick="refreshCookies('regtech')"
-                                            title="쿠키 갱신">
-                                        <i class="bi bi-arrow-repeat"></i>
-                                    </button>
+                                    <a href="/settings" class="btn btn-outline-secondary btn-sm" 
+                                       title="설정">
+                                        <i class="bi bi-gear"></i>
+                                    </a>
                                 </div>
                                 <div id="regtech-last-collect" class="mt-2">
                                     <small class="text-muted">마지막 수집: -</small>
@@ -315,10 +298,10 @@
                                     </span>
                                 </div>
                                 
-                                <!-- SECUDIUM Login Info -->
+                                <!-- SECUDIUM Status -->
                                 <div class="mb-3 bg-light rounded p-2">
                                     <small class="text-muted d-block">
-                                        <i class="bi bi-x-circle"></i> 계정 문제로 비활성화됨
+                                        <i class="bi bi-x-circle"></i> 현재 비활성화됨
                                     </small>
                                 </div>
 
@@ -449,26 +432,42 @@
             <div class="modern-card">
                 <div class="card-header bg-transparent border-0 pb-0">
                     <h5 class="mb-0 fw-semibold">
-                        <i class="bi bi-pie-chart-fill text-info"></i> 소스별 분포
+                        <i class="bi bi-activity text-info"></i> 시스템 상태
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="sourceChart"></canvas>
-                    </div>
-                    <div class="mt-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted small">REGTECH ({{ source_distribution.regtech.count if source_distribution else 0 }}개)</span>
-                            <span class="fw-semibold">{{ source_distribution.regtech.percentage if source_distribution else 0 }}%</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted small">SECUDIUM ({{ source_distribution.secudium.count if source_distribution else 0 }}개)</span>
-                            <span class="fw-semibold">{{ source_distribution.secudium.percentage if source_distribution else 0 }}%</span>
-                        </div>
+                    <div class="status-item mb-3">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted small">Public Sources ({{ source_distribution.public.count if source_distribution else 0 }}개)</span>
-                            <span class="fw-semibold">{{ source_distribution.public.percentage if source_distribution else 0 }}%</span>
+                            <span class="text-muted">데이터베이스</span>
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> 정상
+                            </span>
                         </div>
+                    </div>
+                    <div class="status-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">캐시 시스템</span>
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> 활성
+                            </span>
+                        </div>
+                    </div>
+                    <div class="status-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">수집 서비스</span>
+                            <span id="collection-status-badge" class="badge bg-warning">
+                                <i class="bi bi-pause-circle"></i> 대기
+                            </span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="mt-3">
+                        <small class="text-muted d-block mb-2">
+                            <i class="bi bi-clock"></i> 마지막 업데이트: <span id="last-update-time">{{ last_update }}</span>
+                        </small>
+                        <small class="text-muted d-block">
+                            <i class="bi bi-hdd"></i> 데이터 보관: 90일
+                        </small>
                     </div>
                 </div>
             </div>
