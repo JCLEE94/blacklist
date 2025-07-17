@@ -131,7 +131,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         # Initialize advanced features
         from src.utils.advanced_cache import get_smart_cache
         from src.utils.real_time_monitoring import setup_monitoring
-        from src.utils.enhanced_security import get_security_manager
+        from src.utils.security import get_security_manager
         
         # Setup advanced caching
         smart_cache = get_smart_cache()

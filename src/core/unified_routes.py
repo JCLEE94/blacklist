@@ -668,9 +668,9 @@ def get_realtime_logs():
         logger.error(f"Realtime logs error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@unified_bp.route('/api/blacklist/enhanced', methods=['GET'])
-def get_enhanced_blacklist():
-    """향상된 블랙리스트 조회 - 실제 만료일 정보 포함"""
+@unified_bp.route('/api/blacklist/metadata', methods=['GET'])
+def get_blacklist_with_metadata():
+    """메타데이터 포함 블랙리스트 조회 - 실제 만료일 정보 포함"""
     try:
         # 실제 만료 통계를 데이터베이스에서 조회
         # blacklist_manager = g.container.resolve('blacklist_manager')  # g 객체 제거
@@ -1203,8 +1203,8 @@ def get_system_stats():
         conn.close()
         
         # 기존 통계에 만료 정보 추가 (90일 필터링된 데이터 사용)
-        enhanced_stats = stats.copy()
-        enhanced_stats.update({
+        detailed_stats = stats.copy()
+        detailed_stats.update({
             'total_ips': active_ips,  # 90일 내 활성 IP를 total로 표시
             'active_ips': active_ips,
             'expired_ips': expired_ips,
@@ -1215,7 +1215,7 @@ def get_system_stats():
             'db_total_ips': total_ips  # 전체 DB 데이터는 별도 필드로 제공
         })
         
-        return jsonify(enhanced_stats)
+        return jsonify(detailed_stats)
     except Exception as e:
         import traceback
         logger.error(f"System stats error: {e}")
@@ -2162,17 +2162,17 @@ def list_docker_containers():
 
 # === 향상된 API (v2) ===
 
-@unified_bp.route('/api/v2/blacklist/enhanced', methods=['GET'])
+@unified_bp.route('/api/v2/blacklist/metadata', methods=['GET'])
 
-def get_enhanced_blacklist_v2():
-    """향상된 블랙리스트 (메타데이터 포함)"""
+def get_blacklist_with_metadata_v2():
+    """메타데이터 포함 블랙리스트 (v2)"""
     try:
         page = request.args.get('page', 1, type=int)
         per_page = min(request.args.get('per_page', 50, type=int), 500)
         include_metadata = request.args.get('metadata', 'true').lower() == 'true'
         source_filter = request.args.get('source')
         
-        result = service.get_enhanced_blacklist(
+        result = service.get_blacklist_with_metadata(
             page=page,
             per_page=per_page,
             include_metadata=include_metadata,
@@ -2594,9 +2594,9 @@ def manual_collection_trigger():
                 visual_logs.append('📊 수집 진행 상태 추적 시작')
             
             try:
-                # Enhanced REGTECH Collector 사용
-                from src.core.regtech_enhanced_collector import create_regtech_collector
-                collector = create_regtech_collector()
+                # REGTECH Simple Collector 사용
+                from src.core.regtech_simple_collector import RegtechSimpleCollector
+                collector = RegtechSimpleCollector('data')
                 visual_logs.append('✅ REGTECH 수집기 생성 완료')
                 
                 # 연결 테스트

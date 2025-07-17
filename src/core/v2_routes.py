@@ -18,7 +18,7 @@ from ..utils.unified_decorators import (
 from ..utils.cache import CacheManager
 from ..utils.performance_optimizer import optimizer, validate_ips_batch
 from ..core.blacklist_unified import UnifiedBlacklistManager
-from ..utils.enhanced_security import SecurityManager
+from ..utils.security import SecurityManager
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,9 @@ class V2APIService:
         self.security = SecurityManager(secret_key="v2-api-security-key-2024")
         self.executor = ThreadPoolExecutor(max_workers=10)
         
-    @optimizer.measure_performance("v2_get_enhanced_blacklist")
-    def get_enhanced_blacklist_data(self, filters: Dict[str, Any]) -> Dict[str, Any]:
-        """향상된 블랙리스트 조회"""
+    @optimizer.measure_performance("v2_get_blacklist_with_metadata")
+    def get_blacklist_with_metadata(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+        """메타데이터 포함 블랙리스트 조회"""
         # 필터 파싱
         limit = filters.get('limit', 1000)
         offset = filters.get('offset', 0)
@@ -47,7 +47,7 @@ class V2APIService:
         min_risk_score = filters.get('min_risk_score', 0)
         
         # 캐시 키 생성
-        cache_key = f"v2:enhanced_blacklist:{json.dumps(filters, sort_keys=True)}"
+        cache_key = f"v2:blacklist_metadata:{json.dumps(filters, sort_keys=True)}"
         
         # 캐시 확인
         cached_data = self.cache.get(cache_key)
@@ -295,10 +295,10 @@ v2_service = None
 
 
 # Blueprint 라우트들을 모듈 레벨에서 정의
-@v2_bp.route('/blacklist/enhanced', methods=['GET'])
+@v2_bp.route('/blacklist/metadata', methods=['GET'])
 @unified_cache(ttl=300, key_prefix='v2:blacklist')
-def get_enhanced_blacklist_v2_route():
-    """향상된 블랙리스트 조회"""
+def get_blacklist_with_metadata_v2_route():
+    """메타데이터 포함 블랙리스트 조회"""
     if not v2_service:
         return jsonify({'error': 'Service not initialized'}), 503
         
@@ -310,7 +310,7 @@ def get_enhanced_blacklist_v2_route():
         'min_risk_score': request.args.get('min_risk_score', 0, type=float)
     }
     
-    result = v2_service.get_enhanced_blacklist_data(filters)
+    result = v2_service.get_blacklist_with_metadata(filters)
     return jsonify(result)
 
 
@@ -376,7 +376,7 @@ def export_data(format):
     }
     
     try:
-        data = v2_service.get_enhanced_blacklist_data(filters)['data']
+        data = v2_service.get_blacklist_with_metadata(filters)['data']
         
         if format == 'json':
             return jsonify(data)
@@ -498,7 +498,7 @@ def warm_cache():
     
     # 기본 블랙리스트
     try:
-        v2_service.get_enhanced_blacklist_data({'limit': 1000, 'offset': 0})
+        v2_service.get_blacklist_with_metadata({'limit': 1000, 'offset': 0})
         warmed.append('blacklist:default')
     except:
         pass

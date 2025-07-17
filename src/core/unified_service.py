@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from .container import get_container
-from .regtech_collector import RegtechCollector
+from .regtech_simple_collector import RegtechSimpleCollector
 # SECUDIUM 수집기 제거됨 - 사용자 요청에 따라
 from .blacklist_unified import UnifiedBlacklistManager
 from .collection_manager import CollectionManager
@@ -1398,8 +1398,8 @@ class UnifiedBlacklistService:
         # TODO: Implement actual collection trigger based on source parameter
         return task_id
     
-    def get_enhanced_blacklist(self, page: int = 1, per_page: int = 50, include_metadata: bool = True, source_filter: str = None) -> Dict[str, Any]:
-        """향상된 블랙리스트 조회"""
+    def get_blacklist_with_metadata(self, page: int = 1, per_page: int = 50, include_metadata: bool = True, source_filter: str = None) -> Dict[str, Any]:
+        """메타데이터 포함 블랙리스트 조회"""
         try:
             # 데이터베이스에서 실제 소스 정보와 함께 IP 조회
             import sqlite3
@@ -1472,7 +1472,7 @@ class UnifiedBlacklistService:
             }
             
         except Exception as e:
-            self.logger.error(f"Failed to get enhanced blacklist: {e}")
+            self.logger.error(f"Failed to get blacklist with metadata: {e}")
             return {
                 'page': page,
                 'per_page': per_page,
