@@ -2827,40 +2827,7 @@ def system_settings_page():
     """시스템 설정 페이지"""
     return render_template('system_settings.html')
 
-@unified_bp.route('/api/settings', methods=['GET', 'POST'])
-def api_settings():
-    """시스템 설정 API"""
-    try:
-        if request.method == 'GET':
-            # 현재 설정 반환
-            settings = {
-                'update_interval': int(os.environ.get('UPDATE_INTERVAL', '10800000')),  # 3시간
-                'data_retention': int(os.environ.get('DATA_RETENTION', '90')),  # 90일
-                'cache_ttl': int(os.environ.get('CACHE_TTL', '300')),  # 5분
-                'log_level': os.environ.get('LOG_LEVEL', 'INFO')
-            }
-            return jsonify({
-                'success': True,
-                'settings': settings
-            })
-        
-        elif request.method == 'POST':
-            # 설정 업데이트 (실제로는 환경 변수이므로 재시작 필요)
-            data = request.get_json() or {}
-            
-            # localStorage를 통해 클라이언트 측에서 관리
-            return jsonify({
-                'success': True,
-                'message': '설정이 저장되었습니다. 일부 설정은 재시작 후 적용됩니다.',
-                'settings': data
-            })
-            
-    except Exception as e:
-        logger.error(f"Settings API error: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+# Removed duplicate /api/settings endpoint - now handled by settings_routes.py
 
 @unified_bp.route('/api/maintenance/cleanup', methods=['POST'])
 def maintenance_cleanup():
