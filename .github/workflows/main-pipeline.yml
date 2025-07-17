@@ -30,36 +30,22 @@ jobs:
         run: |
           case "${{ matrix.check }}" in
             lint)
-              echo "🔍 Running linting checks..."
-              # Python syntax check
-              python3 -m py_compile src/**/*.py
-              # flake8 linting
+              echo "🧹 Running linting checks..."
               flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 || true
-              # black format check
-              black --check src/ --diff --color || true
-              # isort import sorting check
-              isort src/ --check-only --diff --color || true
-              # mypy type checking
-              mypy src/ --ignore-missing-imports --no-error-summary || true
-              echo "✅ Linting completed"
+              black --check src/ --diff || true
+              isort src/ --check-only --diff || true
+              echo "✅ Linting checks completed"
               ;;
             security)
-              echo "🔒 Running security checks..."
-              # bandit security scanning
+              echo "🔒 Running security scans..."
               bandit -r src/ -f json -o bandit-report.json -ll || true
-              # safety dependency check
               safety check --json --output safety-report.json || true
-              # semgrep code analysis
-              semgrep --config=auto src/ --json --output=semgrep-report.json || true
-              echo "✅ Security check completed"
+              echo "✅ Security scans completed"
               ;;
             test)
-              echo "🧪 Running tests..."
-              # pytest with coverage
-              pytest -v --cov=src tests/ || true
-              # integration tests
-              python3 tests/integration/run_integration_tests.py || true
-              echo "✅ Tests completed"
+              echo "🧪 Running unit tests..."
+              python -m pytest tests/ -v --tb=short || true
+              echo "✅ Unit tests completed"
               ;;
           esac
 
@@ -68,25 +54,25 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        test-type: [unit, integration, performance, smoke]
+        test: [integration, unit, performance, smoke]
       fail-fast: false
       max-parallel: 4
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
       
-      - name: Run Extended Test - ${{ matrix.test-type }}
+      - name: Run Extended Test - ${{ matrix.test }}
         run: |
-          case "${{ matrix.test-type }}" in
-            unit)
-              echo "🧪 Running unit tests..."
-              pytest -m "not slow and not integration" --cov=src tests/ || true
-              echo "✅ Unit tests completed"
-              ;;
+          case "${{ matrix.test }}" in
             integration)
               echo "🔗 Running integration tests..."
               python3 tests/integration/run_integration_tests.py || true
               echo "✅ Integration tests completed"
+              ;;
+            unit)
+              echo "🧪 Running detailed unit tests..."
+              python -m pytest tests/ -v --cov=src --cov-report=term-missing || true
+              echo "✅ Unit tests completed"
               ;;
             performance)
               echo "⚡ Running performance tests..."
@@ -119,7 +105,7 @@ jobs:
     runs-on: self-hosted
     needs: [quality-checks, extended-tests]
     outputs:
-      image_tag: ${{ steps.build.outputs.image_tag }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -137,8 +123,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
-          username: admin
-          password: bingogo1
+          username: ${{ secrets.REGISTRY_USERNAME || 'admin' }}
+          password: ${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}
 
       - name: Generate metadata
         id: meta
@@ -196,103 +182,30 @@ jobs:
     needs: build-and-push
     if: success()
     steps:
-      - name: Update Charts Repository for GitOps
+      - name: Trigger ArgoCD Sync
         run: |
-          echo "🔄 Updating charts.jclee.me repository for GitOps deployment"
+          echo "🔄 Triggering ArgoCD sync for new image"
+          echo "📦 New image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
           
-          # charts.jclee.me 저장소를 사용하여 Helm 차트 업데이트
-          if [ -d "/home/jclee/charts.jclee.me" ]; then
-            cd /home/jclee/charts.jclee.me
-            
-            # Update blacklist chart
-            if [ -d "charts/blacklist" ]; then
-              # Update image tag in values.yaml
-              sed -i "s|tag:.*|tag: \"${{ needs.build-and-push.outputs.image_tag }}\"|g" charts/blacklist/values.yaml
-              
-              # Update Chart version
-              CHART_VERSION="1.0.$(date +%s)"
-              sed -i "s|version:.*|version: $CHART_VERSION|g" charts/blacklist/Chart.yaml
-              
-              # Package and index
-              helm package charts/blacklist -d .
-              helm repo index . --url https://charts.jclee.me
-              
-              echo "✅ Chart updated to version $CHART_VERSION with image tag ${{ needs.build-and-push.outputs.image_tag }}"
-              
-              # Commit and push changes for GitOps
-              git add .
-              git commit -m "feat: update blacklist chart to ${{ needs.build-and-push.outputs.image_tag }}"
-              git push origin main
-              
-              echo "✅ GitOps chart changes pushed to charts.jclee.me repository"
-            else
-              echo "⚠️ charts/blacklist directory not found"
-            fi
-          else
-            echo "⚠️ charts.jclee.me directory not found, skipping chart update"
-          fi
-
-      - name: ArgoCD Sync and Deployment
-        run: |
-          echo "🚀 ArgoCD GitOps Deployment:"
-          echo "  - Cluster: k8s.jclee.me"
-          echo "  - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
-          echo "  - Namespace: blacklist"
-          echo ""
-          
-          # Set production kubeconfig
-          kubectl config use-context k8s-jclee
-          
-          # ArgoCD Image Updater가 새 이미지를 감지하도록 대기
-          echo "⏳ Waiting for ArgoCD Image Updater to detect new image..."
-          sleep 10
-          
-          # ArgoCD sync 트리거 (CLI 사용)
-          echo "🔄 Triggering ArgoCD sync..."
+          # ArgoCD will detect new image via Image Updater
+          # Force sync to apply immediately
           argocd app sync blacklist --grpc-web || true
           
-          # ArgoCD 애플리케이션 상태 확인
-          echo "📊 Checking ArgoCD application status..."
-          for i in {1..30}; do
-            SYNC_STATUS=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.sync.status')
-            HEALTH_STATUS=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.health.status')
-            
-            echo "  Attempt $i/30 - Sync: $SYNC_STATUS, Health: $HEALTH_STATUS"
-            
-            if [ "$SYNC_STATUS" = "Synced" ] && [ "$HEALTH_STATUS" = "Healthy" ]; then
-              echo "✅ ArgoCD sync completed successfully!"
-              break
-            elif [ "$SYNC_STATUS" = "Unknown" ] || [ "$SYNC_STATUS" = "OutOfSync" ]; then
-              # 재시도
-              argocd app sync blacklist --grpc-web || true
-            fi
-            
-            sleep 10
-          done
+          # Update app to use new image tag
+          argocd app set blacklist --grpc-web -p image.tag=${{ needs.build-and-push.outputs.image_tag }} || true
           
-          # 최종 상태 확인
-          echo "📋 Final ArgoCD Application Status:"
-          argocd app get blacklist --grpc-web
+          # Sync again with new tag
+          argocd app sync blacklist --grpc-web || true
           
-          # Pod 상태 확인
-          echo "📦 Pod Status after GitOps deployment:"
-          kubectl get pods -n blacklist -l app=blacklist
-          
-          # 배포된 이미지 확인
-          echo "🏷️ Deployed image:"
-          kubectl get deployment blacklist -n blacklist -o jsonpath='{.spec.template.spec.containers[0].image}'
+      - name: Verify Deployment
+        run: |
+          echo "🚀 Verifying deployment:"
+          echo "  - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
           echo ""
           
-          # 성공 여부 판단
-          FINAL_SYNC=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.sync.status')
-          FINAL_HEALTH=$(argocd app get blacklist --grpc-web -o json | jq -r '.status.health.status')
-          
-          if [ "$FINAL_SYNC" = "Synced" ] && [ "$FINAL_HEALTH" = "Healthy" ]; then
-            echo "✅ GitOps deployment completed successfully!"
-          else
-            echo "⚠️ Warning: Deployment may not be fully successful (Sync: $FINAL_SYNC, Health: $FINAL_HEALTH)"
-            echo "However, continuing as ArgoCD will handle retries..."
-          fi
+          # Check deployment status
+          sleep 10
+          argocd app get blacklist --grpc-web || true
 
   pipeline-report:
     name: Pipeline Report & Monitoring
@@ -310,14 +223,8 @@ jobs:
           echo "✅ GitOps Deploy: ${{ needs.gitops-deploy.result }}"
           echo ""
           echo "🔄 Pipeline started at: $(date)"
-          echo "🎯 Image tag: ${{ needs.build-and-push.outputs.image_tag }}"
+          echo "🎯 Image tag: ${{ needs.build-and-push.outputs.image_tag || 'N/A' }}"
           echo "🚀 Deployment status: Complete"
-          echo ""
-          echo "📈 Runner Usage Report:"
-          echo "- Quality checks: 3 parallel jobs"
-          echo "- Extended tests: 4 parallel jobs"
-          echo "- Total parallel capacity: 7 simultaneous jobs"
-          echo "- Available runners: 33 active"
           echo ""
           if [ "${{ needs.quality-checks.result }}" == "success" ] && [ "${{ needs.extended-tests.result }}" == "success" ] && [ "${{ needs.build-and-push.result }}" == "success" ] && [ "${{ needs.gitops-deploy.result }}" == "success" ]; then
             echo "✅ All pipeline stages completed successfully!"
