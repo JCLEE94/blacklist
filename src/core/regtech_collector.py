@@ -57,14 +57,22 @@ class RegtechCollector:
         # 디렉토리 생성
         os.makedirs(self.regtech_dir, exist_ok=True)
         
-        # REGTECH API 설정
-        self.base_url = settings.regtech_base_url
+        # REGTECH API 설정 (쿠키 기반 인증)
+        self.base_url = "https://regtech.fsec.or.kr"
         self.advisory_endpoint = "/fcti/securityAdvisory/advisoryList"
+        
+        # 쿠키 설정 (e.ps1에서 추출한 값들)
+        self.cookies = {
+            '_ga': 'GA1.1.1689204774.1752555033',
+            'regtech-front': '2F3B7CE1B26084FCD546BDB56CE9ABAC',
+            'regtech-va': 'BearereyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuZXh0cmFkZSIsIm9yZ2FubmFtZSI6IuuEpeyKpO2KuOugiOydtOuTnCIsImlkIjoibmV4dHJhZGUiLCJleHAiOjE3NTI4Mjk2NDUsInVzZXJuYW1lIjoi7J6l7ZmN7KSAIn0.ha36VHXTf1AnziAChasI68mh9nrDawyrKRXyXKV6liPCOA1MFnoR5kTg3pSw3RNM_zkDD2NnfX5PcbdzwPET1w',
+            '_ga_7WRDYHF66J': 'GS2.1.s1752743223$o3$g1$t1752746099$j38$l0$h0'
+        }
         
         # 수집 통계
         self.stats = RegtechCollectionStats(start_time=datetime.now())
         
-        logger.info(f"REGTECH 수집기 초기화 완료: {self.regtech_dir}")
+        logger.info(f"REGTECH 수집기 초기화 완료 (쿠키 기반 인증): {self.regtech_dir}")
     
     def collect_from_web(self, max_pages: int = 5, page_size: int = 100, 
                         parallel_workers: int = 1, start_date: str = None, 
@@ -255,34 +263,39 @@ class RegtechCollector:
             return []
     
     def _perform_login(self, session: requests.Session) -> bool:
-        """REGTECH 로그인 수행 - 완전한 세션 인증"""
+        """REGTECH 쿠키 기반 인증 설정 (e.ps1 방식)"""
         try:
-            # 데이터베이스에서 인증 정보 가져오기 (우선순위: DB > 환경변수)
-            try:
-                from ..models.settings import get_settings_manager
-                settings_manager = get_settings_manager()
-                username = settings_manager.get_setting('regtech_username', settings.regtech_username)
-                password = settings_manager.get_setting('regtech_password', settings.regtech_password)
-                
-                logger.info(f"REGTECH 인증 정보 로드 - username: {username[:3] + '***' if username else '없음'}, password: {'***' if password else '없음'}")
-            except Exception as e:
-                logger.warning(f"데이터베이스 설정 읽기 실패, 환경변수 사용: {e}")
-                username = settings.regtech_username
-                password = settings.regtech_password
+            logger.info("REGTECH 쿠키 기반 인증 설정 시작")
             
-            try:
-                from .regtech_auto_login import get_regtech_auth
-                auth = get_regtech_auth()
-                # 저장된 인증정보가 있으면 사용
-                if hasattr(auth, '_saved_username') and auth._saved_username:
-                    username = auth._saved_username
-                    password = auth._saved_password
-            except ImportError:
-                pass
+            # 기존 쿠키 설정
+            for name, value in self.cookies.items():
+                session.cookies.set(name, value, domain='.regtech.fsec.or.kr')
             
-            if not username or not password:
-                logger.error("REGTECH 자격증명이 설정되지 않았습니다")
+            # 추가 헤더 설정
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'same-origin'
+            })
+            
+            # 쿠키 유효성 간단 테스트
+            test_resp = session.get(f"{self.base_url}/fcti/securityAdvisory/advisoryList", timeout=30)
+            if test_resp.status_code == 200:
+                logger.info("REGTECH 쿠키 기반 인증 성공")
+                return True
+            else:
+                logger.error(f"REGTECH 쿠키 인증 실패: {test_resp.status_code}")
                 return False
+                
+        except Exception as e:
+            logger.error(f"REGTECH 쿠키 인증 중 오류: {e}")
+            return False
             
             logger.info(f"REGTECH 로그인 시작: {username}")
             

@@ -506,9 +506,13 @@ class CollectionManager:
             regtech_result = self.trigger_regtech_collection(start_date=start_date, end_date=end_date)
             results['regtech'] = regtech_result
             
-            # SECUDIUM 수집 (하루 단위)
-            secudium_result = self.trigger_secudium_collection()
-            results['secudium'] = secudium_result
+            # SECUDIUM 수집 비활성화
+            results['secudium'] = {
+                'status': 'disabled',
+                'message': 'SECUDIUM 수집기가 비활성화되었습니다',
+                'source': 'secudium',
+                'collected_count': 0
+            }
             
             # 마지막 수집 시간 업데이트
             self.last_daily_collection = datetime.now().isoformat()
@@ -657,7 +661,7 @@ class CollectionManager:
     
     def collect_secudium_data(self) -> Dict[str, Any]:
         """
-        SECUDIUM 데이터 수집 (trigger_secudium_collection과 동일)
+        SECUDIUM 데이터 수집 - 비활성화됨
         
         Returns:
             수집 결과
@@ -666,19 +670,19 @@ class CollectionManager:
     
     def trigger_secudium_collection(self) -> Dict[str, Any]:
         """
-        SECUDIUM 수집 트리거
+        SECUDIUM 수집 트리거 - 비활성화됨
         
         Returns:
             수집 결과
         """
-        try:
-            logger.info("SECUDIUM 수집 시작")
-            
-            # HAR 기반 SECUDIUM 수집기 우선 시도
-            try:
-                logger.info("HAR 기반 SECUDIUM 수집기 import 시도")
-                from .har_based_secudium_collector import HarBasedSecudiumCollector
-                logger.info("HAR 기반 SECUDIUM 수집기 import 성공")
+        logger.info("SECUDIUM 수집기가 비활성화되었습니다")
+        return {
+            'status': 'disabled',
+            'message': 'SECUDIUM 수집기가 비활성화되었습니다',
+            'source': 'secudium',
+            'collected_count': 0,
+            'timestamp': datetime.now().isoformat()
+        }
                 
                 # data 디렉토리 경로 전달
                 data_dir = os.path.join(os.path.dirname(self.db_path), '..', 'data')

@@ -262,28 +262,28 @@ class BlacklistContainer(ServiceContainer):
         except Exception as e:
             logger.warning(f"Collection Manager registration failed: {e}")
         
-        # REGTECH Collector - Enhanced Version
+        # REGTECH Collector - Cookie-based Version
         try:
-            # Try enhanced collector first
-            from .regtech_collector_enhanced import EnhancedRegtechCollector
+            # Use cookie-based collector
+            from .regtech_collector import RegtechCollector
             self.register(
                 'regtech_collector',
-                EnhancedRegtechCollector,
-                factory=lambda: EnhancedRegtechCollector('data'),
+                RegtechCollector,
+                factory=lambda: RegtechCollector('data'),
                 dependencies={}
             )
-            logger.info("Enhanced REGTECH Collector registered in container")
+            logger.info("REGTECH Collector (cookie-based) registered in container")
         except ImportError:
-            # Fallback to original collector
+            # Fallback to enhanced collector
             try:
-                from .regtech_collector import RegtechCollector
+                from .regtech_collector_enhanced import EnhancedRegtechCollector
                 self.register(
                     'regtech_collector',
-                    RegtechCollector,
-                    factory=lambda: RegtechCollector('data'),
+                    EnhancedRegtechCollector,
+                    factory=lambda: EnhancedRegtechCollector('data'),
                     dependencies={}
                 )
-                logger.info("REGTECH Collector registered in container")
+                logger.info("Enhanced REGTECH Collector registered in container (fallback)")
             except Exception as e:
                 logger.warning(f"REGTECH Collector registration failed: {e}")
         
