@@ -55,8 +55,8 @@ class UnifiedBlacklistService:
         self.collection_logs = []
         self.max_logs = 1000
         
-        # 수집 상태 관리 (메모리)
-        self.collection_enabled = True
+        # 수집 상태 관리 (메모리) - 기본값 False
+        self.collection_enabled = False
         self.daily_collection_enabled = False
         
         # Initialize core services immediately
