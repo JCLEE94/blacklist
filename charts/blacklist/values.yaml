@@ -98,7 +98,7 @@ config:
   port: 8541
   enableMetrics: true
   enableTracing: true
-  collectionEnabled: true
+  collectionEnabled: false
   cacheTTL: 3600
   secureCookies: true
   sessionTimeout: 3600

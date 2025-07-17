@@ -2,8 +2,8 @@ apiVersion: v2
 name: blacklist
 description: Enterprise threat intelligence platform with GitOps deployment
 type: application
-version: 1.0.0
-appVersion: "1.0.0"
+version: 1.0.4
+appVersion: "1.0.4"
 keywords:
   - blacklist
   - threat-intelligence

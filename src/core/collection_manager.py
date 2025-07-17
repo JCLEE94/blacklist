@@ -36,16 +36,26 @@ class CollectionManager:
         # 수집 설정 로드
         self.config = self._load_collection_config()
         
-        # DB에서 설정 로드를 우선시 - DB 값이 있으면 config 파일보다 우선
-        db_collection_enabled = self._load_collection_enabled_from_db()
-        if db_collection_enabled is not None:  # DB에 값이 있으면
-            self.collection_enabled = db_collection_enabled
-            self.config['collection_enabled'] = db_collection_enabled
-            logger.info(f"DB 설정 우선 적용: collection_enabled = {db_collection_enabled}")
-        else:  # DB에 값이 없으면 config 파일 값 사용
-            self.collection_enabled = self.config.get('collection_enabled', False)
-            # DB에 현재 값 저장
+        # 환경변수를 최우선으로 확인
+        env_collection_enabled = os.getenv('COLLECTION_ENABLED')
+        if env_collection_enabled is not None:
+            # 환경변수가 설정되어 있으면 이를 사용
+            self.collection_enabled = env_collection_enabled.lower() in ('true', '1', 'yes', 'on')
+            self.config['collection_enabled'] = self.collection_enabled
+            logger.info(f"환경변수 COLLECTION_ENABLED 적용: {self.collection_enabled}")
+            # DB에도 저장
             self._save_collection_enabled_to_db(self.collection_enabled)
+        else:
+            # 환경변수가 없으면 DB에서 설정 로드를 우선시
+            db_collection_enabled = self._load_collection_enabled_from_db()
+            if db_collection_enabled is not None:  # DB에 값이 있으면
+                self.collection_enabled = db_collection_enabled
+                self.config['collection_enabled'] = db_collection_enabled
+                logger.info(f"DB 설정 우선 적용: collection_enabled = {db_collection_enabled}")
+            else:  # DB에 값이 없으면 config 파일 값 사용
+                self.collection_enabled = self.config.get('collection_enabled', False)
+                # DB에 현재 값 저장
+                self._save_collection_enabled_to_db(self.collection_enabled)
         
         self._save_collection_config()
         logger.info(f"✅ CollectionManager 초기화: 수집 상태 = {self.collection_enabled}")
