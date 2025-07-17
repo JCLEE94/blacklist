@@ -36,8 +36,11 @@ class CollectionManager:
         # 수집 설정 로드
         self.config = self._load_collection_config()
         
-        # collection_enabled 속성 추가 - 기본값을 False로 설정 (수집 비활성화)
-        self.collection_enabled = self.config.get('collection_enabled', False)
+        # DB에서 설정 로드, 없으면 기본값 False
+        self.collection_enabled = self._load_collection_enabled_from_db()
+        self.config['collection_enabled'] = self.collection_enabled
+        self._save_collection_config()
+        logger.info(f"✅ CollectionManager 초기화: 수집 상태 = {self.collection_enabled}")
         
         # 일일 자동 수집 설정
         self.daily_collection_enabled = self.config.get('daily_collection_enabled', False)
@@ -101,6 +104,70 @@ class CollectionManager:
                 'initial_collection_needed': True
             }
     
+    def _load_collection_enabled_from_db(self) -> bool:
+        """DB에서 collection_enabled 설정 로드"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # app_settings 테이블 확인
+            cursor.execute("""
+                SELECT value FROM app_settings 
+                WHERE key = 'collection_enabled'
+            """)
+            result = cursor.fetchone()
+            
+            if result:
+                # DB에 설정이 있으면 사용
+                value = result[0]
+                if isinstance(value, str):
+                    enabled = value.lower() in ('true', '1', 'yes', 'on')
+                else:
+                    enabled = bool(value)
+                logger.info(f"DB에서 collection_enabled 로드: {enabled}")
+                return enabled
+            else:
+                # DB에 설정이 없으면 기본값 False
+                logger.info("DB에 collection_enabled 설정 없음, 기본값 False 사용")
+                return False
+                
+        except Exception as e:
+            logger.error(f"DB에서 설정 로드 실패: {e}")
+            return False  # 오류 시 기본값 False
+        finally:
+            if 'conn' in locals():
+                conn.close()
+    
+    def _save_collection_enabled_to_db(self, enabled: bool):
+        """DB에 collection_enabled 설정 저장"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # app_settings 테이블이 없으면 생성
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # 설정 저장 (UPSERT)
+            cursor.execute("""
+                INSERT OR REPLACE INTO app_settings (key, value, updated_at) 
+                VALUES ('collection_enabled', ?, CURRENT_TIMESTAMP)
+            """, (str(enabled),))
+            
+            conn.commit()
+            logger.info(f"DB에 collection_enabled 저장: {enabled}")
+            
+        except Exception as e:
+            logger.error(f"DB에 설정 저장 실패: {e}")
+        finally:
+            if 'conn' in locals():
+                conn.close()
+    
     def _save_collection_config(self):
         """수집 설정 저장"""
         try:
@@ -132,6 +199,9 @@ class CollectionManager:
             self.config['collection_enabled'] = True
             self.collection_enabled = True  # 인스턴스 속성도 업데이트
             self.config['last_enabled_at'] = datetime.now().isoformat()
+            
+            # DB에 설정 저장
+            self._save_collection_enabled_to_db(True)
             
             if sources:
                 self.config['sources'].update(sources)
@@ -187,6 +257,9 @@ class CollectionManager:
                 self.sources[source_key]['enabled'] = False
             
             self._save_collection_config()
+            
+            # DB에 설정 저장
+            self._save_collection_enabled_to_db(False)
             
             logger.info("수집이 비활성화되었습니다.")
             
