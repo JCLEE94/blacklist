@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 from .container import get_container
 from .regtech_collector import RegtechCollector
-from .secudium_collector import SecudiumCollector
+# SECUDIUM 수집기 제거됨 - 사용자 요청에 따라
 from .blacklist_unified import UnifiedBlacklistManager
 from .collection_manager import CollectionManager
 
@@ -44,7 +44,7 @@ class UnifiedBlacklistService:
         # 통합 설정
         self.config = {
             'regtech_enabled': os.getenv('REGTECH_ENABLED', 'true').lower() == 'true',
-            'secudium_enabled': os.getenv('SECUDIUM_ENABLED', 'true').lower() == 'true',
+            # SECUDIUM 수집기 제거됨 - 사용자 요청에 따라
             'auto_collection': os.getenv('AUTO_COLLECTION', 'true').lower() == 'true',
             'collection_interval': int(os.getenv('COLLECTION_INTERVAL', 3600)),
             'service_name': 'blacklist-unified',
@@ -176,10 +176,7 @@ class UnifiedBlacklistService:
             self._components['regtech'] = RegtechCollector('data', self.cache)
             self.logger.info("✅ REGTECH 수집기 초기화 완료")
         
-        # SECUDIUM 수집기 초기화
-        if self.config['secudium_enabled']:
-            self._components['secudium'] = SecudiumCollector('data', self.cache)
-            self.logger.info("✅ SECUDIUM 수집기 초기화 완료")
+        # SECUDIUM 수집기 제거됨 - 사용자 요청에 따라
         
         self.logger.info("✅ 모든 컴포넌트 초기화 완료")
     
@@ -825,7 +822,7 @@ class UnifiedBlacklistService:
                 'public_count': source_counts.get('PUBLIC', 0),
                 'sources': {
                     'regtech': {'enabled': self.config.get('regtech_enabled', False), 'count': source_counts.get('REGTECH', 0)},
-                    'secudium': {'enabled': self.config.get('secudium_enabled', False), 'count': source_counts.get('SECUDIUM', 0)}
+                    # SECUDIUM 수집기 제거됨 - 사용자 요청에 따라
                 },
                 'last_update': datetime.now().isoformat(),
                 'cache_available': self.cache is not None,
