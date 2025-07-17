@@ -1343,6 +1343,17 @@ def enable_collection():
         # UnifiedService의 상태도 동기화
         service.collection_enabled = True
         
+        # 로그 추가
+        service.add_collection_log(
+            source='system',
+            action='collection_enabled',
+            details={
+                'enabled_by': 'manual',
+                'cleared_data': result.get('cleared_data', False),
+                'timestamp': datetime.now().isoformat()
+            }
+        )
+        
         return jsonify({
             'success': True,
             'message': result.get('message', '수집이 활성화되었습니다.'),
@@ -1375,6 +1386,16 @@ def disable_collection():
         
         # UnifiedService의 상태도 동기화
         service.collection_enabled = False
+        
+        # 로그 추가
+        service.add_collection_log(
+            source='system',
+            action='collection_disabled',
+            details={
+                'disabled_by': 'manual',
+                'timestamp': datetime.now().isoformat()
+            }
+        )
         
         return jsonify({
             'success': True,
