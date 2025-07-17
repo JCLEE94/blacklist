@@ -36,9 +36,17 @@ class CollectionManager:
         # 수집 설정 로드
         self.config = self._load_collection_config()
         
-        # DB에서 설정 로드, 없으면 기본값 False
-        self.collection_enabled = self._load_collection_enabled_from_db()
-        self.config['collection_enabled'] = self.collection_enabled
+        # DB에서 설정 로드를 우선시 - DB 값이 있으면 config 파일보다 우선
+        db_collection_enabled = self._load_collection_enabled_from_db()
+        if db_collection_enabled is not None:  # DB에 값이 있으면
+            self.collection_enabled = db_collection_enabled
+            self.config['collection_enabled'] = db_collection_enabled
+            logger.info(f"DB 설정 우선 적용: collection_enabled = {db_collection_enabled}")
+        else:  # DB에 값이 없으면 config 파일 값 사용
+            self.collection_enabled = self.config.get('collection_enabled', False)
+            # DB에 현재 값 저장
+            self._save_collection_enabled_to_db(self.collection_enabled)
+        
         self._save_collection_config()
         logger.info(f"✅ CollectionManager 초기화: 수집 상태 = {self.collection_enabled}")
         
@@ -104,7 +112,7 @@ class CollectionManager:
                 'initial_collection_needed': True
             }
     
-    def _load_collection_enabled_from_db(self) -> bool:
+    def _load_collection_enabled_from_db(self) -> Optional[bool]:
         """DB에서 collection_enabled 설정 로드"""
         try:
             conn = sqlite3.connect(self.db_path)
@@ -127,13 +135,13 @@ class CollectionManager:
                 logger.info(f"DB에서 collection_enabled 로드: {enabled}")
                 return enabled
             else:
-                # DB에 설정이 없으면 기본값 False
-                logger.info("DB에 collection_enabled 설정 없음, 기본값 False 사용")
-                return False
+                # DB에 설정이 없으면 None 반환
+                logger.info("DB에 collection_enabled 설정 없음")
+                return None
                 
         except Exception as e:
             logger.error(f"DB에서 설정 로드 실패: {e}")
-            return False  # 오류 시 기본값 False
+            return None  # 오류 시 None 반환
         finally:
             if 'conn' in locals():
                 conn.close()
