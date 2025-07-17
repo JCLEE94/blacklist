@@ -117,90 +117,107 @@ class RegtechSimpleCollector:
             return False
     
     def _collect_ips(self, session: requests.Session, start_date: str, end_date: str) -> List[Dict[str, Any]]:
-        """단순한 IP 수집"""
+        """다중 페이지 IP 수집 - 최대한 많은 데이터 수집"""
         try:
-            logger.info("IP 데이터 수집 시작")
+            logger.info(f"대규모 다중 페이지 IP 데이터 수집 시작 (기간: {start_date} ~ {end_date})")
             
-            # 수집 요청 데이터
-            data = {
-                'page': '0',
-                'tabSort': 'blacklist',
-                'startDate': start_date,
-                'endDate': end_date,
-                'findCondition': 'all',
-                'findKeyword': '',
-                'size': '100',
-                'rows': '100',
-                'excelDownload': '',
-                'cveId': '',
-                'ipId': '',
-                'estId': ''
-            }
+            all_ips = []
+            max_pages = 99999  # 거의 완전 무제한으로 수집
+            page = 0
             
-            # 요청 보내기
-            response = session.post(
-                f"{self.base_url}/fcti/securityAdvisory/advisoryList",
-                data=data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
-            )
-            
-            if response.status_code != 200:
-                logger.error(f"데이터 요청 실패: {response.status_code}")
-                return []
-            
-            # HTML 파싱
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # 로그인 페이지 체크
-            if 'login' in response.text.lower()[:500]:
-                logger.error("로그인 페이지로 리다이렉트됨")
-                return []
-            
-            # 테이블 찾기
-            ips = []
-            tables = soup.find_all('table')
-            
-            for table in tables:
-                caption = table.find('caption')
-                if caption and '요주의 IP' in caption.text:
-                    logger.info("요주의 IP 테이블 발견")
-                    
-                    tbody = table.find('tbody')
-                    if tbody:
-                        rows = tbody.find_all('tr')
-                        logger.info(f"테이블 행 수: {len(rows)}")
+            while page < max_pages:
+                logger.info(f"페이지 {page + 1}/{max_pages} 수집 중...")
+                
+                # 수집 요청 데이터
+                data = {
+                    'page': str(page),
+                    'tabSort': 'blacklist',
+                    'startDate': start_date,
+                    'endDate': end_date,
+                    'findCondition': 'all',
+                    'findKeyword': '',
+                    'size': '100',
+                    'rows': '100',
+                    'excelDownload': '',
+                    'cveId': '',
+                    'ipId': '',
+                    'estId': ''
+                }
+                
+                # 요청 보내기
+                response = session.post(
+                    f"{self.base_url}/fcti/securityAdvisory/advisoryList",
+                    data=data,
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                )
+                
+                if response.status_code != 200:
+                    logger.error(f"데이터 요청 실패 (페이지 {page}): {response.status_code}")
+                    break
+                
+                # HTML 파싱
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # 로그인 페이지 체크
+                if 'login' in response.text.lower()[:500]:
+                    logger.error("로그인 페이지로 리다이렉트됨")
+                    break
+                
+                # 테이블 찾기
+                page_ips = []
+                tables = soup.find_all('table')
+                
+                for table in tables:
+                    caption = table.find('caption')
+                    if caption and '요주의 IP' in caption.text:
+                        logger.info(f"페이지 {page + 1}에서 요주의 IP 테이블 발견")
                         
-                        for row in rows:
-                            cells = row.find_all('td')
-                            if len(cells) >= 4:
-                                ip = cells[0].text.strip()
-                                country = cells[1].text.strip()
-                                reason = cells[2].text.strip()
-                                date = cells[3].text.strip()
-                                
-                                # 유효한 IP인지 확인
-                                if self._is_valid_ip(ip):
-                                    ip_data = {
-                                        'ip': ip,
-                                        'country': country,
-                                        'reason': reason,
-                                        'date': date,
-                                        'source': 'REGTECH'
-                                    }
-                                    ips.append(ip_data)
-                                    logger.debug(f"IP 추가: {ip} ({country})")
-                        
-                        break
+                        tbody = table.find('tbody')
+                        if tbody:
+                            rows = tbody.find_all('tr')
+                            logger.info(f"페이지 {page + 1} 테이블 행 수: {len(rows)}")
+                            
+                            for row in rows:
+                                cells = row.find_all('td')
+                                if len(cells) >= 4:
+                                    ip = cells[0].text.strip()
+                                    country = cells[1].text.strip()
+                                    reason = cells[2].text.strip()
+                                    date = cells[3].text.strip()
+                                    
+                                    # 유효한 IP인지 확인
+                                    if self._is_valid_ip(ip):
+                                        ip_data = {
+                                            'ip': ip,
+                                            'country': country,
+                                            'reason': reason,
+                                            'date': date,
+                                            'source': 'REGTECH'
+                                        }
+                                        page_ips.append(ip_data)
+                                        logger.debug(f"IP 추가: {ip} ({country})")
+                            
+                            break
+                
+                # 이 페이지에서 IP를 찾지 못했다면 더 이상 페이지가 없다고 가정
+                if not page_ips:
+                    logger.info(f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료")
+                    break
+                
+                all_ips.extend(page_ips)
+                logger.info(f"페이지 {page + 1}에서 {len(page_ips)}개 IP 수집됨 (누적: {len(all_ips)}개)")
+                
+                page += 1
             
             # 중복 제거
             unique_ips = []
             seen = set()
-            for ip_data in ips:
+            for ip_data in all_ips:
                 if ip_data['ip'] not in seen:
                     unique_ips.append(ip_data)
                     seen.add(ip_data['ip'])
             
-            logger.info(f"수집된 IP: {len(unique_ips)}개 (중복 제거 후)")
+            logger.info(f"총 수집된 IP: {len(unique_ips)}개 (중복 제거 후, {max_pages}페이지 탐색)")
             return unique_ips
             
         except Exception as e:
