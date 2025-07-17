@@ -121,6 +121,16 @@ def update_regtech_auth():
             jwt_token = token.replace("Bearer", "").strip()
             payload = jwt.decode(jwt_token, options={"verify_signature": False})
             
+            # 캐시 클리어
+            try:
+                container = get_container()
+                cache_manager = container.resolve('cache_manager')
+                if cache_manager:
+                    cache_manager.clear()
+                    logger.info("REGTECH 인증 후 캐시가 클리어되었습니다")
+            except Exception as e:
+                logger.warning(f"캐시 클리어 실패: {e}")
+            
             return jsonify({
                 'success': True,
                 'token': token,
@@ -320,6 +330,16 @@ def update_secudium_auth():
             logger.info("SECUDIUM 인증정보가 파일에도 저장되었습니다.")
         except Exception as file_error:
             logger.warning(f"파일 저장 실패: {file_error}")
+        
+        # 캐시 클리어
+        try:
+            container = get_container()
+            cache_manager = container.resolve('cache_manager')
+            if cache_manager:
+                cache_manager.clear()
+                logger.info("SECUDIUM 인증 정보 업데이트 후 캐시가 클리어되었습니다")
+        except Exception as e:
+            logger.warning(f"캐시 클리어 실패: {e}")
         
         return jsonify({
             'success': True,
@@ -543,6 +563,16 @@ def save_settings():
                     
                 except Exception as e:
                     logger.warning(f"설정 저장 실패 {key}: {e}")
+        
+        # 캐시 클리어 - 설정 변경 후 즉시 반영되도록
+        try:
+            container = get_container()
+            cache_manager = container.resolve('cache_manager')
+            if cache_manager:
+                cache_manager.clear()
+                logger.info("설정 변경 후 캐시가 클리어되었습니다")
+        except Exception as cache_error:
+            logger.warning(f"캐시 클리어 실패: {cache_error}")
         
         return jsonify({
             'success': True,
