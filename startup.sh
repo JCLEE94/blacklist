@@ -10,6 +10,14 @@ echo "Working directory: $(pwd)"
 echo "Initializing database..."
 python3 init_database.py || echo "Database initialization failed (may already exist)"
 
+# Fix collection enabled setting to be false by default
+echo "Ensuring collection is disabled by default..."
+if [ -f scripts/fix_collection_enabled.py ]; then
+    python3 scripts/fix_collection_enabled.py || echo "Failed to fix collection setting"
+else
+    echo "Fix script not found, skipping collection fix"
+fi
+
 # Start application
 echo "Starting Gunicorn..."
 # Add preload to ensure app is ready before accepting requests
