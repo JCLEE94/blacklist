@@ -60,12 +60,17 @@ class RegtechCollector:
         # REGTECH API 설정 (쿠키 기반 인증)
         self.base_url = "https://regtech.fsec.or.kr"
         self.advisory_endpoint = "/fcti/securityAdvisory/advisoryList"
+        self.login_url = "https://regtech.fsec.or.kr/login/loginUserTfaProc"
+        
+        # 로그인 정보 (쿠키 만료 시 사용)
+        self.username = "nextrade"
+        self.password = "Sprtmxm1@3"
         
         # 쿠키 설정 (e.ps1에서 추출한 값들)
         self.cookies = {
             '_ga': 'GA1.1.1689204774.1752555033',
             'regtech-front': '2F3B7CE1B26084FCD546BDB56CE9ABAC',
-            'regtech-va': 'BearereyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuZXh0cmFkZSIsIm9yZ2FubmFtZSI6IuuEpeyKpO2KuOugiOydtOuTnCIsImlkIjoibmV4dHJhZGUiLCJleHAiOjE3NTI4Mjk2NDUsInVzZXJuYW1lIjoi7J6l7ZmN7KSAIn0.ha36VHXTf1AnziAChasI68mh9nrDawyrKRXyXKV6liPCOA1MFnoR5kTg3pSw3RNM_zkDD2NnfX5PcbdzwPET1w',
+            'regtech-va': 'BearereyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuZXh0cmFkZSIsIm9yZ2FubmFtZSI6IuuEpeyKpO2KuOugiIzydtOuTnCIsImlkIjoibmV4dHJhZGUiLCJleHAiOjE3NTI4Mjk2NDUsInVzZXJuYW1lIjoi7J6l7ZmN7KSAIn0.ha36VHXTf1AnziAChasI68mh9nrDawyrKRXyXKV6liPCOA1MFnoR5kTg3pSw3RNM_zkDD2NnfX5PcbdzwPET1w',
             '_ga_7WRDYHF66J': 'GS2.1.s1752743223$o3$g1$t1752746099$j38$l0$h0'
         }
         
@@ -286,34 +291,116 @@ class RegtechCollector:
             
             # 쿠키 유효성 간단 테스트
             test_resp = session.get(f"{self.base_url}/fcti/securityAdvisory/advisoryList", timeout=30)
-            if test_resp.status_code == 200:
+            
+            # 로그인 페이지로 리다이렉트되었는지 확인
+            if "login" in test_resp.url or test_resp.status_code != 200:
+                logger.warning("쿠키가 만료되었습니다. 자동 로그인을 시도합니다...")
+                
+                # 자동 로그인 시도
+                if self._auto_login(session):
+                    logger.info("자동 로그인 성공! 새로운 쿠키로 인증되었습니다.")
+                    return True
+                else:
+                    logger.error("자동 로그인 실패")
+                    return False
+            else:
                 logger.info("REGTECH 쿠키 기반 인증 성공")
                 return True
-            else:
-                logger.error(f"REGTECH 쿠키 인증 실패: {test_resp.status_code}")
-                return False
                 
         except Exception as e:
             logger.error(f"REGTECH 쿠키 인증 중 오류: {e}")
             return False
+    
+    def _auto_login(self, session: requests.Session) -> bool:
+        """
+        쿠키 만료 시 자동 로그인하여 새로운 쿠키 추출
+        """
+        try:
+            logger.info(f"REGTECH 자동 로그인 시작: {self.username}")
             
-            logger.info(f"REGTECH 로그인 시작: {username}")
-            
-            # 1. 메인 페이지 접속 (세션 초기화)
-            main_resp = session.get(f"{self.base_url}/main/main", timeout=30)
-            if main_resp.status_code != 200:
-                logger.error(f"메인 페이지 접속 실패: {main_resp.status_code}")
+            # 1. 로그인 페이지 접속
+            login_page = session.get(f"{self.base_url}/login/loginForm", timeout=30)
+            if login_page.status_code != 200:
+                logger.error(f"로그인 페이지 접속 실패: {login_page.status_code}")
                 return False
-            time.sleep(1)
             
-            # 2. 로그인 폼 접속
-            form_resp = session.get(f"{self.base_url}/login/loginForm", timeout=30)
-            if form_resp.status_code != 200:
-                logger.error(f"로그인 폼 접속 실패: {form_resp.status_code}")
+            # 2. 로그인 요청
+            login_data = {
+                'username': self.username,
+                'password': self.password,
+                'loginType': 'loginUserTfaProc'
+            }
+            
+            login_resp = session.post(
+                self.login_url,
+                data=login_data,
+                headers={
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Referer': f'{self.base_url}/login/loginForm'
+                },
+                allow_redirects=False,
+                timeout=30
+            )
+            
+            # 3. 로그인 성공 확인
+            if login_resp.status_code in [302, 200]:
+                # 새로운 쿠키 추출
+                new_cookies = {}
+                for cookie in session.cookies:
+                    if cookie.name in ['regtech-front', 'regtech-va', '_ga', '_ga_7WRDYHF66J']:
+                        new_cookies[cookie.name] = cookie.value
+                        logger.info(f"새로운 쿠키 추출: {cookie.name}")
+                
+                # 쿠키 업데이트
+                if 'regtech-va' in new_cookies:
+                    self.cookies.update(new_cookies)
+                    logger.info("✅ 쿠키 업데이트 완료")
+                    
+                    # 쿠키를 파일에 저장 (다음 실행 시 사용)
+                    self._save_cookies_to_file(new_cookies)
+                    
+                    return True
+                else:
+                    logger.error("로그인은 성공했으나 쿠키 추출 실패")
+                    return False
+            else:
+                logger.error(f"로그인 실패: {login_resp.status_code}")
                 return False
-            time.sleep(1)
-            
-            # 3. 실제 로그인 수행
+                
+        except Exception as e:
+            logger.error(f"자동 로그인 중 오류: {e}")
+            return False
+    
+    def _save_cookies_to_file(self, cookies: dict):
+        """
+        추출한 쿠키를 파일에 저장 (다음 실행 시 사용)
+        """
+        try:
+            cookie_file = os.path.join(self.regtech_dir, 'cookies.json')
+            with open(cookie_file, 'w') as f:
+                json.dump(cookies, f, indent=2)
+            logger.info(f"쿠키 저장 완료: {cookie_file}")
+        except Exception as e:
+            logger.warning(f"쿠키 저장 실패: {e}")
+    
+    def _load_cookies_from_file(self):
+        """
+        저장된 쿠키 파일에서 쿠키 로드
+        """
+        try:
+            cookie_file = os.path.join(self.regtech_dir, 'cookies.json')
+            if os.path.exists(cookie_file):
+                with open(cookie_file, 'r') as f:
+                    saved_cookies = json.load(f)
+                self.cookies.update(saved_cookies)
+                logger.info("저장된 쿠키 로드 완료")
+        except Exception as e:
+            logger.warning(f"쿠키 로드 실패: {e}")
+    
+    def _perform_login_legacy(self, session: requests.Session, username: str = None, password: str = None) -> bool:
+        """레거시 로그인 방식 (현재 사용하지 않음)"""
+        try:
+            # Legacy login code - kept for reference
             login_data = {
                 'login_error': '',
                 'txId': '',
