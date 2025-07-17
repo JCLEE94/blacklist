@@ -2489,6 +2489,321 @@ def get_docker_container_logs(name):
             'error': str(e)
         }), 500
 
+# === REGTECH 쿠키 설정 API ===
+
+@unified_bp.route('/api/settings/regtech/cookies', methods=['GET', 'POST'])
+def regtech_cookies_settings():
+    """REGTECH 쿠키 설정 관리"""
+    try:
+        from src.models.settings import get_settings_manager
+        settings_manager = get_settings_manager()
+        
+        if request.method == 'GET':
+            # 현재 쿠키 설정 조회
+            cookies = {
+                'regtech_cookie_ga': settings_manager.get_setting('regtech_cookie_ga', ''),
+                'regtech_cookie_front': settings_manager.get_setting('regtech_cookie_front', ''),
+                'regtech_cookie_va': settings_manager.get_setting('regtech_cookie_va', ''),
+                'regtech_cookie_ga_analytics': settings_manager.get_setting('regtech_cookie_ga_analytics', '')
+            }
+            
+            return jsonify({
+                'success': True,
+                'cookies': cookies,
+                'message': 'REGTECH 쿠키 설정 조회 완료'
+            })
+            
+        elif request.method == 'POST':
+            # 쿠키 설정 저장
+            data = request.get_json() or {}
+            
+            # 각 쿠키 설정 저장
+            cookie_keys = ['regtech_cookie_ga', 'regtech_cookie_front', 'regtech_cookie_va', 'regtech_cookie_ga_analytics']
+            saved_count = 0
+            
+            for key in cookie_keys:
+                if key in data:
+                    cookie_value = data[key].strip() if data[key] else ''
+                    settings_manager.set_setting(
+                        key, 
+                        cookie_value, 
+                        'string',
+                        'credentials'
+                    )
+                    saved_count += 1
+                    logger.info(f"REGTECH 쿠키 설정 저장: {key}")
+            
+            # 수집 로그 추가
+            service.add_collection_log(
+                source='system',
+                action='regtech_cookies_saved',
+                details={
+                    'saved_cookies': saved_count,
+                    'updated_by': 'manual',
+                    'timestamp': datetime.now().isoformat()
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': f'{saved_count}개 REGTECH 쿠키 설정이 저장되었습니다.',
+                'saved_count': saved_count
+            })
+            
+    except Exception as e:
+        logger.error(f"REGTECH 쿠키 설정 오류: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'REGTECH 쿠키 설정 처리 중 오류가 발생했습니다.'
+        }), 500
+
+# === 수동 수집 트리거 API ===
+
+@unified_bp.route('/api/collection/manual/trigger', methods=['POST'])
+def manual_collection_trigger():
+    """수동 수집 트리거 - 버튼 클릭용 (시각적 로그 포함)"""
+    try:
+        data = request.get_json() or {}
+        source = data.get('source', 'regtech').lower()
+        
+        # 수집 활성화 여부 확인
+        if not service.is_collection_enabled():
+            return jsonify({
+                'success': False,
+                'error': 'Collection is disabled',
+                'message': '수집 기능이 비활성화되어 있습니다. 먼저 수집을 활성화해 주세요.',
+                'visual_log': ['❌ 수집 기능이 비활성화되어 있습니다.']
+            }), 400
+        
+        # 시각적 로그 리스트
+        visual_logs = []
+        visual_logs.append('🚀 수동 수집이 시작되었습니다.')
+        
+        # REGTECH 수집 실행
+        if source == 'regtech':
+            visual_logs.append('🔍 REGTECH 수집기 초기화 중...')
+            logger.info("🔘 수동 REGTECH 수집 트리거됨")
+            
+            # 진행 상황 추적
+            container = get_container()
+            progress_tracker = container.get('progress_tracker')
+            
+            if progress_tracker:
+                progress_tracker.start_collection('regtech')
+                visual_logs.append('📊 수집 진행 상태 추적 시작')
+            
+            try:
+                # Enhanced REGTECH Collector 사용
+                from src.core.regtech_enhanced_collector import create_regtech_collector
+                collector = create_regtech_collector()
+                visual_logs.append('✅ REGTECH 수집기 생성 완료')
+                
+                # 연결 테스트
+                visual_logs.append('🔗 REGTECH 서버 연결 테스트 중...')
+                if not collector.test_connection():
+                    visual_logs.append('❌ REGTECH 서버 연결 실패 - 쿠키 설정을 확인하세요')
+                    
+                    if progress_tracker:
+                        progress_tracker.fail_collection('regtech', 'Connection test failed')
+                    
+                    return jsonify({
+                        'success': False,
+                        'error': 'Connection failed',
+                        'message': 'REGTECH 서버 연결에 실패했습니다.',
+                        'visual_log': visual_logs
+                    }), 500
+                
+                visual_logs.append('✅ REGTECH 서버 연결 성공')
+                
+                # 데이터 수집 실행
+                start_date = data.get('start_date')
+                end_date = data.get('end_date')
+                
+                if start_date and end_date:
+                    visual_logs.append(f'📅 수집 기간: {start_date} ~ {end_date}')
+                else:
+                    visual_logs.append('📅 기본 수집 기간 사용 (최근 90일)')
+                
+                visual_logs.append('⏳ 데이터 수집 중... (최대 5분 소요)')
+                
+                entries = collector.collect_from_web(start_date=start_date, end_date=end_date)
+                
+                if entries:
+                    visual_logs.append(f'📋 {len(entries)}개 IP 데이터 수집 완료')
+                    visual_logs.append('💾 데이터베이스에 저장 중...')
+                    
+                    # 데이터베이스에 저장
+                    blacklist_manager = container.get('blacklist_manager')
+                    saved_count = 0
+                    for entry in entries:
+                        blacklist_manager.add_ip(entry)
+                        saved_count += 1
+                    
+                    visual_logs.append(f'✅ {saved_count}개 IP가 데이터베이스에 저장되었습니다')
+                    
+                    if progress_tracker:
+                        progress_tracker.complete_collection('regtech', len(entries))
+                    
+                    # 로그 추가
+                    service.add_collection_log(
+                        source='regtech',
+                        action='manual_collection_completed',
+                        details={
+                            'ips_collected': len(entries),
+                            'triggered_by': 'manual_button',
+                            'start_date': start_date,
+                            'end_date': end_date,
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    )
+                    
+                    visual_logs.append('🎉 수집 작업이 성공적으로 완료되었습니다!')
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': f'REGTECH 수집 완료: {len(entries)}개 IP 추가됨',
+                        'details': {
+                            'collected': len(entries),
+                            'source': 'regtech',
+                            'method': 'manual'
+                        },
+                        'visual_log': visual_logs
+                    })
+                else:
+                    visual_logs.append('ℹ️ 새로운 IP 데이터가 없습니다')
+                    visual_logs.append('✅ 수집 작업 완료 (신규 데이터 없음)')
+                    
+                    if progress_tracker:
+                        progress_tracker.complete_collection('regtech', 0)
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': 'REGTECH 수집 완료: 새로운 IP가 없습니다.',
+                        'details': {
+                            'collected': 0,
+                            'source': 'regtech',
+                            'method': 'manual'
+                        },
+                        'visual_log': visual_logs
+                    })
+                    
+            except Exception as e:
+                visual_logs.append(f'❌ 수집 중 오류 발생: {str(e)}')
+                visual_logs.append('🔧 설정을 확인하고 다시 시도해 주세요')
+                
+                logger.error(f"수동 REGTECH 수집 오류: {e}")
+                if progress_tracker:
+                    progress_tracker.fail_collection('regtech', str(e))
+                
+                service.add_collection_log(
+                    source='regtech',
+                    action='manual_collection_failed',
+                    details={
+                        'error': str(e),
+                        'triggered_by': 'manual_button',
+                        'timestamp': datetime.now().isoformat()
+                    }
+                )
+                
+                return jsonify({
+                    'success': False,
+                    'error': str(e),
+                    'message': 'REGTECH 수집 중 오류가 발생했습니다.',
+                    'visual_log': visual_logs
+                }), 500
+        
+        else:
+            visual_logs.append(f'❌ 지원하지 않는 소스: {source}')
+            return jsonify({
+                'success': False,
+                'error': 'Invalid source',
+                'message': f'지원하지 않는 소스입니다: {source}',
+                'visual_log': visual_logs
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"수동 수집 트리거 오류: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': '수동 수집 트리거 중 오류가 발생했습니다.',
+            'visual_log': ['❌ 시스템 오류가 발생했습니다.']
+        }), 500
+
+# === 자동 수집 관리 API ===
+
+@unified_bp.route('/api/collection/auto/config', methods=['GET', 'POST'])
+def auto_collection_config():
+    """자동 수집 설정 관리"""
+    try:
+        from src.models.settings import get_settings_manager
+        settings_manager = get_settings_manager()
+        
+        if request.method == 'GET':
+            # 현재 자동 수집 설정 조회
+            config = {
+                'auto_collection_enabled': settings_manager.get_setting('auto_collection_enabled', False),
+                'collection_interval_minutes': settings_manager.get_setting('collection_interval_minutes', 60),
+                'collection_schedule_hour': settings_manager.get_setting('collection_schedule_hour', 9),
+                'regtech_auto_enabled': settings_manager.get_setting('regtech_auto_enabled', False),
+                'last_auto_collection': settings_manager.get_setting('last_auto_collection', '')
+            }
+            
+            return jsonify({
+                'success': True,
+                'config': config,
+                'message': '자동 수집 설정 조회 완료'
+            })
+            
+        elif request.method == 'POST':
+            # 자동 수집 설정 저장
+            data = request.get_json() or {}
+            
+            # 설정값 검증 및 저장
+            auto_enabled = data.get('auto_collection_enabled', False)
+            interval_minutes = max(30, min(1440, data.get('collection_interval_minutes', 60)))
+            schedule_hour = max(0, min(23, data.get('collection_schedule_hour', 9)))
+            regtech_auto = data.get('regtech_auto_enabled', False)
+            
+            # 데이터베이스에 저장
+            settings_manager.set_setting('auto_collection_enabled', auto_enabled, 'boolean', 'collection')
+            settings_manager.set_setting('collection_interval_minutes', interval_minutes, 'integer', 'collection')
+            settings_manager.set_setting('collection_schedule_hour', schedule_hour, 'integer', 'collection')
+            settings_manager.set_setting('regtech_auto_enabled', regtech_auto, 'boolean', 'collection')
+            
+            # 로그 추가
+            service.add_collection_log(
+                source='system',
+                action='auto_collection_config_updated',
+                details={
+                    'auto_enabled': auto_enabled,
+                    'interval_minutes': interval_minutes,
+                    'schedule_hour': schedule_hour,
+                    'regtech_auto': regtech_auto,
+                    'updated_by': 'manual',
+                    'timestamp': datetime.now().isoformat()
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': '자동 수집 설정이 저장되었습니다.',
+                'config': {
+                    'auto_enabled': auto_enabled,
+                    'interval_minutes': interval_minutes,
+                    'schedule_hour': schedule_hour,
+                    'regtech_auto': regtech_auto
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"자동 수집 설정 오류: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': '자동 수집 설정 처리 중 오류가 발생했습니다.'
+        }), 500
 
 
 # === 에러 핸들러 ===

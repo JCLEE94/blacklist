@@ -99,6 +99,7 @@ config:
   enableMetrics: true
   enableTracing: true
   collectionEnabled: false
+  secudiumEnabled: false
   cacheTTL: 3600
   secureCookies: true
   sessionTimeout: 3600

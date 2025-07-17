@@ -174,6 +174,44 @@ class SettingsManager:
                 required=True,
                 encrypted=True
             ),
+            
+            # REGTECH 쿠키 설정
+            SettingDefinition(
+                key="regtech_cookie_ga",
+                name="REGTECH Google Analytics 쿠키",
+                description="REGTECH 사이트 인증용 Google Analytics 쿠키 (_ga)",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.STRING,
+                default_value=os.getenv("REGTECH_COOKIE_GA", ""),
+                required=False
+            ),
+            SettingDefinition(
+                key="regtech_cookie_front",
+                name="REGTECH Front 쿠키",
+                description="REGTECH 사이트 세션 쿠키 (regtech-front)",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.STRING,
+                default_value=os.getenv("REGTECH_COOKIE_FRONT", ""),
+                required=False
+            ),
+            SettingDefinition(
+                key="regtech_cookie_va",
+                name="REGTECH VA 쿠키",
+                description="REGTECH 인증 토큰 쿠키 (regtech-va, Bearer 토큰)",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.STRING,
+                default_value=os.getenv("REGTECH_COOKIE_VA", ""),
+                required=False
+            ),
+            SettingDefinition(
+                key="regtech_cookie_ga_analytics",
+                name="REGTECH GA Analytics 쿠키",
+                description="REGTECH 사이트 분석용 GA 쿠키 (_ga_7WRDYHF66J)",
+                category=SettingCategory.CREDENTIALS,
+                setting_type=SettingType.STRING,
+                default_value=os.getenv("REGTECH_COOKIE_GA_ANALYTICS", ""),
+                required=False
+            ),
             SettingDefinition(
                 key="secudium_username",
                 name="SECUDIUM 사용자명",
@@ -232,6 +270,52 @@ class SettingsManager:
                 category=SettingCategory.NOTIFICATION,
                 setting_type=SettingType.EMAIL,
                 default_value="admin@example.com"
+            ),
+            
+            # 자동 수집 설정
+            SettingDefinition(
+                key="auto_collection_enabled",
+                name="자동 수집 활성화",
+                description="정기적인 자동 수집 기능 활성화",
+                category=SettingCategory.COLLECTION,
+                setting_type=SettingType.BOOLEAN,
+                default_value=False
+            ),
+            SettingDefinition(
+                key="collection_interval_minutes",
+                name="수집 주기 (분)",
+                description="자동 수집 실행 간격 (분 단위)",
+                category=SettingCategory.COLLECTION,
+                setting_type=SettingType.INTEGER,
+                default_value=60,
+                min_value=30,
+                max_value=1440
+            ),
+            SettingDefinition(
+                key="collection_schedule_hour",
+                name="수집 시작 시간",
+                description="자동 수집을 시작할 시간 (0-23시)",
+                category=SettingCategory.COLLECTION,
+                setting_type=SettingType.INTEGER,
+                default_value=9,
+                min_value=0,
+                max_value=23
+            ),
+            SettingDefinition(
+                key="regtech_auto_enabled",
+                name="REGTECH 자동 수집",
+                description="REGTECH 소스 자동 수집 활성화",
+                category=SettingCategory.COLLECTION,
+                setting_type=SettingType.BOOLEAN,
+                default_value=False
+            ),
+            SettingDefinition(
+                key="last_auto_collection",
+                name="마지막 자동 수집",
+                description="마지막 자동 수집 실행 시간",
+                category=SettingCategory.COLLECTION,
+                setting_type=SettingType.STRING,
+                default_value=""
             ),
             
             # 성능 설정

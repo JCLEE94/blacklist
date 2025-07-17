@@ -82,7 +82,6 @@
                                             <th><i class="bi bi-calendar3"></i> 날짜</th>
                                             <th><i class="bi bi-database"></i> 전체 IP</th>
                                             <th class="text-primary">REGTECH</th>
-                                            <th class="text-success">SECUDIUM</th>
                                             <th class="text-info">Public</th>
                                             <th><i class="bi bi-plus-circle"></i> 신규</th>
                                             <th><i class="bi bi-x-circle"></i> 만료</th>
@@ -114,6 +113,56 @@
         </div>
     </div>
 
+
+    <!-- Collection Control Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="card-header bg-gradient-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-play-circle"></i> 수집 제어
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button id="manual-collection-btn" class="btn btn-success btn-lg" onclick="triggerManualCollection()">
+                                    <i class="bi bi-download-cloud"></i> 수동 수집 시작
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-info btn-lg" onclick="showCookieSettings()">
+                                    <i class="bi bi-gear"></i> REGTECH 쿠키 설정
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-warning btn-lg" onclick="showAutoCollectionSettings()">
+                                    <i class="bi bi-clock-history"></i> 자동 수집 설정
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 시각적 수집 로그 -->
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-eye"></i> 실시간 수집 상태
+                        </h6>
+                        <div class="log-viewer" id="visual-collection-log" style="height: 200px; overflow-y: auto; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px;">
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-info-circle"></i> 수집 버튼을 클릭하면 실시간 로그가 여기에 표시됩니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Management Actions -->
     <div class="row mb-4">
@@ -342,6 +391,62 @@ class UnifiedControl {
         }
     }
     
+    // 서버에서 최신 로그 업데이트
+    async updateLogs() {
+        try {
+            const response = await fetch('/api/collection/status');
+            const data = await response.json();
+            
+            if (data.logs && Array.isArray(data.logs)) {
+                // 서버 로그를 로컬 로그와 병합
+                data.logs.forEach(log => {
+                    // 액션에 따른 로그 메시지 생성
+                    let message = '';
+                    let type = 'info';
+                    
+                    switch(log.action) {
+                        case 'collection_enabled':
+                            message = '수집이 활성화되었습니다';
+                            type = 'success';
+                            break;
+                        case 'collection_disabled':
+                            message = '수집이 비활성화되었습니다';
+                            type = 'warning';
+                            break;
+                        case 'collection_triggered':
+                            message = `${log.source.toUpperCase()} 수집이 시작되었습니다`;
+                            type = 'info';
+                            break;
+                        case 'collection_completed':
+                            message = `${log.source.toUpperCase()} 수집 완료: ${log.details.ips_collected || 0}개 IP`;
+                            type = 'success';
+                            break;
+                        case 'collection_failed':
+                            message = `${log.source.toUpperCase()} 수집 실패: ${log.details.error || '알 수 없는 오류'}`;
+                            type = 'error';
+                            break;
+                        default:
+                            message = `${log.source}: ${log.action}`;
+                            type = 'info';
+                    }
+                    
+                    // 중복 제거를 위해 타임스탬프 확인
+                    const exists = this.logBuffer.some(
+                        existingLog => existingLog.fullTimestamp === log.timestamp
+                    );
+                    
+                    if (!exists && message) {
+                        this.addLog(type, message, new Date(log.timestamp));
+                    }
+                });
+                
+                this.renderLogs();
+            }
+        } catch (error) {
+            console.error('Failed to update logs:', error);
+        }
+    }
+    
     // Check collection status
     async checkCollectionStatus() {
         try {
@@ -361,14 +466,12 @@ class UnifiedControl {
                     total_ips: statsData.details?.total_ips || statusData.stats?.total_ips || 0,
                     active_ips: statsData.details?.active_ips || statusData.stats?.total_ips || 0,
                     regtech_count: statsData.details?.regtech_count || 0,
-                    secudium_count: statsData.details?.secudium_count || 0,
                     today_collected: statusData.stats?.today_collected || 0
                 }
             };
             
             this.updateOverallStatus(combinedData);
             this.updateCollectorStatus('regtech', statusData.sources?.regtech);
-            this.updateCollectorStatus('secudium', statusData.sources?.secudium);
             
             // Update buttons
             document.getElementById('enable-collection').disabled = statusData.collection_enabled;
@@ -376,7 +479,6 @@ class UnifiedControl {
             
             // Update trigger buttons (수동수집은 항상 활성화)
             document.getElementById('regtech-trigger').disabled = false;
-            document.getElementById('secudium-trigger').disabled = false;
             
             // Check daily collection status
             this.checkDailyCollectionStatus();
@@ -497,7 +599,6 @@ class UnifiedControl {
     formatCollectionLogMessage(source, action, details) {
         const ip_count = details.ip_count || details.collected_count || 0;
         const sourceName = source === 'regtech' ? 'REGTECH' : 
-                          source === 'secudium' ? 'SECUDIUM' : source.toUpperCase();
         
         switch (action) {
             case 'collection_start':
@@ -612,7 +713,6 @@ class UnifiedControl {
             
             const totalIPs = stat.total_ips || 0;
             const regtech = stat.regtech_count || 0;
-            const secudium = stat.secudium_count || 0;
             const publicCount = stat.public_count || 0;
             const newIPs = stat.new_ips || 0;
             const expiredIPs = stat.expired_ips || 0;
@@ -626,7 +726,6 @@ class UnifiedControl {
                     <td>${dateStr}</td>
                     <td><strong>${totalIPs.toLocaleString()}</strong></td>
                     <td class="text-primary">${regtech.toLocaleString()}</td>
-                    <td class="text-success">${secudium.toLocaleString()}</td>
                     <td class="text-info">${publicCount.toLocaleString()}</td>
                     <td><span class="text-success">+${newIPs.toLocaleString()}</span></td>
                     <td><span class="text-danger">-${expiredIPs.toLocaleString()}</span></td>
@@ -667,8 +766,18 @@ class UnifiedControl {
     }
     
     // Add log entry with detailed information
-    addLog(level, message, collector = null, details = null) {
-        const now = new Date();
+    addLog(level, message, timestampOrCollector = null, details = null) {
+        let now, collector;
+        
+        // 타임스탬프와 collector 구분
+        if (timestampOrCollector instanceof Date) {
+            now = timestampOrCollector;
+            collector = null;
+        } else {
+            now = new Date();
+            collector = timestampOrCollector;
+        }
+        
         const timestamp = now.toLocaleTimeString('ko-KR');
         const collectorTag = collector ? `[${collector.toUpperCase()}]` : '';
         
@@ -776,8 +885,12 @@ async function toggleCollection(enable) {
         if (data.success || data.status === 'success') {
             showNotification(`수집이 ${enable ? '활성화' : '비활성화'}되었습니다.`, 'success');
             unifiedControl.checkCollectionStatus();
-            unifiedControl.addLog('info', 
-                `Collection ${enable ? 'enabled' : 'disabled'}`);
+            unifiedControl.addLog('success', 
+                `수집이 ${enable ? '활성화' : '비활성화'}되었습니다.`);
+            // 로그 새로고침
+            setTimeout(() => {
+                unifiedControl.updateLogs();
+            }, 1000);
         } else {
             throw new Error(data.message || 'Operation failed');
         }
@@ -986,6 +1099,414 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         alertDiv.remove();
     }, 5000);
+}
+
+// === 수집 관련 함수들 ===
+
+// 수동 수집 트리거
+async function triggerManualCollection() {
+    const btn = document.getElementById('manual-collection-btn');
+    const logContainer = document.getElementById('visual-collection-log');
+    
+    // 버튼 비활성화
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 수집 중...';
+    
+    // 로그 컨테이너 초기화
+    logContainer.innerHTML = '';
+    
+    try {
+        // 시각적 로그 함수
+        const addVisualLog = (message, type = 'info') => {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `
+                <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                <br>
+                ${message}
+            `;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        };
+        
+        addVisualLog('🚀 수집 요청을 서버로 전송 중...', 'info');
+        
+        const response = await fetch('/api/collection/manual/trigger', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                source: 'regtech'
+            })
+        });
+        
+        const result = await response.json();
+        
+        // 서버에서 반환된 시각적 로그 표시
+        if (result.visual_log && Array.isArray(result.visual_log)) {
+            logContainer.innerHTML = ''; // 기존 로그 삭제
+            result.visual_log.forEach((logMessage, index) => {
+                setTimeout(() => {
+                    addVisualLog(logMessage, getLogTypeFromMessage(logMessage));
+                }, index * 500); // 0.5초 간격으로 표시
+            });
+        }
+        
+        if (result.success) {
+            // 성공시 추가 정보 표시
+            setTimeout(() => {
+                addVisualLog(`✅ 수집 완료: ${result.details?.collected || 0}개 IP 수집됨`, 'success');
+            }, result.visual_log ? result.visual_log.length * 500 : 1000);
+            
+            showNotification(result.message || '수집이 성공적으로 완료되었습니다.', 'success');
+            
+            // 데이터 새로고침
+            setTimeout(() => {
+                refreshData();
+            }, 2000);
+        } else {
+            addVisualLog(`❌ 수집 실패: ${result.message}`, 'error');
+            showNotification(result.message || '수집 중 오류가 발생했습니다.', 'danger');
+        }
+        
+    } catch (error) {
+        console.error('Manual collection error:', error);
+        const logContainer = document.getElementById('visual-collection-log');
+        logContainer.innerHTML = `
+            <div class="log-entry error">
+                <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                <br>
+                ❌ 네트워크 오류: ${error.message}
+            </div>
+        `;
+        showNotification('네트워크 오류가 발생했습니다.', 'danger');
+    } finally {
+        // 버튼 복구
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-download-cloud"></i> 수동 수집 시작';
+        }, 3000);
+    }
+}
+
+// 로그 메시지에서 타입 추출
+function getLogTypeFromMessage(message) {
+    if (message.includes('❌') || message.includes('오류') || message.includes('실패')) {
+        return 'error';
+    } else if (message.includes('✅') || message.includes('완료') || message.includes('성공')) {
+        return 'success';
+    } else if (message.includes('⚠️') || message.includes('경고')) {
+        return 'warning';
+    } else {
+        return 'info';
+    }
+}
+
+// REGTECH 쿠키 설정 모달 표시
+function showCookieSettings() {
+    // Bootstrap 모달 생성
+    const modalHtml = `
+        <div class="modal fade" id="cookieSettingsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-gear"></i> REGTECH 쿠키 설정
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            REGTECH 사이트에서 로그인 후 브라우저 개발자 도구에서 쿠키 값을 복사하여 입력하세요.
+                        </div>
+                        
+                        <form id="cookieSettingsForm">
+                            <div class="mb-3">
+                                <label class="form-label">Google Analytics 쿠키 (_ga)</label>
+                                <input type="text" class="form-control" id="regtech_cookie_ga" placeholder="GA1.1.1689204774.1752555033">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Front 세션 쿠키 (regtech-front)</label>
+                                <input type="text" class="form-control" id="regtech_cookie_front" placeholder="2F3B7CE1B26084FCD546BDB56CE9ABAC">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">인증 토큰 쿠키 (regtech-va)</label>
+                                <textarea class="form-control" id="regtech_cookie_va" rows="3" placeholder="Bearer eyJ0eXAiOi..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">GA Analytics 쿠키 (_ga_7WRDYHF66J)</label>
+                                <input type="text" class="form-control" id="regtech_cookie_ga_analytics" placeholder="GS2.1.s1752743223$o3$g1$t1752746099$j38$l0$h0">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" onclick="saveCookieSettings()">저장</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 기존 모달 제거
+    const existingModal = document.getElementById('cookieSettingsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 새 모달 추가
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 현재 설정 로드
+    loadCurrentCookieSettings();
+    
+    // 모달 표시
+    const modal = new bootstrap.Modal(document.getElementById('cookieSettingsModal'));
+    modal.show();
+}
+
+// 현재 쿠키 설정 로드
+async function loadCurrentCookieSettings() {
+    try {
+        const response = await fetch('/api/settings/regtech/cookies');
+        const result = await response.json();
+        
+        if (result.success && result.cookies) {
+            document.getElementById('regtech_cookie_ga').value = result.cookies.regtech_cookie_ga || '';
+            document.getElementById('regtech_cookie_front').value = result.cookies.regtech_cookie_front || '';
+            document.getElementById('regtech_cookie_va').value = result.cookies.regtech_cookie_va || '';
+            document.getElementById('regtech_cookie_ga_analytics').value = result.cookies.regtech_cookie_ga_analytics || '';
+        }
+    } catch (error) {
+        console.error('Failed to load cookie settings:', error);
+    }
+}
+
+// 쿠키 설정 저장
+async function saveCookieSettings() {
+    const cookieData = {
+        regtech_cookie_ga: document.getElementById('regtech_cookie_ga').value,
+        regtech_cookie_front: document.getElementById('regtech_cookie_front').value,
+        regtech_cookie_va: document.getElementById('regtech_cookie_va').value,
+        regtech_cookie_ga_analytics: document.getElementById('regtech_cookie_ga_analytics').value
+    };
+    
+    try {
+        const response = await fetch('/api/settings/regtech/cookies', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(cookieData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message || '쿠키 설정이 저장되었습니다.', 'success');
+            
+            // 모달 닫기
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cookieSettingsModal'));
+            modal.hide();
+        } else {
+            showNotification(result.message || '쿠키 설정 저장에 실패했습니다.', 'danger');
+        }
+    } catch (error) {
+        console.error('Failed to save cookie settings:', error);
+        showNotification('네트워크 오류가 발생했습니다.', 'danger');
+    }
+}
+
+// 자동 수집 설정 모달 표시
+function showAutoCollectionSettings() {
+    const modalHtml = `
+        <div class="modal fade" id="autoCollectionModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-clock-history"></i> 자동 수집 설정
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            자동 수집은 서버가 정기적으로 REGTECH 데이터를 수집합니다. 쿠키 설정이 올바르게 구성되어야 합니다.
+                        </div>
+                        
+                        <form id="autoCollectionForm">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="auto_collection_enabled">
+                                    <label class="form-check-label" for="auto_collection_enabled">
+                                        자동 수집 활성화
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3" id="auto-collection-options">
+                                <label class="form-label">수집 주기 (분)</label>
+                                <select class="form-select" id="collection_interval_minutes">
+                                    <option value="30">30분</option>
+                                    <option value="60" selected>1시간</option>
+                                    <option value="120">2시간</option>
+                                    <option value="360">6시간</option>
+                                    <option value="720">12시간</option>
+                                    <option value="1440">24시간</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3" id="schedule-options">
+                                <label class="form-label">시작 시간</label>
+                                <select class="form-select" id="collection_schedule_hour">
+                                    ${Array.from({length: 24}, (_, i) => 
+                                        `<option value="${i}" ${i === 9 ? 'selected' : ''}>${i.toString().padStart(2, '0')}:00</option>`
+                                    ).join('')}
+                                </select>
+                                <div class="form-text">자동 수집을 시작할 시간을 선택하세요.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="regtech_auto_enabled" checked>
+                                    <label class="form-check-label" for="regtech_auto_enabled">
+                                        REGTECH 자동 수집 포함
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div id="auto-collection-status" class="mt-3">
+                            <small class="text-muted">현재 설정을 로드 중...</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" onclick="saveAutoCollectionSettings()">저장</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 기존 모달 제거
+    const existingModal = document.getElementById('autoCollectionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 새 모달 추가
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 자동 수집 옵션 토글 이벤트
+    document.getElementById('auto_collection_enabled').addEventListener('change', function() {
+        const options = document.getElementById('auto-collection-options');
+        const scheduleOptions = document.getElementById('schedule-options');
+        if (this.checked) {
+            options.style.display = 'block';
+            scheduleOptions.style.display = 'block';
+        } else {
+            options.style.display = 'none';
+            scheduleOptions.style.display = 'none';
+        }
+    });
+    
+    // 현재 설정 로드
+    loadCurrentAutoCollectionSettings();
+    
+    // 모달 표시
+    const modal = new bootstrap.Modal(document.getElementById('autoCollectionModal'));
+    modal.show();
+}
+
+// 현재 자동 수집 설정 로드
+async function loadCurrentAutoCollectionSettings() {
+    try {
+        const response = await fetch('/api/collection/auto/config');
+        const result = await response.json();
+        
+        if (result.success && result.config) {
+            const config = result.config;
+            
+            document.getElementById('auto_collection_enabled').checked = config.auto_collection_enabled || false;
+            document.getElementById('collection_interval_minutes').value = config.collection_interval_minutes || 60;
+            document.getElementById('collection_schedule_hour').value = config.collection_schedule_hour || 9;
+            document.getElementById('regtech_auto_enabled').checked = config.regtech_auto_enabled !== false; // 기본값 true
+            
+            // 옵션 표시/숨김
+            const enabled = config.auto_collection_enabled || false;
+            document.getElementById('auto-collection-options').style.display = enabled ? 'block' : 'none';
+            document.getElementById('schedule-options').style.display = enabled ? 'block' : 'none';
+            
+            // 상태 표시
+            const statusDiv = document.getElementById('auto-collection-status');
+            if (config.last_auto_collection) {
+                const lastTime = new Date(config.last_auto_collection).toLocaleString('ko-KR');
+                statusDiv.innerHTML = `<small class="text-success">마지막 자동 수집: ${lastTime}</small>`;
+            } else {
+                statusDiv.innerHTML = `<small class="text-muted">아직 자동 수집이 실행되지 않았습니다.</small>`;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load auto collection settings:', error);
+        document.getElementById('auto-collection-status').innerHTML = 
+            `<small class="text-danger">설정 로드 실패: ${error.message}</small>`;
+    }
+}
+
+// 자동 수집 설정 저장
+async function saveAutoCollectionSettings() {
+    const configData = {
+        auto_collection_enabled: document.getElementById('auto_collection_enabled').checked,
+        collection_interval_minutes: parseInt(document.getElementById('collection_interval_minutes').value),
+        collection_schedule_hour: parseInt(document.getElementById('collection_schedule_hour').value),
+        regtech_auto_enabled: document.getElementById('regtech_auto_enabled').checked
+    };
+    
+    try {
+        const response = await fetch('/api/collection/auto/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(configData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message || '자동 수집 설정이 저장되었습니다.', 'success');
+            
+            // 모달 닫기
+            const modal = bootstrap.Modal.getInstance(document.getElementById('autoCollectionModal'));
+            modal.hide();
+            
+            // 시각적 로그에 설정 변경 사항 표시
+            const logContainer = document.getElementById('visual-collection-log');
+            if (logContainer) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry success';
+                logEntry.innerHTML = `
+                    <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                    <br>
+                    ⚙️ 자동 수집 설정 업데이트됨: ${configData.auto_collection_enabled ? '활성화' : '비활성화'}
+                `;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        } else {
+            showNotification(result.message || '자동 수집 설정 저장에 실패했습니다.', 'danger');
+        }
+    } catch (error) {
+        console.error('Failed to save auto collection settings:', error);
+        showNotification('네트워크 오류가 발생했습니다.', 'danger');
+    }
 }
 
 // Initialize on page load
