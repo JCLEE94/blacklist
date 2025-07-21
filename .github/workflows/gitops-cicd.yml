@@ -11,7 +11,6 @@ on:
 env:
   REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
-  CONFIG_REPO: JCLEE94/blacklist-k8s-config
 
 jobs:
   # 코드 품질 검사
@@ -69,10 +68,8 @@ jobs:
         run: |
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
-          elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            VERSION=v$(date +%Y%m%d.%H%M%S)
           else
-            VERSION=dev-$(date +%Y%m%d.%H%M%S)
+            VERSION=$(date +%Y%m%d%H%M%S)
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📌 Version: $VERSION"
@@ -97,58 +94,65 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: deployment/Dockerfile
+          file: ./deployment/Dockerfile
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:date-$(date +%Y%m%d)
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
             BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
             GIT_COMMIT=${{ github.sha }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+            VERSION=${{ steps.version.outputs.version }}
       
       - name: Output Image
         id: image
         run: |
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
-          echo "📦 Built image: $IMAGE"
+          echo "📦 Image: $IMAGE"
 
-  # GitOps - Config 저장소 업데이트
+  # K8s 매니페스트 업데이트 (단일 저장소)
   update-manifests:
     name: Update K8s Manifests
     runs-on: self-hosted
     needs: build-push
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     steps:
-      - name: Checkout Config Repo
+      - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ env.CONFIG_REPO }}
-          token: ${{ secrets.CONFIG_REPO_TOKEN }}
-          path: k8s-config
+          fetch-depth: 0
       
       - name: Update Image Tag
         run: |
-          cd k8s-config
           VERSION="${{ needs.build-push.outputs.version }}"
+          
+          # Kustomize 설치 확인
+          if ! command -v kustomize &> /dev/null; then
+            echo "Installing kustomize..."
+            curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+            sudo mv kustomize /usr/local/bin/
+          fi
           
           # Production update for tags
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             echo "📝 Updating production to $VERSION"
-            cd overlays/prod
-            kustomize edit set image registry.jclee.me/blacklist:$VERSION
+            cd k8s-gitops/overlays/prod
+            kustomize edit set image blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
           # Dev update for main branch
           else
             echo "📝 Updating development to $VERSION"
-            cd overlays/dev
-            kustomize edit set image registry.jclee.me/blacklist:$VERSION
+            cd k8s-gitops/overlays/dev
+            kustomize edit set image blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
           fi
       
       - name: Commit and Push
         run: |
-          cd k8s-config
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           
@@ -156,13 +160,17 @@ jobs:
           ENV=$([[ $GITHUB_REF == refs/tags/v* ]] && echo "prod" || echo "dev")
           
           git add .
-          git commit -m "chore($ENV): update blacklist image to $VERSION
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore($ENV): update blacklist image to $VERSION
 
-          Triggered by: ${{ github.event_name }}
-          Commit: ${{ github.sha }}
-          Actor: ${{ github.actor }}"
-          
-          git push
+            Triggered by: ${{ github.event_name }}
+            Commit: ${{ github.sha }}
+            Actor: ${{ github.actor }}"
+            
+            git push origin main
+          fi
 
   # 배포 상태 알림
   notify:
@@ -183,16 +191,34 @@ jobs:
           echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build & Push | ${{ needs.build-push.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Update Manifests | ${{ needs.update-manifests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ needs.build-push.result }}" == "success" ]; then
-            echo "### 📦 Build Details" >> $GITHUB_STEP_SUMMARY
-            echo "- **Version**: ${{ needs.build-push.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Image**: ${{ needs.build-push.outputs.image }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏷️ Deployment Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.build-push.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ needs.build-push.outputs.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.update-manifests.result }}" == "success" ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            
-            echo "### 🔄 Next Steps" >> $GITHUB_STEP_SUMMARY
-            echo "ArgoCD will automatically detect and deploy the changes." >> $GITHUB_STEP_SUMMARY
-            echo "Monitor deployment at: https://argo.jclee.me" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **GitOps deployment triggered successfully!**" >> $GITHUB_STEP_SUMMARY
+            echo "ArgoCD will automatically sync the changes." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Manual intervention may be required.**" >> $GITHUB_STEP_SUMMARY
           fi
+      
+      - name: Send Webhook
+        if: env.WEBHOOK_URL != ''
+        env:
+          WEBHOOK_URL: ${{ secrets.DEPLOYMENT_WEBHOOK_URL }}
+        run: |
+          curl -X POST $WEBHOOK_URL \
+            -H "Content-Type: application/json" \
+            -d '{
+              "version": "${{ needs.build-push.outputs.version }}",
+              "image": "${{ needs.build-push.outputs.image }}",
+              "status": "${{ needs.update-manifests.result }}",
+              "commit": "${{ github.sha }}",
+              "actor": "${{ github.actor }}"
+            }' || true
