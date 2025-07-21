@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: blacklist-base
+  
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+  # - secret.yaml  # Uncomment only for dev, use external secrets in prod
+
+commonLabels:
+  app.kubernetes.io/name: blacklist
+  app.kubernetes.io/component: backend
+  app.kubernetes.io/part-of: blacklist-system
+
+images:
+  - name: registry.jclee.me/blacklist
+    newTag: latest

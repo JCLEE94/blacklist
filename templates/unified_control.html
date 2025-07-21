@@ -124,6 +124,34 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    <!-- 기간 선택 UI -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="border rounded p-3 bg-light">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-calendar-range"></i> 수집 기간 설정
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="manual-start-date" class="form-label">시작일</label>
+                                        <input type="date" class="form-control" id="manual-start-date">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="manual-end-date" class="form-label">종료일</label>
+                                        <input type="date" class="form-control" id="manual-end-date">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">설명</label>
+                                        <div class="form-text mt-2">
+                                            <i class="bi bi-info-circle"></i> 
+                                            기간을 미지정하면 오늘 날짜로 수집됩니다. 과거 데이터 수집 시 범위를 지정하세요.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <div class="d-grid">
@@ -1129,16 +1157,34 @@ async function triggerManualCollection() {
             logContainer.scrollTop = logContainer.scrollHeight;
         };
         
+        // 기간 선택 값 가져오기
+        const startDate = document.getElementById('manual-start-date').value;
+        const endDate = document.getElementById('manual-end-date').value;
+        
+        // 날짜 포맷 변환 (YYYY-MM-DD -> YYYYMMDD)
+        const formatDate = (dateStr) => dateStr ? dateStr.replace(/-/g, '') : null;
+        
+        const requestData = {
+            source: 'regtech'
+        };
+        
+        // 기간이 지정된 경우 추가
+        if (startDate && endDate) {
+            requestData.start_date = formatDate(startDate);
+            requestData.end_date = formatDate(endDate);
+            addVisualLog(`📅 수집 기간: ${startDate} ~ ${endDate}`, 'info');
+        } else {
+            addVisualLog('📅 기간 미지정 - 오늘 날짜로 수집', 'info');
+        }
+        
         addVisualLog('🚀 수집 요청을 서버로 전송 중...', 'info');
         
-        const response = await fetch('/api/collection/manual/trigger', {
+        const response = await fetch('/api/collection/regtech/trigger', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                source: 'regtech'
-            })
+            body: JSON.stringify(requestData)
         });
         
         const result = await response.json();

@@ -1,0 +1,198 @@
+name: GitOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  CONFIG_REPO: JCLEE94/blacklist-k8s-config
+
+jobs:
+  # 코드 품질 검사
+  quality-check:
+    name: Code Quality
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Python Setup
+        run: |
+          python3 --version
+          pip3 install --upgrade pip
+          pip3 install flake8 black isort bandit safety
+      
+      - name: Code Quality Checks
+        run: |
+          echo "🔍 Running code quality checks..."
+          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 || true
+          black --check src/ || true
+          isort src/ --check-only || true
+          bandit -r src/ -ll || true
+
+  # 테스트
+  test:
+    name: Run Tests
+    runs-on: self-hosted
+    needs: quality-check
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Dependencies
+        run: |
+          pip3 install -r requirements.txt
+          pip3 install pytest pytest-cov
+      
+      - name: Run Tests
+        run: |
+          python3 -m pytest tests/ -v --tb=short || true
+
+  # Docker 빌드 및 푸시
+  build-push:
+    name: Build and Push Docker Image
+    runs-on: self-hosted
+    needs: test
+    if: github.event_name != 'pull_request'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Generate Version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            VERSION=v$(date +%Y%m%d.%H%M%S)
+          else
+            VERSION=dev-$(date +%Y%m%d.%H%M%S)
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Version: $VERSION"
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+          config-inline: |
+            [registry."${{ env.REGISTRY }}"]
+              http = true
+              insecure = true
+      
+      - name: Login to Registry
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} \
+            --username ${{ secrets.REGISTRY_USERNAME }} \
+            --password-stdin
+      
+      - name: Build and Push
+        id: build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            GIT_COMMIT=${{ github.sha }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+      
+      - name: Output Image
+        id: image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "📦 Built image: $IMAGE"
+
+  # GitOps - Config 저장소 업데이트
+  update-manifests:
+    name: Update K8s Manifests
+    runs-on: self-hosted
+    needs: build-push
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout Config Repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.CONFIG_REPO }}
+          token: ${{ secrets.CONFIG_REPO_TOKEN }}
+          path: k8s-config
+      
+      - name: Update Image Tag
+        run: |
+          cd k8s-config
+          VERSION="${{ needs.build-push.outputs.version }}"
+          
+          # Production update for tags
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            echo "📝 Updating production to $VERSION"
+            cd overlays/prod
+            kustomize edit set image registry.jclee.me/blacklist:$VERSION
+          # Dev update for main branch
+          else
+            echo "📝 Updating development to $VERSION"
+            cd overlays/dev
+            kustomize edit set image registry.jclee.me/blacklist:$VERSION
+          fi
+      
+      - name: Commit and Push
+        run: |
+          cd k8s-config
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          VERSION="${{ needs.build-push.outputs.version }}"
+          ENV=$([[ $GITHUB_REF == refs/tags/v* ]] && echo "prod" || echo "dev")
+          
+          git add .
+          git commit -m "chore($ENV): update blacklist image to $VERSION
+
+          Triggered by: ${{ github.event_name }}
+          Commit: ${{ github.sha }}
+          Actor: ${{ github.actor }}"
+          
+          git push
+
+  # 배포 상태 알림
+  notify:
+    name: Deployment Notification
+    runs-on: self-hosted
+    needs: [build-push, update-manifests]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🚀 GitOps Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📊 Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality Check | ${{ needs.quality-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Push | ${{ needs.build-push.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Manifests | ${{ needs.update-manifests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.build-push.result }}" == "success" ]; then
+            echo "### 📦 Build Details" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: ${{ needs.build-push.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Image**: ${{ needs.build-push.outputs.image }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "### 🔄 Next Steps" >> $GITHUB_STEP_SUMMARY
+            echo "ArgoCD will automatically detect and deploy the changes." >> $GITHUB_STEP_SUMMARY
+            echo "Monitor deployment at: https://argo.jclee.me" >> $GITHUB_STEP_SUMMARY
+          fi

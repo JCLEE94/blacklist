@@ -295,6 +295,25 @@ v2_service = None
 
 
 # Blueprint 라우트들을 모듈 레벨에서 정의
+@v2_bp.route('/blacklist/enhanced', methods=['GET'])
+@unified_cache(ttl=300, key_prefix='v2:blacklist:enhanced')
+def get_blacklist_enhanced():
+    """향상된 블랙리스트 조회 (메타데이터 포함)"""
+    if not v2_service:
+        return jsonify({'error': 'Service not initialized'}), 503
+        
+    filters = {
+        'limit': request.args.get('limit', 1000, type=int),
+        'offset': request.args.get('offset', 0, type=int),
+        'source': request.args.get('source'),
+        'country': request.args.get('country'),
+        'min_risk_score': request.args.get('min_risk_score', 0, type=float)
+    }
+    
+    result = v2_service.get_blacklist_with_metadata(filters)
+    return jsonify(result)
+
+
 @v2_bp.route('/blacklist/metadata', methods=['GET'])
 @unified_cache(ttl=300, key_prefix='v2:blacklist')
 def get_blacklist_with_metadata_v2_route():

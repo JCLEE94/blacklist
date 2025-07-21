@@ -1,96 +1,106 @@
-# syntax=docker/dockerfile:1.4
-# Optimized multi-stage Dockerfile for Blacklist Management System
+# Optimized Multi-stage Dockerfile for Blacklist System
+# Build arguments
+ARG PYTHON_VERSION=3.9
+ARG BUILD_DATE
+ARG GIT_COMMIT
 
-# Stage 1: Dependencies
-FROM python:3.10-slim as deps
-
-WORKDIR /deps
+# Stage 1: Dependencies builder
+FROM python:${PYTHON_VERSION}-slim AS deps
 
 # Install build dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        gcc \
-        libpq-dev \
-        && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
+# Copy and install requirements
+WORKDIR /deps
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --user --no-warn-script-location -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --user --no-cache-dir -r requirements.txt
 
-# Stage 2: Builder
-FROM python:3.10-slim as builder
+# Stage 2: Production image
+FROM python:${PYTHON_VERSION}-slim AS production
 
-WORKDIR /build
+# Metadata
+LABEL maintainer="blacklist-team" \
+      version="1.0" \
+      description="Blacklist Management System" \
+      build.date="${BUILD_DATE}" \
+      git.commit="${GIT_COMMIT}"
 
-# Copy dependencies from previous stage
-COPY --from=deps /root/.local /root/.local
+# Environment
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app \
+    TZ=Asia/Seoul \
+    PORT=8541
 
-# Copy application code
-COPY . .
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
 
-# Compile Python files for faster startup
-RUN python -m compileall -b src/ && \
-    find src/ -name "*.py" -delete
+# Create non-root user
+RUN groupadd -r app && useradd -r -g app -m -s /bin/bash app
 
-# Remove unnecessary files
-RUN find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
-    find . -type f -name "*.pyc" -delete && \
-    rm -rf .git .github docs scripts legacy tests
+# Copy Python packages from deps stage
+COPY --from=deps /root/.local /home/app/.local
+ENV PATH=/home/app/.local/bin:$PATH
 
-# Stage 3: Final image
-FROM python:3.10-slim
-
+# Setup application directory
 WORKDIR /app
 
-# Install runtime dependencies only
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        curl \
-        ca-certificates \
-        && rm -rf /var/lib/apt/lists/* && \
-    # Create non-root user
-    useradd -m -u 1000 -s /bin/bash appuser && \
-    mkdir -p /app/instance /app/data /app/logs && \
-    chown -R appuser:appuser /app
+# Copy application files
+COPY --chown=app:app . .
 
-# Copy dependencies and application
-COPY --from=deps --chown=appuser:appuser /root/.local /home/appuser/.local
-COPY --from=builder --chown=appuser:appuser /build .
-
-# Set environment variables
-ENV PATH=/home/appuser/.local/bin:$PATH \
-    PYTHONPATH=/app:$PYTHONPATH \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8541 \
-    FLASK_APP=main:application
-
-# Create volume mount points
-VOLUME ["/app/instance", "/app/data", "/app/logs"]
+# Create required directories
+RUN mkdir -p instance logs data && \
+    chown -R app:app /app && \
+    chmod -R 755 /app
 
 # Switch to non-root user
-USER appuser
+USER app
 
-# Expose port
-EXPOSE 8541
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "🚀 Starting Blacklist Management System..."\n\
+echo "📅 Build Date: ${BUILD_DATE:-unknown}"\n\
+echo "🔧 Git Commit: ${GIT_COMMIT:-unknown}"\n\
+echo "🌍 Environment: ${ENVIRONMENT:-production}"\n\
+echo "🔢 Port: ${PORT}"\n\
+\n\
+# Initialize database if needed\n\
+if [ ! -f instance/blacklist.db ]; then\n\
+    echo "🗄️ Initializing database..."\n\
+    python3 init_database.py\n\
+fi\n\
+\n\
+# Start application\n\
+if [ "$ENVIRONMENT" = "development" ]; then\n\
+    echo "🔧 Running in development mode..."\n\
+    python3 main.py --port ${PORT} --debug\n\
+else\n\
+    echo "🏭 Running in production mode..."\n\
+    exec gunicorn -w ${WORKERS:-4} \\\n\
+        -b 0.0.0.0:${PORT} \\\n\
+        --timeout ${TIMEOUT:-120} \\\n\
+        --access-logfile - \\\n\
+        --error-logfile - \\\n\
+        --log-level ${LOG_LEVEL:-info} \\\n\
+        main:application\n\
+fi' > startup.sh && chmod +x startup.sh
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8541/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
-# Pre-compile any remaining Python files at runtime
-RUN python -c "import compileall; compileall.compile_dir('/app', force=True)" 2>/dev/null || true
+# Expose port
+EXPOSE ${PORT}
 
-# Run the application
-CMD ["gunicorn", \
-     "--workers", "4", \
-     "--threads", "2", \
-     "--worker-class", "sync", \
-     "--worker-tmp-dir", "/dev/shm", \
-     "--bind", "0.0.0.0:8541", \
-     "--timeout", "120", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "--log-level", "info", \
-     "main:application"]
+# Start application
+ENTRYPOINT ["./startup.sh"]

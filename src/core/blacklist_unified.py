@@ -505,23 +505,19 @@ class UnifiedBlacklistManager:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Get all IPs from the last 90 days regardless of is_active status
-            ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
-            
-            # Query for IPs detected within the last 90 days
+            # Get all active IPs (is_active = 1) without date restriction
             cursor.execute("""
                 SELECT DISTINCT ip 
                 FROM blacklist_ip 
-                WHERE detection_date >= ? 
-                   OR (detection_date IS NULL AND created_at >= ?)
+                WHERE is_active = 1
                 ORDER BY ip
-            """, (ninety_days_ago, ninety_days_ago))
+            """)
                 
             result = cursor.fetchall()
             conn.close()
             
             ips = [row[0] for row in result]
-            logger.info(f"Retrieved {len(ips)} active IPs from last 90 days")
+            logger.info(f"Retrieved {len(ips)} active IPs from database")
             return ips
                 
         except Exception as e:
@@ -817,18 +813,15 @@ class UnifiedBlacklistManager:
             with self.db_manager.get_session() as session:
                 from sqlalchemy import text
                 
-                # Get all IPs from the last 90 days
-                ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
-                
+                # Get all active IPs (is_active = 1)
                 query = text("""
                     SELECT DISTINCT ip 
                     FROM blacklist_ip 
-                    WHERE detection_date >= :ninety_days_ago
-                       OR (detection_date IS NULL AND created_at >= :ninety_days_ago)
+                    WHERE is_active = 1
                     ORDER BY ip
                 """)
                 
-                result = session.execute(query, {'ninety_days_ago': ninety_days_ago})
+                result = session.execute(query)
                 return [row[0] for row in result]
                 
         except Exception as e:

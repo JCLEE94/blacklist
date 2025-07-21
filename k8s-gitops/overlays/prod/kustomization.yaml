@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: blacklist
+
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+  - hpa.yaml
+
+configMapGenerator:
+  - name: blacklist-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=WARNING
+      - FLASK_ENV=production
+      - COLLECTION_ENABLED=true
+      - COLLECTION_INTERVAL=1800  # 30 minutes
+      - WORKERS=4
+      - API_RATE_LIMIT=1000
+
+# Production uses external secret management
+# Do not use secretGenerator in production
+
+images:
+  - name: registry.jclee.me/blacklist
+    newTag: v1.0.0  # Will be updated by CI/CD
+
+replicas:
+  - name: blacklist
+    count: 3

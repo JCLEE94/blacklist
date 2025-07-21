@@ -264,6 +264,22 @@
                                     </div>
                                 </div>
 
+                                <div class="mb-2">
+                                    <div class="row g-1">
+                                        <div class="col-6">
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   id="regtech-start-date" 
+                                                   title="시작일">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   id="regtech-end-date" 
+                                                   title="종료일">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">기간 미지정 시 오늘 날짜로 수집</small>
+                                </div>
+                                
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-primary btn-sm flex-fill" 
                                             onclick="triggerCollection('regtech')"
@@ -296,6 +312,23 @@
                                     <span class="badge bg-danger">
                                         비활성
                                     </span>
+                                </div>
+                                
+                                <!-- SECUDIUM Date Range -->
+                                <div class="mb-2">
+                                    <div class="row g-1">
+                                        <div class="col-6">
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   id="secudium-start-date" 
+                                                   title="시작일" disabled>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   id="secudium-end-date" 
+                                                   title="종료일" disabled>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">기간 미지정 시 오늘 날짜로 수집</small>
                                 </div>
                                 
                                 <!-- SECUDIUM Status -->
@@ -604,12 +637,26 @@ async function triggerCollection(source) {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>수집 중...';
         
+        // Get date range from UI
+        let startDate = document.getElementById(`${source}-start-date`)?.value;
+        let endDate = document.getElementById(`${source}-end-date`)?.value;
+        
+        // Use today's date if not specified
+        if (!startDate || !endDate) {
+            const today = new Date().toISOString().slice(0, 10);
+            startDate = startDate || today;
+            endDate = endDate || today;
+        }
+        
+        // Format dates for API (YYYYMMDD)
+        const formatDate = (dateStr) => dateStr.replace(/-/g, '');
+        
         const response = await fetch(`/api/collection/${source}/trigger`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                start_date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
-                end_date: new Date().toISOString().slice(0, 10).replace(/-/g, '')
+                start_date: formatDate(startDate),
+                end_date: formatDate(endDate)
             })
         });
         

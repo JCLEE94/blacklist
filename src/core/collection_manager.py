@@ -157,34 +157,14 @@ class CollectionManager:
                 conn.close()
     
     def _save_collection_enabled_to_db(self, enabled: bool):
-        """DB에 collection_enabled 설정 저장"""
+        """DB에 collection_enabled 설정 저장 (Settings Manager 사용)"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # app_settings 테이블이 없으면 생성
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS app_settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # 설정 저장 (UPSERT)
-            cursor.execute("""
-                INSERT OR REPLACE INTO app_settings (key, value, updated_at) 
-                VALUES ('collection_enabled', ?, CURRENT_TIMESTAMP)
-            """, (str(enabled),))
-            
-            conn.commit()
-            logger.info(f"DB에 collection_enabled 저장: {enabled}")
+            # 임시로 비활성화 - settings manager 순환 참조 문제 해결 후 재활성화
+            logger.info(f"Collection 상태 변경: {enabled} (DB 저장은 임시 비활성화)")
+            pass
             
         except Exception as e:
             logger.error(f"DB에 설정 저장 실패: {e}")
-        finally:
-            if 'conn' in locals():
-                conn.close()
     
     def _save_collection_config(self):
         """수집 설정 저장"""
