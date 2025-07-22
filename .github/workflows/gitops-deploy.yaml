@@ -15,7 +15,7 @@ on:
 
 env:
   REGISTRY: ${{ secrets.REGISTRY_URL || 'registry.jclee.me' }}
-  IMAGE_NAME: ${{ vars.GITHUB_ORG || 'JCLEE94' }}/${{ vars.APP_NAME || 'blacklist' }}
+  IMAGE_NAME: ${{ vars.GITHUB_ORG || 'jclee94' }}/${{ vars.APP_NAME || 'blacklist' }}
   NAMESPACE: ${{ vars.NAMESPACE || 'blacklist' }}
   CHARTMUSEUM_URL: ${{ secrets.CHARTMUSEUM_URL || 'https://charts.jclee.me' }}
 
@@ -74,8 +74,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/jclee94/blacklist:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/jclee94/blacklist:buildcache,mode=max
           network: host
 
       - name: Install Helm

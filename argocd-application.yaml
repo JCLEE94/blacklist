@@ -16,7 +16,7 @@ spec:
       values: |
         replicaCount: 3
         image:
-          repository: registry.jclee.me/JCLEE94/blacklist
+          repository: registry.jclee.me/jclee94/blacklist
           pullPolicy: Always
         service:
           type: NodePort
@@ -76,7 +76,7 @@ spec:
       values: |
         replicaCount: 1
         image:
-          repository: registry.jclee.me/JCLEE94/blacklist
+          repository: registry.jclee.me/jclee94/blacklist
           pullPolicy: Always
           tag: develop
         service:
