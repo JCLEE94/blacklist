@@ -32,10 +32,32 @@ ENV BUILD_TIME=${BUILD_TIME}
 ENV TZ=Asia/Seoul
 ENV PYTHONPATH=/app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Configure APT to use a more reliable mirror and DNS
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf && \
+    echo "nameserver 1.1.1.1" >> /etc/resolv.conf && \
+    echo "Acquire::http::Timeout \"30\";" > /etc/apt/apt.conf.d/99timeout && \
+    echo "Acquire::http::ConnectionAttemptDelayMsec \"500\";" >> /etc/apt/apt.conf.d/99timeout && \
+    echo "Acquire::Retries \"3\";" >> /etc/apt/apt.conf.d/99timeout
+
+# Install runtime dependencies with retry logic and mirror fallback
+RUN set -ex && \
+    for i in 1 2 3; do \
+        (apt-get update -o Acquire::ForceIPv4=true || \
+         (sed -i 's|deb.debian.org|ftp.us.debian.org|g' /etc/apt/sources.list && apt-get update)) && \
+        apt-get install -y --no-install-recommends \
+            curl \
+            ca-certificates \
+        && rm -rf /var/lib/apt/lists/* \
+        && break || \
+        if [ $i -lt 3 ]; then \
+            echo "Attempt $i failed, retrying in 10 seconds..." && \
+            sleep 10; \
+        else \
+            echo "All attempts failed" && \
+            exit 1; \
+        fi; \
+    done
 
 # Create app user
 RUN useradd --create-home --shell /bin/bash app
