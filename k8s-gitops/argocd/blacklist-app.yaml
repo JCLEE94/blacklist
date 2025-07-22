@@ -16,7 +16,7 @@ spec:
   project: default
   
   source:
-    repoURL: git@github.com:JCLEE94/blacklist.git
+    repoURL: https://github.com/JCLEE94/blacklist.git
     targetRevision: main
     path: k8s-gitops/overlays/prod  # GitOps 구조 사용
   

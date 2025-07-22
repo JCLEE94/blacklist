@@ -1,0 +1,768 @@
+name: GitOps Template - Complete CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests for emergency deployment'
+        required: false
+        default: false
+        type: boolean
+      deploy_environment:
+        description: 'Target deployment environment'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+        - auto
+        - development
+        - staging
+        - production
+
+env:
+  REGISTRY: ${{ secrets.REGISTRY_URL || 'registry.jclee.me' }}
+  IMAGE_NAME: ${{ vars.APP_NAME || 'blacklist' }}
+  NAMESPACE: ${{ vars.APP_NAMESPACE || 'blacklist' }}
+  CHARTS_URL: ${{ secrets.CHARTS_URL || 'https://charts.jclee.me' }}
+  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER || 'argo.jclee.me' }}
+
+jobs:
+  # === 1단계: 사전 검사 (병렬 실행) ===
+  pre-check:
+    name: Pre-flight Checks
+    runs-on: self-hosted
+    outputs:
+      should-deploy: ${{ steps.check.outputs.should-deploy }}
+      environment: ${{ steps.check.outputs.environment }}
+      skip-build: ${{ steps.check.outputs.skip-build }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check Deployment Conditions
+        id: check
+        run: |
+          # 배포 조건 확인
+          SHOULD_DEPLOY="false"
+          ENVIRONMENT="development"
+          SKIP_BUILD="false"
+          
+          # 문서 전용 변경사항 체크
+          if git diff --name-only ${{ github.event.before }}..${{ github.sha }} | grep -E '\.(md|txt|rst)$' | wc -l | grep -q '^0$'; then
+            echo "📄 Only documentation changes detected"
+            if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+              SHOULD_DEPLOY="true"
+              ENVIRONMENT="production"
+            elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/develop" ]]; then
+              SHOULD_DEPLOY="true"
+              ENVIRONMENT="development"
+            elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+              SHOULD_DEPLOY="true"
+              ENVIRONMENT="production"
+            fi
+          else
+            # 일반 코드 변경
+            if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+              SHOULD_DEPLOY="true"
+              ENVIRONMENT="production"
+            elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/develop" ]]; then
+              SHOULD_DEPLOY="true" 
+              ENVIRONMENT="development"
+            elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+              SHOULD_DEPLOY="true"
+              ENVIRONMENT="production"
+            fi
+          fi
+          
+          # Manual deployment environment override
+          if [[ "${{ github.event.inputs.deploy_environment }}" != "" && "${{ github.event.inputs.deploy_environment }}" != "auto" ]]; then
+            ENVIRONMENT="${{ github.event.inputs.deploy_environment }}"
+          fi
+          
+          echo "should-deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "skip-build=$SKIP_BUILD" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Deployment Decision:"
+          echo "  - Should Deploy: $SHOULD_DEPLOY"
+          echo "  - Environment: $ENVIRONMENT"
+          echo "  - Skip Build: $SKIP_BUILD"
+
+  # === 2단계: 코드 품질 검사 (병렬 실행) ===
+  code-quality:
+    name: Code Quality & Security
+    runs-on: self-hosted
+    needs: pre-check
+    if: github.event_name == 'pull_request' || needs.pre-check.outputs.should-deploy == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [lint, security, format]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python Environment
+        run: |
+          python3 --version
+          pip3 install --upgrade pip
+          pip3 install flake8 black isort bandit safety semgrep mypy
+
+      - name: Run Lint Check
+        if: matrix.check == 'lint'
+        run: |
+          echo "🔍 Running linting checks..."
+          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 --format=json --output-file=flake8-report.json || true
+          mypy src/ --ignore-missing-imports --no-error-summary --junit-xml=mypy-report.xml || true
+
+      - name: Run Security Scan  
+        if: matrix.check == 'security'
+        run: |
+          echo "🔐 Running security scans..."
+          bandit -r src/ -f json -o bandit-report.json -ll || true
+          safety check --json --output safety-report.json || true
+          semgrep --config=auto src/ --json --output=semgrep-report.json || true
+
+      - name: Run Format Check
+        if: matrix.check == 'format'  
+        run: |
+          echo "📝 Running code formatting checks..."
+          black --check src/ --diff --color || true
+          isort src/ --check-only --diff --color || true
+
+      - name: Upload Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-reports-${{ matrix.check }}
+          path: "*-report.*"
+          retention-days: 7
+
+  # === 3단계: 테스트 (병렬 실행) ===  
+  test-suite:
+    name: Test Suite
+    runs-on: self-hosted
+    needs: pre-check
+    if: (github.event_name == 'pull_request' || needs.pre-check.outputs.should-deploy == 'true') && github.event.inputs.skip_tests != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [unit, integration, performance]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Test Environment
+        run: |
+          pip3 install -r requirements.txt
+          pip3 install pytest pytest-cov pytest-xdist pytest-html
+
+      - name: Run Unit Tests
+        if: matrix.test-type == 'unit'
+        run: |
+          echo "🧪 Running unit tests..."
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+          python3 -m pytest tests/unit/ -v --tb=short --junitxml=unit-test-results.xml --html=unit-test-report.html || true
+
+      - name: Run Integration Tests  
+        if: matrix.test-type == 'integration'
+        run: |
+          echo "🔗 Running integration tests..."
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+          python3 -m pytest tests/integration/ -v --tb=short --junitxml=integration-test-results.xml --html=integration-test-report.html || true
+
+      - name: Run Performance Tests
+        if: matrix.test-type == 'performance'
+        run: |
+          echo "⚡ Running performance tests..."
+          python3 tests/integration/performance_benchmark.py > performance-report.txt || true
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports-${{ matrix.test-type }}
+          path: |
+            *-test-results.xml
+            *-test-report.html
+            performance-report.txt
+          retention-days: 7
+
+  # === 4단계: Docker 이미지 빌드 및 푸시 ===
+  docker-build:
+    name: Docker Build & Push
+    runs-on: self-hosted
+    needs: [pre-check, code-quality, test-suite]
+    if: always() && needs.pre-check.outputs.should-deploy == 'true' && (needs.code-quality.result == 'success' || needs.code-quality.result == 'skipped') && (needs.test-suite.result == 'success' || needs.test-suite.result == 'skipped' || github.event.inputs.skip_tests == 'true')
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Generate Version
+        id: version
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=${GITHUB_SHA::8}
+          
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="1.0.0-$SHORT_SHA"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT  
+          echo "📌 Generated version: $VERSION"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+          config-inline: |
+            [registry."${{ env.REGISTRY }}"]
+              http = true
+              insecure = true
+
+      - name: Login to Registry
+        run: |
+          echo "${{ secrets.DOCKER_REGISTRY_PASS }}" | docker login ${{ env.REGISTRY }} \
+            --username "${{ secrets.DOCKER_REGISTRY_USER }}" \
+            --password-stdin
+          echo "✅ Logged into registry: ${{ env.REGISTRY }}"
+
+      - name: Generate Image Metadata
+        id: meta
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          TIMESTAMP=${{ steps.version.outputs.timestamp }}
+          SHORT_SHA=${GITHUB_SHA::8}
+          
+          # 기본 태그들
+          TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION"
+          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-$SHORT_SHA"
+          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:date-$TIMESTAMP"
+          
+          # 브랜치별 태그
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:production"
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev"
+          fi
+          
+          # 환경별 태그
+          ENV="${{ needs.pre-check.outputs.environment }}"
+          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$ENV"
+          
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "📦 Generated tags:"
+          echo "$TAGS" | tr ',' '\n' | sed 's/^/  - /'
+
+      - name: Build and Push Docker Image
+        id: build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployment/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ steps.version.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.description=Blacklist Management System
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+      - name: Verify Image Push
+        run: |
+          echo "🔍 Verifying pushed image..."
+          VERSION=${{ steps.version.outputs.version }}
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
+          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
+          echo "✅ Image verification successful"
+
+  # === 5단계: Helm Chart 패키징 및 업로드 ===
+  helm-package:
+    name: Helm Chart Package & Push
+    runs-on: self-hosted
+    needs: [pre-check, docker-build]
+    if: always() && needs.pre-check.outputs.should-deploy == 'true' && needs.docker-build.result == 'success'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Helm
+        run: |
+          if ! command -v helm &> /dev/null; then
+            echo "Installing Helm..."
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          fi
+          helm version
+
+      - name: Update Chart Version
+        run: |
+          VERSION="${{ needs.docker-build.outputs.version }}"
+          
+          # Chart.yaml 업데이트
+          sed -i "s/^version:.*/version: $VERSION/" helm/blacklist/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"$VERSION\"/" helm/blacklist/Chart.yaml
+          
+          # values.yaml 업데이트  
+          sed -i "s|repository:.*|repository: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}|" helm/blacklist/values.yaml
+          sed -i "s|tag:.*|tag: \"$VERSION\"|" helm/blacklist/values.yaml
+          
+          echo "📊 Updated Helm chart to version $VERSION"
+
+      - name: Lint and Validate Chart
+        run: |
+          echo "🔍 Validating Helm chart..."
+          helm lint helm/blacklist
+          helm template test helm/blacklist --debug >/dev/null
+          echo "✅ Chart validation successful"
+
+      - name: Package Chart
+        run: |
+          helm package helm/blacklist --destination /tmp/
+          CHART_FILE=$(ls /tmp/blacklist-*.tgz | head -1)
+          echo "CHART_FILE=$CHART_FILE" >> $GITHUB_ENV
+          echo "📦 Packaged chart: $CHART_FILE"
+
+      - name: Push to ChartMuseum
+        run: |
+          echo "📤 Uploading chart to ChartMuseum..."
+          curl -v \
+            -u "${{ secrets.HELM_REPO_USERNAME }}:${{ secrets.HELM_REPO_PASSWORD }}" \
+            -F "chart=@${{ env.CHART_FILE }}" \
+            "${{ env.CHARTS_URL }}/api/charts"
+          echo "✅ Chart uploaded successfully"
+
+      - name: Verify Chart Upload
+        run: |
+          echo "🔍 Verifying chart upload..."
+          curl -s \
+            -u "${{ secrets.HELM_REPO_USERNAME }}:${{ secrets.HELM_REPO_PASSWORD }}" \
+            "${{ env.CHARTS_URL }}/api/charts" | jq -r '.blacklist // "Chart not found"'
+
+  # === 6단계: ArgoCD 배포 및 동기화 ===
+  argocd-deploy:
+    name: ArgoCD Deployment
+    runs-on: self-hosted  
+    needs: [pre-check, docker-build, helm-package]
+    if: always() && needs.pre-check.outputs.should-deploy == 'true' && needs.docker-build.result == 'success' && needs.helm-package.result == 'success'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup kubectl & ArgoCD CLI
+        run: |
+          # kubectl 설치
+          if ! command -v kubectl &> /dev/null; then
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/
+          fi
+          
+          # ArgoCD CLI 설치
+          if ! command -v argocd &> /dev/null; then
+            curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            chmod +x argocd-linux-amd64
+            sudo mv argocd-linux-amd64 /usr/local/bin/argocd
+          fi
+          
+          kubectl version --client
+          argocd version --client
+
+      - name: Setup Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.K8S_TOKEN }}" | base64 -d > ~/.kube/token || echo "${{ secrets.K8S_TOKEN }}" > ~/.kube/token
+          
+          cat > ~/.kube/config << EOF
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              insecure-skip-tls-verify: true
+              server: ${{ secrets.K8S_CLUSTER }}
+            name: target-cluster
+          contexts:
+          - context:
+              cluster: target-cluster
+              namespace: ${{ env.NAMESPACE }}
+              user: cluster-admin
+            name: target-context
+          current-context: target-context
+          users:
+          - name: cluster-admin
+            user:
+              token: ${{ secrets.K8S_TOKEN }}
+          EOF
+          
+          # 연결 테스트
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Create/Update Registry Secret
+        run: |
+          echo "🔐 Creating registry secret..."
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret docker-registry regcred \
+            --docker-server=${{ env.REGISTRY }} \
+            --docker-username=${{ secrets.DOCKER_REGISTRY_USER }} \
+            --docker-password=${{ secrets.DOCKER_REGISTRY_PASS }} \
+            --namespace=${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy/Update ArgoCD Application
+        run: |
+          VERSION="${{ needs.docker-build.outputs.version }}"
+          ENVIRONMENT="${{ needs.pre-check.outputs.environment }}"
+          
+          echo "🚀 Deploying ArgoCD application for $ENVIRONMENT..."
+          
+          cat > argocd-application.yaml << EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: blacklist-$ENVIRONMENT
+            namespace: argocd
+            annotations:
+              argocd-image-updater.argoproj.io/image-list: blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+              argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+              argocd-image-updater.argoproj.io/blacklist.pull-secret: pullsecret:${{ env.NAMESPACE }}/regcred
+              argocd-image-updater.argoproj.io/write-back-method: argocd
+              argocd-image-updater.argoproj.io/blacklist.helm.image-name: image.repository
+              argocd-image-updater.argoproj.io/blacklist.helm.image-tag: image.tag
+          spec:
+            project: default
+            source:
+              repoURL: ${{ env.CHARTS_URL }}
+              chart: blacklist
+              targetRevision: "$VERSION"
+              helm:
+                values: |
+                  image:
+                    repository: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+                    tag: $VERSION
+                    pullPolicy: Always
+                  
+                  imagePullSecrets:
+                    - name: regcred
+                  
+                  service:
+                    type: NodePort
+                    port: 80
+                    nodePort: ${{ vars.NODE_PORT || '32452' }}
+                  
+                  ingress:
+                    enabled: true
+                    host: blacklist-$ENVIRONMENT.jclee.me
+                  
+                  resources:
+                    requests:
+                      memory: "256Mi"
+                      cpu: "200m"
+                    limits:
+                      memory: "512Mi"
+                      cpu: "500m"
+                  
+                  env:
+                    ENVIRONMENT: $ENVIRONMENT
+                    LOG_LEVEL: info
+                  
+                  secretName: blacklist-secrets
+            
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: ${{ env.NAMESPACE }}
+            
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+              - CreateNamespace=true
+          EOF
+          
+          kubectl apply -f argocd-application.yaml
+
+      - name: Wait for ArgoCD Sync
+        timeout-minutes: 10
+        run: |
+          ENVIRONMENT="${{ needs.pre-check.outputs.environment }}"
+          APP_NAME="blacklist-$ENVIRONMENT"
+          
+          echo "⏳ Waiting for ArgoCD to sync $APP_NAME..."
+          
+          for i in {1..30}; do
+            echo "Checking ArgoCD sync status... attempt $i/30"
+            
+            SYNC_STATUS=$(kubectl get application $APP_NAME -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
+            HEALTH_STATUS=$(kubectl get application $APP_NAME -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
+            
+            echo "  Sync Status: $SYNC_STATUS"
+            echo "  Health Status: $HEALTH_STATUS"
+            
+            if [[ "$SYNC_STATUS" == "Synced" && "$HEALTH_STATUS" == "Healthy" ]]; then
+              echo "✅ ArgoCD application is synced and healthy!"
+              break
+            fi
+            
+            sleep 20
+          done
+
+      - name: Verify Deployment
+        run: |
+          echo "🔍 Verifying deployment in namespace ${{ env.NAMESPACE }}..."
+          
+          # 네임스페이스 확인
+          kubectl get namespace ${{ env.NAMESPACE }}
+          
+          # Pod 상태 확인 (최대 10분 대기)
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=Ready pods -l app=blacklist -n ${{ env.NAMESPACE }} --timeout=600s || true
+          
+          # 리소스 상태
+          kubectl get all -n ${{ env.NAMESPACE }}
+          
+          # 최근 이벤트
+          echo "Recent events:"
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by='.lastTimestamp' | tail -10
+
+  # === 7단계: 최종 검증 및 테스트 ===
+  final-verification:
+    name: Final Verification & Health Check
+    runs-on: self-hosted
+    needs: [pre-check, docker-build, helm-package, argocd-deploy]
+    if: always() && needs.argocd-deploy.result == 'success'
+    steps:
+      - name: Service Health Check
+        timeout-minutes: 10
+        run: |
+          echo "🏥 Running final health checks..."
+          
+          # NodePort 서비스 접근 테스트
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+          NODE_PORT="${{ vars.NODE_PORT || '32452' }}"
+          SERVICE_URL="http://$NODE_IP:$NODE_PORT"
+          
+          echo "Service URL: $SERVICE_URL"
+          
+          # 헬스체크 (최대 10분 대기)
+          for i in {1..60}; do
+            echo "Health check attempt $i/60..."
+            if curl -f --max-time 10 "$SERVICE_URL/health" 2>/dev/null; then
+              echo "✅ Health check passed!"
+              curl -s "$SERVICE_URL/health" | jq . || true
+              break
+            fi
+            sleep 10
+          done
+
+      - name: API Endpoints Test
+        run: |
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+          NODE_PORT="${{ vars.NODE_PORT || '32452' }}"
+          BASE_URL="http://$NODE_IP:$NODE_PORT"
+          
+          echo "🧪 Testing API endpoints..."
+          
+          # 주요 엔드포인트 테스트
+          endpoints=("/health" "/api/stats" "/api/blacklist/active" "/test" "/api/collection/status")
+          
+          for endpoint in "${endpoints[@]}"; do
+            echo "Testing $endpoint..."
+            if curl -f --max-time 10 "$BASE_URL$endpoint" >/dev/null 2>&1; then
+              echo "✅ $endpoint - OK"
+            else
+              echo "❌ $endpoint - Failed"
+            fi
+          done
+
+      - name: Performance Test
+        run: |
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+          NODE_PORT="${{ vars.NODE_PORT || '32452' }}"
+          BASE_URL="http://$NODE_IP:$NODE_PORT"
+          
+          echo "⚡ Running performance test..."
+          
+          # 동시성 테스트 (10개 병렬 요청)
+          for i in {1..10}; do
+            (time curl -s --max-time 5 "$BASE_URL/health" > /dev/null) &
+          done
+          wait
+          
+          echo "✅ Performance test completed"
+
+  # === 8단계: 배포 완료 알림 ===
+  deployment-summary:
+    name: Deployment Summary & Notification
+    runs-on: self-hosted
+    needs: [pre-check, docker-build, helm-package, argocd-deploy, final-verification]
+    if: always()
+    steps:
+      - name: Generate Deployment Summary
+        run: |
+          echo "## 🚀 GitOps Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 파이프라인 상태
+          echo "### 📊 Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-check | ${{ needs.pre-check.result }} | Should Deploy: ${{ needs.pre-check.outputs.should-deploy }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | ${{ needs.test-suite.result }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker-build.result }} | Version: ${{ needs.docker-build.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Helm Package | ${{ needs.helm-package.result }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| ArgoCD Deploy | ${{ needs.argocd-deploy.result }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Final Verification | ${{ needs.final-verification.result }} | - |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏷️ Deployment Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.pre-check.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.docker-build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Namespace**: ${{ env.NAMESPACE }}" >> $GITHUB_STEP_SUMMARY
+          
+          # 접속 정보
+          if [[ "${{ needs.final-verification.result }}" == "success" ]]; then
+            NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}' 2>/dev/null || echo "N/A")
+            NODE_PORT="${{ vars.NODE_PORT || '32452' }}"
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🌐 Access Information" >> $GITHUB_STEP_SUMMARY
+            echo "- **Application**: http://$NODE_IP:$NODE_PORT" >> $GITHUB_STEP_SUMMARY
+            echo "- **Health Check**: http://$NODE_IP:$NODE_PORT/health" >> $GITHUB_STEP_SUMMARY
+            echo "- **API Stats**: http://$NODE_IP:$NODE_PORT/api/stats" >> $GITHUB_STEP_SUMMARY
+            echo "- **ArgoCD Dashboard**: https://${{ env.ARGOCD_SERVER }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # 결과 메시지
+          if [[ "${{ needs.final-verification.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Deployment completed successfully!**" >> $GITHUB_STEP_SUMMARY
+            echo "🎉 Application is running and accessible." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Deployment completed with issues.**" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the logs and troubleshoot accordingly." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Success Notification
+        if: needs.final-verification.result == 'success'
+        run: |
+          echo "🎉 GitOps Pipeline completed successfully!"
+          echo "Environment: ${{ needs.pre-check.outputs.environment }}"
+          echo "Version: ${{ needs.docker-build.outputs.version }}"
+          echo "Deployed at: $(date)"
+
+      - name: Failure Notification  
+        if: failure() || needs.final-verification.result == 'failure'
+        run: |
+          echo "❌ GitOps Pipeline failed or completed with errors!"
+          echo "Please check the workflow logs for details."
+          echo "Failed at: $(date)"
+
+  # === 9단계: 오프라인 패키지 생성 (옵션) ===
+  offline-package:
+    name: Generate Offline Package
+    runs-on: self-hosted
+    needs: [pre-check, docker-build, helm-package]
+    if: needs.pre-check.outputs.environment == 'production' && needs.docker-build.result == 'success' && needs.helm-package.result == 'success'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Create Offline Package
+        run: |
+          VERSION="${{ needs.docker-build.outputs.version }}"
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          PACKAGE_NAME="blacklist-offline-$TIMESTAMP"
+          
+          echo "📦 Creating offline package: $PACKAGE_NAME"
+          
+          mkdir -p "/tmp/$PACKAGE_NAME"
+          cd "/tmp/$PACKAGE_NAME"
+          
+          # 소스 코드 복사
+          cp -r /home/jclee/app/blacklist/* .
+          
+          # Docker 이미지 저장
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION | gzip > blacklist-image.tar.gz
+          
+          # Helm 차트 복사
+          cp /tmp/blacklist-*.tgz ./
+          
+          # Kubernetes 매니페스트
+          cp -r k8s ./k8s-manifests
+          
+          # 설치 가이드 생성
+          cat > OFFLINE_INSTALL.md << 'EOL'
+          # Blacklist Offline Installation Guide
+          
+          ## Prerequisites
+          - Docker/Podman
+          - Kubernetes cluster
+          - kubectl configured
+          
+          ## Installation Steps
+          
+          1. Load Docker image:
+             ```bash
+             docker load < blacklist-image.tar.gz
+             ```
+          
+          2. Deploy with Kubernetes:
+             ```bash
+             kubectl create namespace blacklist
+             kubectl apply -k k8s-manifests/
+             ```
+          
+          3. Or deploy with Helm:
+             ```bash
+             helm install blacklist blacklist-*.tgz -n blacklist
+             ```
+          
+          ## Access
+          - Application: http://NODE_IP:32452
+          - Health: http://NODE_IP:32452/health
+          EOL
+          
+          # 패키지 압축
+          cd /tmp
+          tar -czf "$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+          
+          echo "PACKAGE_FILE=/tmp/$PACKAGE_NAME.tar.gz" >> $GITHUB_ENV
+          echo "✅ Offline package created: $PACKAGE_NAME.tar.gz"
+
+      - name: Upload Offline Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: blacklist-offline-package
+          path: ${{ env.PACKAGE_FILE }}
+          retention-days: 30

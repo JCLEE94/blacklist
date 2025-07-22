@@ -1,0 +1,117 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist-development
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: blacklist
+    app.kubernetes.io/environment: development
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # GitOps 템플릿 버전
+    gitops-template.version: "1.0.0"
+    # Image Updater 설정 - 자동 이미지 업데이트
+    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+    argocd-image-updater.argoproj.io/blacklist.pull-secret: pullsecret:blacklist/regcred
+    # Helm 특정 설정
+    argocd-image-updater.argoproj.io/blacklist.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/blacklist.helm.image-tag: image.tag
+    # 자동 동기화 주기 (1분마다 - 개발용)
+    argocd-image-updater.argoproj.io/interval: "1m"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    # Helm 차트 저장소 사용
+    repoURL: https://charts.jclee.me
+    chart: blacklist
+    targetRevision: "*"  # 최신 버전 사용
+    helm:
+      values: |
+        image:
+          repository: registry.jclee.me/blacklist
+          tag: develop
+        
+        imagePullSecrets:
+          - name: regcred
+        
+        replicaCount: 1
+        
+        service:
+          type: NodePort
+          port: 8541
+          nodePort: 32453  # 개발용 포트
+        
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        
+        autoscaling:
+          enabled: false
+        
+        persistence:
+          enabled: true
+          size: 10Gi
+        
+        env:
+          ENVIRONMENT: development
+          LOG_LEVEL: DEBUG
+          FLASK_ENV: development
+          PORT: "8541"
+          
+        secrets:
+          # Application secrets will be created by CI/CD pipeline
+          regtech:
+            username: ""  # Set by CI/CD
+            password: ""  # Set by CI/CD
+          secudium:
+            username: ""  # Set by CI/CD  
+            password: ""  # Set by CI/CD
+          app:
+            secretKey: ""     # Set by CI/CD
+            jwtSecretKey: ""  # Set by CI/CD
+            apiSecretKey: ""  # Set by CI/CD
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+  
+  syncPolicy:
+    automated:
+      prune: true      # 삭제된 리소스 자동 정리
+      selfHeal: true   # 수동 변경 시 자동 복구
+      allowEmpty: false # 빈 리소스 방지
+    
+    syncOptions:
+      - CreateNamespace=true              # 네임스페이스 자동 생성
+      - PrunePropagationPolicy=foreground # 안전한 리소스 삭제
+      - ApplyOutOfSyncOnly=true          # 변경된 리소스만 적용
+      - ServerSideApply=true             # 서버 사이드 적용
+    
+    retry:
+      limit: 5  # 개발환경에서는 더 많은 재시도
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30s
+  
+  # 무시할 차이점
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Service
+      jsonPointers:
+        - /spec/clusterIP
+  
+  revisionHistoryLimit: 10  # 개발환경에서는 더 많은 히스토리 유지
