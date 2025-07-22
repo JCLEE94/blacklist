@@ -24,7 +24,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Production image with all dependencies
-FROM python:3.9-slim AS production
+# Using regular python:3.9 instead of slim to have curl pre-installed
+FROM python:3.9 AS production
 
 # Build arguments
 ARG BUILD_TIME="Unknown"
@@ -32,38 +33,8 @@ ENV BUILD_TIME=${BUILD_TIME}
 ENV TZ=Asia/Seoul
 ENV PYTHONPATH=/app
 
-# Install runtime dependencies with retry logic
-# Using retry logic and multiple mirrors to handle network issues
-RUN set -ex && \
-    mkdir -p /etc/apt/apt.conf.d && \
-    echo 'Acquire::http::Timeout "30";' > /etc/apt/apt.conf.d/99timeout && \
-    echo 'Acquire::http::ConnectionAttemptDelayMsec "500";' >> /etc/apt/apt.conf.d/99timeout && \
-    echo 'Acquire::Retries "3";' >> /etc/apt/apt.conf.d/99timeout && \
-    for attempt in 1 2 3; do \
-        echo "Attempt $attempt of 3..." && \
-        if [ $attempt -eq 2 ]; then \
-            echo "Switching to alternative mirror..." && \
-            sed -i 's|deb.debian.org|ftp.us.debian.org|g' /etc/apt/sources.list; \
-        fi && \
-        if [ $attempt -eq 3 ]; then \
-            echo "Switching to another mirror..." && \
-            sed -i 's|ftp.us.debian.org|mirror.leaseweb.net/debian|g' /etc/apt/sources.list; \
-        fi && \
-        apt-get update -o Acquire::ForceIPv4=true && \
-        apt-get install -y --no-install-recommends \
-            curl \
-            ca-certificates \
-        && rm -rf /var/lib/apt/lists/* \
-        && echo "Successfully installed packages" && \
-        break || \
-        if [ $attempt -lt 3 ]; then \
-            echo "Attempt $attempt failed, waiting 15 seconds before retry..." && \
-            sleep 15; \
-        else \
-            echo "All attempts failed, exiting" && \
-            exit 1; \
-        fi; \
-    done
+# Verify curl is available (should be pre-installed in python:3.9)
+RUN which curl && curl --version
 
 # Create app user
 RUN useradd --create-home --shell /bin/bash app
