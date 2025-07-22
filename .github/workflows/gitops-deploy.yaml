@@ -76,7 +76,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/jclee94/blacklist:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/jclee94/blacklist:buildcache,mode=max
-          network: host
+          # network: host  # Removed due to build issues
 
       - name: Install Helm
         uses: azure/setup-helm@v3
