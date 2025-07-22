@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/jclee94/blacklist
+    argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/JCLEE94/blacklist
+    targetRevision: main
+    path: helm/blacklist
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
