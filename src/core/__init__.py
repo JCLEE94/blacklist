@@ -65,6 +65,6 @@ __all__ = [
     'DatabaseError'
 ]
 
-__version__ = '2.1.1-unified'
+__version__ = '2.1.2-unified'
 __author__ = 'Blacklist Team'
 __description__ = 'Unified Blacklist Management System Core'

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: blacklist
+description: A Helm chart for Blacklist Management System - Enterprise threat intelligence platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - blacklist
+  - threat-intelligence
+  - security
+  - gitops
+home: https://github.com/JCLEE94/blacklist
+sources:
+  - https://github.com/JCLEE94/blacklist
+maintainers:
+  - name: JCLEE94
+    email: jclee@example.com

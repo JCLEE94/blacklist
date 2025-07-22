@@ -1,0 +1,22 @@
+완료된 작업:
+
+1. 통합 테스트 구현 ✅
+   - API 엔드포인트 테스트
+   - 수집 시스템 테스트  
+   - 배포 테스트
+   - CI/CD 파이프라인 테스트
+   - E2E 테스트
+
+2. 오프라인 패키지 스크립트 ✅
+   - create-offline-package-minimal.sh (문서 없음)
+   - Docker 이미지 포함
+   - K8s 매니페스트 포함
+   - 설치 스크립트 포함
+
+실행 명령:
+- 테스트: python3 tests/integration/run_all_integration_tests.py
+- 패키지: ./scripts/create-offline-package-minimal.sh
+
+또는 한번에:
+chmod +x execute-tests-and-package.sh
+./execute-tests-and-package.sh

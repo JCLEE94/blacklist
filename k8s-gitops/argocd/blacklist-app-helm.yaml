@@ -10,6 +10,9 @@ metadata:
     argocd-image-updater.argoproj.io/git-branch: main
     argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
     argocd-image-updater.argoproj.io/blacklist.pull-secret: namespace:blacklist:regcred
+    # Helm 특정 설정
+    argocd-image-updater.argoproj.io/blacklist.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/blacklist.helm.image-tag: image.tag
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -18,7 +21,14 @@ spec:
   source:
     repoURL: git@github.com:JCLEE94/blacklist.git
     targetRevision: main
-    path: k8s-gitops/overlays/prod  # GitOps 구조 사용
+    path: helm/blacklist
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+      parameters:
+        - name: image.tag
+          value: latest
   
   destination:
     server: https://kubernetes.default.svc
@@ -42,7 +52,6 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 1m
-  
   
   # 무시할 차이점
   ignoreDifferences:

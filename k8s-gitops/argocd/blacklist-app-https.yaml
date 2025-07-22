@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist:latest
+    argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+    argocd-image-updater.argoproj.io/blacklist.pull-secret: namespace:blacklist:regcred
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/JCLEE94/blacklist.git
+    targetRevision: main
+    path: k8s-gitops/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

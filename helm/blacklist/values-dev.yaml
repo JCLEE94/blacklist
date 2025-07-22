@@ -1,0 +1,35 @@
+# Development values for blacklist
+# This overrides values in values.yaml
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+
+config:
+  logLevel: DEBUG
+  flaskEnv: development
+  collectionEnabled: false
+  workers: 2
+
+persistence:
+  enabled: false
+
+# Dev can use inline secrets for convenience
+secrets:
+  create: true
+  data:
+    REGTECH_USERNAME: "nextrade"
+    REGTECH_PASSWORD: "Sprtmxm1@3"
+    SECUDIUM_USERNAME: "nextrade"
+    SECUDIUM_PASSWORD: "Sprtmxm1@3"
+    SECRET_KEY: "dev-secret-key"
+    JWT_SECRET_KEY: "dev-jwt-secret"

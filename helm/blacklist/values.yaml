@@ -1,0 +1,151 @@
+# Default values for blacklist.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+
+image:
+  repository: registry.jclee.me/blacklist
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets:
+  - name: regcred
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: NodePort
+  port: 2541
+  nodePort: 32452
+  targetPort: 2541
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: blacklist.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: blacklist-tls
+  #    hosts:
+  #      - blacklist.local
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Application configuration
+config:
+  logLevel: WARNING
+  flaskEnv: production
+  collectionEnabled: true
+  collectionInterval: 1800  # 30 minutes
+  workers: 4
+  apiRateLimit: 1000
+  port: 2541
+
+# Environment-specific values
+env:
+  - name: PORT
+    value: "2541"
+  - name: WORKERS
+    value: "4"
+  - name: LOG_LEVEL
+    value: "WARNING"
+  - name: COLLECTION_ENABLED
+    value: "true"
+  - name: COLLECTION_INTERVAL
+    value: "1800"
+
+# Secrets - should be provided externally in production
+secrets:
+  create: false
+  # If create is true, these values will be used
+  # Otherwise, expects external secret named 'blacklist-secrets'
+  data: {}
+    # REGTECH_USERNAME: ""
+    # REGTECH_PASSWORD: ""
+    # SECUDIUM_USERNAME: ""
+    # SECUDIUM_PASSWORD: ""
+    # SECRET_KEY: ""
+    # JWT_SECRET_KEY: ""
+
+# Volume configuration
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /app/instance
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 2541
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 2541
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# ArgoCD Image Updater annotations
+argocd:
+  imageUpdater:
+    enabled: true
+    updateStrategy: latest
+    pullSecret: "namespace:blacklist:regcred"

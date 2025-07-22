@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blacklist.fullname" . }}-config
+  labels:
+    {{- include "blacklist.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  FLASK_ENV: {{ .Values.config.flaskEnv | quote }}
+  COLLECTION_ENABLED: {{ .Values.config.collectionEnabled | quote }}
+  COLLECTION_INTERVAL: {{ .Values.config.collectionInterval | quote }}
+  WORKERS: {{ .Values.config.workers | quote }}
+  API_RATE_LIMIT: {{ .Values.config.apiRateLimit | quote }}

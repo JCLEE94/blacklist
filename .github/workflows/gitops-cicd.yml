@@ -29,10 +29,10 @@ jobs:
       - name: Code Quality Checks
         run: |
           echo "🔍 Running code quality checks..."
-          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 || true
-          black --check src/ || true
-          isort src/ --check-only || true
-          bandit -r src/ -ll || true
+          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503
+          black --check src/
+          isort src/ --check-only
+          bandit -r src/ -ll
 
   # 테스트
   test:
@@ -49,7 +49,8 @@ jobs:
       
       - name: Run Tests
         run: |
-          python3 -m pytest tests/ -v --tb=short || true
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+          python3 -m pytest tests/ -v --tb=short
 
   # Docker 빌드 및 푸시
   build-push:
@@ -83,11 +84,13 @@ jobs:
               http = true
               insecure = true
       
-      - name: Login to Registry
+      - name: Registry Setup
         run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} \
-            --username ${{ secrets.REGISTRY_USERNAME }} \
+          # Login to registry.jclee.me
+          echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} \
+            --username "${{ secrets.REGISTRY_USERNAME || 'admin' }}" \
             --password-stdin
+          echo "✓ Logged in to registry: ${{ env.REGISTRY }}"
       
       - name: Build and Push
         id: build
@@ -116,6 +119,57 @@ jobs:
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
           echo "📦 Image: $IMAGE"
 
+  # Helm 차트 패키징 및 배포
+  helm-chart:
+    name: Package and Push Helm Chart
+    runs-on: self-hosted
+    needs: build-push
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Helm
+        run: |
+          if ! command -v helm &> /dev/null; then
+            echo "Installing Helm..."
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          fi
+          helm version
+      
+      - name: Update Chart Version
+        run: |
+          VERSION="${{ needs.build-push.outputs.version }}"
+          
+          # Update Chart.yaml versions
+          sed -i "s/^version:.*/version: $VERSION/" helm/blacklist/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"$VERSION\"/" helm/blacklist/Chart.yaml
+          
+          echo "📊 Updated Helm chart version to $VERSION"
+      
+      - name: Lint Chart
+        run: |
+          helm lint helm/blacklist
+      
+      - name: Package Chart
+        run: |
+          helm package helm/blacklist --destination /tmp/
+          ls -la /tmp/blacklist-*.tgz
+      
+      - name: Push to Chart Repository
+        env:
+          HELM_REPO_USERNAME: admin
+          HELM_REPO_PASSWORD: bingogo1
+        run: |
+          VERSION="${{ needs.build-push.outputs.version }}"
+          CHART_PACKAGE="/tmp/blacklist-${VERSION}.tgz"
+          
+          # Push to ChartMuseum
+          curl --data-binary "@${CHART_PACKAGE}" \
+               -u "${HELM_REPO_USERNAME}:${HELM_REPO_PASSWORD}" \
+               https://charts.jclee.me/api/charts
+          
+          echo "📦 Helm chart pushed to charts.jclee.me"
+
   # K8s 매니페스트 업데이트 (단일 저장소)
   update-manifests:
     name: Update K8s Manifests
@@ -127,6 +181,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN || github.token }}
       
       - name: Update Image Tag
         run: |
