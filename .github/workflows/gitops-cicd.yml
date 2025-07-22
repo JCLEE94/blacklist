@@ -87,8 +87,8 @@ jobs:
       - name: Registry Setup
         run: |
           # Login to registry.jclee.me
-          echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} \
-            --username "${{ secrets.REGISTRY_USERNAME || 'admin' }}" \
+          echo "${{ secrets.DOCKER_REGISTRY_PASS }}" | docker login ${{ env.REGISTRY }} \
+            --username "${{ secrets.DOCKER_REGISTRY_USER }}" \
             --password-stdin
           echo "✓ Logged in to registry: ${{ env.REGISTRY }}"
       
@@ -157,8 +157,8 @@ jobs:
       
       - name: Push to Chart Repository
         env:
-          HELM_REPO_USERNAME: admin
-          HELM_REPO_PASSWORD: bingogo1
+          HELM_REPO_USERNAME: ${{ secrets.HELM_REPO_USERNAME }}
+          HELM_REPO_PASSWORD: ${{ secrets.HELM_REPO_PASSWORD }}
         run: |
           VERSION="${{ needs.build-push.outputs.version }}"
           CHART_PACKAGE="/tmp/blacklist-${VERSION}.tgz"

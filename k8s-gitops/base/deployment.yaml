@@ -16,8 +16,6 @@ spec:
         app: blacklist
         component: backend
     spec:
-      imagePullSecrets:
-      - name: regcred
       containers:
       - name: blacklist
         image: registry.jclee.me/blacklist:latest

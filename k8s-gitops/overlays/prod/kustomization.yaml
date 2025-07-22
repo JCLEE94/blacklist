@@ -5,10 +5,10 @@ namespace: blacklist
 
 resources:
   - ../../base
+  - hpa.yaml
 
 patchesStrategicMerge:
   - deployment-patch.yaml
-  - hpa.yaml
 
 configMapGenerator:
   - name: blacklist-config
@@ -26,7 +26,7 @@ configMapGenerator:
 
 images:
   - name: registry.jclee.me/blacklist
-    newTag: v1.0.0  # Will be updated by CI/CD
+    newTag: latest  # Will be updated by CI/CD
 
 replicas:
   - name: blacklist
