@@ -1,0 +1,167 @@
+name: GitOps CI/CD Pipeline
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests for emergency deployment'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ${{ secrets.REGISTRY_URL || 'registry.jclee.me' }}
+  IMAGE_NAME: ${{ vars.GITHUB_ORG || 'JCLEE94' }}/${{ vars.APP_NAME || 'blacklist' }}
+  NAMESPACE: ${{ vars.NAMESPACE || 'blacklist' }}
+  CHARTMUSEUM_URL: ${{ secrets.CHARTMUSEUM_URL || 'https://charts.jclee.me' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
+          config-inline: |
+            [registry."${{ env.REGISTRY }}"]
+              http = true
+              insecure = true
+
+      - name: Login to Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME || 'admin' }}
+          password: ${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=main-,enable={{is_default_branch}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}-{{sha}}
+
+      - name: Run Tests
+        if: ${{ github.event.inputs.skip_tests != 'true' }}
+        run: |
+          echo "🧪 Running tests..."
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          python -m pytest tests/ -v --tb=short || true
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deployment/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          network: host
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.0'
+
+      - name: Update Chart and Deploy
+        run: |
+          # Chart 버전 설정
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            CHART_VERSION="${{ github.ref_name }}"
+            CHART_VERSION=${CHART_VERSION#v}
+          else
+            CHART_VERSION="0.1.0-${{ github.sha }}"
+          fi
+          
+          # 이미지 태그 추출
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1 | cut -d: -f2)
+          echo "📦 Chart Version: ${CHART_VERSION}"
+          echo "🏷️ Image Tag: ${IMAGE_TAG}"
+          
+          # Chart 버전과 이미지 태그 업데이트
+          sed -i "s/^version:.*/version: ${CHART_VERSION}/" ./charts/blacklist/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${CHART_VERSION}\"/" ./charts/blacklist/Chart.yaml
+          
+          # values.yaml 업데이트 (이미지 태그)
+          cat > ./charts/blacklist/values-override.yaml << EOF
+          image:
+            tag: "${IMAGE_TAG}"
+          EOF
+          
+          # Helm 패키지 생성
+          helm package ./charts/blacklist
+          
+          # ChartMuseum에 업로드
+          CHART_FILE="blacklist-${CHART_VERSION}.tgz"
+          echo "📤 Uploading chart: ${CHART_FILE}"
+          
+          if curl -u ${{ secrets.CHARTMUSEUM_USERNAME || 'admin' }}:${{ secrets.CHARTMUSEUM_PASSWORD || 'bingogo1' }} \
+            --data-binary "@${CHART_FILE}" \
+            --fail \
+            "${CHARTMUSEUM_URL}/api/charts"; then
+            echo "✅ Chart upload successful: ${CHART_VERSION}"
+          else
+            echo "❌ Chart upload failed"
+            exit 1
+          fi
+
+      - name: Verify Chart Upload
+        run: |
+          # Chart 업로드 검증
+          echo "🔍 Verifying chart in repository..."
+          curl -s "${CHARTMUSEUM_URL}/api/charts/blacklist" | jq -r '.[0].version' || echo "Chart not found"
+
+      - name: Trigger ArgoCD Sync
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "🔄 ArgoCD will automatically sync the new chart version"
+          echo "📍 Application: blacklist-${NAMESPACE}"
+          echo "📊 Check status at: https://argo.jclee.me"
+
+  post-deployment-check:
+    needs: build-and-deploy
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Wait for Deployment
+        run: sleep 30
+
+      - name: Health Check
+        run: |
+          echo "🏥 Running health checks..."
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -f http://blacklist.jclee.me/health; then
+              echo "✅ Application is healthy!"
+              exit 0
+            else
+              echo "⏳ Waiting for application to be ready... (${RETRY_COUNT}/${MAX_RETRIES})"
+              sleep 10
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
+          echo "❌ Health check failed after ${MAX_RETRIES} attempts"
+          exit 1

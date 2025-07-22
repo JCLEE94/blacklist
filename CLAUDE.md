@@ -15,16 +15,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Container-First**: Docker/Podman deployment with automated CI/CD
 
 **Production Infrastructure:**
-- Docker Registry: Private registry (configure based on your setup)
+- Docker Registry: `registry.jclee.me` (no authentication required)
 - Kubernetes Clusters: 
   - Primary: Self-hosted k3s/k8s (local)
-  - Secondary: Remote server (configure as needed)
-- ArgoCD Server: Configure based on your environment
+  - Secondary: Remote server at 192.168.50.110
+- ArgoCD Server: `argo.jclee.me`
 - Default Ports: DEV=8541, PROD=2541, NodePort=32452
-- Auto-deployment: ArgoCD Image Updater monitors registry
-- Production URL: Configure based on your domain
-- Timezone: Configure based on your location
-- Namespace: `blacklist` (consolidated from `blacklist-new`)
+- Auto-deployment: ArgoCD Image Updater monitors registry every 2 minutes
+- ChartMuseum: `charts.jclee.me` for Helm charts
+- Namespace: `blacklist`
 
 **Data Sources:**
 - REGTECH (Financial Security Institute) - Requires authentication, ~1,200 IPs ✅ Active
@@ -33,14 +32,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-### Application Startup
+### Initial Setup
 ```bash
+# Clone repository
+git clone https://github.com/JCLEE94/blacklist.git
+cd blacklist
+
+# Copy environment template
+cp .env.example .env
+# Edit .env with your configuration (contains default values for jclee environment)
+# IMPORTANT: Update credentials and URLs for your environment
+nano .env
+
+# Load environment variables
+source scripts/load-env.sh
+
 # Install dependencies
 pip install -r requirements.txt
+pip install -r requirements-dev.txt  # For development
 
 # Initialize database (SQLite with auto-migration)
 python3 init_database.py
+```
 
+### Application Startup
+```bash
 # Development server (entry point with fallback chain)
 python3 main.py                    # Preferred: app_compact → minimal_app → fallback
 python3 main.py --port 8080        # Custom port
@@ -52,8 +68,9 @@ gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application
 
 ### Container Operations
 ```bash
-# Build and deploy to registry
-./manual-deploy.sh                 # Build, push to registry
+# Build and push to registry
+docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
+docker push registry.jclee.me/blacklist:latest
 
 # Local container development
 docker-compose -f deployment/docker-compose.yml up -d --build
@@ -64,6 +81,8 @@ docker exec -it blacklist /bin/bash
 
 # Force rebuild (no cache)
 docker-compose -f deployment/docker-compose.yml build --no-cache
+docker-compose -f deployment/docker-compose.yml down
+docker-compose -f deployment/docker-compose.yml up -d
 ```
 
 ### ArgoCD 완전 자동화 설정
@@ -187,31 +206,45 @@ python3 scripts/integration_test_comprehensive.py
 
 ### Testing
 ```bash
+# Install dev dependencies
+pip install -r requirements-dev.txt
+
 # All tests
 pytest
 
+# Run a single test
+pytest tests/test_core_endpoints.py::test_health_endpoint -v
+pytest -k "test_collection_status" -v              # Run tests matching pattern
+
 # Specific test categories
-pytest -m "not slow and not integration"    # Unit tests only
-pytest tests/test_blacklist_unified.py      # Specific module
-pytest -v --cov=src                         # With coverage
+pytest -m "not slow and not integration"            # Unit tests only
+pytest tests/test_core_endpoints.py                 # Specific module
+pytest -v --cov=src                                 # With coverage
+pytest -v --cov=src --cov-report=html              # Coverage with HTML report
 
 # Integration tests
-pytest tests/integration/                   # Complete integration test suite
+pytest tests/integration/                           # Complete integration test suite
 python3 tests/integration/run_integration_tests.py  # Automated test runner
 
 # Performance benchmarking
 python3 tests/integration/performance_benchmark.py  # Response time validation
 
+# Quick integration test
+python3 tests/quick_integration_test.py
+
 # Inline tests (Rust-style)
 python3 -c "from src.core.unified_routes import _test_collection_status_inline; _test_collection_status_inline()"
 
 # Debugging and diagnostics
-python3 scripts/debug_regtech_advanced.py     # REGTECH auth analysis
-python3 scripts/debug_regtech_har.py          # HAR-based debugging
+python3 scripts/debug_regtech_advanced.py          # REGTECH auth analysis
+python3 scripts/debug_regtech_har.py               # HAR-based debugging
 ```
 
 ### Linting and Code Quality
 ```bash
+# Install quality tools (optional, not required for basic functionality)
+pip install flake8 black isort mypy bandit safety
+
 # Python syntax check
 python3 -m py_compile src/**/*.py
 
@@ -224,7 +257,7 @@ mypy src/ --ignore-missing-imports --no-error-summary
 # Security scanning
 bandit -r src/ -f json -o bandit-report.json -ll  # Medium/High severity only
 safety check --json --output safety-report.json
-semgrep --config=auto src/ --json --output=semgrep-report.json
+# semgrep --config=auto src/ --json --output=semgrep-report.json  # Requires semgrep
 
 # Auto-format code
 black src/
@@ -329,7 +362,7 @@ class BaseIPSource(ABC):
 
 ### CI/CD Pipeline (ArgoCD GitOps)
 
-**GitHub Actions Workflow** (`.github/workflows/cicd.yml`):
+**GitHub Actions Workflow** (`.github/workflows/gitops-template.yml`):
 1. **Parallel Quality Checks**: Lint, security scan, tests (matrix strategy)
 2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me`
 3. **Multi-tag Push**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
@@ -525,10 +558,19 @@ JWT_SECRET_KEY=jwt-secret    # JWT token signing
 API_SECRET_KEY=api-secret    # API key generation
 
 # Docker Registry (for CI/CD)
-DOCKER_USERNAME=your-username
-DOCKER_PASSWORD=your-password
-REGISTRY_USERNAME=registry-username  # For private registry
-REGISTRY_PASSWORD=registry-password
+REGISTRY_URL=registry.jclee.me     # Private registry URL
+DOCKER_REGISTRY_USER=admin         # Registry username
+DOCKER_REGISTRY_PASS=bingogo1      # Registry password
+
+# ArgoCD Configuration
+ARGOCD_SERVER=argo.jclee.me       # ArgoCD server
+ARGOCD_USERNAME=admin              # ArgoCD username
+ARGOCD_PASSWORD=bingogo1           # ArgoCD password
+
+# ChartMuseum Configuration  
+CHARTS_URL=https://charts.jclee.me # Helm chart repository
+HELM_REPO_USERNAME=admin           # ChartMuseum username
+HELM_REPO_PASSWORD=bingogo1        # ChartMuseum password
 
 # Cloudflare Tunnel (optional)
 ENABLE_CLOUDFLARED=false            # Enable Cloudflare Tunnel deployment
@@ -540,13 +582,16 @@ CLOUDFLARE_HOSTNAME=blacklist.yourdomain.com  # External hostname
 Required for CI/CD pipeline:
 ```bash
 # Set these in GitHub Settings → Secrets and variables → Actions
-DOCKER_USERNAME         # Docker Hub username
-DOCKER_PASSWORD         # Docker Hub password  
-REGISTRY_USERNAME       # Private registry username (priority)
-REGISTRY_PASSWORD       # Private registry password (priority)
-DEPLOYMENT_WEBHOOK_URL  # Optional webhook for deployment notifications
-CLOUDFLARE_TUNNEL_TOKEN # Cloudflare Zero Trust tunnel token (required for Cloudflare)
-CF_API_TOKEN           # Cloudflare API token for DNS management (required for Cloudflare)
+REGISTRY_URL           # Private registry URL (default: registry.jclee.me)
+DOCKER_REGISTRY_USER   # Registry username  
+DOCKER_REGISTRY_PASS   # Registry password
+ARGOCD_SERVER         # ArgoCD server URL
+ARGOCD_USERNAME       # ArgoCD username
+ARGOCD_PASSWORD       # ArgoCD password
+CHARTS_URL            # ChartMuseum URL
+HELM_REPO_USERNAME    # ChartMuseum username
+HELM_REPO_PASSWORD    # ChartMuseum password
+DEPLOYMENT_WEBHOOK_URL # Optional webhook for deployment notifications
 ```
 
 ### Date Parameters for REGTECH
@@ -831,29 +876,31 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
 - Security scanning integration with CI/CD pipeline
 - Performance benchmarking and monitoring strategies
 
-## Recent Implementations (2025.07.11)
+## Recent Implementations (2025.07.15)
 
-### CI/CD Pipeline Consolidation
-**Unified CI/CD Pipeline**:
-- Consolidated multiple workflow files into single `cicd.yml`
-- Removed `enhanced-cicd.yml`, `main.yml`, and other duplicates
-- Configured for self-hosted runners exclusively
-- Switched to private registry `registry.jclee.me` (no auth required)
-- Removed deployment logic - push only, ArgoCD handles deployment
+### GitOps Template Pipeline Implementation
+**Complete CI/CD Pipeline** (`.github/workflows/gitops-template.yml`):
+- Comprehensive CI/CD workflow with GitOps best practices
+- Multi-stage deployment with environment-specific configurations
+- Parallel quality checks and testing with matrix strategy
+- Automatic offline package generation for air-gapped environments
+- ArgoCD Image Updater integration for automatic deployments
+- Helm chart management with ChartMuseum integration
 
-**Key Changes**:
-- **Concurrency control**: Auto-cancels previous runs on same branch
-- **Skip conditions**: Skips builds for documentation-only changes
-- **Matrix strategy**: Parallel execution for tests and quality checks
-- **Continue-on-error**: Non-critical steps don't block pipeline
-- **Private registry**: Configured buildx for insecure registry support
+**Key Features**:
+- **Pre-flight checks**: Smart deployment decisions based on branch/tag
+- **Parallel execution**: Code quality and tests run concurrently
+- **Multi-tag strategy**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
+- **Offline packages**: Complete deployment bundles for disconnected environments
+- **Health monitoring**: Post-deployment health checks with retries
+- **GitOps integration**: Automatic ArgoCD sync after successful builds
 
 ### Private Registry Configuration
 **registry.jclee.me**:
 - Primary registry for all Docker images
-- No authentication required
+- No authentication required (public read access)
 - Configured with insecure registry support in buildx
-- IPv6 connectivity issues resolved with network=host
+- Used by both CI/CD and ArgoCD Image Updater
 
 **Buildx Configuration**:
 ```yaml
