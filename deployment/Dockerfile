@@ -32,29 +32,35 @@ ENV BUILD_TIME=${BUILD_TIME}
 ENV TZ=Asia/Seoul
 ENV PYTHONPATH=/app
 
-# Configure APT to use a more reliable mirror and DNS
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 8.8.4.4" >> /etc/resolv.conf && \
-    echo "nameserver 1.1.1.1" >> /etc/resolv.conf && \
-    echo "Acquire::http::Timeout \"30\";" > /etc/apt/apt.conf.d/99timeout && \
-    echo "Acquire::http::ConnectionAttemptDelayMsec \"500\";" >> /etc/apt/apt.conf.d/99timeout && \
-    echo "Acquire::Retries \"3\";" >> /etc/apt/apt.conf.d/99timeout
-
-# Install runtime dependencies with retry logic and mirror fallback
+# Install runtime dependencies with retry logic
+# Using retry logic and multiple mirrors to handle network issues
 RUN set -ex && \
-    for i in 1 2 3; do \
-        (apt-get update -o Acquire::ForceIPv4=true || \
-         (sed -i 's|deb.debian.org|ftp.us.debian.org|g' /etc/apt/sources.list && apt-get update)) && \
+    mkdir -p /etc/apt/apt.conf.d && \
+    echo 'Acquire::http::Timeout "30";' > /etc/apt/apt.conf.d/99timeout && \
+    echo 'Acquire::http::ConnectionAttemptDelayMsec "500";' >> /etc/apt/apt.conf.d/99timeout && \
+    echo 'Acquire::Retries "3";' >> /etc/apt/apt.conf.d/99timeout && \
+    for attempt in 1 2 3; do \
+        echo "Attempt $attempt of 3..." && \
+        if [ $attempt -eq 2 ]; then \
+            echo "Switching to alternative mirror..." && \
+            sed -i 's|deb.debian.org|ftp.us.debian.org|g' /etc/apt/sources.list; \
+        fi && \
+        if [ $attempt -eq 3 ]; then \
+            echo "Switching to another mirror..." && \
+            sed -i 's|ftp.us.debian.org|mirror.leaseweb.net/debian|g' /etc/apt/sources.list; \
+        fi && \
+        apt-get update -o Acquire::ForceIPv4=true && \
         apt-get install -y --no-install-recommends \
             curl \
             ca-certificates \
         && rm -rf /var/lib/apt/lists/* \
-        && break || \
-        if [ $i -lt 3 ]; then \
-            echo "Attempt $i failed, retrying in 10 seconds..." && \
-            sleep 10; \
+        && echo "Successfully installed packages" && \
+        break || \
+        if [ $attempt -lt 3 ]; then \
+            echo "Attempt $attempt failed, waiting 15 seconds before retry..." && \
+            sleep 15; \
         else \
-            echo "All attempts failed" && \
+            echo "All attempts failed, exiting" && \
             exit 1; \
         fi; \
     done
