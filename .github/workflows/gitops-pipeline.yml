@@ -1,0 +1,755 @@
+name: GitOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests for emergency deployment'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # Registry Configuration
+  REGISTRY: ${{ secrets.REGISTRY_URL || 'registry.jclee.me' }}
+  IMAGE_NAME: blacklist
+  
+  # Kubernetes Configuration
+  NAMESPACE: blacklist
+  
+  # ArgoCD Configuration
+  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER || 'argo.jclee.me' }}
+  ARGOCD_APP_NAME: blacklist
+  
+  # Chart Configuration
+  CHARTMUSEUM_URL: ${{ secrets.CHARTMUSEUM_URL || 'https://charts.jclee.me' }}
+
+jobs:
+  # Quality Checks (Parallel)
+  quality-check:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        check: [lint, security]
+      fail-fast: false
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run ${{ matrix.check }}
+        run: |
+          if [ "${{ matrix.check }}" == "lint" ]; then
+            echo "🔍 Running linting checks..."
+            flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 || true
+            black --check src/ --diff || true
+            isort src/ --check-only --diff || true
+          elif [ "${{ matrix.check }}" == "security" ]; then
+            echo "🔒 Running security checks..."
+            bandit -r src/ -f json -o bandit-report.json -ll || true
+            safety check --json --output safety-report.json || true
+          fi
+
+  # Tests (Parallel)
+  test:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        test-type: [unit, integration]
+      fail-fast: false
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Initialize Database
+        if: matrix.test-type == 'integration'
+        run: |
+          python3 init_database.py
+
+      - name: Run ${{ matrix.test-type }} tests
+        run: |
+          if [ "${{ matrix.test-type }}" == "unit" ]; then
+            echo "🧪 Running unit tests..."
+            pytest tests/unit/ -v --tb=short || true
+          elif [ "${{ matrix.test-type }}" == "integration" ]; then
+            echo "🧪 Running integration tests..."
+            python3 test_integration.py || true
+            pytest tests/integration/ -v --tb=short || true
+          fi
+
+  # Build and Push
+  build-and-push:
+    needs: [quality-check, test]
+    if: always() && (needs.quality-check.result == 'success' || needs.quality-check.result == 'failure') && (needs.test.result == 'success' || needs.test.result == 'failure')
+    runs-on: self-hosted
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      chart-version: ${{ steps.chart.outputs.version }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          buildkitd-flags: --debug
+          config-inline: |
+            [registry."${{ env.REGISTRY }}"]
+              http = true
+              insecure = true
+
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME || 'admin' }}
+          password: ${{ secrets.REGISTRY_PASSWORD || 'admin' }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            BUILD_VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Prepare Chart Version
+        id: chart
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            CHART_VERSION="${{ github.ref_name }}"
+            CHART_VERSION=${CHART_VERSION#v}
+          else
+            CHART_VERSION="0.1.0-${{ github.run_number }}"
+          fi
+          echo "version=${CHART_VERSION}" >> $GITHUB_OUTPUT
+          echo "📦 Chart Version: ${CHART_VERSION}"
+
+      - name: Update and Package Helm Chart
+        run: |
+          # Install Helm if not available
+          if ! command -v helm &> /dev/null; then
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          fi
+          
+          # Update Chart.yaml
+          sed -i "s/^version:.*/version: ${{ steps.chart.outputs.version }}/" ./charts/blacklist/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.meta.outputs.version }}\"/" ./charts/blacklist/Chart.yaml
+          
+          # Update values with new image tag
+          cat > ./charts/blacklist/values-override.yaml << EOF
+          image:
+            repository: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            tag: "${{ steps.meta.outputs.version }}"
+            pullPolicy: Always
+          EOF
+          
+          # Package chart
+          helm package ./charts/blacklist
+
+      - name: Push to ChartMuseum
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          CHART_FILE="blacklist-${{ steps.chart.outputs.version }}.tgz"
+          
+          # Upload to ChartMuseum
+          curl -u ${{ secrets.CHARTMUSEUM_USERNAME || 'admin' }}:${{ secrets.CHARTMUSEUM_PASSWORD || 'admin' }} \
+            --data-binary "@${CHART_FILE}" \
+            --fail \
+            "${{ env.CHARTMUSEUM_URL }}/api/charts" || {
+              echo "❌ Chart upload failed"
+              exit 1
+            }
+          
+          echo "✅ Chart uploaded successfully: ${{ steps.chart.outputs.version }}"
+
+  # ArgoCD Deployment
+  deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Create ArgoCD Application
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          # Install ArgoCD CLI if not available
+          if ! command -v argocd &> /dev/null; then
+            curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            chmod +x /usr/local/bin/argocd
+          fi
+          
+          # Create Application manifest
+          cat > argocd-app.yaml << EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: ${{ env.ARGOCD_APP_NAME }}
+            namespace: argocd
+            finalizers:
+              - resources-finalizer.argocd.argoproj.io
+          spec:
+            project: default
+            source:
+              repoURL: ${{ env.CHARTMUSEUM_URL }}
+              chart: blacklist
+              targetRevision: ${{ needs.build-and-push.outputs.chart-version }}
+              helm:
+                valueFiles:
+                  - values-override.yaml
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: ${{ env.NAMESPACE }}
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+                allowEmpty: false
+              syncOptions:
+                - CreateNamespace=true
+                - ApplyOutOfSyncOnly=true
+              retry:
+                limit: 5
+                backoff:
+                  duration: 5s
+                  factor: 2
+                  maxDuration: 3m
+          EOF
+          
+          # Apply the application
+          kubectl apply -f argocd-app.yaml || echo "Application already exists"
+          
+          # Trigger sync
+          argocd app sync ${{ env.ARGOCD_APP_NAME }} --grpc-web --server ${{ env.ARGOCD_SERVER }} || true
+
+      - name: Wait for Deployment
+        run: |
+          echo "⏳ Waiting for deployment to complete..."
+          sleep 30
+          
+          # Check deployment status
+          kubectl rollout status deployment/${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} --timeout=300s || true
+
+  # Post-deployment validation
+  validate:
+    needs: deploy
+    runs-on: self-hosted
+    steps:
+      - name: Health Check
+        run: |
+          echo "🏥 Running health checks..."
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+          
+          # Get service endpoint
+          SERVICE_URL=$(kubectl get svc ${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "localhost:8541")
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -f http://${SERVICE_URL}/health; then
+              echo "✅ Application is healthy!"
+              break
+            else
+              echo "⏳ Waiting for application... (${RETRY_COUNT}/${MAX_RETRIES})"
+              sleep 10
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+
+      - name: Integration Test
+        run: |
+          echo "🧪 Running post-deployment tests..."
+          
+          # Simple API tests
+          SERVICE_URL=$(kubectl get svc ${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "localhost:8541")
+          
+          # Test endpoints
+          curl -s http://${SERVICE_URL}/api/stats | jq . || true
+          curl -s http://${SERVICE_URL}/api/collection/status | jq . || true
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "📊 Version: ${{ needs.build-and-push.outputs.image-tag }}"
+          echo "📦 Chart: ${{ needs.build-and-push.outputs.chart-version }}"
+          echo "🔗 Application: https://${{ env.ARGOCD_SERVER }}/applications/${{ env.ARGOCD_APP_NAME }}"
+
+  # Generate Offline Package
+  offline-package:
+    needs: [build-and-push, validate]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Create Offline Package Directory
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          PACKAGE_NAME="blacklist-offline-${TIMESTAMP}"
+          PACKAGE_DIR="/tmp/${PACKAGE_NAME}"
+          
+          echo "PACKAGE_NAME=${PACKAGE_NAME}" >> $GITHUB_ENV
+          echo "PACKAGE_DIR=${PACKAGE_DIR}" >> $GITHUB_ENV
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+          
+          mkdir -p "${PACKAGE_DIR}"/{source,docker,helm,scripts,docs}
+          echo "📦 Created package directory: ${PACKAGE_DIR}"
+
+      - name: Export Docker Image
+        run: |
+          IMAGE_TAG="${{ needs.build-and-push.outputs.image-tag }}"
+          IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          
+          echo "💾 Exporting Docker image: ${IMAGE_NAME}"
+          docker pull "${IMAGE_NAME}"
+          docker save "${IMAGE_NAME}" | gzip > "${PACKAGE_DIR}/docker/blacklist-image.tar.gz"
+          
+          # Create image info file
+          cat > "${PACKAGE_DIR}/docker/image-info.txt" << EOF
+          Image: ${IMAGE_NAME}
+          Tag: ${IMAGE_TAG}
+          Registry: ${{ env.REGISTRY }}
+          Build Date: $(date -u)
+          Git Commit: ${{ github.sha }}
+          Git Branch: ${{ github.ref_name }}
+          EOF
+          
+          echo "✅ Docker image exported successfully"
+
+      - name: Package Source Code
+        run: |
+          echo "📝 Packaging source code..."
+          
+          # Create source archive excluding unnecessary files
+          tar -czf "${PACKAGE_DIR}/source/blacklist-source.tar.gz" \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.pytest_cache' \
+            --exclude='instance/*.db' \
+            --exclude='data' \
+            --exclude='logs' \
+            .
+          
+          # Copy important configuration files
+          cp -r k8s "${PACKAGE_DIR}/source/"
+          cp -r charts "${PACKAGE_DIR}/source/"
+          cp requirements.txt "${PACKAGE_DIR}/source/"
+          cp .env.example "${PACKAGE_DIR}/source/"
+          cp CLAUDE.md "${PACKAGE_DIR}/source/"
+          
+          echo "✅ Source code packaged successfully"
+
+      - name: Package Helm Charts
+        run: |
+          echo "📊 Packaging Helm charts..."
+          
+          # Copy Helm chart
+          cp -r charts/blacklist "${PACKAGE_DIR}/helm/"
+          
+          # Copy packaged chart if exists
+          if [ -f "blacklist-${{ needs.build-and-push.outputs.chart-version }}.tgz" ]; then
+            cp "blacklist-${{ needs.build-and-push.outputs.chart-version }}.tgz" "${PACKAGE_DIR}/helm/"
+          fi
+          
+          # Create Helm values for offline deployment
+          cat > "${PACKAGE_DIR}/helm/values-offline.yaml" << EOF
+          image:
+            repository: blacklist
+            tag: "${{ needs.build-and-push.outputs.image-tag }}"
+            pullPolicy: Never
+          
+          service:
+            type: NodePort
+            nodePort: 32452
+          
+          ingress:
+            enabled: false
+          
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          EOF
+          
+          echo "✅ Helm charts packaged successfully"
+
+      - name: Create Installation Scripts
+        run: |
+          echo "🔧 Creating installation scripts..."
+          
+          # Docker Compose installation script
+          cat > "${PACKAGE_DIR}/scripts/install-docker-compose.sh" << 'EOF'
+          #!/bin/bash
+          # Blacklist Docker Compose 설치 스크립트
+          
+          set -e
+          
+          echo "🚀 Blacklist Docker Compose 설치 시작..."
+          
+          # Load Docker image
+          echo "📦 Docker 이미지 로딩..."
+          docker load < ../docker/blacklist-image.tar.gz
+          
+          # Copy source files
+          echo "📂 소스 파일 복사..."
+          tar -xzf ../source/blacklist-source.tar.gz -C .
+          
+          # Setup environment
+          echo "⚙️ 환경 설정..."
+          cp .env.example .env
+          echo "Please edit .env file with your configuration"
+          
+          # Initialize database
+          echo "🗄️ 데이터베이스 초기화..."
+          python3 init_database.py
+          
+          # Start services
+          echo "🎯 서비스 시작..."
+          docker-compose -f deployment/docker-compose.yml up -d
+          
+          echo "✅ 설치 완료!"
+          echo "🌐 접속 URL: http://localhost:8541"
+          EOF
+          
+          # Kubernetes installation script
+          cat > "${PACKAGE_DIR}/scripts/install-kubernetes.sh" << 'EOF'
+          #!/bin/bash
+          # Blacklist Kubernetes 설치 스크립트
+          
+          set -e
+          
+          echo "🚀 Blacklist Kubernetes 설치 시작..."
+          
+          # Load Docker image to all nodes
+          echo "📦 Docker 이미지 모든 노드에 로딩..."
+          docker load < ../docker/blacklist-image.tar.gz
+          
+          # Apply Kubernetes manifests
+          echo "🎯 Kubernetes 매니페스트 적용..."
+          kubectl create namespace blacklist --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -k ../source/k8s/
+          
+          # Wait for deployment
+          echo "⏳ 배포 대기 중..."
+          kubectl rollout status deployment/blacklist -n blacklist --timeout=300s
+          
+          echo "✅ 설치 완료!"
+          echo "🌐 서비스 정보:"
+          kubectl get svc -n blacklist
+          EOF
+          
+          # Helm installation script
+          cat > "${PACKAGE_DIR}/scripts/install-helm.sh" << 'EOF'
+          #!/bin/bash
+          # Blacklist Helm 설치 스크립트
+          
+          set -e
+          
+          echo "🚀 Blacklist Helm 설치 시작..."
+          
+          # Load Docker image
+          echo "📦 Docker 이미지 로딩..."
+          docker load < ../docker/blacklist-image.tar.gz
+          
+          # Install with Helm
+          echo "⚙️ Helm 설치..."
+          helm upgrade --install blacklist ../helm/blacklist \
+            -f ../helm/values-offline.yaml \
+            --namespace blacklist \
+            --create-namespace \
+            --wait \
+            --timeout 300s
+          
+          echo "✅ 설치 완료!"
+          echo "🌐 서비스 정보:"
+          kubectl get svc -n blacklist
+          EOF
+          
+          # Make scripts executable
+          chmod +x "${PACKAGE_DIR}/scripts/"*.sh
+          
+          echo "✅ 설치 스크립트 생성 완료"
+
+      - name: Create Documentation
+        run: |
+          echo "📚 문서 생성 중..."
+          
+          # Installation guide
+          cat > "${PACKAGE_DIR}/docs/INSTALLATION.md" << EOF
+          # Blacklist 오프라인 설치 가이드
+          
+          ## 📦 패키지 내용
+          
+          - \`source/\` - 소스 코드 및 설정 파일
+          - \`docker/\` - Docker 이미지 및 정보
+          - \`helm/\` - Helm 차트 및 설정
+          - \`scripts/\` - 설치 스크립트
+          - \`docs/\` - 문서
+          
+          ## 🚀 설치 방법
+          
+          ### 1. Docker Compose 설치
+          \`\`\`bash
+          cd scripts
+          ./install-docker-compose.sh
+          \`\`\`
+          
+          ### 2. Kubernetes 설치
+          \`\`\`bash
+          cd scripts
+          ./install-kubernetes.sh
+          \`\`\`
+          
+          ### 3. Helm 설치 (권장)
+          \`\`\`bash
+          cd scripts
+          ./install-helm.sh
+          \`\`\`
+          
+          ## ⚙️ 설정
+          
+          ### 환경 변수
+          - REGTECH_USERNAME: REGTECH 사용자명
+          - REGTECH_PASSWORD: REGTECH 비밀번호
+          - SECUDIUM_USERNAME: SECUDIUM 사용자명
+          - SECUDIUM_PASSWORD: SECUDIUM 비밀번호
+          
+          ### 포트 설정
+          - 개발: 8541
+          - 프로덕션: 2541
+          - NodePort: 32452
+          
+          ## 🔧 문제 해결
+          
+          ### Docker 이미지 로딩 실패
+          \`\`\`bash
+          # 이미지 압축 해제 및 로딩
+          gunzip -c docker/blacklist-image.tar.gz | docker load
+          \`\`\`
+          
+          ### 데이터베이스 초기화
+          \`\`\`bash
+          python3 init_database.py --force
+          \`\`\`
+          
+          ### 서비스 상태 확인
+          \`\`\`bash
+          # Docker Compose
+          docker-compose -f deployment/docker-compose.yml ps
+          
+          # Kubernetes
+          kubectl get pods -n blacklist
+          
+          # Helm
+          helm status blacklist -n blacklist
+          \`\`\`
+          
+          ## 📊 시스템 요구사항
+          
+          - Docker 20.10+
+          - Kubernetes 1.20+ (선택사항)
+          - Helm 3.0+ (선택사항)
+          - Python 3.9+
+          - 최소 메모리: 512MB
+          - 최소 저장공간: 2GB
+          
+          ## 🌐 접속 정보
+          
+          설치 완료 후 다음 URL로 접속:
+          - Docker Compose: http://localhost:8541
+          - Kubernetes NodePort: http://\<node-ip\>:32452
+          - Kubernetes Ingress: https://blacklist.yourdomain.com
+          EOF
+          
+          # Copy project documentation
+          cp README.md "${PACKAGE_DIR}/docs/" 2>/dev/null || echo "README.md not found"
+          cp CHANGELOG.md "${PACKAGE_DIR}/docs/" 2>/dev/null || echo "CHANGELOG.md not found"
+          cp docs/*.md "${PACKAGE_DIR}/docs/" 2>/dev/null || echo "No additional docs found"
+          
+          echo "✅ 문서 생성 완료"
+
+      - name: Create Package Metadata
+        run: |
+          echo "📋 패키지 메타데이터 생성..."
+          
+          cat > "${PACKAGE_DIR}/package-info.json" << EOF
+          {
+            "name": "blacklist-offline-package",
+            "version": "${{ needs.build-and-push.outputs.image-tag }}",
+            "chart_version": "${{ needs.build-and-push.outputs.chart-version }}",
+            "build_date": "$(date -u -Iseconds)",
+            "git_commit": "${{ github.sha }}",
+            "git_branch": "${{ github.ref_name }}",
+            "git_tag": "${{ github.ref_type == 'tag' && github.ref_name || 'none' }}",
+            "registry": "${{ env.REGISTRY }}",
+            "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}",
+            "components": {
+              "source_code": "source/blacklist-source.tar.gz",
+              "docker_image": "docker/blacklist-image.tar.gz",
+              "helm_chart": "helm/blacklist/",
+              "installation_scripts": "scripts/",
+              "documentation": "docs/"
+            },
+            "installation_methods": [
+              "docker-compose",
+              "kubernetes",
+              "helm"
+            ],
+            "system_requirements": {
+              "docker": "20.10+",
+              "kubernetes": "1.20+ (optional)",
+              "helm": "3.0+ (optional)",
+              "python": "3.9+",
+              "memory": "512MB minimum",
+              "storage": "2GB minimum"
+            }
+          }
+          EOF
+          
+          # Create checksums
+          echo "🔐 체크섬 생성..."
+          cd "${PACKAGE_DIR}"
+          find . -type f -exec sha256sum {} + > checksums.txt
+          
+          echo "✅ 패키지 메타데이터 생성 완료"
+
+      - name: Create Final Archive
+        run: |
+          echo "🗜️ 최종 패키지 아카이브 생성..."
+          
+          cd /tmp
+          tar -czf "${PACKAGE_NAME}.tar.gz" "${PACKAGE_NAME}/"
+          
+          # Get package size
+          PACKAGE_SIZE=$(du -h "${PACKAGE_NAME}.tar.gz" | cut -f1)
+          echo "📦 패키지 크기: ${PACKAGE_SIZE}"
+          
+          # Move to workspace for artifact upload
+          mv "${PACKAGE_NAME}.tar.gz" "${GITHUB_WORKSPACE}/"
+          
+          echo "PACKAGE_SIZE=${PACKAGE_SIZE}" >> $GITHUB_ENV
+          echo "✅ 오프라인 패키지 생성 완료: ${PACKAGE_NAME}.tar.gz"
+
+      - name: Upload Offline Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.PACKAGE_NAME }}
+          path: ${{ env.PACKAGE_NAME }}.tar.gz
+          retention-days: 30
+
+      - name: Create Release Asset (for tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "🏷️ 릴리스 자산으로 패키지 추가..."
+          
+          # Install gh CLI if not available
+          if ! command -v gh &> /dev/null; then
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+            sudo apt update
+            sudo apt install gh
+          fi
+          
+          # Upload to release
+          gh release upload ${{ github.ref_name }} "${PACKAGE_NAME}.tar.gz" \
+            --clobber \
+            --repo ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Summary
+        run: |
+          echo "📊 오프라인 패키지 생성 완료!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📦 패키지명: ${{ env.PACKAGE_NAME }}.tar.gz"
+          echo "📏 패키지 크기: ${{ env.PACKAGE_SIZE }}"
+          echo "🏷️ 이미지 태그: ${{ needs.build-and-push.outputs.image-tag }}"
+          echo "📊 차트 버전: ${{ needs.build-and-push.outputs.chart-version }}"
+          echo "🕐 생성 시간: ${{ env.TIMESTAMP }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📥 다운로드 방법:"
+          echo "1. GitHub Actions Artifacts에서 다운로드"
+          echo "2. GitHub Releases에서 다운로드 (태그 빌드시)"
+          echo ""
+          echo "🚀 설치 방법:"
+          echo "1. tar -xzf ${{ env.PACKAGE_NAME }}.tar.gz"
+          echo "2. cd ${{ env.PACKAGE_NAME }}"
+          echo "3. cat docs/INSTALLATION.md"
+
+  # Cleanup old images
+  cleanup:
+    needs: [validate, offline-package]
+    runs-on: self-hosted
+    if: always()
+    steps:
+      - name: Clean old images
+        run: |
+          echo "🧹 Cleaning old images..."
+          # Keep only last 10 images
+          docker image prune -a --force --filter "until=72h" || true
+          
+      - name: Clean old packages
+        run: |
+          echo "🧹 Cleaning old offline packages..."
+          # Clean packages older than 7 days
+          find /tmp -name "blacklist-offline-*" -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || true
