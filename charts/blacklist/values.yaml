@@ -2,7 +2,7 @@
 replicaCount: 3
 
 image:
-  repository: registry.jclee.me/blacklist
+  repository: registry.jclee.me/jclee94/blacklist
   pullPolicy: IfNotPresent
   tag: "latest"
 
