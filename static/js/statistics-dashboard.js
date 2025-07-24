@@ -476,13 +476,13 @@ class StatisticsDashboard {
      */
     async updateDetectionTrend() {
         try {
-            const response = await fetch(`/api/stats/detection-trends?${this.buildQueryString()}`);
+            const response = await fetch(`/api/v2/analytics/detection-trend?${this.buildQueryString()}`);
             const data = await response.json();
             
-            if (data.daily_trends && this.charts.detectionTrend) {
-                const labels = data.daily_trends.map(d => this.formatDate(d.date));
-                const newDetections = data.daily_trends.map(d => d.new_detections || 0);
-                const removed = data.daily_trends.map(d => d.removed || 0);
+            if (data.trend && this.charts.detectionTrend) {
+                const labels = data.trend.map(d => this.formatDate(d.date));
+                const newDetections = data.trend.map(d => d.count || 0);
+                const removed = data.trend.map(d => 0); // V2 API doesn't have removed data
                 
                 this.charts.detectionTrend.data.labels = labels;
                 this.charts.detectionTrend.data.datasets[0].data = newDetections;

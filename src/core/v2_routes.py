@@ -499,6 +499,66 @@ def health_check():
     return jsonify(result), status_code
 
 
+@v2_bp.route("/analytics/threat-levels", methods=["GET"])
+def get_threat_levels():
+    """위협 레벨별 분포"""
+    try:
+        db_path = get_db_path()
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # 위협 레벨별 카운트
+        cursor.execute("""
+            SELECT 
+                CASE 
+                    WHEN threat_level IS NULL OR threat_level = '' THEN 'medium'
+                    ELSE LOWER(threat_level)
+                END as level,
+                COUNT(*) as count
+            FROM blacklist_ip 
+            WHERE is_active = 1 
+            GROUP BY level
+        """)
+        
+        level_data = cursor.fetchall()
+        conn.close()
+        
+        # 기본 레벨 구조
+        levels = {
+            "low": 0,
+            "medium": 0,
+            "high": 0,
+            "critical": 0
+        }
+        
+        # 데이터 채우기
+        for level, count in level_data:
+            if level in levels:
+                levels[level] = count
+            else:
+                # 알 수 없는 레벨은 medium으로 분류
+                levels["medium"] += count
+        
+        return jsonify({
+            "success": True,
+            "threat_levels": levels,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"위협 레벨 조회 실패: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "threat_levels": {
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "critical": 0
+            }
+        }), 500
+
+
 @v2_bp.route("/performance", methods=["GET"])
 def get_performance_metrics():
     """성능 메트릭 조회"""
