@@ -50,7 +50,7 @@ class UnifiedBlacklistService:
             "auto_collection": os.getenv("AUTO_COLLECTION", "true").lower() == "true",
             "collection_interval": int(os.getenv("COLLECTION_INTERVAL", 3600)),
             "service_name": "blacklist-unified",
-            "version": "3.0.0",
+            "version": "3.0.1-cicd-test",
         }
 
         # 수집 로그 저장 (메모리, 최대 1000개)
@@ -906,7 +906,7 @@ class UnifiedBlacklistService:
                 "last_update": datetime.now().isoformat(),
                 "cache_available": self.cache is not None,
                 "database_connected": True,
-                "version": self.config.get("version", "3.0.0"),
+                "version": self.config.get("version", "3.0.1-cicd-test"),
             }
         except Exception as e:
             self.logger.error(f"Failed to get system health: {e}")

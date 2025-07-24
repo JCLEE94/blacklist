@@ -4,20 +4,24 @@ metadata:
   name: blacklist
   namespace: blacklist
   labels:
-    app: blacklist
+    app.kubernetes.io/name: blacklist
+    app.kubernetes.io/instance: blacklist
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
-      app: blacklist
+      app.kubernetes.io/name: blacklist
+      app.kubernetes.io/instance: blacklist
   template:
     metadata:
       labels:
-        app: blacklist
+        app.kubernetes.io/name: blacklist
+        app.kubernetes.io/instance: blacklist
     spec:
       containers:
       - name: blacklist
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+        image: registry.jclee.me/jclee94/blacklist:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8541
         env:
@@ -91,38 +95,3 @@ spec:
           claimName: blacklist-logs-pvc
       imagePullSecrets:
       - name: regcred
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: blacklist-service
-  namespace: blacklist
-spec:
-  selector:
-    app: blacklist
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8541
-      nodePort: 32542
-  type: NodePort
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: blacklist-ingress
-  namespace: blacklist
-  annotations:
-    kubernetes.io/ingress.class: traefik
-spec:
-  rules:
-  - host: blacklist.jclee.me
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: blacklist-service
-            port:
-              number: 80
