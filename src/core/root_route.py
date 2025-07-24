@@ -13,7 +13,7 @@ def index():
     return jsonify(
         {
             "message": "🛡️ Blacklist Management System",
-            "version": "3.0.0",
+            "version": "3.0.1",
             "status": "running",
             "dashboard": "/dashboard",
             "endpoints": {

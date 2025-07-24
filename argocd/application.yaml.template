@@ -1,0 +1,128 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: $PROJECT_NAME
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # ArgoCD Image Updater 설정 (Helm)
+    argocd-image-updater.argoproj.io/image-list: $PROJECT_NAME=$REGISTRY_URL/$PROJECT_NAME
+    argocd-image-updater.argoproj.io/$PROJECT_NAME.update-strategy: latest
+    argocd-image-updater.argoproj.io/$PROJECT_NAME.pull-secret: pullsecret:argocd/regcred
+    argocd-image-updater.argoproj.io/$PROJECT_NAME.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/$PROJECT_NAME.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+spec:
+  project: $ARGOCD_PROJECT
+  source:
+    repoURL: $HELM_REPOSITORY
+    chart: $PROJECT_NAME
+    targetRevision: $HELM_CHART_VERSION
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: $IMAGE_TAG
+        - name: image.repository
+          value: $REGISTRY_URL/$PROJECT_NAME
+        - name: namespace
+          value: $K8S_NAMESPACE
+        - name: ingress.enabled
+          value: "$INGRESS_ENABLED"
+        - name: ingress.hostname
+          value: $BASE_DOMAIN
+  destination:
+    server: $K8S_SERVER
+    namespace: $K8S_NAMESPACE
+  syncPolicy:
+    automated:
+      prune: $ARGOCD_AUTO_PRUNE
+      selfHeal: $ARGOCD_SELF_HEAL
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: $ARGOCD_RETRY_LIMIT
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: $ARGOCD_HISTORY_LIMIT
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: $PROJECT_NAME-chart-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+type: Opaque
+stringData:
+  type: helm
+  url: $HELM_REPOSITORY
+  name: $PROJECT_NAME-charts
+  username: $HELM_USERNAME
+  password: $HELM_PASSWORD
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: $PROJECT_NAME-project
+  namespace: argocd
+spec:
+  description: $PROJECT_DESCRIPTION
+  sourceRepos:
+    - $GIT_REPOSITORY
+    - $HELM_REPOSITORY
+  destinations:
+    - namespace: $K8S_NAMESPACE
+      server: $K8S_SERVER
+    - namespace: argocd
+      server: $K8S_SERVER
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: ''
+      kind: PersistentVolume
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: '*'
+    - group: 'apps'
+      kind: '*'
+    - group: 'extensions'
+      kind: '*'
+    - group: 'networking.k8s.io'
+      kind: '*'
+    - group: 'autoscaling'
+      kind: '*'
+    - group: 'policy'
+      kind: '*'
+    - group: 'metrics.k8s.io'
+      kind: '*'
+  roles:
+    - name: admin
+      description: Admin role for $PROJECT_NAME project
+      policies:
+        - p, proj:$PROJECT_NAME-project:admin, applications, *, $PROJECT_NAME-project/*, allow
+        - p, proj:$PROJECT_NAME-project:admin, repositories, *, *, allow
+      groups:
+        - $PROJECT_NAME-admins

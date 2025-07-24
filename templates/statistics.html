@@ -371,6 +371,20 @@ class StatisticsDashboard {
     }
 
     async fetchSystemHealth() {
+        try {
+            // V2 API 먼저 시도
+            const v2Response = await fetch('/api/v2/analytics/summary-data');
+            if (v2Response.ok) {
+                const v2Data = await v2Response.json();
+                if (v2Data.summary) {
+                    return v2Data.summary;
+                }
+            }
+        } catch (error) {
+            console.warn('V2 analytics API failed, falling back to /api/stats');
+        }
+        
+        // V1 API fallback
         const response = await fetch('/api/stats');
         if (!response.ok) throw new Error('System health API failed');
         const result = await response.json();

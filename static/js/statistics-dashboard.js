@@ -430,7 +430,7 @@ class StatisticsDashboard {
      */
     async loadSummaryStats() {
         try {
-            const response = await fetch('/api/v2/analytics/summary?' + this.buildQueryString());
+            const response = await fetch('/api/v2/analytics/summary-data?' + this.buildQueryString());
             const data = await response.json();
             
             if (data.summary) {

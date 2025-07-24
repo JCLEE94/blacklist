@@ -1,4 +1,4 @@
-name: GitOps Simple Pipeline
+name: Simple CI/CD Pipeline
 
 on:
   push:
