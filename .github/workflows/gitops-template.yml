@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload Reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: quality-reports-${{ matrix.check }}
           path: "*-report.*"
@@ -186,7 +186,7 @@ jobs:
 
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-reports-${{ matrix.test-type }}
           path: |
@@ -761,7 +761,7 @@ jobs:
           echo "✅ Offline package created: $PACKAGE_NAME.tar.gz"
 
       - name: Upload Offline Package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: blacklist-offline-package
           path: ${{ env.PACKAGE_FILE }}
