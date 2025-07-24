@@ -13,67 +13,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Multi-layered Entry Points**: `main.py` → `src/core/app_compact.py` → fallback chain for maximum compatibility
 - **Plugin-based IP Sources**: Extensible source system in `src/core/ip_sources/`
 - **Container-First**: Docker/Podman deployment with automated CI/CD
+- **Configuration Template System**: Environment-based deployments with dynamic configuration
 
 **Production Infrastructure:**
-- Docker Registry: `registry.jclee.me` (no authentication required)
+- Docker Registry: `registry.jclee.me` (Private registry with public read access)
 - Kubernetes Clusters: 
   - Primary: Self-hosted k3s/k8s (local)
-  - Secondary: Remote server at 192.168.50.110
+  - Secondary: Remote server `192.168.50.110`
 - ArgoCD Server: `argo.jclee.me`
-- Default Ports: DEV=8541, PROD=2541, NodePort=32542
+- Default Ports: DEV=8541, PROD=2541, NodePort=32452
 - Auto-deployment: ArgoCD Image Updater monitors registry every 2 minutes
-- ChartMuseum: `charts.jclee.me` for Helm charts
+- Production URL: `https://blacklist.jclee.me`
+- Timezone: KST (Asia/Seoul)
 - Namespace: `blacklist`
 
-## 🚨 CRITICAL DEPLOYMENT ISSUES (Current Status)
-
-**IMMEDIATE ATTENTION REQUIRED**: The system has critical deployment and external access issues as of 2025-07-23:
-
-### Registry Configuration Mismatch (CRITICAL)
-- **Problem**: New pods failing with `ImagePullBackOff` errors
-- **Root Cause**: CI/CD pushes to `registry.jclee.me/jclee94/blacklist` but Helm chart expects `registry.jclee.me/blacklist`
-- **Impact**: Only 2 old pods (16h+) are running, new deployments fail
-- **Fix**: Update Helm chart image path or CI/CD image name to match
-
-### External Access 502 Errors (CRITICAL) 
-- **Problem**: `https://blacklist.jclee.me` returns 502 Bad Gateway (openresty)
-- **Working**: Local NodePort access `http://192.168.50.110:32542` functions correctly
-- **Root Cause**: External reverse proxy (openresty) cannot properly forward to internal Kubernetes services
-- **Impact**: External users cannot access the application
-
-### ArgoCD Sync Issues (HIGH)
-- **Status**: ArgoCD application shows "Unknown" sync status
-- **Impact**: Automated GitOps deployments not functioning
-- **Symptom**: Image updates not automatically triggering deployments
-
-### Current Pod Status
-```
-blacklist-78d877788f-h6fnr   1/1     Running            0          16h  ✅ Working
-blacklist-ff47fc754-knpbx    1/1     Running            0          16h  ✅ Working  
-blacklist-685b5cb6bb-ffg5m   0/1     ImagePullBackOff   0          71m  ❌ Failed
-blacklist-685b5cb6bb-h8rdg   0/1     ImagePullBackOff   0          71m  ❌ Failed
-```
-
-### Immediate Recovery Commands
-```bash
-# 1. Fix registry path mismatch
-kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:latest -n blacklist
-
-# 2. Check ArgoCD sync status  
-argocd app get blacklist --grpc-web
-argocd app sync blacklist --force --grpc-web
-
-# 3. Monitor pod recovery
-kubectl get pods -n blacklist -w
-
-# 4. Test external access
-curl -k https://blacklist.jclee.me/health
-```
-
 **Data Sources:**
-- REGTECH (Financial Security Institute) - Requires authentication, ~1,200 IPs ✅ Active
-- SECUDIUM - Standard authentication with POST-based login and Excel download ❌ Disabled (account issues)
-- Public Threat Intelligence - Automated collection
+- REGTECH (Financial Security Institute) - Session-based auth, ~9,500 IPs ✅ Active
+- SECUDIUM - POST-based login with Excel download ❌ Disabled (authentication issues)
+- Public Threat Intelligence - Automated collection from various sources
 
 ## Development Commands
 
@@ -94,10 +51,12 @@ source scripts/load-env.sh
 
 # Install dependencies
 pip install -r requirements.txt
-pip install -r requirements-dev.txt  # For development
 
 # Initialize database (SQLite with auto-migration)
 python3 init_database.py
+
+# For development/testing (optional)
+pip install pytest pytest-cov pytest-xdist pytest-html
 ```
 
 ### Application Startup
@@ -113,9 +72,9 @@ gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application
 
 ### Container Operations
 ```bash
-# Build and push to registry
-docker build -f deployment/Dockerfile -t registry.jclee.me/blacklist:latest .
-docker push registry.jclee.me/blacklist:latest
+# Build and push to registry (with correct path)
+docker build -f deployment/Dockerfile -t registry.jclee.me/jclee94/blacklist:latest .
+docker push registry.jclee.me/jclee94/blacklist:latest
 
 # Local container development
 docker-compose -f deployment/docker-compose.yml up -d --build
@@ -193,8 +152,12 @@ kubectl exec -it deployment/blacklist -n blacklist -- /bin/bash
 kubectl rollout restart deployment/blacklist -n blacklist
 
 
-# Registry secret management (not needed for registry.jclee.me)
-# Only required if using authenticated registries
+# Registry secret management
+kubectl create secret docker-registry regcred \
+  --docker-server=registry.jclee.me \
+  --docker-username=admin \
+  --docker-password=bingogo1 \
+  --namespace=blacklist
 ```
 
 ### Remote Server Management
@@ -251,9 +214,6 @@ python3 scripts/integration_test_comprehensive.py
 
 ### Testing
 ```bash
-# Install dev dependencies
-pip install -r requirements-dev.txt
-
 # All tests
 pytest
 
@@ -407,41 +367,40 @@ class BaseIPSource(ABC):
 
 ### CI/CD Pipeline (ArgoCD GitOps)
 
-**GitHub Actions Workflow** (`.github/workflows/gitops-template.yml`):
+**GitHub Actions Workflow** (`.github/workflows/gitops-pipeline.yml`):
 1. **Parallel Quality Checks**: Lint, security scan, tests (matrix strategy)
-2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me`
+2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me/jclee94/blacklist`
 3. **Multi-tag Push**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
-4. **ArgoCD Image Updater**: Automatically detects and deploys new images
-5. **Deployment Notification**: Push-only strategy, ArgoCD handles deployment
-6. **Concurrency Control**: Auto-cancels previous runs on same branch
-7. **Skip Conditions**: Skips build for documentation-only changes
+4. **Helm Chart Management**: Auto-versioning and push to ChartMuseum
+5. **ArgoCD Deployment**: Automatic application creation and sync
+6. **Post-deployment Validation**: Health checks and integration tests
+7. **Cleanup**: Automatic old image pruning
 
-**Unified Pipeline Features**:
-- **Single workflow file**: Consolidated from multiple workflows
-- **Self-hosted runners only**: Optimized for private infrastructure
-- **Parallel execution**: Matrix builds for tests and quality checks
-- **Fail-fast disabled**: Continues other jobs even if one fails
-- **Continue-on-error**: Non-critical steps don't block pipeline
-- **Cached dependencies**: Speeds up repeated builds
-- **Network mode host**: For private registry access
-- **Offline Package Generation**: Creates complete offline deployment package
+**Pipeline Configuration**:
+```yaml
+# Key environment variables
+REGISTRY: registry.jclee.me
+IMAGE_NAME: blacklist
+NAMESPACE: blacklist
+ARGOCD_SERVER: argo.jclee.me
+CHARTMUSEUM_URL: https://charts.jclee.me
+```
+
+**Security Features**:
+- **Quality Gates**: Bandit, Safety, Flake8, Black, isort
+- **Continue on Error**: Non-blocking quality checks
+- **JSON Reports**: Structured security scan outputs
+- **Severity Filtering**: Medium/High issues only
 
 **Deployment Flow**:
 ```
-Push to main → GitHub Actions → Build & Push → Helm Chart → Offline Package → ArgoCD Auto Deploy
+Push to main → Quality Checks (parallel) → Tests (parallel) → Build & Push → Helm Package → ArgoCD Deploy → Validate
 ```
 
-**Offline Package Features**:
-- **Complete Deployment Bundle**: Source code, Docker image, Helm charts
-- **Self-contained**: All dependencies included for air-gapped environments
-- **Multiple Install Options**: Kubernetes, Helm, or standalone deployment
-- **Installation Guide**: Detailed instructions for offline deployment
-- **Metadata**: Version info, checksums, and deployment details
-
-**Self-hosted Runner Compatibility**:
+**Self-hosted Runner Requirements**:
 ```yaml
 runs-on: self-hosted
-# Must use these specific versions:
+# MUST use these specific versions for compatibility:
 - uses: actions/checkout@v3         # NOT v4
 - uses: docker/setup-buildx-action@v2  # NOT v3
 - uses: docker/build-push-action@v4    # NOT v5
@@ -553,6 +512,28 @@ runs-on: self-hosted
 - Kubernetes cluster status
 - Deployment health check
 
+## Code Quality and Testing Standards
+
+### Code Formatting
+- **Black**: Line length 88, automatic formatting
+- **isort**: Import sorting with Black compatibility
+- **flake8**: Max line length 88, ignore E203,W503 for Black
+- **mypy**: Type checking with --ignore-missing-imports
+
+### Testing Strategy
+- **Unit Tests**: `tests/unit/` - Individual component testing
+- **Integration Tests**: `tests/integration/` - End-to-end API testing
+- **Inline Tests**: Rust-style `_test_*_inline()` functions in modules
+- **Performance Benchmarking**: Target < 50ms response time
+- **Mock-based Testing**: Prevent external dependencies in tests
+
+### Security Standards
+- **Bandit**: Medium/High severity only (-ll flag)
+- **Safety**: Dependency vulnerability scanning
+- **No Hardcoded Secrets**: Use environment variables
+- **Input Validation**: All user inputs must be validated
+- **SQL Injection Prevention**: Use parameterized queries
+
 ## Critical Implementation Notes
 
 ### Cache Configuration
@@ -582,6 +563,17 @@ Preserve original detection dates from source data:
 if isinstance(detection_date_raw, pd.Timestamp):
     detection_date = detection_date_raw.strftime('%Y-%m-%d')
 # NOT: detection_date = datetime.now().strftime('%Y-%m-%d')
+```
+
+### Error Handling Pattern
+Use common error handlers from `src/core/common/error_handlers.py`:
+```python
+from src.core.common import handle_api_errors, safe_execute
+
+@handle_api_errors
+def api_endpoint():
+    result = safe_execute(risky_operation, default_value={})
+    return jsonify(result)
 ```
 
 ### Environment Variables
@@ -639,16 +631,12 @@ HELM_REPO_PASSWORD    # ChartMuseum password
 DEPLOYMENT_WEBHOOK_URL # Optional webhook for deployment notifications
 ```
 
-### Registry Path Configuration (CRITICAL ISSUE)
-**Current Mismatch**:
+### Registry Path Configuration
+**Fixed Configuration** (as of 2025-07-23):
 - CI/CD Pipeline pushes to: `registry.jclee.me/jclee94/blacklist:latest`
-- Helm chart expects: `registry.jclee.me/blacklist:latest`
-- Result: New pods cannot pull images, causing `ImagePullBackOff` errors
-
-**Resolution Options**:
-1. **Update CI/CD** (Recommended): Change `IMAGE_NAME` to `blacklist` instead of `jclee94/blacklist`
-2. **Update Helm Chart**: Change image path to include `jclee94/` prefix
-3. **Registry Alias**: Configure registry to alias both paths
+- Helm chart updated to: `registry.jclee.me/jclee94/blacklist:latest`
+- Registry credentials: admin/bingogo1
+- Status: ✅ Working correctly
 
 ### Date Parameters for REGTECH
 REGTECH collector requires startDate and endDate parameters:
@@ -665,50 +653,34 @@ collector.collect_from_web(start_date='20250601', end_date='20250620')
 
 ## Troubleshooting
 
-### 🚨 Current Critical Issues (2025-07-23)
+### External Access 502 Issue (Current)
 
-**PRIORITY 1: Registry Image Pull Failures**
+**Status**: External domain `https://blacklist.jclee.me` returns 502 from reverse proxy
+
+**Working Access Points**:
 ```bash
-# Check failing pods
-kubectl get pods -n blacklist | grep ImagePullBackOff
+# NodePort access (✅ Working)
+curl http://192.168.50.110:32452/health
 
-# View detailed error
-kubectl describe pod <failing-pod-name> -n blacklist
-
-# Quick fix - update deployment image
-kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:latest -n blacklist
-
-# Verify fix
-kubectl rollout status deployment/blacklist -n blacklist
+# Internal service test
+kubectl run test-curl --image=curlimages/curl:latest --rm -it -- \
+  curl http://blacklist-service.blacklist.svc.cluster.local:80/health
 ```
 
-**PRIORITY 2: External 502 Access Issues**
+**Troubleshooting External Access**:
 ```bash
-# Test local access (should work)
-curl http://192.168.50.110:32542/health
-
-# Test ingress routing (should work)  
-curl -k -H "Host: blacklist.jclee.me" https://192.168.50.110/health
-
-# Test external domain (currently fails with 502)
-curl -k https://blacklist.jclee.me/health
-
-# Check ingress status
+# Check ingress configuration
 kubectl get ingress -n blacklist
 kubectl describe ingress blacklist-ingress -n blacklist
+
+# Check service endpoints
+kubectl get endpoints blacklist-service -n blacklist
+
+# Verify pod health
+kubectl get pods -n blacklist -o wide
 ```
 
-**PRIORITY 3: ArgoCD Sync Recovery**
-```bash
-# Check ArgoCD application status
-argocd app get blacklist --grpc-web
-
-# Force sync to fix "Unknown" status
-argocd app sync blacklist --force --grpc-web
-
-# Monitor sync progress
-argocd app wait blacklist --sync --timeout 300
-```
+**Note**: The external reverse proxy (openresty) configuration is outside the Kubernetes cluster and needs to be checked separately.
 
 ### Common Issues and Solutions
 
@@ -977,28 +949,42 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
 - Security scanning integration with CI/CD pipeline
 - Performance benchmarking and monitoring strategies
 
-## Recent Implementations (2025.07.15)
+## Recent Implementations (2025.07.23)
 
-### GitOps Template Pipeline Implementation
-**Complete CI/CD Pipeline** (`.github/workflows/gitops-template.yml`):
-- Comprehensive CI/CD workflow with GitOps best practices
-- Multi-stage deployment with environment-specific configurations
-- Parallel quality checks and testing with matrix strategy
-- Automatic offline package generation for air-gapped environments
-- ArgoCD Image Updater integration for automatic deployments
-- Helm chart management with ChartMuseum integration
+### Configuration Template System
+**Complete Environment-based Configuration**:
+- Created modular configuration system in `config/` directory
+- Environment files: `dev.env`, `staging.env`, `prod.env`
+- Template files for ArgoCD, Kubernetes manifests
+- Dynamic configuration management script: `scripts/config-manager.sh`
+- Eliminated all hardcoded values across the codebase
 
-**Key Features**:
-- **Pre-flight checks**: Smart deployment decisions based on branch/tag
-- **Parallel execution**: Code quality and tests run concurrently
-- **Multi-tag strategy**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
-- **Offline packages**: Complete deployment bundles for disconnected environments
-- **Health monitoring**: Post-deployment health checks with retries
-- **GitOps integration**: Automatic ArgoCD sync after successful builds
+**Key Components**:
+- **Environment Files**: Store all deployment-specific variables
+- **Template System**: Uses `envsubst` for dynamic substitution
+- **Validation**: Built-in configuration validation and backup
+- **Multi-environment**: Support for dev/staging/prod deployments
+
+### GitOps Pipeline Updates
+**Enhanced CI/CD Pipeline** (`.github/workflows/gitops-pipeline.yml`):
+- Comprehensive workflow with quality gates and parallel execution
+- Security scanning with Bandit and Safety
+- Helm chart auto-versioning and ChartMuseum integration
+- ArgoCD automatic deployment with post-validation
+- Support for emergency deployments (skip_tests option)
+
+**Pipeline Matrix Strategy**:
+```yaml
+strategy:
+  matrix:
+    check: [lint, security]
+    test-type: [unit, integration]
+  fail-fast: false
+```
 
 ### Private Registry Configuration
 **registry.jclee.me**:
-- Primary registry for all Docker images
+- Primary registry path: `registry.jclee.me/jclee94/blacklist`
 - No authentication required (public read access)
 - Configured with insecure registry support in buildx
 - Used by both CI/CD and ArgoCD Image Updater
@@ -1085,7 +1071,7 @@ config-inline: |
 - Detailed collector action tracking
 - Memory-based log storage with automatic rotation
 
-### Technology Stack
+## Technology Stack
 
 - **Backend**: Flask 2.3.3 + Gunicorn
 - **Database**: SQLite with auto-migration support
@@ -1097,6 +1083,8 @@ config-inline: |
 - **Monitoring**: Built-in performance metrics and health checks
 - **JSON**: orjson for high-performance serialization
 - **Data Processing**: pandas + openpyxl for Excel parsing
+- **Testing**: pytest + integration test suite with Rust-style inline tests
+- **Code Quality**: Black, isort, flake8, mypy, bandit, safety
 
 ## Quick Reference
 
@@ -1107,22 +1095,9 @@ python3 main.py --debug
 # Testing
 pytest -v
 
-# 🚨 CRITICAL FIXES (Current Issues)
-# Fix registry image pull failures
-kubectl set image deployment/blacklist blacklist=registry.jclee.me/blacklist:latest -n blacklist
-kubectl rollout status deployment/blacklist -n blacklist
-
-# Fix ArgoCD sync issues
-argocd app sync blacklist --force --grpc-web
-argocd app wait blacklist --sync --timeout 300
-
-# Test access points
-curl http://192.168.50.110:32542/health          # NodePort (should work)
-curl -k https://blacklist.jclee.me/health        # External (currently 502)
-
-# CI/CD Deployment (Recommended - currently has registry path issues)
+# CI/CD Deployment (Recommended)
 git add . && git commit -m "feat: your changes"
-git push origin main  # May fail due to registry mismatch
+git push origin main  # Triggers automatic GitOps deployment
 
 # Manual ArgoCD Deployment
 ./scripts/k8s-management.sh deploy

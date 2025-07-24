@@ -8,9 +8,9 @@ from .testing import TestingConfig
 from .factory import get_config
 
 __all__ = [
-    'BaseConfig',
-    'ProductionConfig', 
-    'DevelopmentConfig',
-    'TestingConfig',
-    'get_config'
+    "BaseConfig",
+    "ProductionConfig",
+    "DevelopmentConfig",
+    "TestingConfig",
+    "get_config",
 ]

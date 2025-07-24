@@ -6,8 +6,4 @@ from .base_source import BaseIPSource
 from .source_manager import IPSourceManager
 from .source_registry import SourceRegistry
 
-__all__ = [
-    'BaseIPSource',
-    'IPSourceManager', 
-    'SourceRegistry'
-]
+__all__ = ["BaseIPSource", "IPSourceManager", "SourceRegistry"]

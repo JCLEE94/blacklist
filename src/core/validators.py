@@ -9,7 +9,7 @@ from .common import (
     validate_ip as _validate_ip,
     sanitize_ip as _sanitize_ip,
     validate_ip_list as _validate_ip_list,
-    DateUtils
+    DateUtils,
 )
 
 
@@ -24,7 +24,9 @@ def validate_month_format(month: str) -> bool:
     return DateUtils.validate_month_format(month)
 
 
-def validate_ip_list(ip_list: List[str], max_count: int = 100) -> Tuple[List[str], List[str]]:
+def validate_ip_list(
+    ip_list: List[str], max_count: int = 100
+) -> Tuple[List[str], List[str]]:
     """
     IP 리스트 검증
     Returns: (valid_ips, invalid_ips)

@@ -9,62 +9,52 @@ Core business logic module for Blacklist Manager
 """
 # from .app_compact import create_compact_app  # Remove to avoid circular import
 # Import managers directly when needed to avoid circular imports
-# from .blacklist_unified import UnifiedBlacklistManager  
+# from .blacklist_unified import UnifiedBlacklistManager
 # from .routes_unified import UnifiedAPIRoutes
 from .database import DatabaseManager
 from .validators import (
     validate_ip,
     validate_ip_list,
     validate_month_format,
-    sanitize_ip
+    sanitize_ip,
 )
 from .constants import (
     DEFAULT_CACHE_TTL,
     DEFAULT_DATA_RETENTION_DAYS,
     API_VERSION,
-    SUPPORTED_IP_FORMATS
+    SUPPORTED_IP_FORMATS,
 )
 from .models import BlacklistEntry, SystemHealth, MonthData
-from .exceptions import (
-    BlacklistError,
-    ValidationError,
-    CacheError,
-    DatabaseError
-)
+from .exceptions import BlacklistError, ValidationError, CacheError, DatabaseError
 
 __all__ = [
     # Main application factory
     # 'create_compact_app',  # Remove to avoid circular import
-    
     # Core managers
     # 'UnifiedBlacklistManager',
-    # 'UnifiedAPIRoutes', 
-    'DatabaseManager',
-    
+    # 'UnifiedAPIRoutes',
+    "DatabaseManager",
     # Validators
-    'validate_ip',
-    'validate_ip_list',
-    'validate_month_format',
-    'sanitize_ip',
-    
+    "validate_ip",
+    "validate_ip_list",
+    "validate_month_format",
+    "sanitize_ip",
     # Constants
-    'DEFAULT_CACHE_TTL',
-    'DEFAULT_DATA_RETENTION_DAYS',
-    'API_VERSION',
-    'SUPPORTED_IP_FORMATS',
-    
+    "DEFAULT_CACHE_TTL",
+    "DEFAULT_DATA_RETENTION_DAYS",
+    "API_VERSION",
+    "SUPPORTED_IP_FORMATS",
     # Models
-    'BlacklistEntry',
-    'SystemHealth',
-    'MonthData',
-    
+    "BlacklistEntry",
+    "SystemHealth",
+    "MonthData",
     # Exceptions
-    'BlacklistError',
-    'ValidationError',
-    'CacheError',
-    'DatabaseError'
+    "BlacklistError",
+    "ValidationError",
+    "CacheError",
+    "DatabaseError",
 ]
 
-__version__ = '2.1.2-unified'
-__author__ = 'Blacklist Team'
-__description__ = 'Unified Blacklist Management System Core'
+__version__ = "2.1.2-unified"
+__author__ = "Blacklist Team"
+__description__ = "Unified Blacklist Management System Core"
