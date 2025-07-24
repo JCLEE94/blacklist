@@ -13,24 +13,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Multi-layered Entry Points**: `main.py` → `src/core/app_compact.py` → fallback chain for maximum compatibility
 - **Plugin-based IP Sources**: Extensible source system in `src/core/ip_sources/`
 - **Container-First**: Docker/Podman deployment with automated CI/CD
-- **Configuration Template System**: Environment-based deployments with dynamic configuration
 
 **Production Infrastructure:**
-- Docker Registry: `registry.jclee.me` (Private registry with public read access)
+- Docker Registry: Private registry (configure based on your setup)
 - Kubernetes Clusters: 
   - Primary: Self-hosted k3s/k8s (local)
-  - Secondary: Remote server `192.168.50.110`
-- ArgoCD Server: `argo.jclee.me`
-- Default Ports: DEV=8541, PROD=2541, NodePort=32452
-- Auto-deployment: ArgoCD Image Updater monitors registry every 2 minutes
-- Production URL: `https://blacklist.jclee.me`
-- Timezone: KST (Asia/Seoul)
+  - Secondary: Remote server (configure as needed)
+- ArgoCD Server: Configure based on your environment
+- Default Ports: DEV=8541, PROD=2541, NodePort=32542
+- Auto-deployment: ArgoCD Image Updater monitors registry
+- Production URL: Configure based on your domain
+- Timezone: Configure based on your location
 - Namespace: `blacklist`
 
 **Data Sources:**
-- REGTECH (Financial Security Institute) - Session-based auth, ~9,500 IPs ✅ Active
-- SECUDIUM - POST-based login with Excel download ❌ Disabled (authentication issues)
-- Public Threat Intelligence - Automated collection from various sources
+- REGTECH (Financial Security Institute) - Requires authentication, ~9,500 IPs ✅ Active
+- SECUDIUM - Standard authentication with POST-based login and Excel download ❌ Disabled (account issues)
+- Public Threat Intelligence - Automated collection
 
 ## Development Commands
 
@@ -42,7 +41,7 @@ cd blacklist
 
 # Copy environment template
 cp .env.example .env
-# Edit .env with your configuration (contains default values for jclee environment)
+# Edit .env with your configuration
 # IMPORTANT: Update credentials and URLs for your environment
 nano .env
 
@@ -72,9 +71,9 @@ gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application
 
 ### Container Operations
 ```bash
-# Build and push to registry (with correct path)
-docker build -f deployment/Dockerfile -t registry.jclee.me/jclee94/blacklist:latest .
-docker push registry.jclee.me/jclee94/blacklist:latest
+# Build and push to registry
+docker build -f deployment/Dockerfile -t your-registry/blacklist:latest .
+docker push your-registry/blacklist:latest
 
 # Local container development
 docker-compose -f deployment/docker-compose.yml up -d --build
@@ -89,23 +88,18 @@ docker-compose -f deployment/docker-compose.yml down
 docker-compose -f deployment/docker-compose.yml up -d
 ```
 
-### ArgoCD 완전 자동화 설정
+### ArgoCD Setup
 ```bash
-# ArgoCD + GitHub + Private Registry 완전 자동화 설정
+# ArgoCD + GitHub + Private Registry setup
 ./scripts/setup/argocd-complete-setup.sh
 
-# 필요한 환경 변수들이 스크립트에 미리 설정되어 있음:
-# - ARGOCD_API_TOKEN: ArgoCD API 토큰
-# - GITHUB_TOKEN: GitHub 개인 액세스 토큰
-# - REGISTRY 인증 정보: Private registry 접근
-
-# 실행 후 자동으로 설정되는 항목들:
-# 1. GitHub Repository 연동 (Private 저장소 지원)
-# 2. Private Registry Secret 생성
-# 3. ArgoCD Image Updater 설정
-# 4. ArgoCD Application 생성
-# 5. CI/CD 파이프라인 워크플로우 생성
-# 6. GitHub Actions Secrets 설정 안내
+# This script automatically configures:
+# 1. GitHub Repository integration (Private repos supported)
+# 2. Private Registry Secret creation
+# 3. ArgoCD Image Updater configuration
+# 4. ArgoCD Application creation
+# 5. CI/CD pipeline workflow generation
+# 6. GitHub Actions Secrets setup guidance
 ```
 
 ### Kubernetes Operations (ArgoCD GitOps)
@@ -151,12 +145,11 @@ kubectl exec -it deployment/blacklist -n blacklist -- /bin/bash
 # Rolling restart
 kubectl rollout restart deployment/blacklist -n blacklist
 
-
 # Registry secret management
 kubectl create secret docker-registry regcred \
-  --docker-server=registry.jclee.me \
-  --docker-username=admin \
-  --docker-password=bingogo1 \
+  --docker-server=your-registry \
+  --docker-username=your-username \
+  --docker-password=your-password \
   --namespace=blacklist
 ```
 
@@ -367,40 +360,22 @@ class BaseIPSource(ABC):
 
 ### CI/CD Pipeline (ArgoCD GitOps)
 
-**GitHub Actions Workflow** (`.github/workflows/gitops-pipeline.yml`):
-1. **Parallel Quality Checks**: Lint, security scan, tests (matrix strategy)
-2. **Docker Build**: Multi-stage build with caching to `registry.jclee.me/jclee94/blacklist`
-3. **Multi-tag Push**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
-4. **Helm Chart Management**: Auto-versioning and push to ChartMuseum
-5. **ArgoCD Deployment**: Automatic application creation and sync
-6. **Post-deployment Validation**: Health checks and integration tests
-7. **Cleanup**: Automatic old image pruning
-
-**Pipeline Configuration**:
-```yaml
-# Key environment variables
-REGISTRY: registry.jclee.me
-IMAGE_NAME: blacklist
-NAMESPACE: blacklist
-ARGOCD_SERVER: argo.jclee.me
-CHARTMUSEUM_URL: https://charts.jclee.me
-```
-
-**Security Features**:
-- **Quality Gates**: Bandit, Safety, Flake8, Black, isort
-- **Continue on Error**: Non-blocking quality checks
-- **JSON Reports**: Structured security scan outputs
-- **Severity Filtering**: Medium/High issues only
+**GitHub Actions Workflow** (`.github/workflows/gitops-cicd.yml`):
+1. **Build & Push**: Docker image to registry
+2. **Multi-tag Strategy**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
+3. **ArgoCD Image Updater**: Automatically detects and deploys new images
+4. **Health Checks**: Post-deployment verification
+5. **No Artifact Uploads**: Avoids GitHub storage quota issues
 
 **Deployment Flow**:
 ```
-Push to main → Quality Checks (parallel) → Tests (parallel) → Build & Push → Helm Package → ArgoCD Deploy → Validate
+Push to main → GitHub Actions → Build & Push → ArgoCD Auto Deploy
 ```
 
-**Self-hosted Runner Requirements**:
+**Self-hosted Runner Compatibility**:
 ```yaml
 runs-on: self-hosted
-# MUST use these specific versions for compatibility:
+# Must use these specific versions:
 - uses: actions/checkout@v3         # NOT v4
 - uses: docker/setup-buildx-action@v2  # NOT v3
 - uses: docker/build-push-action@v4    # NOT v5
@@ -469,7 +444,7 @@ runs-on: self-hosted
 - Triggers GitOps sync
 
 **multi-deploy.sh** - Multi-server parallel deployment:
-- Deploys to local and remote (192.168.50.110) simultaneously
+- Deploys to local and remote simultaneously
 - Real-time progress monitoring
 - Automatic project file sync via rsync
 - ArgoCD sync on both clusters
@@ -490,13 +465,13 @@ runs-on: self-hosted
 - Supports: kubernetes, docker, production, local
 - ArgoCD GitOps for Kubernetes deployments
 
-**argocd-complete-setup.sh** - ArgoCD 완전 자동화 설정:
-- GitHub Repository 연동 (Private 저장소 지원)
-- Private Registry Secret 자동 생성
-- ArgoCD Image Updater 설정
-- ArgoCD Application 생성 및 자동 동기화
-- CI/CD 파이프라인 워크플로우 생성
-- 중복 실행 방지로 안전한 반복 실행
+**argocd-complete-setup.sh** - ArgoCD automation setup:
+- GitHub Repository integration (Private repos supported)
+- Private Registry Secret auto-creation
+- ArgoCD Image Updater configuration
+- ArgoCD Application creation and auto-sync
+- CI/CD pipeline workflow generation
+- Duplicate run prevention for safe re-execution
 
 ### Remote Server Setup
 
@@ -511,28 +486,6 @@ runs-on: self-hosted
 - Tool availability verification
 - Kubernetes cluster status
 - Deployment health check
-
-## Code Quality and Testing Standards
-
-### Code Formatting
-- **Black**: Line length 88, automatic formatting
-- **isort**: Import sorting with Black compatibility
-- **flake8**: Max line length 88, ignore E203,W503 for Black
-- **mypy**: Type checking with --ignore-missing-imports
-
-### Testing Strategy
-- **Unit Tests**: `tests/unit/` - Individual component testing
-- **Integration Tests**: `tests/integration/` - End-to-end API testing
-- **Inline Tests**: Rust-style `_test_*_inline()` functions in modules
-- **Performance Benchmarking**: Target < 50ms response time
-- **Mock-based Testing**: Prevent external dependencies in tests
-
-### Security Standards
-- **Bandit**: Medium/High severity only (-ll flag)
-- **Safety**: Dependency vulnerability scanning
-- **No Hardcoded Secrets**: Use environment variables
-- **Input Validation**: All user inputs must be validated
-- **SQL Injection Prevention**: Use parameterized queries
 
 ## Critical Implementation Notes
 
@@ -565,25 +518,14 @@ if isinstance(detection_date_raw, pd.Timestamp):
 # NOT: detection_date = datetime.now().strftime('%Y-%m-%d')
 ```
 
-### Error Handling Pattern
-Use common error handlers from `src/core/common/error_handlers.py`:
-```python
-from src.core.common import handle_api_errors, safe_execute
-
-@handle_api_errors
-def api_endpoint():
-    result = safe_execute(risky_operation, default_value={})
-    return jsonify(result)
-```
-
 ### Environment Variables
 Required for production deployment:
 ```bash
 # Authentication credentials (store in Kubernetes secrets)
-REGTECH_USERNAME=nextrade
-REGTECH_PASSWORD=Sprtmxm1@3
-SECUDIUM_USERNAME=nextrade  
-SECUDIUM_PASSWORD=Sprtmxm1@3
+REGTECH_USERNAME=your-username
+REGTECH_PASSWORD=your-password
+SECUDIUM_USERNAME=your-username
+SECUDIUM_PASSWORD=your-password
 
 # Application configuration
 PORT=8541               # Application port
@@ -595,19 +537,19 @@ JWT_SECRET_KEY=jwt-secret    # JWT token signing
 API_SECRET_KEY=api-secret    # API key generation
 
 # Docker Registry (for CI/CD)
-REGISTRY_URL=registry.jclee.me     # Private registry URL
-DOCKER_REGISTRY_USER=admin         # Registry username
-DOCKER_REGISTRY_PASS=bingogo1      # Registry password
+REGISTRY_URL=your-registry     # Private registry URL
+DOCKER_REGISTRY_USER=username  # Registry username
+DOCKER_REGISTRY_PASS=password  # Registry password
 
 # ArgoCD Configuration
-ARGOCD_SERVER=argo.jclee.me       # ArgoCD server
-ARGOCD_USERNAME=admin              # ArgoCD username
-ARGOCD_PASSWORD=bingogo1           # ArgoCD password
+ARGOCD_SERVER=argo.your-domain   # ArgoCD server
+ARGOCD_USERNAME=admin             # ArgoCD username
+ARGOCD_PASSWORD=password          # ArgoCD password
 
 # ChartMuseum Configuration  
-CHARTS_URL=https://charts.jclee.me # Helm chart repository
-HELM_REPO_USERNAME=admin           # ChartMuseum username
-HELM_REPO_PASSWORD=bingogo1        # ChartMuseum password
+CHARTS_URL=https://charts.your-domain # Helm chart repository
+HELM_REPO_USERNAME=admin              # ChartMuseum username
+HELM_REPO_PASSWORD=password           # ChartMuseum password
 
 # Cloudflare Tunnel (optional)
 ENABLE_CLOUDFLARED=false            # Enable Cloudflare Tunnel deployment
@@ -619,7 +561,7 @@ CLOUDFLARE_HOSTNAME=blacklist.yourdomain.com  # External hostname
 Required for CI/CD pipeline:
 ```bash
 # Set these in GitHub Settings → Secrets and variables → Actions
-REGISTRY_URL           # Private registry URL (default: registry.jclee.me)
+REGISTRY_URL           # Private registry URL
 DOCKER_REGISTRY_USER   # Registry username  
 DOCKER_REGISTRY_PASS   # Registry password
 ARGOCD_SERVER         # ArgoCD server URL
@@ -630,13 +572,6 @@ HELM_REPO_USERNAME    # ChartMuseum username
 HELM_REPO_PASSWORD    # ChartMuseum password
 DEPLOYMENT_WEBHOOK_URL # Optional webhook for deployment notifications
 ```
-
-### Registry Path Configuration
-**Fixed Configuration** (as of 2025-07-23):
-- CI/CD Pipeline pushes to: `registry.jclee.me/jclee94/blacklist:latest`
-- Helm chart updated to: `registry.jclee.me/jclee94/blacklist:latest`
-- Registry credentials: admin/bingogo1
-- Status: ✅ Working correctly
 
 ### Date Parameters for REGTECH
 REGTECH collector requires startDate and endDate parameters:
@@ -652,35 +587,6 @@ collector.collect_from_web(start_date='20250601', end_date='20250620')
 - Located at `/app/instance/blacklist.db` in containers
 
 ## Troubleshooting
-
-### External Access 502 Issue (Current)
-
-**Status**: External domain `https://blacklist.jclee.me` returns 502 from reverse proxy
-
-**Working Access Points**:
-```bash
-# NodePort access (✅ Working)
-curl http://192.168.50.110:32452/health
-
-# Internal service test
-kubectl run test-curl --image=curlimages/curl:latest --rm -it -- \
-  curl http://blacklist-service.blacklist.svc.cluster.local:80/health
-```
-
-**Troubleshooting External Access**:
-```bash
-# Check ingress configuration
-kubectl get ingress -n blacklist
-kubectl describe ingress blacklist-ingress -n blacklist
-
-# Check service endpoints
-kubectl get endpoints blacklist-service -n blacklist
-
-# Verify pod health
-kubectl get pods -n blacklist -o wide
-```
-
-**Note**: The external reverse proxy (openresty) configuration is outside the Kubernetes cluster and needs to be checked separately.
 
 ### Common Issues and Solutions
 
@@ -759,13 +665,13 @@ kubectl get application blacklist -n argocd -o yaml
 **Multi-Server Deployment Issues**:
 ```bash
 # Check remote server connectivity
-ssh jclee@192.168.50.110 "echo Connected"
+ssh user@remote-server "echo Connected"
 
 # Verify remote tools
 ./scripts/check-remote-status.sh
 
 # Check remote deployment
-ssh jclee@192.168.50.110 "kubectl get pods -n blacklist"
+ssh user@remote-server "kubectl get pods -n blacklist"
 
 # Re-run remote setup if needed
 ./scripts/setup/remote-server-setup.sh
@@ -819,7 +725,7 @@ docker logs blacklist -f
 argocd app logs blacklist --grpc-web
 
 # Remote server logs
-ssh jclee@192.168.50.110 "kubectl logs -f deployment/blacklist -n blacklist"
+ssh user@remote-server "kubectl logs -f deployment/blacklist -n blacklist"
 ```
 
 ### Offline Package Deployment
@@ -899,6 +805,24 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
     }
 ```
 
+## Recent Implementations (2025.07.24)
+
+### CI/CD Pipeline Optimization
+**GitHub Actions Artifact Storage Fix**:
+- Removed artifact uploads from CI/CD pipeline to avoid storage quota issues
+- Created streamlined workflow (`gitops-cicd.yml`) focused on build and deploy only
+- Created artifact cleanup script to manage existing artifacts
+- Result: Pipeline now runs successfully without hitting quota limits
+
+### Code Cleanup Completion
+**Code Quality Improvements**:
+- Black formatting applied to all Python files (4 files reformatted)
+- isort import sorting fixed (60+ files)
+- Flake8 issues reduced from 425 to 315 (26% reduction)
+- Fixed critical issues: undefined names, bare except clauses, duplicate functions
+- Organized file structure: moved test/debug files from root to appropriate directories
+- Removed duplicate and temporary files
+
 ## Recent Implementations (2025.01.12)
 
 ### Integration Testing Suite Implementation
@@ -918,7 +842,7 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
 
 ### Enhanced CI/CD Pipeline and Security
 **Registry Configuration Alignment**:
-- Fixed critical registry mismatch between CI/CD and ArgoCD (now both use registry.jclee.me)
+- Fixed critical registry mismatch between CI/CD and ArgoCD
 - Updated all Kubernetes manifests and ArgoCD Image Updater configuration
 - Resolved automatic deployment issues - GitOps now works seamlessly
 
@@ -949,42 +873,28 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
 - Security scanning integration with CI/CD pipeline
 - Performance benchmarking and monitoring strategies
 
-## Recent Implementations (2025.07.23)
+## Recent Implementations (2025.07.15)
 
-### Configuration Template System
-**Complete Environment-based Configuration**:
-- Created modular configuration system in `config/` directory
-- Environment files: `dev.env`, `staging.env`, `prod.env`
-- Template files for ArgoCD, Kubernetes manifests
-- Dynamic configuration management script: `scripts/config-manager.sh`
-- Eliminated all hardcoded values across the codebase
+### GitOps Template Pipeline Implementation
+**Complete CI/CD Pipeline** (`.github/workflows/gitops-template.yml`):
+- Comprehensive CI/CD workflow with GitOps best practices
+- Multi-stage deployment with environment-specific configurations
+- Parallel quality checks and testing with matrix strategy
+- Automatic offline package generation for air-gapped environments
+- ArgoCD Image Updater integration for automatic deployments
+- Helm chart management with ChartMuseum integration
 
-**Key Components**:
-- **Environment Files**: Store all deployment-specific variables
-- **Template System**: Uses `envsubst` for dynamic substitution
-- **Validation**: Built-in configuration validation and backup
-- **Multi-environment**: Support for dev/staging/prod deployments
-
-### GitOps Pipeline Updates
-**Enhanced CI/CD Pipeline** (`.github/workflows/gitops-pipeline.yml`):
-- Comprehensive workflow with quality gates and parallel execution
-- Security scanning with Bandit and Safety
-- Helm chart auto-versioning and ChartMuseum integration
-- ArgoCD automatic deployment with post-validation
-- Support for emergency deployments (skip_tests option)
-
-**Pipeline Matrix Strategy**:
-```yaml
-strategy:
-  matrix:
-    check: [lint, security]
-    test-type: [unit, integration]
-  fail-fast: false
-```
+**Key Features**:
+- **Pre-flight checks**: Smart deployment decisions based on branch/tag
+- **Parallel execution**: Code quality and tests run concurrently
+- **Multi-tag strategy**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
+- **Offline packages**: Complete deployment bundles for disconnected environments
+- **Health monitoring**: Post-deployment health checks with retries
+- **GitOps integration**: Automatic ArgoCD sync after successful builds
 
 ### Private Registry Configuration
 **registry.jclee.me**:
-- Primary registry path: `registry.jclee.me/jclee94/blacklist`
+- Primary registry for all Docker images
 - No authentication required (public read access)
 - Configured with insecure registry support in buildx
 - Used by both CI/CD and ArgoCD Image Updater
@@ -1013,7 +923,7 @@ config-inline: |
 - `.github/workflows/argocd-deploy.yml` - CI/CD with multi-tag push
 
 ### Multi-Server Deployment
-**Remote Server Support** (192.168.50.110):
+**Remote Server Support**:
 - Automated SSH key setup and tool installation
 - Parallel deployment to multiple clusters
 - Real-time deployment monitoring
@@ -1071,7 +981,7 @@ config-inline: |
 - Detailed collector action tracking
 - Memory-based log storage with automatic rotation
 
-## Technology Stack
+### Technology Stack
 
 - **Backend**: Flask 2.3.3 + Gunicorn
 - **Database**: SQLite with auto-migration support
@@ -1083,8 +993,6 @@ config-inline: |
 - **Monitoring**: Built-in performance metrics and health checks
 - **JSON**: orjson for high-performance serialization
 - **Data Processing**: pandas + openpyxl for Excel parsing
-- **Testing**: pytest + integration test suite with Rust-style inline tests
-- **Code Quality**: Black, isort, flake8, mypy, bandit, safety
 
 ## Quick Reference
 
@@ -1103,7 +1011,7 @@ git push origin main  # Triggers automatic GitOps deployment
 ./scripts/k8s-management.sh deploy
 
 # Multi-Server Deployment
-./scripts/multi-deploy.sh  # Deploy to local + 192.168.50.110
+./scripts/multi-deploy.sh  # Deploy to local + remote
 
 # Health Check (Local)
 curl http://localhost:8541/health
