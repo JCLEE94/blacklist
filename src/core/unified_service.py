@@ -50,7 +50,7 @@ class UnifiedBlacklistService:
             "auto_collection": os.getenv("AUTO_COLLECTION", "true").lower() == "true",
             "collection_interval": int(os.getenv("COLLECTION_INTERVAL", 3600)),
             "service_name": "blacklist-unified",
-            "version": "3.0.2-auto-deploy",
+            "version": "3.0.3-cicd-test",
         }
 
         # 수집 로그 저장 (메모리, 최대 1000개)
