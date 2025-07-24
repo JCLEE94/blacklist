@@ -1,0 +1,26 @@
+name: Simple Test Workflow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Simple Test
+    runs-on: ubuntu-latest  # GitHub-hosted runner 사용
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: Test Echo
+        run: |
+          echo "✅ GitHub-hosted runner is working!"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref }}"
+          
+      - name: Python Version
+        run: python3 --version
+        
+      - name: Docker Version
+        run: docker --version

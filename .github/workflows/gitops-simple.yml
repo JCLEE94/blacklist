@@ -1,0 +1,147 @@
+name: GitOps Simple Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ${{ secrets.REGISTRY_URL || 'registry.jclee.me' }}
+  IMAGE_NAME: blacklist
+  NAMESPACE: blacklist
+
+jobs:
+  # 빌드 및 푸시
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME || 'admin' }}
+          password: ${{ secrets.REGISTRY_PASSWORD || 'admin' }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+
+  # 오프라인 패키지 생성
+  offline-package:
+    name: Generate Offline Package
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME || 'admin' }}
+          password: ${{ secrets.REGISTRY_PASSWORD || 'admin' }}
+
+      - name: Create Offline Package
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          PACKAGE_NAME="blacklist-offline-${TIMESTAMP}"
+          PACKAGE_DIR="${PACKAGE_NAME}"
+          
+          echo "📦 Creating offline package: $PACKAGE_NAME"
+          mkdir -p "${PACKAGE_DIR}"/{docker,source,helm,scripts,docs}
+          
+          # Docker 이미지 내보내기
+          IMAGE_TAG="${{ needs.build.outputs.version }}"
+          FULL_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          
+          echo "🐳 Pulling and exporting Docker image..."
+          docker pull "${FULL_IMAGE}"
+          docker save "${FULL_IMAGE}" | gzip > "${PACKAGE_DIR}/docker/blacklist-image.tar.gz"
+          
+          # 소스 코드 패키징
+          echo "📝 Packaging source code..."
+          tar -czf "${PACKAGE_DIR}/source/blacklist-source.tar.gz" \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.pytest_cache' \
+            --exclude='venv' \
+            .
+          
+          # 설치 스크립트 생성
+          cat > "${PACKAGE_DIR}/scripts/install.sh" << 'EOF'
+          #!/bin/bash
+          echo "🚀 Loading Docker image..."
+          docker load < ../docker/blacklist-image.tar.gz
+          echo "✅ Installation complete!"
+          EOF
+          chmod +x "${PACKAGE_DIR}/scripts/install.sh"
+          
+          # 패키지 압축
+          tar -czf "${PACKAGE_NAME}.tar.gz" "${PACKAGE_DIR}/"
+          
+          echo "✅ Package created: ${PACKAGE_NAME}.tar.gz"
+          echo "📏 Size: $(du -h ${PACKAGE_NAME}.tar.gz | cut -f1)"
+
+      - name: Upload Offline Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: offline-package
+          path: blacklist-offline-*.tar.gz
+          retention-days: 30
+
+      - name: Create Release (for tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: blacklist-offline-*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 배포 상태 알림
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [build, offline-package]
+    if: always()
+    steps:
+      - name: Send Notification
+        run: |
+          echo "🎉 Deployment Status:"
+          echo "- Build: ${{ needs.build.result }}"
+          echo "- Offline Package: ${{ needs.offline-package.result }}"
+          echo "- Version: ${{ needs.build.outputs.version }}"
