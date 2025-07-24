@@ -1,4 +1,4 @@
-name: Auto Deploy CI/CD
+name: Deploy CI/CD
 on:
   push:
     branches: [main]
@@ -51,3 +51,10 @@ jobs:
           kubectl annotate deployment blacklist -n blacklist \
             kubernetes.io/change-cause="Auto deploy: ${{ steps.meta.outputs.sha_short }}" \
             --overwrite
+          
+          # ArgoCD Image Updater가 최신 이미지를 감지하도록 트리거
+          echo "Deployment triggered at $(date)"
+          echo "Image tags pushed:"
+          echo "  - registry.jclee.me/jclee94/blacklist:latest"
+          echo "  - registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.sha_short }}"
+          echo "  - registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.date }}"
