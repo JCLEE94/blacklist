@@ -1,0 +1,46 @@
+name: Auto Deploy CI/CD
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          config-inline: |
+            [registry."registry.jclee.me"]
+              http = true
+              insecure = true
+      
+      - name: Generate build metadata
+        id: meta
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployment/Dockerfile
+          push: true
+          tags: |
+            registry.jclee.me/jclee94/blacklist:latest
+            registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.sha_short }}
+            registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.date }}
+          build-args: |
+            BUILD_DATE=${{ steps.meta.outputs.date }}
+            VCS_REF=${{ steps.meta.outputs.sha_short }}
+      
+      - name: Update Kubernetes deployment
+        run: |
+          # ArgoCD가 자동으로 감지하도록 annotation 업데이트
+          kubectl annotate deployment blacklist -n blacklist \
+            kubernetes.io/change-cause="Auto deploy: ${{ steps.meta.outputs.sha_short }}" \
+            --overwrite
