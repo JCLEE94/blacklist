@@ -3,9 +3,10 @@
 모든 하드코딩된 값을 환경변수로 관리
 """
 import os
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import timedelta
+from pathlib import Path
+from typing import Any, Dict
+
 from dotenv import load_dotenv
 
 # .env 파일 로드

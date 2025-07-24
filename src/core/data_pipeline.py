@@ -3,16 +3,16 @@
 Data Processing Pipeline
 수집기에서 DB로 데이터 정제 및 처리 파이프라인
 
-SECUDIUM, REGTECH 수집기의 원시 데이터를 정제하여 
+SECUDIUM, REGTECH 수집기의 원시 데이터를 정제하여
 통합 블랙리스트 DB에 저장하는 파이프라인입니다.
 """
-import logging
-import ipaddress
 import hashlib
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Set, Tuple
-from pathlib import Path
+import ipaddress
+import logging
 import re
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -346,7 +346,7 @@ class DataCleaningPipeline:
                 score += 10
             elif days_ago <= 30:
                 score += 5
-        except:
+        except Exception:
             pass
 
         return min(max(score, 0), 100)  # 0-100 범위로 제한

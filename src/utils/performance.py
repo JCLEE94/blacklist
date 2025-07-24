@@ -1,21 +1,22 @@
 """
 고급 성능 모니터링 및 최적화 모듈
 """
-import time
-import psutil
-import threading
-import logging
-import functools
-from typing import Dict, List, Callable, Any, Optional
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
-from collections import defaultdict, deque
-from contextlib import contextmanager
-import sqlite3
-import json
-import os
 import asyncio
+import functools
+import json
+import logging
+import os
+import sqlite3
+import threading
+import time
+from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Optional
+
+import psutil
 
 try:
     import orjson
@@ -682,8 +683,9 @@ def benchmark_api_endpoints(
     base_url: str = "http://localhost:2541", iterations: int = 100
 ) -> Dict[str, Any]:
     """API 엔드포인트 벤치마크"""
-    import requests
     import statistics
+
+    import requests
 
     endpoints = [
         "/health",

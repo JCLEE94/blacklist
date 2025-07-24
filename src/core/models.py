@@ -3,11 +3,11 @@
 
 시스템에서 사용하는 모든 데이터 구조와 모델을 정의합니다.
 """
+import json
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
 from enum import Enum
-import json
+from typing import Any, Dict, List, Optional, Union
 
 
 class HealthStatus(Enum):

@@ -4,15 +4,15 @@
 JSON 형식의 구조화된 로그와 중앙 집중형 로깅 관리
 """
 
+import json
 import logging
 import logging.handlers
-import json
-import sys
 import os
-from datetime import datetime
-from typing import Dict, Any, Optional, Union
-from pathlib import Path
+import sys
 import traceback
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
 
 try:
     from pythonjsonlogger import jsonlogger
@@ -20,9 +20,9 @@ try:
     HAS_JSON_LOGGER = True
 except ImportError:
     HAS_JSON_LOGGER = False
+import sqlite3
 import threading
 from collections import deque
-import sqlite3
 
 
 class StructuredLogger:
@@ -141,14 +141,14 @@ class StructuredLogger:
 
         cursor.execute(
             """
-            CREATE INDEX IF NOT EXISTS idx_logs_timestamp 
+            CREATE INDEX IF NOT EXISTS idx_logs_timestamp
             ON structured_logs(timestamp)
         """
         )
 
         cursor.execute(
             """
-            CREATE INDEX IF NOT EXISTS idx_logs_level 
+            CREATE INDEX IF NOT EXISTS idx_logs_level
             ON structured_logs(level)
         """
         )
@@ -165,7 +165,7 @@ class StructuredLogger:
 
             cursor.execute(
                 """
-                INSERT INTO structured_logs 
+                INSERT INTO structured_logs
                 (timestamp, level, logger_name, message, context, traceback)
                 VALUES (?, ?, ?, ?, ?, ?)
             """,
@@ -213,7 +213,7 @@ class StructuredLogger:
 
         # 요청 컨텍스트 추가
         try:
-            from flask import request, g
+            from flask import g, request
 
             if request:
                 record["context"]["request"] = {
@@ -411,6 +411,7 @@ def get_logger(name: str) -> StructuredLogger:
 def setup_request_logging(app):
     """Flask 요청 로깅 설정"""
     import uuid
+
     from flask import g, request
 
     logger = get_logger("request")

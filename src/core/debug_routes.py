@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Debug routes for API testing"""
 
-from flask import Blueprint, jsonify, request
-import sqlite3
 import logging
+import sqlite3
+
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,9 @@ def raw_source_check():
         # 소스별 통계
         cursor.execute(
             """
-            SELECT source, COUNT(*) as count 
-            FROM blacklist_ip 
-            WHERE is_active = 1 
+            SELECT source, COUNT(*) as count
+            FROM blacklist_ip
+            WHERE is_active = 1
             GROUP BY source
         """
         )
@@ -34,10 +35,10 @@ def raw_source_check():
         # 최근 5개 레코드 조회
         cursor.execute(
             """
-            SELECT ip, source, detection_date, created_at, attack_type, country 
-            FROM blacklist_ip 
-            WHERE is_active = 1 
-            ORDER BY created_at DESC 
+            SELECT ip, source, detection_date, created_at, attack_type, country
+            FROM blacklist_ip
+            WHERE is_active = 1
+            ORDER BY created_at DESC
             LIMIT 5
         """
         )
@@ -57,9 +58,9 @@ def raw_source_check():
         # REGTECH 데이터 샘플
         cursor.execute(
             """
-            SELECT ip, source, detection_date 
-            FROM blacklist_ip 
-            WHERE source = 'REGTECH' AND is_active = 1 
+            SELECT ip, source, detection_date
+            FROM blacklist_ip
+            WHERE source = 'REGTECH' AND is_active = 1
             LIMIT 3
         """
         )
@@ -76,9 +77,9 @@ def raw_source_check():
         # SECUDIUM 데이터 샘플
         cursor.execute(
             """
-            SELECT ip, source, detection_date 
-            FROM blacklist_ip 
-            WHERE source = 'SECUDIUM' AND is_active = 1 
+            SELECT ip, source, detection_date
+            FROM blacklist_ip
+            WHERE source = 'SECUDIUM' AND is_active = 1
             LIMIT 3
         """
         )

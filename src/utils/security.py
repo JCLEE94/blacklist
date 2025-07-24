@@ -1,18 +1,19 @@
 """
 Enhanced Security Module
-Provides advanced security features including authentication, authorization, 
+Provides advanced security features including authentication, authorization,
 rate limiting, and security headers
 """
 
-import logging
 import hashlib
+import logging
 import secrets
 import time
-import jwt
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Callable
-from functools import wraps
 from collections import defaultdict, deque
+from datetime import datetime, timedelta
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional
+
+import jwt
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +202,7 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import request, g, current_app
+            from flask import current_app, g, request
 
             try:
                 security_manager = getattr(current_app, "security_manager", None)
@@ -250,7 +251,7 @@ def rate_limit(limit: int = 100, window_seconds: int = 3600):
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import request, current_app
+            from flask import current_app, request
 
             try:
                 security_manager = getattr(current_app, "security_manager", None)

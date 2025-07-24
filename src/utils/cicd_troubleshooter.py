@@ -4,12 +4,13 @@ CI/CD 자동 트러블슈팅 시스템
 Claude Code v8.4.0 - 완전 자동화된 파이프라인 문제 해결
 """
 
-import requests
-import time
 import json
 import re
 import subprocess
-from typing import Dict, List, Optional, Any
+import time
+from typing import Any, Dict, List, Optional
+
+import requests
 
 
 class CICDTroubleshooter:

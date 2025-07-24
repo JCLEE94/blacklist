@@ -2,10 +2,10 @@
 Configuration management package
 """
 from .base import BaseConfig
-from .production import ProductionConfig
 from .development import DevelopmentConfig
-from .testing import TestingConfig
 from .factory import get_config
+from .production import ProductionConfig
+from .testing import TestingConfig
 
 __all__ = [
     "BaseConfig",

@@ -2,10 +2,10 @@
 """
 Collection service for managing data collection
 """
-import os
-import logging
-import subprocess
 import json
+import logging
+import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -120,7 +120,7 @@ class CollectionService:
                                 self.status["sources"]["regtech"][
                                     "total_collected"
                                 ] += count
-                except:
+                except Exception:
                     pass
 
                 self.status["sources"]["regtech"]["status"] = "completed"
@@ -204,7 +204,7 @@ class CollectionService:
                             self.status["sources"]["secudium"][
                                 "total_collected"
                             ] += count
-                except:
+                except Exception:
                     pass
 
                 self.status["sources"]["secudium"]["status"] = "completed"

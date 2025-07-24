@@ -3,27 +3,24 @@
 Enhanced UnifiedBlacklistManager with fixed database schema compatibility
 """
 
-import os
-import sys
-import json
-import logging
-import sqlite3
 import ipaddress
-import hashlib
-import time
+import logging
+import os
+import sqlite3
+import sys
 import threading
-from collections import defaultdict, Counter
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Set, Tuple, Union, Iterator
+import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Import components
-from src.core.models import BlacklistEntry
 from src.core.database import DatabaseManager
 from src.utils.advanced_cache import EnhancedSmartCache
 from src.utils.unified_decorators import unified_cache, unified_monitoring
@@ -281,9 +278,9 @@ class UnifiedBlacklistManager:
                 detection_results = session.execute(
                     text(
                         """
-                        SELECT source, attack_type, confidence_score, created_at 
-                        FROM ip_detection 
-                        WHERE ip = :ip 
+                        SELECT source, attack_type, confidence_score, created_at
+                        FROM ip_detection
+                        WHERE ip = :ip
                         ORDER BY created_at DESC
                     """
                     ),
@@ -448,7 +445,7 @@ class UnifiedBlacklistManager:
                         # Update existing record
                         cursor.execute(
                             """
-                            UPDATE blacklist_ip 
+                            UPDATE blacklist_ip
                             SET created_at = ?,
                                 detection_date = COALESCE(?, detection_date),
                                 attack_type = COALESCE(?, attack_type),
@@ -479,7 +476,7 @@ class UnifiedBlacklistManager:
                         # Insert new record
                         cursor.execute(
                             """
-                            INSERT INTO blacklist_ip 
+                            INSERT INTO blacklist_ip
                             (ip, created_at, detection_date, attack_type, country, source, reason, threat_level, is_active, updated_at)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
@@ -505,7 +502,7 @@ class UnifiedBlacklistManager:
                     # Record detection
                     cursor.execute(
                         """
-                        INSERT INTO ip_detection 
+                        INSERT INTO ip_detection
                         (ip, created_at, source, attack_type, confidence_score)
                         VALUES (?, ?, ?, ?, ?)
                     """,
@@ -572,8 +569,8 @@ class UnifiedBlacklistManager:
             # Get all active IPs (is_active = 1) without date restriction
             cursor.execute(
                 """
-                SELECT DISTINCT ip 
-                FROM blacklist_ip 
+                SELECT DISTINCT ip
+                FROM blacklist_ip
                 WHERE is_active = 1
                 ORDER BY ip
             """
@@ -605,7 +602,7 @@ class UnifiedBlacklistManager:
 
             # Build query based on available columns
             base_query = """
-                SELECT ip, source, country, attack_type, detection_date, created_at, 
+                SELECT ip, source, country, attack_type, detection_date, created_at,
                        threat_level, reason, extra_data
                 FROM blacklist_ip
             """
@@ -773,15 +770,15 @@ class UnifiedBlacklistManager:
                 # Include both active and expired IPs for historical accuracy
                 query = text(
                     """
-                    SELECT 
+                    SELECT
                         source,
                         COUNT(DISTINCT ip) as total_count,
                         SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_count,
                         SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as expired_count,
                         MIN(detection_date) as first_detection,
                         MAX(detection_date) as last_detection
-                    FROM blacklist_ip 
-                    WHERE detection_date >= :start_date 
+                    FROM blacklist_ip
+                    WHERE detection_date >= :start_date
                     AND detection_date <= :end_date
                     GROUP BY source
                 """
@@ -848,10 +845,10 @@ class UnifiedBlacklistManager:
                 # Update is_active status based on expires_at
                 query = text(
                     """
-                    UPDATE blacklist_ip 
-                    SET is_active = CASE 
-                        WHEN expires_at > datetime('now') THEN 1 
-                        ELSE 0 
+                    UPDATE blacklist_ip
+                    SET is_active = CASE
+                        WHEN expires_at > datetime('now') THEN 1
+                        ELSE 0
                     END
                     WHERE expires_at IS NOT NULL
                 """
@@ -863,7 +860,7 @@ class UnifiedBlacklistManager:
                 # Get current statistics
                 stats_query = text(
                     """
-                    SELECT 
+                    SELECT
                         COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_count,
                         COUNT(CASE WHEN is_active = 0 THEN 1 END) as expired_count,
                         COUNT(*) as total_count
@@ -898,8 +895,8 @@ class UnifiedBlacklistManager:
                 # Get all active IPs (is_active = 1)
                 query = text(
                     """
-                    SELECT DISTINCT ip 
-                    FROM blacklist_ip 
+                    SELECT DISTINCT ip
+                    FROM blacklist_ip
                     WHERE is_active = 1
                     ORDER BY ip
                 """
@@ -933,11 +930,11 @@ class UnifiedBlacklistManager:
 
                 query = text(
                     """
-                    SELECT country, COUNT(*) as count 
-                    FROM blacklist_ip 
+                    SELECT country, COUNT(*) as count
+                    FROM blacklist_ip
                     WHERE country IS NOT NULL AND country != '' AND is_active = 1
-                    GROUP BY country 
-                    ORDER BY count DESC 
+                    GROUP BY country
+                    ORDER BY count DESC
                     LIMIT :limit
                 """
                 )
@@ -960,7 +957,7 @@ class UnifiedBlacklistManager:
 
                 query = text(
                     """
-                    SELECT 
+                    SELECT
                         DATE(detection_date) as date,
                         COUNT(*) as new_ips,
                         source
@@ -1051,7 +1048,7 @@ class UnifiedBlacklistManager:
             logger.error(f"Failed to clear all data: {e}")
             return {"success": False, "error": str(e)}
 
-    def update_expiration_status(self) -> Dict[str, Any]:
+    def update_expiration_status_duplicate(self) -> Dict[str, Any]:
         """만료 상태 업데이트 - 탐지일로부터 90일 지난 IP를 만료 처리"""
         try:
             conn = sqlite3.connect(self.db_path)
@@ -1063,8 +1060,8 @@ class UnifiedBlacklistManager:
             # 만료된 IP를 is_active=0으로 업데이트 (detection_date 기준, 없으면 created_at 기준)
             cursor.execute(
                 """
-                UPDATE blacklist_ip 
-                SET is_active = 0 
+                UPDATE blacklist_ip
+                SET is_active = 0
                 WHERE (
                     (detection_date IS NOT NULL AND detection_date < ?) OR
                     (detection_date IS NULL AND created_at < ?)
@@ -1119,7 +1116,7 @@ class UnifiedBlacklistManager:
             warning_date = datetime.now() - timedelta(days=60)  # 90-30 = 60일 전
             cursor.execute(
                 """
-                SELECT COUNT(*) FROM blacklist_ip 
+                SELECT COUNT(*) FROM blacklist_ip
                 WHERE is_active = 1 AND (
                     (detection_date IS NOT NULL AND detection_date < ?) OR
                     (detection_date IS NULL AND created_at < ?)
@@ -1150,7 +1147,7 @@ class UnifiedBlacklistManager:
 
             cursor.execute(
                 """
-                UPDATE blacklist_ip 
+                UPDATE blacklist_ip
                 SET expires_at = ?
                 WHERE ip = ?
             """,
@@ -1185,9 +1182,9 @@ class UnifiedBlacklistManager:
             cursor.execute(
                 """
                 SELECT ip, source, detection_date, expires_at, created_at
-                FROM blacklist_ip 
-                WHERE is_active = 1 
-                AND expires_at IS NOT NULL 
+                FROM blacklist_ip
+                WHERE is_active = 1
+                AND expires_at IS NOT NULL
                 AND expires_at <= ?
                 ORDER BY expires_at ASC
                 LIMIT 1000
@@ -1225,25 +1222,26 @@ class UnifiedBlacklistManager:
 # Rust-style 인라인 통합 테스트
 # ==============================================================================
 
+
 def _test_blacklist_manager_initialization():
     """블랙리스트 매니저 초기화 테스트"""
     print("🧪 블랙리스트 매니저 초기화 테스트 시작...")
-    
+
     try:
         # 테스트용 설정으로 매니저 생성
         manager = UnifiedBlacklistManager("data", cache_backend=None)
-        
+
         assert manager is not None
         assert manager.data_dir == "data"
         print("  ✅ 매니저 기본 초기화 성공")
-        
+
         # 디렉토리 생성 확인
-        if hasattr(manager, '_ensure_directories'):
+        if hasattr(manager, "_ensure_directories"):
             print("  ✅ 디렉토리 생성 메서드 존재")
-        
+
         print("✅ 블랙리스트 매니저 초기화 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ 초기화 테스트 중 오류: {str(e)}")
         return False
@@ -1252,39 +1250,40 @@ def _test_blacklist_manager_initialization():
 def _test_blacklist_manager_database_operations():
     """블랙리스트 매니저 데이터베이스 작업 테스트"""
     print("🧪 블랙리스트 매니저 데이터베이스 작업 테스트 시작...")
-    
+
     try:
         from .container import get_container
-        
+
         # 컨테이너에서 매니저 가져오기
         container = get_container()
-        manager = container.resolve('blacklist_manager')
-        
+        manager = container.resolve("blacklist_manager")
+
         if not manager:
             print("  ⚠️ 블랙리스트 매니저를 컨테이너에서 가져올 수 없음")
             return False
-        
+
         # 활성 IP 목록 가져오기 테스트
         active_ips = manager.get_active_blacklist_ips()
         print(f"  📊 활성 IP 수: {len(active_ips)}")
-        
+
         if len(active_ips) > 0:
             print("  ✅ 활성 IP 목록 조회 성공")
-            
+
             # 첫 번째 IP로 검색 테스트
             test_ip = active_ips[0]
             search_result = manager.search_ip(test_ip)
-            
-            if search_result and search_result.get('found'):
+
+            if search_result and search_result.get("found"):
                 print(f"  ✅ IP 검색 기능 동작 확인: {test_ip}")
             else:
                 print(f"  ⚠️ IP 검색 결과 불일치: {test_ip}")
         else:
             print("  ⚠️ 활성 IP가 없음 (예상될 수 있음)")
-        
+
         # 통계 정보 테스트 (통합 서비스 사용)
         try:
             from .unified_service import get_unified_service
+
             service = get_unified_service()
             stats = service.get_source_statistics()
             if isinstance(stats, dict):
@@ -1293,10 +1292,10 @@ def _test_blacklist_manager_database_operations():
                 print("  ⚠️ 통계 정보 형식 오류")
         except Exception as e:
             print(f"  ⚠️ 통계 정보 조회 실패: {str(e)[:30]}...")
-        
+
         print("✅ 블랙리스트 매니저 데이터베이스 작업 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ 데이터베이스 작업 테스트 중 오류: {str(e)}")
         return False
@@ -1305,52 +1304,53 @@ def _test_blacklist_manager_database_operations():
 def _test_blacklist_manager_fortigate_format():
     """FortiGate 형식 변환 테스트"""
     print("🧪 FortiGate 형식 변환 테스트 시작...")
-    
+
     try:
         from .container import get_container
-        
+
         container = get_container()
-        manager = container.resolve('blacklist_manager')
-        
+        manager = container.resolve("blacklist_manager")
+
         if not manager:
             print("  ⚠️ 블랙리스트 매니저를 가져올 수 없음")
             return False
-        
+
         # FortiGate 형식 변환 테스트 (통합 서비스 사용)
         active_ips = manager.get_active_blacklist_ips()
         from .unified_service import get_unified_service
+
         service = get_unified_service()
         fortigate_data = service.format_for_fortigate(active_ips)
-        
+
         # 기본 구조 검증
         if isinstance(fortigate_data, dict):
             print("  ✅ FortiGate 데이터가 딕셔너리 형태")
-            
-            if 'results' in fortigate_data:
-                results_count = len(fortigate_data['results'])
+
+            if "results" in fortigate_data:
+                results_count = len(fortigate_data["results"])
                 print(f"  ✅ FortiGate 결과 항목 수: {results_count}")
-                
+
                 if results_count > 0:
                     # 첫 번째 항목의 구조 확인
-                    first_item = fortigate_data['results'][0]
-                    if isinstance(first_item, dict) and 'ip' in first_item:
+                    first_item = fortigate_data["results"][0]
+                    if isinstance(first_item, dict) and "ip" in first_item:
                         print("  ✅ FortiGate 항목 구조 올바름")
                     else:
                         print("  ⚠️ FortiGate 항목 구조 이상")
-                
-                if 'metadata' in fortigate_data:
+
+                if "metadata" in fortigate_data:
                     print("  ✅ FortiGate 메타데이터 포함")
-                
+
             else:
                 print("  ❌ FortiGate 데이터에 'results' 키 없음")
                 return False
         else:
             print("  ❌ FortiGate 데이터가 딕셔너리가 아님")
             return False
-        
+
         print("✅ FortiGate 형식 변환 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ FortiGate 형식 변환 테스트 중 오류: {str(e)}")
         return False
@@ -1359,36 +1359,38 @@ def _test_blacklist_manager_fortigate_format():
 def _test_blacklist_manager_performance():
     """블랙리스트 매니저 성능 테스트"""
     print("🧪 블랙리스트 매니저 성능 테스트 시작...")
-    
+
     try:
         import time
+
         from .container import get_container
-        
+
         container = get_container()
-        manager = container.resolve('blacklist_manager')
-        
+        manager = container.resolve("blacklist_manager")
+
         if not manager:
             print("  ⚠️ 블랙리스트 매니저를 가져올 수 없음")
             return False
-        
+
         # 통계 조회 성능 테스트
         from .unified_service import get_unified_service
+
         service = get_unified_service()
         start_time = time.time()
-        stats = service.get_source_statistics()
+        _ = service.get_source_statistics()  # 통계 조회 테스트
         stats_time = time.time() - start_time
         print(f"  📊 통계 조회 시간: {stats_time:.3f}초")
-        
+
         # IP 검색 성능 테스트 (실제 IP 사용)
         active_ips = manager.get_active_blacklist_ips()
         if len(active_ips) > 0:
             test_ip = active_ips[0]
-            
+
             start_time = time.time()
-            search_result = manager.search_ip(test_ip)
+            _ = manager.search_ip(test_ip)  # IP 검색 테스트
             search_time = time.time() - start_time
             print(f"  🔍 IP 검색 시간: {search_time:.3f}초")
-            
+
             # 성능 기준 확인 (응답시간 < 100ms)
             if stats_time < 0.1 and search_time < 0.1:
                 print("  ✅ 성능 기준 충족 (< 100ms)")
@@ -1396,13 +1398,13 @@ def _test_blacklist_manager_performance():
                 print("  ⚠️ 성능 기준 미충족 (> 100ms)")
         else:
             print("  ⚠️ 테스트할 IP가 없음")
-        
+
         # FortiGate 형식 변환 성능 테스트
         start_time = time.time()
-        fortigate_data = service.format_for_fortigate(active_ips)
+        _ = service.format_for_fortigate(active_ips)  # FortiGate 형식 변환 테스트
         fortigate_time = time.time() - start_time
         print(f"  🛡️ FortiGate 변환 시간: {fortigate_time:.3f}초")
-        
+
         # 전체 성능 평가
         total_time = stats_time + search_time + fortigate_time
         if total_time < 0.3:  # 300ms 이하
@@ -1414,10 +1416,10 @@ def _test_blacklist_manager_performance():
         else:
             print(f"  ⚠️ 전체 성능 개선 필요: {total_time:.3f}초")
             performance_ok = False
-        
+
         print("✅ 블랙리스트 매니저 성능 테스트 완료")
         return performance_ok
-        
+
     except Exception as e:
         print(f"❌ 성능 테스트 중 오류: {str(e)}")
         return False
@@ -1426,29 +1428,30 @@ def _test_blacklist_manager_performance():
 def _test_blacklist_manager_data_integrity():
     """데이터 무결성 테스트"""
     print("🧪 블랙리스트 매니저 데이터 무결성 테스트 시작...")
-    
+
     try:
         from .container import get_container
-        
+
         container = get_container()
-        manager = container.resolve('blacklist_manager')
-        
+        manager = container.resolve("blacklist_manager")
+
         if not manager:
             print("  ⚠️ 블랙리스트 매니저를 가져올 수 없음")
             return False
-        
+
         # 통계 정보와 실제 데이터 일치성 확인
         from .unified_service import get_unified_service
+
         service = get_unified_service()
         stats = service.get_source_statistics()
         active_ips = manager.get_active_blacklist_ips()
-        
-        stats_total = stats.get('total_ips', 0)
+
+        stats_total = stats.get("total_ips", 0)
         actual_count = len(active_ips)
-        
+
         print(f"  📊 통계 총 IP 수: {stats_total}")
         print(f"  📊 실제 활성 IP 수: {actual_count}")
-        
+
         # 완전 일치를 요구하지 않음 (만료된 IP 등이 있을 수 있음)
         if stats_total >= actual_count:
             print("  ✅ 데이터 일치성 검증 통과 (통계 >= 실제)")
@@ -1456,14 +1459,15 @@ def _test_blacklist_manager_data_integrity():
         else:
             print("  ⚠️ 데이터 불일치 (통계 < 실제)")
             integrity_ok = False
-        
+
         # IP 형식 검증 (샘플링)
         valid_ips = 0
         invalid_ips = 0
-        
+
         import re
-        ip_pattern = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
-        
+
+        ip_pattern = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
+
         sample_size = min(10, len(active_ips))
         for i in range(sample_size):
             ip = active_ips[i]
@@ -1471,7 +1475,7 @@ def _test_blacklist_manager_data_integrity():
                 valid_ips += 1
             else:
                 invalid_ips += 1
-        
+
         if sample_size > 0:
             print(f"  🔍 IP 형식 검증 ({sample_size}개 샘플): 유효 {valid_ips}, 무효 {invalid_ips}")
             if invalid_ips == 0:
@@ -1479,20 +1483,20 @@ def _test_blacklist_manager_data_integrity():
             else:
                 print("  ⚠️ 일부 IP 형식 무효")
                 integrity_ok = False
-        
+
         # 중복 IP 검사
         unique_ips = set(active_ips)
         duplicate_count = len(active_ips) - len(unique_ips)
-        
+
         if duplicate_count == 0:
             print("  ✅ 중복 IP 없음")
         else:
             print(f"  ⚠️ 중복 IP 발견: {duplicate_count}개")
             integrity_ok = False
-        
+
         print("✅ 블랙리스트 매니저 데이터 무결성 테스트 완료")
         return integrity_ok
-        
+
     except Exception as e:
         print(f"❌ 데이터 무결성 테스트 중 오류: {str(e)}")
         return False
@@ -1502,21 +1506,21 @@ if __name__ == "__main__":
     print("=" * 70)
     print("🚀 Unified Blacklist Manager 통합 테스트 실행")
     print("=" * 70)
-    
+
     # 테스트 결과 수집
     test_results = []
-    
+
     # 개별 테스트 실행
     test_results.append(_test_blacklist_manager_initialization())
     test_results.append(_test_blacklist_manager_database_operations())
     test_results.append(_test_blacklist_manager_fortigate_format())
     test_results.append(_test_blacklist_manager_performance())
     test_results.append(_test_blacklist_manager_data_integrity())
-    
+
     # 전체 결과 요약
     passed_tests = sum(test_results)
     total_tests = len(test_results)
-    
+
     print("=" * 70)
     print("📊 테스트 결과 요약")
     print("=" * 70)
@@ -1524,7 +1528,7 @@ if __name__ == "__main__":
     print(f"통과한 테스트: {passed_tests}")
     print(f"실패한 테스트: {total_tests - passed_tests}")
     print(f"성공률: {(passed_tests/total_tests)*100:.1f}%")
-    
+
     if passed_tests == total_tests:
         print("🎉 모든 테스트 통과!")
         exit(0)

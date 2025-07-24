@@ -8,30 +8,26 @@ import time
 from typing import Optional
 
 from flask import Flask, g, request
-from flask_cors import CORS
 from flask_compress import Compress
-
+from flask_cors import CORS
+from werkzeug.middleware.profiler import ProfilerMiddleware
 # Rate limiting 비활성화로 인해 주석 처리
 # from flask_limiter import Limiter
 # from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
-from werkzeug.middleware.profiler import ProfilerMiddleware
-
-from .container import get_container, BlacklistContainer
-from .constants import PRODUCTION_CONFIG, DEVELOPMENT_CONFIG, SECURITY_HEADERS
-from .exceptions import BlacklistError, handle_exception, create_error_response
 
 # Import new error handling and logging modules
-from src.utils.error_handler import register_error_handlers, error_handler
 from src.utils.structured_logging import get_logger, setup_request_logging
+from src.utils.performance import get_connection_manager, get_profiler
+
+from .exceptions import BlacklistError, create_error_response, handle_exception
+from .container import get_container
+from src.core.constants import SECURITY_HEADERS
 
 # Use structured logger instead of basic logging
 logger = get_logger(__name__)
 
-
 # Performance optimization imports
-from src.utils.performance import get_connection_manager, get_profiler
-
 try:
     import orjson
 
@@ -110,9 +106,6 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
                 "orjson 활성화됨 - JSON 직렬화 성능 향상", feature="orjson", status="enabled"
             )
 
-        # Rate limiting with container-managed cache
-        cache = container.resolve("cache")
-
         # Rate limiting completely disabled - no storage URI needed
 
         # Rate limiting 완전 비활성화로 인해 불필요
@@ -133,7 +126,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             def exempt(self, f):
                 return f
 
-        limiter = DummyLimiter()
+        # limiter = DummyLimiter()  # Not used anywhere
 
         # Configure Flask app with container
         container.configure_flask_app(app)
@@ -192,9 +185,8 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             metrics=container.resolve("metrics_collector"),
         )
 
-        # Register error handlers from the new error handling system
-        register_error_handlers(app)
-        logger.info("Error handlers registered successfully")
+        # Error handlers are defined later in this file
+        logger.info("Error handlers will be registered")
 
         # Setup structured request logging
         setup_request_logging(app)
@@ -262,7 +254,8 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
 
         # V2 API routes already registered above - avoiding duplicate registration
 
-        # Register missing API routes - DISABLED due to route conflicts with unified_routes
+        # Register missing API routes - DISABLED due to route conflicts
+        # with unified_routes
         # try:
         #     from .missing_routes import register_missing_routes
         #     register_missing_routes(app)
@@ -272,7 +265,8 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         #     import traceback
         #     logger.error(traceback.format_exc())
 
-        # Register root routes - DISABLED due to route conflicts with unified_routes
+        # Register root routes - DISABLED due to route conflicts with
+        # unified_routes
         # try:
         #     from .root_route import root_bp
         #     app.register_blueprint(root_bp)
@@ -282,7 +276,8 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         #     import traceback
         #     logger.error(traceback.format_exc())
 
-        # Register web UI blueprint - DISABLED due to route conflicts with unified_routes
+        # Register web UI blueprint - DISABLED due to route conflicts
+        # with unified_routes
         # try:
         #     from src.web import web_bp
         #     app.register_blueprint(web_bp)
@@ -310,7 +305,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
         os.environ["TZ"] = "Asia/Seoul"
         try:
             time.tzset()
-        except:
+        except Exception:
             pass  # Windows에서는 tzset이 없음
 
         @app.after_request
@@ -435,7 +430,7 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
                                 build_time = line.split("=", 1)[1].strip("'\"")
                                 return {"build_time": build_time}
                 return {"build_time": "2025-06-18 18:48:33 KST"}
-            except:
+            except Exception:
                 return {"build_time": "2025-06-18 18:48:33 KST"}
 
         logger.info(
@@ -464,6 +459,7 @@ def main():
     """Main execution function"""
     # Load environment variables from .env file
     from pathlib import Path
+
     from dotenv import load_dotenv
 
     env_path = Path(__file__).parent.parent / ".env"
@@ -499,7 +495,10 @@ def main():
     if env == "production":
         logger.warning(
             "Production mode - use Gunicorn",
-            command=f"gunicorn -w 4 -b 0.0.0.0:{port} core.app_compact:create_compact_app()",
+            command=(
+                f"gunicorn -w 4 -b 0.0.0.0:{port} "
+                "core.app_compact:create_compact_app()"
+            ),
         )
 
     app.run(host="0.0.0.0", port=port, debug=debug)

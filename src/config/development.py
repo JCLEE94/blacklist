@@ -2,6 +2,7 @@
 Development environment configuration
 """
 import os
+
 from .base import BaseConfig
 
 

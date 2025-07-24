@@ -3,21 +3,20 @@
 통합 블랙리스트 관리 서비스
 모든 블랙리스트 운영을 하나로 통합한 서비스
 """
-import os
-import logging
 import asyncio
 import json
+import logging
+import os
 import sqlite3
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-
-from .container import get_container
-from .regtech_simple_collector import RegtechSimpleCollector
+from typing import Any, Dict, List, Optional
 
 # SECUDIUM 수집기 제거됨 - 사용자 요청에 따라
 from .blacklist_unified import UnifiedBlacklistManager
 from .collection_manager import CollectionManager
+from .container import get_container
+from .regtech_simple_collector import RegtechSimpleCollector
 
 logger = logging.getLogger(__name__)
 
@@ -821,8 +820,8 @@ class UnifiedBlacklistService:
                     # 90일 내 탐지된 IP 수 계산
                     cursor.execute(
                         """
-                        SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-                        WHERE detection_date >= ? 
+                        SELECT COUNT(DISTINCT ip) FROM blacklist_ip
+                        WHERE detection_date >= ?
                            OR (detection_date IS NULL AND created_at >= ?)
                     """,
                         (ninety_days_ago, ninety_days_ago),
@@ -834,9 +833,9 @@ class UnifiedBlacklistService:
                     if total_in_db > 0:
                         cursor.execute(
                             """
-                            SELECT UPPER(source), COUNT(DISTINCT ip) 
-                            FROM blacklist_ip 
-                            WHERE detection_date >= ? 
+                            SELECT UPPER(source), COUNT(DISTINCT ip)
+                            FROM blacklist_ip
+                            WHERE detection_date >= ?
                                OR (detection_date IS NULL AND created_at >= ?)
                             GROUP BY UPPER(source)
                         """,
@@ -854,11 +853,11 @@ class UnifiedBlacklistService:
                         # 최근 추가된 데이터 확인 (90일 내)
                         cursor.execute(
                             """
-                            SELECT ip, source, detection_date, created_at 
-                            FROM blacklist_ip 
-                            WHERE detection_date >= ? 
+                            SELECT ip, source, detection_date, created_at
+                            FROM blacklist_ip
+                            WHERE detection_date >= ?
                                OR (detection_date IS NULL AND created_at >= ?)
-                            ORDER BY COALESCE(detection_date, created_at) DESC 
+                            ORDER BY COALESCE(detection_date, created_at) DESC
                             LIMIT 5
                         """,
                             (ninety_days_ago, ninety_days_ago),
@@ -943,9 +942,9 @@ class UnifiedBlacklistService:
             # 30일 내 만료 예정 IP 수
             cursor.execute(
                 """
-                SELECT COUNT(*) FROM blacklist_ip 
-                WHERE is_active = 1 
-                AND expires_at IS NOT NULL 
+                SELECT COUNT(*) FROM blacklist_ip
+                WHERE is_active = 1
+                AND expires_at IS NOT NULL
                 AND expires_at <= datetime('now', '+30 days')
             """
             )
@@ -985,8 +984,8 @@ class UnifiedBlacklistService:
 
     def _load_regtech_ips_from_files(self) -> List[Dict[str, Any]]:
         """REGTECH 수집 파일에서 IP 목록 로드"""
-        import json
         import glob
+        import json
         from datetime import datetime
 
         try:
@@ -1177,8 +1176,9 @@ class UnifiedBlacklistService:
                 db_path = self.blacklist_manager.db_path
             else:
                 # 설정에서 데이터베이스 URI 가져오기
-                from src.config.settings import settings
                 import re
+
+                from src.config.settings import settings
 
                 db_uri = settings.database_uri
                 # sqlite:///path/to/db.db 형식에서 경로 추출
@@ -1262,7 +1262,7 @@ class UnifiedBlacklistService:
                 # 인덱스 생성
                 conn.execute(
                     """
-                CREATE INDEX IF NOT EXISTS idx_collection_logs_created_at 
+                CREATE INDEX IF NOT EXISTS idx_collection_logs_created_at
                 ON collection_logs(created_at DESC)
                 """
                 )
@@ -1409,8 +1409,8 @@ class UnifiedBlacklistService:
                     # Count total distinct IPs by source for this date (using detection_date - 실제 등록일)
                     cursor.execute(
                         """
-                        SELECT UPPER(source), COUNT(DISTINCT ip) 
-                        FROM blacklist_ip 
+                        SELECT UPPER(source), COUNT(DISTINCT ip)
+                        FROM blacklist_ip
                         WHERE DATE(COALESCE(detection_date, created_at)) = ?
                         GROUP BY UPPER(source)
                     """,
@@ -1431,8 +1431,8 @@ class UnifiedBlacklistService:
                     # Count new distinct IPs for this date (using detection_date - 실제 등록일)
                     cursor.execute(
                         """
-                        SELECT COUNT(DISTINCT ip) 
-                        FROM blacklist_ip 
+                        SELECT COUNT(DISTINCT ip)
+                        FROM blacklist_ip
                         WHERE DATE(COALESCE(detection_date, created_at)) = ?
                     """,
                         (date_str,),
@@ -1561,16 +1561,16 @@ class UnifiedBlacklistService:
             # 소스 필터 적용
             if source_filter:
                 query = """
-                    SELECT ip, source, added_date, expires_at, is_active 
-                    FROM blacklist_ip 
+                    SELECT ip, source, added_date, expires_at, is_active
+                    FROM blacklist_ip
                     WHERE is_active = 1 AND source = ?
                     ORDER BY added_date DESC
                 """
                 cursor.execute(query, (source_filter,))
             else:
                 query = """
-                    SELECT ip, source, added_date, expires_at, is_active 
-                    FROM blacklist_ip 
+                    SELECT ip, source, added_date, expires_at, is_active
+                    FROM blacklist_ip
                     WHERE is_active = 1
                     ORDER BY added_date DESC
                 """
@@ -1927,11 +1927,11 @@ class UnifiedBlacklistService:
 
             # 최근 30일간의 날짜별 수집 통계 (탐지일 기준, 중복 IP 제거)
             query = """
-            SELECT 
+            SELECT
                 DATE(COALESCE(detection_date, created_at)) as date,
                 COUNT(DISTINCT ip) as count,
                 UPPER(source) as source
-            FROM blacklist_ip 
+            FROM blacklist_ip
             WHERE DATE(COALESCE(detection_date, created_at)) >= DATE('now', '-30 days')
             GROUP BY DATE(COALESCE(detection_date, created_at)), UPPER(source)
             ORDER BY date DESC
@@ -1972,14 +1972,14 @@ class UnifiedBlacklistService:
             ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
 
             query = """
-            SELECT 
+            SELECT
                 UPPER(source) as source,
                 COUNT(DISTINCT ip) as total,
                 MIN(COALESCE(detection_date, created_at)) as first_detection,
                 MAX(COALESCE(detection_date, created_at)) as last_detection,
                 COUNT(DISTINCT DATE(COALESCE(detection_date, created_at))) as collection_days
-            FROM blacklist_ip 
-            WHERE detection_date >= ? 
+            FROM blacklist_ip
+            WHERE detection_date >= ?
                OR (detection_date IS NULL AND created_at >= ?)
             GROUP BY UPPER(source)
             """
@@ -2088,7 +2088,7 @@ class UnifiedBlacklistService:
 
             query = """
             SELECT DISTINCT DATE(detection_date) as date
-            FROM blacklist_ip 
+            FROM blacklist_ip
             WHERE source = ? AND detection_date >= ?
             ORDER BY date DESC
             """
@@ -2581,38 +2581,39 @@ def get_unified_service() -> UnifiedBlacklistService:
 # Rust-style 인라인 통합 테스트
 # ==============================================================================
 
+
 def _test_unified_service_initialization():
     """통합 서비스 초기화 테스트"""
     print("🧪 통합 서비스 초기화 테스트 시작...")
-    
+
     try:
         service = get_unified_service()
-        
+
         assert service is not None
         print("  ✅ 서비스 인스턴스 생성 성공")
-        
+
         # 컨테이너 초기화 확인
-        if hasattr(service, 'container') and service.container:
+        if hasattr(service, "container") and service.container:
             print("  ✅ 컨테이너 초기화됨")
         else:
             print("  ⚠️ 컨테이너 초기화되지 않음")
-        
+
         # 블랙리스트 매니저 확인
-        if hasattr(service, 'blacklist_manager') and service.blacklist_manager:
+        if hasattr(service, "blacklist_manager") and service.blacklist_manager:
             print("  ✅ 블랙리스트 매니저 연결됨")
         else:
             print("  ⚠️ 블랙리스트 매니저 연결 안됨")
-        
+
         # 싱글톤 확인
         service2 = get_unified_service()
         if service is service2:
             print("  ✅ 싱글톤 패턴 동작 확인")
         else:
             print("  ⚠️ 싱글톤 패턴 미동작")
-        
+
         print("✅ 통합 서비스 초기화 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ 초기화 테스트 중 오류: {str(e)}")
         return False
@@ -2621,40 +2622,43 @@ def _test_unified_service_initialization():
 def _test_unified_service_collection_logging():
     """컬렉션 로깅 시스템 테스트"""
     print("🧪 통합 서비스 컬렉션 로깅 테스트 시작...")
-    
+
     try:
         service = get_unified_service()
-        
+
         # 테스트 로그 추가
         test_source = "TEST_SOURCE"
         test_action = "validation_test"
         test_details = {"ips_processed": 100, "success": True}
-        
+
         service.add_collection_log(test_source, test_action, test_details)
         print("  ✅ 컬렉션 로그 추가 성공")
-        
+
         # 최근 로그 조회
         recent_logs = service.get_recent_collection_logs()
-        
+
         if isinstance(recent_logs, list) and len(recent_logs) > 0:
             print(f"  ✅ 최근 로그 조회 성공: {len(recent_logs)}개 로그")
-            
+
             # 방금 추가한 로그 확인
             found_test_log = False
             for log in recent_logs[:5]:  # 최근 5개만 확인
-                if log.get('source') == test_source and log.get('action') == test_action:
+                if (
+                    log.get("source") == test_source
+                    and log.get("action") == test_action
+                ):
                     found_test_log = True
                     print("  ✅ 테스트 로그 확인됨")
                     break
-            
+
             if not found_test_log:
                 print("  ⚠️ 테스트 로그를 찾을 수 없음 (정상일 수 있음)")
         else:
             print("  ⚠️ 최근 로그 조회 실패 또는 로그 없음")
-        
+
         print("✅ 통합 서비스 컬렉션 로깅 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ 컬렉션 로깅 테스트 중 오류: {str(e)}")
         return False
@@ -2663,22 +2667,22 @@ def _test_unified_service_collection_logging():
 def _test_unified_service_statistics():
     """통합 서비스 통계 테스트"""
     print("🧪 통합 서비스 통계 테스트 시작...")
-    
+
     try:
         service = get_unified_service()
-        
+
         # 소스별 통계 테스트
         source_stats = service.get_source_statistics()
-        
+
         if isinstance(source_stats, dict):
             print("  ✅ 소스별 통계 조회 성공")
-            
+
             for source, stats in source_stats.items():
-                if isinstance(stats, dict) and 'total' in stats:
+                if isinstance(stats, dict) and "total" in stats:
                     print(f"    📊 {source}: {stats['total']}개 IP")
         else:
             print("  ⚠️ 소스별 통계 형식 오류")
-        
+
         # 시스템 헬스 체크
         try:
             health = service.get_system_health()
@@ -2690,20 +2694,20 @@ def _test_unified_service_statistics():
                 print("  ⚠️ 시스템 헬스 체크 형식 오류")
         except Exception as e:
             print(f"  ⚠️ 시스템 헬스 체크 실패: {str(e)[:30]}...")
-        
+
         # 향상된 통계 테스트
         try:
             enhanced_stats = service.get_enhanced_statistics()
-            if isinstance(enhanced_stats, dict) and 'total_ips' in enhanced_stats:
+            if isinstance(enhanced_stats, dict) and "total_ips" in enhanced_stats:
                 print(f"  ✅ 향상된 통계 조회 성공: {enhanced_stats['total_ips']}개 IP")
             else:
                 print("  ⚠️ 향상된 통계 형식 오류")
         except Exception as e:
             print(f"  ⚠️ 향상된 통계 조회 실패: {str(e)[:30]}...")
-        
+
         print("✅ 통합 서비스 통계 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ 통계 테스트 중 오류: {str(e)}")
         return False
@@ -2712,54 +2716,56 @@ def _test_unified_service_statistics():
 def _test_unified_service_fortigate_format():
     """FortiGate 형식 변환 테스트"""
     print("🧪 통합 서비스 FortiGate 형식 테스트 시작...")
-    
+
     try:
         service = get_unified_service()
-        
+
         # 테스트용 IP 리스트
         test_ips = ["192.168.1.1", "10.0.0.1", "172.16.0.1"]
-        
+
         # FortiGate 형식 변환
         fortigate_data = service.format_for_fortigate(test_ips)
-        
+
         if isinstance(fortigate_data, dict):
             print("  ✅ FortiGate 데이터가 딕셔너리 형태")
-            
+
             # 필수 필드 확인
-            required_fields = ['metadata', 'addresses']
+            required_fields = ["metadata", "addresses"]
             for field in required_fields:
                 if field in fortigate_data:
                     print(f"  ✅ '{field}' 필드 존재")
                 else:
                     print(f"  ⚠️ '{field}' 필드 누락")
-            
+
             # 주소 목록 확인
-            if 'addresses' in fortigate_data and isinstance(fortigate_data['addresses'], list):
-                addresses_count = len(fortigate_data['addresses'])
+            if "addresses" in fortigate_data and isinstance(
+                fortigate_data["addresses"], list
+            ):
+                addresses_count = len(fortigate_data["addresses"])
                 print(f"  ✅ 주소 목록: {addresses_count}개 항목")
-                
+
                 if addresses_count > 0:
                     # 첫 번째 항목 구조 확인
-                    first_addr = fortigate_data['addresses'][0]
-                    if isinstance(first_addr, dict) and 'ip' in first_addr:
+                    first_addr = fortigate_data["addresses"][0]
+                    if isinstance(first_addr, dict) and "ip" in first_addr:
                         print("  ✅ 주소 항목 구조 올바름")
                     else:
                         print("  ⚠️ 주소 항목 구조 이상")
-            
+
             # 메타데이터 확인
-            if 'metadata' in fortigate_data:
-                metadata = fortigate_data['metadata']
+            if "metadata" in fortigate_data:
+                metadata = fortigate_data["metadata"]
                 if isinstance(metadata, dict):
                     print(f"  ✅ 메타데이터 구조 올바름")
-                    if 'total_addresses' in metadata:
+                    if "total_addresses" in metadata:
                         print(f"    📊 총 주소 수: {metadata['total_addresses']}")
         else:
             print("  ❌ FortiGate 데이터가 딕셔너리가 아님")
             return False
-        
+
         print("✅ 통합 서비스 FortiGate 형식 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ FortiGate 형식 테스트 중 오류: {str(e)}")
         return False
@@ -2768,53 +2774,53 @@ def _test_unified_service_fortigate_format():
 def _test_unified_service_collection_status():
     """컬렉션 상태 관리 테스트"""
     print("🧪 통합 서비스 컬렉션 상태 테스트 시작...")
-    
+
     try:
         service = get_unified_service()
-        
+
         # 컬렉션 상태 조회
         status = service.get_collection_status()
-        
+
         if isinstance(status, dict):
             print("  ✅ 컬렉션 상태 조회 성공")
-            
+
             # 필수 필드 확인
-            required_fields = ['enabled', 'sources']
+            required_fields = ["enabled", "sources"]
             for field in required_fields:
                 if field in status:
                     print(f"  ✅ '{field}' 필드 존재: {status[field]}")
                 else:
                     print(f"  ⚠️ '{field}' 필드 누락")
-            
+
             # 소스별 상태 확인
-            if 'sources' in status and isinstance(status['sources'], dict):
-                sources_count = len(status['sources'])
+            if "sources" in status and isinstance(status["sources"], dict):
+                sources_count = len(status["sources"])
                 print(f"  📊 소스 수: {sources_count}개")
-                
-                for source_name, source_info in status['sources'].items():
+
+                for source_name, source_info in status["sources"].items():
                     if isinstance(source_info, dict):
-                        enabled = source_info.get('enabled', False)
+                        enabled = source_info.get("enabled", False)
                         print(f"    {source_name}: {'활성화' if enabled else '비활성화'}")
         else:
             print("  ❌ 컬렉션 상태가 딕셔너리가 아님")
             return False
-        
+
         # 컬렉션 간격 설정 테스트
         try:
             intervals = service.get_collection_intervals()
             if isinstance(intervals, dict):
                 print("  ✅ 컬렉션 간격 설정 조회 성공")
-                regtech_days = intervals.get('regtech_days', 0)
-                secudium_days = intervals.get('secudium_days', 0)
+                regtech_days = intervals.get("regtech_days", 0)
+                secudium_days = intervals.get("secudium_days", 0)
                 print(f"    📅 REGTECH: {regtech_days}일, SECUDIUM: {secudium_days}일")
             else:
                 print("  ⚠️ 컬렉션 간격 설정 형식 오류")
         except Exception as e:
             print(f"  ⚠️ 컬렉션 간격 조회 실패: {str(e)[:30]}...")
-        
+
         print("✅ 통합 서비스 컬렉션 상태 테스트 통과")
         return True
-        
+
     except Exception as e:
         print(f"❌ 컬렉션 상태 테스트 중 오류: {str(e)}")
         return False
@@ -2824,21 +2830,21 @@ if __name__ == "__main__":
     print("=" * 70)
     print("🚀 Unified Blacklist Service 통합 테스트 실행")
     print("=" * 70)
-    
+
     # 테스트 결과 수집
     test_results = []
-    
+
     # 개별 테스트 실행
     test_results.append(_test_unified_service_initialization())
     test_results.append(_test_unified_service_collection_logging())
     test_results.append(_test_unified_service_statistics())
     test_results.append(_test_unified_service_fortigate_format())
     test_results.append(_test_unified_service_collection_status())
-    
+
     # 전체 결과 요약
     passed_tests = sum(test_results)
     total_tests = len(test_results)
-    
+
     print("=" * 70)
     print("📊 테스트 결과 요약")
     print("=" * 70)
@@ -2846,7 +2852,7 @@ if __name__ == "__main__":
     print(f"통과한 테스트: {passed_tests}")
     print(f"실패한 테스트: {total_tests - passed_tests}")
     print(f"성공률: {(passed_tests/total_tests)*100:.1f}%")
-    
+
     if passed_tests == total_tests:
         print("🎉 모든 테스트 통과!")
         exit(0)

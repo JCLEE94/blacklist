@@ -2,13 +2,14 @@
 """
 최소한의 Flask 앱 - 기본 API 기능만 제공
 """
-import os
 import logging
+import os
+
 from flask import Flask
 from flask_cors import CORS
 
-from .simple_api import register_simple_api
 from .collection_routes import register_collection_routes
+from .simple_api import register_simple_api
 
 logger = logging.getLogger(__name__)
 

@@ -2,13 +2,13 @@
 """
 수집 진행 상황 추적 및 시각화 모듈
 """
-import time
-import threading
 import logging
-from datetime import datetime
-from typing import Dict, Any, Optional
+import threading
+import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

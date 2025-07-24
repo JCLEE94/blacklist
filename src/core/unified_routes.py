@@ -2,27 +2,21 @@
 통합 API 라우트
 모든 블랙리스트 API를 하나로 통합한 라우트 시스템
 """
-from flask import (
-    Blueprint,
-    request,
-    jsonify,
-    Response,
-    render_template,
-    current_app,
-    redirect,
-    url_for,
-)
-from typing import Dict, Any
-import logging
 import asyncio
 import json
+import logging
 import os
 from datetime import datetime
+from typing import Any, Dict
 
-from .unified_service import get_unified_service
-from .exceptions import ValidationError, handle_exception, create_error_response
-from .validators import validate_ip
+from flask import (Blueprint, Response, current_app, jsonify, redirect,
+                   render_template, request, url_for)
+
 from .container import get_container
+from .exceptions import (ValidationError, create_error_response,
+                         handle_exception)
+from .unified_service import get_unified_service
+from .validators import validate_ip
 
 # Decorators removed to fix Flask endpoint conflicts
 # from src.utils.unified_decorators import public_endpoint, api_endpoint
@@ -255,8 +249,8 @@ def api_monthly_data():
 
         # 최근 12개월 데이터 조회
         monthly_stats = []
-        from datetime import datetime, timedelta
         import calendar
+        from datetime import datetime, timedelta
 
         end_date = datetime.now()
         start_date = end_date - timedelta(days=365)  # 1년 전
@@ -828,9 +822,9 @@ def get_blacklist_with_metadata():
         # 30일 내 만료 예정 IP 수 (활성이면서 expires_at이 30일 이내)
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip 
-            WHERE is_active = 1 
-            AND expires_at IS NOT NULL 
+            SELECT COUNT(*) FROM blacklist_ip
+            WHERE is_active = 1
+            AND expires_at IS NOT NULL
             AND expires_at <= datetime('now', '+30 days')
         """
         )
@@ -839,9 +833,9 @@ def get_blacklist_with_metadata():
         # 7일 내 만료 예정 IP 수 (경고)
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip 
-            WHERE is_active = 1 
-            AND expires_at IS NOT NULL 
+            SELECT COUNT(*) FROM blacklist_ip
+            WHERE is_active = 1
+            AND expires_at IS NOT NULL
             AND expires_at <= datetime('now', '+7 days')
         """
         )
@@ -1015,12 +1009,12 @@ def get_monthly_data():
 
             # 최근 12개월 데이터 조회
             query = """
-                SELECT 
+                SELECT
                     strftime('%Y-%m', created_at) as month,
                     COUNT(*) as count,
                     MIN(created_at) as first_detection,
                     MAX(created_at) as last_detection
-                FROM blacklist_ip 
+                FROM blacklist_ip
                 WHERE created_at IS NOT NULL
                 GROUP BY strftime('%Y-%m', created_at)
                 ORDER BY strftime('%Y-%m', created_at) DESC
@@ -1113,8 +1107,8 @@ def clear_db():
 def get_monthly_stats():
     """월별 통계 데이터"""
     try:
-        from datetime import datetime, timedelta
         import calendar
+        from datetime import datetime, timedelta
 
         # 최근 6개월 데이터 생성
         monthly_data = []
@@ -1189,8 +1183,8 @@ def get_monthly_data_old():
 def debug_database():
     """데이터베이스 디버깅 정보"""
     try:
-        import sqlite3
         import os
+        import sqlite3
 
         debug_info = {}
 
@@ -1289,8 +1283,8 @@ def get_system_stats():
         stats = service.get_system_stats()
 
         # 데이터베이스에서 직접 만료 통계 조회
-        import sqlite3
         import os
+        import sqlite3
 
         # 적절한 데이터베이스 경로 찾기
         db_path = (
@@ -1311,8 +1305,8 @@ def get_system_stats():
         ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
         cursor.execute(
             """
-            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-            WHERE detection_date >= ? 
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip
+            WHERE detection_date >= ?
                OR (detection_date IS NULL AND created_at >= ?)
         """,
             (ninety_days_ago, ninety_days_ago),
@@ -1326,9 +1320,9 @@ def get_system_stats():
         # 30일 내 만료 예정 IP 수
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip 
-            WHERE is_active = 1 
-            AND expires_at IS NOT NULL 
+            SELECT COUNT(*) FROM blacklist_ip
+            WHERE is_active = 1
+            AND expires_at IS NOT NULL
             AND expires_at <= datetime('now', '+30 days')
         """
         )
@@ -1337,8 +1331,8 @@ def get_system_stats():
         # 소스별 90일 내 활성 IP 통계
         cursor.execute(
             """
-            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-            WHERE UPPER(source) = 'REGTECH' 
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip
+            WHERE UPPER(source) = 'REGTECH'
             AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
         """,
             (ninety_days_ago, ninety_days_ago),
@@ -1347,8 +1341,8 @@ def get_system_stats():
 
         cursor.execute(
             """
-            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-            WHERE UPPER(source) = 'SECUDIUM' 
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip
+            WHERE UPPER(source) = 'SECUDIUM'
             AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
         """,
             (ninety_days_ago, ninety_days_ago),
@@ -1357,8 +1351,8 @@ def get_system_stats():
 
         cursor.execute(
             """
-            SELECT COUNT(DISTINCT ip) FROM blacklist_ip 
-            WHERE UPPER(source) NOT IN ('REGTECH', 'SECUDIUM') 
+            SELECT COUNT(DISTINCT ip) FROM blacklist_ip
+            WHERE UPPER(source) NOT IN ('REGTECH', 'SECUDIUM')
             AND (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
         """,
             (ninety_days_ago, ninety_days_ago),
@@ -2266,8 +2260,8 @@ def api_get_daily_collection_status():
 @unified_bp.route("/api/system/docker/logs", methods=["GET"])
 def get_docker_logs():
     """Docker 컨테이너 로그 조회"""
-    import subprocess
     import os
+    import subprocess
 
     try:
         # 쿼리 파라미터
@@ -2708,8 +2702,8 @@ def get_sources_status():
 def get_docker_containers():
     """Docker 컨테이너 목록 조회"""
     try:
-        import subprocess
         import json
+        import subprocess
 
         # Docker 컨테이너 목록 가져오기
         cmd = ["docker", "ps", "--format", "json", "--all"]
@@ -2961,7 +2955,8 @@ def manual_collection_trigger():
 
             try:
                 # REGTECH Simple Collector 사용
-                from src.core.regtech_simple_collector import RegtechSimpleCollector
+                from src.core.regtech_simple_collector import \
+                    RegtechSimpleCollector
 
                 collector = RegtechSimpleCollector("data")
                 visual_logs.append("✅ REGTECH 수집기 생성 완료")
@@ -3325,8 +3320,8 @@ def get_raw_data():
         offset = (page - 1) * limit
 
         # Get database connection
-        import sqlite3
         import os
+        import sqlite3
 
         db_path = os.path.join(
             "/app" if os.path.exists("/app") else ".", "instance/blacklist.db"
@@ -3366,7 +3361,7 @@ def get_raw_data():
 
         # Get paginated data
         data_query = f"""
-        SELECT 
+        SELECT
             id,
             ip,
             source,
@@ -3660,10 +3655,11 @@ def _test_collection_endpoints():
     in an integrated environment with the Flask app and blueprints.
     """
     import json
-    from flask import Flask
-    from unittest.mock import Mock, patch
-    import tempfile
     import os
+    import tempfile
+    from unittest.mock import Mock, patch
+
+    from flask import Flask
 
     print("\n🧪 Running inline integration tests for collection endpoints...")
 
@@ -3804,8 +3800,9 @@ def _test_collection_endpoints():
 
 def _test_collection_state_consistency():
     """Test that collection state remains consistent across operations"""
-    from flask import Flask
     from unittest.mock import Mock, patch
+
+    from flask import Flask
 
     print("\n🧪 Testing collection state consistency...")
 
@@ -3861,10 +3858,11 @@ def _test_collection_state_consistency():
 
 def _test_concurrent_requests():
     """Test handling of concurrent collection requests"""
-    from flask import Flask
-    from unittest.mock import Mock, patch
     import threading
     import time
+    from unittest.mock import Mock, patch
+
+    from flask import Flask
 
     print("\n🧪 Testing concurrent request handling...")
 
@@ -4042,8 +4040,8 @@ def _test_database_api_consistency():
     print("🧪 데이터베이스-API 일관성 테스트 시작...")
 
     try:
-        import sqlite3
         import os
+        import sqlite3
 
         # 1. 데이터베이스에서 직접 데이터 조회
         db_path = "/home/jclee/app/blacklist/instance/blacklist.db"
@@ -4066,11 +4064,11 @@ def _test_database_api_consistency():
 
         cursor.execute(
             """
-            SELECT country, COUNT(*) as count 
-            FROM blacklist_ip 
+            SELECT country, COUNT(*) as count
+            FROM blacklist_ip
             WHERE country IS NOT NULL AND country != '' AND is_active = 1
-            GROUP BY country 
-            ORDER BY count DESC 
+            GROUP BY country
+            ORDER BY count DESC
             LIMIT 5
         """
         )

@@ -3,12 +3,13 @@
 REGTECH 데이터 분석 웹 라우트
 """
 
-from flask import Blueprint, render_template, jsonify, request
-import sqlite3
 import json
-from datetime import datetime, timedelta
-from collections import defaultdict
 import os
+import sqlite3
+from collections import defaultdict
+from datetime import datetime, timedelta
+
+from flask import Blueprint, jsonify, render_template, request
 
 # pandas는 선택적으로 import (호환성 문제시 None으로 설정)
 try:
@@ -50,7 +51,7 @@ class RegtechAnalyzer:
             # 최근 업데이트 시간
             cursor.execute(
                 """
-                SELECT MAX(created_at) FROM blacklist_ip 
+                SELECT MAX(created_at) FROM blacklist_ip
                 WHERE source = 'REGTECH'
             """
             )
@@ -59,7 +60,7 @@ class RegtechAnalyzer:
             # 위험도별 분포 (메타데이터에서 추출)
             cursor.execute(
                 """
-                SELECT metadata FROM blacklist_ip 
+                SELECT metadata FROM blacklist_ip
                 WHERE source = 'REGTECH' AND metadata IS NOT NULL
                 LIMIT 1000
             """
@@ -101,8 +102,8 @@ class RegtechAnalyzer:
             # 날짜별 데이터 (created_at 기준)
             query = """
                 SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM blacklist_ip 
-                WHERE source = 'REGTECH' 
+                FROM blacklist_ip
+                WHERE source = 'REGTECH'
                 AND created_at >= datetime('now', '-{} days')
                 GROUP BY DATE(created_at)
                 ORDER BY date ASC
@@ -138,10 +139,10 @@ class RegtechAnalyzer:
             conn = sqlite3.connect(self.db_path)
 
             query = """
-                SELECT 
+                SELECT
                     SUBSTR(ip, 1, INSTR(ip, '.') - 1) as first_octet,
                     COUNT(*) as count
-                FROM blacklist_ip 
+                FROM blacklist_ip
                 WHERE source = 'REGTECH'
                 GROUP BY first_octet
                 ORDER BY count DESC
@@ -170,7 +171,7 @@ class RegtechAnalyzer:
             if search_term:
                 query = """
                     SELECT ip, attack_type, detection_date, metadata
-                    FROM blacklist_ip 
+                    FROM blacklist_ip
                     WHERE source = 'REGTECH' AND ip LIKE ?
                     ORDER BY ip ASC
                     LIMIT ?
@@ -179,7 +180,7 @@ class RegtechAnalyzer:
             else:
                 query = """
                     SELECT ip, attack_type, detection_date, metadata
-                    FROM blacklist_ip 
+                    FROM blacklist_ip
                     WHERE source = 'REGTECH'
                     ORDER BY ip ASC
                     LIMIT ?

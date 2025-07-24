@@ -4,11 +4,11 @@
 시스템의 모든 의존성을 중앙에서 관리하고 주입하는 컨테이너입니다.
 이를 통해 모듈 간 결합도를 낮추고 테스트 가능성을 높입니다.
 """
-import os
 import logging
-from typing import Dict, Any, TypeVar, Type, Optional, Callable
-from dataclasses import dataclass
+import os
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -205,11 +205,13 @@ class BlacklistContainer(ServiceContainer):
     def _configure_core_services(self):
         """핵심 서비스 구성"""
         from src.config.factory import get_config
-        from src.utils.cache import get_cache
         from src.utils.auth import AuthManager, RateLimiter
-        from src.utils.monitoring import get_metrics_collector, get_health_checker
-        from .database import DatabaseManager
+        from src.utils.cache import get_cache
+        from src.utils.monitoring import (get_health_checker,
+                                          get_metrics_collector)
+
         from .blacklist_unified import UnifiedBlacklistManager
+        from .database import DatabaseManager
 
         # Configuration
         self.register_factory("config", lambda: get_config())
@@ -261,8 +263,9 @@ class BlacklistContainer(ServiceContainer):
 
         # Collection Manager - Docker 환경 기반 경로 사용
         try:
-            from .collection_manager import CollectionManager
             import os
+
+            from .collection_manager import CollectionManager
 
             # Docker 환경에서는 고정 경로 사용
             db_path = "/app/instance/blacklist.db"
@@ -415,24 +418,25 @@ def resolve_service(service_name: str) -> Any:
 # Rust-style 인라인 통합 테스트
 # ==============================================================================
 
+
 def _test_container_service_registration():
     """서비스 등록 및 해결 테스트"""
     print("🧪 컨테이너 서비스 등록/해결 테스트 시작...")
-    
+
     try:
         container = BlacklistContainer()
         container.initialize()
-        
+
         # 핵심 서비스들 검증
         services_to_test = [
-            'blacklist_manager',
-            'cache_manager', 
-            'auth_manager',
-            'config',
-            'metrics_collector',
-            'health_checker'
+            "blacklist_manager",
+            "cache_manager",
+            "auth_manager",
+            "config",
+            "metrics_collector",
+            "health_checker",
         ]
-        
+
         resolved_services = {}
         for service_name in services_to_test:
             try:
@@ -442,18 +446,18 @@ def _test_container_service_registration():
             except Exception as e:
                 resolved_services[service_name] = False
                 print(f"  ❌ {service_name}: {str(e)[:50]}...")
-        
+
         # 성공적으로 해결된 서비스 수 확인
         successful_count = sum(resolved_services.values())
         total_count = len(services_to_test)
-        
+
         if successful_count >= total_count * 0.7:  # 70% 이상 성공
             print(f"✅ 컨테이너 서비스 등록/해결 테스트 통과 ({successful_count}/{total_count})")
             return True
         else:
             print(f"❌ 컨테이너 서비스 등록/해결 테스트 실패 ({successful_count}/{total_count})")
             return False
-            
+
     except Exception as e:
         print(f"❌ 컨테이너 테스트 중 오류: {str(e)}")
         return False
@@ -462,22 +466,22 @@ def _test_container_service_registration():
 def _test_container_singleton_behavior():
     """싱글톤 동작 검증"""
     print("🧪 컨테이너 싱글톤 동작 테스트 시작...")
-    
+
     try:
         container1 = get_container()
         container2 = get_container()
-        
+
         # 컨테이너 자체가 싱글톤인지 확인
         if container1 is container2:
             print("  ✅ 컨테이너 자체 싱글톤 동작 확인")
         else:
             print("  ⚠️ 컨테이너가 싱글톤이 아님")
-        
+
         # 서비스 싱글톤 동작 확인
         try:
-            manager1 = container1.resolve('blacklist_manager')
-            manager2 = container2.resolve('blacklist_manager')
-            
+            manager1 = container1.resolve("blacklist_manager")
+            manager2 = container2.resolve("blacklist_manager")
+
             if manager1 is manager2:
                 print("  ✅ 서비스 싱글톤 동작 확인")
                 singleton_ok = True
@@ -487,10 +491,10 @@ def _test_container_singleton_behavior():
         except Exception as e:
             print(f"  ⚠️ 서비스 싱글톤 테스트 불가: {str(e)[:30]}...")
             singleton_ok = False
-        
+
         print("✅ 컨테이너 싱글톤 동작 테스트 완료")
         return singleton_ok
-        
+
     except Exception as e:
         print(f"❌ 싱글톤 테스트 중 오류: {str(e)}")
         return False
@@ -499,21 +503,21 @@ def _test_container_singleton_behavior():
 def _test_container_dependency_injection():
     """의존성 주입 검증"""
     print("🧪 컨테이너 의존성 주입 테스트 시작...")
-    
+
     try:
         container = get_container()
         service_info = container.get_service_info()
-        
+
         print(f"  📊 등록된 서비스 수: {len(service_info)}")
-        
+
         # 필수 서비스들이 등록되어 있는지 확인
-        required_services = ['blacklist_manager', 'cache_manager', 'auth_manager']
+        required_services = ["blacklist_manager", "cache_manager", "auth_manager"]
         missing_services = []
         instantiated_services = []
-        
+
         for service in required_services:
             if service in service_info:
-                if service_info[service]['instantiated']:
+                if service_info[service]["instantiated"]:
                     instantiated_services.append(service)
                     print(f"  ✅ {service}: 등록됨 및 인스턴스화됨")
                 else:
@@ -521,16 +525,20 @@ def _test_container_dependency_injection():
             else:
                 missing_services.append(service)
                 print(f"  ❌ {service}: 등록되지 않음")
-        
+
         success_rate = len(instantiated_services) / len(required_services)
-        
+
         if success_rate >= 0.7:  # 70% 이상 성공
-            print(f"✅ 컨테이너 의존성 주입 테스트 통과 ({len(instantiated_services)}/{len(required_services)})")
+            print(
+                f"✅ 컨테이너 의존성 주입 테스트 통과 ({len(instantiated_services)}/{len(required_services)})"
+            )
             return True
         else:
-            print(f"❌ 컨테이너 의존성 주입 테스트 실패 ({len(instantiated_services)}/{len(required_services)})")
+            print(
+                f"❌ 컨테이너 의존성 주입 테스트 실패 ({len(instantiated_services)}/{len(required_services)})"
+            )
             return False
-            
+
     except Exception as e:
         print(f"❌ 의존성 주입 테스트 중 오류: {str(e)}")
         return False
@@ -539,33 +547,33 @@ def _test_container_dependency_injection():
 def _test_container_error_handling():
     """컨테이너 오류 처리 테스트"""
     print("🧪 컨테이너 오류 처리 테스트 시작...")
-    
+
     try:
         container = get_container()
-        
+
         # 존재하지 않는 서비스 요청
         try:
-            container.resolve('nonexistent_service')
+            container.resolve("nonexistent_service")
             print("  ❌ 존재하지 않는 서비스 요청시 예외가 발생하지 않음")
             return False
         except KeyError:
             print("  ✅ 존재하지 않는 서비스 요청시 적절한 예외 발생 (KeyError)")
         except Exception as e:
             print(f"  ✅ 존재하지 않는 서비스 요청시 예외 발생: {type(e).__name__}")
-        
+
         # Rate limiter 특별 처리 (비활성화됨)
         try:
-            rate_limiter = container.resolve('rate_limiter')
+            rate_limiter = container.resolve("rate_limiter")
             if rate_limiter is None:
                 print("  ✅ Rate limiter 비활성화 처리 확인")
             else:
                 print("  ⚠️ Rate limiter가 활성화되어 있음")
         except Exception as e:
             print(f"  ⚠️ Rate limiter 테스트 실패: {str(e)[:30]}...")
-        
+
         print("✅ 컨테이너 오류 처리 테스트 완료")
         return True
-        
+
     except Exception as e:
         print(f"❌ 오류 처리 테스트 중 오류: {str(e)}")
         return False
@@ -575,20 +583,20 @@ if __name__ == "__main__":
     print("=" * 70)
     print("🚀 Dependency Injection Container 통합 테스트 실행")
     print("=" * 70)
-    
+
     # 테스트 결과 수집
     test_results = []
-    
+
     # 개별 테스트 실행
     test_results.append(_test_container_service_registration())
     test_results.append(_test_container_singleton_behavior())
-    test_results.append(_test_container_dependency_injection()) 
+    test_results.append(_test_container_dependency_injection())
     test_results.append(_test_container_error_handling())
-    
+
     # 전체 결과 요약
     passed_tests = sum(test_results)
     total_tests = len(test_results)
-    
+
     print("=" * 70)
     print("📊 테스트 결과 요약")
     print("=" * 70)
@@ -596,7 +604,7 @@ if __name__ == "__main__":
     print(f"통과한 테스트: {passed_tests}")
     print(f"실패한 테스트: {total_tests - passed_tests}")
     print(f"성공률: {(passed_tests/total_tests)*100:.1f}%")
-    
+
     if passed_tests == total_tests:
         print("🎉 모든 테스트 통과!")
         exit(0)

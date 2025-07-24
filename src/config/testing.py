@@ -1,8 +1,9 @@
 """
 Testing environment configuration
 """
-import tempfile
 import os
+import tempfile
+
 from .base import BaseConfig
 
 # Memory database URI for testing

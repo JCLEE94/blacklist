@@ -1,12 +1,13 @@
 """
 데이터베이스 관리 및 마이그레이션
 """
-import os
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Dict, Optional
+
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 logger = logging.getLogger(__name__)
@@ -228,8 +229,8 @@ class DatabaseManager:
             category_stats = session.execute(
                 text(
                     """
-                    SELECT attack_type, COUNT(*) as count 
-                    FROM blacklist_ip 
+                    SELECT attack_type, COUNT(*) as count
+                    FROM blacklist_ip
                     GROUP BY attack_type
                 """
                 )
@@ -240,7 +241,7 @@ class DatabaseManager:
             monthly_stats = session.execute(
                 text(
                     """
-                    SELECT strftime('%Y-%m', created_at) as month, 
+                    SELECT strftime('%Y-%m', created_at) as month,
                            COUNT(DISTINCT ip) as unique_ips,
                            COUNT(*) as total_detections
                     FROM blacklist_ip
@@ -280,7 +281,7 @@ class DatabaseManager:
             result = session.execute(
                 text(
                     """
-                    DELETE FROM blacklist_ip 
+                    DELETE FROM blacklist_ip
                     WHERE id NOT IN (
                         SELECT DISTINCT blacklist_ip_id FROM ip_detection
                     )

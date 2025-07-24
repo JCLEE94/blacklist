@@ -4,19 +4,19 @@ Provides intelligent caching with TTL, compression, tagging, and Redis optimizat
 Features: Smart compression, tag-based invalidation, connection pooling, async support
 """
 
-import logging
-import json
-import gzip
-import pickle
-import time
-import hashlib
-import threading
 import asyncio
-from typing import Any, Optional, Dict, Union, List, Set, Callable
-from functools import wraps
+import gzip
+import hashlib
+import json
+import logging
+import pickle
+import threading
+import time
+import weakref
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
-import weakref
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 try:
     import redis

@@ -2,23 +2,17 @@
 Web UI routes for Blacklist Manager
 Updated to use dependency injection container instead of Flask g
 """
-from flask import (
-    Blueprint,
-    render_template,
-    jsonify,
-    request,
-    flash,
-    redirect,
-    url_for,
-    g,
-)
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
 import json
-import os
-from pathlib import Path
 import logging
+import os
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import requests
+from flask import (Blueprint, flash, g, jsonify, redirect, render_template,
+                   request, url_for)
+
 from src.config.settings import settings
 
 # Avoid circular import by importing models and exceptions directly
@@ -335,8 +329,8 @@ def api_search():
 
         cursor.execute(
             """
-            SELECT ip, attack_type, detection_date, country, source, metadata 
-            FROM blacklist_ip 
+            SELECT ip, attack_type, detection_date, country, source, metadata
+            FROM blacklist_ip
             WHERE ip = ? LIMIT 1
         """,
             (ip,),
@@ -581,8 +575,8 @@ def get_month_details(month):
                 # 실제 일별 파일이 없으면 월별 데이터를 날짜별로 분산 생성
                 if not month_info["daily_files"]:
                     # 월별 IP 데이터를 일별로 가상 분산
-                    from datetime import datetime, timedelta
                     import random
+                    from datetime import datetime, timedelta
 
                     year, month_num = map(int, month.split("-"))
                     # 해당 월의 일수 계산
@@ -711,8 +705,8 @@ def get_daily_ips(month, date):
                 all_ips = [line.strip() for line in f if line.strip()]
 
             # 날짜 기반으로 시드 설정 (일관된 결과를 위해)
-            import random
             import hashlib
+            import random
 
             seed_string = f"{month}-{date}"
             seed = int(hashlib.md5(seed_string.encode()).hexdigest()[:8], 16)
@@ -760,8 +754,8 @@ def download_daily_ips(month, date):
     """Download IP list for a specific date as text file"""
     try:
         # get_daily_ips와 동일한 로직으로 IP 목록 가져오기
-        import re
         import calendar
+        import re
 
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", date):
             return jsonify({"error": "Invalid date format"}), 400
@@ -788,8 +782,8 @@ def download_daily_ips(month, date):
                 all_ips = [line.strip() for line in f if line.strip()]
 
             # 날짜 기반으로 시드 설정 (일관된 결과를 위해)
-            import random
             import hashlib
+            import random
 
             seed_string = f"{month}-{date}"
             seed = int(hashlib.md5(seed_string.encode()).hexdigest()[:8], 16)
@@ -875,7 +869,7 @@ def api_stats_simple():
         # Get recent detections (실제 탐지일 기준 최근 30일)
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip 
+            SELECT COUNT(*) FROM blacklist_ip
             WHERE DATE(detection_date) >= DATE('now', '-30 days')
         """
         )
@@ -892,11 +886,11 @@ def api_stats_simple():
         # 탐지일 기준 일별 분포 추가
         cursor.execute(
             """
-            SELECT 
+            SELECT
                 DATE(detection_date) as detect_date,
                 source,
                 COUNT(*) as count
-            FROM blacklist_ip 
+            FROM blacklist_ip
             GROUP BY DATE(detection_date), source
             ORDER BY detect_date DESC
         """
@@ -973,8 +967,8 @@ def api_fortigate_simple():
         # Get all IPs with metadata
         cursor.execute(
             """
-            SELECT ip, source, attack_type, country, detection_date 
-            FROM blacklist_ip 
+            SELECT ip, source, attack_type, country, detection_date
+            FROM blacklist_ip
             ORDER BY ip
         """
         )
@@ -1045,10 +1039,10 @@ def raw_data_viewer():
         # Date range
         cursor.execute(
             """
-            SELECT 
+            SELECT
                 MIN(DATE(detection_date)) as start_date,
                 MAX(DATE(detection_date)) as end_date
-            FROM blacklist_ip 
+            FROM blacklist_ip
             WHERE detection_date IS NOT NULL
         """
         )
@@ -1123,10 +1117,10 @@ def api_raw_data():
 
         # Get data with pagination
         data_query = f"""
-            SELECT 
-                ip, source, attack_type, country, 
+            SELECT
+                ip, source, attack_type, country,
                 detection_date, created_at, metadata
-            FROM blacklist_ip 
+            FROM blacklist_ip
             {where_clause}
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?
@@ -1189,8 +1183,8 @@ def regtech_collector():
         # 오늘 수집된 IP 수
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip 
-            WHERE source = 'REGTECH' 
+            SELECT COUNT(*) FROM blacklist_ip
+            WHERE source = 'REGTECH'
             AND DATE(created_at) = DATE('now')
         """
         )
@@ -1199,7 +1193,7 @@ def regtech_collector():
         # 마지막 업데이트 시간
         cursor.execute(
             """
-            SELECT MAX(created_at) FROM blacklist_ip 
+            SELECT MAX(created_at) FROM blacklist_ip
             WHERE source = 'REGTECH'
         """
         )
@@ -1242,8 +1236,8 @@ def secudium_collector():
 def api_secudium_test():
     """Test SECUDIUM connection"""
     try:
-        import sys
         import os
+        import sys
 
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -1310,8 +1304,8 @@ def api_secudium_progress():
 def api_secudium_logs():
     """Get SECUDIUM collection logs"""
     try:
-        import tempfile
         import os
+        import tempfile
 
         log_file = os.path.join(tempfile.gettempdir(), "secudium_collector.log")
 
@@ -1342,8 +1336,8 @@ def api_secudium_status():
         # SECUDIUM 소스 통계
         cursor.execute(
             """
-            SELECT COUNT(*) 
-            FROM blacklist_ip 
+            SELECT COUNT(*)
+            FROM blacklist_ip
             WHERE source LIKE 'SECUDIUM%'
         """
         )
@@ -1353,9 +1347,9 @@ def api_secudium_status():
         today = datetime.now().strftime("%Y-%m-%d")
         cursor.execute(
             """
-            SELECT COUNT(*) 
-            FROM blacklist_ip 
-            WHERE source LIKE 'SECUDIUM%' 
+            SELECT COUNT(*)
+            FROM blacklist_ip
+            WHERE source LIKE 'SECUDIUM%'
             AND date(created_at) = date(?)
         """,
             (today,),
@@ -1365,8 +1359,8 @@ def api_secudium_status():
         # 마지막 수집 시간
         cursor.execute(
             """
-            SELECT MAX(created_at) 
-            FROM blacklist_ip 
+            SELECT MAX(created_at)
+            FROM blacklist_ip
             WHERE source LIKE 'SECUDIUM%'
         """
         )
@@ -1418,8 +1412,8 @@ def api_secudium_stop():
     """Stop SECUDIUM collection"""
     try:
         import os
-        import tempfile
         import signal
+        import tempfile
 
         pid_file = os.path.join(tempfile.gettempdir(), "secudium_collector.pid")
 
@@ -1507,7 +1501,7 @@ def api_regtech_collect():
                     # 업데이트
                     cursor.execute(
                         """
-                        UPDATE blacklist_ip 
+                        UPDATE blacklist_ip
                         SET detection_date = ?, created_at = ?
                         WHERE ip = ? AND source = 'REGTECH'
                     """,
@@ -1519,7 +1513,7 @@ def api_regtech_collect():
                     try:
                         cursor.execute(
                             """
-                            INSERT INTO blacklist_ip 
+                            INSERT INTO blacklist_ip
                             (ip, country, attack_type, source, detection_date, created_at)
                             VALUES (?, ?, ?, ?, ?, ?)
                         """,
@@ -1577,8 +1571,8 @@ def api_regtech_stats():
         # 오늘 수집된 IP 수
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip 
-            WHERE source = 'REGTECH' 
+            SELECT COUNT(*) FROM blacklist_ip
+            WHERE source = 'REGTECH'
             AND DATE(created_at) = DATE('now')
         """
         )
@@ -1587,7 +1581,7 @@ def api_regtech_stats():
         # 마지막 업데이트
         cursor.execute(
             """
-            SELECT MAX(created_at) FROM blacklist_ip 
+            SELECT MAX(created_at) FROM blacklist_ip
             WHERE source = 'REGTECH'
         """
         )
@@ -1620,14 +1614,14 @@ def api_sources_stats():
         # 출처별 통계
         cursor.execute(
             """
-            SELECT 
+            SELECT
                 source,
                 COUNT(*) as total_ips,
                 COUNT(DISTINCT country) as countries,
                 MIN(detection_date) as earliest_detection,
                 MAX(detection_date) as latest_detection
-            FROM blacklist_ip 
-            GROUP BY source 
+            FROM blacklist_ip
+            GROUP BY source
             ORDER BY total_ips DESC
         """
         )
@@ -1698,9 +1692,9 @@ def api_ips_recent():
         # Get recent IPs with pagination - 일자별 데이터 표시
         cursor.execute(
             """
-            SELECT ip, attack_type, source, country, detection_date, created_at 
-            FROM blacklist_ip 
-            ORDER BY COALESCE(created_at, detection_date) DESC 
+            SELECT ip, attack_type, source, country, detection_date, created_at
+            FROM blacklist_ip
+            ORDER BY COALESCE(created_at, detection_date) DESC
             LIMIT ? OFFSET ?
         """,
             (limit, offset),
@@ -1760,12 +1754,12 @@ def api_daily_stats():
         # 탐지일 기준 최근 30일간의 일자별 데이터 집계
         cursor.execute(
             """
-            SELECT 
+            SELECT
                 DATE(detection_date) as detection_date,
                 COUNT(*) as daily_count,
                 COUNT(DISTINCT source) as sources_count,
                 GROUP_CONCAT(DISTINCT source) as sources_list
-            FROM blacklist_ip 
+            FROM blacklist_ip
             WHERE DATE(detection_date) >= DATE('now', '-30 days')
             GROUP BY DATE(detection_date)
             ORDER BY detection_date DESC
@@ -1831,8 +1825,8 @@ def api_daily_stats():
 def api_ips_by_date(date):
     """특정 탐지일의 IP 목록"""
     try:
-        import sqlite3
         import re
+        import sqlite3
 
         # 날짜 형식 검증
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", date):
@@ -1845,7 +1839,7 @@ def api_ips_by_date(date):
         cursor.execute(
             """
             SELECT ip, source, attack_type, country, detection_date
-            FROM blacklist_ip 
+            FROM blacklist_ip
             WHERE DATE(detection_date) = ?
             ORDER BY source, ip
         """,

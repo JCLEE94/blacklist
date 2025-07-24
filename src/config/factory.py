@@ -3,11 +3,13 @@ Configuration factory
 """
 import os
 from typing import Type
+
+from src.core.constants import ENV_DEVELOPMENT, ENV_PRODUCTION, ENV_TESTING
+
 from .base import BaseConfig
-from .production import ProductionConfig
 from .development import DevelopmentConfig
+from .production import ProductionConfig
 from .testing import TestingConfig
-from src.core.constants import ENV_PRODUCTION, ENV_DEVELOPMENT, ENV_TESTING
 
 
 def get_config(config_name: str = None) -> Type[BaseConfig]:

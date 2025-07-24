@@ -1,0 +1,113 @@
+name: GitOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ${{ secrets.REGISTRY_URL || 'registry.jclee.me' }}
+  IMAGE_NAME: ${{ vars.GITHUB_ORG || 'jclee94' }}/${{ vars.APP_NAME || 'blacklist' }}
+  NAMESPACE: ${{ vars.NAMESPACE || 'blacklist' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          buildkitd-flags: --debug
+          config-inline: |
+            [registry."${{ env.REGISTRY }}"]
+              http = true
+              insecure = true
+
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_REGISTRY_USER || 'admin' }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASS || 'bingogo1' }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value={{date 'YYYYMMDD-HHmmss' tz='Asia/Seoul'}}-{{sha}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            BUILD_VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+            VCS_REF=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+
+      - name: Notify ArgoCD
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "✅ Image pushed successfully to registry"
+          echo "🔄 ArgoCD will automatically detect and deploy the new image"
+          echo "📦 Image tags:"
+          echo "${{ steps.meta.outputs.tags }}" | sed 's/,/\n/g'
+
+  post-deployment-check:
+    needs: build-and-deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    steps:
+      - name: Wait for ArgoCD sync
+        run: sleep 30
+
+      - name: Check deployment status
+        run: |
+          echo "🔍 Checking deployment status..."
+          
+          # Check pod status
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=blacklist
+          
+          # Check service endpoints
+          kubectl get endpoints -n ${{ env.NAMESPACE }}
+          
+          # Check ArgoCD app status (if ArgoCD CLI is available)
+          if command -v argocd &> /dev/null; then
+            argocd app get blacklist --grpc-web || true
+          fi
+
+      - name: Health check
+        run: |
+          echo "🏥 Running health check..."
+          
+          # NodePort health check
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          NODE_PORT=$(kubectl get svc blacklist-service -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}')
+          
+          if [ ! -z "$NODE_IP" ] && [ ! -z "$NODE_PORT" ]; then
+            echo "Checking http://$NODE_IP:$NODE_PORT/health"
+            curl -s -f "http://$NODE_IP:$NODE_PORT/health" || echo "⚠️ Health check failed"
+          fi

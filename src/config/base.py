@@ -2,15 +2,11 @@
 Base configuration class
 """
 import os
-from typing import Dict, Any, List
-from src.core.constants import (
-    DEFAULT_PORT,
-    DEFAULT_DATA_DIR,
-    DEFAULT_DB_URI,
-    DEFAULT_REDIS_URL,
-    DEFAULT_UPDATE_INTERVAL,
-    DEFAULT_DATA_RETENTION_DAYS,
-)
+from typing import Any, Dict, List
+
+from src.core.constants import (DEFAULT_DATA_DIR, DEFAULT_DATA_RETENTION_DAYS,
+                                DEFAULT_DB_URI, DEFAULT_PORT,
+                                DEFAULT_UPDATE_INTERVAL)
 
 
 class BaseConfig:

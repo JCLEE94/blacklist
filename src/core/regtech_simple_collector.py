@@ -4,14 +4,15 @@ REGTECH 단순 수집기 - 최소한의 기능으로 작동하는 버전
 사용자가 "아니저번에됫자나.." (이전에 작동했던) 버전을 기반으로 구현
 """
 
-import os
 import json
 import logging
-import requests
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
-from bs4 import BeautifulSoup
+import os
 import re
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
+
+import requests
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 

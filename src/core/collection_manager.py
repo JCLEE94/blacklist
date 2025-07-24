@@ -3,15 +3,15 @@
 REGTECH, SECUDIUM 등 다양한 소스의 데이터 수집을 통합 관리
 수집 ON/OFF 기능 및 데이터 클리어 기능 포함
 """
-import os
-import logging
 import json
-import sqlite3
+import logging
+import os
 import shutil
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from pathlib import Path
+import sqlite3
 import traceback
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ class CollectionManager:
             # app_settings 테이블 확인
             cursor.execute(
                 """
-                SELECT value FROM app_settings 
+                SELECT value FROM app_settings
                 WHERE key = 'collection_enabled'
             """
             )
@@ -556,7 +556,8 @@ class CollectionManager:
             try:
                 # Enhanced 수집기 우선 시도
                 try:
-                    from .regtech_collector_enhanced import EnhancedRegtechCollector
+                    from .regtech_collector_enhanced import \
+                        EnhancedRegtechCollector
 
                     data_dir = os.path.join(os.path.dirname(self.db_path), "..", "data")
                     collector = EnhancedRegtechCollector(data_dir=data_dir)
@@ -606,7 +607,8 @@ class CollectionManager:
                 except ImportError:
                     # HAR 기반 수집기로 폴백
                     logger.warning("Enhanced 수집기 사용 불가, HAR 기반 수집기로 폴백")
-                    from .har_based_regtech_collector import HarBasedRegtechCollector
+                    from .har_based_regtech_collector import \
+                        HarBasedRegtechCollector
 
                     data_dir = os.path.join(os.path.dirname(self.db_path), "..", "data")
                     collector = HarBasedRegtechCollector(data_dir=data_dir)
@@ -712,8 +714,8 @@ class CollectionManager:
             if source:
                 cursor.execute(
                     """
-                    SELECT ip, source, detection_date, created_at 
-                    FROM blacklist_ip 
+                    SELECT ip, source, detection_date, created_at
+                    FROM blacklist_ip
                     WHERE UPPER(source) = UPPER(?)
                     ORDER BY created_at DESC LIMIT ?
                 """,
@@ -722,8 +724,8 @@ class CollectionManager:
             else:
                 cursor.execute(
                     """
-                    SELECT ip, source, detection_date, created_at 
-                    FROM blacklist_ip 
+                    SELECT ip, source, detection_date, created_at
+                    FROM blacklist_ip
                     ORDER BY created_at DESC LIMIT ?
                 """,
                     (limit,),
@@ -814,7 +816,7 @@ class CollectionManager:
                         # 새로운 IP 삽입
                         cursor.execute(
                             """
-                            INSERT INTO blacklist_ip 
+                            INSERT INTO blacklist_ip
                             (ip, source, country, reason, detection_date, threat_level, is_active, created_at)
                             VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
                         """,
@@ -832,8 +834,8 @@ class CollectionManager:
                         # 기존 IP 업데이트
                         cursor.execute(
                             """
-                            UPDATE blacklist_ip 
-                            SET country = ?, reason = ?, detection_date = ?, 
+                            UPDATE blacklist_ip
+                            SET country = ?, reason = ?, detection_date = ?,
                                 threat_level = ?, updated_at = datetime('now')
                             WHERE ip = ? AND source = ?
                         """,

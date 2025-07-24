@@ -2,15 +2,17 @@
 """
 설정 관리 API 엔드포인트
 """
-from flask import Blueprint, request, jsonify, render_template
-import logging
-import jwt
-from datetime import datetime
-import os
 import json
+import logging
+import os
+from datetime import datetime
 from pathlib import Path
 
+import jwt
+from flask import Blueprint, jsonify, render_template, request
+
 from src.config.settings import settings
+
 from .container import get_container
 
 logger = logging.getLogger(__name__)
@@ -224,9 +226,11 @@ def regtech_token_status():
 def test_regtech_collection():
     """REGTECH 수집 테스트"""
     try:
-        from .regtech_auto_login import get_regtech_auth
-        import requests
         from datetime import datetime, timedelta
+
+        import requests
+
+        from .regtech_auto_login import get_regtech_auth
 
         auth = get_regtech_auth()
         token = auth.get_valid_token()

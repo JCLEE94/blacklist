@@ -3,13 +3,13 @@
 애플리케이션 설정 모델
 데이터베이스에 저장되는 동적 설정 관리
 """
-import os  # os 모듈을 맨 처음에 import
 import json
+import os  # os 모듈을 맨 처음에 import
 import sqlite3
-from typing import Any, Dict, Optional, List
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from dataclasses import dataclass, asdict
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class SettingType(Enum):
