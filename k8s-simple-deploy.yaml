@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+  namespace: blacklist
+  labels:
+    app: blacklist
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: blacklist
+  template:
+    metadata:
+      labels:
+        app: blacklist
+    spec:
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/jclee94/blacklist:latest
+        ports:
+        - containerPort: 8541
+        env:
+        - name: PORT
+          value: "8541"
+        - name: REGTECH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: REGTECH_USERNAME
+        - name: REGTECH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: REGTECH_PASSWORD
+        - name: SECUDIUM_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: SECUDIUM_USERNAME
+        - name: SECUDIUM_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: SECUDIUM_PASSWORD
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: SECRET_KEY
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: JWT_SECRET_KEY
+        - name: API_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: API_SECRET_KEY
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8541
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8541
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist-service
+  namespace: blacklist
+spec:
+  selector:
+    app: blacklist
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8541
+      nodePort: 32542
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blacklist-ingress
+  namespace: blacklist
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: blacklist.jclee.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blacklist-service
+            port:
+              number: 80
