@@ -56,9 +56,9 @@ class CollectionProgress:
             "total_items": self.total_items,
             "percentage": round(self.percentage, 2),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "duration": self._get_duration(),
             "error": self.error,
             "details": self.details,

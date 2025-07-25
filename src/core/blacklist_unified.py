@@ -1202,10 +1202,10 @@ class UnifiedBlacklistManager:
                         "expires_at": row[3],
                         "created_at": row[4],
                         "days_until_expiry": (
-                            datetime.fromisoformat(row[3]) - datetime.now()
-                        ).days
-                        if row[3]
-                        else None,
+                            (datetime.fromisoformat(row[3]) - datetime.now()).days
+                            if row[3]
+                            else None
+                        ),
                     }
                 )
 
@@ -1477,7 +1477,9 @@ def _test_blacklist_manager_data_integrity():
                 invalid_ips += 1
 
         if sample_size > 0:
-            print(f"  🔍 IP 형식 검증 ({sample_size}개 샘플): 유효 {valid_ips}, 무효 {invalid_ips}")
+            print(
+                f"  🔍 IP 형식 검증 ({sample_size}개 샘플): 유효 {valid_ips}, 무효 {invalid_ips}"
+            )
             if invalid_ips == 0:
                 print("  ✅ IP 형식 모두 유효")
             else:

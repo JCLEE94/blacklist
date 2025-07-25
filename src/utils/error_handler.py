@@ -341,7 +341,8 @@ def validate_required_fields(data: Dict, required_fields: list) -> None:
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         raise ValidationError(
-            f"필수 필드가 누락되었습니다: {', '.join(missing_fields)}", field=missing_fields[0]
+            f"필수 필드가 누락되었습니다: {', '.join(missing_fields)}",
+            field=missing_fields[0],
         )
 
 

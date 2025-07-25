@@ -1,6 +1,7 @@
 """
 데이터베이스 관리 및 마이그레이션
 """
+
 import logging
 import os
 from datetime import datetime, timedelta
@@ -43,13 +44,15 @@ class DatabaseManager:
                 max_overflow=10,
                 pool_timeout=20,
                 pool_recycle=7200,  # 2시간
-                connect_args={
-                    "check_same_thread": False,
-                    "timeout": 30,  # 잠금 대기 시간
-                    "isolation_level": None,  # 자동 커밋 모드
-                }
-                if "sqlite" in self.database_url
-                else {},
+                connect_args=(
+                    {
+                        "check_same_thread": False,
+                        "timeout": 30,  # 잠금 대기 시간
+                        "isolation_level": None,  # 자동 커밋 모드
+                    }
+                    if "sqlite" in self.database_url
+                    else {}
+                ),
                 echo=False,
                 future=True,
             )

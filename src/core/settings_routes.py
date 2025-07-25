@@ -95,7 +95,12 @@ def update_regtech_auth():
         password = data.get("password")
 
         if not username or not password:
-            return jsonify({"success": False, "error": "사용자명과 비밀번호가 필요합니다."}), 400
+            return (
+                jsonify(
+                    {"success": False, "error": "사용자명과 비밀번호가 필요합니다."}
+                ),
+                400,
+            )
 
         # 자동 로그인 모듈 가져오기
         from .regtech_auto_login import get_regtech_auth
@@ -146,7 +151,12 @@ def update_regtech_auth():
                 }
             )
         else:
-            return jsonify({"success": False, "error": "인증 실패. 사용자명과 비밀번호를 확인하세요."})
+            return jsonify(
+                {
+                    "success": False,
+                    "error": "인증 실패. 사용자명과 비밀번호를 확인하세요.",
+                }
+            )
 
     except Exception as e:
         logger.error(f"REGTECH 인증 업데이트 오류: {e}")
@@ -180,7 +190,9 @@ def refresh_regtech_token():
                 }
             )
         else:
-            return jsonify({"success": False, "error": "토큰 갱신 실패. 인증 정보를 확인하세요."})
+            return jsonify(
+                {"success": False, "error": "토큰 갱신 실패. 인증 정보를 확인하세요."}
+            )
 
     except Exception as e:
         logger.error(f"토큰 갱신 오류: {e}")
@@ -284,7 +296,12 @@ def update_secudium_auth():
         password = data.get("password")
 
         if not username or not password:
-            return jsonify({"success": False, "error": "사용자명과 비밀번호가 필요합니다."}), 400
+            return (
+                jsonify(
+                    {"success": False, "error": "사용자명과 비밀번호가 필요합니다."}
+                ),
+                400,
+            )
 
         # 설정 업데이트 (메모리)
         settings.secudium_username = username
@@ -335,7 +352,10 @@ def update_secudium_auth():
             logger.warning(f"캐시 클리어 실패: {e}")
 
         return jsonify(
-            {"success": True, "message": "SECUDIUM 인증 정보가 DB 및 파일에 저장되었습니다."}
+            {
+                "success": True,
+                "message": "SECUDIUM 인증 정보가 DB 및 파일에 저장되었습니다.",
+            }
         )
 
     except Exception as e:
@@ -384,7 +404,11 @@ def get_all_settings_api():
 
     # 카테고리 메타데이터 추가
     categories_info = {
-        "general": {"name": "일반 설정", "description": "애플리케이션의 기본 설정", "icon": "bi-gear"},
+        "general": {
+            "name": "일반 설정",
+            "description": "애플리케이션의 기본 설정",
+            "icon": "bi-gear",
+        },
         "collection": {
             "name": "수집 설정",
             "description": "REGTECH/SECUDIUM 데이터 수집 관련 설정",
@@ -543,7 +567,9 @@ def save_settings():
         except Exception as cache_error:
             logger.warning(f"캐시 클리어 실패: {cache_error}")
 
-        return jsonify({"success": True, "message": "설정이 성공적으로 저장되었습니다."})
+        return jsonify(
+            {"success": True, "message": "설정이 성공적으로 저장되었습니다."}
+        )
 
     except Exception as e:
         logger.error(f"설정 저장 오류: {e}")

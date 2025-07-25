@@ -1,6 +1,7 @@
 """
 Base configuration class
 """
+
 import os
 from typing import Any, Dict, List
 

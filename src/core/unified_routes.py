@@ -2,6 +2,7 @@
 통합 API 라우트
 모든 블랙리스트 API를 하나로 통합한 라우트 시스템
 """
+
 import asyncio
 import json
 import logging
@@ -65,8 +66,6 @@ def _get_dashboard_data():
     monthly_data = []
     if total > 0:
         # Show current month with actual data
-        from datetime import datetime
-
         current_month = datetime.now().strftime("%m월")
         monthly_data = [{"month": current_month, "count": total}]
 
@@ -314,11 +313,11 @@ def api_sources_distribution():
                 {
                     "source": "REGTECH",
                     "count": stats["regtech_count"],
-                    "percentage": round(
-                        (stats["regtech_count"] / stats["total_ips"]) * 100, 1
-                    )
-                    if stats["total_ips"] > 0
-                    else 0,
+                    "percentage": (
+                        round((stats["regtech_count"] / stats["total_ips"]) * 100, 1)
+                        if stats["total_ips"] > 0
+                        else 0
+                    ),
                 }
             )
 
@@ -327,11 +326,11 @@ def api_sources_distribution():
                 {
                     "source": "SECUDIUM",
                     "count": stats["secudium_count"],
-                    "percentage": round(
-                        (stats["secudium_count"] / stats["total_ips"]) * 100, 1
-                    )
-                    if stats["total_ips"] > 0
-                    else 0,
+                    "percentage": (
+                        round((stats["secudium_count"] / stats["total_ips"]) * 100, 1)
+                        if stats["total_ips"] > 0
+                        else 0
+                    ),
                 }
             )
 
@@ -340,11 +339,11 @@ def api_sources_distribution():
                 {
                     "source": "PUBLIC",
                     "count": stats["public_count"],
-                    "percentage": round(
-                        (stats["public_count"] / stats["total_ips"]) * 100, 1
-                    )
-                    if stats["total_ips"] > 0
-                    else 0,
+                    "percentage": (
+                        round((stats["public_count"] / stats["total_ips"]) * 100, 1)
+                        if stats["total_ips"] > 0
+                        else 0
+                    ),
                 }
             )
 
@@ -393,9 +392,11 @@ def api_collection_logs():
                             ):
                                 logs.append(
                                     {
-                                        "timestamp": line.split(" - ")[0]
-                                        if " - " in line
-                                        else datetime.now().isoformat(),
+                                        "timestamp": (
+                                            line.split(" - ")[0]
+                                            if " - " in line
+                                            else datetime.now().isoformat()
+                                        ),
                                         "message": line.strip(),
                                         "source": "file",
                                     }
@@ -769,9 +770,11 @@ def get_realtime_logs():
         for log in logs:
             simple_logs.append(
                 {
-                    "time": log.get("timestamp", "").split("T")[1][:8]
-                    if "T" in log.get("timestamp", "")
-                    else "",  # HH:MM:SS만
+                    "time": (
+                        log.get("timestamp", "").split("T")[1][:8]
+                        if "T" in log.get("timestamp", "")
+                        else ""
+                    ),  # HH:MM:SS만
                     "message": log.get("message", ""),
                     "source": log.get("source", "").upper(),
                 }
@@ -1030,12 +1033,16 @@ def get_monthly_data():
                         "month": row["month"],
                         "ip_count": row["count"],
                         "details": {
-                            "first_detection": row["first_detection"][:10]
-                            if row["first_detection"]
-                            else "-",  # YYYY-MM-DD 추출
-                            "last_detection": row["last_detection"][:10]
-                            if row["last_detection"]
-                            else "-",  # YYYY-MM-DD 추출
+                            "first_detection": (
+                                row["first_detection"][:10]
+                                if row["first_detection"]
+                                else "-"
+                            ),  # YYYY-MM-DD 추출
+                            "last_detection": (
+                                row["last_detection"][:10]
+                                if row["last_detection"]
+                                else "-"
+                            ),  # YYYY-MM-DD 추출
                             "status": "active",
                         },
                     }
@@ -1090,7 +1097,12 @@ def clear_db():
     try:
         result = service.clear_all_data()
         if result.get("success"):
-            return jsonify({"success": True, "message": "데이터베이스가 성공적으로 클리어되었습니다."})
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "데이터베이스가 성공적으로 클리어되었습니다.",
+                }
+            )
         else:
             return (
                 jsonify(
@@ -1458,9 +1470,9 @@ def get_collection_status():
                     "total_ips": stats.get("total_ips", 0),
                     "active_ips": stats.get("active_ips", 0),
                     "today_collected": today_stats["count"] if today_stats else 0,
-                    "today_sources": today_stats.get("sources", {})
-                    if today_stats
-                    else {},
+                    "today_sources": (
+                        today_stats.get("sources", {}) if today_stats else {}
+                    ),
                 },
                 "daily_collection": {
                     "today": today_stats["count"] if today_stats else 0,
@@ -1841,7 +1853,9 @@ def trigger_secudium_collection():
 
         # SECUDIUM은 현재 계정 문제로 비활성화됨
         if progress_tracker:
-            progress_tracker.fail_collection("secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다.")
+            progress_tracker.fail_collection(
+                "secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다."
+            )
 
         return (
             jsonify(
@@ -1977,13 +1991,23 @@ def update_collection_intervals():
         # 유효성 검사
         if not (1 <= regtech_days <= 365):
             return (
-                jsonify({"success": False, "error": "REGTECH 수집 간격은 1-365일 사이여야 합니다."}),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "REGTECH 수집 간격은 1-365일 사이여야 합니다.",
+                    }
+                ),
                 400,
             )
 
         if not (1 <= secudium_days <= 30):
             return (
-                jsonify({"success": False, "error": "SECUDIUM 수집 간격은 1-30일 사이여야 합니다."}),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "SECUDIUM 수집 간격은 1-30일 사이여야 합니다.",
+                    }
+                ),
                 400,
             )
 
@@ -2020,7 +2044,11 @@ def update_expiration_status():
         result = blacklist_manager.update_expiration_status()
 
         return jsonify(
-            {"success": True, "message": "만료 상태가 업데이트되었습니다.", "data": result}
+            {
+                "success": True,
+                "message": "만료 상태가 업데이트되었습니다.",
+                "data": result,
+            }
         )
 
     except Exception as e:
@@ -2177,7 +2205,9 @@ def api_enable_daily_collection():
 
         # 일일 수집 설정 저장
         result = service.set_daily_collection_config(
-            enabled=True, strategy=collection_strategy, collection_days=3  # 3일 데이터 수집
+            enabled=True,
+            strategy=collection_strategy,
+            collection_days=3,  # 3일 데이터 수집
         )
 
         return jsonify(
@@ -2213,7 +2243,11 @@ def api_disable_daily_collection():
         )
 
         return jsonify(
-            {"success": True, "message": "일일 자동 수집이 비활성화되었습니다.", "data": result}
+            {
+                "success": True,
+                "message": "일일 자동 수집이 비활성화되었습니다.",
+                "data": result,
+            }
         )
 
     except Exception as e:
@@ -2571,9 +2605,11 @@ def get_sources_status():
                 "last_success": None,
                 "last_error": None,
                 "total_ips": service.get_system_health().get("regtech_count", 0),
-                "status": "active"
-                if collection_status.get("collection_enabled", False)
-                else "disabled",
+                "status": (
+                    "active"
+                    if collection_status.get("collection_enabled", False)
+                    else "disabled"
+                ),
                 "health": "healthy",
                 "config": {
                     "url": "https://regtech.fss.or.kr",
@@ -2588,9 +2624,11 @@ def get_sources_status():
                 "last_success": None,
                 "last_error": None,
                 "total_ips": service.get_system_health().get("secudium_count", 0),
-                "status": "active"
-                if collection_status.get("collection_enabled", False)
-                else "disabled",
+                "status": (
+                    "active"
+                    if collection_status.get("collection_enabled", False)
+                    else "disabled"
+                ),
                 "health": "healthy",
                 "config": {
                     "url": "https://secudium.com",
@@ -2854,7 +2892,11 @@ def regtech_cookies_settings():
             }
 
             return jsonify(
-                {"success": True, "cookies": cookies, "message": "REGTECH 쿠키 설정 조회 완료"}
+                {
+                    "success": True,
+                    "cookies": cookies,
+                    "message": "REGTECH 쿠키 설정 조회 완료",
+                }
             )
 
         elif request.method == "POST":
@@ -2964,7 +3006,9 @@ def manual_collection_trigger():
                 # 연결 테스트
                 visual_logs.append("🔗 REGTECH 서버 연결 테스트 중...")
                 if not collector.test_connection():
-                    visual_logs.append("❌ REGTECH 서버 연결 실패 - 쿠키 설정을 확인하세요")
+                    visual_logs.append(
+                        "❌ REGTECH 서버 연결 실패 - 쿠키 설정을 확인하세요"
+                    )
 
                     if progress_tracker:
                         progress_tracker.fail_collection(
@@ -3011,7 +3055,9 @@ def manual_collection_trigger():
                         blacklist_manager.add_ip(entry)
                         saved_count += 1
 
-                    visual_logs.append(f"✅ {saved_count}개 IP가 데이터베이스에 저장되었습니다")
+                    visual_logs.append(
+                        f"✅ {saved_count}개 IP가 데이터베이스에 저장되었습니다"
+                    )
 
                     if progress_tracker:
                         progress_tracker.complete_collection("regtech", len(entries))
@@ -3154,7 +3200,11 @@ def auto_collection_config():
             }
 
             return jsonify(
-                {"success": True, "config": config, "message": "자동 수집 설정 조회 완료"}
+                {
+                    "success": True,
+                    "config": config,
+                    "message": "자동 수집 설정 조회 완료",
+                }
             )
 
         elif request.method == "POST":
@@ -3504,8 +3554,8 @@ def set_ip_expiration(ip):
 
 
 @unified_bp.errorhandler(404)
-def not_found_error(error):
-    """404 에러 핸들러"""
+def not_found_error_v2(error):
+    """404 에러 핸들러 - v2 to avoid redefinition"""
     return (
         jsonify(
             {
@@ -3609,7 +3659,10 @@ def test_manual_github_issue():
         else:
             return (
                 jsonify(
-                    {"success": False, "message": "GitHub 이슈 생성에 실패했습니다 (토큰 설정 확인 필요)"}
+                    {
+                        "success": False,
+                        "message": "GitHub 이슈 생성에 실패했습니다 (토큰 설정 확인 필요)",
+                    }
                 ),
                 500,
             )
@@ -3711,7 +3764,9 @@ def _test_collection_endpoints():
             assert data["status"] == "active", "Status should be active"
             assert "stats" in data, "Response should include stats"
             assert data["stats"]["total_ips"] == 1000, "Should have correct total IPs"
-            assert data["message"] == "수집은 항상 활성화 상태입니다", "Should have correct message"
+            assert (
+                data["message"] == "수집은 항상 활성화 상태입니다"
+            ), "Should have correct message"
 
             # Test 2: Collection enable endpoint
             print("  ✓ Testing POST /api/collection/enable")
@@ -3725,7 +3780,9 @@ def _test_collection_endpoints():
             assert data["success"] is True, "Enable should always succeed"
             assert data["collection_enabled"] is True, "Should be enabled"
             assert data["cleared_data"] is False, "Should not clear data"
-            assert data["message"] == "수집은 항상 활성화 상태입니다.", "Should have correct message"
+            assert (
+                data["message"] == "수집은 항상 활성화 상태입니다."
+            ), "Should have correct message"
 
             # Test 3: Collection disable endpoint
             print("  ✓ Testing POST /api/collection/disable")
@@ -3939,6 +3996,7 @@ def _test_statistics_integration():
 
     try:
         # Flask 테스트 앱 생성
+        from flask import Flask
         test_app = Flask(__name__)
         test_app.register_blueprint(unified_bp)
 
@@ -4016,7 +4074,9 @@ def _test_statistics_integration():
                 for trend in daily_trends[:2]:  # 최근 2일만 검증
                     assert "date" in trend, "트렌드에 date 필드가 없습니다"
                     assert "new_ips" in trend, "트렌드에 new_ips 필드가 없습니다"
-                    assert isinstance(trend["new_ips"], int), "new_ips는 정수여야 합니다"
+                    assert isinstance(
+                        trend["new_ips"], int
+                    ), "new_ips는 정수여야 합니다"
 
                 print(
                     f"    - 최근 트렌드: {daily_trends[0]['date']} ({daily_trends[0]['new_ips']}개)"
@@ -4048,7 +4108,9 @@ def _test_database_api_consistency():
         if not os.path.exists(db_path):
             db_path = "instance/blacklist.db"
 
-        assert os.path.exists(db_path), f"데이터베이스 파일을 찾을 수 없습니다: {db_path}"
+        assert os.path.exists(
+            db_path
+        ), f"데이터베이스 파일을 찾을 수 없습니다: {db_path}"
 
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -4081,6 +4143,7 @@ def _test_database_api_consistency():
         print(f"  ✓ DB 상위 국가: {db_countries[0] if db_countries else 'None'}")
 
         # 2. API 응답과 비교
+        from flask import Flask
         test_app = Flask(__name__)
         test_app.register_blueprint(unified_bp)
 
@@ -4143,6 +4206,7 @@ def _test_collection_data_flow():
     print("🧪 수집 데이터 플로우 통합 테스트 시작...")
 
     try:
+        from flask import Flask
         test_app = Flask(__name__)
         test_app.register_blueprint(unified_bp)
 

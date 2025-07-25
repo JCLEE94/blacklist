@@ -2,6 +2,7 @@
 Base class for IP source plugins
 모든 IP 소스 플러그인이 상속해야 하는 기본 클래스
 """
+
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -203,9 +204,9 @@ class BaseIPSource(ABC):
                 "error_count": self._error_count,
                 "max_errors": self._max_errors,
                 "enabled": self.config.enabled,
-                "last_update": self._last_update.isoformat()
-                if self._last_update
-                else None,
+                "last_update": (
+                    self._last_update.isoformat() if self._last_update else None
+                ),
             }
         except Exception as e:
             return {"healthy": False, "source": self.source_name, "error": str(e)}

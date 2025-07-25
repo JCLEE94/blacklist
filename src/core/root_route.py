@@ -1,4 +1,5 @@
 """루트 경로 라우트 추가"""
+
 import asyncio
 import logging
 
@@ -50,21 +51,21 @@ def calculate_source_distribution(stats):
         return {
             "regtech": {
                 "count": regtech_count,
-                "percentage": round((regtech_count / total) * 100, 1)
-                if total > 0
-                else 0,
+                "percentage": (
+                    round((regtech_count / total) * 100, 1) if total > 0 else 0
+                ),
             },
             "secudium": {
                 "count": secudium_count,
-                "percentage": round((secudium_count / total) * 100, 1)
-                if total > 0
-                else 0,
+                "percentage": (
+                    round((secudium_count / total) * 100, 1) if total > 0 else 0
+                ),
             },
             "public": {
                 "count": max(0, public_count),
-                "percentage": round((max(0, public_count) / total) * 100, 1)
-                if total > 0
-                else 0,
+                "percentage": (
+                    round((max(0, public_count) / total) * 100, 1) if total > 0 else 0
+                ),
             },
         }
     except Exception as e:

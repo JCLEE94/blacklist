@@ -2,6 +2,7 @@
 IP 및 데이터 검증 유틸리티
 공통 모듈로 마이그레이션 - 후방 호환성 유지
 """
+
 from typing import List, Optional, Tuple
 
 # 공통 모듈에서 import

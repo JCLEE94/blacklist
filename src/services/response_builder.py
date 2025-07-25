@@ -4,6 +4,7 @@ Response Builder Service
 Provides standardized response formatting for API endpoints.
 Creates consistent JSON responses with proper HTTP status codes.
 """
+
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
@@ -259,9 +260,9 @@ class ResponseBuilder:
                     "total": len(results),
                     "success_count": success_count,
                     "failure_count": failure_count,
-                    "success_rate": round((success_count / len(results)) * 100, 2)
-                    if results
-                    else 0,
+                    "success_rate": (
+                        round((success_count / len(results)) * 100, 2) if results else 0
+                    ),
                 },
             },
             "timestamp": datetime.now().isoformat(),

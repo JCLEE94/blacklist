@@ -115,7 +115,10 @@ class CICDTroubleshooter:
                 "retry_result": retry_result,
             }
         else:
-            return {"status": "no_fixes_available", "message": "자동 수정할 수 있는 문제를 찾지 못함"}
+            return {
+                "status": "no_fixes_available",
+                "message": "자동 수정할 수 있는 문제를 찾지 못함",
+            }
 
     def get_pipeline_status(self, project_id: str, pipeline_id: str) -> str:
         """파이프라인 상태 확인"""

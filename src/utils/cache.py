@@ -1,6 +1,7 @@
 """
 캐싱 유틸리티 - Redis 및 인메모리 캐싱
 """
+
 import hashlib
 import json
 import logging
@@ -280,9 +281,9 @@ class CacheManager:
             "evictions": self.stats["evictions"],
             "memory_usage": local_cache_size,
             "local_cache_size": local_cache_size,  # CacheService 호환성
-            "max_memory_items": self.max_memory_items
-            if self.cache_type == "memory"
-            else "unlimited",
+            "max_memory_items": (
+                self.max_memory_items if self.cache_type == "memory" else "unlimited"
+            ),
         }
 
         # Redis 전용 통계

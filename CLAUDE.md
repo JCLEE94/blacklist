@@ -360,17 +360,21 @@ class BaseIPSource(ABC):
 
 ### CI/CD Pipeline (ArgoCD GitOps)
 
-**GitHub Actions Workflow** (`.github/workflows/gitops-cicd.yml`):
-1. **Build & Push**: Docker image to registry
-2. **Multi-tag Strategy**: `latest`, `sha-<hash>`, `date-<timestamp>`, branch names
-3. **ArgoCD Image Updater**: Automatically detects and deploys new images
-4. **Health Checks**: Post-deployment verification
-5. **No Artifact Uploads**: Avoids GitHub storage quota issues
+**GitHub Actions Workflow** (`.github/workflows/deploy.yaml`):
+1. **Unified Pipeline**: Single consolidated workflow for all deployments
+2. **Registry Authentication**: Automated Docker login with GitHub Secrets
+3. **Multi-tag Strategy**: `latest`, `sha-<hash>`, `date-<timestamp>` for version tracking
+4. **ArgoCD Integration**: Automatic deployment annotation updates
+5. **Buildx Configuration**: Insecure registry support for registry.jclee.me
 
 **Deployment Flow**:
 ```
 Push to main → GitHub Actions → Build & Push → ArgoCD Auto Deploy
 ```
+
+**Required GitHub Secrets**:
+- `DOCKER_REGISTRY_USER`: Registry username
+- `DOCKER_REGISTRY_PASS`: Registry password
 
 **Self-hosted Runner Compatibility**:
 ```yaml
@@ -805,14 +809,32 @@ def add_collection_log(self, source: str, action: str, details: Dict[str, Any] =
     }
 ```
 
+### CI/CD Status Monitoring
+
+**Status Check Script** (`check-cicd-status.sh`):
+- Comprehensive pipeline health verification
+- GitHub Actions workflow status monitoring  
+- ArgoCD application and Image Updater health checks
+- Docker registry connectivity testing
+- Kubernetes deployment status validation
+- Current deployment version and image tracking
+- Automated troubleshooting recommendations
+
+Usage: `./check-cicd-status.sh`
+
 ## Recent Implementations (2025.07.24)
 
-### CI/CD Pipeline Optimization
-**GitHub Actions Artifact Storage Fix**:
-- Removed artifact uploads from CI/CD pipeline to avoid storage quota issues
-- Created streamlined workflow (`gitops-cicd.yml`) focused on build and deploy only
-- Created artifact cleanup script to manage existing artifacts
-- Result: Pipeline now runs successfully without hitting quota limits
+### CI/CD Pipeline Consolidation & Fixes
+**Workflow Unification**:
+- Consolidated `auto-deploy.yaml` and `simple-deploy.yaml` into single `deploy.yaml`
+- Added Docker registry authentication to fix "no basic auth credentials" errors
+- Implemented proper login steps with GitHub Secrets integration
+- Multi-tag strategy maintained: latest, SHA, and timestamp tags
+
+**Authentication Implementation**:
+- Uses `docker/login-action@v2` for secure registry authentication
+- Fallback to direct docker login commands for simple deployments
+- Fixed deployment path references in Kubernetes manifests
 
 ### Code Cleanup Completion
 **Code Quality Improvements**:
@@ -1003,9 +1025,12 @@ python3 main.py --debug
 # Testing
 pytest -v
 
+# CI/CD Status Check
+./check-cicd-status.sh  # Comprehensive pipeline health verification
+
 # CI/CD Deployment (Recommended)
 git add . && git commit -m "feat: your changes"
-git push origin main  # Triggers automatic GitOps deployment
+git push origin main  # Triggers unified deploy.yaml workflow
 
 # Manual ArgoCD Deployment
 ./scripts/k8s-management.sh deploy
@@ -1035,6 +1060,10 @@ kubectl logs -f deployment/blacklist -n blacklist
 # Check ArgoCD status
 argocd app get blacklist --grpc-web
 argocd app sync blacklist --grpc-web
+
+# Monitor workflow runs
+gh run list --repo JCLEE94/blacklist
+gh run view <run-id> --repo JCLEE94/blacklist --log-failed
 
 # Troubleshoot current issues
 kubectl describe pod <failing-pod> -n blacklist  # For ImagePullBackOff

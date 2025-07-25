@@ -1,6 +1,7 @@
 """
 Configuration factory
 """
+
 import os
 from typing import Type
 

@@ -2,6 +2,7 @@
 Web UI routes for Blacklist Manager
 Updated to use dependency injection container instead of Flask g
 """
+
 import json
 import logging
 import os
@@ -110,7 +111,10 @@ def dashboard():
         if not blacklist_mgr:
             logger.error("BlacklistManager를 가져올 수 없습니다")
             flash("서비스를 사용할 수 없습니다", "error")
-            return render_template("error.html", error="서비스를 사용할 수 없습니다"), 503
+            return (
+                render_template("error.html", error="서비스를 사용할 수 없습니다"),
+                503,
+            )
 
         # Get system health
         health = blacklist_mgr.get_system_health()
@@ -445,9 +449,9 @@ def connection_status():
     services.append(
         {
             "name": "SQLite Database",
-            "status": "online"
-            if os.path.exists("instance/blacklist.db")
-            else "offline",
+            "status": (
+                "online" if os.path.exists("instance/blacklist.db") else "offline"
+            ),
             "last_check": datetime.now().isoformat(),
             "response_time": "1ms",
         }
@@ -692,7 +696,9 @@ def get_daily_ips(month, date):
                     result["total_detections"] = details.get(
                         "total_detections", len(daily_ips)
                     )
-                    result["records_sample"] = details.get("records", [])[:20]  # 샘플 20개
+                    result["records_sample"] = details.get("records", [])[
+                        :20
+                    ]  # 샘플 20개
 
         else:
             # 실제 일별 파일이 없으면 시뮬레이션 데이터 생성
@@ -1024,7 +1030,10 @@ def raw_data_viewer():
         blacklist_mgr = get_blacklist_manager()
         if not blacklist_mgr:
             flash("서비스를 사용할 수 없습니다", "error")
-            return render_template("error.html", error="서비스를 사용할 수 없습니다"), 503
+            return (
+                render_template("error.html", error="서비스를 사용할 수 없습니다"),
+                503,
+            )
 
         # Get total count from database
         import sqlite3
@@ -1161,7 +1170,9 @@ def api_raw_data():
     except Exception as e:
         logger.error(f"RAW data API 오류: {e}")
         return (
-            jsonify({"success": False, "error": f"데이터 로드 실패: {str(e)}", "total": 0}),
+            jsonify(
+                {"success": False, "error": f"데이터 로드 실패: {str(e)}", "total": 0}
+            ),
             500,
         )
 
@@ -1471,7 +1482,11 @@ def api_regtech_collect():
 
         if not advisory_ips:
             return jsonify(
-                {"success": True, "total_collected": 0, "message": "해당 기간에 데이터가 없습니다."}
+                {
+                    "success": True,
+                    "total_collected": 0,
+                    "message": "해당 기간에 데이터가 없습니다.",
+                }
             )
 
         # DB 저장
@@ -1955,7 +1970,11 @@ def realtime_feed():
                 "icon": "bi-check-circle",
                 "message": "새로운 IP가 블랙리스트에 추가됨",
             },
-            {"type": "info", "icon": "bi-info-circle", "message": "REGTECH 데이터 동기화 완료"},
+            {
+                "type": "info",
+                "icon": "bi-info-circle",
+                "message": "REGTECH 데이터 동기화 완료",
+            },
             {
                 "type": "warning",
                 "icon": "bi-exclamation-triangle",
@@ -1963,7 +1982,11 @@ def realtime_feed():
             },
             {"type": "success", "icon": "bi-shield-check", "message": "보안 검사 완료"},
             {"type": "info", "icon": "bi-clock", "message": "자동 백업 실행됨"},
-            {"type": "success", "icon": "bi-database", "message": "데이터베이스 최적화 완료"},
+            {
+                "type": "success",
+                "icon": "bi-database",
+                "message": "데이터베이스 최적화 완료",
+            },
         ]
 
         # Return random event

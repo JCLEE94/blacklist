@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 from .blacklist_unified import UnifiedBlacklistManager
 from .collection_manager import CollectionManager
 from .container import get_container
-from .regtech_simple_collector import RegtechSimpleCollector
+from .regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,9 @@ class UnifiedBlacklistService:
             )
 
             # 수집은 활성화하지 않음 - 수동 제어
-            self.logger.info("⚠️ 자동 수집이 비활성화되었습니다. 수동으로 수집을 시작하세요.")
+            self.logger.info(
+                "⚠️ 자동 수집이 비활성화되었습니다. 수동으로 수집을 시작하세요."
+            )
 
             # 완료 표시 (자동 수집 시도 방지)
             self.collection_manager.mark_initial_collection_done()
@@ -1074,7 +1076,11 @@ class UnifiedBlacklistService:
             message = f"{date_str} {source_display} 수집 시작"
 
         elif action == "collection_failed":
-            error_msg = details.get("error", "알 수 없는 오류") if details else "알 수 없는 오류"
+            error_msg = (
+                details.get("error", "알 수 없는 오류")
+                if details
+                else "알 수 없는 오류"
+            )
             message = f"{date_str} {source_display} 수집 실패: {error_msg}"
 
         elif action == "collection_enabled":
@@ -2127,7 +2133,10 @@ class UnifiedBlacklistService:
             self.add_collection_log(
                 "system",
                 "collection_enabled",
-                {"message": "수집이 활성화되었습니다", "timestamp": datetime.now().isoformat()},
+                {
+                    "message": "수집이 활성화되었습니다",
+                    "timestamp": datetime.now().isoformat(),
+                },
             )
 
             self.logger.info("Collection enabled successfully")
@@ -2158,7 +2167,10 @@ class UnifiedBlacklistService:
             self.add_collection_log(
                 "system",
                 "collection_disabled",
-                {"message": "수집이 비활성화되었습니다", "timestamp": datetime.now().isoformat()},
+                {
+                    "message": "수집이 비활성화되었습니다",
+                    "timestamp": datetime.now().isoformat(),
+                },
             )
 
             self.logger.info("Collection disabled successfully")
@@ -2194,9 +2206,9 @@ class UnifiedBlacklistService:
                 "task_id": task_id,
                 "start_date": start_date,
                 "end_date": end_date,
-                "is_daily": start_date == end_date
-                if start_date and end_date
-                else False,
+                "is_daily": (
+                    start_date == end_date if start_date and end_date else False
+                ),
             },
         )
 
@@ -2218,7 +2230,9 @@ class UnifiedBlacklistService:
 
             # 진행 상황 업데이트
             if progress_tracker:
-                progress_tracker.update_progress("regtech", 0, 100, "REGTECH 수집 시작...")
+                progress_tracker.update_progress(
+                    "regtech", 0, 100, "REGTECH 수집 시작..."
+                )
 
             # 실제 수집 실행 (동기적으로 처리)
             try:
@@ -2251,7 +2265,10 @@ class UnifiedBlacklistService:
                 # 진행 상황 업데이트 - 수집 완료
                 if progress_tracker:
                     progress_tracker.update_progress(
-                        "regtech", 50, 100, f"{len(ips)}개 IP 수집 완료, 데이터베이스 저장 중..."
+                        "regtech",
+                        50,
+                        100,
+                        f"{len(ips)}개 IP 수집 완료, 데이터베이스 저장 중...",
                     )
 
                 # 수집 완료 로그 추가
@@ -2263,9 +2280,9 @@ class UnifiedBlacklistService:
                         "ips_collected": len(ips),
                         "start_date": start_date,
                         "end_date": end_date,
-                        "is_daily": start_date == end_date
-                        if start_date and end_date
-                        else False,
+                        "is_daily": (
+                            start_date == end_date if start_date and end_date else False
+                        ),
                     },
                 )
 
@@ -2407,7 +2424,8 @@ class UnifiedBlacklistService:
                             )
                             if progress_tracker:
                                 progress_tracker.fail_collection(
-                                    "regtech", f"데이터베이스 저장 실패: {result.get('error')}"
+                                    "regtech",
+                                    f"데이터베이스 저장 실패: {result.get('error')}",
                                 )
                             return {
                                 "success": False,
@@ -2441,7 +2459,9 @@ class UnifiedBlacklistService:
             except Exception as e:
                 self.logger.error(f"REGTECH 수집 실행 중 오류: {e}")
                 if progress_tracker:
-                    progress_tracker.fail_collection("regtech", f"수집 실행 오류: {str(e)}")
+                    progress_tracker.fail_collection(
+                        "regtech", f"수집 실행 오류: {str(e)}"
+                    )
                 return {
                     "success": False,
                     "error": str(e),
@@ -2452,7 +2472,11 @@ class UnifiedBlacklistService:
             self.logger.error(f"REGTECH trigger error: {e}")
             if progress_tracker:
                 progress_tracker.fail_collection("regtech", f"트리거 오류: {str(e)}")
-            return {"success": False, "error": str(e), "message": "REGTECH 수집 트리거 실패"}
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "REGTECH 수집 트리거 실패",
+            }
 
     def trigger_secudium_collection(self) -> dict:
         """SECUDIUM 수집 트리거"""
@@ -2562,7 +2586,11 @@ class UnifiedBlacklistService:
 
         except Exception as e:
             self.logger.error(f"SECUDIUM trigger error: {e}")
-            return {"success": False, "error": str(e), "message": "SECUDIUM 수집 트리거 실패"}
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "SECUDIUM 수집 트리거 실패",
+            }
 
 
 # 전역 서비스 인스턴스
@@ -2800,7 +2828,9 @@ def _test_unified_service_collection_status():
                 for source_name, source_info in status["sources"].items():
                     if isinstance(source_info, dict):
                         enabled = source_info.get("enabled", False)
-                        print(f"    {source_name}: {'활성화' if enabled else '비활성화'}")
+                        print(
+                            f"    {source_name}: {'활성화' if enabled else '비활성화'}"
+                        )
         else:
             print("  ❌ 컬렉션 상태가 딕셔너리가 아님")
             return False

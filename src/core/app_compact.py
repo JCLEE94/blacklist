@@ -16,13 +16,13 @@ from werkzeug.middleware.profiler import ProfilerMiddleware
 # from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from src.core.constants import SECURITY_HEADERS
+from src.utils.performance import get_connection_manager, get_profiler
 # Import new error handling and logging modules
 from src.utils.structured_logging import get_logger, setup_request_logging
-from src.utils.performance import get_connection_manager, get_profiler
 
-from .exceptions import BlacklistError, create_error_response, handle_exception
 from .container import get_container
-from src.core.constants import SECURITY_HEADERS
+from .exceptions import BlacklistError, create_error_response, handle_exception
 
 # Use structured logger instead of basic logging
 logger = get_logger(__name__)
@@ -103,7 +103,9 @@ def create_compact_app(config_name: Optional[str] = None) -> Flask:
             app.json_encoder = None  # Disable default JSON encoder to use orjson
             app.config["JSON_SORT_KEYS"] = False  # orjson handles sorting
             logger.info(
-                "orjson 활성화됨 - JSON 직렬화 성능 향상", feature="orjson", status="enabled"
+                "orjson 활성화됨 - JSON 직렬화 성능 향상",
+                feature="orjson",
+                status="enabled",
             )
 
         # Rate limiting completely disabled - no storage URI needed

@@ -4,6 +4,7 @@
 시스템의 모든 의존성을 중앙에서 관리하고 주입하는 컨테이너입니다.
 이를 통해 모듈 간 결합도를 낮추고 테스트 가능성을 높입니다.
 """
+
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -226,10 +227,12 @@ class BlacklistContainer(ServiceContainer):
         self.register(
             "database_manager",
             DatabaseManager,
-            factory=lambda config: DatabaseManager(config.SQLALCHEMY_DATABASE_URI)
-            if hasattr(config, "SQLALCHEMY_DATABASE_URI")
-            and config.SQLALCHEMY_DATABASE_URI
-            else None,
+            factory=lambda config: (
+                DatabaseManager(config.SQLALCHEMY_DATABASE_URI)
+                if hasattr(config, "SQLALCHEMY_DATABASE_URI")
+                and config.SQLALCHEMY_DATABASE_URI
+                else None
+            ),
             dependencies={"config": "config"},
         )
 
@@ -263,8 +266,6 @@ class BlacklistContainer(ServiceContainer):
 
         # Collection Manager - Docker 환경 기반 경로 사용
         try:
-            import os
-
             from .collection_manager import CollectionManager
 
             # Docker 환경에서는 고정 경로 사용
@@ -452,10 +453,14 @@ def _test_container_service_registration():
         total_count = len(services_to_test)
 
         if successful_count >= total_count * 0.7:  # 70% 이상 성공
-            print(f"✅ 컨테이너 서비스 등록/해결 테스트 통과 ({successful_count}/{total_count})")
+            print(
+                f"✅ 컨테이너 서비스 등록/해결 테스트 통과 ({successful_count}/{total_count})"
+            )
             return True
         else:
-            print(f"❌ 컨테이너 서비스 등록/해결 테스트 실패 ({successful_count}/{total_count})")
+            print(
+                f"❌ 컨테이너 서비스 등록/해결 테스트 실패 ({successful_count}/{total_count})"
+            )
             return False
 
     except Exception as e:

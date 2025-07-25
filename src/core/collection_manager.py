@@ -3,6 +3,7 @@
 REGTECH, SECUDIUM 등 다양한 소스의 데이터 수집을 통합 관리
 수집 ON/OFF 기능 및 데이터 클리어 기능 포함
 """
+
 import json
 import logging
 import os
@@ -69,7 +70,9 @@ class CollectionManager:
                 self._save_collection_enabled_to_db(self.collection_enabled)
 
         self._save_collection_config()
-        logger.info(f"✅ CollectionManager 초기화: 수집 상태 = {self.collection_enabled}")
+        logger.info(
+            f"✅ CollectionManager 초기화: 수집 상태 = {self.collection_enabled}"
+        )
 
         # 일일 자동 수집 설정
         self.daily_collection_enabled = self.config.get(
@@ -253,9 +256,9 @@ class CollectionManager:
                 "cleared_data": cleared_data,
                 "sources": self.config["sources"],
                 "enabled_at": self.config["last_enabled_at"],
-                "cleared_items": clear_result.get("cleared_items", [])
-                if cleared_data
-                else [],
+                "cleared_items": (
+                    clear_result.get("cleared_items", []) if cleared_data else []
+                ),
             }
 
         except Exception as e:
@@ -311,7 +314,9 @@ class CollectionManager:
                     try:
                         cursor.execute(f"DELETE FROM {table}")
                         row_count = cursor.rowcount
-                        cleared_items.append(f"테이블 {table}: {row_count}개 레코드 삭제")
+                        cleared_items.append(
+                            f"테이블 {table}: {row_count}개 레코드 삭제"
+                        )
                     except sqlite3.Error as e:
                         logger.warning(f"테이블 {table} 삭제 중 오류: {e}")
 
@@ -401,9 +406,11 @@ class CollectionManager:
             )
 
             return {
-                "status": "active"
-                if self.config.get("collection_enabled", False)
-                else "inactive",
+                "status": (
+                    "active"
+                    if self.config.get("collection_enabled", False)
+                    else "inactive"
+                ),
                 "collection_enabled": self.config.get("collection_enabled", False),
                 "daily_collection_enabled": self.daily_collection_enabled,
                 "last_enabled_at": self.config.get("last_enabled_at"),
@@ -414,9 +421,9 @@ class CollectionManager:
                     source_key: {
                         "name": source_info["name"],
                         "enabled": source_info.get("enabled", False),
-                        "status": "active"
-                        if source_info["total_ips"] > 0
-                        else "no_data",
+                        "status": (
+                            "active" if source_info["total_ips"] > 0 else "no_data"
+                        ),
                         "last_collection": source_info["last_collection"],
                         "total_ips": source_info["total_ips"],
                         "manual_only": source_info.get("manual_only", False),
@@ -484,7 +491,10 @@ class CollectionManager:
         """
         try:
             if not self.daily_collection_enabled:
-                return {"success": False, "message": "일일 자동 수집이 비활성화 상태입니다"}
+                return {
+                    "success": False,
+                    "message": "일일 자동 수집이 비활성화 상태입니다",
+                }
 
             # 오늘 날짜로 수집 범위 설정
             today = datetime.now()
@@ -550,7 +560,9 @@ class CollectionManager:
             수집 결과
         """
         try:
-            logger.info(f"REGTECH 수집 시작 (start_date={start_date}, end_date={end_date})")
+            logger.info(
+                f"REGTECH 수집 시작 (start_date={start_date}, end_date={end_date})"
+            )
 
             # Enhanced REGTECH 수집기 import 및 실행
             try:

@@ -321,7 +321,7 @@ class RegTechSource(BaseIPSource):
 
             return True
 
-        except:
+        except Exception:
             return False
 
     def get_source_info(self):

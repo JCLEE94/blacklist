@@ -7,6 +7,7 @@ Core business logic module for Blacklist Manager
 - DatabaseManager: 데이터베이스 관리
 - 각종 검증자 및 상수
 """
+
 from .constants import (API_VERSION, DEFAULT_CACHE_TTL,
                         DEFAULT_DATA_RETENTION_DAYS, SUPPORTED_IP_FORMATS)
 # from .app_compact import create_compact_app  # Remove to avoid circular import
@@ -48,6 +49,6 @@ __all__ = [
     "DatabaseError",
 ]
 
-__version__ = '2.1.3-test'
+__version__ = "2.1.3-test"
 __author__ = "Blacklist Team"
 __description__ = "Unified Blacklist Management System Core"

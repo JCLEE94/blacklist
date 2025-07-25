@@ -1,6 +1,7 @@
 """
 Configuration management package
 """
+
 from .base import BaseConfig
 from .development import DevelopmentConfig
 from .factory import get_config

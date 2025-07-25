@@ -2,6 +2,7 @@
 URL 기반 IP 소스 플러그인
 다양한 웹 소스에서 IP 리스트를 다운로드
 """
+
 import logging
 import re
 from datetime import datetime

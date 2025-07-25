@@ -2,6 +2,7 @@
 GitHub 이슈 자동 생성 서비스
 애플리케이션 에러 발생 시 자동으로 GitHub 이슈를 생성합니다.
 """
+
 import hashlib
 import json
 import logging
