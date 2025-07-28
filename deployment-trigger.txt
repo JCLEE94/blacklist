@@ -1,2 +1,0 @@
-# Deployment trigger 2025. 07. 06. (일) 14:15:00 KST
-# Triggering fresh deployment to fix 502 error

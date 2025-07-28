@@ -38,6 +38,9 @@ helm.sh/chart: {{ include "blacklist.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/part-of: blacklist-microservice
+infrastructure: jclee.me
 {{- end }}
 
 {{/*
@@ -57,4 +60,28 @@ Create the name of the service account to use
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
+{{- end }}
+
+{{/*
+Generate basic auth secret data
+*/}}
+{{- define "blacklist.secretData" -}}
+{{- $regtech := printf "%s:%s" (.Values.auth.regtech.username | default "admin") (.Values.auth.regtech.password | default "password") | b64enc }}
+{{- $secudium := printf "%s:%s" (.Values.auth.secudium.username | default "admin") (.Values.auth.secudium.password | default "password") | b64enc }}
+regtech-username: {{ .Values.auth.regtech.username | default "admin" | b64enc }}
+regtech-password: {{ .Values.auth.regtech.password | default "password" | b64enc }}
+secudium-username: {{ .Values.auth.secudium.username | default "admin" | b64enc }}
+secudium-password: {{ .Values.auth.secudium.password | default "password" | b64enc }}
+{{- end }}
+
+{{/*
+Generate registry secret for private registry access
+*/}}
+{{- define "blacklist.registrySecret" -}}
+{{- $registry := .Values.image.repository | default "https://registry.jclee.me" }}
+{{- $username := .Values.registryAuth.username | default "admin" }}
+{{- $password := .Values.registryAuth.password | default "bingogo1" }}
+{{- $auth := printf "%s:%s" $username $password | b64enc }}
+{{- $dockerConfig := printf `{"auths":{"%s":{"username":"%s","password":"%s","auth":"%s"}}}` $registry $username $password $auth | b64enc }}
+.dockerconfigjson: {{ $dockerConfig }}
 {{- end }}
