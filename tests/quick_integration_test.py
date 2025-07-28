@@ -195,7 +195,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--local":
         base_url = LOCAL_URL
     else:
-        base_url = BASE_URL
+        base_url = LOCAL_URL
     
     success = run_integration_tests(base_url)
     sys.exit(0 if success else 1)
