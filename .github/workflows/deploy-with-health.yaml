@@ -1,0 +1,305 @@
+name: Deploy with Health Check and Auto-Rollback
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: jclee94/blacklist
+  NAMESPACE: blacklist
+  ARGOCD_SERVER: argo.jclee.me
+  DEPLOYMENT_NAME: blacklist
+  HEALTH_CHECK_RETRIES: 5
+  HEALTH_CHECK_DELAY: 30
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          config-inline: |
+            [registry."registry.jclee.me"]
+              http = true
+              insecure = true
+      
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_REGISTRY_USER }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASS }}
+      
+      - name: Generate build metadata
+        id: meta
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/} | sed 's/[^a-zA-Z0-9._-]/-/g')" >> $GITHUB_OUTPUT
+      
+      - name: Build and push Docker image
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployment/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.date }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch }}
+          build-args: |
+            BUILD_DATE=${{ steps.meta.outputs.date }}
+            VCS_REF=${{ steps.meta.outputs.sha_short }}
+      
+      - name: Store previous deployment info
+        id: previous
+        run: |
+          # Get current deployment image
+          CURRENT_IMAGE=$(kubectl get deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "none")
+          echo "previous_image=$CURRENT_IMAGE" >> $GITHUB_OUTPUT
+          
+          # Get current ArgoCD revision
+          CURRENT_REVISION=$(argocd app get ${{ env.DEPLOYMENT_NAME }} --grpc-web -o json 2>/dev/null | jq -r '.status.history[0].revision' || echo "none")
+          echo "previous_revision=$CURRENT_REVISION" >> $GITHUB_OUTPUT
+          
+          echo "📸 Current deployment state captured:"
+          echo "  - Image: $CURRENT_IMAGE"
+          echo "  - Revision: $CURRENT_REVISION"
+      
+      - name: Trigger ArgoCD deployment
+        id: argocd_deploy
+        run: |
+          # Update deployment annotation to trigger ArgoCD
+          kubectl annotate deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} \
+            kubernetes.io/change-cause="Deploy: ${{ steps.meta.outputs.sha_short }} at ${{ steps.meta.outputs.date }}" \
+            deployment.kubernetes.io/revision="${{ steps.meta.outputs.sha_short }}" \
+            --overwrite || true
+          
+          # Force ArgoCD sync
+          echo "🔄 Triggering ArgoCD sync..."
+          argocd app sync ${{ env.DEPLOYMENT_NAME }} --grpc-web --force --prune || true
+          
+          # Wait for sync to start
+          sleep 10
+      
+      - name: Wait for deployment
+        id: wait_deployment
+        timeout-minutes: 10
+        run: |
+          echo "⏳ Waiting for deployment to complete..."
+          
+          # Wait for new pods to be created
+          kubectl wait --for=condition=progressing deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n ${{ env.NAMESPACE }} --timeout=300s || true
+          
+          # Wait for rollout to complete
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n ${{ env.NAMESPACE }} --timeout=300s || {
+            echo "❌ Deployment rollout failed"
+            exit 1
+          }
+          
+          echo "✅ Deployment rollout completed"
+      
+      - name: Health check with retries
+        id: health_check
+        run: |
+          echo "🏥 Starting health checks..."
+          
+          # Get service endpoints
+          NODE_PORT=$(kubectl get svc ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+          CLUSTER_IP=$(kubectl get svc ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+          
+          if [ -z "$NODE_PORT" ]; then
+            echo "❌ Could not find NodePort for service"
+            exit 1
+          fi
+          
+          # Health check with retries
+          RETRY_COUNT=0
+          SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt ${{ env.HEALTH_CHECK_RETRIES }} ]; do
+            echo "🔍 Health check attempt $((RETRY_COUNT + 1))/${{ env.HEALTH_CHECK_RETRIES }}..."
+            
+            # Check pod readiness
+            READY_PODS=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.DEPLOYMENT_NAME }} -o json | \
+              jq '[.items[] | select(.status.phase == "Running" and .status.conditions[] | select(.type == "Ready" and .status == "True"))] | length')
+            
+            TOTAL_PODS=$(kubectl get deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.replicas}')
+            
+            echo "  - Ready pods: $READY_PODS/$TOTAL_PODS"
+            
+            # HTTP health check
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
+              "http://localhost:$NODE_PORT/health" || echo "000")
+            
+            echo "  - HTTP status: $HTTP_STATUS"
+            
+            # Check if healthy
+            if [ "$READY_PODS" -ge 1 ] && [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ Health check passed!"
+              SUCCESS=true
+              break
+            fi
+            
+            # Wait before next retry
+            if [ $RETRY_COUNT -lt $(({{ env.HEALTH_CHECK_RETRIES }} - 1)) ]; then
+              echo "⏳ Waiting ${{ env.HEALTH_CHECK_DELAY }}s before next attempt..."
+              sleep ${{ env.HEALTH_CHECK_DELAY }}
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+          done
+          
+          if [ "$SUCCESS" = "false" ]; then
+            echo "❌ Health check failed after ${{ env.HEALTH_CHECK_RETRIES }} attempts"
+            exit 1
+          fi
+      
+      - name: Advanced health validation
+        id: advanced_health
+        run: |
+          echo "🔬 Running advanced health validation..."
+          
+          # Check application-specific endpoints
+          NODE_PORT=$(kubectl get svc ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}')
+          
+          # Test core endpoints
+          ENDPOINTS=(
+            "/api/stats"
+            "/api/collection/status"
+            "/api/blacklist/active"
+          )
+          
+          FAILED_ENDPOINTS=0
+          
+          for endpoint in "${ENDPOINTS[@]}"; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 \
+              "http://localhost:$NODE_PORT$endpoint" || echo "000")
+            
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ $endpoint: OK ($HTTP_STATUS)"
+            else
+              echo "❌ $endpoint: FAILED ($HTTP_STATUS)"
+              FAILED_ENDPOINTS=$((FAILED_ENDPOINTS + 1))
+            fi
+          done
+          
+          # Check response time
+          AVG_RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" --connect-timeout 5 \
+            "http://localhost:$NODE_PORT/health" || echo "999")
+          
+          echo "⏱️  Average response time: ${AVG_RESPONSE_TIME}s"
+          
+          # Validate results
+          if [ $FAILED_ENDPOINTS -gt 0 ]; then
+            echo "❌ $FAILED_ENDPOINTS endpoints failed validation"
+            exit 1
+          fi
+          
+          # Check if response time is acceptable (< 2 seconds)
+          if (( $(echo "$AVG_RESPONSE_TIME > 2" | bc -l) )); then
+            echo "⚠️  Response time is slow (>2s)"
+          fi
+          
+          echo "✅ All health validations passed!"
+      
+      - name: Auto-rollback on failure
+        if: failure() && (steps.health_check.outcome == 'failure' || steps.advanced_health.outcome == 'failure')
+        run: |
+          echo "🔄 Initiating automatic rollback..."
+          
+          PREVIOUS_IMAGE="${{ steps.previous.outputs.previous_image }}"
+          PREVIOUS_REVISION="${{ steps.previous.outputs.previous_revision }}"
+          
+          if [ "$PREVIOUS_IMAGE" != "none" ] && [ "$PREVIOUS_REVISION" != "none" ]; then
+            echo "📌 Rolling back to:"
+            echo "  - Image: $PREVIOUS_IMAGE"
+            echo "  - Revision: $PREVIOUS_REVISION"
+            
+            # Rollback via ArgoCD
+            argocd app rollback ${{ env.DEPLOYMENT_NAME }} $PREVIOUS_REVISION --grpc-web || {
+              echo "⚠️  ArgoCD rollback failed, trying kubectl rollback..."
+              kubectl rollout undo deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }}
+            }
+            
+            # Wait for rollback to complete
+            kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} --timeout=300s
+            
+            echo "✅ Rollback completed"
+            
+            # Verify rollback health
+            sleep 30
+            NODE_PORT=$(kubectl get svc ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}')
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
+              "http://localhost:$NODE_PORT/health" || echo "000")
+            
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ Rollback successful - service is healthy"
+            else
+              echo "❌ Rollback completed but service is still unhealthy"
+            fi
+          else
+            echo "⚠️  No previous deployment information available for rollback"
+          fi
+      
+      - name: Deployment success notification
+        if: success()
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "📦 Deployed image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}"
+          echo "🏷️  Tags:"
+          echo "  - latest"
+          echo "  - ${{ steps.meta.outputs.sha_short }}"
+          echo "  - ${{ steps.meta.outputs.date }}"
+          echo "  - ${{ steps.meta.outputs.branch }}"
+          
+          # Optional: Send webhook notification
+          if [ ! -z "${{ secrets.DEPLOYMENT_WEBHOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.DEPLOYMENT_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"status\": \"success\",
+                \"project\": \"blacklist\",
+                \"commit\": \"${{ steps.meta.outputs.sha_short }}\",
+                \"timestamp\": \"${{ steps.meta.outputs.date }}\",
+                \"image\": \"${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}\"
+              }" || true
+          fi
+      
+      - name: Create deployment report
+        if: always()
+        run: |
+          cat > deployment-report.json <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ steps.meta.outputs.sha_short }}",
+            "branch": "${{ steps.meta.outputs.branch }}",
+            "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}",
+            "build_status": "${{ steps.docker_build.outcome }}",
+            "deployment_status": "${{ steps.wait_deployment.outcome }}",
+            "health_check_status": "${{ steps.health_check.outcome }}",
+            "advanced_health_status": "${{ steps.advanced_health.outcome }}",
+            "rollback_triggered": "${{ steps.health_check.outcome == 'failure' || steps.advanced_health.outcome == 'failure' }}",
+            "previous_image": "${{ steps.previous.outputs.previous_image }}",
+            "workflow_run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF
+          
+          echo "📊 Deployment report generated: deployment-report.json"
+      
+      - name: Upload deployment report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-report-${{ steps.meta.outputs.date }}
+          path: deployment-report.json
+          retention-days: 30

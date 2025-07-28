@@ -1,0 +1,470 @@
+name: MSA CI/CD Pipeline (jclee.me 인프라)
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '배포 환경 선택'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+      skip_tests:
+        description: '테스트 건너뛰기 (긴급 배포용)'
+        required: false
+        default: false
+        type: boolean
+
+# 동일 브랜치에서 새 푸시 시 기존 실행 취소
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # jclee.me 인프라 설정
+  REGISTRY: registry.jclee.me
+  CHARTS_URL: https://charts.jclee.me
+  ARGOCD_SERVER: argo.jclee.me
+  K8S_CLUSTER: k8s.jclee.me
+  
+  # 애플리케이션 설정
+  APP_NAME: blacklist
+  NAMESPACE: microservices
+  
+  # 이미지 태그 전략
+  IMAGE_TAG: ${{ github.sha }}
+  BRANCH_NAME: ${{ github.ref_name }}
+
+jobs:
+  # 🔍 사전 검사
+  pre-check:
+    name: "사전 검사 및 환경 설정"
+    runs-on: self-hosted
+    outputs:
+      should-deploy: ${{ steps.check.outputs.should-deploy }}
+      environment: ${{ steps.env.outputs.environment }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: 환경 설정
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            ENV="production"
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            ENV="staging" 
+          else
+            ENV="development"
+          fi
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "🎯 배포 환경: $ENV"
+
+      - name: 버전 생성
+        id: version
+        run: |
+          VERSION=$(date +'%Y%m%d')-${GITHUB_SHA::8}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 버전: $VERSION"
+
+      - name: 배포 필요성 확인
+        id: check
+        run: |
+          # 문서만 변경된 경우 배포 생략
+          if git diff --name-only HEAD~1 | grep -E '\.md$|^docs/|\.gitignore$' && \
+             ! git diff --name-only HEAD~1 | grep -v -E '\.md$|^docs/|\.gitignore$'; then
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "📝 문서만 변경됨 - 배포 생략"
+          else
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "🚀 코드 변경 감지 - 배포 진행"
+          fi
+
+  # 🔍 코드 품질 검사 (병렬)
+  code-quality:
+    name: "코드 품질 검사"
+    runs-on: self-hosted
+    needs: pre-check
+    if: needs.pre-check.outputs.should-deploy == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [lint, security, format]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install flake8 black isort bandit safety mypy
+
+      - name: Lint 검사
+        if: matrix.check == 'lint'
+        run: |
+          echo "🔍 Python Lint 검사"
+          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 --statistics
+          mypy src/ --ignore-missing-imports --no-error-summary
+
+      - name: 보안 검사
+        if: matrix.check == 'security'
+        run: |
+          echo "🔒 보안 취약점 검사"
+          bandit -r src/ -f json -o bandit-report.json -ll
+          safety check --json --output safety-report.json
+
+      - name: 포맷 검사
+        if: matrix.check == 'format'
+        run: |
+          echo "✨ 코드 포맷 검사"
+          black --check src/ --diff --color
+          isort src/ --check-only --diff --color
+
+  # 🧪 테스트 실행 (병렬)
+  tests:
+    name: "테스트 실행"
+    runs-on: self-hosted
+    needs: pre-check
+    if: needs.pre-check.outputs.should-deploy == 'true' && github.event.inputs.skip_tests != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [unit, integration, performance]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-xdist pytest-html
+
+      - name: Unit Tests
+        if: matrix.test-type == 'unit'
+        run: |
+          echo "🧪 Unit 테스트 실행"
+          pytest tests/ -v --cov=src --cov-report=xml --junitxml=junit-unit.xml
+
+      - name: Integration Tests
+        if: matrix.test-type == 'integration'
+        run: |
+          echo "🔄 Integration 테스트 실행"
+          python3 tests/integration/run_integration_tests.py
+
+      - name: Performance Tests
+        if: matrix.test-type == 'performance'
+        run: |
+          echo "⚡ 성능 테스트 실행"
+          python3 tests/integration/performance_benchmark.py
+
+  # 🏗️ 빌드 및 푸시
+  build-and-push:
+    name: "이미지 빌드 및 푸시"
+    runs-on: self-hosted
+    needs: [pre-check, code-quality, tests]
+    if: |
+      always() && 
+      needs.pre-check.outputs.should-deploy == 'true' &&
+      (needs.code-quality.result == 'success' || needs.code-quality.result == 'skipped') &&
+      (needs.tests.result == 'success' || needs.tests.result == 'skipped')
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: 이미지 메타데이터 생성
+        id: meta
+        run: |
+          TAGS="$REGISTRY/$APP_NAME:latest"
+          TAGS="$TAGS,$REGISTRY/$APP_NAME:${{ needs.pre-check.outputs.version }}"
+          TAGS="$TAGS,$REGISTRY/$APP_NAME:$BRANCH_NAME"
+          TAGS="$TAGS,$REGISTRY/$APP_NAME:sha-${GITHUB_SHA::8}"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "📋 생성된 태그들: $TAGS"
+
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v2
+        with:
+          config-inline: |
+            [registry."${{ env.REGISTRY }}"]
+              http = true
+              insecure = true
+
+      - name: Registry 로그인
+        run: |
+          echo "${{ secrets.JCLEE_REGISTRY_PASSWORD }}" | docker login $REGISTRY \
+            --username "${{ secrets.JCLEE_REGISTRY_USERNAME }}" \
+            --password-stdin
+
+      - name: 이미지 빌드 및 푸시
+        id: build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployment/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - name: 빌드 결과 확인
+        run: |
+          echo "✅ 이미지 빌드 완료"
+          echo "📦 Digest: ${{ steps.build.outputs.digest }}"
+          echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
+
+  # 📦 Helm Chart 패키징
+  helm-package:
+    name: "Helm Chart 패키징 및 푸시"
+    runs-on: self-hosted
+    needs: [pre-check, build-and-push]
+    if: needs.build-and-push.result == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Helm 설치
+        run: |
+          if ! command -v helm &> /dev/null; then
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          fi
+          helm version
+
+      - name: Chart 버전 업데이트
+        run: |
+          cd charts/blacklist
+          sed -i "s/version: .*/version: ${{ needs.pre-check.outputs.version }}/" Chart.yaml
+          sed -i "s/appVersion: .*/appVersion: \"${{ needs.pre-check.outputs.version }}\"/" Chart.yaml
+          cat Chart.yaml
+
+      - name: Chart 검증
+        run: |
+          cd charts/blacklist
+          helm lint .
+          helm template blacklist . --debug --dry-run
+
+      - name: Chart 패키징
+        run: |
+          cd charts
+          helm package blacklist/
+          ls -la *.tgz
+
+      - name: ChartMuseum 인증 및 푸시
+        run: |
+          # ChartMuseum에 차트 푸시
+          curl -u "${{ secrets.JCLEE_CHARTS_USERNAME }}:${{ secrets.JCLEE_CHARTS_PASSWORD }}" \
+            --data-binary "@charts/blacklist-${{ needs.pre-check.outputs.version }}.tgz" \
+            "$CHARTS_URL/api/charts"
+          echo "📦 Helm Chart 푸시 완료"
+
+  # 🚀 ArgoCD 배포
+  argocd-deploy:
+    name: "ArgoCD GitOps 배포"
+    runs-on: self-hosted
+    needs: [pre-check, build-and-push, helm-package]
+    if: needs.build-and-push.result == 'success'
+    environment: ${{ needs.pre-check.outputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: ArgoCD CLI 설치
+        run: |
+          if ! command -v argocd &> /dev/null; then
+            curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          fi
+          argocd version --client
+
+      - name: ArgoCD 로그인
+        run: |
+          argocd login $ARGOCD_SERVER \
+            --username "${{ secrets.JCLEE_ARGOCD_USERNAME }}" \
+            --password "${{ secrets.JCLEE_ARGOCD_PASSWORD }}" \
+            --grpc-web \
+            --insecure
+
+      - name: ArgoCD Application 업데이트
+        id: deploy
+        run: |
+          # 이미지 태그 업데이트를 위한 어노테이션 추가
+          argocd app set $APP_NAME \
+            --parameter image.tag=${{ needs.pre-check.outputs.version }} \
+            --grpc-web
+          
+          # 동기화 실행 (재시도 로직 포함)
+          for i in {1..3}; do
+            echo "🔄 ArgoCD 동기화 시도 $i/3"
+            if argocd app sync $APP_NAME --grpc-web --timeout 300; then
+              echo "✅ ArgoCD 동기화 성공"
+              break
+            elif [ $i -eq 3 ]; then
+              echo "❌ ArgoCD 동기화 실패 (최대 재시도 초과)"
+              exit 1
+            else
+              echo "⏳ 30초 후 재시도..."
+              sleep 30
+            fi
+          done
+
+      - name: 배포 상태 확인
+        run: |
+          # 헬스 체크 (재시도 로직 포함)
+          for i in {1..5}; do
+            echo "🏥 헬스 체크 시도 $i/5"
+            if argocd app wait $APP_NAME --health --timeout 120 --grpc-web; then
+              echo "✅ 애플리케이션 헬스 체크 성공"
+              break
+            elif [ $i -eq 5 ]; then
+              echo "❌ 헬스 체크 실패 (최대 재시도 초과)"
+              argocd app get $APP_NAME --grpc-web
+              exit 1
+            else
+              echo "⏳ 30초 후 재시도..."
+              sleep 30
+            fi
+          done
+
+      - name: 배포 결과 확인
+        run: |
+          echo "🎉 배포 완료!"
+          argocd app get $APP_NAME --grpc-web
+          
+          # kubectl로 pod 상태 확인
+          if command -v kubectl &> /dev/null; then
+            kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=$APP_NAME
+            kubectl get svc -n $NAMESPACE -l app.kubernetes.io/name=$APP_NAME
+          fi
+
+  # 📊 배포 후 검증
+  post-deploy-verification:
+    name: "배포 후 검증"
+    runs-on: self-hosted
+    needs: [pre-check, argocd-deploy]
+    if: needs.argocd-deploy.result == 'success'
+    steps:
+      - name: 서비스 헬스 체크
+        run: |
+          echo "🏥 서비스 헬스 체크"
+          
+          # NodePort를 통한 헬스 체크 (30080 포트)
+          for i in {1..10}; do
+            if curl -f -s http://localhost:30080/health > /dev/null 2>&1; then
+              echo "✅ 서비스 헬스 체크 성공"
+              curl -s http://localhost:30080/health | jq .
+              break
+            elif [ $i -eq 10 ]; then
+              echo "❌ 서비스 헬스 체크 실패"
+              exit 1
+            else
+              echo "⏳ 서비스 시작 대기 중... ($i/10)"
+              sleep 15
+            fi
+          done
+
+      - name: API 엔드포인트 테스트
+        run: |
+          echo "🔌 API 엔드포인트 테스트"
+          
+          # 주요 엔드포인트 테스트
+          endpoints=(
+            "/health"
+            "/api/blacklist/active"
+            "/api/collection/status"
+            "/api/stats"
+          )
+          
+          for endpoint in "${endpoints[@]}"; do
+            echo "Testing $endpoint..."
+            if curl -f -s "http://localhost:30080$endpoint" > /dev/null; then
+              echo "✅ $endpoint 응답 정상"
+            else
+              echo "❌ $endpoint 응답 실패"
+              exit 1
+            fi
+          done
+
+      - name: 성능 벤치마크
+        run: |
+          echo "⚡ 성능 벤치마크 실행"
+          
+          # 간단한 부하 테스트 (10초간 초당 10 요청)
+          if command -v ab &> /dev/null; then
+            ab -t 10 -c 5 -q http://localhost:30080/health
+          else
+            echo "📊 Apache Bench 없음 - 기본 응답 시간 테스트"
+            time curl -s http://localhost:30080/health > /dev/null
+          fi
+
+  # 🔔 알림 및 정리
+  notify:
+    name: "배포 결과 알림"
+    runs-on: self-hosted
+    needs: [pre-check, build-and-push, argocd-deploy, post-deploy-verification]
+    if: always()
+    steps:
+      - name: 배포 결과 정리
+        run: |
+          if [[ "${{ needs.argocd-deploy.result }}" == "success" && "${{ needs.post-deploy-verification.result }}" == "success" ]]; then
+            echo "🎉 MSA 배포 성공!"
+            echo "📦 버전: ${{ needs.pre-check.outputs.version }}"
+            echo "🌍 환경: ${{ needs.pre-check.outputs.environment }}"
+            echo "🔗 서비스 URL: https://blacklist.jclee.me"
+            echo "📊 ArgoCD: https://$ARGOCD_SERVER/applications/$APP_NAME"
+          else
+            echo "❌ MSA 배포 실패"
+            echo "🔍 로그를 확인해주세요"
+          fi
+
+      - name: Webhook 알림 (선택사항)
+        if: env.DEPLOYMENT_WEBHOOK_URL
+        run: |
+          STATUS="${{ needs.argocd-deploy.result == 'success' && needs.post-deploy-verification.result == 'success' && '성공' || '실패' }}"
+          curl -X POST "${{ env.DEPLOYMENT_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"🚀 Blacklist MSA 배포 $STATUS\",
+              \"username\": \"GitHub Actions\",
+              \"attachments\": [
+                {
+                  \"color\": \"${{ needs.argocd-deploy.result == 'success' && needs.post-deploy-verification.result == 'success' && 'good' || 'danger' }}\",
+                  \"fields\": [
+                    {\"title\": \"환경\", \"value\": \"${{ needs.pre-check.outputs.environment }}\", \"short\": true},
+                    {\"title\": \"버전\", \"value\": \"${{ needs.pre-check.outputs.version }}\", \"short\": true},
+                    {\"title\": \"브랜치\", \"value\": \"${{ github.ref_name }}\", \"short\": true},
+                    {\"title\": \"커밋\", \"value\": \"${{ github.sha }}\", \"short\": true}
+                  ]
+                }
+              ]
+            }"

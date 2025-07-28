@@ -1,0 +1,441 @@
+name: Pipeline Health Monitoring
+on:
+  schedule:
+    # 매 5분마다 실행
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_check:
+        description: '강제 전체 헬스체크 실행'
+        required: false
+        default: 'false'
+        type: boolean
+      send_notifications:
+        description: '알림 발송 활성화'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  NAMESPACE: blacklist
+  APP_NAME: blacklist
+  ARGOCD_SERVER: argo.jclee.me
+  ALERT_THRESHOLD_MINUTES: 10
+  MAX_CONSECUTIVE_FAILURES: 3
+
+jobs:
+  pipeline-health-check:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set monitoring context
+        id: context
+        run: |
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+          echo "check_id=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "force_check=${{ github.event.inputs.force_check || 'false' }}" >> $GITHUB_OUTPUT
+          echo "send_notifications=${{ github.event.inputs.send_notifications || 'true' }}" >> $GITHUB_OUTPUT
+      
+      - name: Pipeline health check
+        id: health_check
+        continue-on-error: true
+        run: |
+          echo "🔍 파이프라인 헬스체크 시작..."
+          
+          # 헬스체크 스크립트 실행
+          bash scripts/pipeline-health-monitor.sh > health-check-output.log 2>&1
+          HEALTH_EXIT_CODE=$?
+          
+          # 결과 분석
+          case $HEALTH_EXIT_CODE in
+            0)
+              echo "status=healthy" >> $GITHUB_OUTPUT
+              echo "severity=info" >> $GITHUB_OUTPUT
+              echo "message=모든 파이프라인 구성 요소가 정상 작동 중" >> $GITHUB_OUTPUT
+              ;;
+            1)
+              echo "status=degraded" >> $GITHUB_OUTPUT
+              echo "severity=warning" >> $GITHUB_OUTPUT
+              echo "message=일부 구성 요소에 경미한 문제 발견" >> $GITHUB_OUTPUT
+              ;;
+            2)
+              echo "status=critical" >> $GITHUB_OUTPUT
+              echo "severity=critical" >> $GITHUB_OUTPUT
+              echo "message=심각한 파이프라인 문제 발견" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "status=unknown" >> $GITHUB_OUTPUT
+              echo "severity=warning" >> $GITHUB_OUTPUT
+              echo "message=헬스체크 실행 중 오류 발생" >> $GITHUB_OUTPUT
+              ;;
+          esac
+          
+          echo "exit_code=$HEALTH_EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          # 로그 요약 생성
+          echo "=== 헬스체크 결과 요약 ===" >> health-summary.txt
+          echo "시간: $(date)" >> health-summary.txt
+          echo "상태: $([ $HEALTH_EXIT_CODE -eq 0 ] && echo "정상" || echo "문제 발견")" >> health-summary.txt
+          echo "종료 코드: $HEALTH_EXIT_CODE" >> health-summary.txt
+          echo "" >> health-summary.txt
+          
+          # 주요 정보 추출
+          if grep -q "파이프라인 헬스 스코어" health-check-output.log; then
+            grep "파이프라인 헬스 스코어" health-check-output.log >> health-summary.txt
+          fi
+          
+          if grep -q "파이프라인 상태:" health-check-output.log; then
+            grep "파이프라인 상태:" health-check-output.log >> health-summary.txt
+          fi
+          
+          echo "헬스체크 완료. 상태: $(cat health-summary.txt | grep "상태:" || echo "알 수 없음")"
+      
+      - name: ArgoCD specific checks
+        id: argocd_check
+        continue-on-error: true
+        run: |
+          echo "🚀 ArgoCD 상세 체크..."
+          
+          # ArgoCD 애플리케이션 상태
+          APP_STATUS=$(argocd app get ${{ env.APP_NAME }} --server ${{ env.ARGOCD_SERVER }} --grpc-web -o json 2>/dev/null || echo "{}")
+          
+          if [ "$APP_STATUS" != "{}" ]; then
+            HEALTH_STATUS=$(echo "$APP_STATUS" | jq -r '.status.health.status // "Unknown"')
+            SYNC_STATUS=$(echo "$APP_STATUS" | jq -r '.status.sync.status // "Unknown"')
+            LAST_SYNC=$(echo "$APP_STATUS" | jq -r '.status.operationState.finishedAt // "Never"')
+            
+            echo "argocd_health=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+            echo "argocd_sync=$SYNC_STATUS" >> $GITHUB_OUTPUT
+            echo "last_sync=$LAST_SYNC" >> $GITHUB_OUTPUT
+            
+            # ArgoCD 문제 감지
+            if [ "$HEALTH_STATUS" = "Degraded" ] || [ "$HEALTH_STATUS" = "Missing" ]; then
+              echo "argocd_issue=true" >> $GITHUB_OUTPUT
+              echo "argocd_issue_type=health_$HEALTH_STATUS" >> $GITHUB_OUTPUT
+            elif [ "$SYNC_STATUS" = "OutOfSync" ]; then
+              # 마지막 동기화 시간 확인
+              if [ "$LAST_SYNC" != "Never" ]; then
+                LAST_SYNC_EPOCH=$(date -d "$LAST_SYNC" +%s 2>/dev/null || echo 0)
+                CURRENT_EPOCH=$(date +%s)
+                MINUTES_SINCE_SYNC=$(( (CURRENT_EPOCH - LAST_SYNC_EPOCH) / 60 ))
+                
+                if [ $MINUTES_SINCE_SYNC -gt ${{ env.ALERT_THRESHOLD_MINUTES }} ]; then
+                  echo "argocd_issue=true" >> $GITHUB_OUTPUT
+                  echo "argocd_issue_type=sync_outdated" >> $GITHUB_OUTPUT
+                else
+                  echo "argocd_issue=false" >> $GITHUB_OUTPUT
+                fi
+              else
+                echo "argocd_issue=true" >> $GITHUB_OUTPUT
+                echo "argocd_issue_type=never_synced" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "argocd_issue=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "argocd_health=Unknown" >> $GITHUB_OUTPUT
+            echo "argocd_sync=Unknown" >> $GITHUB_OUTPUT
+            echo "argocd_issue=true" >> $GITHUB_OUTPUT
+            echo "argocd_issue_type=connection_failed" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Application endpoint checks
+        id: endpoint_check
+        continue-on-error: true
+        run: |
+          echo "🌐 애플리케이션 엔드포인트 체크..."
+          
+          NODE_PORT=$(kubectl get service ${{ env.APP_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+          
+          if [ -z "$NODE_PORT" ]; then
+            echo "endpoint_status=service_not_found" >> $GITHUB_OUTPUT
+            echo "endpoint_issue=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # 핵심 엔드포인트 테스트
+          ENDPOINTS=(
+            "/health:Health Check"
+            "/api/stats:Statistics API"
+            "/api/collection/status:Collection Status"
+            "/api/blacklist/active:Active Blacklist"
+          )
+          
+          FAILED_ENDPOINTS=0
+          TOTAL_ENDPOINTS=${#ENDPOINTS[@]}
+          FAILED_LIST=""
+          
+          for endpoint_info in "${ENDPOINTS[@]}"; do
+            endpoint=$(echo "$endpoint_info" | cut -d':' -f1)
+            description=$(echo "$endpoint_info" | cut -d':' -f2)
+            
+            status=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 \
+                    "http://localhost:$NODE_PORT$endpoint" 2>/dev/null || echo "000")
+            
+            if [ "$status" != "200" ]; then
+              FAILED_ENDPOINTS=$((FAILED_ENDPOINTS + 1))
+              FAILED_LIST="$FAILED_LIST $endpoint($status)"
+              echo "❌ $description ($endpoint): $status"
+            else
+              echo "✅ $description ($endpoint): $status"
+            fi
+          done
+          
+          # 결과 저장
+          echo "failed_endpoints=$FAILED_ENDPOINTS" >> $GITHUB_OUTPUT
+          echo "total_endpoints=$TOTAL_ENDPOINTS" >> $GITHUB_OUTPUT
+          echo "failed_list=$FAILED_LIST" >> $GITHUB_OUTPUT
+          
+          if [ $FAILED_ENDPOINTS -gt 0 ]; then
+            echo "endpoint_issue=true" >> $GITHUB_OUTPUT
+            echo "endpoint_status=degraded" >> $GITHUB_OUTPUT
+          else
+            echo "endpoint_issue=false" >> $GITHUB_OUTPUT
+            echo "endpoint_status=healthy" >> $GITHUB_OUTPUT
+          fi
+          
+          # 응답 시간 측정
+          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" --connect-timeout 5 --max-time 10 \
+                         "http://localhost:$NODE_PORT/health" 2>/dev/null || echo "999")
+          echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+      
+      - name: Store monitoring state
+        id: state
+        run: |
+          # 이전 상태 파일 경로
+          STATE_FILE="/tmp/pipeline-monitoring-state.json"
+          
+          # 현재 상태 생성
+          cat > current-state.json <<EOF
+          {
+            "timestamp": "${{ steps.context.outputs.timestamp }}",
+            "check_id": "${{ steps.context.outputs.check_id }}",
+            "overall_status": "${{ steps.health_check.outputs.status }}",
+            "severity": "${{ steps.health_check.outputs.severity }}",
+            "argocd": {
+              "health": "${{ steps.argocd_check.outputs.argocd_health }}",
+              "sync": "${{ steps.argocd_check.outputs.argocd_sync }}",
+              "issue": "${{ steps.argocd_check.outputs.argocd_issue }}",
+              "issue_type": "${{ steps.argocd_check.outputs.argocd_issue_type }}"
+            },
+            "endpoints": {
+              "status": "${{ steps.endpoint_check.outputs.endpoint_status }}",
+              "failed_count": "${{ steps.endpoint_check.outputs.failed_endpoints }}",
+              "total_count": "${{ steps.endpoint_check.outputs.total_endpoints }}",
+              "response_time": "${{ steps.endpoint_check.outputs.response_time }}",
+              "issue": "${{ steps.endpoint_check.outputs.endpoint_issue }}"
+            }
+          }
+          EOF
+          
+          # 연속 실패 카운트 계산
+          CONSECUTIVE_FAILURES=0
+          if [ -f "$STATE_FILE" ]; then
+            PREV_STATUS=$(jq -r '.overall_status // "unknown"' "$STATE_FILE")
+            PREV_FAILURES=$(jq -r '.consecutive_failures // 0' "$STATE_FILE")
+            
+            if [ "${{ steps.health_check.outputs.status }}" != "healthy" ]; then
+              if [ "$PREV_STATUS" != "healthy" ]; then
+                CONSECUTIVE_FAILURES=$((PREV_FAILURES + 1))
+              else
+                CONSECUTIVE_FAILURES=1
+              fi
+            fi
+          elif [ "${{ steps.health_check.outputs.status }}" != "healthy" ]; then
+            CONSECUTIVE_FAILURES=1
+          fi
+          
+          # 상태 파일 업데이트
+          jq --argjson failures "$CONSECUTIVE_FAILURES" '. + {"consecutive_failures": $failures}' current-state.json > "$STATE_FILE"
+          
+          echo "consecutive_failures=$CONSECUTIVE_FAILURES" >> $GITHUB_OUTPUT
+          echo "trigger_alert=$([ $CONSECUTIVE_FAILURES -ge ${{ env.MAX_CONSECUTIVE_FAILURES }} ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+      
+      - name: Auto-recovery attempt
+        if: steps.health_check.outputs.status == 'critical' || steps.state.outputs.consecutive_failures >= 2
+        id: auto_recovery
+        run: |
+          echo "🔧 자동 복구 시도..."
+          
+          # ArgoCD 강제 동기화 시도
+          if [ "${{ steps.argocd_check.outputs.argocd_issue }}" = "true" ]; then
+            echo "ArgoCD 강제 동기화 실행..."
+            argocd app sync ${{ env.APP_NAME }} --server ${{ env.ARGOCD_SERVER }} --grpc-web --force --prune || true
+            sleep 30
+          fi
+          
+          # Pod 재시작 시도 (엔드포인트 문제 시)
+          if [ "${{ steps.endpoint_check.outputs.endpoint_issue }}" = "true" ]; then
+            echo "애플리케이션 재시작 실행..."
+            kubectl rollout restart deployment/${{ env.APP_NAME }} -n ${{ env.NAMESPACE }} || true
+            kubectl rollout status deployment/${{ env.APP_NAME }} -n ${{ env.NAMESPACE }} --timeout=300s || true
+          fi
+          
+          echo "auto_recovery_attempted=true" >> $GITHUB_OUTPUT
+      
+      - name: Critical alert and rollback
+        if: steps.state.outputs.trigger_alert == 'true'
+        id: critical_alert
+        run: |
+          echo "🚨 임계점 도달 - 자동 롤백 고려..."
+          
+          # 자동 롤백 실행 (연속 3회 이상 실패 시)
+          if [ ${{ steps.state.outputs.consecutive_failures }} -ge ${{ env.MAX_CONSECUTIVE_FAILURES }} ]; then
+            echo "연속 ${{ steps.state.outputs.consecutive_failures }}회 실패 - 자동 롤백 실행"
+            bash scripts/auto-rollback.sh --check-health || true
+            echo "rollback_triggered=true" >> $GITHUB_OUTPUT
+          else
+            echo "rollback_triggered=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Send notifications
+        if: steps.context.outputs.send_notifications == 'true' && (steps.health_check.outputs.status != 'healthy' || steps.context.outputs.force_check == 'true')
+        run: |
+          echo "📬 알림 발송 중..."
+          
+          # 알림 메시지 구성
+          STATUS="${{ steps.health_check.outputs.status }}"
+          SEVERITY="${{ steps.health_check.outputs.severity }}"
+          CONSECUTIVE="${{ steps.state.outputs.consecutive_failures }}"
+          
+          case $STATUS in
+            "healthy")
+              EMOJI="✅"
+              COLOR="good"
+              ;;
+            "degraded")
+              EMOJI="⚠️"
+              COLOR="warning"
+              ;;
+            "critical")
+              EMOJI="🚨"
+              COLOR="danger"
+              ;;
+            *)
+              EMOJI="❓"
+              COLOR="warning"
+              ;;
+          esac
+          
+          MESSAGE="$EMOJI Blacklist 파이프라인 상태: $STATUS"
+          if [ $CONSECUTIVE -gt 0 ]; then
+            MESSAGE="$MESSAGE (연속 ${CONSECUTIVE}회 문제)"
+          fi
+          
+          # ArgoCD 상태 추가
+          if [ "${{ steps.argocd_check.outputs.argocd_issue }}" = "true" ]; then
+            MESSAGE="$MESSAGE\n• ArgoCD: ${{ steps.argocd_check.outputs.argocd_issue_type }}"
+          fi
+          
+          # 엔드포인트 상태 추가
+          if [ "${{ steps.endpoint_check.outputs.endpoint_issue }}" = "true" ]; then
+            MESSAGE="$MESSAGE\n• 엔드포인트: ${{ steps.endpoint_check.outputs.failed_endpoints }}/${{ steps.endpoint_check.outputs.total_endpoints }} 실패"
+          fi
+          
+          # 복구 시도 여부
+          if [ "${{ steps.auto_recovery.outputs.auto_recovery_attempted }}" = "true" ]; then
+            MESSAGE="$MESSAGE\n• 자동 복구 시도됨"
+          fi
+          
+          # 롤백 여부
+          if [ "${{ steps.critical_alert.outputs.rollback_triggered }}" = "true" ]; then
+            MESSAGE="$MESSAGE\n• 🔄 자동 롤백 실행됨"
+          fi
+          
+          # Webhook 알림 발송 (선택적)
+          if [ ! -z "${{ secrets.MONITORING_WEBHOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.MONITORING_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"text\": \"$MESSAGE\",
+                \"color\": \"$COLOR\",
+                \"timestamp\": \"${{ steps.context.outputs.timestamp }}\",
+                \"details\": {
+                  \"status\": \"$STATUS\",
+                  \"consecutive_failures\": $CONSECUTIVE,
+                  \"argocd_health\": \"${{ steps.argocd_check.outputs.argocd_health }}\",
+                  \"endpoint_status\": \"${{ steps.endpoint_check.outputs.endpoint_status }}\",
+                  \"response_time\": \"${{ steps.endpoint_check.outputs.response_time }}\",
+                  \"workflow_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                }
+              }" || true
+          fi
+          
+          echo "알림 발송 완료"
+      
+      - name: Update status badge
+        if: always()
+        run: |
+          # 상태 배지용 정보 생성
+          STATUS="${{ steps.health_check.outputs.status }}"
+          
+          case $STATUS in
+            "healthy")
+              BADGE_COLOR="brightgreen"
+              BADGE_MESSAGE="healthy"
+              ;;
+            "degraded")
+              BADGE_COLOR="yellow"
+              BADGE_MESSAGE="degraded"
+              ;;
+            "critical")
+              BADGE_COLOR="red"
+              BADGE_MESSAGE="critical"
+              ;;
+            *)
+              BADGE_COLOR="lightgrey"
+              BADGE_MESSAGE="unknown"
+              ;;
+          esac
+          
+          # GitHub Pages나 외부 배지 서비스용 JSON 생성
+          cat > pipeline-status.json <<EOF
+          {
+            "schemaVersion": 1,
+            "label": "pipeline",
+            "message": "$BADGE_MESSAGE",
+            "color": "$BADGE_COLOR",
+            "namedLogo": "kubernetes",
+            "cacheSeconds": 300
+          }
+          EOF
+          
+          echo "상태 배지 정보 업데이트 완료"
+      
+      - name: Archive monitoring logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: monitoring-logs-${{ steps.context.outputs.check_id }}
+          path: |
+            health-check-output.log
+            health-summary.txt
+            current-state.json
+            pipeline-status.json
+          retention-days: 7
+      
+      - name: Monitoring summary
+        if: always()
+        run: |
+          echo "📊 모니터링 결과 요약"
+          echo "===================="
+          echo "시간: ${{ steps.context.outputs.timestamp }}"
+          echo "전체 상태: ${{ steps.health_check.outputs.status }}"
+          echo "심각도: ${{ steps.health_check.outputs.severity }}"
+          echo "연속 실패: ${{ steps.state.outputs.consecutive_failures }}회"
+          echo "ArgoCD 상태: ${{ steps.argocd_check.outputs.argocd_health }}/${{ steps.argocd_check.outputs.argocd_sync }}"
+          echo "엔드포인트 상태: ${{ steps.endpoint_check.outputs.endpoint_status }}"
+          echo "응답 시간: ${{ steps.endpoint_check.outputs.response_time }}초"
+          
+          if [ "${{ steps.auto_recovery.outputs.auto_recovery_attempted }}" = "true" ]; then
+            echo "자동 복구: 시도됨"
+          fi
+          
+          if [ "${{ steps.critical_alert.outputs.rollback_triggered }}" = "true" ]; then
+            echo "자동 롤백: 실행됨"
+          fi
+          
+          echo ""
+          echo "다음 검사: 5분 후 자동 실행"
