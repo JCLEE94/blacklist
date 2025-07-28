@@ -4,7 +4,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Blacklist Management System** - Enterprise threat intelligence platform with GitOps-based deployment, multi-source data collection, automated processing, and FortiGate External Connector integration. Features dependency injection architecture, containerized deployment with GitHub Actions CI/CD and ArgoCD GitOps automation.
+**Blacklist Management System** - Enterprise threat intelligence platform transformed into Microservices Architecture (MSA) with GitOps-based deployment, multi-source data collection, automated processing, and FortiGate External Connector integration. Features both monolithic (legacy) and microservices deployment options with full CI/CD automation.
+
+## 🏗️ Architecture Overview
+
+### Dual Architecture Support
+The system now supports both deployment architectures:
+
+1. **Legacy Monolithic** (기존 아키텍처)
+   - Single application deployment
+   - Integrated services in one container
+   - Suitable for small-scale deployments
+
+2. **Microservices Architecture (MSA)** (신규 아키텍처)
+   - 4개의 독립적인 마이크로서비스
+   - API Gateway 패턴
+   - 서비스별 독립적 스케일링 가능
+
+### MSA 서비스 구성
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    API Gateway (8080)                      │
+│  • 라우팅 • 인증 • 부하분산 • 캐싱 • 모니터링               │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+          ┌───────────┼───────────┐
+          │           │           │
+┌─────────▼─────┐ ┌───▼──────┐ ┌──▼─────────┐
+│ Collection    │ │Blacklist │ │ Analytics  │
+│ Service       │ │Management│ │ Service    │
+│ (8000)        │ │ Service  │ │ (8002)     │
+│               │ │ (8001)   │ │            │
+│• REGTECH 수집 │ │• IP 관리 │ │• 트렌드 분석│
+│• SECUDIUM 수집│ │• 검증     │ │• 통계 생성 │
+│• 스케줄링     │ │• FortiGate│ │• 리포팅    │
+└───────────────┘ └──────────┘ └────────────┘
+         │             │              │
+         └─────────────┼──────────────┘
+                       │
+              ┌────────▼────────┐
+              │   PostgreSQL    │
+              │     Redis       │
+              │   (데이터 저장)  │
+              └─────────────────┘
+```
 
 **Key Architecture Principles:**
 - **GitOps Deployment**: ArgoCD-based continuous deployment with automatic image updates
@@ -59,6 +103,7 @@ pip install pytest pytest-cov pytest-xdist pytest-html
 ```
 
 ### Application Startup
+#### Monolithic (Legacy) Deployment
 ```bash
 # Development server (entry point with fallback chain)
 python3 main.py                    # Preferred: app_compact → minimal_app → fallback
@@ -67,6 +112,33 @@ python3 main.py --debug            # Debug mode
 
 # Production deployment
 gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application
+```
+
+#### MSA (Microservices) Deployment
+```bash
+# MSA 전체 배포 (Docker Compose)
+./scripts/msa-deployment.sh deploy-docker
+
+# MSA 전체 배포 (Kubernetes)
+./scripts/msa-deployment.sh deploy-k8s
+
+# MSA 상태 확인
+./scripts/msa-deployment.sh status
+
+# MSA 서비스 테스트
+./scripts/msa-deployment.sh test
+
+# 개별 서비스 개발 실행
+cd services/collection-service && python app.py    # Collection Service (8000)
+cd services/blacklist-service && python app.py     # Blacklist Service (8001)
+cd services/analytics-service && python app.py     # Analytics Service (8002)
+cd services/api-gateway && python app.py           # API Gateway (8080)
+
+# MSA Docker Compose 직접 실행
+docker-compose -f docker-compose.msa.yml up -d --build
+
+# MSA 로그 확인
+docker-compose -f docker-compose.msa.yml logs -f
 ```
 
 ### Container Operations
@@ -236,6 +308,18 @@ python3 -c "from src.core.unified_routes import _test_collection_status_inline; 
 # Debugging and diagnostics
 python3 scripts/debug_regtech_advanced.py          # REGTECH auth analysis
 python3 scripts/debug_regtech_har.py               # HAR-based debugging
+
+# MSA Service Testing
+# Individual service health checks (when MSA is running)
+curl http://localhost:8000/health                  # Collection Service
+curl http://localhost:8001/health                  # Blacklist Service
+curl http://localhost:8002/health                  # Analytics Service
+curl http://localhost:8080/health                  # API Gateway
+
+# API Gateway routing tests
+curl http://localhost:8080/api/v1/blacklist/active      # Via gateway
+curl http://localhost:8080/api/v1/analytics/trends      # Via gateway
+curl http://localhost:8080/api/v1/collection/status     # Via gateway
 ```
 
 ### Linting and Code Quality
@@ -287,6 +371,26 @@ cache_manager = container.get('cache_manager')
 - `regtech_collector`: REGTECH-specific collection with session management
 - `secudium_collector`: SECUDIUM-specific collection with Excel download
 - `unified_service`: Central service orchestrator (`src/core/unified_service.py`)
+
+### Architectural Patterns
+
+**Entry Point Hierarchy** (`main.py` → `src/core/app_compact.py`):
+- Single entry point with automatic database schema migration
+- Graceful fallback chain for maximum compatibility
+- Container-based service initialization
+- Environment-specific configuration loading
+
+**Plugin Architecture** (`src/core/ip_sources/`):
+- Extensible data source system with abstract base class
+- Registry pattern for source discovery and management
+- Source-specific collectors with standardized interfaces
+- Support for file, URL, and API-based sources
+
+**Error Handling Strategy**:
+- Centralized error handlers in `src/core/common/error_handlers.py`
+- Structured logging with context preservation
+- Graceful degradation for external service failures
+- Comprehensive exception mapping for API responses
 
 ### Application Entry Points
 
@@ -394,6 +498,19 @@ runs-on: self-hosted
 
 ## API Endpoints Reference
 
+### Architecture-Specific Access
+
+#### Monolithic Architecture
+- **Base URL**: `http://localhost:8541` (dev) or `http://localhost:2541` (prod)
+- All endpoints available directly from single application
+
+#### MSA Architecture
+- **API Gateway**: `http://localhost:8080` (모든 요청의 진입점)
+- **Direct Service Access** (개발용):
+  - Collection Service: `http://localhost:8000`
+  - Blacklist Service: `http://localhost:8001`
+  - Analytics Service: `http://localhost:8002`
+
 ### Core Blacklist Endpoints
 - `GET /` - Web dashboard interface
 - `GET /health` - System health check with detailed diagnostics
@@ -407,6 +524,25 @@ runs-on: self-hosted
 - `POST /api/collection/disable` - Disable all collection sources
 - `POST /api/collection/regtech/trigger` - Manual REGTECH collection trigger
 - `POST /api/collection/secudium/trigger` - Manual SECUDIUM collection trigger
+
+### MSA-Specific Endpoints
+
+#### API Gateway Endpoints (MSA Only)
+- `GET /api/gateway/health` - API Gateway health status
+- `GET /api/gateway/services` - Service discovery status
+- `GET /api/gateway/metrics` - Gateway performance metrics
+- `GET /api/gateway/routes` - Available routes and services
+
+#### Service-Specific Health Checks (MSA Only)
+- `GET /api/v1/collection/health` - Collection Service health
+- `GET /api/v1/blacklist/health` - Blacklist Service health
+- `GET /api/v1/analytics/health` - Analytics Service health
+
+#### Analytics Endpoints (Enhanced in MSA)
+- `GET /api/v1/analytics/report` - Comprehensive analytics report
+- `GET /api/v1/analytics/trends` - Trend analysis with time ranges
+- `GET /api/v1/analytics/sources` - Source-specific statistics
+- `GET /api/v1/analytics/geographic` - Geographic distribution analysis
 
 ### Enhanced V2 Endpoints
 - `GET /api/v2/blacklist/enhanced` - Enhanced blacklist with metadata
@@ -427,6 +563,28 @@ runs-on: self-hosted
 - `GET /test` - Simple test endpoint that returns "Test response from blacklist app"
 
 ## Deployment Scripts
+
+### MSA Deployment Scripts
+
+**msa-deployment.sh** - Complete MSA management tool:
+```bash
+./scripts/msa-deployment.sh deploy-docker    # Deploy MSA with Docker Compose
+./scripts/msa-deployment.sh deploy-k8s      # Deploy MSA with Kubernetes
+./scripts/msa-deployment.sh status          # Check all services status
+./scripts/msa-deployment.sh test            # Run MSA integration tests
+./scripts/msa-deployment.sh stop            # Stop all MSA services
+./scripts/msa-deployment.sh cleanup         # Clean up MSA resources
+./scripts/msa-deployment.sh logs            # View all services logs
+```
+
+**docker-compose.msa.yml** - MSA services orchestration:
+- PostgreSQL database for persistent storage
+- Redis for distributed caching and session storage
+- RabbitMQ for inter-service messaging
+- All 4 microservices with proper networking
+- Development and production configurations
+
+### Legacy Monolithic Scripts
 
 ### ArgoCD GitOps Scripts
 
@@ -521,6 +679,33 @@ if isinstance(detection_date_raw, pd.Timestamp):
     detection_date = detection_date_raw.strftime('%Y-%m-%d')
 # NOT: detection_date = datetime.now().strftime('%Y-%m-%d')
 ```
+
+### Development Patterns
+
+**Service Implementation Pattern**:
+```python
+# All services follow this pattern in services/ directory
+# 1. FastAPI-based microservice architecture
+# 2. Async/await for I/O operations  
+# 3. Dependency injection for database and cache
+# 4. Health check endpoints at /health
+# 5. Version-prefixed APIs (/api/v1/)
+```
+
+**Container Service Registration**:
+```python
+# Services auto-register via container pattern
+from src.core.container import get_container
+container = get_container()
+# Services available: blacklist_manager, cache_manager, collection_manager
+```
+
+**MSA Communication Pattern**:
+- API Gateway (`services/api-gateway/app.py`) routes all external requests
+- Inter-service communication via HTTP with circuit breaker pattern
+- Service discovery with health checks every 30 seconds
+- Rate limiting per client IP and endpoint type
+- Centralized caching with TTL-based invalidation
 
 ### Environment Variables
 Required for production deployment:
@@ -1018,6 +1203,7 @@ config-inline: |
 
 ## Quick Reference
 
+### Monolithic (Legacy) Commands
 ```bash
 # Development
 python3 main.py --debug
@@ -1025,6 +1211,55 @@ python3 main.py --debug
 # Testing
 pytest -v
 
+# Health Check (Local)
+curl http://localhost:8541/health
+
+# Collection Status
+curl http://localhost:8541/api/collection/status
+
+# Manual Collection
+curl -X POST http://localhost:8541/api/collection/regtech/trigger
+curl -X POST http://localhost:8541/api/collection/secudium/trigger
+
+# Force collection with date range (REGTECH)
+curl -X POST http://localhost:8541/api/collection/regtech/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"start_date": "20250601", "end_date": "20250620"}'
+```
+
+### MSA Commands
+```bash
+# MSA 전체 배포
+./scripts/msa-deployment.sh deploy-docker    # Docker Compose로 배포
+./scripts/msa-deployment.sh deploy-k8s      # Kubernetes로 배포
+
+# MSA 상태 확인
+./scripts/msa-deployment.sh status          # 모든 서비스 상태 확인
+curl http://localhost:8080/health           # API Gateway 헬스체크
+curl http://localhost:8080/api/gateway/services  # 서비스 디스커버리 상태
+
+# MSA 개별 서비스 헬스체크
+curl http://localhost:8000/health           # Collection Service
+curl http://localhost:8001/health           # Blacklist Service  
+curl http://localhost:8002/health           # Analytics Service
+
+# MSA API 호출 (API Gateway 통해)
+curl http://localhost:8080/api/v1/blacklist/active     # 블랙리스트 조회
+curl http://localhost:8080/api/v1/analytics/report     # 분석 리포트
+curl http://localhost:8080/api/v1/collection/status    # 수집 상태
+
+# MSA 로그 확인
+./scripts/msa-deployment.sh logs            # 모든 서비스 로그
+docker-compose -f docker-compose.msa.yml logs -f collection-service
+docker-compose -f docker-compose.msa.yml logs -f api-gateway
+
+# MSA 정리
+./scripts/msa-deployment.sh stop            # 서비스 중지
+./scripts/msa-deployment.sh cleanup         # 리소스 정리
+```
+
+### Common Deployment Commands
+```bash
 # CI/CD Status Check
 ./check-cicd-status.sh  # Comprehensive pipeline health verification
 
@@ -1037,12 +1272,6 @@ git push origin main  # Triggers unified deploy.yaml workflow
 
 # Multi-Server Deployment
 ./scripts/multi-deploy.sh  # Deploy to local + remote
-
-# Health Check (Local)
-curl http://localhost:8541/health
-
-# Collection Status
-curl http://localhost:8541/api/collection/status
 
 # Manual Collection
 curl -X POST http://localhost:8541/api/collection/regtech/trigger
@@ -1077,6 +1306,56 @@ kubectl get endpoints -n blacklist               # Check service routing
 # Remote server status
 ssh user@remote-server "kubectl get pods -n blacklist"
 ```
+
+## MSA Architecture Guidelines
+
+### Service Development Principles
+1. **Single Responsibility**: 각 서비스는 명확한 단일 책임을 가짐
+2. **Database per Service**: 서비스별 독립적인 데이터 저장소 (현재는 단일 PostgreSQL 사용)
+3. **API-First Design**: 명확한 API 계약 정의 후 구현
+4. **Circuit Breaker Pattern**: 장애 전파 방지를 위한 회로 차단기 패턴 적용
+5. **Health Check Standards**: 모든 서비스는 `/health` 엔드포인트 제공 필수
+
+### Deployment Strategy
+- **Blue-Green Deployment**: 무중단 배포를 위한 블루-그린 배포 전략
+- **Rolling Update**: Kubernetes 환경에서 롤링 업데이트 기본 적용
+- **Canary Release**: 중요한 변경사항의 점진적 배포
+- **Auto Scaling**: HPA(Horizontal Pod Autoscaler)를 통한 자동 스케일링
+
+### Monitoring and Observability
+- **Distributed Tracing**: 서비스 간 요청 추적을 위한 분산 트레이싱
+- **Centralized Logging**: 모든 서비스 로그의 중앙집중식 관리
+- **Metrics Collection**: Prometheus 기반 메트릭 수집 및 Grafana 시각화
+- **Service Mesh**: Istio 도입을 통한 고급 트래픽 관리 (향후 계획)
+
+## Migration Path
+
+### From Monolithic to MSA
+현재 시스템은 모놀리식과 MSA 두 가지 아키텍처를 모두 지원합니다:
+
+1. **Phase 1**: 모놀리식 시스템 안정화 완료 ✅
+2. **Phase 2**: MSA 아키텍처 구현 완료 ✅
+3. **Phase 3**: 운영 환경에서 점진적 전환 (진행 예정)
+4. **Phase 4**: 완전한 MSA 전환 및 모놀리식 레거시 제거 (향후 계획)
+
+### Architecture Decision Records (ADR)
+
+#### ADR-001: API Gateway Pattern
+- **결정**: 모든 외부 요청은 API Gateway를 통해 라우팅
+- **이유**: 중앙집중식 인증, 로깅, 모니터링, 캐싱 적용
+- **결과**: 서비스 간 통신 복잡성 감소, 보안 강화
+
+#### ADR-002: Single Database Strategy
+- **결정**: 초기 MSA 구현에서는 단일 PostgreSQL 인스턴스 사용
+- **이유**: 데이터 일관성 보장, 복잡성 최소화
+- **향후 계획**: 서비스별 데이터베이스 분리, Event Sourcing 도입
+
+#### ADR-003: Container-First Deployment
+- **결정**: Docker/Kubernetes 기반 컨테이너 배포 전략
+- **이유**: 환경 일관성, 확장성, GitOps 호환성
+- **도구**: Docker Compose (개발), Kubernetes (운영)
+
+이 MSA 전환을 통해 시스템은 더 높은 확장성, 유지보수성, 장애 격리 능력을 갖추게 되었습니다.
 
 ## GitOps Best Practices
 

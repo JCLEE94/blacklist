@@ -10,12 +10,19 @@ import os
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import (Blueprint, Response, current_app, jsonify, redirect,
-                   render_template, request, url_for)
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from .container import get_container
-from .exceptions import (ValidationError, create_error_response,
-                         handle_exception)
+from .exceptions import ValidationError, create_error_response, handle_exception
 from .unified_service import get_unified_service
 from .validators import validate_ip
 
@@ -2997,8 +3004,7 @@ def manual_collection_trigger():
 
             try:
                 # REGTECH Simple Collector 사용
-                from src.core.regtech_simple_collector import \
-                    RegtechSimpleCollector
+                from src.core.regtech_simple_collector import RegtechSimpleCollector
 
                 collector = RegtechSimpleCollector("data")
                 visual_logs.append("✅ REGTECH 수집기 생성 완료")
@@ -3997,6 +4003,7 @@ def _test_statistics_integration():
     try:
         # Flask 테스트 앱 생성
         from flask import Flask
+
         test_app = Flask(__name__)
         test_app.register_blueprint(unified_bp)
 
@@ -4144,6 +4151,7 @@ def _test_database_api_consistency():
 
         # 2. API 응답과 비교
         from flask import Flask
+
         test_app = Flask(__name__)
         test_app.register_blueprint(unified_bp)
 
@@ -4207,6 +4215,7 @@ def _test_collection_data_flow():
 
     try:
         from flask import Flask
+
         test_app = Flask(__name__)
         test_app.register_blueprint(unified_bp)
 

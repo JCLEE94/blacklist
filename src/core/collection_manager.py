@@ -568,8 +568,7 @@ class CollectionManager:
             try:
                 # Enhanced 수집기 우선 시도
                 try:
-                    from .regtech_collector_enhanced import \
-                        EnhancedRegtechCollector
+                    from .regtech_collector_enhanced import EnhancedRegtechCollector
 
                     data_dir = os.path.join(os.path.dirname(self.db_path), "..", "data")
                     collector = EnhancedRegtechCollector(data_dir=data_dir)
@@ -619,8 +618,7 @@ class CollectionManager:
                 except ImportError:
                     # HAR 기반 수집기로 폴백
                     logger.warning("Enhanced 수집기 사용 불가, HAR 기반 수집기로 폴백")
-                    from .har_based_regtech_collector import \
-                        HarBasedRegtechCollector
+                    from .har_based_regtech_collector import HarBasedRegtechCollector
 
                     data_dir = os.path.join(os.path.dirname(self.db_path), "..", "data")
                     collector = HarBasedRegtechCollector(data_dir=data_dir)

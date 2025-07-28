@@ -11,8 +11,16 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import requests
-from flask import (Blueprint, flash, g, jsonify, redirect, render_template,
-                   request, url_for)
+from flask import (
+    Blueprint,
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from src.config.settings import settings
 

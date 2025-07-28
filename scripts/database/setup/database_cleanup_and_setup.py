@@ -3,22 +3,24 @@
 Complete database cleanup and fresh REGTECH collection setup
 """
 import os
-import sqlite3
 import shutil
+import sqlite3
 from datetime import datetime
+
 import pytz
+
 
 def main():
     """Main cleanup and setup process"""
     kst = pytz.timezone('Asia/Seoul')
     current_time = datetime.now(kst).strftime('%Y-%m-%d %H:%M:%S KST')
-    
-    print("="*60)
+
+    print("=" * 60)
     print("DATABASE CLEANUP AND FRESH COLLECTION SETUP")
-    print("="*60)
+    print("=" * 60)
     print(f"Current Time: {current_time}")
     print()
-    
+
     # Step 1: Create environment file if not exists
     if not os.path.exists('.env'):
         print("📝 Creating .env file template...")
@@ -58,40 +60,42 @@ MAX_RETRIES=3
             f.write(env_content)
         print("✅ Created .env file - Please fill in REGTECH credentials!")
         print()
-    
+
     # Step 2: Analyze current database state
     print("📊 Current Database Analysis:")
     print("-" * 40)
-    
+
     db_path = 'instance/blacklist.db'
     if os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # Check blacklist_ips table
         cursor.execute("SELECT COUNT(*) FROM blacklist_ips")
         ips_count = cursor.fetchone()[0]
         print(f"blacklist_ips table: {ips_count} records")
-        
+
         # Check blacklist_ip table
         cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
         ip_count = cursor.fetchone()[0]
         print(f"blacklist_ip table: {ip_count} records")
-        
+
         # Check expired IPs
-        cursor.execute("SELECT COUNT(*) FROM blacklist_ips WHERE expiry_date < date('now')")
+        cursor.execute(
+            "SELECT COUNT(*) FROM blacklist_ips WHERE expiry_date < date('now')"
+        )
         expired_count = cursor.fetchone()[0]
         print(f"Expired IPs: {expired_count}")
-        
+
         # Check valid IPs
         valid_count = ips_count - expired_count
         print(f"Valid IPs: {valid_count}")
-        
+
         conn.close()
     else:
         print("❌ Database not found!")
         return
-    
+
     print()
     print("🔍 Findings:")
     print("- Data exists in 'blacklist_ips' table (old schema)")
@@ -99,7 +103,7 @@ MAX_RETRIES=3
     print("- No hardcoded IPs found - all from REGTECH")
     print("- 421 IPs have expired (35% of total)")
     print()
-    
+
     # Step 3: Provide cleanup options
     print("🛠️  Cleanup Options:")
     print("-" * 40)
@@ -108,14 +112,14 @@ MAX_RETRIES=3
     print("3. Start fresh - clear all data")
     print("4. Exit without changes")
     print()
-    
+
     # Create option scripts
     create_option_scripts()
-    
+
     # Step 4: REGTECH collection preparation
     print("📥 REGTECH Collection Setup:")
     print("-" * 40)
-    
+
     # Check for main collection script
     main_collector = 'scripts/collection/regtech/regtech_auto_collector.py'
     if os.path.exists(main_collector):
@@ -128,10 +132,10 @@ MAX_RETRIES=3
             main_collector = alt_collector
         else:
             print("❌ REGTECH collector not found")
-    
+
     # Create a simple REGTECH test script
     create_regtech_test_script()
-    
+
     print()
     print("📋 Next Steps:")
     print("-" * 40)
@@ -148,7 +152,7 @@ MAX_RETRIES=3
 
 def create_option_scripts():
     """Create cleanup option scripts"""
-    
+
     # Option 1: Migrate valid IPs only
     option1 = '''#!/usr/bin/env python3
 """Option 1: Migrate only valid (non-expired) IPs"""
@@ -200,7 +204,7 @@ finally:
     with open('option1_migrate_valid.py', 'w') as f:
         f.write(option1)
     os.chmod('option1_migrate_valid.py', 0o755)
-    
+
     # Option 2: Migrate all IPs
     option2 = '''#!/usr/bin/env python3
 """Option 2: Migrate all IPs including expired"""
@@ -251,7 +255,7 @@ finally:
     with open('option2_migrate_all.py', 'w') as f:
         f.write(option2)
     os.chmod('option2_migrate_all.py', 0o755)
-    
+
     # Option 3: Start fresh
     option3 = '''#!/usr/bin/env python3
 """Option 3: Start fresh - clear all data"""
@@ -294,7 +298,7 @@ finally:
 
 def create_regtech_test_script():
     """Create REGTECH connection test script"""
-    
+
     test_script = '''#!/usr/bin/env python3
 """Test REGTECH connection and credentials"""
 import os
@@ -346,7 +350,7 @@ print("📝 Note: This only tests connectivity.")
 print("   Actual login requires handling CAPTCHA/OTP")
 print("   Use manual collection scripts for data gathering")
 '''
-    
+
     with open('test_regtech_connection.py', 'w') as f:
         f.write(test_script)
     os.chmod('test_regtech_connection.py', 0o755)

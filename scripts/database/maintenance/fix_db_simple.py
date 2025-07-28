@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import sqlite3
 import os
+import sqlite3
 
 # 프로덕션 컨테이너에서 실행할 스크립트
 db_path = '/app/instance/blacklist.db'
@@ -15,7 +15,8 @@ cursor = conn.cursor()
 
 # 테이블 삭제 및 재생성
 cursor.execute("DROP TABLE IF EXISTS blacklist_ip")
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE blacklist_ip (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ip VARCHAR(45) UNIQUE NOT NULL,
@@ -25,10 +26,12 @@ CREATE TABLE blacklist_ip (
     source VARCHAR(100),
     extra_data TEXT
 )
-""")
+"""
+)
 
 cursor.execute("DROP TABLE IF EXISTS ip_detection")
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE ip_detection (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ip VARCHAR(45) NOT NULL,
@@ -39,10 +42,12 @@ CREATE TABLE ip_detection (
     blacklist_ip_id INTEGER,
     FOREIGN KEY (blacklist_ip_id) REFERENCES blacklist_ip(id)
 )
-""")
+"""
+)
 
 cursor.execute("DROP TABLE IF EXISTS daily_stats")
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE daily_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date DATE UNIQUE NOT NULL,
@@ -52,7 +57,8 @@ CREATE TABLE daily_stats (
     public_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
-""")
+"""
+)
 
 conn.commit()
 conn.close()

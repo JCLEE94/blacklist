@@ -368,9 +368,19 @@ class UnifiedBlacklistService:
             }
 
     async def get_active_blacklist(self, format_type: str = "json") -> Dict[str, Any]:
-        """활성 블랙리스트 조회"""
+        """활성 블랙리스트 조회 - 성능 최적화 버전"""
         try:
-            # Check if blacklist_manager is available
+            # 성능 캐시 키 생성
+            cache_key = f"active_blacklist_{format_type}_v2"
+            
+            # 캐시에서 먼저 확인 (2분 TTL)
+            if self.cache:
+                cached_result = self.cache.get(cache_key)
+                if cached_result:
+                    self.logger.debug(f"Active blacklist ({format_type}) returned from cache")
+                    return cached_result
+
+            # Blacklist manager 확인
             if not self.blacklist_manager:
                 return {
                     "success": False,
@@ -378,38 +388,61 @@ class UnifiedBlacklistService:
                     "timestamp": datetime.now().isoformat(),
                 }
 
+            # 활성 IP 조회 (최적화된 방식)
+            active_ips = self.blacklist_manager.get_active_ips()
+            
+            # 타입 확인 및 정규화
+            if isinstance(active_ips, tuple):
+                active_ips = active_ips[0]
+            if not isinstance(active_ips, (list, set)):
+                active_ips = list(active_ips) if active_ips else []
+
+            # 포맷별 결과 생성
             if format_type == "fortigate":
-                # FortiGate 형식으로 변환
-                active_ips = self.blacklist_manager.get_active_ips()
+                # FortiGate 형식 (정렬된 IP 리스트)
+                sorted_ips = sorted(set(active_ips))  # 중복 제거 및 정렬
                 result = {
                     "version": "1.0",
                     "name": "Blacklist IPs",
-                    "category": "Secudium Blacklist",
-                    "description": "Threat Intelligence Blacklist",
-                    "entries": [{"ip": ip} for ip in sorted(active_ips)],
-                    "total_count": len(active_ips),
+                    "category": "Threat Intelligence Blacklist",
+                    "description": "Multi-source threat intelligence blacklist",
+                    "entries": [{"ip": ip} for ip in sorted_ips],
+                    "total_count": len(sorted_ips),
                     "generated_at": datetime.now().isoformat(),
+                    "performance_optimized": True,
                 }
             else:
-                active_ips = self.blacklist_manager.get_active_ips()
+                # 표준 JSON 형식
+                unique_ips = list(set(active_ips))  # 중복 제거
                 result = {
-                    "ips": list(active_ips),
-                    "count": len(active_ips),
+                    "ips": unique_ips,
+                    "count": len(unique_ips),
                     "timestamp": datetime.now().isoformat(),
+                    "performance_optimized": True,
                 }
 
-            return {
+            final_result = {
                 "success": True,
                 "format": format_type,
                 "data": result,
                 "timestamp": datetime.now().isoformat(),
+                "cache_hit": False,  # 새로 생성된 결과
             }
+
+            # 결과를 캐시에 저장 (2분 TTL)
+            if self.cache:
+                self.cache.set(cache_key, final_result, ttl=120)
+                self.logger.debug(f"Active blacklist ({format_type}) cached for 2 minutes")
+
+            return final_result
+
         except Exception as e:
             self.logger.error(f"블랙리스트 조회 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
+                "performance_optimized": True,
             }
 
     async def get_statistics(self) -> Dict[str, Any]:
@@ -716,12 +749,19 @@ class UnifiedBlacklistService:
             }
 
     def get_system_health(self) -> Dict[str, Any]:
-        """시스템 헬스 정보 반환 (unified_routes에서 사용)"""
+        """시스템 헬스 정보 반환 (unified_routes에서 사용) - 성능 최적화 버전"""
         try:
-            # Check if blacklist_manager is available
+            # 캐시에서 먼저 확인 (30초 TTL)
+            cache_key = "system_health_v2"
+            if self.cache:
+                cached_result = self.cache.get(cache_key)
+                if cached_result:
+                    self.logger.debug("System health returned from cache")
+                    return cached_result
+
+            # Blacklist manager 초기화 확인
             if not self.blacklist_manager:
                 self.logger.error("Blacklist manager is None in get_system_health")
-                # Try to reinitialize it
                 try:
                     self.blacklist_manager = self.container.resolve("blacklist_manager")
                     self.logger.info("Successfully reinitialized blacklist_manager")
@@ -734,164 +774,100 @@ class UnifiedBlacklistService:
                         "error": "Blacklist manager not initialized",
                     }
 
-            # Get active IPs
-            active_ips = self.blacklist_manager.get_active_ips()
-            if isinstance(active_ips, tuple):
-                active_ips = active_ips[0]  # Get the actual list from tuple
+            # 데이터베이스 경로 설정
+            if hasattr(self.blacklist_manager, "db_path"):
+                db_path = self.blacklist_manager.db_path
+            else:
+                db_path = os.path.join(
+                    "/app" if os.path.exists("/app") else ".",
+                    "instance/blacklist.db",
+                )
 
-            total_ips = len(active_ips) if active_ips else 0
-
-            # Get actual counts by source from database
+            # 단일 최적화된 쿼리로 모든 통계 수집
             source_counts = {"REGTECH": 0, "SECUDIUM": 0, "PUBLIC": 0}
+            total_ips = 0
+            
             try:
-                # Use blacklist_manager's database path
-                if hasattr(self.blacklist_manager, "db_path"):
-                    db_path = self.blacklist_manager.db_path
-                else:
-                    # Fallback to instance path
-                    db_path = os.path.join(
-                        "/app" if os.path.exists("/app") else ".",
-                        "instance/blacklist.db",
-                    )
-
-                self.logger.info(f"Getting source counts from database: {db_path}")
-                self.logger.info(f"Database file exists: {os.path.exists(db_path)}")
-                if os.path.exists(db_path):
-                    self.logger.info(
-                        f"Database file size: {os.path.getsize(db_path)} bytes"
-                    )
-
-                conn = sqlite3.connect(db_path)
-                cursor = conn.cursor()
-
-                # Check if table exists
-                cursor.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='blacklist_ip'"
-                )
-                table_exists = cursor.fetchone()
-                self.logger.info(
-                    f"blacklist_ip table exists: {table_exists is not None}"
-                )
-
-                if not table_exists:
-                    self.logger.warning(
-                        "blacklist_ip table does not exist! Creating tables..."
-                    )
+                with sqlite3.connect(db_path, timeout=10) as conn:
+                    cursor = conn.cursor()
+                    
+                    # 테이블 존재 확인
                     cursor.execute(
-                        """
-                        CREATE TABLE IF NOT EXISTS blacklist_ip (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            ip TEXT NOT NULL UNIQUE,
-                            created_at TEXT NOT NULL,
-                            detection_date TEXT,
-                            attack_type TEXT,
-                            country TEXT,
-                            source TEXT,
-                            confidence_score REAL DEFAULT 1.0,
-                            is_active INTEGER DEFAULT 1,
-                            last_seen TEXT
-                        )
-                    """
+                        "SELECT name FROM sqlite_master WHERE type='table' AND name='blacklist_ip'"
                     )
-                    cursor.execute(
-                        """
-                        CREATE TABLE IF NOT EXISTS ip_detection (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            ip TEXT NOT NULL,
-                            created_at TEXT NOT NULL,
-                            source TEXT NOT NULL,
-                            attack_type TEXT,
-                            confidence_score REAL DEFAULT 1.0
-                        )
-                    """
-                    )
-                    cursor.execute(
-                        "CREATE INDEX IF NOT EXISTS idx_blacklist_ip_source ON blacklist_ip(source)"
-                    )
-                    conn.commit()
-                    self.logger.info("Database tables created successfully!")
+                    table_exists = cursor.fetchone()
 
-                if table_exists or True:  # Always check after potential creation
-                    # 탐지일 기준 90일 내 활성 IP만 계산
-                    from datetime import datetime, timedelta
-
-                    ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime(
-                        "%Y-%m-%d"
-                    )
-
-                    # 90일 내 탐지된 IP 수 계산
-                    cursor.execute(
-                        """
-                        SELECT COUNT(DISTINCT ip) FROM blacklist_ip
-                        WHERE detection_date >= ?
-                           OR (detection_date IS NULL AND created_at >= ?)
-                    """,
-                        (ninety_days_ago, ninety_days_ago),
-                    )
-                    total_in_db = cursor.fetchone()[0]
-                    self.logger.info(f"Active IPs in database (90 days): {total_in_db}")
-
-                    # 소스별 90일 내 활성 IP 통계
-                    if total_in_db > 0:
-                        cursor.execute(
-                            """
-                            SELECT UPPER(source), COUNT(DISTINCT ip)
-                            FROM blacklist_ip
-                            WHERE detection_date >= ?
-                               OR (detection_date IS NULL AND created_at >= ?)
-                            GROUP BY UPPER(source)
-                        """,
-                            (ninety_days_ago, ninety_days_ago),
-                        )
-                        for row in cursor.fetchall():
-                            source_name = row[0]
-                            count = row[1]
-                            self.logger.info(
-                                f"Active Source {source_name} (90 days): {count} IPs"
+                    if not table_exists:
+                        self.logger.warning("blacklist_ip table does not exist! Creating tables...")
+                        cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS blacklist_ip (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                ip TEXT NOT NULL UNIQUE,
+                                created_at TEXT NOT NULL,
+                                detection_date TEXT,
+                                attack_type TEXT,
+                                country TEXT,
+                                source TEXT,
+                                confidence_score REAL DEFAULT 1.0,
+                                is_active INTEGER DEFAULT 1,
+                                last_seen TEXT
                             )
-                            # 모든 소스를 source_counts에 추가 (동적으로)
-                            source_counts[source_name] = count
+                        """)
+                        cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS ip_detection (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                ip TEXT NOT NULL,
+                                created_at TEXT NOT NULL,
+                                source TEXT NOT NULL,
+                                attack_type TEXT,
+                                confidence_score REAL DEFAULT 1.0
+                            )
+                        """)
+                        # 성능 최적화를 위한 인덱스 추가
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_source ON blacklist_ip(source)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_detection_date ON blacklist_ip(detection_date)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_created_at ON blacklist_ip(created_at)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_composite ON blacklist_ip(detection_date, source)")
+                        conn.commit()
+                        self.logger.info("Database tables and performance indexes created successfully!")
 
-                        # 최근 추가된 데이터 확인 (90일 내)
-                        cursor.execute(
-                            """
-                            SELECT ip, source, detection_date, created_at
+                    # 최적화된 단일 쿼리로 90일 내 활성 IP 통계 조회
+                    from datetime import datetime, timedelta
+                    ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
+
+                    # 단일 쿼리로 전체 통계와 소스별 통계를 동시에 수집
+                    cursor.execute("""
+                        WITH active_ips AS (
+                            SELECT ip, UPPER(COALESCE(source, 'UNKNOWN')) as source_upper
                             FROM blacklist_ip
-                            WHERE detection_date >= ?
-                               OR (detection_date IS NULL AND created_at >= ?)
-                            ORDER BY COALESCE(detection_date, created_at) DESC
-                            LIMIT 5
-                        """,
-                            (ninety_days_ago, ninety_days_ago),
+                            WHERE (detection_date >= ? OR (detection_date IS NULL AND created_at >= ?))
                         )
-                        recent_ips = cursor.fetchall()
-                        self.logger.info(
-                            f"Recent active IPs added (90 days): {recent_ips}"
-                        )
-                    else:
-                        self.logger.warning(
-                            "No IPs found in database - checking table structure..."
-                        )
-                        cursor.execute("PRAGMA table_info(blacklist_ip)")
-                        table_info = cursor.fetchall()
-                        self.logger.info(f"Table structure: {table_info}")
+                        SELECT 
+                            COUNT(DISTINCT ip) as total_count,
+                            COUNT(CASE WHEN source_upper = 'REGTECH' THEN 1 END) as regtech_count,
+                            COUNT(CASE WHEN source_upper = 'SECUDIUM' THEN 1 END) as secudium_count,
+                            COUNT(CASE WHEN source_upper NOT IN ('REGTECH', 'SECUDIUM') THEN 1 END) as other_count
+                        FROM active_ips
+                    """, (ninety_days_ago, ninety_days_ago))
+                    
+                    result = cursor.fetchone()
+                    if result:
+                        total_ips = result[0]
+                        source_counts["REGTECH"] = result[1]
+                        source_counts["SECUDIUM"] = result[2]
+                        source_counts["PUBLIC"] = result[3]
 
-                        # 모든 테이블 확인
-                        cursor.execute(
-                            "SELECT name FROM sqlite_master WHERE type='table'"
-                        )
-                        all_tables = cursor.fetchall()
-                        self.logger.info(f"All tables in database: {all_tables}")
+                    self.logger.info(f"Performance optimized query: {total_ips} active IPs (90 days)")
+                    self.logger.info(f"Source distribution: REGTECH={source_counts['REGTECH']}, "
+                                   f"SECUDIUM={source_counts['SECUDIUM']}, PUBLIC={source_counts['PUBLIC']}")
 
-                    total_ips = total_in_db  # Use the actual count from database
-                conn.close()
             except Exception as e:
-                self.logger.warning(f"Failed to get source counts: {e}")
+                self.logger.warning(f"Database query failed: {e}")
                 import traceback
-
                 self.logger.warning(f"Traceback: {traceback.format_exc()}")
 
-            return {
+            # 최종 결과 구성
+            health_result = {
                 "status": "healthy" if self._running else "stopped",
                 "total_ips": total_ips,
                 "active_ips": total_ips,
@@ -903,13 +879,21 @@ class UnifiedBlacklistService:
                         "enabled": self.config.get("regtech_enabled", False),
                         "count": source_counts.get("REGTECH", 0),
                     },
-                    # SECUDIUM 수집기 제거됨 - 사용자 요청에 따라
                 },
                 "last_update": datetime.now().isoformat(),
                 "cache_available": self.cache is not None,
                 "database_connected": True,
                 "version": self.config.get("version", "3.0.2-auto-deploy"),
+                "performance_optimized": True,  # 최적화 버전임을 표시
             }
+
+            # 결과를 캐시에 저장 (30초 TTL)
+            if self.cache:
+                self.cache.set(cache_key, health_result, ttl=30)
+                self.logger.debug("System health cached for 30 seconds")
+
+            return health_result
+
         except Exception as e:
             self.logger.error(f"Failed to get system health: {e}")
             return {"status": "error", "total_ips": 0, "active_ips": 0, "error": str(e)}
