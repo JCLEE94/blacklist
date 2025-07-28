@@ -107,6 +107,11 @@ docs/reports/
 # Shrimp task manager data
 $SHRIMP_DATA_DIR/
 
+# Test data files
+data/regtech/regtech_simple_*.json
+blacklist_report.json
+quick_test_app.py
+
 # HAR files and analysis data (archived)
 *.har
 har_analysis/
