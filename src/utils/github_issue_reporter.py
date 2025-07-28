@@ -39,6 +39,12 @@ class GitHubIssueReporter:
         # 에러 중복 방지를 위한 캐시 (메모리 기반)
         self.error_cache = {}
         self.cache_timeout = timedelta(hours=1)  # 1시간 동안 같은 에러 중복 방지
+        self.max_cache_size = 1000  # 메모리 누수 방지를 위한 최대 캐시 크기
+        self.max_retries = 3  # GitHub API 호출 최대 재시도 횟수
+        self.retry_delay = 1  # 재시도 간격 (초)
+        
+        # 토큰 유효성 검증
+        self._validate_configuration()
 
     def _generate_error_hash(
         self, error_type: str, error_message: str, stack_trace: str
@@ -60,9 +66,53 @@ class GitHubIssueReporter:
         self.error_cache[error_hash] = datetime.now()
 
     def _clean_cache(self):
-        """오래된 캐시 정리"""
+        """오래된 캐시 정리 및 크기 제한 적용"""
         cutoff = datetime.now() - self.cache_timeout
         self.error_cache = {k: v for k, v in self.error_cache.items() if v > cutoff}
+        
+        # 캐시 크기가 최대 크기를 초과하는 경우 오래된 항목부터 제거
+        if len(self.error_cache) > self.max_cache_size:
+            # 시간순으로 정렬해서 오래된 항목부터 제거
+            sorted_items = sorted(self.error_cache.items(), key=lambda x: x[1])
+            items_to_keep = sorted_items[-self.max_cache_size:]
+            self.error_cache = dict(items_to_keep)
+            logger.info(f"Cache size exceeded {self.max_cache_size}, cleaned to {len(self.error_cache)} items")
+
+    def _validate_configuration(self):
+        """GitHub 설정 검증"""
+        if not self.github_token:
+            logger.warning("GITHUB_TOKEN not configured. GitHub issue reporting will be disabled.")
+        else:
+            # 토큰 형식 간단 검증 (GitHub Personal Access Token은 ghp_로 시작)
+            if not (self.github_token.startswith('ghp_') or self.github_token.startswith('github_pat_')):
+                logger.warning("GITHUB_TOKEN format may be incorrect. Expected format: ghp_* or github_pat_*")
+        
+        if not self.repo_owner or not self.repo_name:
+            logger.warning("GitHub repository owner or name not configured properly.")
+            
+    def test_github_connection(self) -> bool:
+        """GitHub API 연결 테스트"""
+        if not self.github_token:
+            logger.error("Cannot test GitHub connection: GITHUB_TOKEN not configured")
+            return False
+            
+        try:
+            response = self.session.get(f"{self.base_url}", timeout=5)
+            if response.status_code == 200:
+                logger.info("✅ GitHub API connection test successful")
+                return True
+            elif response.status_code == 401:
+                logger.error("❌ GitHub API authentication failed - check GITHUB_TOKEN")
+                return False
+            elif response.status_code == 404:
+                logger.error(f"❌ GitHub repository not found: {self.repo_owner}/{self.repo_name}")
+                return False
+            else:
+                logger.error(f"❌ GitHub API connection failed: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"❌ GitHub API connection test failed: {e}")
+            return False
 
     def _format_error_title(
         self, error_type: str, error_message: str, error_hash: str
@@ -161,24 +211,55 @@ class GitHubIssueReporter:
                 "labels": ["bug", "auto-generated", "error-report", "priority-high"],
             }
 
-            # GitHub API 호출
-            response = self.session.post(
-                f"{self.base_url}/issues", json=issue_data, timeout=10
-            )
+            # GitHub API 호출 (재시도 로직 포함)
+            for attempt in range(self.max_retries):
+                try:
+                    response = self.session.post(
+                        f"{self.base_url}/issues", json=issue_data, timeout=10
+                    )
 
-            if response.status_code == 201:
-                issue_url = response.json().get("html_url")
-                logger.info(f"GitHub issue created successfully: {issue_url}")
+                    if response.status_code == 201:
+                        issue_url = response.json().get("html_url")
+                        logger.info(f"GitHub issue created successfully: {issue_url}")
 
-                # 에러 보고 완료 표시
-                self._mark_error_reported(error_hash)
+                        # 에러 보고 완료 표시
+                        self._mark_error_reported(error_hash)
 
-                return issue_url
-            else:
-                logger.error(
-                    f"Failed to create GitHub issue: {response.status_code} - {response.text}"
-                )
-                return None
+                        return issue_url
+                    elif response.status_code == 401:
+                        logger.error("GitHub API authentication failed - check GITHUB_TOKEN")
+                        return None
+                    elif response.status_code == 403:
+                        logger.error("GitHub API rate limit exceeded or permission denied")
+                        return None
+                    elif response.status_code >= 500:
+                        # 서버 에러의 경우 재시도
+                        logger.warning(f"GitHub API server error (attempt {attempt + 1}/{self.max_retries}): {response.status_code}")
+                        if attempt < self.max_retries - 1:
+                            import time
+                            time.sleep(self.retry_delay * (attempt + 1))  # 지수 백오프
+                            continue
+                    else:
+                        logger.error(f"Failed to create GitHub issue: {response.status_code} - {response.text}")
+                        return None
+                
+                except requests.exceptions.Timeout:
+                    logger.warning(f"GitHub API timeout (attempt {attempt + 1}/{self.max_retries})")
+                    if attempt < self.max_retries - 1:
+                        import time
+                        time.sleep(self.retry_delay * (attempt + 1))
+                        continue
+                except requests.exceptions.RequestException as e:
+                    logger.warning(f"GitHub API request error (attempt {attempt + 1}/{self.max_retries}): {e}")
+                    if attempt < self.max_retries - 1:
+                        import time
+                        time.sleep(self.retry_delay * (attempt + 1))
+                        continue
+                
+                # 마지막 시도에서도 실패한 경우
+                if attempt == self.max_retries - 1:
+                    logger.error("GitHub API call failed after all retry attempts")
+                    return None
 
         except Exception as e:
             logger.error(f"Error creating GitHub issue: {e}")

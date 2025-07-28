@@ -28,16 +28,11 @@ logger = logging.getLogger(__name__)
 def ensure_database_schema():
     """데이터베이스 스키마 확인 및 수정"""
     import sqlite3
+    from src.config.settings import settings
     
-    # Docker 환경 우선 경로 설정
-    if os.path.exists('/app'):
-        # Docker 환경
-        db_path = '/app/instance/blacklist.db'
-        instance_dir = '/app/instance'
-    else:
-        # 로컬 개발 환경
-        db_path = os.path.join(current_dir, 'instance', 'blacklist.db')
-        instance_dir = os.path.join(current_dir, 'instance')
+    # 설정에서 경로 가져오기 (환경에 따라 자동 결정)
+    instance_dir = str(settings.instance_dir)
+    db_path = str(settings.instance_dir / 'blacklist.db')
     
     # instance 디렉토리 생성
     try:
@@ -48,7 +43,21 @@ def ensure_database_schema():
     # 데이터베이스가 없으면 init_database 실행
     if not os.path.exists(db_path):
         logger.info(f"데이터베이스가 없습니다. 새로 생성합니다: {db_path}")
-        os.system("python3 init_database.py")
+        try:
+            # 보안상 os.system() 대신 직접 import해서 호출
+            sys.path.append(current_dir)
+            from init_database import init_database
+            if init_database():
+                logger.info("✅ 데이터베이스 초기화 성공")
+            else:
+                logger.error("❌ 데이터베이스 초기화 실패")
+                raise Exception("Database initialization failed")
+        except ImportError as e:
+            logger.error(f"❌ init_database 모듈 import 실패: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ 데이터베이스 초기화 중 오류: {e}")
+            raise
         return
     
     logger.info(f"데이터베이스 스키마 확인 중: {db_path}")
@@ -91,14 +100,22 @@ def ensure_database_schema():
 # 권한 문제 해결을 위한 디렉토리 생성 및 권한 설정
 def ensure_directories_with_permissions():
     """필요한 디렉토리 생성 및 권한 설정"""
-    directories = ['instance', 'data', 'logs', 'data/by_detection_month']
+    from src.config.settings import settings
+    
+    # 설정에서 디렉토리 경로 가져오기
+    directories = [
+        settings.instance_dir,
+        settings.data_dir,
+        settings.logs_dir,
+        settings.data_dir / 'by_detection_month'
+    ]
     
     for directory in directories:
         try:
-            os.makedirs(directory, exist_ok=True)
+            directory.mkdir(parents=True, exist_ok=True)
             # 디렉토리가 이미 존재하더라도 권한 재설정 시도
             try:
-                os.chmod(directory, 0o777)
+                os.chmod(str(directory), 0o755)  # 보안상 777 대신 755 사용
             except Exception as e:
                 logger.warning(f"Failed to set permissions for {directory}: {e}")
         except Exception as e:
