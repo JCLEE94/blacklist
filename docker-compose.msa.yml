@@ -1,0 +1,247 @@
+version: '3.8'
+
+services:
+  # 데이터베이스
+  postgres:
+    image: postgres:15
+    container_name: blacklist-postgres
+    environment:
+      POSTGRES_DB: blacklist
+      POSTGRES_USER: blacklist_user
+      POSTGRES_PASSWORD: blacklist_pass123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blacklist_user -d blacklist"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (캐시)
+  redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Collection Service (데이터 수집)
+  collection-service:
+    build:
+      context: ./services/collection-service
+      dockerfile: Dockerfile
+    container_name: collection-service
+    environment:
+      - BLACKLIST_SERVICE_URL=http://blacklist-service:8001
+      - REGTECH_USERNAME=${REGTECH_USERNAME}
+      - REGTECH_PASSWORD=${REGTECH_PASSWORD}
+      - SECUDIUM_USERNAME=${SECUDIUM_USERNAME}
+      - SECUDIUM_PASSWORD=${SECUDIUM_PASSWORD}
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Blacklist Management Service (블랙리스트 관리)
+  blacklist-service:
+    build:
+      context: ./services/blacklist-service
+      dockerfile: Dockerfile
+    container_name: blacklist-service
+    environment:
+      - DATABASE_URL=postgresql://blacklist_user:blacklist_pass123@postgres:5432/blacklist
+      - REDIS_URL=redis://redis:6379/1
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Analytics Service (분석)
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    container_name: analytics-service
+    environment:
+      - BLACKLIST_SERVICE_URL=http://blacklist-service:8001
+      - REDIS_URL=redis://redis:6379/2
+    ports:
+      - "8002:8002"
+    depends_on:
+      blacklist-service:
+        condition: service_healthy
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # API Gateway (게이트웨이)
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - COLLECTION_SERVICE_URL=http://collection-service:8000
+      - BLACKLIST_SERVICE_URL=http://blacklist-service:8001
+      - ANALYTICS_SERVICE_URL=http://analytics-service:8002
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-jwt-secret-key}
+      - REDIS_URL=redis://redis:6379/3
+    ports:
+      - "8080:8080"
+    depends_on:
+      collection-service:
+        condition: service_healthy
+      blacklist-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Message Broker (RabbitMQ) - 서비스 간 비동기 통신
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: blacklist-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: blacklist
+      RABBITMQ_DEFAULT_PASS: blacklist123
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Service Mesh - Envoy Proxy (선택사항)
+  envoy:
+    image: envoyproxy/envoy:v1.28-latest
+    container_name: blacklist-envoy
+    volumes:
+      - ./config/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "8090:8090"  # Admin interface
+      - "9901:9901"  # Stats interface
+    networks:
+      - blacklist-network
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+  # Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: blacklist-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+
+  # Monitoring - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: blacklist-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - blacklist-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Load Balancer - Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: blacklist-nginx
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api-gateway
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  blacklist-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
