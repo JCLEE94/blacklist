@@ -16,6 +16,11 @@ commonLabels:
   app: blacklist
   managed-by: kustomize
 
+images:
+  - name: blacklist
+    newName: registry.jclee.me/jclee94/blacklist
+    newTag: latest
+
 configMapGenerator:
   - name: blacklist-config
     literals:
