@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def fix_collection_enabled():
     """Set collection_enabled to false in database and config file"""
-    db_path = '/app/instance/blacklist.db'
-    config_path = '/app/instance/collection_config.json'
+    db_path = "/app/instance/blacklist.db"
+    config_path = "/app/instance/collection_config.json"
 
     if not os.path.exists(db_path):
         print(f"Database not found at {db_path}")
@@ -32,7 +32,7 @@ def fix_collection_enabled():
             current_value = result[0]
             print(f"Current collection_enabled value: {current_value}")
 
-            if current_value.lower() == 'true':
+            if current_value.lower() == "true":
                 # Update to false
                 cursor.execute(
                     """
@@ -71,13 +71,13 @@ def fix_collection_enabled():
         # Also update the JSON config file
         if os.path.exists(config_path):
             try:
-                with open(config_path, 'r') as f:
+                with open(config_path, "r") as f:
                     config = json.load(f)
 
-                if config.get('collection_enabled', True):
-                    config['collection_enabled'] = False
+                if config.get("collection_enabled", True):
+                    config["collection_enabled"] = False
 
-                    with open(config_path, 'w') as f:
+                    with open(config_path, "w") as f:
                         json.dump(config, f, indent=2)
 
                     print(f"Updated {config_path} to set collection_enabled to false")
@@ -96,6 +96,6 @@ def fix_collection_enabled():
         return False
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = fix_collection_enabled()
     sys.exit(0 if success else 1)

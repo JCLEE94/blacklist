@@ -1,0 +1,114 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: http://charts.jclee.me
+    chart: blacklist
+    targetRevision: "3.1.0"
+    helm:
+      values: |
+        image:
+          repository: registry.jclee.me/jclee/blacklist
+          tag: "3.1.0"
+          pullPolicy: Always
+        
+        imagePullSecrets:
+          - name: jclee-registry-secret
+        
+        service:
+          type: NodePort
+          port: 80
+          targetPort: 8541
+          nodePort: 30080
+        
+        ingress:
+          enabled: true
+          className: nginx
+          annotations:
+            nginx.ingress.kubernetes.io/rewrite-target: /
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+          hosts:
+            - host: blacklist.jclee.me
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: blacklist-tls
+              hosts:
+                - blacklist.jclee.me
+        
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        
+        autoscaling:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 10
+          targetCPUUtilizationPercentage: 70
+          targetMemoryUtilizationPercentage: 80
+        
+        env:
+          PORT: "8541"
+          MICROSERVICE_NAME: blacklist
+          CLUSTER_NAME: microservices-cluster
+          NAMESPACE: microservices
+        
+        probes:
+          liveness:
+            path: /health
+            port: 8541
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readiness:
+            path: /health
+            port: 8541
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+        
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+        
+        monitoring:
+          enabled: true
+          serviceMonitor:
+            enabled: true
+            path: /metrics
+            port: metrics
+        
+        serviceAccount:
+          create: true
+          automount: true
+          name: ""
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: microservices
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+  
+  revisionHistoryLimit: 10

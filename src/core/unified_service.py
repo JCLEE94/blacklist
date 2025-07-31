@@ -113,9 +113,7 @@ class UnifiedBlacklistService:
             )
 
             # 수집은 활성화하지 않음 - 수동 제어
-            self.logger.info(
-                "⚠️ 자동 수집이 비활성화되었습니다. 수동으로 수집을 시작하세요."
-            )
+            self.logger.info("⚠️ 자동 수집이 비활성화되었습니다. 수동으로 수집을 시작하세요.")
 
             # 완료 표시 (자동 수집 시도 방지)
             self.collection_manager.mark_initial_collection_done()
@@ -372,12 +370,14 @@ class UnifiedBlacklistService:
         try:
             # 성능 캐시 키 생성
             cache_key = f"active_blacklist_{format_type}_v2"
-            
+
             # 캐시에서 먼저 확인 (2분 TTL)
             if self.cache:
                 cached_result = self.cache.get(cache_key)
                 if cached_result:
-                    self.logger.debug(f"Active blacklist ({format_type}) returned from cache")
+                    self.logger.debug(
+                        f"Active blacklist ({format_type}) returned from cache"
+                    )
                     return cached_result
 
             # Blacklist manager 확인
@@ -390,7 +390,7 @@ class UnifiedBlacklistService:
 
             # 활성 IP 조회 (최적화된 방식)
             active_ips = self.blacklist_manager.get_active_ips()
-            
+
             # 타입 확인 및 정규화
             if isinstance(active_ips, tuple):
                 active_ips = active_ips[0]
@@ -432,7 +432,9 @@ class UnifiedBlacklistService:
             # 결과를 캐시에 저장 (2분 TTL)
             if self.cache:
                 self.cache.set(cache_key, final_result, ttl=120)
-                self.logger.debug(f"Active blacklist ({format_type}) cached for 2 minutes")
+                self.logger.debug(
+                    f"Active blacklist ({format_type}) cached for 2 minutes"
+                )
 
             return final_result
 
@@ -786,11 +788,11 @@ class UnifiedBlacklistService:
             # 단일 최적화된 쿼리로 모든 통계 수집
             source_counts = {"REGTECH": 0, "SECUDIUM": 0, "PUBLIC": 0}
             total_ips = 0
-            
+
             try:
                 with sqlite3.connect(db_path, timeout=10) as conn:
                     cursor = conn.cursor()
-                    
+
                     # 테이블 존재 확인
                     cursor.execute(
                         "SELECT name FROM sqlite_master WHERE type='table' AND name='blacklist_ip'"
@@ -798,8 +800,11 @@ class UnifiedBlacklistService:
                     table_exists = cursor.fetchone()
 
                     if not table_exists:
-                        self.logger.warning("blacklist_ip table does not exist! Creating tables...")
-                        cursor.execute("""
+                        self.logger.warning(
+                            "blacklist_ip table does not exist! Creating tables..."
+                        )
+                        cursor.execute(
+                            """
                             CREATE TABLE IF NOT EXISTS blacklist_ip (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 ip TEXT NOT NULL UNIQUE,
@@ -812,8 +817,10 @@ class UnifiedBlacklistService:
                                 is_active INTEGER DEFAULT 1,
                                 last_seen TEXT
                             )
-                        """)
-                        cursor.execute("""
+                        """
+                        )
+                        cursor.execute(
+                            """
                             CREATE TABLE IF NOT EXISTS ip_detection (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 ip TEXT NOT NULL,
@@ -822,21 +829,36 @@ class UnifiedBlacklistService:
                                 attack_type TEXT,
                                 confidence_score REAL DEFAULT 1.0
                             )
-                        """)
+                        """
+                        )
                         # 성능 최적화를 위한 인덱스 추가
-                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_source ON blacklist_ip(source)")
-                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_detection_date ON blacklist_ip(detection_date)")
-                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_created_at ON blacklist_ip(created_at)")
-                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blacklist_ip_composite ON blacklist_ip(detection_date, source)")
+                        cursor.execute(
+                            "CREATE INDEX IF NOT EXISTS idx_blacklist_ip_source ON blacklist_ip(source)"
+                        )
+                        cursor.execute(
+                            "CREATE INDEX IF NOT EXISTS idx_blacklist_ip_detection_date ON blacklist_ip(detection_date)"
+                        )
+                        cursor.execute(
+                            "CREATE INDEX IF NOT EXISTS idx_blacklist_ip_created_at ON blacklist_ip(created_at)"
+                        )
+                        cursor.execute(
+                            "CREATE INDEX IF NOT EXISTS idx_blacklist_ip_composite ON blacklist_ip(detection_date, source)"
+                        )
                         conn.commit()
-                        self.logger.info("Database tables and performance indexes created successfully!")
+                        self.logger.info(
+                            "Database tables and performance indexes created successfully!"
+                        )
 
                     # 최적화된 단일 쿼리로 90일 내 활성 IP 통계 조회
                     from datetime import datetime, timedelta
-                    ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
+
+                    ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime(
+                        "%Y-%m-%d"
+                    )
 
                     # 단일 쿼리로 전체 통계와 소스별 통계를 동시에 수집
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         WITH active_ips AS (
                             SELECT ip, UPPER(COALESCE(source, 'UNKNOWN')) as source_upper
                             FROM blacklist_ip
@@ -848,8 +870,10 @@ class UnifiedBlacklistService:
                             COUNT(CASE WHEN source_upper = 'SECUDIUM' THEN 1 END) as secudium_count,
                             COUNT(CASE WHEN source_upper NOT IN ('REGTECH', 'SECUDIUM') THEN 1 END) as other_count
                         FROM active_ips
-                    """, (ninety_days_ago, ninety_days_ago))
-                    
+                    """,
+                        (ninety_days_ago, ninety_days_ago),
+                    )
+
                     result = cursor.fetchone()
                     if result:
                         total_ips = result[0]
@@ -857,13 +881,18 @@ class UnifiedBlacklistService:
                         source_counts["SECUDIUM"] = result[2]
                         source_counts["PUBLIC"] = result[3]
 
-                    self.logger.info(f"Performance optimized query: {total_ips} active IPs (90 days)")
-                    self.logger.info(f"Source distribution: REGTECH={source_counts['REGTECH']}, "
-                                   f"SECUDIUM={source_counts['SECUDIUM']}, PUBLIC={source_counts['PUBLIC']}")
+                    self.logger.info(
+                        f"Performance optimized query: {total_ips} active IPs (90 days)"
+                    )
+                    self.logger.info(
+                        f"Source distribution: REGTECH={source_counts['REGTECH']}, "
+                        f"SECUDIUM={source_counts['SECUDIUM']}, PUBLIC={source_counts['PUBLIC']}"
+                    )
 
             except Exception as e:
                 self.logger.warning(f"Database query failed: {e}")
                 import traceback
+
                 self.logger.warning(f"Traceback: {traceback.format_exc()}")
 
             # 최종 결과 구성
@@ -1060,11 +1089,7 @@ class UnifiedBlacklistService:
             message = f"{date_str} {source_display} 수집 시작"
 
         elif action == "collection_failed":
-            error_msg = (
-                details.get("error", "알 수 없는 오류")
-                if details
-                else "알 수 없는 오류"
-            )
+            error_msg = details.get("error", "알 수 없는 오류") if details else "알 수 없는 오류"
             message = f"{date_str} {source_display} 수집 실패: {error_msg}"
 
         elif action == "collection_enabled":
@@ -2214,9 +2239,7 @@ class UnifiedBlacklistService:
 
             # 진행 상황 업데이트
             if progress_tracker:
-                progress_tracker.update_progress(
-                    "regtech", 0, 100, "REGTECH 수집 시작..."
-                )
+                progress_tracker.update_progress("regtech", 0, 100, "REGTECH 수집 시작...")
 
             # 실제 수집 실행 (동기적으로 처리)
             try:
@@ -2443,9 +2466,7 @@ class UnifiedBlacklistService:
             except Exception as e:
                 self.logger.error(f"REGTECH 수집 실행 중 오류: {e}")
                 if progress_tracker:
-                    progress_tracker.fail_collection(
-                        "regtech", f"수집 실행 오류: {str(e)}"
-                    )
+                    progress_tracker.fail_collection("regtech", f"수집 실행 오류: {str(e)}")
                 return {
                     "success": False,
                     "error": str(e),
@@ -2812,9 +2833,7 @@ def _test_unified_service_collection_status():
                 for source_name, source_info in status["sources"].items():
                     if isinstance(source_info, dict):
                         enabled = source_info.get("enabled", False)
-                        print(
-                            f"    {source_name}: {'활성화' if enabled else '비활성화'}"
-                        )
+                        print(f"    {source_name}: {'활성화' if enabled else '비활성화'}")
         else:
             print("  ❌ 컬렉션 상태가 딕셔너리가 아님")
             return False

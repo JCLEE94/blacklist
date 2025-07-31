@@ -20,7 +20,7 @@ import yaml
 
 # 로깅 설정
 logging.basicConfig(
-    level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -131,7 +131,7 @@ class CodeQualityStage(PipelineStage):
 
             src_path = (
                 Path(self.config.project_root)
-                if hasattr(self.config, 'project_root')
+                if hasattr(self.config, "project_root")
                 else Path("src")
             )
             python_files = glob.glob(str(src_path / "**" / "*.py"), recursive=True)
@@ -192,8 +192,8 @@ class CodeQualityStage(PipelineStage):
                 r'(aws_access_key|aws_secret|aws_token)\s*=\s*["\'][^"\']+["\']',
                 r'(database_url|db_url|connection_string)\s*=\s*["\'][^"\']+["\']',
                 r'(private_key|priv_key|pem|cert)\s*=\s*["\'][^"\']+["\']',
-                r'Bearer\s+[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\.?[A-Za-z0-9\-_.+/=]*',
-                r'Basic\s+[A-Za-z0-9+/=]+',
+                r"Bearer\s+[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\.?[A-Za-z0-9\-_.+/=]*",
+                r"Basic\s+[A-Za-z0-9+/=]+",
             ]
 
             # grep 명령을 Python으로 대체
@@ -206,9 +206,7 @@ class CodeQualityStage(PipelineStage):
                 "src/",
             ]
 
-            result = subprocess.run(
-                cmd, capture_output=True, timeout=60  # 60초 타임아웃
-            )
+            result = subprocess.run(cmd, capture_output=True, timeout=60)  # 60초 타임아웃
 
             # grep은 매치가 없으면 returncode 1 반환
             if result.returncode == 0 and result.stdout:
@@ -264,9 +262,7 @@ class TestStage(PipelineStage):
                 "--cov-report=json",
                 "--cov-report=term",
             ]
-            result = subprocess.run(
-                cmd, capture_output=True, timeout=300
-            )  # 5분 타임아웃
+            result = subprocess.run(cmd, capture_output=True, timeout=300)  # 5분 타임아웃
 
             if result.returncode != 0:
                 logger.error(f"Tests failed:\n{result.stdout.decode()}")
@@ -393,9 +389,7 @@ class DeploymentStage(PipelineStage):
                 "--grpc-web",
             ]
 
-            result = subprocess.run(
-                cmd, capture_output=True, timeout=120
-            )  # 2분 타임아웃
+            result = subprocess.run(cmd, capture_output=True, timeout=120)  # 2분 타임아웃
             if result.returncode != 0:
                 logger.error(f"ArgoCD sync failed: {result.stderr.decode()}")
             return result.returncode == 0

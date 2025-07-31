@@ -119,9 +119,7 @@ class RegtechSimpleCollector:
                 logger.info("단순 로그인 성공")
                 return True
             else:
-                logger.error(
-                    f"로그인 실패: {login_resp.status_code}, URL: {login_resp.url}"
-                )
+                logger.error(f"로그인 실패: {login_resp.status_code}, URL: {login_resp.url}")
                 return False
 
         except Exception as e:
@@ -133,9 +131,7 @@ class RegtechSimpleCollector:
     ) -> List[Dict[str, Any]]:
         """다중 페이지 IP 수집 - 최대한 많은 데이터 수집"""
         try:
-            logger.info(
-                f"대규모 다중 페이지 IP 데이터 수집 시작 (기간: {start_date} ~ {end_date})"
-            )
+            logger.info(f"대규모 다중 페이지 IP 데이터 수집 시작 (기간: {start_date} ~ {end_date})")
 
             all_ips = []
             max_pages = 99999  # 거의 완전 무제한으로 수집
@@ -168,9 +164,7 @@ class RegtechSimpleCollector:
                 )
 
                 if response.status_code != 200:
-                    logger.error(
-                        f"데이터 요청 실패 (페이지 {page}): {response.status_code}"
-                    )
+                    logger.error(f"데이터 요청 실패 (페이지 {page}): {response.status_code}")
                     break
 
                 # HTML 파싱
@@ -221,9 +215,7 @@ class RegtechSimpleCollector:
 
                 # 이 페이지에서 IP를 찾지 못했다면 더 이상 페이지가 없다고 가정
                 if not page_ips:
-                    logger.info(
-                        f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료"
-                    )
+                    logger.info(f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료")
                     break
 
                 all_ips.extend(page_ips)
@@ -334,9 +326,7 @@ class RegtechSimpleCollector:
                     formatted_data, source="REGTECH"
                 )
                 if result.get("success"):
-                    logger.info(
-                        f"데이터베이스 저장 성공: {result.get('imported_count', 0)}개"
-                    )
+                    logger.info(f"데이터베이스 저장 성공: {result.get('imported_count', 0)}개")
                 else:
                     logger.error(f"데이터베이스 저장 실패: {result.get('error')}")
             else:

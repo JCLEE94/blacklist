@@ -19,16 +19,16 @@ def check_system_stability():
     print("\n1️⃣ 리소스 사용량 확인...")
     try:
         result = subprocess.run(
-            ['kubectl', 'top', 'pods', '-n', 'blacklist'],
+            ["kubectl", "top", "pods", "-n", "blacklist"],
             capture_output=True,
             text=True,
             timeout=10,
         )
         if result.returncode == 0:
-            lines = result.stdout.strip().split('\n')
+            lines = result.stdout.strip().split("\n")
             if len(lines) > 1:  # 헤더 제외
                 for line in lines[1:]:
-                    if 'blacklist' in line:
+                    if "blacklist" in line:
                         parts = line.split()
                         if len(parts) >= 3:
                             cpu = parts[1]
@@ -48,7 +48,7 @@ def check_system_stability():
     print("\n2️⃣ Pod 상태 확인...")
     try:
         result = subprocess.run(
-            ['kubectl', 'get', 'pods', '-n', 'blacklist', '-o', 'json'],
+            ["kubectl", "get", "pods", "-n", "blacklist", "-o", "json"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -56,24 +56,24 @@ def check_system_stability():
         if result.returncode == 0:
             pods_data = json.loads(result.stdout)
             running_pods = 0
-            total_pods = len(pods_data['items'])
+            total_pods = len(pods_data["items"])
 
-            for pod in pods_data['items']:
-                name = pod['metadata']['name']
-                status = pod['status']['phase']
+            for pod in pods_data["items"]:
+                name = pod["metadata"]["name"]
+                status = pod["status"]["phase"]
                 ready = "0/0"
 
-                if 'containerStatuses' in pod['status']:
+                if "containerStatuses" in pod["status"]:
                     ready_count = sum(
                         1
-                        for c in pod['status']['containerStatuses']
-                        if c.get('ready', False)
+                        for c in pod["status"]["containerStatuses"]
+                        if c.get("ready", False)
                     )
-                    total_count = len(pod['status']['containerStatuses'])
+                    total_count = len(pod["status"]["containerStatuses"])
                     ready = f"{ready_count}/{total_count}"
 
                 print(f"   {name}: {status} ({ready})")
-                if status == 'Running':
+                if status == "Running":
                     running_pods += 1
 
             if running_pods == total_pods and running_pods > 0:
@@ -90,7 +90,7 @@ def check_system_stability():
     print("\n3️⃣ Service 상태 확인...")
     try:
         result = subprocess.run(
-            ['kubectl', 'get', 'svc', '-n', 'blacklist', '-o', 'json'],
+            ["kubectl", "get", "svc", "-n", "blacklist", "-o", "json"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -98,19 +98,19 @@ def check_system_stability():
         if result.returncode == 0:
             svc_data = json.loads(result.stdout)
 
-            for svc in svc_data['items']:
-                name = svc['metadata']['name']
-                svc_type = svc['spec'].get('type', 'ClusterIP')
-                ports = svc['spec'].get('ports', [])
+            for svc in svc_data["items"]:
+                name = svc["metadata"]["name"]
+                svc_type = svc["spec"].get("type", "ClusterIP")
+                ports = svc["spec"].get("ports", [])
 
                 # 포트 정보 안전하게 포맷팅
                 port_list = []
                 for p in ports:
-                    port = p.get('port', '?')
-                    protocol = p.get('protocol', '?')
+                    port = p.get("port", "?")
+                    protocol = p.get("protocol", "?")
                     port_list.append(f"{port}/{protocol}")
 
-                ports_str = ', '.join(port_list)
+                ports_str = ", ".join(port_list)
                 print(f"   {name}: {svc_type}, Ports: {ports_str}")
 
             all_checks.append("✅ Service 설정 정상")
@@ -124,19 +124,19 @@ def check_system_stability():
     print("\n4️⃣ ArgoCD 애플리케이션 상태 확인...")
     try:
         result = subprocess.run(
-            ['argocd', 'app', 'get', 'blacklist', '--grpc-web'],
+            ["argocd", "app", "get", "blacklist", "--grpc-web"],
             capture_output=True,
             text=True,
             timeout=15,
         )
         if result.returncode == 0:
             output = result.stdout
-            if 'Health Status:' in output:
-                for line in output.split('\n'):
-                    if 'Health Status:' in line:
-                        health_status = line.split(':')[1].strip()
+            if "Health Status:" in output:
+                for line in output.split("\n"):
+                    if "Health Status:" in line:
+                        health_status = line.split(":")[1].strip()
                         print(f"   Health Status: {health_status}")
-                        if 'Healthy' in health_status:
+                        if "Healthy" in health_status:
                             all_checks.append("✅ ArgoCD 애플리케이션 정상")
                         else:
                             all_checks.append(f"⚠️ ArgoCD 상태: {health_status}")
@@ -155,12 +155,12 @@ def check_system_stability():
         # kubectl port-forward를 백그라운드에서 실행
         port_forward = subprocess.Popen(
             [
-                'kubectl',
-                'port-forward',
-                '-n',
-                'blacklist',
-                'deployment/blacklist',
-                '8543:8541',
+                "kubectl",
+                "port-forward",
+                "-n",
+                "blacklist",
+                "deployment/blacklist",
+                "8543:8541",
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -175,12 +175,12 @@ def check_system_stability():
         import urllib.error
         import urllib.request
 
-        endpoints = ['/health', '/api/stats', '/api/collection/status']
+        endpoints = ["/health", "/api/stats", "/api/collection/status"]
         working_endpoints = 0
 
         for endpoint in endpoints:
             try:
-                url = f'http://localhost:8543{endpoint}'
+                url = f"http://localhost:8543{endpoint}"
                 with urllib.request.urlopen(url, timeout=5) as response:
                     if response.status == 200:
                         print(f"   ✅ {endpoint}: OK")
@@ -197,9 +197,7 @@ def check_system_stability():
         if working_endpoints == len(endpoints):
             all_checks.append("✅ 모든 API 엔드포인트 정상")
         else:
-            all_checks.append(
-                f"⚠️ API 엔드포인트: {working_endpoints}/{len(endpoints)} 정상"
-            )
+            all_checks.append(f"⚠️ API 엔드포인트: {working_endpoints}/{len(endpoints)} 정상")
 
     except Exception as e:
         print(f"   오류: {e}")

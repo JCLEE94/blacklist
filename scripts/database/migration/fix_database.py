@@ -16,8 +16,8 @@ def fix_database():
     """Fix database schema"""
     db_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'instance',
-        'blacklist.db',
+        "instance",
+        "blacklist.db",
     )
 
     print(f"Checking database at: {db_path}")
@@ -42,7 +42,7 @@ def fix_database():
         column_names = [col[1] for col in columns]
         print(f"Existing columns: {column_names}")
 
-        if 'ip' not in column_names:
+        if "ip" not in column_names:
             print("ERROR: 'ip' column missing from blacklist_ip table")
             print("Recreating table with correct schema...")
 
@@ -84,7 +84,7 @@ def fix_database():
     column_names = [col[1] for col in columns]
     print(f"New columns: {column_names}")
 
-    if 'ip' in column_names:
+    if "ip" in column_names:
         print("✅ Database schema fixed successfully!")
     else:
         print("❌ Failed to fix database schema")

@@ -5,11 +5,11 @@ Test auto-login functionality for REGTECH collector
 
 import logging
 
-from src.core.regtech_collector import RegtechCollector
+from src.core.regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
 
 # Enable detailed logging
 logging.basicConfig(
-    level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 
@@ -19,7 +19,7 @@ def test_auto_login():
     print("=" * 60)
 
     # Create collector
-    collector = RegtechCollector('data')
+    collector = RegtechCollector("data")
 
     # Test with small date range to minimize data
     start_date = "20250116"

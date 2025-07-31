@@ -63,7 +63,7 @@ class RegtechAllPossibilitiesTest:
         # 쿠키 파일에서 로드
         cookie_file = "data/regtech/cookies.json"
         if os.path.exists(cookie_file):
-            with open(cookie_file, 'r') as f:
+            with open(cookie_file, "r") as f:
                 cookies = json.load(f)
 
             self.session = requests.Session()
@@ -76,7 +76,7 @@ class RegtechAllPossibilitiesTest:
             logger.info(f"쿠키 인증 결과: {resp.status_code}")
             logger.info(f"최종 URL: {resp.url}")
 
-            if 'login' not in resp.url:
+            if "login" not in resp.url:
                 logger.info("✅ 쿠키 인증 성공")
                 self.test_downloads_with_session()
             else:
@@ -87,9 +87,9 @@ class RegtechAllPossibilitiesTest:
         self.session = requests.Session()
         self.session.headers.update(
             {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
             }
         )
 
@@ -103,22 +103,22 @@ class RegtechAllPossibilitiesTest:
 
         # 3단계: 로그인 처리
         login_data = {
-            'username': self.username,
-            'password': self.password,
-            'login_error': '',
-            'txId': '',
-            'token': '',
-            'memberId': '',
-            'smsTimeExcess': 'N',
+            "username": self.username,
+            "password": self.password,
+            "login_error": "",
+            "txId": "",
+            "token": "",
+            "memberId": "",
+            "smsTimeExcess": "N",
         }
 
         login_resp = self.session.post(
             f"{self.base_url}/fcti/login/loginUser",
             data=login_data,
             headers={
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Origin': self.base_url,
-                'Referer': f"{self.base_url}/fcti/login/loginPage",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": self.base_url,
+                "Referer": f"{self.base_url}/fcti/login/loginPage",
             },
         )
 
@@ -126,8 +126,8 @@ class RegtechAllPossibilitiesTest:
 
         # 4단계: 리다이렉트 따라가기
         if login_resp.status_code in [302, 303]:
-            location = login_resp.headers.get('Location', '')
-            if location and not location.startswith('http'):
+            location = login_resp.headers.get("Location", "")
+            if location and not location.startswith("http"):
                 location = self.base_url + location
 
             # 모든 리다이렉트 따라가기
@@ -138,7 +138,7 @@ class RegtechAllPossibilitiesTest:
             advisory_resp = self.session.get(
                 f"{self.base_url}/fcti/securityAdvisory/advisoryList"
             )
-            if 'login' not in advisory_resp.url:
+            if "login" not in advisory_resp.url:
                 logger.info("✅ 표준 로그인 성공")
                 self.test_downloads_with_session()
             else:
@@ -150,8 +150,8 @@ class RegtechAllPossibilitiesTest:
             return
 
         # 날짜 설정
-        end_date = datetime.now().strftime('%Y%m%d')
-        start_date = (datetime.now() - timedelta(days=30)).strftime('%Y%m%d')
+        end_date = datetime.now().strftime("%Y%m%d")
+        start_date = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
 
         # 다양한 URL 패턴
         download_urls = [
@@ -173,28 +173,28 @@ class RegtechAllPossibilitiesTest:
         # 다양한 파라미터 조합
         param_sets = [
             {
-                'startDate': start_date,
-                'endDate': end_date,
-                'blockRule': '',
-                'blockTarget': '',
+                "startDate": start_date,
+                "endDate": end_date,
+                "blockRule": "",
+                "blockTarget": "",
             },
             {
-                'start_date': start_date,
-                'end_date': end_date,
-                'block_rule': '',
-                'block_target': '',
+                "start_date": start_date,
+                "end_date": end_date,
+                "block_rule": "",
+                "block_target": "",
             },
             {
-                'fromDate': start_date,
-                'toDate': end_date,
-                'blockRule': '',
-                'blockTarget': '',
+                "fromDate": start_date,
+                "toDate": end_date,
+                "blockRule": "",
+                "blockTarget": "",
             },
             {
-                'searchStartDate': start_date,
-                'searchEndDate': end_date,
-                'searchBlockRule': '',
-                'searchBlockTarget': '',
+                "searchStartDate": start_date,
+                "searchEndDate": end_date,
+                "searchBlockRule": "",
+                "searchBlockTarget": "",
             },
         ]
 
@@ -224,25 +224,25 @@ class RegtechAllPossibilitiesTest:
         logger.info(f"  {method_name}: {resp.status_code}")
 
         if resp.status_code == 200:
-            content_type = resp.headers.get('Content-Type', '')
+            content_type = resp.headers.get("Content-Type", "")
             logger.info(f"    Content-Type: {content_type}")
 
             # Excel 파일 확인
             if any(
                 x in content_type.lower()
-                for x in ['excel', 'spreadsheet', 'octet-stream', 'zip']
+                for x in ["excel", "spreadsheet", "octet-stream", "zip"]
             ):
                 logger.info(f"    ✅ Excel 파일 감지! 크기: {len(resp.content)} bytes")
 
                 # ZIP 헤더 확인 (Excel은 ZIP 형식)
-                if resp.content[:2] == b'PK':
+                if resp.content[:2] == b"PK":
                     logger.info("    ✅ 유효한 ZIP/Excel 파일!")
 
                     # 파일 저장
                     filename = (
                         f"test_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                     )
-                    with open(filename, 'wb') as f:
+                    with open(filename, "wb") as f:
                         f.write(resp.content)
                     logger.info(f"    파일 저장: {filename}")
 
@@ -260,18 +260,18 @@ class RegtechAllPossibilitiesTest:
                     logger.info("    ❌ ZIP 헤더가 아님")
             else:
                 # HTML인 경우 내용 확인
-                if 'html' in content_type:
+                if "html" in content_type:
                     if len(resp.text) < 1000:
                         logger.info(f"    HTML 응답: {resp.text[:200]}")
                     else:
                         # 로그인 페이지인지 확인
-                        if 'login' in resp.text.lower()[:500]:
+                        if "login" in resp.text.lower()[:500]:
                             logger.info("    ❌ 로그인 페이지로 리다이렉트")
                         else:
                             logger.info("    HTML 페이지 (데이터 페이지일 수 있음)")
 
         elif resp.status_code == 302:
-            location = resp.headers.get('Location', '')
+            location = resp.headers.get("Location", "")
             logger.info(f"    리다이렉트: {location}")
 
     def test_api_endpoints(self):
@@ -301,8 +301,8 @@ class RegtechAllPossibilitiesTest:
 
             # JSON 헤더 추가
             headers = {
-                'Accept': 'application/json, text/javascript, */*; q=0.01',
-                'X-Requested-With': 'XMLHttpRequest',
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "X-Requested-With": "XMLHttpRequest",
             }
 
             try:
@@ -310,10 +310,10 @@ class RegtechAllPossibilitiesTest:
                 logger.info(f"  응답: {resp.status_code}")
 
                 if resp.status_code == 200:
-                    content_type = resp.headers.get('Content-Type', '')
+                    content_type = resp.headers.get("Content-Type", "")
                     logger.info(f"  Content-Type: {content_type}")
 
-                    if 'json' in content_type:
+                    if "json" in content_type:
                         try:
                             data = resp.json()
                             logger.info(f"  ✅ JSON 데이터 수신!")
@@ -337,11 +337,11 @@ class RegtechAllPossibilitiesTest:
         # 보안권고 페이지 가져오기
         resp = self.session.get(f"{self.base_url}/fcti/securityAdvisory/advisoryList")
 
-        if resp.status_code == 200 and 'login' not in resp.url:
-            soup = BeautifulSoup(resp.text, 'html.parser')
+        if resp.status_code == 200 and "login" not in resp.url:
+            soup = BeautifulSoup(resp.text, "html.parser")
 
             # JavaScript 코드 찾기
-            scripts = soup.find_all('script')
+            scripts = soup.find_all("script")
             logger.info(f"발견된 스크립트 태그: {len(scripts)}개")
 
             for i, script in enumerate(scripts):
@@ -349,22 +349,22 @@ class RegtechAllPossibilitiesTest:
                     # 다운로드 관련 코드 찾기
                     if any(
                         keyword in script.string
-                        for keyword in ['download', 'excel', 'export', 'xlsx']
+                        for keyword in ["download", "excel", "export", "xlsx"]
                     ):
                         logger.info(f"\n스크립트 {i+1}에서 다운로드 관련 코드 발견:")
 
                         # 관련 라인만 추출
-                        lines = script.string.split('\n')
+                        lines = script.string.split("\n")
                         for line in lines:
                             if any(
                                 keyword in line.lower()
                                 for keyword in [
-                                    'download',
-                                    'excel',
-                                    'export',
-                                    'xlsx',
-                                    'url',
-                                    'action',
+                                    "download",
+                                    "excel",
+                                    "export",
+                                    "xlsx",
+                                    "url",
+                                    "action",
                                 ]
                             ):
                                 logger.info(f"  {line.strip()}")
@@ -380,37 +380,35 @@ class RegtechAllPossibilitiesTest:
         # 보안권고 페이지에서 form 찾기
         resp = self.session.get(f"{self.base_url}/fcti/securityAdvisory/advisoryList")
 
-        if resp.status_code == 200 and 'login' not in resp.url:
-            soup = BeautifulSoup(resp.text, 'html.parser')
+        if resp.status_code == 200 and "login" not in resp.url:
+            soup = BeautifulSoup(resp.text, "html.parser")
 
             # Form 태그 찾기
-            forms = soup.find_all('form')
+            forms = soup.find_all("form")
             logger.info(f"발견된 form 태그: {len(forms)}개")
 
             for i, form in enumerate(forms):
-                action = form.get('action', '')
-                method = form.get('method', 'get').upper()
+                action = form.get("action", "")
+                method = form.get("method", "get").upper()
 
                 if any(
                     keyword in action.lower()
-                    for keyword in ['download', 'excel', 'export']
+                    for keyword in ["download", "excel", "export"]
                 ):
                     logger.info(f"\nForm {i+1} - 다운로드 관련:")
                     logger.info(f"  Action: {action}")
                     logger.info(f"  Method: {method}")
 
                     # Hidden input 찾기
-                    hidden_inputs = form.find_all('input', type='hidden')
+                    hidden_inputs = form.find_all("input", type="hidden")
                     for inp in hidden_inputs:
                         logger.info(f"  Hidden: {inp.get('name')} = {inp.get('value')}")
 
             # 다운로드 버튼 찾기
             download_buttons = soup.find_all(
-                ['button', 'a', 'input'],
+                ["button", "a", "input"],
                 text=lambda t: t
-                and any(
-                    k in t.lower() for k in ['excel', '다운로드', 'download', '엑셀']
-                ),
+                and any(k in t.lower() for k in ["excel", "다운로드", "download", "엑셀"]),
             )
 
             logger.info(f"\n다운로드 버튼: {len(download_buttons)}개 발견")

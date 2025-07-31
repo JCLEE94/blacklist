@@ -21,6 +21,13 @@ data:
     SESSION_COOKIE_SECURE=True
     SESSION_COOKIE_HTTPONLY=True
     SESSION_COOKIE_SAMESITE=Lax
+    
+    # 🔴 Collection Security (외부 인증 차단)
+    FORCE_DISABLE_COLLECTION=true
+    COLLECTION_ENABLED=false
+    RESTART_PROTECTION=true
+    MAX_AUTH_ATTEMPTS=10
+    BLOCK_DURATION_HOURS=24
   
   # Gunicorn 설정
   gunicorn.conf.py: |

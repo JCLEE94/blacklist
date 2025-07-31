@@ -6,6 +6,7 @@ RegTech (금보원) IP 소스
 
 import glob
 import json
+import logging
 import os
 import re
 from datetime import datetime, timedelta
@@ -15,6 +16,8 @@ import pandas as pd
 import requests
 
 from .base_source import BaseIPSource
+
+logger = logging.getLogger(__name__)
 
 
 class RegTechSource(BaseIPSource):
@@ -60,7 +63,7 @@ class RegTechSource(BaseIPSource):
     def collect_ips(self, **kwargs):
         """IP 수집 실행"""
         try:
-            print(f"🏛️ {self.name} 소스에서 IP 수집 시작...")
+            logger.info(f"{self.name} 소스에서 IP 수집 시작...")
 
             # 1. 엑셀 파일 기반 수집 (우선)
             excel_ips = self._collect_from_excel_files()
@@ -92,10 +95,8 @@ class RegTechSource(BaseIPSource):
                 "timestamp": datetime.now().isoformat(),
             }
 
-            print(f"   ✅ 총 {len(final_ips)}개 IP 수집 완료")
-            print(f"      - 엑셀: {len(excel_ips)}개")
-            print(f"      - 웹: {len(web_ips)}개")
-            print(f"      - 캐시: {len(cached_ips)}개")
+            logger.info(f"총 {len(final_ips)}개 IP 수집 완료")
+            logger.debug(f"엑셀: {len(excel_ips)}개, 웹: {len(web_ips)}개, 캐시: {len(cached_ips)}개")
 
             return result
 

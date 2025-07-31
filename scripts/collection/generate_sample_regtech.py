@@ -44,17 +44,17 @@ def generate_sample_ips():
             # Random detection date within last 30 days
             days_ago = random.randint(1, 30)
             detection_date = (datetime.now() - timedelta(days=days_ago)).strftime(
-                '%Y-%m-%d'
+                "%Y-%m-%d"
             )
 
             ips.append(
                 {
-                    'ip': f"{prefix}{i}",
-                    'country': country,
-                    'attack_type': random.choice(attack_types),
-                    'detection_date': detection_date,
-                    'source': 'REGTECH',
-                    'status': 'active',
+                    "ip": f"{prefix}{i}",
+                    "country": country,
+                    "attack_type": random.choice(attack_types),
+                    "detection_date": detection_date,
+                    "source": "REGTECH",
+                    "status": "active",
                 }
             )
 
@@ -70,12 +70,12 @@ def generate_sample_ips():
     for ip, country, attack in known_bad:
         ips.append(
             {
-                'ip': ip,
-                'country': country,
-                'attack_type': attack,
-                'detection_date': datetime.now().strftime('%Y-%m-%d'),
-                'source': 'REGTECH',
-                'status': 'active',
+                "ip": ip,
+                "country": country,
+                "attack_type": attack,
+                "detection_date": datetime.now().strftime("%Y-%m-%d"),
+                "source": "REGTECH",
+                "status": "active",
             }
         )
 
@@ -90,7 +90,7 @@ def main():
     print(f"📊 Generated {len(sample_ips)} sample IPs")
 
     # Connect to database
-    conn = sqlite3.connect('instance/blacklist.db')
+    conn = sqlite3.connect("instance/blacklist.db")
     cursor = conn.cursor()
 
     # Insert IPs
@@ -98,19 +98,19 @@ def main():
     for ip_data in sample_ips:
         try:
             cursor.execute(
-                '''
+                """
                 INSERT OR IGNORE INTO blacklist_ip 
                 (ip, country, attack_type, source, detection_date, source_detail, collection_method)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''',
+            """,
                 (
-                    ip_data['ip'],
-                    ip_data['country'],
-                    ip_data['attack_type'],
-                    ip_data['source'],
-                    ip_data['detection_date'],
-                    'REGTECH Portal',
-                    'sample_generation',
+                    ip_data["ip"],
+                    ip_data["country"],
+                    ip_data["attack_type"],
+                    ip_data["source"],
+                    ip_data["detection_date"],
+                    "REGTECH Portal",
+                    "sample_generation",
                 ),
             )
             if cursor.rowcount > 0:
@@ -121,7 +121,7 @@ def main():
     conn.commit()
 
     # Verify
-    total_count = cursor.execute('SELECT COUNT(*) FROM blacklist_ip').fetchone()[0]
+    total_count = cursor.execute("SELECT COUNT(*) FROM blacklist_ip").fetchone()[0]
     regtech_count = cursor.execute(
         'SELECT COUNT(*) FROM blacklist_ip WHERE source="REGTECH"'
     ).fetchone()[0]
@@ -133,13 +133,13 @@ def main():
     # Show sample
     print("\n📋 Sample of inserted IPs:")
     sample = cursor.execute(
-        '''
+        """
         SELECT ip, country, attack_type, detection_date 
         FROM blacklist_ip 
         WHERE source="REGTECH" 
         ORDER BY detection_date DESC 
         LIMIT 10
-    '''
+    """
     ).fetchall()
 
     for ip, country, attack, date in sample:
@@ -149,5 +149,5 @@ def main():
     print("\n✅ Sample REGTECH data generation complete!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

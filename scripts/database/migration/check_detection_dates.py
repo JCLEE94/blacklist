@@ -25,7 +25,7 @@ def check_detection_dates():
             columns = [row[1] for row in cursor.fetchall()]
             print(f"📋 테이블 컬럼: {columns}")
 
-            if 'detection_date' not in columns:
+            if "detection_date" not in columns:
                 print("❌ detection_date 컬럼이 없습니다")
                 return
 
@@ -66,9 +66,7 @@ def check_detection_dates():
             samples = cursor.fetchall()
             print("\n🔍 샘플 데이터:")
             for ip, det_date, reg_date, source in samples:
-                print(
-                    f"  IP: {ip}, 탐지일: {det_date}, 등록일: {reg_date}, 소스: {source}"
-                )
+                print(f"  IP: {ip}, 탐지일: {det_date}, 등록일: {reg_date}, 소스: {source}")
 
             # NULL 검사
             cursor.execute(
@@ -78,7 +76,7 @@ def check_detection_dates():
             print(f"\n⚠️  detection_date가 NULL인 IP: {null_count:,}개")
 
             # 오늘 날짜와 다른 탐지일 확인
-            today = datetime.now().strftime('%Y-%m-%d')
+            today = datetime.now().strftime("%Y-%m-%d")
             cursor.execute(
                 """
                 SELECT COUNT(*) FROM blacklist_ip 

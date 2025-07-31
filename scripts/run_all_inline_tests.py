@@ -72,21 +72,21 @@ class InlineTestRunner:
             passed_tests = 0
             total_tests = 0
 
-            for line in output.split('\n'):
-                if '성공률:' in line and '%' in line:
+            for line in output.split("\n"):
+                if "성공률:" in line and "%" in line:
                     try:
-                        rate_str = line.split('성공률:')[1].split('%')[0].strip()
+                        rate_str = line.split("성공률:")[1].split("%")[0].strip()
                         success_rate = float(rate_str)
                     except:
                         pass
-                elif '통과한 테스트:' in line:
+                elif "통과한 테스트:" in line:
                     try:
-                        passed_tests = int(line.split('통과한 테스트:')[1].strip())
+                        passed_tests = int(line.split("통과한 테스트:")[1].strip())
                     except:
                         pass
-                elif '총 테스트 수:' in line:
+                elif "총 테스트 수:" in line:
                     try:
-                        total_tests = int(line.split('총 테스트 수:')[1].strip())
+                        total_tests = int(line.split("총 테스트 수:")[1].strip())
                     except:
                         pass
 
@@ -202,7 +202,7 @@ class InlineTestRunner:
 
         for result in self.results:
             status_icon = "✅" if result.passed else "❌"
-            module_name = result.module.split('.')[-1]  # 마지막 부분만 표시
+            module_name = result.module.split(".")[-1]  # 마지막 부분만 표시
 
             print(
                 f"{status_icon} {module_name:<20} "
@@ -226,10 +226,10 @@ class InlineTestRunner:
                     # 실패 관련 줄만 추출
                     error_lines = [
                         line
-                        for line in result.output.split('\n')
-                        if '❌' in line
-                        or 'error' in line.lower()
-                        or 'fail' in line.lower()
+                        for line in result.output.split("\n")
+                        if "❌" in line
+                        or "error" in line.lower()
+                        or "fail" in line.lower()
                     ]
                     if error_lines:
                         print("Output:")

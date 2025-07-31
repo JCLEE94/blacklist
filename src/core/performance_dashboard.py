@@ -5,23 +5,23 @@
 시각화하는 대시보드 기능을 제공합니다.
 """
 
-import time
 import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
-import threading
-from collections import defaultdict, deque
-import psutil
 import sqlite3
+import threading
+import time
+from collections import defaultdict, deque
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from flask import Blueprint, render_template_string, jsonify, request
+import psutil
+from flask import Blueprint, jsonify, render_template_string, request
 from loguru import logger
 
 try:
-    from src.utils.performance_cache import get_global_performance_cache
     from src.utils.async_processor import get_global_async_processor
     from src.utils.memory_optimizer import get_global_memory_optimizer
+    from src.utils.performance_cache import get_global_performance_cache
 except ImportError:
     # 폴백 임포트
     get_global_performance_cache = lambda: None
@@ -32,6 +32,7 @@ except ImportError:
 @dataclass
 class PerformanceMetric:
     """성능 메트릭"""
+
     timestamp: datetime
     response_time_ms: float
     memory_usage_mb: float
@@ -45,38 +46,39 @@ class PerformanceMetric:
 @dataclass
 class AlertRule:
     """알림 규칙"""
+
     name: str
     condition: str  # "response_time > 1000", "memory_usage > 80"
-    severity: str   # "warning", "critical"
+    severity: str  # "warning", "critical"
     enabled: bool = True
     last_triggered: Optional[datetime] = None
 
 
 class PerformanceDashboard:
     """실시간 성능 대시보드"""
-    
+
     def __init__(self, max_metrics: int = 1000):
         self.max_metrics = max_metrics
         self.metrics_history = deque(maxlen=max_metrics)
         self.alert_rules = []
         self.active_alerts = []
-        
+
         # 실시간 데이터
         self.current_connections = 0
         self.request_count = 0
         self.error_count = 0
         self.total_response_time = 0.0
-        
+
         # 스레드 안전성
         self._lock = threading.RLock()
-        
+
         # 모니터링 스레드
         self.monitoring_active = False
         self.monitoring_thread = None
-        
+
         # 기본 알림 규칙 설정
         self._setup_default_alerts()
-        
+
         logger.info("Performance dashboard initialized")
 
     def _setup_default_alerts(self):
@@ -90,7 +92,7 @@ class PerformanceDashboard:
             AlertRule("Low Cache Hit Rate", "cache_hit_rate < 50", "warning"),
             AlertRule("High Error Rate", "errors_count > 10", "critical"),
         ]
-        
+
         self.alert_rules.extend(default_rules)
 
     def record_request(self, response_time_ms: float, status_code: int = 200):
@@ -98,7 +100,7 @@ class PerformanceDashboard:
         with self._lock:
             self.request_count += 1
             self.total_response_time += response_time_ms
-            
+
             if status_code >= 400:
                 self.error_count += 1
 
@@ -113,17 +115,18 @@ class PerformanceDashboard:
             # 시스템 메트릭
             memory = psutil.virtual_memory()
             cpu_percent = psutil.cpu_percent(interval=0.1)
-            
+
             # 프로세스 메트릭
             process = psutil.Process()
             process_memory_mb = process.memory_info().rss / 1024 / 1024
-            
+
             # 응답 시간 계산
             avg_response_time = (
-                self.total_response_time / self.request_count 
-                if self.request_count > 0 else 0.0
+                self.total_response_time / self.request_count
+                if self.request_count > 0
+                else 0.0
             )
-            
+
             # 캐시 메트릭
             cache_hit_rate = 0.0
             try:
@@ -133,10 +136,10 @@ class PerformanceDashboard:
                     cache_hit_rate = stats.get("hit_rate_percent", 0.0)
             except Exception:
                 pass
-            
+
             # 데이터베이스 쿼리 수 (추정)
             db_queries = self.request_count * 1.5  # 평균적으로 요청당 1.5개 쿼리
-            
+
             metric = PerformanceMetric(
                 timestamp=datetime.now(),
                 response_time_ms=avg_response_time,
@@ -145,55 +148,56 @@ class PerformanceDashboard:
                 active_connections=self.current_connections,
                 cache_hit_rate=cache_hit_rate,
                 database_queries=int(db_queries),
-                errors_count=self.error_count
+                errors_count=self.error_count,
             )
-            
+
             # 메트릭 히스토리 저장
             self.metrics_history.append(metric)
-            
+
             # 알림 검사
             self._check_alerts(metric)
-            
+
             return metric
 
     def _check_alerts(self, metric: PerformanceMetric):
         """알림 규칙 검사"""
         metric_dict = asdict(metric)
         current_time = datetime.now()
-        
+
         for rule in self.alert_rules:
             if not rule.enabled:
                 continue
-            
+
             try:
                 # 조건 평가
                 condition = rule.condition
                 for key, value in metric_dict.items():
                     if isinstance(value, (int, float)):
                         condition = condition.replace(key, str(value))
-                
+
                 if eval(condition):
                     # 알림 발생 (중복 방지: 5분 내 동일 알림 무시)
-                    if (rule.last_triggered is None or 
-                        current_time - rule.last_triggered > timedelta(minutes=5)):
-                        
+                    if (
+                        rule.last_triggered is None
+                        or current_time - rule.last_triggered > timedelta(minutes=5)
+                    ):
                         alert = {
                             "rule_name": rule.name,
                             "severity": rule.severity,
                             "message": f"{rule.name}: {rule.condition}",
                             "timestamp": current_time.isoformat(),
-                            "metric_value": metric_dict
+                            "metric_value": metric_dict,
                         }
-                        
+
                         self.active_alerts.append(alert)
                         rule.last_triggered = current_time
-                        
+
                         logger.warning(f"Performance alert: {alert['message']}")
-                        
+
                         # 최대 알림 수 제한
                         if len(self.active_alerts) > 100:
                             self.active_alerts = self.active_alerts[-50:]
-                
+
             except Exception as e:
                 logger.error(f"Alert rule evaluation failed: {rule.condition} - {e}")
 
@@ -201,17 +205,17 @@ class PerformanceDashboard:
         """대시보드 데이터 반환"""
         with self._lock:
             current_metric = self.collect_metrics()
-            
+
             # 히스토리 데이터 (최근 100개)
             recent_metrics = list(self.metrics_history)[-100:]
-            
+
             # 시계열 데이터 준비
             timestamps = [m.timestamp.isoformat() for m in recent_metrics]
             response_times = [m.response_time_ms for m in recent_metrics]
             memory_usage = [m.memory_usage_mb for m in recent_metrics]
             cpu_usage = [m.cpu_usage_percent for m in recent_metrics]
             cache_hit_rates = [m.cache_hit_rate for m in recent_metrics]
-            
+
             # 통계 계산
             if recent_metrics:
                 avg_response_time = sum(response_times) / len(response_times)
@@ -223,13 +227,13 @@ class PerformanceDashboard:
             else:
                 avg_response_time = max_response_time = min_response_time = 0
                 avg_memory_usage = avg_cpu_usage = avg_cache_hit_rate = 0
-            
+
             # 성능 등급 계산
             performance_grade = self._calculate_performance_grade(current_metric)
-            
+
             # 활성 알림 (최근 10개)
             recent_alerts = self.active_alerts[-10:] if self.active_alerts else []
-            
+
             return {
                 "current_metrics": asdict(current_metric),
                 "statistics": {
@@ -242,28 +246,32 @@ class PerformanceDashboard:
                     "total_requests": self.request_count,
                     "total_errors": self.error_count,
                     "error_rate_percent": round(
-                        (self.error_count / self.request_count * 100) 
-                        if self.request_count > 0 else 0, 2
-                    )
+                        (self.error_count / self.request_count * 100)
+                        if self.request_count > 0
+                        else 0,
+                        2,
+                    ),
                 },
                 "time_series": {
                     "timestamps": timestamps,
                     "response_times": response_times,
                     "memory_usage": memory_usage,
                     "cpu_usage": cpu_usage,
-                    "cache_hit_rates": cache_hit_rates
+                    "cache_hit_rates": cache_hit_rates,
                 },
                 "performance_grade": performance_grade,
                 "active_alerts": recent_alerts,
                 "system_info": self._get_system_info(),
-                "optimization_suggestions": self._get_optimization_suggestions(current_metric)
+                "optimization_suggestions": self._get_optimization_suggestions(
+                    current_metric
+                ),
             }
 
     def _calculate_performance_grade(self, metric: PerformanceMetric) -> Dict[str, Any]:
         """성능 등급 계산"""
         score = 100
         grade = "A+"
-        
+
         # 응답 시간 점수 (40점)
         if metric.response_time_ms <= 50:
             response_score = 40
@@ -275,7 +283,7 @@ class PerformanceDashboard:
             response_score = 10
         else:
             response_score = 0
-        
+
         # 메모리 사용 점수 (25점)
         if metric.memory_usage_mb <= 100:
             memory_score = 25
@@ -287,7 +295,7 @@ class PerformanceDashboard:
             memory_score = 10
         else:
             memory_score = 0
-        
+
         # CPU 사용 점수 (20점)
         if metric.cpu_usage_percent <= 20:
             cpu_score = 20
@@ -299,7 +307,7 @@ class PerformanceDashboard:
             cpu_score = 5
         else:
             cpu_score = 0
-        
+
         # 캐시 효율성 점수 (15점)
         if metric.cache_hit_rate >= 90:
             cache_score = 15
@@ -311,9 +319,9 @@ class PerformanceDashboard:
             cache_score = 4
         else:
             cache_score = 0
-        
+
         total_score = response_score + memory_score + cpu_score + cache_score
-        
+
         # 등급 계산
         if total_score >= 95:
             grade = "A+"
@@ -337,7 +345,7 @@ class PerformanceDashboard:
             grade = "D"
         else:
             grade = "F"
-        
+
         return {
             "total_score": total_score,
             "grade": grade,
@@ -345,23 +353,23 @@ class PerformanceDashboard:
                 "response_time": response_score,
                 "memory_usage": memory_score,
                 "cpu_usage": cpu_score,
-                "cache_efficiency": cache_score
-            }
+                "cache_efficiency": cache_score,
+            },
         }
 
     def _get_system_info(self) -> Dict[str, Any]:
         """시스템 정보 수집"""
         try:
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-            
+            disk = psutil.disk_usage("/")
+
             return {
                 "cpu_count": psutil.cpu_count(),
                 "memory_total_gb": round(memory.total / 1024 / 1024 / 1024, 2),
                 "disk_total_gb": round(disk.total / 1024 / 1024 / 1024, 2),
                 "disk_free_gb": round(disk.free / 1024 / 1024 / 1024, 2),
                 "python_version": f"{psutil.version_info}",
-                "uptime_seconds": time.time() - psutil.boot_time()
+                "uptime_seconds": time.time() - psutil.boot_time(),
             }
         except Exception as e:
             logger.error(f"Failed to get system info: {e}")
@@ -370,38 +378,38 @@ class PerformanceDashboard:
     def _get_optimization_suggestions(self, metric: PerformanceMetric) -> List[str]:
         """최적화 제안 생성"""
         suggestions = []
-        
+
         if metric.response_time_ms > 1000:
             suggestions.append("🚀 API 응답 시간이 느립니다. 캐싱 전략을 검토하세요.")
-        
+
         if metric.memory_usage_mb > 500:
             suggestions.append("💾 메모리 사용량이 높습니다. 메모리 누수를 확인하세요.")
-        
+
         if metric.cpu_usage_percent > 80:
             suggestions.append("⚡ CPU 사용률이 높습니다. 비동기 처리를 고려하세요.")
-        
+
         if metric.cache_hit_rate < 75:
             suggestions.append("📊 캐시 적중률이 낮습니다. 캐시 TTL 설정을 검토하세요.")
-        
+
         if metric.errors_count > 5:
             suggestions.append("❌ 오류 발생률이 높습니다. 에러 로그를 확인하세요.")
-        
+
         if len(suggestions) == 0:
             suggestions.append("✅ 시스템이 최적 상태로 동작하고 있습니다.")
-        
+
         return suggestions
 
     def start_monitoring(self, interval: float = 10.0):
         """모니터링 시작"""
         if self.monitoring_active:
             return
-        
+
         self.monitoring_active = True
         self.monitoring_thread = threading.Thread(
             target=self._monitoring_loop,
             args=(interval,),
             daemon=True,
-            name="performance_monitor"
+            name="performance_monitor",
         )
         self.monitoring_thread.start()
         logger.info(f"Performance monitoring started (interval: {interval}s)")
@@ -436,33 +444,37 @@ class PerformanceDashboard:
 # 글로벌 대시보드 인스턴스
 _global_dashboard = None
 
+
 def get_global_dashboard() -> PerformanceDashboard:
     """글로벌 대시보드 인스턴스 반환"""
     global _global_dashboard
-    
+
     if _global_dashboard is None:
         _global_dashboard = PerformanceDashboard()
         _global_dashboard.start_monitoring()
-    
+
     return _global_dashboard
 
 
 # Flask 블루프린트
-dashboard_bp = Blueprint('performance_dashboard', __name__)
+dashboard_bp = Blueprint("performance_dashboard", __name__)
 
-@dashboard_bp.route('/performance')
+
+@dashboard_bp.route("/performance")
 def performance_dashboard():
     """성능 대시보드 페이지"""
     return render_template_string(DASHBOARD_HTML_TEMPLATE)
 
-@dashboard_bp.route('/api/performance/metrics')
+
+@dashboard_bp.route("/api/performance/metrics")
 def get_performance_metrics():
     """성능 메트릭 API"""
     dashboard = get_global_dashboard()
     data = dashboard.get_dashboard_data()
     return jsonify(data)
 
-@dashboard_bp.route('/api/performance/reset', methods=['POST'])
+
+@dashboard_bp.route("/api/performance/reset", methods=["POST"])
 def reset_performance_counters():
     """성능 카운터 리셋 API"""
     dashboard = get_global_dashboard()
@@ -697,41 +709,44 @@ DASHBOARD_HTML_TEMPLATE = """
 if __name__ == "__main__":
     """성능 대시보드 검증"""
     import sys
-    
+
     dashboard = PerformanceDashboard()
     dashboard.start_monitoring(interval=1.0)
-    
+
     try:
         # 테스트 데이터 생성
         import random
-        
+
         for i in range(10):
             # 가상 요청 기록
             response_time = random.uniform(50, 500)
             status_code = 200 if random.random() > 0.1 else 500
             dashboard.record_request(response_time, status_code)
-            
+
             # 가상 연결 변화
             if random.random() > 0.5:
                 dashboard.record_connection(1)
             else:
                 dashboard.record_connection(-1)
-            
+
             time.sleep(0.5)
-        
+
         # 대시보드 데이터 확인
         data = dashboard.get_dashboard_data()
-        
+
         print("✅ 성능 대시보드 검증 완료")
         print(f"📊 현재 메트릭: {data['current_metrics']}")
-        print(f"🎯 성능 등급: {data['performance_grade']['grade']} ({data['performance_grade']['total_score']}점)")
+        print(
+            f"🎯 성능 등급: {data['performance_grade']['grade']} ({data['performance_grade']['total_score']}점)"
+        )
         print(f"💡 최적화 제안: {len(data['optimization_suggestions'])}개")
-        
+
         dashboard.stop_monitoring()
         sys.exit(0)
-        
+
     except Exception as e:
         print(f"❌ 테스트 중 오류 발생: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

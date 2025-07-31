@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sqlite3
 
-conn = sqlite3.connect('instance/blacklist.db')
+conn = sqlite3.connect("instance/blacklist.db")
 cursor = conn.cursor()
 
 print("Table structure for blacklist_ip:")

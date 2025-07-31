@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 # Docker 환경
 db_path = (
-    '/app/instance/blacklist.db' if os.path.exists('/app') else 'instance/blacklist.db'
+    "/app/instance/blacklist.db" if os.path.exists("/app") else "instance/blacklist.db"
 )
 
 print(f"📍 DB 경로: {db_path}")
@@ -26,7 +26,7 @@ try:
     print(f"✅ 현재 컬럼: {columns}")
 
     # 2. detection_date 컬럼이 없으면 추가
-    if 'detection_date' not in columns:
+    if "detection_date" not in columns:
         print("🔧 detection_date 컬럼 추가 중...")
         cursor.execute(
             """
@@ -37,7 +37,7 @@ try:
         print("✅ detection_date 컬럼 추가 완료")
 
     # 3. expires_at 컬럼이 없으면 추가
-    if 'expires_at' not in columns:
+    if "expires_at" not in columns:
         print("🔧 expires_at 컬럼 추가 중...")
         cursor.execute(
             """
@@ -48,7 +48,7 @@ try:
         print("✅ expires_at 컬럼 추가 완료")
 
     # 4. is_active 컬럼이 없으면 추가 (만료되지 않은 활성 IP 표시)
-    if 'is_active' not in columns:
+    if "is_active" not in columns:
         print("🔧 is_active 컬럼 추가 중...")
         cursor.execute(
             """

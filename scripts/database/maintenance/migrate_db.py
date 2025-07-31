@@ -8,7 +8,7 @@ import sqlite3
 
 def migrate_blacklist_db():
     """Migrate blacklist.db to use 'ip' column instead of 'ip_address'"""
-    db_path = 'instance/blacklist.db'
+    db_path = "instance/blacklist.db"
 
     if not os.path.exists(db_path):
         print(f"Database not found: {db_path}")
@@ -24,7 +24,7 @@ def migrate_blacklist_db():
         column_names = [col[1] for col in columns]
         print(f"Current columns: {column_names}")
 
-        if 'ip' not in column_names and 'ip_address' in column_names:
+        if "ip" not in column_names and "ip_address" in column_names:
             print("\nMigrating schema...")
 
             # Create new table with correct schema
@@ -72,7 +72,7 @@ def migrate_blacklist_db():
             count = cursor.fetchone()[0]
             print(f"Migrated {count} records")
 
-        elif 'ip' in column_names:
+        elif "ip" in column_names:
             print("Schema already correct!")
         else:
             print("Unknown schema format")

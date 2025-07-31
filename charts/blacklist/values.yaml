@@ -1,5 +1,5 @@
 # MSA 기본 설정 (jclee.me 인프라 최적화)
-replicaCount: 3
+replicaCount: 1
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -7,7 +7,7 @@ strategy:
     maxSurge: 1
 
 image:
-  repository: https://registry.jclee.me/jclee/blacklist
+  repository: registry.jclee.me/blacklist
   pullPolicy: Always
   tag: "latest"
 
@@ -16,9 +16,9 @@ imagePullSecrets:
 
 service:
   type: NodePort
-  port: 80
-  targetPort: 8080
-  nodePort: 30080
+  port: 8541
+  targetPort: 8541
+  nodePort: 30081
 
 ingress:
   enabled: true
@@ -39,11 +39,11 @@ ingress:
 # MSA 리소스 최적화
 resources:
   limits:
-    cpu: 1000m
-    memory: 1Gi
+    cpu: 500m
+    memory: 512Mi
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 100m
+    memory: 128Mi
 
 # HPA (Horizontal Pod Autoscaler)
 autoscaling:
@@ -56,23 +56,23 @@ autoscaling:
 # 환경 변수
 env:
   NODE_ENV: production
-  PORT: "8080"
+  PORT: "8541"
   MICROSERVICE_NAME: blacklist
-  CLUSTER_NAME: microservices-cluster
-  NAMESPACE: microservices
+  CLUSTER_NAME: blacklist-cluster
+  NAMESPACE: blacklist
 
 # Health Check 설정 (MSA 표준)
 probes:
   liveness:
     path: /health
-    port: 8080
+    port: 8541
     initialDelaySeconds: 60
     periodSeconds: 30
     timeoutSeconds: 10
     failureThreshold: 3
   readiness:
-    path: /ready
-    port: 8080
+    path: /health
+    port: 8541
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 5
@@ -130,7 +130,7 @@ auth:
 
 # 전역 설정
 global:
-  namespace: microservices
+  namespace: blacklist
 
 # Node Selector, Affinity, Tolerations
 nodeSelector: {}

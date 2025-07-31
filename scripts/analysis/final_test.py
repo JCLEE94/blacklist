@@ -32,14 +32,14 @@ def test_stats_after_clear():
         response = requests.get(f"{BASE_URL}/api/stats")
         if response.status_code == 200:
             data = response.json()
-            if data.get('success'):
-                stats = data.get('data', {})
+            if data.get("success"):
+                stats = data.get("data", {})
                 print(f"✓ 통계 조회 성공")
                 print(f"  총 IP 수: {stats.get('total_ips', 0)}")
                 print(f"  활성 IP 수: {stats.get('active_ips', 0)}")
                 print(f"  REGTECH: {stats.get('regtech_count', 0)}")
                 print(f"  SECUDIUM: {stats.get('secudium_count', 0)}")
-                if stats.get('total_ips', 0) == 0:
+                if stats.get("total_ips", 0) == 0:
                     print("✓ DB가 정상적으로 클리어됨")
                 else:
                     print("✗ DB 클리어가 완전하지 않음")
@@ -58,7 +58,7 @@ def test_regtech_collection():
         response = requests.post(f"{BASE_URL}/api/collection/regtech/trigger")
         if response.status_code == 200:
             data = response.json()
-            if data.get('success'):
+            if data.get("success"):
                 print("✓ REGTECH 수집 트리거 성공")
                 print(f"  수집된 IP 수: {data.get('ip_count', 0)}")
                 print(f"  저장된 IP 수: {data.get('imported_count', 0)}")
@@ -86,8 +86,8 @@ def test_final_stats():
         response = requests.get(f"{BASE_URL}/api/stats")
         if response.status_code == 200:
             data = response.json()
-            if data.get('success'):
-                stats = data.get('data', {})
+            if data.get("success"):
+                stats = data.get("data", {})
                 print(f"✓ 최종 통계 조회 성공")
                 print(f"  총 IP 수: {stats.get('total_ips', 0)}")
                 print(f"  활성 IP 수: {stats.get('active_ips', 0)}")
@@ -109,16 +109,16 @@ def test_check_id_sequence():
         response = requests.get(f"{BASE_URL}/api/v2/blacklist/enhanced?limit=5")
         if response.status_code == 200:
             data = response.json()
-            if data.get('success') and data.get('data', {}).get('entries'):
-                entries = data['data']['entries']
-                first_id = entries[0].get('id') if entries else None
+            if data.get("success") and data.get("data", {}).get("entries"):
+                entries = data["data"]["entries"]
+                first_id = entries[0].get("id") if entries else None
                 if first_id == 1:
                     print("✓ ID가 1번부터 시작합니다")
                 else:
                     print(f"✗ ID가 {first_id}번부터 시작합니다 (1번이어야 함)")
 
                 # ID 목록 출력
-                ids = [entry.get('id') for entry in entries[:5]]
+                ids = [entry.get("id") for entry in entries[:5]]
                 print(f"  처음 5개 ID: {ids}")
             else:
                 print("✗ 데이터가 없습니다")
@@ -136,8 +136,8 @@ def test_dashboard_charts():
         response = requests.get(f"{BASE_URL}/api/stats/monthly")
         if response.status_code == 200:
             data = response.json()
-            if data.get('success'):
-                monthly_data = data.get('data', [])
+            if data.get("success"):
+                monthly_data = data.get("data", [])
                 print(f"✓ 월별 통계 조회 성공")
                 for month in monthly_data[-3:]:  # 최근 3개월
                     print(

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: blacklist
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -22,6 +22,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "2541"
         prometheus.io/path: "/metrics"
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: blacklist
       securityContext:
@@ -30,18 +31,15 @@ spec:
         fsGroup: 1000
       containers:
       - name: blacklist
-        image: blacklist:latest
-        imagePullPolicy: Always
+        image: registry.jclee.me/jclee94/blacklist:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
-          containerPort: 2541
+          containerPort: 8541
           protocol: TCP
         env:
         - name: PORT
-          valueFrom:
-            configMapKeyRef:
-              name: blacklist-config
-              key: PORT
+          value: "8541"
         - name: LOG_LEVEL
           valueFrom:
             configMapKeyRef:
@@ -91,13 +89,24 @@ spec:
               name: blacklist-credentials
               key: SECUDIUM_PASSWORD
               optional: true
+        # 🔴 보안 기본 설정 (외부 인증 차단)
+        - name: FORCE_DISABLE_COLLECTION
+          value: "true"
+        - name: COLLECTION_ENABLED
+          value: "false"
+        - name: RESTART_PROTECTION
+          value: "true"
+        - name: MAX_AUTH_ATTEMPTS
+          value: "10"
+        - name: BLOCK_DURATION_HOURS
+          value: "24"
         resources:
           requests:
-            cpu: 100m
-            memory: 256Mi
+            cpu: 50m
+            memory: 128Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 200m
+            memory: 256Mi
         livenessProbe:
           httpGet:
             path: /health
@@ -152,12 +161,5 @@ spec:
                   values:
                   - blacklist
               topologyKey: kubernetes.io/hostname
-      topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app: blacklist
       imagePullSecrets:
       - name: regcred

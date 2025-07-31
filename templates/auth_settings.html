@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인증 설정 - Blacklist Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .config-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            background-color: #f8f9fa;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-enabled { background-color: #28a745; }
+        .status-disabled { background-color: #dc3545; }
+        .password-set { color: #28a745; font-weight: bold; }
+        .password-unset { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <header class="d-flex justify-content-between align-items-center py-3 mb-4 border-bottom">
+                    <h1 class="h3">🔐 인증 설정</h1>
+                    <nav>
+                        <a href="/" class="btn btn-outline-primary">대시보드</a>
+                        <a href="/system-settings" class="btn btn-outline-secondary">시스템 설정</a>
+                    </nav>
+                </header>
+
+                <div class="alert alert-info">
+                    <strong>📢 중요:</strong> 인증 정보는 안전하게 암호화되어 저장됩니다. 
+                    변경 후 수집 서비스를 재시작하여 새 설정을 적용하세요.
+                </div>
+
+                <!-- REGTECH 설정 -->
+                <div class="config-section">
+                    <h3>
+                        <span id="regtech-status" class="status-indicator status-disabled"></span>
+                        REGTECH (금융보안원)
+                    </h3>
+                    <form id="regtech-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="regtech-username" class="form-label">사용자명</label>
+                                    <input type="text" class="form-control" id="regtech-username" 
+                                           placeholder="REGTECH 사용자명">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="regtech-password" class="form-label">비밀번호</label>
+                                    <input type="password" class="form-control" id="regtech-password" 
+                                           placeholder="새 비밀번호 (변경시에만 입력)">
+                                    <div class="form-text">
+                                        현재 상태: <span id="regtech-password-status" class="password-unset">설정되지 않음</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="regtech-enabled">
+                                <label class="form-check-label" for="regtech-enabled">
+                                    REGTECH 수집 활성화
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">REGTECH 설정 저장</button>
+                    </form>
+                </div>
+
+                <!-- SECUDIUM 설정 -->
+                <div class="config-section">
+                    <h3>
+                        <span id="secudium-status" class="status-indicator status-disabled"></span>
+                        SECUDIUM
+                    </h3>
+                    <form id="secudium-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="secudium-username" class="form-label">사용자명</label>
+                                    <input type="text" class="form-control" id="secudium-username" 
+                                           placeholder="SECUDIUM 사용자명">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="secudium-password" class="form-label">비밀번호</label>
+                                    <input type="password" class="form-control" id="secudium-password" 
+                                           placeholder="새 비밀번호 (변경시에만 입력)">
+                                    <div class="form-text">
+                                        현재 상태: <span id="secudium-password-status" class="password-unset">설정되지 않음</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="secudium-enabled">
+                                <label class="form-check-label" for="secudium-enabled">
+                                    SECUDIUM 수집 활성화
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">SECUDIUM 설정 저장</button>
+                    </form>
+                </div>
+
+                <!-- 테스트 및 상태 -->
+                <div class="config-section">
+                    <h3>🧪 연결 테스트</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button id="test-regtech" class="btn btn-info w-100">REGTECH 연결 테스트</button>
+                        </div>
+                        <div class="col-md-6">
+                            <button id="test-secudium" class="btn btn-info w-100">SECUDIUM 연결 테스트</button>
+                        </div>
+                    </div>
+                    <div id="test-results" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 설정 로드
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/auth-config');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const config = data.config;
+                    
+                    // REGTECH 설정 적용
+                    document.getElementById('regtech-username').value = config.regtech.username;
+                    document.getElementById('regtech-enabled').checked = config.regtech.enabled;
+                    document.getElementById('regtech-status').className = 
+                        'status-indicator ' + (config.regtech.enabled ? 'status-enabled' : 'status-disabled');
+                    document.getElementById('regtech-password-status').textContent = 
+                        config.regtech.password_set ? '설정됨' : '설정되지 않음';
+                    document.getElementById('regtech-password-status').className = 
+                        config.regtech.password_set ? 'password-set' : 'password-unset';
+                        
+                    // SECUDIUM 설정 적용
+                    document.getElementById('secudium-username').value = config.secudium.username;
+                    document.getElementById('secudium-enabled').checked = config.secudium.enabled;
+                    document.getElementById('secudium-status').className = 
+                        'status-indicator ' + (config.secudium.enabled ? 'status-enabled' : 'status-disabled');
+                    document.getElementById('secudium-password-status').textContent = 
+                        config.secudium.password_set ? '설정됨' : '설정되지 않음';
+                    document.getElementById('secudium-password-status').className = 
+                        config.secudium.password_set ? 'password-set' : 'password-unset';
+                }
+            } catch (error) {
+                console.error('설정 로드 실패:', error);
+            }
+        }
+
+        // REGTECH 설정 저장
+        document.getElementById('regtech-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                regtech: {
+                    username: document.getElementById('regtech-username').value,
+                    password: document.getElementById('regtech-password').value,
+                    enabled: document.getElementById('regtech-enabled').checked
+                }
+            };
+            
+            try {
+                const response = await fetch('/api/auth-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('REGTECH 설정이 저장되었습니다.');
+                    document.getElementById('regtech-password').value = ''; // 비밀번호 필드 클리어
+                    loadConfig(); // 설정 새로고침
+                } else {
+                    alert('저장 실패: ' + result.error);
+                }
+            } catch (error) {
+                alert('저장 중 오류 발생: ' + error.message);
+            }
+        });
+
+        // SECUDIUM 설정 저장
+        document.getElementById('secudium-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                secudium: {
+                    username: document.getElementById('secudium-username').value,
+                    password: document.getElementById('secudium-password').value,
+                    enabled: document.getElementById('secudium-enabled').checked
+                }
+            };
+            
+            try {
+                const response = await fetch('/api/auth-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('SECUDIUM 설정이 저장되었습니다.');
+                    document.getElementById('secudium-password').value = ''; // 비밀번호 필드 클리어
+                    loadConfig(); // 설정 새로고침
+                } else {
+                    alert('저장 실패: ' + result.error);
+                }
+            } catch (error) {
+                alert('저장 중 오류 발생: ' + error.message);
+            }
+        });
+
+        // 연결 테스트
+        document.getElementById('test-regtech').addEventListener('click', async () => {
+            showTestResult('REGTECH 연결 테스트 중...', 'info');
+            try {
+                const response = await fetch('/api/collection/regtech/trigger', { method: 'POST' });
+                const result = await response.json();
+                showTestResult(
+                    'REGTECH: ' + (result.success ? '연결 성공' : '연결 실패 - ' + result.message), 
+                    result.success ? 'success' : 'danger'
+                );
+            } catch (error) {
+                showTestResult('REGTECH 테스트 오류: ' + error.message, 'danger');
+            }
+        });
+
+        document.getElementById('test-secudium').addEventListener('click', async () => {
+            showTestResult('SECUDIUM 연결 테스트 중...', 'info');
+            try {
+                const response = await fetch('/api/collection/secudium/trigger', { method: 'POST' });
+                const result = await response.json();
+                showTestResult(
+                    'SECUDIUM: ' + (result.success ? '연결 성공' : '연결 실패 - ' + result.message), 
+                    result.success ? 'success' : 'danger'
+                );
+            } catch (error) {
+                showTestResult('SECUDIUM 테스트 오류: ' + error.message, 'danger');
+            }
+        });
+
+        function showTestResult(message, type) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = `<div class="alert alert-${type}" role="alert">${message}</div>`;
+        }
+
+        // 페이지 로드 시 설정 로드
+        loadConfig();
+    </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: http://charts.jclee.me
+    chart: blacklist
+    targetRevision: "3.1.0"
+    helm:
+      values: |
+        image:
+          repository: registry.jclee.me/jclee/blacklist
+          tag: "3.1.0"
+          pullPolicy: Always
+        
+        imagePullSecrets:
+          - name: jclee-registry-secret
+        
+        service:
+          type: NodePort
+          port: 80
+          targetPort: 8541
+          nodePort: 30080
+        
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        
+        env:
+          PORT: "8541"
+        
+        probes:
+          liveness:
+            path: /health
+            port: 8541
+            initialDelaySeconds: 60
+            periodSeconds: 30
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: microservices
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+

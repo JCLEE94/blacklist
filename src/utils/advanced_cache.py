@@ -328,7 +328,9 @@ class EnhancedSmartCache:
                     "p95_latency": (
                         sorted(self.redis_latency)[int(len(self.redis_latency) * 0.95)]
                         if len(self.redis_latency) > 20
-                        else max(self.redis_latency) if self.redis_latency else 0
+                        else max(self.redis_latency)
+                        if self.redis_latency
+                        else 0
                     ),
                 }
 

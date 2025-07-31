@@ -704,9 +704,7 @@ def get_daily_ips(month, date):
                     result["total_detections"] = details.get(
                         "total_detections", len(daily_ips)
                     )
-                    result["records_sample"] = details.get("records", [])[
-                        :20
-                    ]  # 샘플 20개
+                    result["records_sample"] = details.get("records", [])[:20]  # 샘플 20개
 
         else:
             # 실제 일별 파일이 없으면 시뮬레이션 데이터 생성
@@ -1178,9 +1176,7 @@ def api_raw_data():
     except Exception as e:
         logger.error(f"RAW data API 오류: {e}")
         return (
-            jsonify(
-                {"success": False, "error": f"데이터 로드 실패: {str(e)}", "total": 0}
-            ),
+            jsonify({"success": False, "error": f"데이터 로드 실패: {str(e)}", "total": 0}),
             500,
         )
 

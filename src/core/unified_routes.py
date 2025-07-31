@@ -1716,7 +1716,7 @@ def trigger_regtech_collection():
 
         tb = traceback.format_exc()
         logger.error(f"REGTECH trigger error: {e}")
-        print(f"DEBUGGING - Full traceback:\n{tb}")
+        logger.debug(f"Full traceback: {tb}")
         logger.error(f"Traceback: {tb}")
 
         # If the error is "'dict' object has no attribute 'status'" but collection was successful,
@@ -1860,9 +1860,7 @@ def trigger_secudium_collection():
 
         # SECUDIUM은 현재 계정 문제로 비활성화됨
         if progress_tracker:
-            progress_tracker.fail_collection(
-                "secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다."
-            )
+            progress_tracker.fail_collection("secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다.")
 
         return (
             jsonify(
@@ -3012,9 +3010,7 @@ def manual_collection_trigger():
                 # 연결 테스트
                 visual_logs.append("🔗 REGTECH 서버 연결 테스트 중...")
                 if not collector.test_connection():
-                    visual_logs.append(
-                        "❌ REGTECH 서버 연결 실패 - 쿠키 설정을 확인하세요"
-                    )
+                    visual_logs.append("❌ REGTECH 서버 연결 실패 - 쿠키 설정을 확인하세요")
 
                     if progress_tracker:
                         progress_tracker.fail_collection(
@@ -3061,9 +3057,7 @@ def manual_collection_trigger():
                         blacklist_manager.add_ip(entry)
                         saved_count += 1
 
-                    visual_logs.append(
-                        f"✅ {saved_count}개 IP가 데이터베이스에 저장되었습니다"
-                    )
+                    visual_logs.append(f"✅ {saved_count}개 IP가 데이터베이스에 저장되었습니다")
 
                     if progress_tracker:
                         progress_tracker.complete_collection("regtech", len(entries))
@@ -3311,6 +3305,82 @@ def not_found_error(error):
 def system_settings_page():
     """시스템 설정 페이지"""
     return render_template("system_settings.html")
+
+
+# === 인증 설정 관리 API ===
+
+
+@unified_bp.route("/api/auth-config", methods=["GET", "POST"])
+def auth_config():
+    """인증 정보 설정 관리"""
+    try:
+        from src.models.settings import get_settings_manager
+
+        settings_manager = get_settings_manager()
+
+        if request.method == "GET":
+            # 현재 설정 반환 (비밀번호는 마스킹)
+            config = {
+                "regtech": {
+                    "username": settings_manager.get_setting("regtech_username", ""),
+                    "password_set": bool(
+                        settings_manager.get_setting("regtech_password", "")
+                    ),
+                    "enabled": settings_manager.get_setting("regtech_enabled", False),
+                },
+                "secudium": {
+                    "username": settings_manager.get_setting("secudium_username", ""),
+                    "password_set": bool(
+                        settings_manager.get_setting("secudium_password", "")
+                    ),
+                    "enabled": settings_manager.get_setting("secudium_enabled", False),
+                },
+            }
+            return jsonify({"success": True, "config": config})
+
+        elif request.method == "POST":
+            # 인증 정보 업데이트
+            data = request.get_json() or {}
+
+            if "regtech" in data:
+                regtech = data["regtech"]
+                if "username" in regtech:
+                    settings_manager.set_setting(
+                        "regtech_username", regtech["username"]
+                    )
+                if "password" in regtech and regtech["password"]:
+                    settings_manager.set_setting(
+                        "regtech_password", regtech["password"]
+                    )
+                if "enabled" in regtech:
+                    settings_manager.set_setting("regtech_enabled", regtech["enabled"])
+
+            if "secudium" in data:
+                secudium = data["secudium"]
+                if "username" in secudium:
+                    settings_manager.set_setting(
+                        "secudium_username", secudium["username"]
+                    )
+                if "password" in secudium and secudium["password"]:
+                    settings_manager.set_setting(
+                        "secudium_password", secudium["password"]
+                    )
+                if "enabled" in secudium:
+                    settings_manager.set_setting(
+                        "secudium_enabled", secudium["enabled"]
+                    )
+
+            return jsonify({"success": True, "message": "인증 설정이 업데이트되었습니다."})
+
+    except Exception as e:
+        logger.error(f"인증 설정 관리 오류: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@unified_bp.route("/auth-settings")
+def auth_settings_page():
+    """인증 설정 페이지"""
+    return render_template("auth_settings.html")
 
 
 # Removed duplicate /api/settings endpoint - now handled by settings_routes.py
@@ -3720,7 +3790,7 @@ def _test_collection_endpoints():
 
     from flask import Flask
 
-    print("\n🧪 Running inline integration tests for collection endpoints...")
+    logger.info("Running inline integration tests for collection endpoints...")
 
     # Create minimal test app
     test_app = Flask(__name__)
@@ -3760,7 +3830,7 @@ def _test_collection_endpoints():
 
         with test_app.test_client() as client:
             # Test 1: Collection status endpoint
-            print("  ✓ Testing GET /api/collection/status")
+            logger.debug("Testing GET /api/collection/status")
             response = client.get("/api/collection/status")
             assert (
                 response.status_code == 200
@@ -3770,12 +3840,10 @@ def _test_collection_endpoints():
             assert data["status"] == "active", "Status should be active"
             assert "stats" in data, "Response should include stats"
             assert data["stats"]["total_ips"] == 1000, "Should have correct total IPs"
-            assert (
-                data["message"] == "수집은 항상 활성화 상태입니다"
-            ), "Should have correct message"
+            assert data["message"] == "수집은 항상 활성화 상태입니다", "Should have correct message"
 
             # Test 2: Collection enable endpoint
-            print("  ✓ Testing POST /api/collection/enable")
+            logger.debug("Testing POST /api/collection/enable")
             response = client.post(
                 "/api/collection/enable", headers={"Content-Type": "application/json"}
             )
@@ -3786,12 +3854,10 @@ def _test_collection_endpoints():
             assert data["success"] is True, "Enable should always succeed"
             assert data["collection_enabled"] is True, "Should be enabled"
             assert data["cleared_data"] is False, "Should not clear data"
-            assert (
-                data["message"] == "수집은 항상 활성화 상태입니다."
-            ), "Should have correct message"
+            assert data["message"] == "수집은 항상 활성화 상태입니다.", "Should have correct message"
 
             # Test 3: Collection disable endpoint
-            print("  ✓ Testing POST /api/collection/disable")
+            logger.debug("Testing POST /api/collection/disable")
             response = client.post(
                 "/api/collection/disable", headers={"Content-Type": "application/json"}
             )
@@ -3807,7 +3873,7 @@ def _test_collection_endpoints():
             ), "Should have correct warning"
 
             # Test 4: REGTECH trigger endpoint
-            print("  ✓ Testing POST /api/collection/regtech/trigger")
+            logger.debug("Testing POST /api/collection/regtech/trigger")
             response = client.post(
                 "/api/collection/regtech/trigger",
                 json={"start_date": "20250601", "end_date": "20250630"},
@@ -3822,7 +3888,7 @@ def _test_collection_endpoints():
             assert "data" in data, "Should include collection data"
 
             # Test 5: REGTECH trigger with form data
-            print("  ✓ Testing POST /api/collection/regtech/trigger (form data)")
+            logger.debug("Testing POST /api/collection/regtech/trigger (form data)")
             response = client.post(
                 "/api/collection/regtech/trigger",
                 data={"start_date": "20250601", "end_date": "20250630"},
@@ -3832,7 +3898,7 @@ def _test_collection_endpoints():
             ), f"Expected 200, got {response.status_code}"
 
             # Test 6: SECUDIUM trigger endpoint (disabled)
-            print("  ✓ Testing POST /api/collection/secudium/trigger")
+            logger.debug("Testing POST /api/collection/secudium/trigger")
             response = client.post(
                 "/api/collection/secudium/trigger",
                 headers={"Content-Type": "application/json"},
@@ -3847,7 +3913,7 @@ def _test_collection_endpoints():
             assert "reason" in data, "Should include reason for being disabled"
 
             # Test 7: Error handling - test exception in enable
-            print("  ✓ Testing error handling in collection endpoints")
+            logger.debug("Testing error handling in collection endpoints")
             mock_service.get_collection_status.side_effect = Exception("Test error")
             response = client.get("/api/collection/status")
             assert (
@@ -3857,7 +3923,7 @@ def _test_collection_endpoints():
             assert data["enabled"] is False, "Should be disabled on error"
             assert data["status"] == "error", "Status should be error"
 
-    print("\n✅ All inline integration tests passed!")
+    logger.info("All inline integration tests passed!")
     return True
 
 
@@ -3867,7 +3933,7 @@ def _test_collection_state_consistency():
 
     from flask import Flask
 
-    print("\n🧪 Testing collection state consistency...")
+    logger.info("Testing collection state consistency...")
 
     test_app = Flask(__name__)
     test_app.config["TESTING"] = True
@@ -3893,7 +3959,7 @@ def _test_collection_state_consistency():
 
         with test_app.test_client() as client:
             # Perform multiple operations
-            print("  ✓ Testing state consistency across multiple operations")
+            logger.debug("Testing state consistency across multiple operations")
 
             # Enable multiple times - should be idempotent
             for i in range(3):
@@ -3915,7 +3981,7 @@ def _test_collection_state_consistency():
             data = response.get_json()
             assert data["enabled"] is True
 
-    print("✅ Collection state consistency test passed!")
+    logger.info("Collection state consistency test passed!")
     return True
 
 
@@ -3927,7 +3993,7 @@ def _test_concurrent_requests():
 
     from flask import Flask
 
-    print("\n🧪 Testing concurrent request handling...")
+    logger.info("Testing concurrent request handling...")
 
     test_app = Flask(__name__)
     test_app.config["TESTING"] = True
@@ -3960,7 +4026,7 @@ def _test_concurrent_requests():
         test_app.register_blueprint(unified_bp)
 
         with test_app.test_client() as client:
-            print("  ✓ Sending concurrent requests...")
+            logger.debug("Sending concurrent requests...")
 
             threads = []
             results = []
@@ -3989,10 +4055,12 @@ def _test_concurrent_requests():
                 len(concurrent_calls["errors"]) == 0
             ), f"Errors occurred: {concurrent_calls['errors']}"
 
-            print(f"  ✓ Max concurrent requests: {concurrent_calls['max_concurrent']}")
-            print(f"  ✓ All requests completed successfully")
+            logger.debug(
+                f"Max concurrent requests: {concurrent_calls['max_concurrent']}"
+            )
+            logger.debug("All requests completed successfully")
 
-    print("✅ Concurrent request handling test passed!")
+    logger.info("Concurrent request handling test passed!")
     return True
 
 
@@ -4081,9 +4149,7 @@ def _test_statistics_integration():
                 for trend in daily_trends[:2]:  # 최근 2일만 검증
                     assert "date" in trend, "트렌드에 date 필드가 없습니다"
                     assert "new_ips" in trend, "트렌드에 new_ips 필드가 없습니다"
-                    assert isinstance(
-                        trend["new_ips"], int
-                    ), "new_ips는 정수여야 합니다"
+                    assert isinstance(trend["new_ips"], int), "new_ips는 정수여야 합니다"
 
                 print(
                     f"    - 최근 트렌드: {daily_trends[0]['date']} ({daily_trends[0]['new_ips']}개)"
@@ -4115,9 +4181,7 @@ def _test_database_api_consistency():
         if not os.path.exists(db_path):
             db_path = "instance/blacklist.db"
 
-        assert os.path.exists(
-            db_path
-        ), f"데이터베이스 파일을 찾을 수 없습니다: {db_path}"
+        assert os.path.exists(db_path), f"데이터베이스 파일을 찾을 수 없습니다: {db_path}"
 
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()

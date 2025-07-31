@@ -8,7 +8,7 @@ import sqlite3
 
 def create_ip_detection_table():
     """Create the ip_detection table"""
-    db_path = 'instance/blacklist.db'
+    db_path = "instance/blacklist.db"
 
     if not os.path.exists(db_path):
         print(f"Database not found: {db_path}")

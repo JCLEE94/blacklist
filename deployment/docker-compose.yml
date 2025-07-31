@@ -13,6 +13,12 @@ services:
       - FLASK_ENV=production
       - PORT=2541
       - HOST=0.0.0.0
+      # 🔴 보안 기본 설정 (외부 인증 차단)
+      - FORCE_DISABLE_COLLECTION=true
+      - COLLECTION_ENABLED=false
+      - RESTART_PROTECTION=true
+      - MAX_AUTH_ATTEMPTS=10
+      - BLOCK_DURATION_HOURS=24
     volumes:
       - ./instance:/app/instance
       - ./data:/app/data

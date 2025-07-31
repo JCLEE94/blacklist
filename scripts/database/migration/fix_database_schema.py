@@ -15,10 +15,10 @@ def fix_database_schema():
 
     # 데이터베이스 경로들
     db_paths = [
-        '/app/instance/blacklist.db',
-        'instance/blacklist.db',
+        "/app/instance/blacklist.db",
+        "instance/blacklist.db",
         os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), 'instance', 'blacklist.db'
+            os.path.dirname(os.path.dirname(__file__)), "instance", "blacklist.db"
         ),
     ]
 
@@ -46,7 +46,7 @@ def fix_database_schema():
         print(f"현재 컬럼: {column_names}")
 
         # detection_date 컬럼이 없으면 추가
-        if 'detection_date' not in column_names:
+        if "detection_date" not in column_names:
             print("detection_date 컬럼 추가 중...")
             cursor.execute(
                 """
@@ -60,10 +60,10 @@ def fix_database_schema():
 
         # 다른 누락된 컬럼들도 확인 및 추가
         missing_columns = {
-            'reason': 'TEXT',
-            'threat_level': 'VARCHAR(20)',
-            'is_active': 'BOOLEAN DEFAULT 1',
-            'updated_at': 'TIMESTAMP',
+            "reason": "TEXT",
+            "threat_level": "VARCHAR(20)",
+            "is_active": "BOOLEAN DEFAULT 1",
+            "updated_at": "TIMESTAMP",
         }
 
         for col_name, col_type in missing_columns.items():

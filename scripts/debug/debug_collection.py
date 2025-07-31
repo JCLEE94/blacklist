@@ -20,7 +20,7 @@ def check_collection_status():
     try:
         # 외부 URL 사용
         response = requests.get(
-            'https://blacklist.jclee.me/api/collection/status', verify=False, timeout=30
+            "https://blacklist.jclee.me/api/collection/status", verify=False, timeout=30
         )
         data = response.json()
 
@@ -32,7 +32,7 @@ def check_collection_status():
         print(f"오늘 수집: {data.get('stats', {}).get('today_collected', 0)}")
 
         # 소스별 상태
-        sources = data.get('sources', {})
+        sources = data.get("sources", {})
         print("\n=== 소스별 상태 ===")
         for source, info in sources.items():
             print(f"{source.upper()}:")
@@ -41,17 +41,17 @@ def check_collection_status():
             print(f"  - 마지막 수집: {info.get('last_collection', 'N/A')}")
 
         # 로그 확인
-        logs = data.get('logs', [])
+        logs = data.get("logs", [])
         print(f"\n=== 최근 로그 ({len(logs)}개) ===")
         for log in logs[:10]:  # 최근 10개만
             print(
                 f"[{log.get('timestamp', 'N/A')}] {log.get('source', 'N/A')}: {log.get('action', 'N/A')}"
             )
-            if log.get('details'):
-                details = log.get('details', {})
-                if 'ips_collected' in details:
+            if log.get("details"):
+                details = log.get("details", {})
+                if "ips_collected" in details:
                     print(f"  -> 수집된 IP: {details['ips_collected']}")
-                if 'error' in details:
+                if "error" in details:
                     print(f"  -> 오류: {details['error']}")
 
         return True
@@ -68,8 +68,8 @@ def test_regtech_collection():
     try:
         # 수집 트리거
         response = requests.post(
-            'https://blacklist.jclee.me/api/collection/regtech/trigger',
-            headers={'Content-Type': 'application/json'},
+            "https://blacklist.jclee.me/api/collection/regtech/trigger",
+            headers={"Content-Type": "application/json"},
             json={},
             verify=False,
             timeout=300,
@@ -77,7 +77,7 @@ def test_regtech_collection():
 
         data = response.json()
 
-        if data.get('success'):
+        if data.get("success"):
             print("✅ REGTECH 수집 성공")
             print(f"수집된 IP: {data.get('details', {}).get('collected', 0)}")
             print(f"메시지: {data.get('message', 'N/A')}")
@@ -85,7 +85,7 @@ def test_regtech_collection():
             print("❌ REGTECH 수집 실패")
             print(f"오류: {data.get('error', data.get('message', 'Unknown error'))}")
 
-        return data.get('success', False)
+        return data.get("success", False)
 
     except Exception as e:
         print(f"REGTECH 수집 테스트 실패: {e}")
@@ -99,7 +99,7 @@ def check_environment():
     try:
         # 헬스 체크
         response = requests.get(
-            'https://blacklist.jclee.me/health', verify=False, timeout=30
+            "https://blacklist.jclee.me/health", verify=False, timeout=30
         )
         data = response.json()
 
@@ -109,7 +109,7 @@ def check_environment():
 
         # 통계 확인
         stats_response = requests.get(
-            'https://blacklist.jclee.me/api/stats', verify=False, timeout=30
+            "https://blacklist.jclee.me/api/stats", verify=False, timeout=30
         )
         stats_data = stats_response.json()
 

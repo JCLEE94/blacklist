@@ -189,9 +189,7 @@ class BaseCollector(ABC):
                 self._current_result.collected_count = len(collected_data)
                 self._current_result.end_time = datetime.now()
 
-                self.logger.info(
-                    f"수집 완료: {self.name} - {len(collected_data)}개 수집"
-                )
+                self.logger.info(f"수집 완료: {self.name} - {len(collected_data)}개 수집")
                 break
 
             except asyncio.TimeoutError:

@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:15
+    container_name: blacklist-postgres
+    environment:
+      POSTGRES_DB: blacklist
+      POSTGRES_USER: blacklist_user
+      POSTGRES_PASSWORD: blacklist_pass123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blacklist_user -d blacklist"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 캐시
+  redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Collection Service (데이터 수집)
+  collection-service:
+    build:
+      context: ./services/collection-service
+      dockerfile: Dockerfile
+    container_name: collection-service
+    environment:
+      - BLACKLIST_SERVICE_URL=http://blacklist-service:8001
+      - REGTECH_USERNAME=${REGTECH_USERNAME}
+      - REGTECH_PASSWORD=${REGTECH_PASSWORD}
+      - SECUDIUM_USERNAME=${SECUDIUM_USERNAME}
+      - SECUDIUM_PASSWORD=${SECUDIUM_PASSWORD}
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+
+  # Blacklist Management Service (블랙리스트 관리)
+  blacklist-service:
+    build:
+      context: ./services/blacklist-service
+      dockerfile: Dockerfile
+    container_name: blacklist-service
+    environment:
+      - DATABASE_URL=postgresql://blacklist_user:blacklist_pass123@postgres:5432/blacklist
+      - REDIS_URL=redis://redis:6379/1
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+
+  # Analytics Service (분석)
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    container_name: analytics-service
+    environment:
+      - BLACKLIST_SERVICE_URL=http://blacklist-service:8001
+      - REDIS_URL=redis://redis:6379/2
+    ports:
+      - "8002:8002"
+    depends_on:
+      - blacklist-service
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+
+  # API Gateway (게이트웨이)
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - COLLECTION_SERVICE_URL=http://collection-service:8000
+      - BLACKLIST_SERVICE_URL=http://blacklist-service:8001
+      - ANALYTICS_SERVICE_URL=http://analytics-service:8002
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-jwt-secret-key-change-this}
+      - REDIS_URL=redis://redis:6379/3
+    ports:
+      - "8080:8080"
+    depends_on:
+      - collection-service
+      - blacklist-service
+      - analytics-service
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  blacklist-network:
+    driver: bridge

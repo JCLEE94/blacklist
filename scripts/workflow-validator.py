@@ -12,7 +12,7 @@ import yaml
 def load_workflow(file_path):
     """워크플로우 파일 로드"""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             return yaml.safe_load(f)
     except Exception as e:
         print(f"❌ 파일 로드 실패: {e}")
@@ -21,7 +21,7 @@ def load_workflow(file_path):
 
 def validate_job_dependencies(workflow):
     """Job 의존성 검증"""
-    jobs = workflow.get('jobs', {})
+    jobs = workflow.get("jobs", {})
     errors = []
     warnings = []
 
@@ -29,15 +29,13 @@ def validate_job_dependencies(workflow):
     dep_graph = defaultdict(list)
 
     for job_name, job_config in jobs.items():
-        needs = job_config.get('needs', [])
+        needs = job_config.get("needs", [])
         if isinstance(needs, str):
             needs = [needs]
 
         for dep in needs:
             if dep not in jobs:
-                errors.append(
-                    f"Job '{job_name}'이 존재하지 않는 job '{dep}'에 의존합니다"
-                )
+                errors.append(f"Job '{job_name}'이 존재하지 않는 job '{dep}'에 의존합니다")
             else:
                 dep_graph[dep].append(job_name)
 
@@ -67,7 +65,7 @@ def validate_job_dependencies(workflow):
 
 def analyze_workflow_flow(workflow):
     """워크플로우 흐름 분석"""
-    jobs = workflow.get('jobs', {})
+    jobs = workflow.get("jobs", {})
 
     print("\n📊 워크플로우 흐름 분석:")
     print("=" * 50)
@@ -79,7 +77,7 @@ def analyze_workflow_flow(workflow):
     # 의존성이 없는 job 찾기
     no_deps = []
     for job_name, job_config in jobs.items():
-        if not job_config.get('needs'):
+        if not job_config.get("needs"):
             no_deps.append(job_name)
 
     # 위상 정렬로 실행 순서 결정
@@ -92,7 +90,7 @@ def analyze_workflow_flow(workflow):
 
             # 이 job에 의존하는 job들 찾기
             for job_name, job_config in jobs.items():
-                needs = job_config.get('needs', [])
+                needs = job_config.get("needs", [])
                 if isinstance(needs, str):
                     needs = [needs]
 
@@ -105,12 +103,12 @@ def analyze_workflow_flow(workflow):
     print("\n🔄 Job 실행 순서:")
     for i, job in enumerate(job_order, 1):
         job_config = jobs[job]
-        needs = job_config.get('needs', [])
+        needs = job_config.get("needs", [])
         if isinstance(needs, str):
             needs = [needs]
 
         deps_str = f" (의존: {', '.join(needs)})" if needs else " (독립 실행)"
-        condition = job_config.get('if', '')
+        condition = job_config.get("if", "")
         condition_str = f" [조건: {condition}]" if condition else ""
 
         print(f"{i}. {job}{deps_str}{condition_str}")
@@ -118,7 +116,7 @@ def analyze_workflow_flow(workflow):
 
 def check_output_usage(workflow):
     """Job 출력값 사용 검증"""
-    jobs = workflow.get('jobs', {})
+    jobs = workflow.get("jobs", {})
     outputs_defined = {}
     outputs_used = {}
 
@@ -127,7 +125,7 @@ def check_output_usage(workflow):
 
     # 출력값 정의 찾기
     for job_name, job_config in jobs.items():
-        outputs = job_config.get('outputs', {})
+        outputs = job_config.get("outputs", {})
         if outputs:
             outputs_defined[job_name] = list(outputs.keys())
             print(f"\n✅ {job_name} 출력값 정의:")
@@ -137,13 +135,13 @@ def check_output_usage(workflow):
     # 출력값 사용 찾기
     for job_name, job_config in jobs.items():
         # steps에서 출력값 사용 확인
-        for step in job_config.get('steps', []):
+        for step in job_config.get("steps", []):
             for key, value in step.items():
-                if isinstance(value, str) and 'needs.' in value:
+                if isinstance(value, str) and "needs." in value:
                     # needs.job_name.outputs.output_name 패턴 찾기
                     import re
 
-                    matches = re.findall(r'needs\.(\w+)\.outputs\.(\w+)', str(value))
+                    matches = re.findall(r"needs\.(\w+)\.outputs\.(\w+)", str(value))
                     for dep_job, output_name in matches:
                         if dep_job not in outputs_used:
                             outputs_used[dep_job] = []
@@ -165,7 +163,7 @@ def check_output_usage(workflow):
 
 def validate_artifacts(workflow):
     """아티팩트 업로드/다운로드 검증"""
-    jobs = workflow.get('jobs', {})
+    jobs = workflow.get("jobs", {})
     artifacts_uploaded = {}
     artifacts_downloaded = {}
 
@@ -173,16 +171,16 @@ def validate_artifacts(workflow):
     print("=" * 50)
 
     for job_name, job_config in jobs.items():
-        for step in job_config.get('steps', []):
+        for step in job_config.get("steps", []):
             # 아티팩트 업로드 찾기
-            if step.get('uses', '').startswith('actions/upload-artifact'):
-                artifact_name = step.get('with', {}).get('name', 'unknown')
+            if step.get("uses", "").startswith("actions/upload-artifact"):
+                artifact_name = step.get("with", {}).get("name", "unknown")
                 artifacts_uploaded[artifact_name] = job_name
                 print(f"⬆️  {job_name}에서 '{artifact_name}' 업로드")
 
             # 아티팩트 다운로드 찾기
-            if step.get('uses', '').startswith('actions/download-artifact'):
-                artifact_name = step.get('with', {}).get('name', 'unknown')
+            if step.get("uses", "").startswith("actions/download-artifact"):
+                artifact_name = step.get("with", {}).get("name", "unknown")
                 artifacts_downloaded[artifact_name] = job_name
                 print(f"⬇️  {job_name}에서 '{artifact_name}' 다운로드")
 
@@ -198,7 +196,7 @@ def validate_artifacts(workflow):
 
 def check_concurrency(workflow):
     """동시 실행 제어 검증"""
-    concurrency = workflow.get('concurrency', {})
+    concurrency = workflow.get("concurrency", {})
 
     print("\n🔒 동시 실행 제어:")
     print("=" * 50)
@@ -214,7 +212,7 @@ def main():
     print("🔍 GitHub Actions 워크플로우 검증")
     print("=" * 50)
 
-    workflow_file = '.github/workflows/offline-production-deploy.yml'
+    workflow_file = ".github/workflows/offline-production-deploy.yml"
     workflow = load_workflow(workflow_file)
 
     # 기본 정보 출력

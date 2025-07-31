@@ -21,10 +21,10 @@ def test_ajax_collection():
     session = requests.Session()
     session.headers.update(
         {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/javascript, */*; q=0.01',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-            'X-Requested-With': 'XMLHttpRequest',
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+            "X-Requested-With": "XMLHttpRequest",
         }
     )
 
@@ -32,13 +32,13 @@ def test_ajax_collection():
     logger.info("=== 로그인 시도 ===")
     login_url = "https://regtech.fsec.or.kr/fcti/login/loginUser"
     login_data = {
-        'username': 'nextrade',
-        'password': 'Sprtmxm1@3',
-        'login_error': '',
-        'txId': '',
-        'token': '',
-        'memberId': '',
-        'smsTimeExcess': 'N',
+        "username": "nextrade",
+        "password": "Sprtmxm1@3",
+        "login_error": "",
+        "txId": "",
+        "token": "",
+        "memberId": "",
+        "smsTimeExcess": "N",
     }
 
     login_resp = session.post(login_url, data=login_data, allow_redirects=False)
@@ -46,8 +46,8 @@ def test_ajax_collection():
 
     # 리다이렉트 처리
     if login_resp.status_code == 302:
-        redirect_url = login_resp.headers.get('Location', '')
-        if not redirect_url.startswith('http'):
+        redirect_url = login_resp.headers.get("Location", "")
+        if not redirect_url.startswith("http"):
             redirect_url = f"https://regtech.fsec.or.kr{redirect_url}"
 
         # 메인 페이지로 이동
@@ -73,12 +73,12 @@ def test_ajax_collection():
         logger.info(f"\n시도: {ajax_url}")
 
         params = {
-            'startDate': start_date.strftime('%Y%m%d'),
-            'endDate': end_date.strftime('%Y%m%d'),
-            'blockRule': '',
-            'blockTarget': '',
-            'page': '1',
-            'rows': '1000',  # 많은 데이터 요청
+            "startDate": start_date.strftime("%Y%m%d"),
+            "endDate": end_date.strftime("%Y%m%d"),
+            "blockRule": "",
+            "blockTarget": "",
+            "page": "1",
+            "rows": "1000",  # 많은 데이터 요청
         }
 
         try:
@@ -88,7 +88,7 @@ def test_ajax_collection():
 
             if resp.status_code == 200:
                 # JSON 응답 시도
-                if 'application/json' in resp.headers.get('Content-Type', ''):
+                if "application/json" in resp.headers.get("Content-Type", ""):
                     try:
                         data = resp.json()
                         logger.info(
@@ -110,12 +110,12 @@ def test_ajax_collection():
         logger.info(f"\nPOST 시도: {ajax_url}")
 
         data = {
-            'startDate': start_date.strftime('%Y%m%d'),
-            'endDate': end_date.strftime('%Y%m%d'),
-            'blockRule': '',
-            'blockTarget': '',
-            'page': '1',
-            'rows': '1000',
+            "startDate": start_date.strftime("%Y%m%d"),
+            "endDate": end_date.strftime("%Y%m%d"),
+            "blockRule": "",
+            "blockTarget": "",
+            "page": "1",
+            "rows": "1000",
         }
 
         try:
@@ -138,7 +138,7 @@ def test_ajax_collection():
 
         # var data = [...] 패턴 찾기
         data_pattern = re.compile(
-            r'var\s+(?:data|list|items)\s*=\s*(\[.*?\]);', re.DOTALL
+            r"var\s+(?:data|list|items)\s*=\s*(\[.*?\]);", re.DOTALL
         )
         matches = data_pattern.findall(page_resp.text)
 

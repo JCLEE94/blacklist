@@ -6,6 +6,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Blacklist Management System** - Enterprise threat intelligence platform transformed into Microservices Architecture (MSA) with GitOps-based deployment, multi-source data collection, automated processing, and FortiGate External Connector integration. Features both monolithic (legacy) and microservices deployment options with full CI/CD automation.
 
+## 🛡️ 방어적 보안 시스템 (Defensive Security System)
+
+### 자동 인증 차단 시스템
+시스템은 기본적으로 **모든 외부 인증 시도를 차단**하여 무한 재시작으로 인한 서버 차단을 방지합니다.
+
+**핵심 보안 기능:**
+- **기본 차단 모드**: `FORCE_DISABLE_COLLECTION=true` (기본값)
+- **무한 재시작 보호**: 1분 내 5회 재시작 감지 시 자동 차단
+- **인증 시도 제한**: 24시간 내 최대 10회 인증 시도
+- **다층 보안 검사**: 환경변수 → 설정파일 → 런타임 검사
+
+**보안 환경변수:**
+```bash
+# 🔴 필수 보안 설정 (모든 배포 환경에 적용됨)
+FORCE_DISABLE_COLLECTION=true    # 최고 수준 차단 (기본값)
+COLLECTION_ENABLED=false         # 수집 기능 개별 제어 (기본값)
+RESTART_PROTECTION=true          # 재시작 보호 활성화 (기본값)
+MAX_AUTH_ATTEMPTS=10             # 인증 시도 제한 (기본값)
+BLOCK_DURATION_HOURS=24          # 차단 지속 시간 (기본값)
+```
+
+**차단 시스템 동작:**
+1. **초기화 차단**: CollectionManager 생성 시 환경변수 확인
+2. **API 호출 차단**: 모든 수집 API에서 다층 보안 검사
+3. **재시작 감지**: 빠른 재시작 패턴 감지 및 자동 차단
+4. **인증 횟수 추적**: 소스별 인증 시도 횟수 제한
+
+**안전 모드 출력:**
+```
+================================================================================
+🛡️  BLACKLIST 보안 상태 확인
+================================================================================
+✅ FORCE_DISABLE_COLLECTION=true - 모든 외부 수집 강제 차단
+✅ 외부 인증 시도 없음 - 서버 안전 모드
+✅ RESTART_PROTECTION=true - 무한 재시작 보호 활성화
+✅ 안전 모드로 시작됨 - 외부 인증 시도 없음
+================================================================================
+```
+
+### REGTECH/SECUDIUM 통합 차단
+- **REGTECH**: 기본 차단, 인증 시도 제한 적용
+- **SECUDIUM**: 완전 차단 (계정 문제로 인한 보안 차단)
+- **동일한 보안 검사**: 두 소스 모두 동일한 차단 로직 적용
+
+**이 시스템으로 무한 재시작이 발생해도 외부 서버에 인증 요청이 전송되지 않아 서버 차단을 완전히 방지할 수 있습니다.**
+
 ## 🏗️ Architecture Overview
 
 ### Dual Architecture Support
@@ -707,8 +753,211 @@ container = get_container()
 - Rate limiting per client IP and endpoint type
 - Centralized caching with TTL-based invalidation
 
+## 🔴 Collection Security System (방어적 차단 시스템)
+
+### 보안 개요
+2025.07.29 업데이트: 무한 재시작으로 인한 외부 서버 차단 방지를 위한 포괄적 보안 시스템 구축
+
+**핵심 보안 원칙:**
+- **기본 차단 (Default Block)**: 모든 외부 인증 시도 기본적으로 차단
+- **수동 활성화 (Manual Enable)**: 관리자 승인 후에만 수집 기능 활성화
+- **재시작 보호 (Restart Protection)**: 빠른 재시작 감지 시 자동 차단
+- **인증 시도 제한 (Auth Attempt Limit)**: 24시간 내 최대 10회 인증 시도 제한
+
+### 보안 환경변수
+
+#### 🔴 강제 차단 설정
+```bash
+# 모든 외부 수집 기능 강제 차단 (최고 보안)
+export FORCE_DISABLE_COLLECTION=true  # 기본값: true
+
+# 수집 기능 개별 제어 (FORCE_DISABLE_COLLECTION=false일 때만 유효)
+export COLLECTION_ENABLED=false       # 기본값: false
+
+# 재시작 보호 기능 (무한 재시작 방지)
+export RESTART_PROTECTION=true        # 기본값: true
+
+# 인증 시도 제한 설정
+export MAX_AUTH_ATTEMPTS=10           # 24시간 내 최대 시도 횟수
+export BLOCK_DURATION_HOURS=24        # 차단 해제 시간 (시간 단위)
+```
+
+### 보안 상태 확인
+
+#### 시작 시 보안 상태 표시
+```bash
+python3 main.py
+# 출력 예시:
+================================================================================
+🛡️  BLACKLIST 보안 상태 확인
+================================================================================
+✅ FORCE_DISABLE_COLLECTION=true - 모든 외부 수집 강제 차단
+✅ 외부 인증 시도 없음 - 서버 안전 모드
+✅ RESTART_PROTECTION=true - 무한 재시작 보호 활성화
+✅ 안전 모드로 시작됨 - 외부 인증 시도 없음
+================================================================================
+```
+
+#### 수집 상태 API 확인
+```bash
+# 현재 보안 상태 확인
+curl http://localhost:8541/api/collection/status
+
+# 응답 예시 (안전 모드):
+{
+  "collection_enabled": false,
+  "security_mode": "DEFENSIVE",
+  "force_disabled": true,
+  "restart_protection": {
+    "enabled": true,
+    "protection_active": false
+  },
+  "sources": {
+    "regtech": {"status": "blocked", "enabled": false},
+    "secudium": {"status": "blocked", "enabled": false}
+  }
+}
+```
+
+### 수집 활성화 (수동)
+
+#### 안전 검사 후 활성화
+```bash
+# 1. 환경변수 변경 (서버 재시작 필요)
+export FORCE_DISABLE_COLLECTION=false
+export COLLECTION_ENABLED=true
+
+# 2. API를 통한 수동 활성화 (권장)
+curl -X POST http://localhost:8541/api/collection/enable \
+  -H "Content-Type: application/json" \
+  -d '{"clear_data": true}'
+
+# 보안 경고와 함께 응답:
+{
+  "success": true,
+  "message": "🔓 수집이 활성화되었습니다. 기존 데이터가 클리어되었습니다.",
+  "security_warnings": [
+    "외부 서버 인증 시도가 활성화되었습니다",
+    "REGTECH 및 SECUDIUM 서버에 로그인 시도가 발생할 수 있습니다",
+    "수집 중단을 원하면 즉시 disable_collection을 호출하세요"
+  ]
+}
+```
+
+### 인증 시도 모니터링
+
+#### 실시간 인증 시도 추적
+```bash
+# REGTECH 수집 시도 (보안 검사 포함)
+curl -X POST http://localhost:8541/api/collection/regtech/trigger
+
+# 보안 검사 실패 응답 예시:
+{
+  "success": false,
+  "message": "환경변수 FORCE_DISABLE_COLLECTION=true로 인해 수집이 차단되었습니다",
+  "security_blocked": true,
+  "force_disabled": true
+}
+
+# 인증 시도 제한 초과 응답:
+{
+  "success": false,
+  "message": "REGTECH 소스가 인증 시도 제한으로 차단되었습니다",
+  "security_blocked": true,
+  "auth_limit_exceeded": true
+}
+```
+
+### 재시작 보호 시스템
+
+#### 빠른 재시작 감지
+- **감지 조건**: 1분 이내 5회 이상 재시작
+- **자동 조치**: 수집 기능 자동 차단
+- **보호 기간**: 수동 해제까지 지속
+
+```bash
+# 재시작 보호 활성화 로그 예시:
+🚨 빠른 재시작 감지 (5/5회, 지난 45.2초)
+🚨 빠른 재시작 감지 - 자동 수집 기능 차단으로 서버 보호
+🛡️  재시작 보호 모드 활성화 - 수집 기능 자동 차단
+```
+
+### Docker/Kubernetes 배포 보안
+
+#### Docker Compose
+```yaml
+# deployment/docker-compose.yml
+environment:
+  # 🔴 보안 기본 설정 (외부 인증 차단)
+  - FORCE_DISABLE_COLLECTION=true
+  - COLLECTION_ENABLED=false
+  - RESTART_PROTECTION=true
+  - MAX_AUTH_ATTEMPTS=10
+  - BLOCK_DURATION_HOURS=24
+```
+
+#### Kubernetes
+```yaml
+# k8s/base/deployment.yaml
+env:
+  # 🔴 보안 기본 설정 (외부 인증 차단)
+  - name: FORCE_DISABLE_COLLECTION
+    value: "true"
+  - name: COLLECTION_ENABLED
+    value: "false"
+  - name: RESTART_PROTECTION
+    value: "true"
+```
+
+#### MSA 환경
+```yaml
+# docker-compose.msa.yml - Collection Service
+environment:
+  # 🔴 수집 보안 설정 (외부 인증 차단)
+  - FORCE_DISABLE_COLLECTION=true
+  - COLLECTION_ENABLED=false
+  - RESTART_PROTECTION=true
+```
+
+### 보안 모니터링
+
+#### 로그 패턴 확인
+```bash
+# 보안 관련 로그 패턴
+docker logs blacklist -f | grep -E "(🚫|🚨|🛡️|⚠️)"
+
+# 주요 보안 이벤트:
+# 🚫 - 차단 이벤트
+# 🚨 - 긴급 보안 경고
+# 🛡️ - 보호 모드 활성화
+# ⚠️ - 보안 경고
+# ✅ - 안전 상태 확인
+```
+
+#### 보안 상태 체크리스트
+- [ ] `FORCE_DISABLE_COLLECTION=true` 설정 확인
+- [ ] 시작 시 보안 상태 메시지 확인
+- [ ] API 응답에서 `security_blocked: true` 확인
+- [ ] 로그에서 외부 인증 시도 없음 확인
+- [ ] 재시작 보호 기능 활성화 확인
+
+### 긴급 차단 복구
+
+#### 수집 기능 즉시 차단
+```bash
+# 1. API를 통한 즉시 차단
+curl -X POST http://localhost:8541/api/collection/disable
+
+# 2. 환경변수를 통한 강제 차단
+export FORCE_DISABLE_COLLECTION=true
+# 서버 재시작 후 적용
+
+# 3. 컨테이너 환경변수 업데이트
+docker-compose -f deployment/docker-compose.yml \
+  -e FORCE_DISABLE_COLLECTION=true up -d --force-recreate
+```
+
 ### Environment Variables
-Required for production deployment:
 ```bash
 # Authentication credentials (store in Kubernetes secrets)
 REGTECH_USERNAME=your-username

@@ -252,9 +252,7 @@ class PerformanceProfiler:
             if timings:
                 avg_time = sum(timings) / len(timings)
                 if avg_time > 0.5:  # 500ms 이상
-                    recommendations.append(
-                        f"함수 {name}의 평균 실행시간이 깁니다 ({avg_time:.3f}s)"
-                    )
+                    recommendations.append(f"함수 {name}의 평균 실행시간이 깁니다 ({avg_time:.3f}s)")
 
         # 메모리 사용량 분석
         if self.metrics:
@@ -262,16 +260,12 @@ class PerformanceProfiler:
                 m.memory_after - m.memory_before for m in self.metrics
             ) / len(self.metrics)
             if avg_memory_growth > 10:  # 10MB 이상 증가
-                recommendations.append(
-                    f"평균 메모리 증가량이 큽니다 ({avg_memory_growth:.1f}MB)"
-                )
+                recommendations.append(f"평균 메모리 증가량이 큽니다 ({avg_memory_growth:.1f}MB)")
 
         # 느린 쿼리 분석
         slow_queries = self._get_slow_queries(0.05)  # 50ms 이상
         if slow_queries:
-            recommendations.append(
-                f"{len(slow_queries)}개의 느린 쿼리가 발견되었습니다. 인덱스 최적화 필요"
-            )
+            recommendations.append(f"{len(slow_queries)}개의 느린 쿼리가 발견되었습니다. 인덱스 최적화 필요")
 
         return recommendations
 
@@ -481,14 +475,10 @@ class CacheProfiler:
 
         # 권장사항
         if analysis["hit_rate"] < 0.7:
-            analysis["recommendations"].append(
-                "캐시 히트율이 낮음 - TTL 조정 또는 캐시 워밍 필요"
-            )
+            analysis["recommendations"].append("캐시 히트율이 낮음 - TTL 조정 또는 캐시 워밍 필요")
 
         if analysis["operation_stats"].get("get", {}).get("avg_duration", 0) > 0.01:
-            analysis["recommendations"].append(
-                "캐시 조회 시간이 김 - Redis 연결 상태 확인 필요"
-            )
+            analysis["recommendations"].append("캐시 조회 시간이 김 - Redis 연결 상태 확인 필요")
 
         return analysis
 

@@ -12,8 +12,8 @@ import pytz
 
 def main():
     """Main cleanup and setup process"""
-    kst = pytz.timezone('Asia/Seoul')
-    current_time = datetime.now(kst).strftime('%Y-%m-%d %H:%M:%S KST')
+    kst = pytz.timezone("Asia/Seoul")
+    current_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S KST")
 
     print("=" * 60)
     print("DATABASE CLEANUP AND FRESH COLLECTION SETUP")
@@ -22,7 +22,7 @@ def main():
     print()
 
     # Step 1: Create environment file if not exists
-    if not os.path.exists('.env'):
+    if not os.path.exists(".env"):
         print("📝 Creating .env file template...")
         env_content = """# Blacklist System Environment Configuration
 
@@ -56,7 +56,7 @@ SECUDIUM_PASSWORD=
 COLLECTION_TIMEOUT=300
 MAX_RETRIES=3
 """
-        with open('.env', 'w') as f:
+        with open(".env", "w") as f:
             f.write(env_content)
         print("✅ Created .env file - Please fill in REGTECH credentials!")
         print()
@@ -65,7 +65,7 @@ MAX_RETRIES=3
     print("📊 Current Database Analysis:")
     print("-" * 40)
 
-    db_path = 'instance/blacklist.db'
+    db_path = "instance/blacklist.db"
     if os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -121,12 +121,12 @@ MAX_RETRIES=3
     print("-" * 40)
 
     # Check for main collection script
-    main_collector = 'scripts/collection/regtech/regtech_auto_collector.py'
+    main_collector = "scripts/collection/regtech/regtech_auto_collector.py"
     if os.path.exists(main_collector):
         print(f"✅ Main collector found: {main_collector}")
     else:
         # Try alternative location
-        alt_collector = 'scripts/collection/regtech_auto_collector.py'
+        alt_collector = "scripts/collection/regtech_auto_collector.py"
         if os.path.exists(alt_collector):
             print(f"✅ Collector found: {alt_collector}")
             main_collector = alt_collector
@@ -201,9 +201,9 @@ except Exception as e:
 finally:
     conn.close()
 '''
-    with open('option1_migrate_valid.py', 'w') as f:
+    with open("option1_migrate_valid.py", "w") as f:
         f.write(option1)
-    os.chmod('option1_migrate_valid.py', 0o755)
+    os.chmod("option1_migrate_valid.py", 0o755)
 
     # Option 2: Migrate all IPs
     option2 = '''#!/usr/bin/env python3
@@ -252,9 +252,9 @@ except Exception as e:
 finally:
     conn.close()
 '''
-    with open('option2_migrate_all.py', 'w') as f:
+    with open("option2_migrate_all.py", "w") as f:
         f.write(option2)
-    os.chmod('option2_migrate_all.py', 0o755)
+    os.chmod("option2_migrate_all.py", 0o755)
 
     # Option 3: Start fresh
     option3 = '''#!/usr/bin/env python3
@@ -291,9 +291,9 @@ except Exception as e:
 finally:
     conn.close()
 '''
-    with open('option3_start_fresh.py', 'w') as f:
+    with open("option3_start_fresh.py", "w") as f:
         f.write(option3)
-    os.chmod('option3_start_fresh.py', 0o755)
+    os.chmod("option3_start_fresh.py", 0o755)
 
 
 def create_regtech_test_script():
@@ -351,9 +351,9 @@ print("   Actual login requires handling CAPTCHA/OTP")
 print("   Use manual collection scripts for data gathering")
 '''
 
-    with open('test_regtech_connection.py', 'w') as f:
+    with open("test_regtech_connection.py", "w") as f:
         f.write(test_script)
-    os.chmod('test_regtech_connection.py', 0o755)
+    os.chmod("test_regtech_connection.py", 0o755)
 
 
 if __name__ == "__main__":

@@ -15,12 +15,12 @@ def verify_system():
     # kubectl port-forward 시작
     port_forward = subprocess.Popen(
         [
-            'kubectl',
-            'port-forward',
-            '-n',
-            'blacklist',
-            'deployment/blacklist',
-            '8544:8541',
+            "kubectl",
+            "port-forward",
+            "-n",
+            "blacklist",
+            "deployment/blacklist",
+            "8544:8541",
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -29,15 +29,15 @@ def verify_system():
     time.sleep(2)
 
     try:
-        base_url = 'http://localhost:8544'
+        base_url = "http://localhost:8544"
 
         # 핵심 엔드포인트 테스트
         endpoints = {
-            '/health': '시스템 상태',
-            '/api/stats': '통계 정보',
-            '/api/collection/status': '수집 상태',
-            '/api/blacklist/active': '활성 IP 목록',
-            '/api/fortigate': 'FortiGate 연동',
+            "/health": "시스템 상태",
+            "/api/stats": "통계 정보",
+            "/api/collection/status": "수집 상태",
+            "/api/blacklist/active": "활성 IP 목록",
+            "/api/fortigate": "FortiGate 연동",
         }
 
         all_passed = True
@@ -45,7 +45,7 @@ def verify_system():
 
         for endpoint, description in endpoints.items():
             try:
-                response = requests.get(f'{base_url}{endpoint}', timeout=5)
+                response = requests.get(f"{base_url}{endpoint}", timeout=5)
                 if response.status_code == 200:
                     print(f"✅ {endpoint}: {description} - OK")
                     results[endpoint] = True

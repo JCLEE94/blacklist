@@ -17,14 +17,14 @@ def fix_collection_status():
     # 1. Config 파일 수정
     config_path = Path("/app/instance/collection_config.json")
     if config_path.exists():
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = json.load(f)
 
-        config['collection_enabled'] = False
-        config['sources']['regtech'] = False
-        config['sources']['secudium'] = False
+        config["collection_enabled"] = False
+        config["sources"]["regtech"] = False
+        config["sources"]["secudium"] = False
 
-        with open(config_path, 'w') as f:
+        with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
         print(f"✅ Config 파일 업데이트: {config_path}")
 
@@ -48,7 +48,7 @@ def fix_collection_status():
         conn.close()
 
     # 3. 환경변수 확인
-    env_value = os.environ.get('COLLECTION_ENABLED', 'not set')
+    env_value = os.environ.get("COLLECTION_ENABLED", "not set")
     print(f"ℹ️  환경변수 COLLECTION_ENABLED: {env_value}")
 
     print("\n🎯 수집 상태가 비활성화로 강제 설정되었습니다.")

@@ -26,7 +26,7 @@ class CollectionManager:
         config_path: str = "instance/collection_config.json",
     ):
         """
-        초기화
+        초기화 - 방어적 자동 인증 차단 시스템
 
         Args:
             db_path: 데이터베이스 경로
@@ -37,6 +37,23 @@ class CollectionManager:
 
         # 설정 디렉토리 생성
         self.config_path.parent.mkdir(exist_ok=True)
+
+        # 🔴 방어적 차단 시스템 - 환경변수로 강제 차단 가능
+        force_disable_collection = os.getenv(
+            "FORCE_DISABLE_COLLECTION", "true"
+        ).lower() in ("true", "1", "yes", "on")
+
+        # 🔴 재시작 감지 및 자동 차단 메커니즘
+        self._restart_protection_enabled = os.getenv(
+            "RESTART_PROTECTION", "true"
+        ).lower() in ("true", "1", "yes", "on")
+
+        if force_disable_collection:
+            logger.warning("🚫 FORCE_DISABLE_COLLECTION=true 설정으로 모든 수집 기능 강제 차단")
+            self.collection_enabled = False
+            self._save_collection_enabled_to_db(False)
+            self._create_initial_config_with_protection()
+            return
 
         # 수집 설정 로드
         self.config = self._load_collection_config()
@@ -64,83 +81,157 @@ class CollectionManager:
                 logger.info(
                     f"DB 설정 우선 적용: collection_enabled = {db_collection_enabled}"
                 )
-            else:  # DB에 값이 없으면 config 파일 값 사용
+            else:  # DB에 값이 없으면 config 파일 값 사용 (기본값: False)
                 self.collection_enabled = self.config.get("collection_enabled", False)
                 # DB에 현재 값 저장
                 self._save_collection_enabled_to_db(self.collection_enabled)
 
-        self._save_collection_config()
-        logger.info(
-            f"✅ CollectionManager 초기화: 수집 상태 = {self.collection_enabled}"
-        )
+        # 🔴 재시작 보호 로직 - 무한 재시작 방지
+        if self._restart_protection_enabled and self._detect_rapid_restart():
+            logger.error("🚨 빠른 재시작 감지 - 자동 수집 기능 차단으로 서버 보호")
+            self.collection_enabled = False
+            self.config["collection_enabled"] = False
+            self._save_collection_enabled_to_db(False)
+            self._record_restart_protection_event()
 
-        # 일일 자동 수집 설정
+        self._save_collection_config()
+
+        # 최종 상태 로깅
+        if self.collection_enabled:
+            logger.warning("⚠️  수집 기능 활성화됨 - 외부 인증 시도가 발생할 수 있습니다")
+        else:
+            logger.info("✅ 수집 기능 차단됨 - 외부 인증 시도 없음 (안전 모드)")
+
+        # 일일 자동 수집 설정 (기본값: False)
         self.daily_collection_enabled = self.config.get(
             "daily_collection_enabled", False
         )
         self.last_daily_collection = self.config.get("last_daily_collection", None)
 
+        # 🔴 소스별 기본 차단 설정 (수동 활성화 필요)
         self.sources = {
             "regtech": {
                 "name": "REGTECH (금융보안원)",
-                "status": "inactive",
+                "status": "blocked",  # 기본적으로 차단
                 "last_collection": None,
                 "total_ips": 0,
                 "manual_only": True,
                 "enabled": self.config.get("sources", {}).get(
                     "regtech", False
                 ),  # 기본값 False (비활성화)
+                "auth_attempts": 0,  # 인증 시도 횟수 추적
+                "last_auth_attempt": None,
+                "blocked_until": None,  # 차단 해제 시간
             },
             "secudium": {
                 "name": "SECUDIUM (에스케이인포섹)",
-                "status": "disabled",
+                "status": "blocked",  # 기본적으로 차단
                 "last_collection": None,
                 "total_ips": 0,
                 "manual_only": True,
                 "enabled": False,  # Secudium 수집기 비활성화
+                "auth_attempts": 0,  # 인증 시도 횟수 추적
+                "last_auth_attempt": None,
+                "blocked_until": None,  # 차단 해제 시간
             },
         }
 
     def _load_collection_config(self) -> Dict[str, Any]:
-        """수집 설정 로드"""
+        """
+        수집 설정 로드 - 방어적 기본값 적용
+
+        🔴 보안 기본값:
+        - collection_enabled: False (기본 차단)
+        - 모든 소스 기본 False (비활성화)
+        - 재시작 보호 기본 활성화
+        """
         try:
             if self.config_path.exists():
                 with open(self.config_path, "r", encoding="utf-8") as f:
                     config = json.load(f)
-                    # 최초 실행 확인
-                    if not config.get("initial_collection_done", False):
-                        logger.info("🔥 최초 실행 감지 - 수집은 기본 OFF")
-                        config["collection_enabled"] = False  # 기본 OFF
+
+                    # 🔴 기존 설정도 강제로 보안 모드 적용
+                    logger.info("🛡️  기존 설정 파일 발견 - 보안 검사 적용")
+
+                    # 최초 실행이거나 보안 설정이 없는 경우 강제 차단
+                    if not config.get(
+                        "initial_collection_done", False
+                    ) or not config.get("security_initialized", False):
+                        logger.warning("🚫 보안 초기화 - 모든 수집 기능 기본 차단")
+                        config["collection_enabled"] = False  # 강제 OFF
                         config["sources"] = {
                             "regtech": False,
                             "secudium": False,
                         }  # 모두 OFF
                         config["initial_collection_needed"] = False
+                        config["security_initialized"] = True
+                        config["force_disabled"] = True
+                        config["security_mode"] = "DEFENSIVE"
+
+                    # 🔴 재시작 보호 설정 확인/초기화
+                    if "restart_protection" not in config:
+                        config["restart_protection"] = {
+                            "enabled": True,
+                            "last_restart": datetime.now().isoformat(),
+                            "restart_count": 0,
+                            "protection_active": False,
+                        }
+
                     return config
             else:
-                # 설정 파일이 없으면 최초 실행
-                logger.info("🔥 최초 실행 - 수집은 수동으로 활성화하세요")
+                # 🔴 설정 파일이 없으면 완전 방어적 초기 설정
+                logger.warning("🛡️  최초 실행 - 완전 방어적 보안 모드로 초기화")
                 return {
-                    "collection_enabled": False,  # 기본값 OFF
+                    "collection_enabled": False,  # 기본값 완전 OFF
                     "sources": {"regtech": False, "secudium": False},  # 모두 OFF
-                    "last_enabled_at": datetime.now().isoformat(),
-                    "last_disabled_at": None,
+                    "last_enabled_at": None,  # 활성화 기록 없음
+                    "last_disabled_at": datetime.now().isoformat(),
                     "daily_collection_enabled": False,
                     "last_daily_collection": None,
-                    "initial_collection_done": False,  # 최초 수집 완료 플래그
-                    "initial_collection_needed": True,  # 최초 수집 필요
+                    "initial_collection_done": True,  # 초기 수집 완료로 표시 (자동 실행 방지)
+                    "initial_collection_needed": False,  # 초기 수집 불필요
+                    "security_initialized": True,  # 보안 초기화 완료
+                    "force_disabled": True,  # 강제 차단 모드
+                    "security_mode": "DEFENSIVE",  # 방어적 모드
+                    "restart_protection": {
+                        "enabled": True,
+                        "last_restart": datetime.now().isoformat(),
+                        "restart_count": 0,
+                        "protection_active": False,
+                    },
+                    "created_at": datetime.now().isoformat(),
+                    "security_notes": [
+                        "모든 외부 인증 시도 기본 차단",
+                        "수동 활성화만 허용",
+                        "재시작 보호 기능 활성화",
+                        "REGTECH/SECUDIUM 자동 수집 차단",
+                    ],
                 }
         except Exception as e:
             logger.error(f"설정 로드 실패: {e}")
+            # 🔴 오류 시에도 완전 방어적 설정 반환
+            logger.warning("🚨 설정 로드 오류 - 긴급 방어 모드 활성화")
             return {
-                "collection_enabled": False,  # 오류 시에도 OFF
+                "collection_enabled": False,  # 오류 시에도 완전 OFF
                 "sources": {"regtech": False, "secudium": False},  # 모두 OFF
-                "last_enabled_at": datetime.now().isoformat(),
-                "last_disabled_at": None,
+                "last_enabled_at": None,
+                "last_disabled_at": datetime.now().isoformat(),
                 "daily_collection_enabled": False,
                 "last_daily_collection": None,
-                "initial_collection_done": False,
-                "initial_collection_needed": True,
+                "initial_collection_done": True,
+                "initial_collection_needed": False,
+                "security_initialized": True,
+                "force_disabled": True,
+                "security_mode": "EMERGENCY_DEFENSIVE",  # 긴급 방어 모드
+                "error_protection": True,
+                "restart_protection": {
+                    "enabled": True,
+                    "last_restart": datetime.now().isoformat(),
+                    "restart_count": 0,
+                    "protection_active": True,  # 오류 시 보호 활성화
+                },
+                "error_details": str(e),
+                "recovery_mode": True,
             }
 
     def _load_collection_enabled_from_db(self) -> Optional[bool]:
@@ -198,11 +289,253 @@ class CollectionManager:
         except Exception as e:
             logger.error(f"설정 저장 실패: {e}")
 
+    def _create_initial_config_with_protection(self):
+        """강제 차단 모드용 초기 설정 생성"""
+        config = {
+            "collection_enabled": False,
+            "sources": {"regtech": False, "secudium": False},
+            "last_enabled_at": None,
+            "last_disabled_at": datetime.now().isoformat(),
+            "daily_collection_enabled": False,
+            "last_daily_collection": None,
+            "initial_collection_done": True,  # 초기 수집 완료로 표시
+            "initial_collection_needed": False,
+            "force_disabled": True,  # 강제 차단 플래그
+            "protection_mode": "FORCE_DISABLE",
+            "restart_protection": {
+                "enabled": True,
+                "last_restart": datetime.now().isoformat(),
+                "restart_count": 0,
+                "protection_active": False,
+            },
+        }
+
+        try:
+            with open(self.config_path, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            self.config = config
+            logger.info("🛡️  강제 차단 모드 설정 생성 완료")
+        except Exception as e:
+            logger.error(f"강제 차단 설정 생성 실패: {e}")
+
+    def _detect_rapid_restart(self) -> bool:
+        """빠른 재시작 감지 (무한 재시작 방지)"""
+        try:
+            restart_data = self.config.get("restart_protection", {})
+            last_restart_str = restart_data.get("last_restart")
+            restart_count = restart_data.get("restart_count", 0)
+
+            if not last_restart_str:
+                # 첫 번째 시작
+                self._update_restart_data(1)
+                return False
+
+            last_restart = datetime.fromisoformat(
+                last_restart_str.replace("Z", "+00:00")
+            )
+            current_time = datetime.now()
+            time_diff = (current_time - last_restart).total_seconds()
+
+            # 1분 이내에 재시작된 경우
+            if time_diff < 60:
+                new_count = restart_count + 1
+                self._update_restart_data(new_count)
+
+                # 5회 이상 빠른 재시작 시 차단
+                if new_count >= 5:
+                    logger.error(f"🚨 {new_count}회 연속 빠른 재시작 감지 (지난 {time_diff:.1f}초)")
+                    return True
+                else:
+                    logger.warning(
+                        f"⚠️  빠른 재시작 감지 ({new_count}/5회, 지난 {time_diff:.1f}초)"
+                    )
+                    return False
+            else:
+                # 1분 이상 경과 시 카운터 리셋
+                self._update_restart_data(1)
+                return False
+
+        except Exception as e:
+            logger.error(f"재시작 감지 오류: {e}")
+            return False
+
+    def _update_restart_data(self, count: int):
+        """재시작 데이터 업데이트"""
+        if "restart_protection" not in self.config:
+            self.config["restart_protection"] = {}
+
+        self.config["restart_protection"].update(
+            {
+                "last_restart": datetime.now().isoformat(),
+                "restart_count": count,
+                "enabled": self._restart_protection_enabled,
+            }
+        )
+
+    def _record_restart_protection_event(self):
+        """재시작 보호 이벤트 기록"""
+        protection_data = {
+            "protection_active": True,
+            "protected_at": datetime.now().isoformat(),
+            "reason": "rapid_restart_detection",
+            "auto_disabled": True,
+        }
+
+        if "restart_protection" not in self.config:
+            self.config["restart_protection"] = {}
+
+        self.config["restart_protection"].update(protection_data)
+        logger.info("🛡️  재시작 보호 모드 활성화 - 수집 기능 자동 차단")
+
+    def _check_auth_attempt_limit(self, source: str) -> bool:
+        """인증 시도 횟수 제한 확인"""
+        if source not in self.sources:
+            return False
+
+        source_info = self.sources[source]
+        auth_attempts = source_info.get("auth_attempts", 0)
+        last_attempt = source_info.get("last_auth_attempt")
+        blocked_until = source_info.get("blocked_until")
+
+        # 차단 시간이 설정되어 있고 아직 해제되지 않은 경우
+        if blocked_until:
+            try:
+                blocked_until_dt = datetime.fromisoformat(blocked_until)
+                if datetime.now() < blocked_until_dt:
+                    remaining = (blocked_until_dt - datetime.now()).total_seconds()
+                    logger.warning(f"🚫 {source} 소스 차단 중 (해제까지 {remaining:.0f}초)")
+                    return False
+                else:
+                    # 차단 해제
+                    source_info["blocked_until"] = None
+                    source_info["auth_attempts"] = 0
+                    logger.info(f"✅ {source} 소스 차단 해제")
+            except Exception as e:
+                logger.error(f"차단 시간 확인 오류: {e}")
+
+        # 인증 시도 횟수 확인 (24시간 내 10회 제한)
+        if last_attempt:
+            try:
+                last_attempt_dt = datetime.fromisoformat(last_attempt)
+                hours_passed = (datetime.now() - last_attempt_dt).total_seconds() / 3600
+
+                if hours_passed < 24 and auth_attempts >= 10:
+                    # 24시간 차단
+                    blocked_until = (datetime.now() + timedelta(hours=24)).isoformat()
+                    source_info["blocked_until"] = blocked_until
+                    logger.error(f"🚨 {source} 소스 24시간 차단 - 인증 시도 {auth_attempts}회 초과")
+                    return False
+                elif hours_passed >= 24:
+                    # 24시간 경과 시 카운터 리셋
+                    source_info["auth_attempts"] = 0
+            except Exception as e:
+                logger.error(f"인증 시도 시간 확인 오류: {e}")
+
+        return True
+
+    def record_auth_attempt(self, source: str, success: bool = False):
+        """인증 시도 기록"""
+        if source not in self.sources:
+            return
+
+        source_info = self.sources[source]
+        current_time = datetime.now().isoformat()
+
+        if not success:
+            source_info["auth_attempts"] = source_info.get("auth_attempts", 0) + 1
+            logger.warning(f"⚠️  {source} 인증 실패 기록 ({source_info['auth_attempts']}회)")
+        else:
+            source_info["auth_attempts"] = 0  # 성공 시 카운터 리셋
+            logger.info(f"✅ {source} 인증 성공 - 카운터 리셋")
+
+        source_info["last_auth_attempt"] = current_time
+        self._save_collection_config()
+
+    def is_collection_safe_to_enable(self) -> tuple[bool, str]:
+        """수집 활성화가 안전한지 확인"""
+        # 강제 차단 모드 확인
+        if os.getenv("FORCE_DISABLE_COLLECTION", "true").lower() in (
+            "true",
+            "1",
+            "yes",
+            "on",
+        ):
+            return False, "환경변수 FORCE_DISABLE_COLLECTION=true로 인한 강제 차단"
+
+        # 재시작 보호 활성화 확인
+        protection_data = self.config.get("restart_protection", {})
+        if protection_data.get("protection_active", False):
+            return False, "빠른 재시작 감지로 인한 보호 모드 활성화"
+
+        # 소스별 차단 상태 확인
+        blocked_sources = []
+        for source_name, source_info in self.sources.items():
+            if source_info.get("blocked_until"):
+                try:
+                    blocked_until_dt = datetime.fromisoformat(
+                        source_info["blocked_until"]
+                    )
+                    if datetime.now() < blocked_until_dt:
+                        remaining = (blocked_until_dt - datetime.now()).total_seconds()
+                        blocked_sources.append(f"{source_name} ({remaining:.0f}초 남음)")
+                except Exception:
+                    pass
+
+        if blocked_sources:
+            return False, f"차단된 소스: {', '.join(blocked_sources)}"
+
+        return True, "수집 활성화 가능"
+
     def enable_collection(
         self, sources: Optional[Dict[str, bool]] = None, clear_data: bool = False
     ) -> Dict[str, Any]:
-        """수집 활성화 - 선택적으로 기존 데이터 클리어"""
+        """
+        수집 활성화 - 보안 검사 후 선택적으로 기존 데이터 클리어
+
+        🔴 방어적 보안 검사:
+        - 강제 차단 모드 확인
+        - 재시작 보호 모드 확인
+        - 인증 시도 제한 확인
+        - 수동 활성화만 허용
+        """
         try:
+            # 🔴 보안 검사 1: 수집 활성화 안전성 확인
+            is_safe, safety_reason = self.is_collection_safe_to_enable()
+            if not is_safe:
+                logger.warning(f"🚫 수집 활성화 거부: {safety_reason}")
+                return {
+                    "success": False,
+                    "message": f"수집 활성화 불가: {safety_reason}",
+                    "security_blocked": True,
+                    "reason": safety_reason,
+                }
+
+            # 🔴 보안 검사 2: 강제 차단 환경변수 재확인
+            if os.getenv("FORCE_DISABLE_COLLECTION", "true").lower() in (
+                "true",
+                "1",
+                "yes",
+                "on",
+            ):
+                logger.error("🚨 FORCE_DISABLE_COLLECTION=true로 인한 수집 활성화 차단")
+                return {
+                    "success": False,
+                    "message": "환경변수 FORCE_DISABLE_COLLECTION=true로 인해 수집을 활성화할 수 없습니다",
+                    "security_blocked": True,
+                    "force_disabled": True,
+                }
+
+            # 🔴 보안 검사 3: 소스별 인증 시도 제한 확인
+            for source_name in ["regtech", "secudium"]:
+                if not self._check_auth_attempt_limit(source_name):
+                    logger.warning(f"🚫 {source_name} 소스 인증 시도 제한 초과")
+                    return {
+                        "success": False,
+                        "message": f"{source_name} 소스가 인증 시도 제한으로 차단된 상태입니다",
+                        "security_blocked": True,
+                        "blocked_source": source_name,
+                    }
+
             # 이미 활성화되어 있는지 확인
             was_already_enabled = self.config.get("collection_enabled", False)
             cleared_data = False
@@ -223,31 +556,49 @@ class CollectionManager:
             self.collection_enabled = True  # 인스턴스 속성도 업데이트
             self.config["last_enabled_at"] = datetime.now().isoformat()
 
+            # 🔴 보안 이벤트 로깅
+            logger.warning("⚠️  수집 기능 수동 활성화됨 - 외부 인증 시도 가능")
+            logger.info(f"📋 활성화 요청자: 수동 관리자 요청")
+
             # DB에 설정 저장
             self._save_collection_enabled_to_db(True)
 
             if sources:
                 self.config["sources"].update(sources)
             else:
-                # 기본적으로 모든 소스 활성화
+                # 기본적으로 모든 소스 활성화 (보안 경고와 함께)
                 for source in self.config["sources"]:
                     self.config["sources"][source] = True
+                    logger.warning(f"⚠️  {source} 소스 활성화 - 외부 서버 인증 시도 발생")
 
             # 소스 상태 업데이트
             for source_key in self.sources:
-                self.sources[source_key]["enabled"] = self.config["sources"].get(
-                    source_key, False
-                )
+                enabled = self.config["sources"].get(source_key, False)
+                self.sources[source_key]["enabled"] = enabled
+
+                if enabled:
+                    self.sources[source_key]["status"] = "enabled"
+                    logger.warning(f"🔓 {source_key} 소스 잠금 해제 - 인증 준비")
+                else:
+                    self.sources[source_key]["status"] = "disabled"
+
+            # 재시작 보호 해제 (수동 활성화 시)
+            if "restart_protection" in self.config:
+                self.config["restart_protection"]["protection_active"] = False
+                logger.info("🛡️  수동 활성화로 인한 재시작 보호 해제")
 
             self._save_collection_config()
 
-            logger.info("수집이 활성화되었습니다. 모든 기존 데이터가 삭제되었습니다.")
-
-            message = "수집이 활성화되었습니다."
+            message = "🔓 수집이 활성화되었습니다."
             if cleared_data:
                 message += " 기존 데이터가 클리어되었습니다."
             elif was_already_enabled:
-                message = "수집은 이미 활성화 상태입니다."
+                message = "ℹ️  수집은 이미 활성화 상태입니다."
+
+            # 🔴 최종 보안 경고
+            active_sources = [k for k, v in self.config["sources"].items() if v]
+            if active_sources:
+                logger.warning(f"🚨 활성화된 소스: {', '.join(active_sources)} - 외부 인증 시도 시작됨")
 
             return {
                 "success": True,
@@ -259,6 +610,12 @@ class CollectionManager:
                 "cleared_items": (
                     clear_result.get("cleared_items", []) if cleared_data else []
                 ),
+                "security_warnings": [
+                    "외부 서버 인증 시도가 활성화되었습니다",
+                    "REGTECH 및 SECUDIUM 서버에 로그인 시도가 발생할 수 있습니다",
+                    "수집 중단을 원하면 즉시 disable_collection을 호출하세요",
+                ],
+                "active_sources": active_sources,
             }
 
         except Exception as e:
@@ -314,9 +671,7 @@ class CollectionManager:
                     try:
                         cursor.execute(f"DELETE FROM {table}")
                         row_count = cursor.rowcount
-                        cleared_items.append(
-                            f"테이블 {table}: {row_count}개 레코드 삭제"
-                        )
+                        cleared_items.append(f"테이블 {table}: {row_count}개 레코드 삭제")
                     except sqlite3.Error as e:
                         logger.warning(f"테이블 {table} 삭제 중 오류: {e}")
 
@@ -550,7 +905,13 @@ class CollectionManager:
         self, start_date: str = None, end_date: str = None
     ) -> Dict[str, Any]:
         """
-        REGTECH 수집 트리거
+        REGTECH 수집 트리거 - 보안 검사 후 실행
+
+        🔴 방어적 보안 검사:
+        - 수집 기능 활성화 상태 확인
+        - 인증 시도 제한 확인
+        - 강제 차단 모드 확인
+        - 재시작 보호 모드 확인
 
         Args:
             start_date: 시작일 (YYYYMMDD), None이면 최근 90일
@@ -560,9 +921,66 @@ class CollectionManager:
             수집 결과
         """
         try:
-            logger.info(
-                f"REGTECH 수집 시작 (start_date={start_date}, end_date={end_date})"
+            # 🔴 보안 검사 1: 수집 기능 활성화 확인
+            if not self.is_collection_enabled():
+                logger.warning("🚫 REGTECH 수집 차단: 수집 기능이 비활성화됨")
+                return {
+                    "success": False,
+                    "message": "수집 기능이 비활성화되어 있습니다. 먼저 수집을 활성화하세요.",
+                    "source": "regtech",
+                    "timestamp": datetime.now().isoformat(),
+                    "security_blocked": True,
+                    "reason": "collection_disabled",
+                }
+
+            # 🔴 보안 검사 2: 강제 차단 환경변수 확인
+            if os.getenv("FORCE_DISABLE_COLLECTION", "true").lower() in (
+                "true",
+                "1",
+                "yes",
+                "on",
+            ):
+                logger.error("🚨 REGTECH 수집 차단: FORCE_DISABLE_COLLECTION=true")
+                return {
+                    "success": False,
+                    "message": "환경변수 FORCE_DISABLE_COLLECTION=true로 인해 수집이 차단되었습니다",
+                    "source": "regtech",
+                    "timestamp": datetime.now().isoformat(),
+                    "security_blocked": True,
+                    "force_disabled": True,
+                }
+
+            # 🔴 보안 검사 3: 인증 시도 제한 확인
+            if not self._check_auth_attempt_limit("regtech"):
+                logger.warning("🚫 REGTECH 수집 차단: 인증 시도 제한 초과")
+                return {
+                    "success": False,
+                    "message": "REGTECH 소스가 인증 시도 제한으로 차단되었습니다",
+                    "source": "regtech",
+                    "timestamp": datetime.now().isoformat(),
+                    "security_blocked": True,
+                    "auth_limit_exceeded": True,
+                }
+
+            # 🔴 보안 검사 4: 소스 활성화 상태 확인
+            if not self.sources["regtech"]["enabled"]:
+                logger.warning("🚫 REGTECH 수집 차단: 소스가 비활성화됨")
+                return {
+                    "success": False,
+                    "message": "REGTECH 소스가 비활성화되어 있습니다",
+                    "source": "regtech",
+                    "timestamp": datetime.now().isoformat(),
+                    "security_blocked": True,
+                    "source_disabled": True,
+                }
+
+            logger.warning(
+                f"⚠️  REGTECH 외부 인증 시작 (start_date={start_date}, end_date={end_date})"
             )
+            logger.info("🔓 금융보안원 서버 접속 시도 중...")
+
+            # 인증 시도 기록 (시작)
+            self.record_auth_attempt("regtech", success=False)
 
             # Enhanced REGTECH 수집기 import 및 실행
             try:
@@ -582,6 +1000,9 @@ class CollectionManager:
                     )
 
                     if ips:
+                        # 인증 성공 기록
+                        self.record_auth_attempt("regtech", success=True)
+
                         # 데이터베이스에 저장
                         saved_count = self._save_ips_to_database(ips, "REGTECH")
 
@@ -595,6 +1016,8 @@ class CollectionManager:
                         ip_count = self._get_source_ip_count("REGTECH")
                         self.sources["regtech"]["total_ips"] = ip_count
 
+                        logger.info(f"✅ REGTECH 수집 성공: {saved_count:,}개 IP 수집")
+
                         return {
                             "success": True,
                             "message": f"REGTECH 수집 완료: {saved_count:,}개 IP 저장 (총 {ip_count:,}개)",
@@ -605,14 +1028,20 @@ class CollectionManager:
                                 "saved": saved_count,
                                 "total_in_db": ip_count,
                                 "collector": "enhanced",
+                                "auth_success": True,
                             },
                         }
                     else:
+                        # 인증 실패 기록
+                        self.record_auth_attempt("regtech", success=False)
+                        logger.error("❌ REGTECH 수집 실패: 데이터 없음")
+
                         return {
                             "success": False,
-                            "message": "REGTECH 수집 실패: 데이터를 가져오지 못했습니다",
+                            "message": "REGTECH 수집 실패: 데이터를 가져오지 못했습니다 (인증 오류 가능)",
                             "source": "regtech",
                             "timestamp": datetime.now().isoformat(),
+                            "auth_failed": True,
                         }
 
                 except ImportError:
@@ -638,6 +1067,9 @@ class CollectionManager:
                         )
 
                     if result.get("success", False):
+                        # 인증 성공 기록
+                        self.record_auth_attempt("regtech", success=True)
+
                         self.sources["regtech"][
                             "last_collection"
                         ] = datetime.now().isoformat()
@@ -645,38 +1077,60 @@ class CollectionManager:
                         ip_count = self._get_source_ip_count("REGTECH")
                         self.sources["regtech"]["total_ips"] = ip_count
 
+                        logger.info(f"✅ REGTECH HAR 수집 성공: {ip_count:,}개 IP")
+
                         return {
                             "success": True,
                             "message": f"REGTECH 수집 완료: {ip_count:,}개 IP",
                             "source": "regtech",
                             "timestamp": datetime.now().isoformat(),
-                            "details": result,
+                            "details": {
+                                **result,
+                                "collector": "har_based",
+                                "auth_success": True,
+                            },
                         }
                     else:
+                        # 인증 실패 기록
+                        self.record_auth_attempt("regtech", success=False)
+                        logger.error(
+                            f"❌ REGTECH HAR 수집 실패: {result.get('error', '알 수 없는 오류')}"
+                        )
+
                         return {
                             "success": False,
-                            "message": f'REGTECH 수집 실패: {result.get("error", "알 수 없는 오류")}',
+                            "message": f'REGTECH 수집 실패: {result.get("error", "알 수 없는 오류")} (인증 문제 가능)',
                             "source": "regtech",
                             "timestamp": datetime.now().isoformat(),
+                            "auth_failed": True,
                         }
 
             except ImportError as e:
                 logger.error(f"REGTECH 수집기 import 실패: {e}")
+                # 인증 시도 실패 기록
+                self.record_auth_attempt("regtech", success=False)
+
                 return {
                     "success": False,
                     "message": f"REGTECH 수집기 모듈을 찾을 수 없습니다: {e}",
                     "source": "regtech",
                     "timestamp": datetime.now().isoformat(),
+                    "module_error": True,
                 }
 
         except Exception as e:
             logger.error(f"REGTECH 수집 오류: {e}")
             logger.error(traceback.format_exc())
+
+            # 예외 발생 시에도 인증 실패 기록
+            self.record_auth_attempt("regtech", success=False)
+
             return {
                 "success": False,
                 "message": f"REGTECH 수집 중 오류 발생: {str(e)}",
                 "source": "regtech",
                 "timestamp": datetime.now().isoformat(),
+                "exception_error": True,
             }
 
     def collect_secudium_data(self) -> Dict[str, Any]:
@@ -690,18 +1144,33 @@ class CollectionManager:
 
     def trigger_secudium_collection(self) -> Dict[str, Any]:
         """
-        SECUDIUM 수집 트리거 - 비활성화됨
+        SECUDIUM 수집 트리거 - 보안 검사 후 차단
+
+        🔴 방어적 보안 검사:
+        - 기본적으로 모든 SECUDIUM 수집 차단
+        - 수집 기능 활성화 상태 확인
+        - 인증 시도 제한 확인
+        - 강제 차단 모드 확인
 
         Returns:
-            수집 결과
+            수집 결과 (기본적으로 차단됨)
         """
-        logger.info("SECUDIUM 수집기가 비활성화되었습니다")
+        # 🔴 보안 검사 1: SECUDIUM 기본 차단 (계정 문제로 인한)
+        logger.warning("🚫 SECUDIUM 수집 기본 차단: 계정 문제 및 보안상 차단")
         return {
-            "status": "disabled",
-            "message": "SECUDIUM 수집기가 비활성화되었습니다",
+            "success": False,
+            "status": "blocked",
+            "message": "SECUDIUM 수집기가 보안상 차단되었습니다 (계정 문제 및 서버 보호)",
             "source": "secudium",
             "collected_count": 0,
             "timestamp": datetime.now().isoformat(),
+            "security_blocked": True,
+            "reason": "default_security_block",
+            "details": {
+                "account_issues": True,
+                "server_protection": True,
+                "manual_enable_required": False,  # 수동 활성화도 차단
+            },
         }
 
     def get_collection_history(

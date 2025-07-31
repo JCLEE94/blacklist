@@ -90,6 +90,19 @@ document/
 .env.regtech
 .gitlab-runner-config.toml
 
+# Chart archives and temporary files
+charts/**/*.tgz
+!charts/blacklist/blacklist-*.tgz
+*.tgz.backup
+
+# AI helper files
+.ai-*
+ai-*
+
+# Integration test reports
+*_INTEGRATION_TEST_*_REPORT.md
+*_integration_report_*.md
+
 # Legacy script directories (now organized)
 scripts/manual/
 scripts/deployment/

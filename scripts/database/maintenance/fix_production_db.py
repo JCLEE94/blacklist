@@ -9,7 +9,7 @@ from datetime import datetime
 
 # Docker 환경
 db_path = (
-    '/app/instance/blacklist.db' if os.path.exists('/app') else 'instance/blacklist.db'
+    "/app/instance/blacklist.db" if os.path.exists("/app") else "instance/blacklist.db"
 )
 
 print(f"📍 DB 경로: {db_path}")
@@ -24,7 +24,7 @@ try:
     print(f"✅ 현재 컬럼: {columns}")
 
     # 2. detection_date 컬럼이 없으면 추가
-    if 'detection_date' not in columns:
+    if "detection_date" not in columns:
         print("🔧 detection_date 컬럼 추가 중...")
         cursor.execute(
             """

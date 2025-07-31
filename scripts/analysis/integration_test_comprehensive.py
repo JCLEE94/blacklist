@@ -15,11 +15,11 @@ BASE_URL = "http://192.168.50.215:2541"
 LOCAL_URL = "http://localhost:8541"
 
 # 색상 코드
-GREEN = '\033[92m'
-RED = '\033[91m'
-YELLOW = '\033[93m'
-BLUE = '\033[94m'
-RESET = '\033[0m'
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+BLUE = "\033[94m"
+RESET = "\033[0m"
 
 
 def print_test_header(test_name: str):
@@ -45,23 +45,19 @@ def test_health_check(base_url: str) -> bool:
         response = requests.get(f"{base_url}/health", timeout=5)
         data = response.json()
 
-        print_result(
-            response.status_code == 200, f"HTTP 상태 코드: {response.status_code}"
-        )
-        print_result(
-            data.get('status') == 'healthy', f"서비스 상태: {data.get('status')}"
-        )
-        print_result('details' in data, "상세 정보 포함")
+        print_result(response.status_code == 200, f"HTTP 상태 코드: {response.status_code}")
+        print_result(data.get("status") == "healthy", f"서비스 상태: {data.get('status')}")
+        print_result("details" in data, "상세 정보 포함")
 
-        if 'details' in data:
-            details = data['details']
+        if "details" in data:
+            details = data["details"]
             print(f"  - 총 IP 수: {details.get('total_ips', 0)}")
             print(f"  - REGTECH: {details.get('regtech_count', 0)}")
             print(f"  - SECUDIUM: {details.get('secudium_count', 0)}")
             print(f"  - 캐시 상태: {details.get('cache_available', False)}")
             print(f"  - DB 연결: {details.get('database_connected', False)}")
 
-        return response.status_code == 200 and data.get('status') == 'healthy'
+        return response.status_code == 200 and data.get("status") == "healthy"
 
     except Exception as e:
         print_result(False, f"오류 발생: {e}")
@@ -76,17 +72,15 @@ def test_collection_status(base_url: str) -> bool:
         response = requests.get(f"{base_url}/api/collection/status", timeout=5)
         data = response.json()
 
-        print_result(
-            response.status_code == 200, f"HTTP 상태 코드: {response.status_code}"
-        )
-        print_result('enabled' in data, "수집 활성화 상태 확인")
-        print_result('sources' in data, "소스 정보 포함")
+        print_result(response.status_code == 200, f"HTTP 상태 코드: {response.status_code}")
+        print_result("enabled" in data, "수집 활성화 상태 확인")
+        print_result("sources" in data, "소스 정보 포함")
 
         print(f"  - 수집 활성화: {data.get('enabled', False)}")
         print(f"  - 마지막 수집: {data.get('last_collection', 'N/A')}")
 
-        if 'sources' in data:
-            for source, info in data['sources'].items():
+        if "sources" in data:
+            for source, info in data["sources"].items():
                 print(
                     f"  - {source}: {info.get('status')} (IP: {info.get('total_ips', 0)})"
                 )
@@ -146,15 +140,13 @@ def test_collection_trigger(base_url: str) -> bool:
         status_response = requests.get(f"{base_url}/api/collection/status", timeout=5)
         status_data = status_response.json()
 
-        if not status_data.get('enabled', False):
-            print(
-                f"{YELLOW}⚠️  수집이 비활성화되어 있습니다. 활성화를 시도합니다.{RESET}"
-            )
+        if not status_data.get("enabled", False):
+            print(f"{YELLOW}⚠️  수집이 비활성화되어 있습니다. 활성화를 시도합니다.{RESET}")
 
             # 수집 활성화
             enable_response = requests.post(
                 f"{base_url}/api/collection/enable",
-                headers={'Content-Type': 'application/json'},
+                headers={"Content-Type": "application/json"},
                 json={},
                 timeout=10,
             )
@@ -170,9 +162,7 @@ def test_collection_trigger(base_url: str) -> bool:
         return False
 
     # 수집 트리거 테스트는 실제 외부 서버에 부하를 줄 수 있으므로 주의
-    print(
-        f"{YELLOW}⚠️  실제 수집 트리거는 외부 서버에 부하를 줄 수 있으므로 생략합니다.{RESET}"
-    )
+    print(f"{YELLOW}⚠️  실제 수집 트리거는 외부 서버에 부하를 줄 수 있으므로 생략합니다.{RESET}")
     return True
 
 
@@ -247,7 +237,7 @@ def test_collection_logs_persistence(base_url: str) -> bool:
         response1 = requests.get(f"{base_url}/api/collection/status", timeout=5)
         data1 = response1.json()
 
-        logs1 = data1.get('logs', [])
+        logs1 = data1.get("logs", [])
         print(f"현재 로그 수: {len(logs1)}")
 
         # 최신 로그 몇 개 표시
@@ -265,7 +255,7 @@ def test_collection_logs_persistence(base_url: str) -> bool:
         response2 = requests.get(f"{base_url}/api/collection/status", timeout=5)
         data2 = response2.json()
 
-        logs2 = data2.get('logs', [])
+        logs2 = data2.get("logs", [])
 
         # 로그가 유지되는지 확인
         logs_maintained = len(logs2) >= len(logs1)

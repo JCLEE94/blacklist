@@ -7,11 +7,11 @@ import os
 import sys
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 # Configure logging first
 logging.basicConfig(
-    level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -31,14 +31,14 @@ except Exception as e:
 
     application = Flask(__name__)
 
-    @application.route('/health')
+    @application.route("/health")
     def health():
         return (
             jsonify(
                 {
-                    'status': 'error',
-                    'message': f'Failed to load app_compact: {str(e)}',
-                    'mode': 'emergency_fallback',
+                    "status": "error",
+                    "message": f"Failed to load app_compact: {str(e)}",
+                    "mode": "emergency_fallback",
                 }
             ),
             503,
@@ -46,7 +46,7 @@ except Exception as e:
 
 
 # Main execution
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 2541))
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 2541))
     logger.info(f"Starting Blacklist App on port {port}")
-    application.run(host='0.0.0.0', port=port, debug=False)
+    application.run(host="0.0.0.0", port=port, debug=False)

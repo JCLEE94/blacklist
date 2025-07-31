@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple
 
 def load_results(filename: str) -> Dict:
     """Load k6 test results from JSON file"""
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         return json.load(f)
 
 
@@ -23,30 +23,30 @@ def analyze_metrics(results: Dict) -> Tuple[bool, List[str]]:
     failures = []
 
     # Check HTTP request duration
-    if 'http_req_duration' in results['metrics']:
-        duration = results['metrics']['http_req_duration']
+    if "http_req_duration" in results["metrics"]:
+        duration = results["metrics"]["http_req_duration"]
 
         # Check p95 < 500ms
-        if duration['p(95)'] > 500:
+        if duration["p(95)"] > 500:
             failures.append(
                 f"p95 response time {duration['p(95)']}ms exceeds 500ms threshold"
             )
 
         # Check p99 < 1000ms
-        if duration['p(99)'] > 1000:
+        if duration["p(99)"] > 1000:
             failures.append(
                 f"p99 response time {duration['p(99)']}ms exceeds 1000ms threshold"
             )
 
     # Check error rate
-    if 'errors' in results['metrics']:
-        error_rate = results['metrics']['errors']['rate']
+    if "errors" in results["metrics"]:
+        error_rate = results["metrics"]["errors"]["rate"]
         if error_rate > 0.05:
             failures.append(f"Error rate {error_rate*100:.2f}% exceeds 5% threshold")
 
     # Check HTTP request failure rate
-    if 'http_req_failed' in results['metrics']:
-        fail_rate = results['metrics']['http_req_failed']['rate']
+    if "http_req_failed" in results["metrics"]:
+        fail_rate = results["metrics"]["http_req_failed"]["rate"]
         if fail_rate > 0.05:
             failures.append(
                 f"HTTP failure rate {fail_rate*100:.2f}% exceeds 5% threshold"
@@ -69,11 +69,11 @@ def generate_report(results: Dict) -> str:
     # Key metrics
     report.append("Key Metrics:")
 
-    metrics = results.get('metrics', {})
+    metrics = results.get("metrics", {})
 
     # Response times
-    if 'http_req_duration' in metrics:
-        duration = metrics['http_req_duration']
+    if "http_req_duration" in metrics:
+        duration = metrics["http_req_duration"]
         report.append(f"  Response Times:")
         report.append(f"    Median: {duration.get('med', 0):.2f}ms")
         report.append(f"    p95: {duration.get('p(95)', 0):.2f}ms")
@@ -81,17 +81,17 @@ def generate_report(results: Dict) -> str:
         report.append(f"    Max: {duration.get('max', 0):.2f}ms")
 
     # Throughput
-    if 'http_reqs' in metrics:
-        reqs = metrics['http_reqs']
+    if "http_reqs" in metrics:
+        reqs = metrics["http_reqs"]
         report.append(f"  Throughput: {reqs.get('rate', 0):.2f} req/s")
 
     # Error rates
-    if 'errors' in metrics:
-        error_rate = metrics['errors']['rate'] * 100
+    if "errors" in metrics:
+        error_rate = metrics["errors"]["rate"] * 100
         report.append(f"  Error Rate: {error_rate:.2f}%")
 
-    if 'http_req_failed' in metrics:
-        fail_rate = metrics['http_req_failed']['rate'] * 100
+    if "http_req_failed" in metrics:
+        fail_rate = metrics["http_req_failed"]["rate"] * 100
         report.append(f"  HTTP Failure Rate: {fail_rate:.2f}%")
 
     report.append("")
@@ -120,7 +120,7 @@ def main():
         print(report)
 
         # Generate HTML report
-        with open('performance-report.html', 'w') as f:
+        with open("performance-report.html", "w") as f:
             f.write(
                 f"""
 <!DOCTYPE html>

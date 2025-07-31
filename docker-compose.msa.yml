@@ -52,6 +52,12 @@ services:
       - SECUDIUM_USERNAME=${SECUDIUM_USERNAME}
       - SECUDIUM_PASSWORD=${SECUDIUM_PASSWORD}
       - REDIS_URL=redis://redis:6379/0
+      # 🔴 수집 보안 설정 (외부 인증 차단)
+      - FORCE_DISABLE_COLLECTION=true
+      - COLLECTION_ENABLED=false
+      - RESTART_PROTECTION=true
+      - MAX_AUTH_ATTEMPTS=10
+      - BLOCK_DURATION_HOURS=24
     ports:
       - "8000:8000"
     depends_on:

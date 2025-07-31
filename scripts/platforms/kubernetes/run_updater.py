@@ -13,8 +13,8 @@ from pathlib import Path
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.FileHandler('updater.log'), logging.StreamHandler()],
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("updater.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -65,9 +65,9 @@ class DataUpdater:
             all_ips_file = self.blacklist_dir / "all_ips.txt"
 
             if all_ips_file.exists():
-                with open(all_ips_file, 'r') as f:
+                with open(all_ips_file, "r") as f:
                     ip_count = sum(
-                        1 for line in f if line.strip() and not line.startswith('#')
+                        1 for line in f if line.strip() and not line.startswith("#")
                     )
 
                 stats = {
@@ -79,7 +79,7 @@ class DataUpdater:
 
                 import json
 
-                with open(stats_file, 'w') as f:
+                with open(stats_file, "w") as f:
                     json.dump(stats, f, indent=2)
 
                 logger.info(f"Stats updated: {ip_count} IPs")
@@ -114,13 +114,13 @@ def main():
     """메인 실행 함수"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Secudium Data Updater')
-    parser.add_argument('--once', action='store_true', help='Run update once and exit')
+    parser = argparse.ArgumentParser(description="Secudium Data Updater")
+    parser.add_argument("--once", action="store_true", help="Run update once and exit")
     parser.add_argument(
-        '--interval', type=int, default=1, help='Update interval in hours (default: 1)'
+        "--interval", type=int, default=1, help="Update interval in hours (default: 1)"
     )
     parser.add_argument(
-        '--data-dir', default='data', help='Data directory path (default: data)'
+        "--data-dir", default="data", help="Data directory path (default: data)"
     )
 
     args = parser.parse_args()
@@ -134,5 +134,5 @@ def main():
         updater.run_continuous(args.interval)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

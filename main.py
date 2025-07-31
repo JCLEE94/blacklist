@@ -24,6 +24,54 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# 🔴 보안 초기화 및 검사
+def check_security_configuration():
+    """보안 설정 확인 및 경고 출력"""
+    force_disable = os.getenv("FORCE_DISABLE_COLLECTION", "true").lower() in ("true", "1", "yes", "on")
+    collection_enabled = os.getenv("COLLECTION_ENABLED", "false").lower() in ("true", "1", "yes", "on")
+    restart_protection = os.getenv("RESTART_PROTECTION", "true").lower() in ("true", "1", "yes", "on")
+    
+    print("\n" + "="*80)
+    print("🛡️  BLACKLIST 보안 상태 확인")
+    print("="*80)
+    
+    if force_disable:
+        print("✅ FORCE_DISABLE_COLLECTION=true - 모든 외부 수집 강제 차단")
+        print("✅ 외부 인증 시도 없음 - 서버 안전 모드")
+    else:
+        print("⚠️  FORCE_DISABLE_COLLECTION=false - 수집 기능 활성화 가능")
+        if collection_enabled:
+            print("🚨 COLLECTION_ENABLED=true - 외부 인증 시도 발생 가능")
+            print("🚨 REGTECH/SECUDIUM 서버 접속 시도 예상")
+        else:
+            print("✅ COLLECTION_ENABLED=false - 수집 기능 비활성화")
+    
+    if restart_protection:
+        print("✅ RESTART_PROTECTION=true - 무한 재시작 보호 활성화")
+    else:
+        print("⚠️  RESTART_PROTECTION=false - 재시작 보호 비활성화")
+    
+    print("="*80)
+    
+    # 중요한 보안 경고
+    if not force_disable and collection_enabled:
+        print("🚨🚨🚨 중요 보안 경고 🚨🚨🚨")
+        print("외부 서버 인증 시도가 활성화되어 있습니다!")
+        print("무한 재시작 시 외부 서버에서 차단될 수 있습니다!")
+        print("안전한 운영을 위해 FORCE_DISABLE_COLLECTION=true 권장")
+        print("="*80)
+        
+        # 5초 대기로 관리자가 확인할 수 있도록
+        import time
+        for i in range(5, 0, -1):
+            print(f"🚨 외부 인증 시도 시작까지 {i}초...")
+            time.sleep(1)
+        print("🔓 외부 인증 시도 활성화됨")
+    else:
+        print("✅ 안전 모드로 시작됨 - 외부 인증 시도 없음")
+    
+    print("="*80 + "\n")
+
 # 데이터베이스 스키마 자동 수정
 def ensure_database_schema():
     """데이터베이스 스키마 확인 및 수정"""
@@ -123,6 +171,9 @@ def ensure_directories_with_permissions():
 
 # 권한 설정 먼저 실행
 ensure_directories_with_permissions()
+
+# 🔴 보안 설정 확인 (애플리케이션 시작 전)
+check_security_configuration()
 
 # 애플리케이션 시작 전 스키마 확인
 ensure_database_schema()

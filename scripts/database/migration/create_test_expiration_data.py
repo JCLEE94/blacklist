@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 # Docker 환경
 db_path = (
-    '/app/instance/blacklist.db' if os.path.exists('/app') else 'instance/blacklist.db'
+    "/app/instance/blacklist.db" if os.path.exists("/app") else "instance/blacklist.db"
 )
 
 print(f"📍 DB 경로: {db_path}")
@@ -46,9 +46,9 @@ try:
             WHERE id = ?
         """,
             (
-                past_date.strftime('%Y-%m-%d %H:%M:%S'),
-                expires_date.strftime('%Y-%m-%d %H:%M:%S'),
-                expires_date.strftime('%Y-%m-%d %H:%M:%S'),
+                past_date.strftime("%Y-%m-%d %H:%M:%S"),
+                expires_date.strftime("%Y-%m-%d %H:%M:%S"),
+                expires_date.strftime("%Y-%m-%d %H:%M:%S"),
                 ip_id,
             ),
         )

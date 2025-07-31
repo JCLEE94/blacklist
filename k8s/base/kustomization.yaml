@@ -7,6 +7,7 @@ resources:
   - configmap.yaml
   - secret.yaml
   - namespace.yaml
+  - serviceaccount.yaml
   - hpa.yaml
   - pdb.yaml
   - networkpolicy.yaml

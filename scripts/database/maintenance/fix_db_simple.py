@@ -3,10 +3,10 @@ import os
 import sqlite3
 
 # 프로덕션 컨테이너에서 실행할 스크립트
-db_path = '/app/instance/blacklist.db'
+db_path = "/app/instance/blacklist.db"
 if not os.path.exists(db_path):
-    db_path = 'instance/blacklist.db'
-    os.makedirs('instance', exist_ok=True)
+    db_path = "instance/blacklist.db"
+    os.makedirs("instance", exist_ok=True)
 
 print(f"Fixing database at: {db_path}")
 
