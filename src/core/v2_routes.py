@@ -6,6 +6,7 @@ V2 API Routes - Enhanced endpoints with advanced features
 
 import json
 import logging
+import os
 import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor

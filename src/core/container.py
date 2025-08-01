@@ -7,7 +7,6 @@
 
 import logging
 import os
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
@@ -104,7 +103,7 @@ class ServiceContainer:
         if name not in self._services:
             # Special handling for disabled rate_limiter
             if name == "rate_limiter":
-                logger.warning(f"Rate limiter service disabled, returning None")
+                logger.warning("Rate limiter service disabled, returning None")
                 return None
             raise KeyError(f"Service '{name}' not registered")
 
@@ -157,7 +156,8 @@ class ServiceContainer:
                     and dep_service not in self._instances
                 ):
                     raise KeyError(
-                        f"Service '{service_name}' depends on unregistered service '{dep_service}'"
+                        f"Service '{service_name}' depends on unregistered "
+                        f"service '{dep_service}'"
                     )
 
     def get_service_info(self) -> Dict[str, Dict[str, Any]]:
@@ -206,9 +206,12 @@ class BlacklistContainer(ServiceContainer):
     def _configure_core_services(self):
         """핵심 서비스 구성"""
         from src.config.factory import get_config
-        from src.utils.auth import AuthManager, RateLimiter
+        from src.utils.auth import AuthManager
         from src.utils.cache import get_cache
-        from src.utils.monitoring import get_health_checker, get_metrics_collector
+        from src.utils.monitoring import (
+            get_health_checker,
+            get_metrics_collector,
+        )
 
         from .blacklist_unified import UnifiedBlacklistManager
         from .database import DatabaseManager
@@ -530,12 +533,14 @@ def _test_container_dependency_injection():
 
         if success_rate >= 0.7:  # 70% 이상 성공
             print(
-                f"✅ 컨테이너 의존성 주입 테스트 통과 ({len(instantiated_services)}/{len(required_services)})"
+                f"✅ 컨테이너 의존성 주입 테스트 통과 "
+                f"({len(instantiated_services)}/{len(required_services)})"
             )
             return True
         else:
             print(
-                f"❌ 컨테이너 의존성 주입 테스트 실패 ({len(instantiated_services)}/{len(required_services)})"
+                f"❌ 컨테이너 의존성 주입 테스트 실패 "
+                f"({len(instantiated_services)}/{len(required_services)})"
             )
             return False
 

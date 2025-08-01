@@ -3,12 +3,10 @@
 모든 블랙리스트 API를 하나로 통합한 라우트 시스템
 """
 
-import asyncio
 import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict
 
 from flask import (
     Blueprint,
@@ -22,7 +20,7 @@ from flask import (
 )
 
 from .container import get_container
-from .exceptions import ValidationError, create_error_response, handle_exception
+from .exceptions import ValidationError, create_error_response
 from .unified_service import get_unified_service
 from .validators import validate_ip
 
