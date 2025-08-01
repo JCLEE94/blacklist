@@ -39,7 +39,9 @@ class V2APIService:
     ):
         self.blacklist_manager = blacklist_manager
         self.cache = cache_manager
-        self.security = SecurityManager(secret_key="v2-api-security-key-2024")
+        self.security = SecurityManager(
+            secret_key=os.getenv("API_SECRET_KEY", "v2-api-security-key-2024")
+        )
         self.executor = ThreadPoolExecutor(max_workers=10)
 
     @optimizer.measure_performance("v2_get_blacklist_with_metadata")

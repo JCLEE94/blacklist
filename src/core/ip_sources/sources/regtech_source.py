@@ -96,7 +96,9 @@ class RegTechSource(BaseIPSource):
             }
 
             logger.info(f"총 {len(final_ips)}개 IP 수집 완료")
-            logger.debug(f"엑셀: {len(excel_ips)}개, 웹: {len(web_ips)}개, 캐시: {len(cached_ips)}개")
+            logger.debug(
+                f"엑셀: {len(excel_ips)}개, 웹: {len(web_ips)}개, 캐시: {len(cached_ips)}개"
+            )
 
             return result
 
