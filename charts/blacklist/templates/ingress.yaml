@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "blacklist.fullname" . }}
-  namespace: {{ .Values.global.namespace | default "microservices" }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "blacklist.labels" . | nindent 4 }}
     app.kubernetes.io/component: ingress

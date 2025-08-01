@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: blacklist
-  namespace: blacklist
+  namespace: {{ .Release.Namespace }}
   labels:
     app: blacklist
 spec:
@@ -96,7 +96,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: blacklist-service
-  namespace: blacklist
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     app: blacklist
@@ -104,14 +104,14 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8541
-      nodePort: 32542
+      nodePort: 32452
   type: NodePort
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: blacklist-ingress
-  namespace: blacklist
+  namespace: {{ .Release.Namespace }}
   annotations:
     kubernetes.io/ingress.class: traefik
 spec:

@@ -2,8 +2,8 @@ apiVersion: v2
 name: blacklist
 description: blacklist microservice on jclee.me infrastructure
 type: application
-version: 3.2.6
-appVersion: "3.2.6"
+version: 1.0.4-f293c19
+appVersion: "v1.0.4-f293c19"
 keywords:
   - microservice
   - jclee.me

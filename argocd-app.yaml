@@ -10,12 +10,12 @@ spec:
   source:
     repoURL: http://charts.jclee.me
     chart: blacklist
-    targetRevision: "3.1.0"
+    targetRevision: "1.0.4-f293c19"
     helm:
       values: |
         image:
-          repository: registry.jclee.me/jclee/blacklist
-          tag: "3.1.0"
+          repository: registry.jclee.me/blacklist
+          tag: "v1.0.4-f293c19"
           pullPolicy: Always
         
         imagePullSecrets:
@@ -61,8 +61,8 @@ spec:
         env:
           PORT: "8541"
           MICROSERVICE_NAME: blacklist
-          CLUSTER_NAME: microservices-cluster
-          NAMESPACE: microservices
+          CLUSTER_NAME: blacklist-cluster
+          NAMESPACE: blacklist
         
         probes:
           liveness:
@@ -100,7 +100,7 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: microservices
+    namespace: blacklist
   
   syncPolicy:
     automated:

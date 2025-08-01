@@ -9,7 +9,7 @@ strategy:
 image:
   repository: registry.jclee.me/blacklist
   pullPolicy: Always
-  tag: "latest"
+  tag: "v1.0.4-f293c19"
 
 imagePullSecrets:
   - name: jclee-registry-secret
@@ -18,7 +18,7 @@ service:
   type: NodePort
   port: 8541
   targetPort: 8541
-  nodePort: 30081
+  nodePort: 32452
 
 ingress:
   enabled: true
@@ -130,7 +130,7 @@ auth:
 
 # 전역 설정
 global:
-  namespace: blacklist
+  namespace: default
 
 # Node Selector, Affinity, Tolerations
 nodeSelector: {}
