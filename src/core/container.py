@@ -208,8 +208,7 @@ class BlacklistContainer(ServiceContainer):
         from src.config.factory import get_config
         from src.utils.auth import AuthManager
         from src.utils.cache import get_cache
-        from src.utils.monitoring import (get_health_checker,
-                                          get_metrics_collector)
+        from src.utils.monitoring import get_health_checker, get_metrics_collector
 
         from .blacklist_unified import UnifiedBlacklistManager
         from .database import DatabaseManager

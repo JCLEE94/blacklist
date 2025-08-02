@@ -16,8 +16,7 @@ from typing import Any, Dict, List, Optional
 from .blacklist_unified import UnifiedBlacklistManager
 from .collection_manager import CollectionManager
 from .container import get_container
-from .regtech_simple_collector import \
-    RegtechSimpleCollector as RegtechCollector
+from .regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
 
 logger = logging.getLogger(__name__)
 

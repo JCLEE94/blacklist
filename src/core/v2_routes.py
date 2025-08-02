@@ -19,8 +19,12 @@ from ..core.blacklist_unified import UnifiedBlacklistManager
 from ..utils.cache import CacheManager
 from ..utils.performance_optimizer import optimizer, validate_ips_batch
 from ..utils.security import SecurityManager
-from ..utils.unified_decorators import (unified_cache, unified_monitoring,
-                                        unified_rate_limit, unified_validation)
+from ..utils.unified_decorators import (
+    unified_cache,
+    unified_monitoring,
+    unified_rate_limit,
+    unified_validation,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -8,8 +8,16 @@ import logging
 import os
 from datetime import datetime
 
-from flask import (Blueprint, Response, current_app, jsonify, redirect,
-                   render_template, request, url_for)
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from .container import get_container
 from .exceptions import ValidationError, create_error_response
@@ -2992,8 +3000,7 @@ def manual_collection_trigger():
 
             try:
                 # REGTECH Simple Collector 사용
-                from src.core.regtech_simple_collector import \
-                    RegtechSimpleCollector
+                from src.core.regtech_simple_collector import RegtechSimpleCollector
 
                 collector = RegtechSimpleCollector("data")
                 visual_logs.append("✅ REGTECH 수집기 생성 완료")
