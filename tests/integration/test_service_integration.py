@@ -4,14 +4,16 @@ Integration tests for service layer interactions
 These tests verify that the unified service layer correctly integrates
 with all dependencies including database, cache, and collectors.
 """
-import pytest
+import os
 import sqlite3
 import tempfile
-import os
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
-from src.core.unified_service import UnifiedBlacklistService
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
 from src.core.container import BlacklistContainer
+from src.core.unified_service import UnifiedBlacklistService
 
 
 class TestServiceLayerIntegration:

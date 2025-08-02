@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 cp .env.example .env && nano .env  # Configure credentials
 source scripts/load-env.sh
 pip install -r requirements.txt
+pip install -r requirements-dev.txt  # For testing
 python3 init_database.py
 
 # Run (Monolithic)
@@ -32,6 +33,7 @@ cd services/collection-service && python app.py    # Individual services
 pytest -v                          # All tests
 pytest -k "test_name" -v          # Specific test
 pytest -m "not slow" -v           # Fast tests only
+pytest --cov=src --cov-report=html  # With coverage
 
 # Integration tests
 python3 tests/integration/run_integration_tests.py
@@ -51,6 +53,8 @@ curl http://localhost:8080/health  # API Gateway health
 ./scripts/k8s-management.sh init    # Initial setup
 ./scripts/k8s-management.sh deploy  # Deploy
 ./scripts/k8s-management.sh status  # Check status
+./scripts/k8s-management.sh sync    # Manual sync
+./scripts/k8s-management.sh rollback  # Rollback
 
 # Docker
 docker-compose -f deployment/docker-compose.yml up -d --build
@@ -60,13 +64,14 @@ docker-compose -f deployment/docker-compose.yml up -d --build
 
 # CI/CD Status
 ./scripts/check-cicd-status.sh     # Pipeline health check
+gh run list --workflow=deploy.yaml --limit=5  # GitHub Actions status
 ```
 
 ### Code Quality
 ```bash
 # Format and lint
-black src/                         # Format code
-isort src/                         # Sort imports
+black src/ tests/                  # Format code
+isort src/ tests/                  # Sort imports
 flake8 src/ --max-line-length=88 --extend-ignore=E203,W503
 
 # Security scan
@@ -86,6 +91,7 @@ safety check                       # Dependency vulnerabilities
 - `cache_manager` - Redis with memory fallback
 - `collection_manager` - Multi-source data collection
 - `unified_service` - Service orchestrator
+- `auth_manager` - Authentication and authorization
 
 ### MSA Services (Port 8080 API Gateway)
 - Collection Service (8000) - REGTECH/SECUDIUM collection
@@ -204,13 +210,15 @@ curl http://localhost:8541/api/collection/status
 ### GitHub Actions
 - **Workflow**: `.github/workflows/deploy.yaml`
 - **Triggers**: Push to main branch
-- **Registry**: Configured via GitHub Secrets
+- **Registry**: registry.jclee.me (private registry)
 - **Tags**: `latest`, `sha-<hash>`, `date-<timestamp>`
+- **Runner**: Self-hosted for security
 
 ### ArgoCD GitOps
 - **Auto-sync**: Enabled with self-heal
 - **Image Updater**: Checks every 2 minutes
 - **Rollback**: `argocd app rollback blacklist --grpc-web`
+- **Namespace**: blacklist
 
 ### Required Secrets
 - `DOCKER_REGISTRY_USER` - Registry authentication
@@ -234,6 +242,8 @@ SECRET_KEY=your-secret-key
 # Data Sources
 REGTECH_USERNAME=username
 REGTECH_PASSWORD=password
+SECUDIUM_USERNAME=username
+SECUDIUM_PASSWORD=password
 ```
 
 ### Deployment Environments

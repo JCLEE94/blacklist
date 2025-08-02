@@ -3,17 +3,18 @@
 통합 테스트: Unified Routes API Endpoints
 Rust 스타일 인라인 테스트
 """
-import sys
-import os
 import json
-from typing import Dict, Any, List
+import os
+import sys
+from typing import Any, Dict, List
 
 # 프로젝트 루트 경로 추가
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from flask import Flask
-from src.core.unified_routes import unified_bp
+
 from src.core.container import BlacklistContainer
+from src.core.unified_routes import unified_bp
 
 
 def test_health_endpoint_integration():

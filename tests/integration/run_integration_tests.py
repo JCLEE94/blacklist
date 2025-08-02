@@ -5,8 +5,8 @@ Integration test runner for blacklist management system
 This script runs all integration tests including inline tests.
 """
 import os
-import sys
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -128,9 +128,10 @@ def main():
 
     # Check if required packages are installed
     try:
-        import pytest
-        import flask
         import unittest.mock
+
+        import flask
+        import pytest
     except ImportError as e:
         print(f"\n❌ Missing required package: {e}")
         print("Please install test dependencies:")

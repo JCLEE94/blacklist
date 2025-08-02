@@ -4,16 +4,17 @@ Integration tests for error handling and edge cases
 These tests verify the system handles errors gracefully and
 behaves correctly in edge case scenarios.
 """
-import pytest
 import json
-import time
-import threading
-from datetime import datetime
-from unittest.mock import Mock, patch, MagicMock
-from flask import Flask
+import os
 import sqlite3
 import tempfile
-import os
+import threading
+import time
+from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+from flask import Flask
 
 
 class TestErrorHandlingIntegration:

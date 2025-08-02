@@ -4,11 +4,12 @@ Quick Integration Test for Blacklist Management System
 Tests cookie-based authentication and basic functionality
 """
 
-import requests
 import json
+import sys
 import time
 from datetime import datetime
-import sys
+
+import requests
 
 # Test configuration
 BASE_URL = "https://blacklist.jclee.me"

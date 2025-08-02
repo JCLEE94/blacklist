@@ -2,13 +2,15 @@
 """
 REGTECH Excel 다운로드 통합 테스트
 """
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.core.regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
 from datetime import datetime, timedelta
+
+from src.core.regtech_simple_collector import \
+    RegtechSimpleCollector as RegtechCollector
 
 
 def test_excel_download():

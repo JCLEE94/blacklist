@@ -3,21 +3,22 @@
 통합 테스트: End-to-End (E2E)
 전체 시스템 플로우 테스트
 """
-import sys
-import os
 import json
-import time
-import tempfile
+import os
 import sqlite3
+import sys
+import tempfile
+import time
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from flask import Flask
+
 from src.core.app_compact import create_compact_app
-from src.core.container import get_container, BlacklistContainer
+from src.core.container import BlacklistContainer, get_container
 from src.core.unified_service import UnifiedBlacklistService
 
 
@@ -274,8 +275,8 @@ def test_performance_under_load():
     """E2E 테스트: 부하 상황에서의 성능"""
     print("\n🧪 Testing performance under load (E2E)...")
 
-    import time
     import concurrent.futures
+    import time
 
     with tempfile.TemporaryDirectory() as tmpdir:
         os.environ["FLASK_ENV"] = "testing"

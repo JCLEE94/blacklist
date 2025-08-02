@@ -15,13 +15,8 @@ import psutil
 logger = logging.getLogger(__name__)
 
 try:
-    from prometheus_client import (
-        CollectorRegistry,
-        Counter,
-        Gauge,
-        Histogram,
-        generate_latest,
-    )
+    from prometheus_client import (CollectorRegistry, Counter, Gauge,
+                                   Histogram, generate_latest)
 
     PROMETHEUS_AVAILABLE = True
 except ImportError:

@@ -4,13 +4,14 @@ CI/CD 파이프라인 모킹 테스트
 외부 서비스와의 통합을 모킹하여 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock, call
 import json
-import yaml
-from pathlib import Path
 import subprocess
 import time
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, call, patch
+
+import pytest
+import yaml
 
 
 class TestGitHubActionsMocking:

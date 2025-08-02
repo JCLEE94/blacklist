@@ -5,13 +5,14 @@ MSA 아키텍처 개별 서비스 상세 테스트
 """
 
 import asyncio
-import httpx
 import json
-import time
-import sys
-from typing import Dict, List, Any
-from dataclasses import dataclass
 import logging
+import sys
+import time
+from dataclasses import dataclass
+from typing import Any, Dict, List
+
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

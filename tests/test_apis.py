@@ -5,12 +5,13 @@ Postman collection JSON 파일을 분석하여 API 테스트
 """
 
 import json
-import requests
 import os
-from pathlib import Path
 import sys
-import pytest
 from datetime import datetime
+from pathlib import Path
+
+import pytest
+import requests
 
 # 프로젝트 루트 경로 설정
 project_root = Path(__file__).parent.parent

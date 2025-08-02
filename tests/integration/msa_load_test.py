@@ -5,15 +5,16 @@ MSA 아키텍처 부하 테스트
 """
 
 import asyncio
-import httpx
-import time
-import sys
-from typing import List, Dict, Any
-from dataclasses import dataclass
+import json
 import logging
 import statistics
+import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
-import json
+from dataclasses import dataclass
+from typing import Any, Dict, List
+
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

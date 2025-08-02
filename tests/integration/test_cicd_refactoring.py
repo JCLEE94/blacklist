@@ -4,26 +4,22 @@ CI/CD 파이프라인 리팩토링을 위한 통합 테스트
 테스트 가능성을 높이기 위한 리팩토링 검증
 """
 
-import pytest
-from pathlib import Path
-import yaml
 import json
-from unittest.mock import Mock, patch, call
-import sys
 import os
+import sys
+from pathlib import Path
+from unittest.mock import Mock, call, patch
+
+import pytest
+import yaml
 
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from scripts.lib.cicd_testability import (
-    PipelineConfig,
-    PipelineStage,
-    CodeQualityStage,
-    TestStage,
-    BuildStage,
-    DeploymentStage,
-    PipelineOrchestrator,
-)
+from scripts.lib.cicd_testability import (BuildStage, CodeQualityStage,
+                                          DeploymentStage, PipelineConfig,
+                                          PipelineOrchestrator, PipelineStage,
+                                          TestStage)
 
 
 class TestPipelineConfig:

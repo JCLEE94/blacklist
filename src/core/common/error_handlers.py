@@ -9,21 +9,13 @@ from typing import Any, Callable, Optional, Tuple, Type, TypeVar, Union
 
 from flask import Response, jsonify
 
-from src.core.exceptions import (
-    AuthenticationError,
-    AuthorizationError,
-    BlacklistError,
-    CacheError,
-    ConfigurationError,
-)
+from src.core.exceptions import (AuthenticationError, AuthorizationError,
+                                 BlacklistError, CacheError,
+                                 ConfigurationError)
 from src.core.exceptions import ConnectionError as CustomConnectionError
-from src.core.exceptions import (
-    DatabaseError,
-    DataProcessingError,
-    RateLimitError,
-    ServiceUnavailableError,
-    ValidationError,
-)
+from src.core.exceptions import (DatabaseError, DataProcessingError,
+                                 RateLimitError, ServiceUnavailableError,
+                                 ValidationError)
 
 logger = logging.getLogger(__name__)
 

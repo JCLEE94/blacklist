@@ -7,21 +7,16 @@ Test suite for Blacklist Manager
 - 성능 테스트 (performance tests)
 - API 엔드포인트 테스트
 """
-import pytest
-from typing import Generator, Any
-from flask import Flask
-from flask.testing import FlaskClient
+from typing import Any, Generator
 from unittest.mock import Mock, patch
 
+import pytest
+from flask import Flask
+from flask.testing import FlaskClient
+
 # Test utilities and fixtures
-from .conftest import (
-    app,
-    client,
-    blacklist_manager,
-    temp_data_dir,
-    mock_cache,
-    sample_ips,
-)
+from .conftest import (app, blacklist_manager, client, mock_cache, sample_ips,
+                       temp_data_dir)
 
 # Test markers for organization
 # These are defined in conftest.py and available for use in tests
@@ -100,8 +95,8 @@ class TestHelpers:
     @staticmethod
     def create_sample_data_structure(temp_dir: str) -> dict:
         """테스트용 데이터 구조 생성"""
-        import os
         import json
+        import os
         from pathlib import Path
 
         data_dir = Path(temp_dir)

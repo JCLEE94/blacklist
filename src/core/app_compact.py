@@ -11,7 +11,6 @@ from flask import Flask, g, request
 from flask_compress import Compress
 from flask_cors import CORS
 from werkzeug.middleware.profiler import ProfilerMiddleware
-
 # Rate limiting 비활성화로 인해 주석 처리
 # from flask_limiter import Limiter
 # from flask_limiter.util import get_remote_address
@@ -19,7 +18,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from src.core.constants import SECURITY_HEADERS
 from src.utils.performance import get_connection_manager, get_profiler
-
 # Import new error handling and logging modules
 from src.utils.structured_logging import get_logger, setup_request_logging
 

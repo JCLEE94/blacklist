@@ -6,19 +6,20 @@ This script runs performance tests on the collection management endpoints
 to ensure they meet response time requirements and handle concurrent load.
 """
 
-import time
-import threading
-import statistics
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Tuple
-import sys
 import os
+import statistics
+import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, List, Tuple
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 try:
-    from unittest.mock import Mock, patch, MagicMock
+    from unittest.mock import MagicMock, Mock, patch
+
     import flask
     from flask import Flask
 

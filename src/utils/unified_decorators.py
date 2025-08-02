@@ -15,14 +15,9 @@ from typing import Any, Callable, Dict, Optional, Tuple, Union
 from flask import g, jsonify, request
 
 from src.core.constants import ERROR_MESSAGES, HTTP_STATUS_CODES
-
 # Import structured exceptions and models
-from src.core.exceptions import (
-    AuthenticationError,
-    CacheError,
-    RateLimitError,
-    ValidationError,
-)
+from src.core.exceptions import (AuthenticationError, CacheError,
+                                 RateLimitError, ValidationError)
 from src.core.models import APIResponse, ValidationResult
 
 logger = logging.getLogger(__name__)

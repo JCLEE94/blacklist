@@ -5,13 +5,14 @@ MSA 아키텍처 최종 통합 테스트 리포트 생성기
 """
 
 import asyncio
-import httpx
 import json
-import time
-import sys
-from datetime import datetime
-from typing import Dict, List, Any
 import logging
+import sys
+import time
+from datetime import datetime
+from typing import Any, Dict, List
+
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
