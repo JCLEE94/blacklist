@@ -673,6 +673,14 @@ def get_smart_cache(
     )
 
 
+def get_cache(redis_url: str = None):
+    """Factory function for backward compatibility with cache.py"""
+    import os
+
+    redis_url = redis_url or os.getenv("REDIS_URL")
+    return get_smart_cache(redis_url=redis_url)
+
+
 def cached_method(ttl: int = 300, key_prefix: str = ""):
     """Decorator for caching method results"""
 

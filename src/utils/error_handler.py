@@ -391,3 +391,190 @@ def retry_on_error(
         return wrapper
 
     return decorator
+
+
+# 추가 함수들 (core/common/error_handlers.py에서 이동)
+
+
+def safe_execute(
+    default_return: Any = None,
+    exceptions: tuple = (Exception,),
+    log_level: str = "error",
+    message: str = "Operation failed",
+) -> Callable:
+    """
+    안전한 함수 실행 데코레이터
+
+    Args:
+        default_return: 에러 시 반환할 기본값
+        exceptions: 처리할 예외 타입들
+        log_level: 로그 레벨 (debug, info, warning, error)
+        message: 에러 메시지
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exceptions as e:
+                log_func = getattr(logger, log_level, logger.error)
+                log_func(f"{message} in {func.__name__}: {str(e)}")
+                return default_return
+
+        return wrapper
+
+    return decorator
+
+
+def handle_api_errors(func: Callable) -> Callable:
+    """
+    API 엔드포인트 에러 처리 데코레이터
+    BlacklistError를 적절한 HTTP 응답으로 변환
+    """
+    from flask import Response
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs) -> Union[Response, Any]:
+        try:
+            return func(*args, **kwargs)
+        except ValidationError as e:
+            logger.warning(f"Validation error in {func.__name__}: {e.message}")
+            return (
+                jsonify(
+                    {
+                        "error": e.message,
+                        "error_code": e.code,
+                        "details": e.details,
+                    }
+                ),
+                422,
+            )
+        except AuthenticationError as e:
+            logger.warning(f"Authentication error in {func.__name__}: {e.message}")
+            return jsonify({"error": e.message, "error_code": e.code}), 401
+        except AuthorizationError as e:
+            logger.warning(f"Authorization error in {func.__name__}: {e.message}")
+            return jsonify({"error": e.message, "error_code": e.code}), 403
+        except Exception as e:
+            logger.error(f"Unexpected error in {func.__name__}: {e}")
+            return (
+                jsonify(
+                    {"error": "Internal server error", "error_code": "INTERNAL_ERROR"}
+                ),
+                500,
+            )
+
+    return wrapper
+
+
+def retry_on_failure(
+    max_attempts: int = 3,
+    delay: float = 1.0,
+    backoff: float = 2.0,
+    exceptions: tuple = (Exception,),
+) -> Callable:
+    """재시도 데코레이터 (alias for retry_on_error)"""
+    return retry_on_error(max_attempts, delay, backoff, exceptions)
+
+
+class ErrorContext:
+    """
+    에러 컨텍스트 관리자
+    with 문을 사용하여 에러를 안전하게 처리
+    """
+
+    def __init__(
+        self,
+        operation: str,
+        default_return: Any = None,
+        suppress: bool = True,
+        log_level: str = "error",
+    ):
+        """
+        Args:
+            operation: 작업 설명
+            default_return: 에러 시 반환값
+            suppress: 에러 억제 여부
+            log_level: 로그 레벨
+        """
+        self.operation = operation
+        self.default_return = default_return
+        self.suppress = suppress
+        self.log_level = log_level
+        self.exception = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            self.exception = exc_val
+            log_func = getattr(logger, self.log_level, logger.error)
+            log_func(f"Error during {self.operation}: {exc_val}")
+
+            if self.suppress:
+                return True  # 예외 억제
+        return False
+
+
+def validate_and_convert(
+    data: Any,
+    converter: Callable[[Any], Any],
+    error_message: str = "Invalid data format",
+    field: Optional[str] = None,
+) -> Any:
+    """
+    데이터 검증 및 변환 헬퍼
+
+    Args:
+        data: 변환할 데이터
+        converter: 변환 함수
+        error_message: 에러 메시지
+        field: 필드 이름 (옵션)
+
+    Returns:
+        변환된 데이터
+
+    Raises:
+        ValidationError: 변환 실패 시
+    """
+    try:
+        return converter(data)
+    except (ValueError, TypeError, KeyError) as e:
+        raise ValidationError(message=error_message, field=field)
+
+
+def log_performance(operation: str) -> Callable:
+    """
+    성능 측정 및 로깅 데코레이터
+
+    Args:
+        operation: 작업 이름
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            import time
+
+            start_time = time.time()
+
+            try:
+                result = func(*args, **kwargs)
+                elapsed = time.time() - start_time
+
+                if elapsed > 1.0:  # 1초 이상 걸린 작업만 로깅
+                    logger.warning(f"{operation} took {elapsed:.2f}s")
+                else:
+                    logger.debug(f"{operation} completed in {elapsed:.3f}s")
+
+                return result
+            except Exception as e:
+                elapsed = time.time() - start_time
+                logger.error(f"{operation} failed after {elapsed:.2f}s: {e}")
+                raise
+
+        return wrapper
+
+    return decorator

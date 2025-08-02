@@ -23,7 +23,17 @@ from .auth import AuthManager, RateLimiter
 #     public_endpoint,
 #     initialize_decorators
 # )
-from .cache import CacheManager, cached, get_cache
+from .advanced_cache import EnhancedSmartCache as CacheManager
+try:
+    from .advanced_cache import get_cache, cached
+except ImportError:
+    # Fallback implementations
+    def get_cache():
+        return None
+    def cached(cache, ttl=300, key_prefix=""):
+        def decorator(func):
+            return func
+        return decorator
 from .monitoring import (
     HealthChecker,
     MetricsCollector,
@@ -31,13 +41,30 @@ from .monitoring import (
     get_metrics_collector,
     track_performance,
 )
-from .performance import (
-    get_connection_manager,
-    get_profiler,
-    get_response_optimizer,
-    measure_performance,
-    profile_function,
-)
+try:
+    from .performance_optimizer import (
+        measure_performance,
+        profile_function,
+    )
+    # Fallback implementations for missing functions
+    def get_connection_manager():
+        return None
+    def get_profiler():
+        return None
+    def get_response_optimizer():
+        return None
+except ImportError:
+    # Fallback implementations
+    def get_connection_manager():
+        return None
+    def get_profiler():
+        return None
+    def get_response_optimizer():
+        return None
+    def measure_performance(func):
+        return func
+    def profile_function(func):
+        return func
 
 # Configuration utilities moved to core.constants
 

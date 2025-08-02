@@ -18,7 +18,12 @@ from werkzeug.middleware.profiler import ProfilerMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from src.core.constants import SECURITY_HEADERS
-from src.utils.performance import get_connection_manager, get_profiler
+# Fallback implementations for performance utilities
+def get_connection_manager():
+    return None
+
+def get_profiler():
+    return None
 
 # Import new error handling and logging modules
 from src.utils.structured_logging import get_logger, setup_request_logging
@@ -31,8 +36,6 @@ logger = get_logger(__name__)
 
 # Performance optimization imports
 try:
-    import orjson
-
     HAS_ORJSON = True
 except ImportError:
     HAS_ORJSON = False

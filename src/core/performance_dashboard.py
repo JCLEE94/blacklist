@@ -5,7 +5,6 @@
 시각화하는 대시보드 기능을 제공합니다.
 """
 
-import json
 import sqlite3
 import threading
 import time

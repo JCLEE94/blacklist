@@ -2,12 +2,10 @@
 """
 Collection service for managing data collection
 """
-import json
 import logging
 import os
 import subprocess
 from datetime import datetime
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +38,10 @@ class CollectionService:
         self.env = os.environ.copy()
         self.env.update(
             {
-                "REGTECH_USERNAME": os.getenv("REGTECH_USERNAME", "nextrade"),
-                "REGTECH_PASSWORD": os.getenv("REGTECH_PASSWORD", "Sprtmxm1@3"),
-                "SECUDIUM_USERNAME": os.getenv("SECUDIUM_USERNAME", "nextrade"),
-                "SECUDIUM_PASSWORD": os.getenv("SECUDIUM_PASSWORD", "Sprtmxm1@3"),
+                "REGTECH_USERNAME": os.getenv("REGTECH_USERNAME", ""),
+                "REGTECH_PASSWORD": os.getenv("REGTECH_PASSWORD", ""),
+                "SECUDIUM_USERNAME": os.getenv("SECUDIUM_USERNAME", ""),
+                "SECUDIUM_PASSWORD": os.getenv("SECUDIUM_PASSWORD", ""),
             }
         )
 

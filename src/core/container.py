@@ -206,8 +206,8 @@ class BlacklistContainer(ServiceContainer):
     def _configure_core_services(self):
         """핵심 서비스 구성"""
         from src.config.factory import get_config
+        from src.utils.advanced_cache import get_cache
         from src.utils.auth import AuthManager
-        from src.utils.cache import get_cache
         from src.utils.monitoring import get_health_checker, get_metrics_collector
 
         from .blacklist_unified import UnifiedBlacklistManager
