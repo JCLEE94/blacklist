@@ -1,52 +1,49 @@
 #!/usr/bin/env python3
 """
-통합 블랙리스트 관리 시스템 - Full Compact App Integration
+Analysis Scripts Main Entry Point
+Consolidated analysis functionality for blacklist system
 """
 import logging
 import os
 import sys
+from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-
-# Configure logging first
+# Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# Try to import the compact app
-try:
-    from src.core.app_compact import application
+def run_performance_analysis():
+    """Run performance analysis tasks"""
+    logger.info("Running performance analysis")
+    # Add performance analysis logic here
+    pass
 
-    logger.info("Successfully imported app_compact - using full-featured app")
-except Exception as e:
-    logger.error(f"Failed to import from app_compact: {e}")
-    import traceback
+def run_data_analysis():
+    """Run data analysis tasks"""
+    logger.info("Running data analysis")
+    # Add data analysis logic here
+    pass
 
-    logger.error(traceback.format_exc())
+def main():
+    """Main analysis entry point"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Blacklist System Analysis')
+    parser.add_argument('--performance', action='store_true', help='Run performance analysis')
+    parser.add_argument('--data', action='store_true', help='Run data analysis')
+    
+    args = parser.parse_args()
+    
+    if args.performance:
+        run_performance_analysis()
+    elif args.data:
+        run_data_analysis()
+    else:
+        logger.info("No analysis type specified. Use --performance or --data")
+        parser.print_help()
 
-    # If app_compact fails, create a minimal error app
-    from flask import Flask, jsonify
-
-    application = Flask(__name__)
-
-    @application.route("/health")
-    def health():
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": f"Failed to load app_compact: {str(e)}",
-                    "mode": "emergency_fallback",
-                }
-            ),
-            503,
-        )
-
-
-# Main execution
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 2541))
-    logger.info(f"Starting Blacklist App on port {port}")
-    application.run(host="0.0.0.0", port=port, debug=False)
+    main()

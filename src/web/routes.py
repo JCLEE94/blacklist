@@ -158,7 +158,7 @@ def dashboard():
                         health["database"] = f"{db_size / 1024:.1f} KB"
                 else:
                     health["database"] = "N/A"
-            except:
+            except Exception:
                 health["database"] = "N/A"
 
         # 실제 DB에서 소스별 통계 가져오기 (안전하게 처리)
@@ -273,7 +273,7 @@ def data_management():
                     try:
                         with open(details_file, "r", encoding="utf-8") as f:
                             details = json.load(f)
-                    except:
+                    except Exception:
                         details = {}
 
                 # 상세 정보에서 검출 날짜 정보 추출
@@ -493,7 +493,7 @@ def system_logs():
                                 "timestamp": datetime.now().isoformat(),  # TODO: Parse from log line
                             }
                         )
-            except:
+            except Exception:
                 pass
 
     return render_template("system_logs.html", logs=logs)
@@ -534,7 +534,7 @@ def get_month_details(month):
                 with open(details_file, "r", encoding="utf-8") as f:
                     details = json.load(f)
                     month_info["details"] = details
-            except:
+            except Exception:
                 pass
 
         # IP 목록 로드
@@ -766,7 +766,6 @@ def download_daily_ips(month, date):
     """Download IP list for a specific date as text file"""
     try:
         # get_daily_ips와 동일한 로직으로 IP 목록 가져오기
-        import calendar
         import re
 
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", date):
@@ -1343,7 +1342,7 @@ def api_secudium_status():
     """Get SECUDIUM collection status"""
     try:
         import sqlite3
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         conn = sqlite3.connect("instance/blacklist.db")
         cursor = conn.cursor()
@@ -1397,7 +1396,7 @@ def api_secudium_status():
                 # 프로세스 확인
                 os.kill(pid, 0)
                 is_running = True
-            except:
+            except Exception:
                 is_running = False
 
         return jsonify(

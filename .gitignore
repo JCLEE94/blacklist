@@ -34,8 +34,18 @@ Thumbs.db
 
 # Backup files
 backup/
+backup-*/
+backups/
+.backup/
+*-backup-*/
 *.backup
 *.bak
+*-backup
+*-original
+*-old
+*_backup*
+*_original*
+*_old*
 
 # Archive files
 *.tar.gz
@@ -135,3 +145,10 @@ archive/
 archive/deprecated_files/
 archive/deprecated_templates/
 .serena/cache/
+
+# Documentation restrictions (only README.md and CLAUDE.md allowed)
+*.md
+!README.md
+!CLAUDE.md
+!docs/**/*.md
+!charts/**/README.md
