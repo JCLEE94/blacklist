@@ -35,9 +35,17 @@ from .routes.test_utils import (
     run_all_tests,
 )
 
+# Main configuration function for backward compatibility
+def configure_routes(app):
+    """Configure routes on Flask app for backward compatibility"""
+    app.register_blueprint(unified_bp)
+    return app
+
+
 # Export the main blueprint and test functions
 __all__ = [
     "unified_bp",
+    "configure_routes",
     "_test_collection_endpoints",
     "_test_collection_state_consistency",
     "_test_concurrent_requests",

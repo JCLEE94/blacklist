@@ -13,9 +13,13 @@ from .services.unified_service_factory import (
     reset_unified_service,
 )
 
+# Alias for backward compatibility
+UnifiedService = UnifiedBlacklistService
+
 # Export for backwards compatibility
 __all__ = [
     "UnifiedBlacklistService",
+    "UnifiedService",
     "ServiceHealth",
     "get_unified_service",
     "reset_unified_service",
