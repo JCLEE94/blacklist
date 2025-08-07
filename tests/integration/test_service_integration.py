@@ -116,7 +116,7 @@ class TestServiceLayerIntegration:
     def service(self, mock_container):
         """Create service instance with mock container"""
         with patch(
-            "src.core.unified_service.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container", return_value=mock_container
         ):
             service = UnifiedBlacklistService()
             service.container = mock_container
@@ -131,7 +131,7 @@ class TestServiceLayerIntegration:
     def test_service_initialization(self, mock_container):
         """Test service initializes with all dependencies"""
         with patch(
-            "src.core.unified_service.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container", return_value=mock_container
         ):
             service = UnifiedBlacklistService()
 
@@ -147,7 +147,7 @@ class TestServiceLayerIntegration:
         mock_container.get.return_value = None
 
         with patch(
-            "src.core.unified_service.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container", return_value=mock_container
         ):
             service = UnifiedBlacklistService()
 
@@ -546,7 +546,7 @@ class TestServiceErrorRecovery:
         mock_container.get("cache_manager").get.side_effect = cache_get
 
         with patch(
-            "src.core.unified_service.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container", return_value=mock_container
         ):
             return UnifiedBlacklistService()
 
@@ -573,7 +573,7 @@ class TestServiceErrorRecovery:
         )
 
         with patch(
-            "src.core.unified_service.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container", return_value=mock_container
         ):
             service = UnifiedBlacklistService()
 

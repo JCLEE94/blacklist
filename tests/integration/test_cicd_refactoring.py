@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from scripts.lib.cicd_testability import (BuildStage, CodeQualityStage,
                                           DeploymentStage, PipelineConfig,
                                           PipelineOrchestrator, PipelineStage,
-                                          TestStage)
+                                          TestStage as CICDTestStage)
 
 
 class TestPipelineConfig:
@@ -340,7 +340,7 @@ class TestPipelineOrchestrator:
         orchestrator = PipelineOrchestrator(config)
 
         # 두 번째 단계(test)에서 실패하도록 설정
-        with patch.object(TestStage, "run", return_value=False):
+        with patch.object(CICDTestStage, "run", return_value=False):
             results = orchestrator.run()
 
         assert results["overall_status"] == "failed"
@@ -407,11 +407,11 @@ class TestHelperFunctions:
         """단계 결과 형식 테스트"""
         config = PipelineConfig()
 
-        class TestStage(PipelineStage):
+        class LocalTestStage(PipelineStage):
             def run(self):
                 return True
 
-        stage = TestStage("test", config)
+        stage = LocalTestStage("test", config)
         result = stage.execute()
 
         # 필수 필드 확인

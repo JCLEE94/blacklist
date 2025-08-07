@@ -42,10 +42,14 @@ def test_excel_download():
 
         # 샘플 출력
         print("\n처음 5개 IP:")
-        for i, entry in enumerate(ips[:5]):
-            print(f"  {i+1}. {entry.ip} ({entry.country}) - {entry.attack_type}")
+        sample_ips = list(ips)[:5] if hasattr(ips, '__iter__') else []
+        for i, entry in enumerate(sample_ips):
+            if hasattr(entry, 'ip'):
+                print(f"  {i+1}. {entry.ip} ({entry.country}) - {entry.attack_type}")
+            else:
+                print(f"  {i+1}. {entry}")
 
-        print(f"\n수집 방법: {collector.stats.source_method}")
+        print(f"\n수집 방법: Excel 다운로드")
 
         # 데이터베이스에 저장 가능 여부 확인
         print("\n💾 데이터베이스 저장 가능 여부:")

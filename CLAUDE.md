@@ -84,13 +84,30 @@ safety check                       # Dependency vulnerabilities
 ### Entry Points
 - **Main**: `main.py` → `src/core/app_compact.py` (with fallback chain)
 - **Container**: `src/core/container.py` - Dependency injection for all services
-- **Routes**: `src/core/unified_routes.py` - All API endpoints
+- **Routes**: Modular route system in `src/core/routes/` (split from monolithic unified_routes.py)
+
+### Modular Route Architecture (Post-Refactoring)
+The routes have been split into logical modules under `src/core/routes/`:
+- `web_routes.py` - Web interface and dashboard routes
+- `api_routes.py` - Core API endpoints for blacklist management
+- `collection_status_routes.py` - Collection status monitoring endpoints
+- `collection_trigger_routes.py` - Manual collection trigger endpoints
+- `collection_logs_routes.py` - Collection logging and history
+- `admin_routes.py` - Administrative and management endpoints
+- `test_utils.py` - Testing utilities and mock endpoints
+
+### Modular Service Architecture  
+Services split into specialized components under `src/core/services/`:
+- `unified_service_core.py` - Core service class with lifecycle management
+- `collection_service.py` - Collection-related functionality (mixin pattern)
+- `statistics_service.py` - Analytics and statistics methods (mixin pattern)
+- `unified_service_factory.py` - Service factory with singleton management
 
 ### Key Services (via container)
 - `blacklist_manager` - IP management and validation
-- `cache_manager` - Redis with memory fallback
+- `cache_manager` - Redis with memory fallback  
 - `collection_manager` - Multi-source data collection
-- `unified_service` - Service orchestrator
+- `unified_service` - Service orchestrator (now modular with mixins)
 - `auth_manager` - Authentication and authorization
 
 ### MSA Services (Port 8080 API Gateway)
@@ -251,7 +268,7 @@ SECUDIUM_PASSWORD=password
 - **Production**: Gunicorn, port 2541, Redis cache
 - **MSA**: PostgreSQL, Redis, RabbitMQ, port 8080
 
-## Project Structure
+## Project Structure (Post-Modularization)
 
 ```
 blacklist/
@@ -260,23 +277,136 @@ blacklist/
 │   ├── core/              # Core business logic
 │   │   ├── app_compact.py # Flask app factory
 │   │   ├── container.py   # Dependency injection
-│   │   ├── unified_routes.py # API routes
-│   │   └── collection_manager.py # Data collection
-│   └── utils/             # Utilities
+│   │   ├── routes/        # Modular route system (< 500 lines each)
+│   │   │   ├── web_routes.py         # Web interface routes
+│   │   │   ├── api_routes.py         # Core API endpoints
+│   │   │   ├── collection_*.py       # Collection-related routes
+│   │   │   └── admin_routes.py       # Administrative endpoints
+│   │   ├── services/      # Modular service system (< 500 lines each)
+│   │   │   ├── unified_service_core.py    # Core service class
+│   │   │   ├── collection_service.py      # Collection mixin
+│   │   │   ├── statistics_service.py      # Statistics mixin  
+│   │   │   └── unified_service_factory.py # Service factory
+│   │   ├── ip_sources/    # IP source management
+│   │   ├── collectors/    # Data collectors
+│   │   └── common/        # Shared utilities
+│   ├── web/               # Web interface (modularized)
+│   │   ├── routes/        # Web-specific route modules
+│   │   └── static/        # Static assets
+│   └── utils/             # Application utilities
 ├── services/              # MSA microservices
-├── scripts/               # Deployment & management
+├── scripts/               # Deployment & management scripts
 ├── k8s/                   # Kubernetes manifests
-├── tests/                 # Test suites
+├── tests/                 # Comprehensive test suite
+│   ├── integration/       # Integration tests
+│   └── unit/              # Unit tests
 └── deployment/            # Docker configurations
 ```
 
-## Best Practices
+## Modular Architecture Patterns
 
-1. **Security First**: Default blocks all external authentication
-2. **Use Container**: Access services via `get_container()`
-3. **Test Coverage**: Run tests before committing
-4. **GitOps Only**: Never modify K8s resources directly
-5. **Cache Parameters**: Always use `ttl=` not `timeout=`
-6. **Error Handling**: Centralized in `error_handlers.py`
-7. **Date Parsing**: Preserve source dates, don't use current time
-8. **MSA Gateway**: All external requests through port 8080
+### Service Pattern (Mixin-based)
+```python
+# Services use multiple inheritance with specialized mixins
+class UnifiedService(CollectionServiceMixin, StatisticsServiceMixin):
+    """Core service with modular functionality via mixins"""
+    
+# Access via factory pattern
+from src.core.services.unified_service_factory import get_unified_service
+service = get_unified_service()
+```
+
+### Route Pattern (Flask Blueprint)
+```python
+# Each route module registers its own Blueprint
+from flask import Blueprint
+blueprint = Blueprint('api', __name__, url_prefix='/api')
+
+# Import and register in app_compact.py
+from src.core.routes.api_routes import blueprint as api_blueprint
+app.register_blueprint(api_blueprint)
+```
+
+### Backwards Compatibility
+All major refactored modules maintain wrapper modules for compatibility:
+- `unified_routes.py` → imports from modular `routes/` modules  
+- `unified_service.py` → imports from modular `services/` modules
+- Original import paths continue to work without changes
+
+## Infrastructure URLs
+- **ArgoCD**: https://argo.jclee.me (GitOps dashboard)
+- **Registry**: registry.jclee.me (private Docker registry)
+- **Charts**: charts.jclee.me (Helm repository)
+- **K8s API**: k8s.jclee.me (Kubernetes API server)
+
+## Essential Patterns
+
+### Dependency Injection
+```python
+# Always use container for service access
+from src.core.container import get_container
+container = get_container()
+service = container.get('unified_service')
+```
+
+### Entry Point Fallback Chain
+The system has multiple fallback levels:
+1. `main.py` → `app_compact.py` (full features)
+2. Falls back to `minimal_app.py` (essential features)
+3. Ultimate fallback to legacy routes
+
+### Cache Pattern
+```python
+# Correct cache usage with TTL
+cache.set(key, value, ttl=300)  # NOT timeout=300
+@cached(cache, ttl=300, key_prefix="stats")
+```
+
+### Error Handling Philosophy
+- Never crash the application
+- Always provide meaningful fallbacks
+- Log before handling errors
+- Return appropriate HTTP status codes
+
+## Development Workflow
+
+### Single Test Execution
+```bash
+# Run specific test
+pytest tests/test_apis.py::test_regtech_apis -v
+
+# Run with markers
+pytest -m "not slow" -v  # Skip slow tests
+pytest -m integration -v # Only integration tests
+
+# Debug failing test
+pytest --pdb tests/failing_test.py
+```
+
+### Code Quality Enforcement
+```bash
+# Pre-commit checks
+black src/ tests/ --check
+flake8 src/ --max-line-length=88
+bandit -r src/ -ll
+
+# File size enforcement (500-line rule)
+find src/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 {print}'
+```
+
+## Security & Authentication
+
+### Default Security Stance
+- `FORCE_DISABLE_COLLECTION=true` (blocks all external auth)
+- `COLLECTION_ENABLED=false` (collection disabled by default)
+- `RESTART_PROTECTION=true` (prevents infinite restarts)
+
+### Credential Management
+```bash
+# Required secrets in K8s
+kubectl create secret generic blacklist-secrets \
+  --from-literal=regtech-username=$REGTECH_USERNAME \
+  --from-literal=regtech-password=$REGTECH_PASSWORD \
+  --from-literal=secudium-username=$SECUDIUM_USERNAME \
+  --from-literal=secudium-password=$SECUDIUM_PASSWORD
+```
