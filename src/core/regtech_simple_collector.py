@@ -26,8 +26,11 @@ class RegtechSimpleCollector:
         os.makedirs(self.regtech_dir, exist_ok=True)
 
         self.base_url = "https://regtech.fsec.or.kr"
-        self.username = os.getenv("REGTECH_USERNAME", "nextrade")
-        self.password = os.getenv("REGTECH_PASSWORD", "Sprtmxm1@3")
+        self.username = os.getenv("REGTECH_USERNAME")
+        self.password = os.getenv("REGTECH_PASSWORD")
+        
+        if not self.username or not self.password:
+            raise ValueError("REGTECH_USERNAME and REGTECH_PASSWORD environment variables must be set")
 
         logger.info(f"REGTECH 단순 수집기 초기화: {self.regtech_dir}")
 
