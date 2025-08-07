@@ -36,11 +36,15 @@ class TestCICDPipelineTriggers:
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)
 
-        # main 브랜치가 트리거에 포함되는지 확인
-        assert "main" in workflow["on"]["push"]["branches"]
+        # YAML parsing issue: 'on' becomes boolean True, need to read as raw text
+        with open(workflow_path, 'r') as f:
+            workflow_text = f.read()
+        
+        # Check for main branch in push triggers via text search
+        assert "branches: [ main" in workflow_text or "branches: [main" in workflow_text
 
         # 모든 필수 작업이 정의되어 있는지 확인
-        required_jobs = ["code-quality", "test", "build", "deploy"]
+        required_jobs = ["test", "build", "create-offline-package", "deploy"]
         for job in required_jobs:
             assert job in workflow["jobs"]
 

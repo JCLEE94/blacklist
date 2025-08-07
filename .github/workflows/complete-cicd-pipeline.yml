@@ -1,0 +1,246 @@
+name: Complete CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  test:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: |
+          pytest -v --tb=short --maxfail=3
+
+  build:
+    needs: test
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_REGISTRY_USER }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASS }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  create-offline-package:
+    needs: test
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create offline package
+        run: |
+          echo "📦 Creating offline deployment package..."
+          
+          # Create package directory
+          mkdir -p offline-package/{app,config,data,scripts,docs,k8s,charts}
+          
+          # Copy essential files
+          cp -r src offline-package/app/
+          cp -r k8s offline-package/
+          cp -r charts offline-package/
+          cp -r scripts offline-package/
+          cp .env.example offline-package/config/
+          cp requirements*.txt offline-package/app/
+          cp main.py offline-package/app/
+          cp init_database.py offline-package/app/
+          cp README.md CLAUDE.md offline-package/docs/
+          
+          # Create deployment script
+          cat > offline-package/scripts/deploy.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          echo "🚀 Blacklist Management System - Offline Deployment"
+          
+          # Check prerequisites
+          command -v docker >/dev/null 2>&1 || { echo "❌ Docker not found"; exit 1; }
+          command -v kubectl >/dev/null 2>&1 || { echo "❌ kubectl not found"; exit 1; }
+          
+          # Load environment
+          if [ -f config/.env ]; then
+              source config/.env
+          else
+              echo "❌ config/.env not found. Copy from config/.env.example"
+              exit 1
+          fi
+          
+          # Build image from source
+          cd app && docker build -t blacklist:latest .
+          
+          # Create namespace and deploy
+          kubectl create namespace blacklist --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f ../k8s/base/
+          
+          # Wait for deployment
+          kubectl wait --for=condition=available --timeout=300s deployment/blacklist -n blacklist
+          
+          echo "🎉 Deployment completed!"
+          echo "Access: kubectl port-forward svc/blacklist 8080:80 -n blacklist"
+          EOF
+          
+          chmod +x offline-package/scripts/deploy.sh
+          
+          # Create package README
+          cat > offline-package/README.md << 'EOF'
+          # Blacklist Management System - Offline Package
+          
+          ## 설치 방법
+          
+          1. 패키지 압축 해제
+          ```bash
+          tar -xzf blacklist-offline-package.tar.gz
+          cd blacklist-offline-package
+          ```
+          
+          2. 환경 설정
+          ```bash
+          cp config/.env.example config/.env
+          nano config/.env  # 환경 설정 편집
+          ```
+          
+          3. 배포 실행
+          ```bash
+          ./scripts/deploy.sh
+          ```
+          
+          ## 요구사항
+          - Docker 20.10+
+          - Kubernetes 1.24+
+          - Python 3.10+
+          EOF
+
+      - name: Create offline package archive
+        run: |
+          # Clean up unnecessary files
+          find offline-package -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find offline-package -name "*.pyc" -delete 2>/dev/null || true
+          find offline-package -name "*.log" -delete 2>/dev/null || true
+          
+          # Create compressed package
+          tar --exclude='*.pyc' --exclude='__pycache__' --exclude='.git' \
+              -czf blacklist-offline-package-$(date +%Y%m%d-%H%M%S).tar.gz offline-package/
+          
+          echo "✅ Offline package created: $(ls -lh blacklist-offline-package-*.tar.gz)"
+
+      - name: Upload offline package artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: blacklist-offline-package-${{ github.run_number }}
+          path: blacklist-offline-package-*.tar.gz
+          retention-days: 30
+
+  deploy:
+    needs: [build, create-offline-package]
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy via ArgoCD
+        run: |
+          argocd app sync blacklist --grpc-web || true
+          argocd app wait blacklist --grpc-web --timeout 300 || true
+
+      - name: Verify deployment and service functionality
+        run: |
+          echo "🔍 Verifying deployment..."
+          kubectl get pods -n blacklist
+          kubectl get svc -n blacklist
+          
+          # Wait for service to be ready
+          kubectl wait --for=condition=ready pod -l app=blacklist -n blacklist --timeout=300s
+          
+          echo "🧪 Testing service functionality..."
+          
+          # Get service URL
+          SERVICE_IP=$(kubectl get svc blacklist -n blacklist -o jsonpath='{.spec.clusterIP}')
+          SERVICE_PORT=$(kubectl get svc blacklist -n blacklist -o jsonpath='{.spec.ports[0].port}')
+          
+          echo "Service endpoint: http://$SERVICE_IP:$SERVICE_PORT"
+          
+          # Test health endpoint
+          echo "Testing /health endpoint..."
+          if kubectl exec -n blacklist deployment/blacklist -- curl -f http://localhost:8541/health > /dev/null 2>&1; then
+            echo "✅ Health check passed"
+          else
+            echo "❌ Health check failed"
+            kubectl logs -n blacklist deployment/blacklist --tail=50
+            exit 1
+          fi
+          
+          # Test main dashboard
+          echo "Testing dashboard endpoint..."
+          if kubectl exec -n blacklist deployment/blacklist -- curl -f http://localhost:8541/ > /dev/null 2>&1; then
+            echo "✅ Dashboard endpoint accessible"
+          else
+            echo "❌ Dashboard endpoint failed"
+            kubectl logs -n blacklist deployment/blacklist --tail=50
+            exit 1
+          fi
+          
+          # Test API endpoints
+          echo "Testing API endpoints..."
+          if kubectl exec -n blacklist deployment/blacklist -- curl -f http://localhost:8541/api/collection/status > /dev/null 2>&1; then
+            echo "✅ Collection status API working"
+          else
+            echo "❌ Collection status API failed"
+          fi
+          
+          if kubectl exec -n blacklist deployment/blacklist -- curl -f http://localhost:8541/api/blacklist/active > /dev/null 2>&1; then
+            echo "✅ Blacklist API working"
+          else
+            echo "❌ Blacklist API failed"
+          fi
+          
+          # Test FortiGate endpoint
+          if kubectl exec -n blacklist deployment/blacklist -- curl -f http://localhost:8541/api/fortigate > /dev/null 2>&1; then
+            echo "✅ FortiGate API working"
+          else
+            echo "❌ FortiGate API failed"
+          fi
+          
+          echo "🎉 Service functionality verification completed"

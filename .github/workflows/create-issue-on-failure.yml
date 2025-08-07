@@ -1,0 +1,24 @@
+name: Create Issue on Failure
+
+on:
+  workflow_run:
+    workflows: ["Complete CI/CD Pipeline"]
+    types:
+      - completed
+
+jobs:
+  create-issue:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Create Issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 CI/CD Pipeline Failure',
+              body: `Pipeline failed on commit ${context.payload.workflow_run.head_sha}.\n\nWorkflow: ${context.payload.workflow_run.html_url}`,
+              labels: ['bug', 'ci/cd']
+            });
