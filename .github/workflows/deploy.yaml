@@ -25,11 +25,44 @@ jobs:
           username: ${{ secrets.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DOCKER_REGISTRY_PASS }}
       
-      - name: Generate build metadata
+      - name: Generate build metadata and version
         id: meta
         run: |
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+          
+          # Get current version from VERSION file or default
+          if [ -f VERSION ]; then
+            CURRENT_VERSION=$(cat VERSION)
+          else
+            CURRENT_VERSION="1.0.0"
+          fi
+          
+          # Parse version components
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          # Increment patch version
+          PATCH=$((PATCH + 1))
+          
+          # Handle patch overflow (reset at 100)
+          if [ $PATCH -ge 100 ]; then
+            PATCH=0
+            MINOR=$((MINOR + 1))
+          fi
+          
+          # Handle minor overflow (reset at 100)
+          if [ $MINOR -ge 100 ]; then
+            MINOR=0
+            MAJOR=$((MAJOR + 1))
+          fi
+          
+          # Construct new version
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          
+          # Save new version
+          echo "$NEW_VERSION" > VERSION
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Version bumped from $CURRENT_VERSION to $NEW_VERSION"
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
@@ -39,11 +72,21 @@ jobs:
           push: true
           tags: |
             registry.jclee.me/jclee94/blacklist:latest
+            registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.version }}
             registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.sha_short }}
             registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.date }}
           build-args: |
             BUILD_DATE=${{ steps.meta.outputs.date }}
             VCS_REF=${{ steps.meta.outputs.sha_short }}
+            VERSION=${{ steps.meta.outputs.version }}
+      
+      - name: Commit version bump
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add VERSION
+          git diff --staged --quiet || git commit -m "chore: bump version to ${{ steps.meta.outputs.version }} [skip ci]"
+          git push origin main || echo "No changes to push"
       
       - name: Update Kubernetes deployment
         run: |

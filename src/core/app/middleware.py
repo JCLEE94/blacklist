@@ -80,10 +80,12 @@ class MiddlewareMixin:
             duration = time.time() - g.get("start_time", time.time())
             
             profiler = g.get('profiler')
-            if profiler:
-                profiler.function_timings[
-                    f"endpoint_{request.endpoint or 'unknown'}"
-                ].append(duration)
+            if profiler and hasattr(profiler, 'function_timings'):
+                endpoint_key = f"endpoint_{request.endpoint or 'unknown'}"
+                if hasattr(profiler.function_timings, '__getitem__'):
+                    if endpoint_key not in profiler.function_timings:
+                        profiler.function_timings[endpoint_key] = []
+                    profiler.function_timings[endpoint_key].append(duration)
 
             # Add performance headers
             response.headers["X-Response-Time"] = f"{duration:.3f}s"

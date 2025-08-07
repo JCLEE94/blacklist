@@ -25,7 +25,7 @@ def unified_validation(
 
     def validation_decorator(func):
         @wraps(func)
-        def validation_wrapper(*args, **kwargs):
+        def unified_validation_wrapper(*args, **kwargs):
             errors = []
 
             # Validate JSON body
@@ -79,6 +79,6 @@ def unified_validation(
 
             return func(*args, **kwargs)
 
-        return validation_wrapper
+        return unified_validation_wrapper
 
     return validation_decorator
