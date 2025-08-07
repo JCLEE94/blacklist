@@ -79,13 +79,19 @@ class MiddlewareMixin:
             """Performance metrics recording"""
             duration = time.time() - g.get("start_time", time.time())
             
-            profiler = g.get('profiler')
-            if profiler and hasattr(profiler, 'function_timings'):
-                endpoint_key = f"endpoint_{request.endpoint or 'unknown'}"
-                if hasattr(profiler.function_timings, '__getitem__'):
+            # Safely handle profiler metrics
+            try:
+                profiler = g.get('profiler')
+                if profiler and hasattr(profiler, 'function_timings'):
+                    endpoint_key = f"endpoint_{request.endpoint or 'unknown'}"
+                    if not hasattr(profiler.function_timings, '__getitem__'):
+                        profiler.function_timings = {}
                     if endpoint_key not in profiler.function_timings:
                         profiler.function_timings[endpoint_key] = []
                     profiler.function_timings[endpoint_key].append(duration)
+            except Exception:
+                # Silently ignore profiler errors to avoid breaking the application
+                pass
 
             # Add performance headers
             response.headers["X-Response-Time"] = f"{duration:.3f}s"
