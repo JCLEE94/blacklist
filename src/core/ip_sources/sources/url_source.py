@@ -186,7 +186,7 @@ class URLSource(BaseIPSource):
     def _parse_xml(self, content: str, category: str, url: str) -> Iterator[IPEntry]:
         """XML 형식 파싱"""
         try:
-            import xml.etree.ElementTree as ET
+            import defusedxml.ElementTree as ET
 
             root = ET.fromstring(content)
             ip_pattern = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")

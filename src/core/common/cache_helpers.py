@@ -49,7 +49,7 @@ class CacheKeyBuilder:
     def _hash_object(obj: Union[dict, list]) -> str:
         """객체를 해시 문자열로 변환"""
         json_str = json.dumps(obj, sort_keys=True, ensure_ascii=False)
-        return hashlib.md5(json_str.encode()).hexdigest()[:8]
+        return hashlib.sha256(json_str.encode()).hexdigest()[:8]
 
     @staticmethod
     def build_pattern(prefix: str, pattern: str = "*") -> str:

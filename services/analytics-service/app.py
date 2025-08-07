@@ -350,5 +350,8 @@ async def get_performance_metrics():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
 
-    uvicorn.run(app, host="0.0.0.0", port=8002)
+    host = os.getenv("SERVICE_HOST", "0.0.0.0")
+    port = int(os.getenv("SERVICE_PORT", "8002"))
+    uvicorn.run(app, host=host, port=port)

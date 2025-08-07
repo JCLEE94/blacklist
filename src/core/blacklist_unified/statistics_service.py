@@ -400,11 +400,10 @@ class StatisticsService:
                     FROM ip_detections 
                     WHERE is_active = 1 
                       AND expires_at IS NOT NULL 
-                      AND expires_at BETWEEN datetime('now') AND datetime('now', '+{} days')
+                      AND expires_at BETWEEN datetime('now') AND datetime('now', '+' || ? || ' days')
                     ORDER BY expires_at
-                    """.format(
-                        days
-                    )
+                    """,
+                    (days,)
                 )
 
                 results = []
