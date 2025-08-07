@@ -36,12 +36,10 @@ class BlueprintRegistrationMixin:
         """V2 API 블루프린트 등록"""
         # Register V2 API routes (advanced features under /api/v2)
         try:
-            from ..v2_routes import register_v2_routes
+            from ..v2_routes import v2_bp
             
-            # Resolve services from container
-            blacklist_manager = container.resolve("blacklist_manager")
-            cache_manager = container.resolve("cache_manager")
-            register_v2_routes(app, blacklist_manager, cache_manager)
+            # Register the V2 blueprint
+            app.register_blueprint(v2_bp)
             logger.info("V2 API routes registered successfully")
         except Exception as e:
             logger.error(
