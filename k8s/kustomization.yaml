@@ -31,6 +31,9 @@ commonAnnotations:
   argocd-image-updater.argoproj.io/git-branch: main
   argocd-image-updater.argoproj.io/blacklist.pull-secret: secret:blacklist/regcred
 
-# Patches for ArgoCD
-patchesStrategicMerge:
-  - patches/ingress-health.yaml
+# Patches for ArgoCD (using new format)
+patches:
+  - path: patches/ingress-health.yaml
+    target:
+      kind: Ingress
+      name: blacklist

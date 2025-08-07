@@ -11,10 +11,7 @@ spec:
   source:
     repoURL: https://github.com/JCLEE94/blacklist
     targetRevision: main
-    path: helm/blacklist
-    helm:
-      valueFiles:
-        - values.yaml
+    path: k8s
   destination:
     server: https://kubernetes.default.svc
     namespace: blacklist
