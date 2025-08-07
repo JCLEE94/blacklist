@@ -1,11 +1,11 @@
 """Modular Unified Blacklist Manager package"""
 
 from .manager import UnifiedBlacklistManager
-from .models import SearchResult, DataProcessingError, ValidationError
+from .models import DataProcessingError, SearchResult, ValidationError
 
 __all__ = [
-    'UnifiedBlacklistManager',
-    'SearchResult', 
-    'DataProcessingError',
-    'ValidationError'
+    "UnifiedBlacklistManager",
+    "SearchResult",
+    "DataProcessingError",
+    "ValidationError",
 ]

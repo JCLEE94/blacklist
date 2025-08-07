@@ -8,13 +8,7 @@ import os
 import sqlite3
 from datetime import datetime
 
-from flask import (
-    Blueprint,
-    current_app,
-    jsonify,
-    render_template,
-    request,
-)
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 from ..exceptions import ValidationError, create_error_response
 from ..unified_service import get_unified_service
@@ -388,18 +382,14 @@ def search_batch_ips():
         results = []
         for ip in ips:
             if not validate_ip(ip):
-                results.append(
-                    {"ip": ip, "found": False, "error": "Invalid IP format"}
-                )
+                results.append({"ip": ip, "found": False, "error": "Invalid IP format"})
                 continue
 
             try:
                 search_result = service.search_ip(ip)
                 results.append({"ip": ip, "found": True, "data": search_result})
             except Exception as e:
-                results.append(
-                    {"ip": ip, "found": False, "error": str(e)}
-                )
+                results.append({"ip": ip, "found": False, "error": str(e)})
 
         return jsonify({"success": True, "results": results})
     except Exception as e:

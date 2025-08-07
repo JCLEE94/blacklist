@@ -38,25 +38,25 @@ class CollectionManager:
         """
         self.db_path = db_path
         self.config_path = Path(config_path)
-        
+
         # 설정 디렉토리 생성
         self.config_path.parent.mkdir(exist_ok=True)
-        
+
         # Initialize services
         self.config_service = CollectionConfigService(db_path, str(config_path))
         self.protection_service = ProtectionService(db_path, str(config_path))
         self.auth_service = AuthService(db_path)
         self.status_service = StatusService(
-            self.config_service, 
-            self.protection_service, 
-            self.auth_service
+            self.config_service, self.protection_service, self.auth_service
         )
-        
+
         # 초기 설정 및 보호 시스템 활성화
         self._initialize_protection_system()
-        
-        logger.info(f"CollectionManager initialized with modular services - DB: {db_path}, Config: {config_path}")
-    
+
+        logger.info(
+            f"CollectionManager initialized with modular services - DB: {db_path}, Config: {config_path}"
+        )
+
     def _initialize_protection_system(self):
         """보호 시스템 초기화"""
         try:
@@ -64,26 +64,31 @@ class CollectionManager:
             if not self.config_path.exists():
                 logger.info("Creating initial protected configuration")
                 self.config_service.create_initial_config_with_protection()
-            
+
             # 급속 재시작 감지
             if self.protection_service.detect_rapid_restart():
-                logger.warning("Rapid restart detected - collection will be disabled for safety")
-                
+                logger.warning(
+                    "Rapid restart detected - collection will be disabled for safety"
+                )
+
         except Exception as e:
             logger.error(f"Error initializing protection system: {e}")
-    
+
     def enable_collection(
         self,
         sources: Optional[List[str]] = None,
         clear_data_first: bool = True,
         bypass_protection: bool = False,
-        reason: str = "Manual enable request"
+        reason: str = "Manual enable request",
     ) -> Dict[str, Any]:
         """수집 활성화 (보호 시스템 적용)"""
         try:
             # 1. 보호 시스템 검사 (바이패스 옵션 확인)
             if not bypass_protection:
-                safe, safety_reason = self.protection_service.is_collection_safe_to_enable()
+                (
+                    safe,
+                    safety_reason,
+                ) = self.protection_service.is_collection_safe_to_enable()
                 if not safe:
                     return {
                         "success": False,
@@ -93,21 +98,23 @@ class CollectionManager:
                         "protection_active": True,
                     }
             else:
-                logger.warning(f"Protection bypass used for collection enable: {reason}")
-            
+                logger.warning(
+                    f"Protection bypass used for collection enable: {reason}"
+                )
+
             # 2. 데이터 클리어 (요청 시)
             clear_result = None
             if clear_data_first:
                 clear_result = self.clear_all_data()
                 logger.info(f"Data cleared before enabling collection: {clear_result}")
-            
+
             # 3. 설정 업데이트
             config = self.config_service.load_collection_config()
             config["enabled"] = True
             config["enabled_at"] = datetime.now().isoformat()
             config["enabled_reason"] = reason
             config["bypass_protection"] = bypass_protection
-            
+
             # 소스별 활성화
             if sources:
                 for source in sources:
@@ -126,14 +133,14 @@ class CollectionManager:
                     "enabled": True,
                     "enabled_at": datetime.now().isoformat(),
                 }
-            
+
             # 설정 저장
             self.config_service.save_collection_config(config)
             self.config_service.save_collection_enabled_to_db(True)
-            
+
             # 4. 인증 실패 기록 리셋
             self.auth_service.reset_auth_attempts()
-            
+
             result = {
                 "success": True,
                 "enabled": True,
@@ -144,10 +151,10 @@ class CollectionManager:
                 "reason": reason,
                 "timestamp": datetime.now().isoformat(),
             }
-            
+
             logger.info(f"Collection enabled successfully: {result}")
             return result
-            
+
         except Exception as e:
             logger.error(f"Error enabling collection: {e}")
             return {
@@ -155,7 +162,7 @@ class CollectionManager:
                 "error": f"수집 활성화 중 오류: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
-    
+
     def disable_collection(self) -> Dict[str, Any]:
         """수집 비활성화"""
         try:
@@ -164,25 +171,27 @@ class CollectionManager:
             config["enabled"] = False
             config["disabled_at"] = datetime.now().isoformat()
             config["disabled_reason"] = "Manual disable request"
-            
+
             # 모든 소스 비활성화
             if "sources" in config:
                 for source in config["sources"]:
                     config["sources"][source]["enabled"] = False
-                    config["sources"][source]["disabled_at"] = datetime.now().isoformat()
-            
+                    config["sources"][source][
+                        "disabled_at"
+                    ] = datetime.now().isoformat()
+
             self.config_service.save_collection_config(config)
             self.config_service.save_collection_enabled_to_db(False)
-            
+
             result = {
                 "success": True,
                 "enabled": False,
                 "timestamp": datetime.now().isoformat(),
             }
-            
+
             logger.info(f"Collection disabled successfully: {result}")
             return result
-            
+
         except Exception as e:
             logger.error(f"Error disabling collection: {e}")
             return {
@@ -190,7 +199,7 @@ class CollectionManager:
                 "error": f"수집 비활성화 중 오류: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
-    
+
     def clear_all_data(self) -> Dict[str, Any]:
         """모든 수집 데이터 삭제"""
         try:
@@ -199,12 +208,18 @@ class CollectionManager:
                 "directories_cleaned": 0,
                 "auth_records_cleared": 0,
             }
-            
+
             # 1. Excel 파일들 삭제
-            patterns = ["regtech*.xlsx", "REGTECH*.xlsx", "secudium*.xlsx", "SECUDIUM*.xlsx"]
-            
+            patterns = [
+                "regtech*.xlsx",
+                "REGTECH*.xlsx",
+                "secudium*.xlsx",
+                "SECUDIUM*.xlsx",
+            ]
+
             for pattern in patterns:
                 import glob
+
                 for file_path in glob.glob(pattern, recursive=True):
                     try:
                         os.remove(file_path)
@@ -212,7 +227,7 @@ class CollectionManager:
                         logger.debug(f"Removed file: {file_path}")
                     except Exception as e:
                         logger.warning(f"Could not remove {file_path}: {e}")
-            
+
             # 2. 임시 디렉토리 정리
             temp_dirs = ["temp", "downloads", "cache"]
             for temp_dir in temp_dirs:
@@ -224,21 +239,23 @@ class CollectionManager:
                         logger.debug(f"Cleaned directory: {temp_dir}")
                     except Exception as e:
                         logger.warning(f"Could not clean directory {temp_dir}: {e}")
-            
+
             # 3. 인증 실패 기록 정리
             auth_clear_result = self.auth_service.reset_auth_attempts()
-            cleared_items["auth_records_cleared"] = auth_clear_result.get("records_cleared", 0)
-            
+            cleared_items["auth_records_cleared"] = auth_clear_result.get(
+                "records_cleared", 0
+            )
+
             result = {
                 "success": True,
                 "cleared_items": cleared_items,
                 "total_items_cleared": sum(cleared_items.values()),
                 "timestamp": datetime.now().isoformat(),
             }
-            
+
             logger.info(f"Data cleared successfully: {cleared_items}")
             return result
-            
+
         except Exception as e:
             logger.error(f"Error clearing data: {e}")
             return {
@@ -246,49 +263,53 @@ class CollectionManager:
                 "error": f"데이터 삭제 중 오류: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
-    
+
     # Delegate methods to appropriate services
     def is_collection_enabled(self, source: Optional[str] = None) -> bool:
         """수집 활성화 상태 확인"""
         return self.status_service.is_collection_enabled(source)
-    
+
     def get_status(self) -> Dict[str, Any]:
         """수집 상태 조회"""
         return self.status_service.get_status()
-    
+
     def get_detailed_status(self) -> Dict[str, Any]:
         """상세 수집 상태 조회"""
         return self.status_service.get_detailed_status()
-    
-    def record_auth_attempt(self, source: str, success: bool = False, details: str = None):
+
+    def record_auth_attempt(
+        self, source: str, success: bool = False, details: str = None
+    ):
         """인증 시도 기록"""
         self.auth_service.record_auth_attempt(source, success, details)
-    
+
     def get_auth_statistics(self, source: str = None, hours: int = 24) -> Dict:
         """인증 통계 조회"""
         return self.auth_service.get_auth_statistics(source, hours)
-    
+
     def reset_protection_state(self) -> Dict[str, bool]:
         """보호 상태 리셋"""
         return self.protection_service.reset_protection_state()
-    
+
     # Legacy methods for backward compatibility
     def set_daily_collection_enabled(self) -> Dict[str, Any]:
         """일일 수집 활성화 (legacy)"""
         return self.enable_collection(reason="Daily collection schedule")
-    
+
     def set_daily_collection_disabled(self) -> Dict[str, Any]:
         """일일 수집 비활성화 (legacy)"""
         return self.disable_collection()
-    
+
     def is_collection_safe_to_enable(self) -> tuple[bool, str]:
         """수집 활성화 안전성 검사"""
         return self.protection_service.is_collection_safe_to_enable()
-    
+
     def create_protection_bypass(self, reason: str, duration_minutes: int = 60) -> Dict:
         """보호 바이패스 생성"""
-        return self.protection_service.create_protection_bypass(reason, duration_minutes)
-    
+        return self.protection_service.create_protection_bypass(
+            reason, duration_minutes
+        )
+
     def validate_collection_requirements(self) -> Dict[str, Any]:
         """수집 요구사항 검증"""
         return self.status_service.validate_collection_requirements()

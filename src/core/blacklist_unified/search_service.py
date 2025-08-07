@@ -12,30 +12,36 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set
 
-from .models import SearchResult
-from ..database import DatabaseManager
 from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_cache, unified_monitoring
+from ..database import DatabaseManager
+from .models import SearchResult
 
 logger = logging.getLogger(__name__)
 
 
 class SearchService:
     """Handles IP search operations for the blacklist manager"""
-    
-    def __init__(self, data_dir: str, db_manager: DatabaseManager, cache: EnhancedSmartCache):
+
+    def __init__(
+        self, data_dir: str, db_manager: DatabaseManager, cache: EnhancedSmartCache
+    ):
         self.data_dir = data_dir
         self.blacklist_dir = os.path.join(data_dir, "blacklist_ips")
         self.detection_dir = os.path.join(data_dir, "by_detection_month")
         self.db_manager = db_manager
         self.cache = cache
-        
+
         # Set database path for direct SQLite access
-        if hasattr(db_manager, 'db_url') and db_manager.db_url and "sqlite:///" in db_manager.db_url:
+        if (
+            hasattr(db_manager, "db_url")
+            and db_manager.db_url
+            and "sqlite:///" in db_manager.db_url
+        ):
             self.db_path = db_manager.db_url.replace("sqlite:///", "")
         else:
             self.db_path = os.path.join(self.data_dir, "database.db")
-    
+
     @unified_monitoring("search_ip")
     def search_ip(self, ip: str, include_geo: bool = False) -> Dict[str, Any]:
         """Search for IP in blacklist with enhanced features"""
@@ -65,7 +71,7 @@ class SearchService:
         # Combine results
         found = file_result["found"] or (db_result is not None)
         sources = file_result["sources"]
-        
+
         if db_result:
             sources.extend(db_result.get("sources", []))
 
@@ -78,14 +84,16 @@ class SearchService:
 
         # Add database metadata if available
         if db_result:
-            result.update({
-                "first_detection": db_result.get("first_detection"),
-                "last_detection": db_result.get("last_detection"),
-                "detection_count": db_result.get("detection_count", 0),
-                "country": db_result.get("country"),
-                "threat_type": db_result.get("threat_type"),
-                "confidence_score": db_result.get("confidence_score"),
-            })
+            result.update(
+                {
+                    "first_detection": db_result.get("first_detection"),
+                    "last_detection": db_result.get("last_detection"),
+                    "detection_count": db_result.get("detection_count", 0),
+                    "country": db_result.get("country"),
+                    "threat_type": db_result.get("threat_type"),
+                    "confidence_score": db_result.get("confidence_score"),
+                }
+            )
 
         # Cache result
         self.cache.set(cache_key, result, ttl=300)  # 5 minute cache
@@ -212,7 +220,7 @@ class SearchService:
         try:
             with sqlite3.connect(self.db_path, timeout=5) as conn:
                 cursor = conn.cursor()
-                
+
                 # Create search_history table if it doesn't exist
                 cursor.execute(
                     """
@@ -226,7 +234,7 @@ class SearchService:
                     )
                     """
                 )
-                
+
                 # Insert search record
                 cursor.execute(
                     """
@@ -235,7 +243,7 @@ class SearchService:
                     """,
                     (ip, found),
                 )
-                
+
                 conn.commit()
         except Exception as e:
             logger.warning(f"Failed to record search history: {e}")
@@ -247,17 +255,16 @@ class SearchService:
         """Bulk search for multiple IPs with concurrent processing"""
         start_time = datetime.now()
         results = []
-        
+
         # Process IPs in batches to avoid overwhelming the system
         batch_size = min(max_workers, len(ips))
-        
+
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
             # Submit all search tasks
             future_to_ip = {
-                executor.submit(self.search_ip, ip, include_geo): ip 
-                for ip in ips
+                executor.submit(self.search_ip, ip, include_geo): ip for ip in ips
             }
-            
+
             # Collect results as they complete
             for future in as_completed(future_to_ip):
                 ip = future_to_ip[future]
@@ -266,20 +273,22 @@ class SearchService:
                     results.append(result)
                 except Exception as e:
                     logger.error(f"Error searching IP {ip}: {e}")
-                    results.append({
-                        "ip": ip,
-                        "found": False,
-                        "error": str(e),
-                        "sources": [],
-                        "search_timestamp": datetime.now().isoformat(),
-                    })
-        
+                    results.append(
+                        {
+                            "ip": ip,
+                            "found": False,
+                            "error": str(e),
+                            "sources": [],
+                            "search_timestamp": datetime.now().isoformat(),
+                        }
+                    )
+
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
-        
+
         # Calculate statistics
         found_count = sum(1 for r in results if r.get("found", False))
-        
+
         return {
             "total_searched": len(ips),
             "found_count": found_count,

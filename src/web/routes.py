@@ -4,11 +4,12 @@ Updated to use modular structure instead of a single large file
 """
 
 import logging
+
 from flask import Blueprint
 
-from .dashboard_routes import dashboard_bp
-from .api_routes import api_bp  
+from .api_routes import api_bp
 from .collection_routes import collection_bp
+from .dashboard_routes import dashboard_bp
 from .data_routes import data_bp
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ web_bp.register_blueprint(collection_bp)
 web_bp.register_blueprint(data_bp)
 
 # Export the main blueprint
-__all__ = ['web_bp']
+__all__ = ["web_bp"]
 
 logger.info("Web routes initialized with modular structure")
 logger.info(f"Registered blueprints: dashboard, api, collection, data")

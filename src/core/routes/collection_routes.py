@@ -4,11 +4,12 @@
 """
 
 import logging
+
 from flask import Blueprint
 
+from .collection_logs_routes import collection_logs_bp
 from .collection_status_routes import collection_status_bp
 from .collection_trigger_routes import collection_trigger_bp
-from .collection_logs_routes import collection_logs_bp
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,9 @@ collection_routes_bp.register_blueprint(collection_trigger_bp)
 collection_routes_bp.register_blueprint(collection_logs_bp)
 
 # Export
-__all__ = ['collection_routes_bp']
+__all__ = ["collection_routes_bp"]
 
 logger.info("Collection routes initialized with modular structure")
-logger.info(f"Registered blueprints: collection_status, collection_trigger, collection_logs")
+logger.info(
+    f"Registered blueprints: collection_status, collection_trigger, collection_logs"
+)

@@ -6,15 +6,7 @@ Collection control and monitoring pages
 import logging
 from datetime import datetime, timedelta
 
-from flask import (
-    Blueprint,
-    flash,
-    jsonify,
-    render_template,
-    request,
-    redirect,
-    url_for,
-)
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
@@ -56,41 +48,54 @@ def api_raw_data():
         limit = request.args.get("limit", 100, type=int)
         date_filter = request.args.get("date")
         source_filter = request.args.get("source")
-        
+
         # Mock raw data
         mock_data = []
         total_count = 500  # Mock total
-        
+
         # Generate mock data based on page
         start_idx = (page - 1) * limit
         for i in range(start_idx, min(start_idx + limit, total_count)):
-            mock_data.append({
-                "id": i + 1,
-                "ip": f"192.168.{i//255}.{i%255}",
-                "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
-                "country": "KR" if i % 3 == 0 else "US",
-                "attack_type": "Malware" if i % 2 == 0 else "Phishing",
-                "detection_date": (datetime.now() - timedelta(days=i%30)).strftime("%Y-%m-%d"),
-                "created_at": (datetime.now() - timedelta(days=i%30)).strftime("%Y-%m-%d %H:%M:%S"),
-            })
-        
-        return jsonify({
-            "success": True,
-            "data": mock_data,
-            "total": total_count,
-            "page": page,
-            "limit": limit,
-            "timestamp": datetime.now().isoformat(),
-        })
-        
+            mock_data.append(
+                {
+                    "id": i + 1,
+                    "ip": f"192.168.{i//255}.{i%255}",
+                    "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
+                    "country": "KR" if i % 3 == 0 else "US",
+                    "attack_type": "Malware" if i % 2 == 0 else "Phishing",
+                    "detection_date": (
+                        datetime.now() - timedelta(days=i % 30)
+                    ).strftime("%Y-%m-%d"),
+                    "created_at": (datetime.now() - timedelta(days=i % 30)).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+                }
+            )
+
+        return jsonify(
+            {
+                "success": True,
+                "data": mock_data,
+                "total": total_count,
+                "page": page,
+                "limit": limit,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Raw data API error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "data": [],
-            "total": 0,
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "data": [],
+                    "total": 0,
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/regtech-collector")
@@ -104,13 +109,13 @@ def regtech_collector():
             "total_collected": 1250,
             "connection_status": "connected",
         }
-        
+
         return render_template(
             "regtech_collector.html",
             collector_info=collector_info,
             current_time=datetime.now(),
         )
-        
+
     except Exception as e:
         logger.error(f"REGTECH collector page error: {e}")
         flash(f"REGTECH collector 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
@@ -128,18 +133,25 @@ def api_secudium_test():
     """SECUDIUM collector test API"""
     try:
         # Mock test result
-        return jsonify({
-            "success": True,
-            "message": "SECUDIUM connection test successful",
-            "status": "connected",
-            "test_time": datetime.now().isoformat(),
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": "SECUDIUM connection test successful",
+                "status": "connected",
+                "test_time": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"SECUDIUM test error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/collection/secudium/trigger", methods=["POST"])
@@ -147,19 +159,26 @@ def api_secudium_trigger():
     """SECUDIUM collection trigger API"""
     try:
         # Mock collection trigger
-        return jsonify({
-            "success": True,
-            "message": "SECUDIUM collection started",
-            "job_id": "secudium_001",
-            "estimated_time": "5 minutes",
-            "started_at": datetime.now().isoformat(),
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": "SECUDIUM collection started",
+                "job_id": "secudium_001",
+                "estimated_time": "5 minutes",
+                "started_at": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"SECUDIUM trigger error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/collection/secudium/progress")
@@ -167,23 +186,30 @@ def api_secudium_progress():
     """SECUDIUM collection progress API"""
     try:
         # Mock progress data
-        return jsonify({
-            "success": True,
-            "progress": {
-                "status": "running",
-                "percentage": 65,
-                "current_step": "Processing data",
-                "items_processed": 130,
-                "total_items": 200,
-                "estimated_remaining": "2 minutes",
-            },
-        })
+        return jsonify(
+            {
+                "success": True,
+                "progress": {
+                    "status": "running",
+                    "percentage": 65,
+                    "current_step": "Processing data",
+                    "items_processed": 130,
+                    "total_items": 200,
+                    "estimated_remaining": "2 minutes",
+                },
+            }
+        )
     except Exception as e:
         logger.error(f"SECUDIUM progress error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/collection/secudium/logs")
@@ -198,28 +224,39 @@ def api_secudium_logs():
                 "message": "Starting SECUDIUM collection",
             },
             {
-                "timestamp": (datetime.now() - timedelta(seconds=30)).strftime("%H:%M:%S"),
-                "level": "INFO", 
+                "timestamp": (datetime.now() - timedelta(seconds=30)).strftime(
+                    "%H:%M:%S"
+                ),
+                "level": "INFO",
                 "message": "Connected to SECUDIUM API",
             },
             {
-                "timestamp": (datetime.now() - timedelta(minutes=1)).strftime("%H:%M:%S"),
+                "timestamp": (datetime.now() - timedelta(minutes=1)).strftime(
+                    "%H:%M:%S"
+                ),
                 "level": "INFO",
                 "message": "Processing page 1 of 5",
             },
         ]
-        
-        return jsonify({
-            "success": True,
-            "logs": logs,
-        })
+
+        return jsonify(
+            {
+                "success": True,
+                "logs": logs,
+            }
+        )
     except Exception as e:
         logger.error(f"SECUDIUM logs error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "logs": [],
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "logs": [],
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/collection/secudium/status")
@@ -227,22 +264,29 @@ def api_secudium_status():
     """SECUDIUM collection status API"""
     try:
         # Mock status data
-        return jsonify({
-            "success": True,
-            "status": {
-                "is_running": False,
-                "last_collection": "2024-01-15 09:45:00",
-                "total_collected": 850,
-                "connection_status": "connected",
-                "next_scheduled": "2024-01-16 09:00:00",
-            },
-        })
+        return jsonify(
+            {
+                "success": True,
+                "status": {
+                    "is_running": False,
+                    "last_collection": "2024-01-15 09:45:00",
+                    "total_collected": 850,
+                    "connection_status": "connected",
+                    "next_scheduled": "2024-01-16 09:00:00",
+                },
+            }
+        )
     except Exception as e:
         logger.error(f"SECUDIUM status error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/collection/secudium/stop", methods=["POST"])
@@ -250,17 +294,24 @@ def api_secudium_stop():
     """SECUDIUM collection stop API"""
     try:
         # Mock stop operation
-        return jsonify({
-            "success": True,
-            "message": "SECUDIUM collection stopped",
-            "stopped_at": datetime.now().isoformat(),
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": "SECUDIUM collection stopped",
+                "stopped_at": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"SECUDIUM stop error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/regtech/collect", methods=["POST"])
@@ -270,25 +321,32 @@ def api_regtech_collect():
         data = request.get_json() or {}
         start_date = data.get("start_date")
         end_date = data.get("end_date")
-        
+
         # Mock collection process
-        return jsonify({
-            "success": True,
-            "message": "REGTECH collection completed",
-            "collected_count": 125,
-            "date_range": {
-                "start": start_date,
-                "end": end_date,
-            },
-            "collection_time": datetime.now().isoformat(),
-        })
-        
+        return jsonify(
+            {
+                "success": True,
+                "message": "REGTECH collection completed",
+                "collected_count": 125,
+                "date_range": {
+                    "start": start_date,
+                    "end": end_date,
+                },
+                "collection_time": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"REGTECH collect error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/regtech/stats")
@@ -304,18 +362,25 @@ def api_regtech_stats():
             "avg_collection_time": "3.2 minutes",
             "last_collection": "2024-01-15 10:30:00",
         }
-        
-        return jsonify({
-            "success": True,
-            "stats": stats,
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "stats": stats,
+            }
+        )
+
     except Exception as e:
         logger.error(f"REGTECH stats error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @collection_bp.route("/api/sources/stats")
@@ -337,17 +402,24 @@ def api_sources_stats():
                 "status": "active",
             },
         }
-        
-        return jsonify({
-            "success": True,
-            "sources": sources,
-            "total_all_sources": sum(s["total"] for s in sources.values()),
-            "active_all_sources": sum(s["active"] for s in sources.values()),
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "sources": sources,
+                "total_all_sources": sum(s["total"] for s in sources.values()),
+                "active_all_sources": sum(s["active"] for s in sources.values()),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Sources stats error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )

@@ -11,13 +11,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from ...utils.advanced_cache import EnhancedSmartCache
+from ...utils.unified_decorators import unified_monitoring
+from ..database import DatabaseManager
 from .data_service import DataService
 from .expiration_service import ExpirationService
 from .search_service import SearchService
 from .statistics_service import StatisticsService
-from ..database import DatabaseManager
-from ...utils.advanced_cache import EnhancedSmartCache
-from ...utils.unified_decorators import unified_monitoring
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +54,19 @@ class UnifiedBlacklistManager:
             self.cache = cache_backend
         else:
             from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
+
             cache_manager = CacheManager()
             self.cache = cache_manager.get_cache()
 
         # Initialize services
         self.search_service = SearchService(self.data_dir, self.db_manager, self.cache)
         self.data_service = DataService(self.data_dir, self.db_manager, self.cache)
-        self.statistics_service = StatisticsService(self.data_dir, self.db_manager, self.cache)
-        self.expiration_service = ExpirationService(self.data_dir, self.db_manager, self.cache)
+        self.statistics_service = StatisticsService(
+            self.data_dir, self.db_manager, self.cache
+        )
+        self.expiration_service = ExpirationService(
+            self.data_dir, self.db_manager, self.cache
+        )
 
         # Initialize geolocation if API keys provided
         self.geo_api_keys = geo_api_keys or {}
@@ -90,18 +95,20 @@ class UnifiedBlacklistManager:
 
     def _setup_cleanup_scheduler(self):
         """Setup periodic cleanup of old data"""
+
         def cleanup_thread():
             while True:
                 try:
                     import time
+
                     time.sleep(24 * 3600)  # Run daily
-                    
+
                     # Run expiration update
                     self.expiration_service.update_expiration_status()
-                    
+
                     # Clean old data (older than 1 year)
                     self.data_service.cleanup_old_data(days=365)
-                    
+
                     logger.info("Scheduled cleanup completed")
                 except Exception as e:
                     logger.error(f"Error in cleanup scheduler: {e}")
@@ -128,7 +135,9 @@ class UnifiedBlacklistManager:
         clear_existing: bool = False,
     ) -> Dict[str, Any]:
         """Bulk import IP addresses"""
-        return self.data_service.bulk_import_ips(ips_data, source, batch_size, clear_existing)
+        return self.data_service.bulk_import_ips(
+            ips_data, source, batch_size, clear_existing
+        )
 
     def get_active_ips(self) -> List[str]:
         """Get all active IP addresses"""
@@ -188,22 +197,21 @@ class UnifiedBlacklistManager:
         """Get active IPs in FortiGate format"""
         try:
             active_ips = self.get_active_ips()
-            
+
             if not active_ips:
                 return "[]"
-            
+
             # FortiGate JSON format
             fortigate_data = []
             for ip in active_ips:
-                fortigate_data.append({
-                    "ip": ip,
-                    "type": "malicious",
-                    "confidence": "high"
-                })
-            
+                fortigate_data.append(
+                    {"ip": ip, "type": "malicious", "confidence": "high"}
+                )
+
             import json
+
             return json.dumps(fortigate_data, indent=2)
-            
+
         except Exception as e:
             logger.error(f"Error generating FortiGate format: {e}")
             return "[]"

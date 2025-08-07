@@ -8,6 +8,7 @@ import hashlib
 import logging
 import os
 from functools import wraps
+
 from .cache_manager import EnhancedSmartCache
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ def get_cache(redis_url: str = None):
 
 def cached(cache, ttl=300, key_prefix=""):
     """Simple caching decorator for backward compatibility"""
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -45,7 +47,7 @@ def cached(cache, ttl=300, key_prefix=""):
             args_str = str(args) if args else ""
             kwargs_str = str(sorted(kwargs.items())) if kwargs else ""
             cache_key = f"{key_prefix}:{func.__name__}:{hash(args_str + kwargs_str)}"
-            
+
             # Try to get from cache
             if cache:
                 try:
@@ -54,17 +56,19 @@ def cached(cache, ttl=300, key_prefix=""):
                         return cached_result
                 except Exception as e:
                     logger.warning(f"Cache get failed: {e}")
-            
+
             # Execute function
             result = func(*args, **kwargs)
-            
+
             # Cache result
             if cache and result is not None:
                 try:
                     cache.set(cache_key, result, ttl=ttl)
                 except Exception as e:
                     logger.warning(f"Cache set failed: {e}")
-            
+
             return result
+
         return wrapper
+
     return decorator

@@ -5,12 +5,13 @@
 """
 
 import logging
+
 from flask import Blueprint
 
-from .routes.web_routes import web_routes_bp
+from .routes.admin_routes import admin_routes_bp
 from .routes.api_routes import api_routes_bp
 from .routes.collection_routes import collection_routes_bp
-from .routes.admin_routes import admin_routes_bp
+from .routes.web_routes import web_routes_bp
 
 logger = logging.getLogger(__name__)
 
@@ -25,26 +26,28 @@ unified_bp.register_blueprint(admin_routes_bp)
 
 # Import test utilities for backwards compatibility
 from .routes.test_utils import (
+    _test_collection_data_flow,
     _test_collection_endpoints,
     _test_collection_state_consistency,
     _test_concurrent_requests,
-    _test_statistics_integration,
     _test_database_api_consistency,
-    _test_collection_data_flow,
+    _test_statistics_integration,
     run_all_tests,
 )
 
 # Export the main blueprint and test functions
 __all__ = [
-    'unified_bp',
-    '_test_collection_endpoints',
-    '_test_collection_state_consistency', 
-    '_test_concurrent_requests',
-    '_test_statistics_integration',
-    '_test_database_api_consistency',
-    '_test_collection_data_flow',
-    'run_all_tests',
+    "unified_bp",
+    "_test_collection_endpoints",
+    "_test_collection_state_consistency",
+    "_test_concurrent_requests",
+    "_test_statistics_integration",
+    "_test_database_api_consistency",
+    "_test_collection_data_flow",
+    "run_all_tests",
 ]
 
 logger.info("Unified routes initialized with modular structure")
-logger.info(f"Registered blueprints: web_routes, api_routes, collection_routes, admin_routes")
+logger.info(
+    f"Registered blueprints: web_routes, api_routes, collection_routes, admin_routes"
+)

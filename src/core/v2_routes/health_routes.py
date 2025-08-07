@@ -4,10 +4,11 @@ V2 Health and Performance API Routes
 """
 
 from datetime import datetime
+
 from flask import Blueprint, jsonify, request
 
-from .service import V2APIService
 from ...utils.unified_decorators import unified_cache
+from .service import V2APIService
 
 health_v2_bp = Blueprint("health_v2", __name__)
 
@@ -27,7 +28,7 @@ def health_check():
     try:
         # 기본 시스템 건강도 조회
         health = service.blacklist_manager.get_system_health()
-        
+
         # V2 향상 건강 정보
         enhanced_health = {
             "status": health.get("status", "unknown"),
@@ -38,7 +39,9 @@ def health_check():
             "database": health.get("database", {}),
             "cache": health.get("cache", {}),
             "components": {
-                "blacklist_manager": "healthy" if health.get("database", {}).get("active_ips", 0) > 0 else "degraded",
+                "blacklist_manager": "healthy"
+                if health.get("database", {}).get("active_ips", 0) > 0
+                else "degraded",
                 "cache_system": "healthy" if health.get("cache") else "unavailable",
                 "api_service": "healthy",
             },
@@ -47,34 +50,38 @@ def health_check():
                 "active_sources": health.get("database", {}).get("active_sources", 0),
                 "total_records": health.get("database", {}).get("total_records", 0),
                 "recent_ips_24h": health.get("database", {}).get("recent_ips_24h", 0),
-            }
+            },
         }
-        
+
         # 전체 상태 결정
         all_healthy = all(
-            status == "healthy" 
-            for status in enhanced_health["components"].values()
+            status == "healthy" for status in enhanced_health["components"].values()
         )
         enhanced_health["overall_status"] = "healthy" if all_healthy else "degraded"
-        
+
         # HTTP 상태 코드 결정
         http_status = 200 if all_healthy else 503
-        
+
         return jsonify(enhanced_health), http_status
-        
+
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "version": "2.0",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat(),
-            "overall_status": "unhealthy",
-            "components": {
-                "blacklist_manager": "error",
-                "cache_system": "error",
-                "api_service": "error",
-            }
-        }), 500
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "version": "2.0",
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                    "overall_status": "unhealthy",
+                    "components": {
+                        "blacklist_manager": "error",
+                        "cache_system": "error",
+                        "api_service": "error",
+                    },
+                }
+            ),
+            500,
+        )
 
 
 @health_v2_bp.route("/performance", methods=["GET"])
@@ -83,7 +90,7 @@ def get_performance_metrics():
     """성능 메트릭 (V2)"""
     try:
         result = service.get_performance_metrics()
-        
+
         # V2 향상 성능 정보 추가
         enhanced_result = {
             "api_version": "v2",
@@ -96,14 +103,18 @@ def get_performance_metrics():
                 "database_query_time": "<50ms",
             },
             "throughput": {
-                "requests_per_minute": result.get("performance", {}).get("requests_per_minute", 0),
-                "cache_operations_per_minute": result.get("cache", {}).get("operations_per_minute", 0),
+                "requests_per_minute": result.get("performance", {}).get(
+                    "requests_per_minute", 0
+                ),
+                "cache_operations_per_minute": result.get("cache", {}).get(
+                    "operations_per_minute", 0
+                ),
             },
             "generated_at": result.get("timestamp"),
         }
-        
+
         return jsonify(enhanced_result)
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -115,13 +126,13 @@ def get_detailed_status():
     try:
         # 기본 건강도 데이터
         health = service.blacklist_manager.get_system_health()
-        
+
         # 성능 메트릭
         performance = service.get_performance_metrics()
-        
+
         # 통계 데이터
         analytics = service.get_analytics_summary(7)  # 7일 데이터
-        
+
         detailed_status = {
             "system_info": {
                 "api_version": "v2",
@@ -132,30 +143,43 @@ def get_detailed_status():
             "health": health,
             "performance": performance,
             "data_summary": {
-                "active_blacklist_entries": analytics.get("summary", {}).get("total_active_ips", 0),
-                "countries_covered": analytics.get("summary", {}).get("unique_countries", 0),
-                "data_sources_active": analytics.get("summary", {}).get("active_sources", 0),
+                "active_blacklist_entries": analytics.get("summary", {}).get(
+                    "total_active_ips", 0
+                ),
+                "countries_covered": analytics.get("summary", {}).get(
+                    "unique_countries", 0
+                ),
+                "data_sources_active": analytics.get("summary", {}).get(
+                    "active_sources", 0
+                ),
                 "last_update": analytics.get("generated_at"),
             },
             "operational_metrics": {
-                "database_status": "operational" if health.get("status") != "error" else "error",
+                "database_status": "operational"
+                if health.get("status") != "error"
+                else "error",
                 "cache_status": "operational" if health.get("cache") else "degraded",
                 "api_status": "operational",
                 "data_freshness": "current",  # 실제 데이터 업데이트 시간 기반
-            }
+            },
         }
-        
+
         return jsonify(detailed_status)
-        
+
     except Exception as e:
-        return jsonify({
-            "error": str(e),
-            "system_info": {
-                "api_version": "v2",
-                "timestamp": datetime.now().isoformat(),
-                "status": "error"
-            }
-        }), 500
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "system_info": {
+                        "api_version": "v2",
+                        "timestamp": datetime.now().isoformat(),
+                        "status": "error",
+                    },
+                }
+            ),
+            500,
+        )
 
 
 @health_v2_bp.route("/diagnostics", methods=["GET"])
@@ -168,7 +192,7 @@ def get_diagnostics():
                 "version": "v2",
                 "endpoints_available": [
                     "/api/v2/health",
-                    "/api/v2/performance", 
+                    "/api/v2/performance",
                     "/api/v2/blacklist/enhanced",
                     "/api/v2/analytics/summary",
                     "/api/v2/export/json",
@@ -179,7 +203,7 @@ def get_diagnostics():
                     "export_multiple_formats",
                     "threat_level_analysis",
                     "geo_analysis",
-                ]
+                ],
             },
             "connectivity": {
                 "database": self._test_database_connection(),
@@ -193,15 +217,15 @@ def get_diagnostics():
             },
             "resource_usage": {
                 "memory_usage": "normal",
-                "disk_usage": "normal", 
+                "disk_usage": "normal",
                 "cpu_usage": "normal",
-                "note": "Detailed metrics require psutil installation"
+                "note": "Detailed metrics require psutil installation",
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
         return jsonify(diagnostics)
-        
+
     except Exception as e:
         return jsonify({"error": str(e), "timestamp": datetime.now().isoformat()}), 500
 
@@ -232,7 +256,7 @@ def _check_data_consistency() -> str:
         # 기본 일관성 검사
         active_ips = service.blacklist_manager.get_active_ips()
         all_ips_with_metadata = service.blacklist_manager.get_all_active_ips()
-        
+
         # 수량 비교
         if len(active_ips) == len(all_ips_with_metadata):
             return "consistent"

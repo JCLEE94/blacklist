@@ -6,11 +6,7 @@
 import logging
 from datetime import datetime
 
-from flask import (
-    Blueprint,
-    jsonify,
-    request,
-)
+from flask import Blueprint, jsonify, request
 
 from ..container import get_container
 from ..exceptions import create_error_response

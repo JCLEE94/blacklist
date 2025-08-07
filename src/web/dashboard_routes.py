@@ -11,15 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import requests
-from flask import (
-    Blueprint,
-    flash,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from src.config.settings import settings
 
@@ -132,23 +124,17 @@ def dashboard():
         # Recent activity (mock data)
         recent_activity = [
             {
-                "time": (datetime.now() - timedelta(minutes=5)).strftime(
-                    "%H:%M:%S"
-                ),
+                "time": (datetime.now() - timedelta(minutes=5)).strftime("%H:%M:%S"),
                 "action": "시스템 상태 확인",
                 "status": "success",
             },
             {
-                "time": (datetime.now() - timedelta(minutes=15)).strftime(
-                    "%H:%M:%S"
-                ),
+                "time": (datetime.now() - timedelta(minutes=15)).strftime("%H:%M:%S"),
                 "action": "블랙리스트 업데이트",
                 "status": "success",
             },
             {
-                "time": (datetime.now() - timedelta(minutes=30)).strftime(
-                    "%H:%M:%S"
-                ),
+                "time": (datetime.now() - timedelta(minutes=30)).strftime("%H:%M:%S"),
                 "action": "데이터 수집",
                 "status": "success",
             },
@@ -211,7 +197,9 @@ def connection_status():
             connections.append(
                 {
                     "name": "Database",
-                    "status": "connected" if health["database"] == "connected" else "error",
+                    "status": "connected"
+                    if health["database"] == "connected"
+                    else "error",
                     "details": f"Status: {health['database']}",
                 }
             )

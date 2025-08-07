@@ -6,11 +6,7 @@ REGTECH, SECUDIUM 데이터 수집 트리거 API
 import logging
 from datetime import datetime
 
-from flask import (
-    Blueprint,
-    jsonify,
-    request,
-)
+from flask import Blueprint, jsonify, request
 
 from ..container import get_container
 from ..exceptions import create_error_response
@@ -110,12 +106,13 @@ def trigger_regtech_collection():
 
     except Exception as e:
         import traceback
+
         tb = traceback.format_exc()
         logger.error(f"REGTECH trigger error: {e}")
         logger.error(f"Traceback: {tb}")
 
         # 진행 상황 실패 처리
-        if 'progress_tracker' in locals() and progress_tracker:
+        if "progress_tracker" in locals() and progress_tracker:
             try:
                 progress_tracker.fail_collection("regtech", str(e))
             except Exception as fail_error:

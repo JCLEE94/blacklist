@@ -249,15 +249,16 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
         """수집 로그 테이블 생성 확인"""
         try:
             import sqlite3
-            
+
             db_path = "/app/instance/blacklist.db"
             if not os.path.exists(os.path.dirname(db_path)):
                 os.makedirs(os.path.dirname(db_path), exist_ok=True)
-            
+
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
-            
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS collection_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TEXT NOT NULL,
@@ -266,32 +267,33 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
                     details TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
-            
+            """
+            )
+
             conn.commit()
             conn.close()
-            
+
         except Exception as e:
             self.logger.warning(f"Failed to ensure log table: {e}")
 
     def _load_logs_from_db(self, limit: int = 100) -> List[Dict]:
         """데이터베이스에서 로그 로드"""
         try:
-            import sqlite3
             import json
-            
+            import sqlite3
+
             db_path = "/app/instance/blacklist.db"
             if not os.path.exists(db_path):
                 return []
-                
+
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
-            
+
             cursor.execute(
                 "SELECT timestamp, source, action, details FROM collection_logs ORDER BY id DESC LIMIT ?",
-                (limit,)
+                (limit,),
             )
-            
+
             logs = []
             for row in cursor.fetchall():
                 log_entry = {
@@ -299,18 +301,20 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
                     "source": row[1],
                     "action": row[2],
                     "details": json.loads(row[3]) if row[3] else {},
-                    "message": f"[{row[1]}] {row[2]}"
+                    "message": f"[{row[1]}] {row[2]}",
                 }
                 logs.append(log_entry)
-            
+
             conn.close()
             return logs
-            
+
         except Exception as e:
             self.logger.warning(f"Failed to load logs from database: {e}")
             return []
 
-    def add_collection_log(self, source: str, action: str, details: Optional[Dict] = None):
+    def add_collection_log(
+        self, source: str, action: str, details: Optional[Dict] = None
+    ):
         """수집 로그 추가 (메모리 + 데이터베이스)"""
         try:
             timestamp = datetime.now().isoformat()
@@ -319,45 +323,45 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
                 "source": source,
                 "action": action,
                 "details": details or {},
-                "message": f"[{source}] {action}"
+                "message": f"[{source}] {action}",
             }
-            
+
             # 메모리에 추가
             self.collection_logs.insert(0, log_entry)  # 최신 로그를 앞에 추가
-            
+
             # 최대 개수 제한
             if len(self.collection_logs) > self.max_logs:
-                self.collection_logs = self.collection_logs[:self.max_logs]
-            
+                self.collection_logs = self.collection_logs[: self.max_logs]
+
             # 데이터베이스에 저장
             self._save_log_to_db(log_entry)
-            
+
         except Exception as e:
             self.logger.warning(f"Failed to add collection log: {e}")
 
     def _save_log_to_db(self, log_entry: Dict):
         """로그를 데이터베이스에 저장"""
         try:
-            import sqlite3
             import json
-            
+            import sqlite3
+
             db_path = "/app/instance/blacklist.db"
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
-            
+
             cursor.execute(
                 "INSERT INTO collection_logs (timestamp, source, action, details) VALUES (?, ?, ?, ?)",
                 (
                     log_entry["timestamp"],
-                    log_entry["source"], 
+                    log_entry["source"],
                     log_entry["action"],
-                    json.dumps(log_entry["details"])
-                )
+                    json.dumps(log_entry["details"]),
+                ),
             )
-            
+
             conn.commit()
             conn.close()
-            
+
         except Exception as e:
             self.logger.warning(f"Failed to save log to database: {e}")
 
@@ -387,20 +391,20 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
                     "secudium_count": 0,
                     "public_count": 0,
                 }
-            
+
             # 블랙리스트 매니저에서 통계 조회
             stats = self.blacklist_manager.get_system_stats()
-            
+
             return {
                 "status": "healthy",
                 "total_ips": stats.get("total_ips", 0),
-                "active_ips": stats.get("active_ips", 0), 
+                "active_ips": stats.get("active_ips", 0),
                 "regtech_count": stats.get("regtech_count", 0),
                 "secudium_count": stats.get("secudium_count", 0),
                 "public_count": stats.get("public_count", 0),
                 "last_update": datetime.now().isoformat(),
             }
-            
+
         except Exception as e:
             self.logger.error(f"Failed to get system health: {e}")
             return {
@@ -422,11 +426,11 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
         try:
             if not self.blacklist_manager:
                 return []
-            
+
             # 블랙리스트 매니저에서 활성 IP 목록 조회
             ips, _ = self.blacklist_manager.get_active_ips()
             return ips
-            
+
         except Exception as e:
             self.logger.error(f"Failed to get active blacklist IPs: {e}")
             return []
@@ -436,20 +440,20 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
         try:
             if not self.blacklist_manager:
                 return {"success": False, "error": "Blacklist manager not available"}
-            
+
             # 블랙리스트 매니저를 통해 데이터 클리어
             result = self.blacklist_manager.clear_all_data()
-            
+
             # 성공시 로그 추가
             if result.get("success"):
                 self.add_collection_log(
                     "system",
-                    "database_cleared", 
-                    {"timestamp": datetime.now().isoformat()}
+                    "database_cleared",
+                    {"timestamp": datetime.now().isoformat()},
                 )
-            
+
             return result
-            
+
         except Exception as e:
             self.logger.error(f"Failed to clear database: {e}")
             return {"success": False, "error": str(e)}
@@ -485,7 +489,7 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
         try:
             # 성능 캐시 키 생성
             cache_key = f"active_blacklist_{format_type}_v2"
-            
+
             # 캐시에서 먼저 확인
             if self.cache:
                 try:
@@ -494,10 +498,10 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
                         return cached_result
                 except Exception:
                     pass
-            
+
             # 활성 아이피 조회
             active_ips = self.get_active_blacklist_ips()
-            
+
             if format_type == "fortigate":
                 result = self.format_for_fortigate(active_ips)
             elif format_type == "text":
@@ -505,30 +509,30 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
                     "success": True,
                     "ips": "\n".join(active_ips),
                     "count": len(active_ips),
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 }
             else:  # json (default)
                 result = {
                     "success": True,
                     "ips": active_ips,
                     "count": len(active_ips),
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 }
-            
+
             # 캐시에 저장 (5분)
             if self.cache:
                 try:
                     self.cache.set(cache_key, result, ttl=300)
                 except Exception:
                     pass
-            
+
             return result
         except Exception as e:
             self.logger.error(f"활성 블랙리스트 조회 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
     def initialize_database_tables(self) -> Dict[str, Any]:
@@ -585,14 +589,14 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
                 "success": True,
                 "message": "Database tables initialized successfully",
                 "db_path": db_path,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             self.logger.error(f"Database initialization failed: {e}")
             return {
                 "success": False,
                 "error": str(e),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
     def clear_collection_logs(self):
@@ -600,13 +604,13 @@ class UnifiedBlacklistService(CollectionServiceMixin, StatisticsServiceMixin):
         try:
             self.collection_logs.clear()
             # 데이터베이스에서도 삭제
-            if self.blacklist_manager and hasattr(self.blacklist_manager, 'db_path'):
+            if self.blacklist_manager and hasattr(self.blacklist_manager, "db_path"):
                 conn = sqlite3.connect(self.blacklist_manager.db_path)
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM collection_logs")
                 conn.commit()
                 conn.close()
-            
+
             self.logger.info("수집 로그가 클리어되었습니다")
         except Exception as e:
             self.logger.error(f"로그 클리어 실패: {e}")

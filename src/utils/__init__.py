@@ -9,8 +9,6 @@ Utility functions module for Blacklist Manager
 - 구성 관리
 """
 
-from .auth import AuthManager, RateLimiter
-
 # Unified decorators - imported directly to avoid circular imports
 # from .unified_decorators import (
 #     unified_cache,
@@ -24,16 +22,22 @@ from .auth import AuthManager, RateLimiter
 #     initialize_decorators
 # )
 from .advanced_cache import EnhancedSmartCache as CacheManager
+from .auth import AuthManager, RateLimiter
+
 try:
-    from .advanced_cache import get_cache, cached
+    from .advanced_cache import cached, get_cache
 except ImportError:
     # Fallback implementations
     def get_cache():
         return None
+
     def cached(cache, ttl=300, key_prefix=""):
         def decorator(func):
             return func
+
         return decorator
+
+
 from .monitoring import (
     HealthChecker,
     MetricsCollector,
@@ -41,30 +45,37 @@ from .monitoring import (
     get_metrics_collector,
     track_performance,
 )
+
 try:
-    from .performance_optimizer import (
-        measure_performance,
-        profile_function,
-    )
+    from .performance_optimizer import measure_performance, profile_function
+
     # Fallback implementations for missing functions
     def get_connection_manager():
         return None
+
     def get_profiler():
         return None
+
     def get_response_optimizer():
         return None
+
 except ImportError:
     # Fallback implementations
     def get_connection_manager():
         return None
+
     def get_profiler():
         return None
+
     def get_response_optimizer():
         return None
+
     def measure_performance(func):
         return func
+
     def profile_function(func):
         return func
+
 
 # Configuration utilities moved to core.constants
 

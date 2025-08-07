@@ -8,20 +8,20 @@ has been modularized into the collection_manager/ package.
 
 # Import everything from the modular package
 from .collection_manager import (
-    CollectionManager,
-    CollectionConfigService,
-    ProtectionService,
     AuthService,
+    CollectionConfigService,
+    CollectionManager,
+    ProtectionService,
     StatusService,
 )
 
 # Re-export for backward compatibility
 __all__ = [
-    'CollectionManager',
-    'CollectionConfigService',
-    'ProtectionService', 
-    'AuthService',
-    'StatusService',
+    "CollectionManager",
+    "CollectionConfigService",
+    "ProtectionService",
+    "AuthService",
+    "StatusService",
 ]
 
 # Preserve the original class name and functionality

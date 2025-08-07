@@ -6,18 +6,18 @@
 """
 
 # Re-export the main service and factory functions for backwards compatibility
-from .services.unified_service_core import UnifiedBlacklistService, ServiceHealth
+from .services.unified_service_core import ServiceHealth, UnifiedBlacklistService
 from .services.unified_service_factory import (
     get_unified_service,
-    reset_unified_service, 
     is_service_initialized,
+    reset_unified_service,
 )
 
 # Export for backwards compatibility
 __all__ = [
-    'UnifiedBlacklistService',
-    'ServiceHealth',
-    'get_unified_service',
-    'reset_unified_service',
-    'is_service_initialized',
+    "UnifiedBlacklistService",
+    "ServiceHealth",
+    "get_unified_service",
+    "reset_unified_service",
+    "is_service_initialized",
 ]
