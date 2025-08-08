@@ -22,24 +22,11 @@ class IntegrationTestFixtures:
         db_path = temp_file.name
         temp_file.close()
 
-        # Initialize database schema
+        # Initialize database schema using shared function
+        from tests.conftest import _create_additional_test_tables
+
         conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS blacklist_ip (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ip_address VARCHAR(45) NOT NULL,
-                source VARCHAR(50) NOT NULL,
-                detection_date TIMESTAMP,
-                reason TEXT,
-                threat_level VARCHAR(20),
-                is_active BOOLEAN DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP
-            )
-        """
-        )
+        _create_additional_test_tables(conn)
         conn.commit()
         conn.close()
 
@@ -56,44 +43,34 @@ class IntegrationTestFixtures:
         """Create mock container with test dependencies"""
         container = Mock(spec=BlacklistContainer)
 
-        # Mock blacklist manager
+        # Create simple mock services
         blacklist_manager = Mock()
-        blacklist_manager.get_active_ips.return_value = (["1.1.1.1", "2.2.2.2"], 2)
+        blacklist_manager.get_active_ips.return_value = (["192.168.1.1", "10.0.0.1"], 2)
         blacklist_manager.add_ip.return_value = True
-        blacklist_manager.get_all_ips.return_value = [
-            {
-                "ip": "1.1.1.1",
-                "source": "regtech",
-                "detection_date": datetime.now().isoformat(),
-                "is_active": True,
-            }
-        ]
+        blacklist_manager.remove_ip.return_value = True
 
-        # Mock cache manager
         cache_manager = Mock()
         cache_manager.get.return_value = None
         cache_manager.set.return_value = True
         cache_manager.delete.return_value = True
-        cache_manager.clear.return_value = True
 
-        # Mock collection manager
         collection_manager = Mock()
-        collection_manager.is_collection_enabled.return_value = True
-        collection_manager.get_status.return_value = {
+        collection_manager.collection_enabled = True
+        collection_manager.enable_collection.return_value = {
+            "success": True,
             "enabled": True,
-            "sources": {"regtech": {"enabled": True}},
+        }
+        collection_manager.disable_collection.return_value = {
+            "success": True,
+            "enabled": False,
         }
 
-        # Mock REGTECH collector
         regtech_collector = Mock()
-        regtech_collector.collect_from_web.return_value = [
-            {
-                "ip": "3.3.3.3",
-                "source": "regtech",
-                "detection_date": datetime.now(),
-                "reason": "Malicious activity",
-            }
-        ]
+        regtech_collector.collect_data.return_value = {
+            "success": True,
+            "data": ["192.168.1.1", "192.168.1.2"],
+            "count": 2,
+        }
 
         # Configure container to return mocks
         container.get.side_effect = lambda key: {

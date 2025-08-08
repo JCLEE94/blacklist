@@ -13,22 +13,22 @@ from unittest.mock import patch
 
 class _TestConfig:
     """Centralized test configuration management"""
-    
+
     def __init__(self):
         self.project_root = Path(__file__).parent.parent
         self.test_root = Path(__file__).parent
         self.temp_dir = tempfile.mkdtemp(prefix="blacklist_test_")
         self.test_db_path = os.path.join(self.temp_dir, "test.db")
-        
+
         # Ensure src is in Python path
         src_path = str(self.project_root / "src")
         if src_path not in sys.path:
             sys.path.insert(0, src_path)
-            
+
         # Ensure project root is in Python path
         if str(self.project_root) not in sys.path:
             sys.path.insert(0, str(self.project_root))
-    
+
     def get_test_env_vars(self) -> Dict[str, str]:
         """Get comprehensive test environment variables"""
         return {
@@ -36,56 +36,51 @@ class _TestConfig:
             "FLASK_ENV": "testing",
             "TESTING": "1",
             "DEBUG": "true",
-            
             # Database
             "DATABASE_URL": f"sqlite:///{self.test_db_path}",
             "TEST_DATABASE_URL": f"sqlite:///{self.test_db_path}",
-            
             # Cache
             "CACHE_TYPE": "simple",
             "REDIS_URL": "redis://localhost:6380/0",  # Different port for testing
-            
             # Security (disabled for testing)
             "FORCE_DISABLE_COLLECTION": "false",
             "COLLECTION_ENABLED": "true",
             "RESTART_PROTECTION": "false",
             "SAFETY_PROTECTION": "false",
             "SECRET_KEY": "test-secret-key-for-testing-only",
-            
             # Auth limits (higher for tests)
             "MAX_AUTH_ATTEMPTS": "100",
-            
             # Mock credentials
             "REGTECH_USERNAME": "test_regtech",
             "REGTECH_PASSWORD": "test_pass",
-            "SECUDIUM_USERNAME": "test_secudium", 
+            "SECUDIUM_USERNAME": "test_secudium",
             "SECUDIUM_PASSWORD": "test_pass",
-            
             # Paths
             "PYTHONPATH": f"{self.project_root}:{self.project_root / 'src'}",
             "DATA_DIR": self.temp_dir,
         }
-    
+
     def setup_test_environment(self):
         """Setup complete test environment"""
         # Set environment variables
         for key, value in self.get_test_env_vars().items():
             os.environ[key] = value
-        
+
         # Create test database
         self.create_test_database()
-        
+
         # Create necessary directories
         os.makedirs(os.path.join(self.temp_dir, "data"), exist_ok=True)
         os.makedirs(os.path.join(self.temp_dir, "logs"), exist_ok=True)
         os.makedirs(os.path.join(self.temp_dir, "cache"), exist_ok=True)
-    
+
     def create_test_database(self):
         """Create and initialize test database"""
         try:
             with sqlite3.connect(self.test_db_path) as conn:
                 # Create tables
-                conn.executescript("""
+                conn.executescript(
+                    """
                     CREATE TABLE IF NOT EXISTS blacklist (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         ip TEXT UNIQUE NOT NULL,
@@ -128,10 +123,12 @@ class _TestConfig:
                     CREATE INDEX IF NOT EXISTS idx_blacklist_created_at ON blacklist(created_at);
                     CREATE INDEX IF NOT EXISTS idx_auth_attempts_source ON auth_attempts(source);
                     CREATE INDEX IF NOT EXISTS idx_collection_logs_source ON collection_logs(source);
-                """)
-                
+                """
+                )
+
                 # Insert test data
-                conn.executescript("""
+                conn.executescript(
+                    """
                     INSERT OR IGNORE INTO blacklist (ip, source, metadata, detection_date) VALUES
                         ('192.168.1.100', 'REGTECH', '{"severity": "high", "category": "malware"}', '2024-01-01'),
                         ('10.0.0.100', 'SECUDIUM', '{"severity": "medium", "category": "spam"}', '2024-01-02'),
@@ -140,52 +137,54 @@ class _TestConfig:
                     INSERT OR IGNORE INTO collection_logs (source, status, message, data_count, duration_seconds) VALUES
                         ('REGTECH', 'success', 'Test collection successful', 100, 30),
                         ('SECUDIUM', 'success', 'Test collection successful', 150, 45);
-                """)
-                
+                """
+                )
+
                 conn.commit()
         except Exception as e:
             print(f"Warning: Failed to create test database: {e}")
-    
+
     def cleanup(self):
         """Clean up test environment"""
         import shutil
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
 class _TestEnvironmentManager:
     """Manages test environment context"""
-    
+
     def __init__(self):
         self.config = _TestConfig()
         self.original_env = {}
         self.patches = []
-    
+
     def __enter__(self):
         # Save original environment
         for key in self.config.get_test_env_vars().keys():
             if key in os.environ:
                 self.original_env[key] = os.environ[key]
-        
+
         # Setup test environment
         self.config.setup_test_environment()
-        
+
         return self.config
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         # Restore original environment
         for key, value in self.original_env.items():
             os.environ[key] = value
-        
+
         # Remove test-only environment variables
         for key in self.config.get_test_env_vars().keys():
             if key not in self.original_env and key in os.environ:
                 del os.environ[key]
-        
+
         # Clean up patches
         for patch_obj in self.patches:
             patch_obj.stop()
-        
+
         # Clean up test files
         self.config.cleanup()
 
@@ -203,30 +202,69 @@ def pytest_configure():
 
 def mock_external_services():
     """Apply comprehensive mocks for external services"""
-    from tests.fixtures.mock_services import (
-        MockREGTECHCollector,
-        MockSECUDIUMCollector,
-        MockCacheManager
-    )
-    
+    from unittest.mock import Mock
+
     patches = []
-    
+
+    # Create simple mock collectors
+    class MockREGTECHCollector:
+        def collect_data(self, start_date=None, end_date=None):
+            return {
+                "success": True,
+                "data": ["192.168.1.100", "192.168.1.101"],
+                "count": 2,
+                "message": "Mock collection successful",
+            }
+
+    class MockSECUDIUMCollector:
+        def collect_data(self, **kwargs):
+            return {
+                "success": True,
+                "data": ["10.0.0.100", "10.0.0.101"],
+                "count": 2,
+                "message": "Mock collection successful",
+            }
+
+    class MockCacheManager:
+        def __init__(self):
+            self.cache = {}
+
+        def get(self, key):
+            return self.cache.get(key)
+
+        def set(self, key, value, ttl=None, timeout=None):
+            self.cache[key] = value
+            return True
+
+        def delete(self, key):
+            return self.cache.pop(key, None) is not None
+
     # Mock REGTECH collector
     regtech_mock = MockREGTECHCollector()
-    patches.append(patch('src.core.collectors.regtech_collector.REGTECHCollector', return_value=regtech_mock))
-    
+    patches.append(
+        patch(
+            "src.core.collectors.regtech_collector.REGTECHCollector",
+            return_value=regtech_mock,
+        )
+    )
+
     # Mock SECUDIUM collector
     secudium_mock = MockSECUDIUMCollector()
-    patches.append(patch('src.core.collectors.secudium_collector.SECUDIUMCollector', return_value=secudium_mock))
-    
+    patches.append(
+        patch(
+            "src.core.collectors.secudium_collector.SECUDIUMCollector",
+            return_value=secudium_mock,
+        )
+    )
+
     # Mock cache manager
     cache_mock = MockCacheManager()
-    patches.append(patch('src.utils.cache_utils.CacheManager', return_value=cache_mock))
-    
+    patches.append(patch("src.utils.cache_utils.CacheManager", return_value=cache_mock))
+
     # Start all patches
     for patch_obj in patches:
         patch_obj.start()
-    
+
     return patches
 
 
@@ -234,30 +272,33 @@ def create_test_app(config_name: str = "testing"):
     """Create Flask app for testing with proper configuration"""
     try:
         from src.core.app_compact import create_compact_app
-        
+
         app = create_compact_app(config_name)
-        app.config['TESTING'] = True
-        app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
-        
+        app.config["TESTING"] = True
+        app.config["WTF_CSRF_ENABLED"] = False  # Disable CSRF for testing
+
         # Override data directory
         test_config = _TestConfig()
-        app.config['DATA_DIR'] = test_config.temp_dir
-        
+        app.config["DATA_DIR"] = test_config.temp_dir
+
         return app
-        
+
     except ImportError as e:
         print(f"Warning: Could not import app_compact: {e}")
         # Fallback to minimal app
         from flask import Flask
+
         app = Flask(__name__)
-        app.config['TESTING'] = True
+        app.config["TESTING"] = True
         return app
 
 
 def assert_response_format(response, expected_keys: list, status_code: int = 200):
     """Assert response format and content"""
-    assert response.status_code == status_code, f"Expected {status_code}, got {response.status_code}"
-    
+    assert (
+        response.status_code == status_code
+    ), f"Expected {status_code}, got {response.status_code}"
+
     if response.is_json:
         data = response.get_json()
         for key in expected_keys:

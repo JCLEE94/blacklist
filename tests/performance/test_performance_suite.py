@@ -161,10 +161,12 @@ class TestDatabasePerformance:
     
     def test_ip_lookup_performance(self, performance_tester, enhanced_mock_container):
         """Test IP lookup performance"""
-        from tests.fixtures.mock_services import create_sample_test_data
-        
-        test_data = create_sample_test_data()
-        sample_ips = test_data['sample_ips']
+        # Create simple test data inline
+        sample_ips = [
+            "192.168.1.100", "192.168.1.101", "192.168.1.102",
+            "10.0.0.100", "10.0.0.101", "172.16.1.100",
+            "203.0.113.100", "198.51.100.100"
+        ]
         
         blacklist_manager = enhanced_mock_container.get('blacklist_manager')
         

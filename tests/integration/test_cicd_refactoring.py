@@ -16,130 +16,21 @@ import yaml
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-# Mock classes for testing instead of missing modules
-class PipelineConfig:
-    def __init__(self, registry="registry.jclee.me", image_name="blacklist", 
-                 namespace="blacklist", dry_run=False, verbose=False):
-        self.registry = registry
-        self.image_name = image_name
-        self.namespace = namespace
-        self.dry_run = dry_run
-        self.verbose = verbose
 
-class PipelineStage:
-    def __init__(self, name, config):
-        self.name = name
-        self.config = config
-        self.status = "pending"
-        self.errors = []
-        
-    def execute(self):
-        import time
-        start_time = time.time()
-        try:
-            if self.config.dry_run:
-                result = True
-            else:
-                result = self.run()
-            self.status = "success" if result else "error"
-        except Exception as e:
-            self.status = "error" 
-            self.errors.append(str(e))
-        
-        return {
-            "stage": self.name,
-            "status": self.status,
-            "duration": time.time() - start_time,
-            "errors": self.errors
-        }
-    
-    def run(self):
-        return True
+# Import shared pipeline classes
+from .test_cicd_stages import (
+    PipelineConfig,
+    PipelineStage,
+    CodeQualityStage,
+    BuildStage,
+    CICDTestStage,
+    DeploymentStage,
+    MockStageSuccess,
+    MockStageFail,
+    MockStageDryRun,
+    PipelineOrchestrator,
+)
 
-class CodeQualityStage(PipelineStage):
-    def __init__(self, config):
-        super().__init__("code-quality", config)
-    
-    def _check_python_syntax(self):
-        return True
-    
-    def _check_code_style(self):
-        return True
-        
-    def _check_security(self):
-        return True
-        
-    def _check_dependencies(self):
-        return True
-
-class BuildStage(PipelineStage):
-    def __init__(self, config):
-        super().__init__("build", config)
-        self.image_tags = []
-    
-    def run(self):
-        import datetime
-        sha = self._get_commit_sha()
-        self.image_tags = [
-            f"{self.config.registry}/{self.config.image_name}:latest",
-            f"{self.config.registry}/{self.config.image_name}:sha-{sha[:7]}",
-            f"{self.config.registry}/{self.config.image_name}:date-{datetime.datetime.now().strftime('%Y%m%d')}"
-        ]
-        return True
-    
-    def _get_commit_sha(self):
-        return "abc123def456789"
-
-class CICDTestStage(PipelineStage):
-    def __init__(self, config):
-        super().__init__("test", config)
-
-class DeploymentStage(PipelineStage):
-    def __init__(self, config):
-        super().__init__("deployment", config)
-    
-    def _sync_argocd_app(self):
-        return True
-    
-    def _verify_deployment(self):
-        return True
-    
-    def run(self):
-        if not self._sync_argocd_app():
-            return False
-        if not self._verify_deployment():
-            # Rollback on failure
-            return True  # Assuming rollback succeeds
-        return True
-
-class PipelineOrchestrator:
-    def __init__(self, config):
-        self.config = config
-        self.stages = [
-            CodeQualityStage(config),
-            CICDTestStage(config), 
-            BuildStage(config),
-            DeploymentStage(config)
-        ]
-    
-    def run(self, skip_stages=None):
-        if skip_stages is None:
-            skip_stages = []
-        
-        results = {"stages": [], "overall_status": "success"}
-        
-        for stage in self.stages:
-            if stage.name in skip_stages:
-                continue
-                
-            result = stage.execute()
-            results["stages"].append(result)
-            
-            if result["status"] == "error":
-                results["overall_status"] = "failed"
-                break
-        
-        return results
 
 def main():
     """Mock main function for CLI testing"""
@@ -187,12 +78,8 @@ class TestPipelineStage:
         """단계 생명주기 테스트"""
         config = PipelineConfig()
 
-        # 구체적인 구현을 위한 Mock 서브클래스
-        class MockStage(PipelineStage):
-            def run(self):
-                return True
-
-        stage = MockStage("test-stage", config)
+        # Use shared mock stage
+        stage = MockStageSuccess("test-stage", config)
 
         # 초기 상태
         assert stage.name == "test-stage"
@@ -212,11 +99,7 @@ class TestPipelineStage:
         """단계 실패 처리 테스트"""
         config = PipelineConfig()
 
-        class FailingStage(PipelineStage):
-            def run(self):
-                raise Exception("Test failure")
-
-        stage = FailingStage("failing-stage", config)
+        stage = MockStageFail("failing-stage", config)
         result = stage.execute()
 
         assert result["status"] == "error"
@@ -227,12 +110,7 @@ class TestPipelineStage:
         """드라이런 모드 테스트"""
         config = PipelineConfig(dry_run=True)
 
-        class MockStage(PipelineStage):
-            def run(self):
-                # 드라이런에서는 이 메서드가 호출되지 않아야 함
-                raise Exception("Should not be called in dry run")
-
-        stage = MockStage("dry-run-stage", config)
+        stage = MockStageDryRun("dry-run-stage", config)
         result = stage.execute()
 
         assert result["status"] == "success"
@@ -531,11 +409,7 @@ class TestHelperFunctions:
         """단계 결과 형식 테스트"""
         config = PipelineConfig()
 
-        class LocalTestStage(PipelineStage):
-            def run(self):
-                return True
-
-        stage = LocalTestStage("test", config)
+        stage = MockStageSuccess("test", config)
         result = stage.execute()
 
         # 필수 필드 확인

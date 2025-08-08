@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 def unified_cache(
     ttl: int = 300,
-    timeout: Optional[int] = None,  # Deprecated, use ttl instead
     key_func: Optional[Callable] = None,
     key_prefix: str = "",
     cache_unless: Optional[Callable] = None,
@@ -27,23 +26,12 @@ def unified_cache(
     Consolidates all caching logic into a single, configurable decorator
 
     Args:
-        ttl: Time to live in seconds (preferred parameter)
-        timeout: Deprecated, use ttl instead
+        ttl: Time to live in seconds
         key_func: Custom function to generate cache key
         key_prefix: Prefix for cache key
         cache_unless: Function that returns True to skip caching
         per_user: Whether to include user context in cache key
     """
-    # Handle backward compatibility
-    if timeout is not None:
-        import warnings
-
-        warnings.warn(
-            "timeout parameter is deprecated, use ttl instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        ttl = timeout
 
     def cache_decorator(func):
         @wraps(func)

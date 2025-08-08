@@ -10,7 +10,7 @@ metadata:
   {{- if .Values.monitoring.enabled }}
   annotations:
     prometheus.io/scrape: "true"
-    prometheus.io/port: "8080"
+    prometheus.io/port: "8541"
     prometheus.io/path: "/metrics"
   {{- end }}
 spec:
@@ -24,8 +24,8 @@ spec:
       nodePort: {{ .Values.service.nodePort | default 32542 }}
       {{- end }}
     {{- if .Values.monitoring.enabled }}
-    - port: 8080
-      targetPort: 8080
+    - port: 8541
+      targetPort: 8541
       protocol: TCP
       name: metrics
     {{- end }}
@@ -48,8 +48,8 @@ spec:
   type: ClusterIP
   clusterIP: None
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8541
+      targetPort: 8541
       protocol: TCP
       name: http
   selector:

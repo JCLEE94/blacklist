@@ -22,7 +22,7 @@ spec:
         infrastructure: jclee.me
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
+        prometheus.io/port: "8541"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: {{ include "blacklist.serviceAccountName" . }}
@@ -38,10 +38,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 8541
               protocol: TCP
             - name: metrics
-              containerPort: 8080
+              containerPort: 8541
               protocol: TCP
           # MSA 표준 Health Check
           livenessProbe:

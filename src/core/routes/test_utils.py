@@ -3,6 +3,7 @@
 인라인 테스트 함수들과 통합 테스트 기능
 """
 
+# Standard library imports
 import logging
 import os
 import sqlite3
@@ -10,27 +11,26 @@ import threading
 import time
 from unittest.mock import Mock, patch
 
+# Third-party imports
 from flask import Flask
 
 logger = logging.getLogger(__name__)
 
+# Simple fallback for mock creation since mock_services was removed
+def create_simple_mock_container():
+    """Simple mock container fallback"""
+    mock_container = Mock()
+    mock_container.get.return_value = Mock()
+    return mock_container
 
-def _test_collection_endpoints():
-    """
-    Collection endpoints integration test
 
-    These tests verify the collection management endpoints work correctly
-    in an integrated environment with the Flask app and blueprints.
-    """
-
-    logger.info("Running inline integration tests for collection endpoints...")
-
-    # Create minimal test app
+def _create_test_app_with_mock_service():
+    """Create test Flask app with mocked service"""
     test_app = Flask(__name__)
     test_app.config["TESTING"] = True
     test_app.config["SECRET_KEY"] = "test-secret-key"
 
-    # Mock the service to avoid database dependencies
+    # Mock service with common functionality
     mock_service = Mock()
     mock_service.get_collection_status.return_value = {
         "enabled": True,
@@ -55,6 +55,22 @@ def _test_collection_endpoints():
         "collected": 50,
         "message": "Collection completed",
     }
+
+    return test_app, mock_service
+
+
+def _test_collection_endpoints():
+    """
+    Collection endpoints integration test
+
+    These tests verify the collection management endpoints work correctly
+    in an integrated environment with the Flask app and blueprints.
+    """
+
+    logger.info("Running inline integration tests for collection endpoints...")
+
+    # Create test app with shared mock
+    test_app, mock_service = _create_test_app_with_mock_service()
 
     # Import and patch the unified_bp
     from ..unified_routes import unified_bp
@@ -127,19 +143,11 @@ def _test_collection_state_consistency():
     """Test that collection state remains consistent across operations"""
     logger.info("Testing collection state consistency...")
 
-    test_app = Flask(__name__)
-    test_app.config["TESTING"] = True
-    test_app.config["SECRET_KEY"] = "test-secret-key"
+    # Create test app with shared mock
+    test_app, mock_service = _create_test_app_with_mock_service()
 
     # Track state changes
     state_log = []
-
-    mock_service = Mock()
-    mock_service.get_collection_status.return_value = {
-        "enabled": True,
-        "sources": {},
-        "last_updated": None,
-    }
 
     def log_state_change(action, **kwargs):
         state_log.append({"action": action, "kwargs": kwargs})
@@ -176,9 +184,8 @@ def _test_concurrent_requests():
     """Test handling of concurrent collection requests"""
     logger.info("Testing concurrent request handling...")
 
-    test_app = Flask(__name__)
-    test_app.config["TESTING"] = True
-    test_app.config["SECRET_KEY"] = "test-secret-key"
+    # Create test app with shared mock
+    test_app, mock_service = _create_test_app_with_mock_service()
 
     # Track concurrent calls
     concurrent_calls = {"count": 0, "max_concurrent": 0, "errors": []}
@@ -199,9 +206,7 @@ def _test_concurrent_requests():
 
         return {"success": True, "collected": 10}
 
-    mock_service = Mock()
     mock_service.trigger_regtech_collection.side_effect = slow_trigger
-    mock_service.add_collection_log.return_value = None
 
     from ..unified_routes import unified_bp
 
