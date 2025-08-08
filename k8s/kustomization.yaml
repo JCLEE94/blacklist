@@ -7,8 +7,6 @@ resources:
   - namespace.yaml
   - components/security/serviceaccount.yaml
   - configmap.yaml
-  - blacklist-secrets.yaml
-  - blacklist-credentials.yaml
   - secret.yaml
   - registry-secret.yaml
   - redis.yaml

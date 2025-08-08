@@ -10,16 +10,21 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"
     notifications.argoproj.io/subscribe.on-sync-succeeded.slack: blacklist-deployments
     notifications.argoproj.io/subscribe.on-sync-failed.slack: blacklist-alerts
+    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/jclee94/blacklist
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
+    argocd-image-updater.argoproj.io/blacklist.ignore-tags: dev-*, test-*
 spec:
   project: default
   
   source:
     repoURL: https://github.com/JCLEE94/blacklist.git
     targetRevision: main
-    path: k8s-gitops/base
+    path: k8s
     
   destination:
-    server: https://k8s.jclee.me:6443
+    server: https://kubernetes.default.svc
     namespace: blacklist
     
   syncPolicy:
@@ -39,14 +44,6 @@ spec:
         factor: 2
         maxDuration: 3m
         
-  # ArgoCD Image Updater 설정
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/jclee94/blacklist
-    argocd-image-updater.argoproj.io/write-back-method: git
-    argocd-image-updater.argoproj.io/git-branch: main
-    argocd-image-updater.argoproj.io/blacklist.update-strategy: latest
-    argocd-image-updater.argoproj.io/blacklist.ignore-tags: dev-*, test-*
-    
   # Health checks
   ignoreDifferences:
   - group: apps
