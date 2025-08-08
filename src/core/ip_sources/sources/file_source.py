@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterator, List, Set
 
-from srcbase_source import BaseIPSource, IPEntry, SourceConfig
+from ..base_source import BaseIPSource, IPEntry, SourceConfig
 
 logger = logging.getLogger(__name__)
 

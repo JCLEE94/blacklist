@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from srcdatabase import DatabaseManager
+from ..database import DatabaseManager
 
 from .base_source import BaseIPSource, IPEntry, SourceConfig
 from .source_registry import registry

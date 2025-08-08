@@ -50,7 +50,7 @@ def create_minimal_app() -> Flask:
 
     # 웹 UI 라우트 등록
     try:
-        from src.web.routes import web_bp
+        from ..web.routes import web_bp
 
         app.register_blueprint(web_bp)
         logger.info("Web UI routes registered")

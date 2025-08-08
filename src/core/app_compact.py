@@ -19,7 +19,7 @@ from .app.middleware import MiddlewareMixin
 from .app.blueprints import BlueprintRegistrationMixin
 from .app.error_handlers import ErrorHandlerMixin
 from .container import get_container
-from src.utils.structured_logging import get_logger, setup_request_logging
+from ..utils.structured_logging import get_logger, setup_request_logging
 
 # Use structured logger instead of basic logging
 logger = get_logger(__name__)
@@ -136,9 +136,9 @@ class CompactFlaskApp(
         """Setup advanced caching, monitoring, and security features"""
         try:
             # Initialize advanced features
-            from src.utils.advanced_cache import get_smart_cache
-            from src.utils.real_time_monitoring import setup_monitoring
-            from src.utils.security import get_security_manager
+            from ..utils.advanced_cache import get_smart_cache
+            from ..utils.real_time_monitoring import setup_monitoring
+            from ..utils.security import get_security_manager
 
             # Setup advanced caching
             smart_cache = get_smart_cache()
@@ -180,7 +180,7 @@ class CompactFlaskApp(
             app.security_manager = security_manager
 
             # Initialize unified decorators with container services (rate limiting disabled)
-            from src.utils.unified_decorators import initialize_decorators
+            from ..utils.unified_decorators import initialize_decorators
 
             initialize_decorators(
                 cache=container.get("cache"),
