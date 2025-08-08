@@ -87,7 +87,7 @@ portfolio/
 ### Contact
 - **Email**: qws941@kakao.com
 - **GitHub**: [github.com/JCLEE94](https://github.com/JCLEE94)
-- **LinkedIn**: [linkedin.com/in/jinchul-kim](https://linkedin.com/in/jinchul-kim)
+
 
 ---
 
