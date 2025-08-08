@@ -3,29 +3,22 @@ Blacklist Management Service - 블랙리스트 관리 전용 마이크로서비�
 IP 주소의 저장, 검증, 조회, FortiGate 형식 변환 등을 담당
 """
 
-from fastapi import FastAPI, HTTPException, Query, Depends
+import asyncio
+import ipaddress
+import logging
+import os
+import uuid
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
-from typing import List, Optional, Dict, Any
-import asyncio
-import logging
-from datetime import datetime, timedelta
-import ipaddress
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    String,
-    DateTime,
-    Boolean,
-    Text,
-    text,
-)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import (Boolean, Column, DateTime, Integer, String, Text,
+                        create_engine, text)
 from sqlalchemy.dialects.postgresql import UUID
-import uuid
-import os
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)

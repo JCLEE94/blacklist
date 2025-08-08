@@ -18,7 +18,7 @@ except ImportError:
         from core.container import get_container as _get_container
     except ImportError:
         from .blacklist_container import BlacklistContainer
-        
+
         def _get_container():
             """Fallback container getter"""
             return BlacklistContainer()
@@ -31,18 +31,21 @@ def get_container():
     except Exception:
         # Fallback to local container
         from .blacklist_container import BlacklistContainer
+
         return BlacklistContainer()
 
 
 def setup_test_environment():
     """테스트 환경 설정"""
     import os
-    os.environ.setdefault('TESTING', 'true')
-    os.environ.setdefault('DATABASE_URL', 'sqlite:///:memory:')
+
+    os.environ.setdefault("TESTING", "true")
+    os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 
 def cleanup_test_environment():
     """테스트 환경 정리"""
     import os
-    if 'TESTING' in os.environ:
-        del os.environ['TESTING']
+
+    if "TESTING" in os.environ:
+        del os.environ["TESTING"]

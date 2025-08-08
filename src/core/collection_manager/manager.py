@@ -328,19 +328,22 @@ class CollectionManager:
         try:
             status = self.get_status()
             # 수집이 활성화되어 있지만 마지막 업데이트가 없거나 오래된 경우
-            if status.get('enabled', False):
-                last_update = status.get('last_update')
+            if status.get("enabled", False):
+                last_update = status.get("last_update")
                 if not last_update:
                     return True
-                
+
                 # 마지막 업데이트가 24시간 이전이면 초기 수집 필요
                 from datetime import datetime, timedelta
+
                 try:
-                    last_update_dt = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
+                    last_update_dt = datetime.fromisoformat(
+                        last_update.replace("Z", "+00:00")
+                    )
                     return datetime.now() - last_update_dt > timedelta(hours=24)
                 except:
                     return True
-                    
+
             return False
         except Exception as e:
             logger.warning(f"Error checking initial collection need: {e}")
@@ -353,17 +356,17 @@ class CollectionManager:
             config["initial_collection_done"] = True
             config["initial_collection_completed_at"] = datetime.now().isoformat()
             self.config_service.save_collection_config(config)
-            
+
             logger.info("Initial collection marked as completed")
             return {
                 "success": True,
                 "message": "Initial collection marked as completed",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Error marking initial collection done: {e}")
             return {
                 "success": False,
                 "error": str(e),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }

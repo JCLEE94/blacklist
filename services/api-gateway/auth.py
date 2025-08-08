@@ -6,11 +6,11 @@ Extracted from app.py for better organization.
 """
 
 import os
-from typing import Dict, Any
+from typing import Any, Dict
 
 import jwt
 from fastapi import Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 security = HTTPBearer(auto_error=False)
 

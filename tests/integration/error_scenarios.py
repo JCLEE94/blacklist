@@ -2,14 +2,11 @@
 
 Extracted from test_error_handling_edge_cases.py for better organization.
 """
-import json
 import sqlite3
 import threading
 import time
-from datetime import datetime
 from unittest.mock import Mock, patch
 
-import pytest
 
 from .test_helpers import BaseIntegrationTest, create_mock_service
 

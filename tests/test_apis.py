@@ -5,7 +5,6 @@ Postman collection JSON 파일을 분석하여 API 테스트
 """
 
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path

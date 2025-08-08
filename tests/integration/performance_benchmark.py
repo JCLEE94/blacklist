@@ -9,18 +9,16 @@ to ensure they meet response time requirements and handle concurrent load.
 import os
 import statistics
 import sys
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 try:
-    from unittest.mock import MagicMock, Mock, patch
+    from unittest.mock import Mock
 
-    import flask
     from flask import Flask
 
     # Mock the service to prevent actual operations

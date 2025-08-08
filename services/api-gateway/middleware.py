@@ -9,7 +9,7 @@ import json
 import logging
 import time
 from collections import defaultdict
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastapi import Request, Response
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class RateLimiter:
     """레이트 리미터"""
-    
+
     def __init__(self):
         self.requests = defaultdict(list)
         self.limits = {
@@ -49,7 +49,7 @@ class RateLimiter:
 
 class CacheManager:
     """캠시 매니저"""
-    
+
     def __init__(self):
         self.cache = {}
         self.cache_ttl = {
@@ -62,7 +62,7 @@ class CacheManager:
     def get_cache_key(self, request: Request) -> str:
         """캠시 키 생성"""
         import hashlib
-        
+
         path = request.url.path
         query = str(request.query_params)
         return hashlib.md5(f"{path}:{query}".encode()).hexdigest()
@@ -100,7 +100,7 @@ async def rate_limiting_middleware(request: Request, call_next):
 
     # Global rate limiter instance
     from . import rate_limiter
-    
+
     if not rate_limiter.is_allowed(client_ip, endpoint_type):
         return Response(
             content=json.dumps({"error": "Rate limit exceeded"}),

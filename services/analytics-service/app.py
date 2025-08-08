@@ -3,18 +3,19 @@ Analytics Service - 분석 및 통계 전용 마이크로서비스
 블랙리스트 데이터의 트렌드 분석, 통계 생성, 리포팅 기능을 담당
 """
 
-from fastapi import FastAPI, HTTPException, Query, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 import asyncio
 import logging
-from datetime import datetime, timedelta
-import httpx
-import pandas as pd
-import numpy as np
-from collections import defaultdict
 import os
+from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import httpx
+import numpy as np
+import pandas as pd
+from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -349,8 +350,9 @@ async def get_performance_metrics():
 
 
 if __name__ == "__main__":
-    import uvicorn
     import os
+
+    import uvicorn
 
     host = os.getenv("SERVICE_HOST", "0.0.0.0")
     port = int(os.getenv("SERVICE_PORT", "8002"))

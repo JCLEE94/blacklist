@@ -3,15 +3,16 @@ Collection Service - 데이터 수집 전용 마이크로서비스
 REGTECH, SECUDIUM 등의 외부 소스에서 IP 데이터를 수집하는 서비스
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 import asyncio
 import logging
-from datetime import datetime, timedelta
-import httpx
 import os
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import httpx
+from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)

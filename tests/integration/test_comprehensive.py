@@ -4,7 +4,6 @@
 REGTECH, SECUDIUM 수집기 및 전체 시스템 통합 테스트
 """
 
-import json
 import sys
 import time
 from datetime import datetime

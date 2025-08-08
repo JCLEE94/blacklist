@@ -218,7 +218,7 @@ class UnifiedBlacklistManager:
         """Get system statistics (backward compatibility)"""
         try:
             stats = self.statistics_service.get_statistics()
-            
+
             # Format for backward compatibility
             return {
                 "total_ips": stats.get("total_ips", 0),
@@ -228,7 +228,7 @@ class UnifiedBlacklistManager:
                 "sources": stats.get("sources", {}),
                 "last_update": stats.get("last_update"),
                 "database_size": stats.get("database_size", "0 MB"),
-                "health": "healthy" if stats.get("active_ips", 0) > 0 else "warning"
+                "health": "healthy" if stats.get("active_ips", 0) > 0 else "warning",
             }
         except Exception as e:
             logger.error(f"Error getting system stats: {e}")
@@ -241,5 +241,5 @@ class UnifiedBlacklistManager:
                 "last_update": None,
                 "database_size": "0 MB",
                 "health": "error",
-                "error": str(e)
+                "error": str(e),
             }

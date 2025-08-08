@@ -3,7 +3,7 @@ Error recovery and resilience tests
 
 Tests service behavior under various failure conditions.
 """
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 

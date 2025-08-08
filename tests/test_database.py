@@ -1,6 +1,5 @@
 """데이터베이스 테스트 설정 모듈"""
 import os
-import sqlite3
 import tempfile
 
 import pytest

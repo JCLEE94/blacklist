@@ -5,10 +5,8 @@ MSA Report Generation Logic
 Extracted from msa_final_integration_report.py for better organization.
 """
 
-import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
 
 import httpx
 

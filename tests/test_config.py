@@ -3,11 +3,11 @@ Comprehensive test configuration and utilities
 Manages test environment setup, configuration, and utilities
 """
 import os
+import sqlite3
 import sys
 import tempfile
-import sqlite3
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict
 from unittest.mock import patch
 
 
@@ -202,7 +202,6 @@ def pytest_configure():
 
 def mock_external_services():
     """Apply comprehensive mocks for external services"""
-    from unittest.mock import Mock
 
     patches = []
 

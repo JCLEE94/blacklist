@@ -1,5 +1,4 @@
 """수집 시스템 모킹 모듈"""
-from unittest.mock import Mock
 
 import pytest
 
@@ -9,7 +8,8 @@ def enable_collection_for_tests(monkeypatch):
     """Automatically enable collection for all tests"""
     # Directly patch the service modules that are imported in routes
     try:
-        from src.core.routes.collection_status_routes import service as status_service
+        from src.core.routes.collection_status_routes import \
+            service as status_service
 
         # Create a property that always returns True and ignores setter
         def always_true():
@@ -29,7 +29,8 @@ def enable_collection_for_tests(monkeypatch):
         pass
 
     try:
-        from src.core.routes.collection_trigger_routes import service as trigger_service
+        from src.core.routes.collection_trigger_routes import \
+            service as trigger_service
 
         monkeypatch.setattr(trigger_service, "collection_enabled", True)
         monkeypatch.setattr(trigger_service, "daily_collection_enabled", True)
@@ -167,7 +168,7 @@ def enable_collection_for_tests(monkeypatch):
 
     # Mock progress tracker to prevent collection failures
     try:
-        from src.core.collection_progress import get_progress_tracker
+        pass
 
         mock_tracker = Mock()
         mock_tracker.start_collection.return_value = None

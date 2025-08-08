@@ -6,7 +6,7 @@ Extracted from msa_final_integration_report.py for better organization.
 """
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Dict
 
 
 class MSAReportFormatter:

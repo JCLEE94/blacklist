@@ -3,13 +3,11 @@
 통합 테스트: Collection System
 수집 관리자와 REGTECH 수집기 통합 테스트
 """
-import json
 import os
-import shutil
 import sys
 import tempfile
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 

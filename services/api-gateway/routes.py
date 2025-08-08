@@ -6,10 +6,10 @@ Extracted from app.py for better organization.
 """
 
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
-from fastapi import FastAPI, HTTPException, Depends, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .auth import verify_token
 from .proxy import proxy_request
@@ -19,12 +19,12 @@ security = HTTPBearer(auto_error=False)
 
 def register_routes(app: FastAPI):
     """라우트 등록"""
-    
+
     @app.get("/health")
     async def gateway_health():
         """게이트웨이 헬스 체크"""
         from . import service_discovery
-        
+
         await service_discovery.health_check()
 
         service_status = {}
@@ -43,7 +43,9 @@ def register_routes(app: FastAPI):
 
     # 수집 서비스 라우팅
     @app.get("/api/v1/collection/status")
-    async def get_collection_status(request: Request, auth: Dict = Depends(verify_token)):
+    async def get_collection_status(
+        request: Request, auth: Dict = Depends(verify_token)
+    ):
         """수집 상태 조회"""
         return await proxy_request(
             "collection",
@@ -59,7 +61,9 @@ def register_routes(app: FastAPI):
         if auth["user_type"] == "anonymous":
             raise HTTPException(status_code=401, detail="Authentication required")
 
-        return await proxy_request("collection", "/api/v1/collect", request, method="POST")
+        return await proxy_request(
+            "collection", "/api/v1/collect", request, method="POST"
+        )
 
     @app.put("/api/v1/collection/sources/{source}/enable")
     async def enable_collection_source(
@@ -100,7 +104,9 @@ def register_routes(app: FastAPI):
     @app.post("/api/v1/blacklist/search")
     async def search_batch(request: Request):
         """배치 IP 검색"""
-        return await proxy_request("blacklist", "/api/v1/search", request, method="POST")
+        return await proxy_request(
+            "blacklist", "/api/v1/search", request, method="POST"
+        )
 
     @app.get("/api/v1/blacklist/statistics")
     async def get_blacklist_statistics(request: Request):
@@ -118,7 +124,11 @@ def register_routes(app: FastAPI):
     async def get_analytics_trends(request: Request):
         """트렌드 분석"""
         return await proxy_request(
-            "analytics", "/api/v1/trends", request, use_cache=True, cache_category="trends"
+            "analytics",
+            "/api/v1/trends",
+            request,
+            use_cache=True,
+            cache_category="trends",
         )
 
     @app.get("/api/v1/analytics/geographic")
@@ -147,7 +157,11 @@ def register_routes(app: FastAPI):
     async def get_analytics_report(request: Request):
         """종합 분석 리포트"""
         return await proxy_request(
-            "analytics", "/api/v1/report", request, use_cache=True, cache_category="trends"
+            "analytics",
+            "/api/v1/report",
+            request,
+            use_cache=True,
+            cache_category="trends",
         )
 
     @app.get("/api/v1/analytics/realtime")
@@ -163,7 +177,7 @@ def register_routes(app: FastAPI):
             raise HTTPException(status_code=403, detail="Admin access required")
 
         from . import service_discovery
-        
+
         await service_discovery.health_check()
 
         services_info = {}
@@ -184,7 +198,7 @@ def register_routes(app: FastAPI):
             raise HTTPException(status_code=403, detail="Admin access required")
 
         from . import cache_manager
-        
+
         cache_manager.cache.clear()
         return {"status": "success", "message": "Cache cleared"}
 
@@ -195,7 +209,7 @@ def register_routes(app: FastAPI):
             raise HTTPException(status_code=403, detail="Admin access required")
 
         from . import cache_manager, rate_limiter, service_discovery
-        
+
         return {
             "cache_size": len(cache_manager.cache),
             "rate_limiter_clients": len(rate_limiter.requests),

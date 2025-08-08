@@ -46,7 +46,9 @@ class DeploymentStage(PipelineStage):
                 "--grpc-web",
             ]
 
-            result = subprocess.run(cmd, capture_output=True, timeout=120)  # 2min timeout
+            result = subprocess.run(
+                cmd, capture_output=True, timeout=120
+            )  # 2min timeout
             if result.returncode != 0:
                 logger.error(f"ArgoCD sync failed: {result.stderr.decode()}")
             return result.returncode == 0

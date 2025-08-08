@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class ServiceDiscovery:
     """서비스 디스커버리"""
-    
+
     def __init__(self, services: Dict[str, str]):
         self.services = services
         self.healthy_services: Set[str] = set()
@@ -27,7 +27,7 @@ class ServiceDiscovery:
         """모든 서비스 헬스 체크 - 성능 최적화 버전"""
         # 캠시에서 최근 헬스체크 결과 확인 (30초 TTL)
         from . import cache_manager
-        
+
         cache_key = "service_health_check_v2"
         cached_health = cache_manager.get(cache_key)
         if cached_health:

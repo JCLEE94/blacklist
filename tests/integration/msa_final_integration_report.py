@@ -24,7 +24,6 @@ class MSAFinalReportGenerator(MSAReportGenerator):
         super().__init__()
 
     # Methods inherited from MSAReportGenerator
-    pass
 
     # run_quick_health_check method renamed to run_health_checks in parent class
 

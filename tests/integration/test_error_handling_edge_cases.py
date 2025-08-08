@@ -22,7 +22,6 @@ class TestErrorHandlingIntegration(BaseIntegrationTest):
     """Core error handling integration tests"""
 
     # Fixtures inherited from BaseIntegrationTest
-    pass
 
     # Test methods moved to specialized modules for better organization
 

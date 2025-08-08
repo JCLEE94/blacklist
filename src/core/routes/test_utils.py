@@ -16,6 +16,7 @@ from flask import Flask
 
 logger = logging.getLogger(__name__)
 
+
 # Simple fallback for mock creation since mock_services was removed
 def create_simple_mock_container():
     """Simple mock container fallback"""

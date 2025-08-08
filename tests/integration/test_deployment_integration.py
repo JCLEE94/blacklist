@@ -3,13 +3,9 @@
 통합 테스트: Deployment System
 Docker, Kubernetes, ArgoCD 배포 시스템 테스트
 """
-import json
 import os
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
 
 import yaml
 

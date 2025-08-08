@@ -1,4 +1,4 @@
-#\!/usr/bin/env python3
+# \!/usr/bin/env python3
 """
 API Gateway - Simplified and Modularized
 
@@ -56,25 +56,26 @@ SERVICES = {
 
 # Initialize core components
 try:
-    from .middleware import RateLimiter, CacheManager
+    from .middleware import CacheManager, RateLimiter
     from .service_discovery import ServiceDiscovery
-    
+
     rate_limiter = RateLimiter()
     cache_manager = CacheManager()
-    service_discovery = ServiceDiscovery({
-        name: config["url"] for name, config in SERVICES.items()
-    })
-    
+    service_discovery = ServiceDiscovery(
+        {name: config["url"] for name, config in SERVICES.items()}
+    )
+
     # Import and register routes after initializing components
     from .routes import register_routes
+
     register_routes(app)
-    
+
 except ImportError as e:
     logger.warning(f"Could not import modular components: {e}")
     logger.info("Falling back to basic health check only")
-    
+
     from datetime import datetime
-    
+
     @app.get("/health")
     async def basic_health():
         """Basic health check fallback"""
@@ -85,18 +86,20 @@ except ImportError as e:
             "mode": "fallback",
         }
 
+
 # Background tasks
 @app.on_event("startup")
 async def startup_event():
     """시작 시 초기화"""
     logger.info("API Gateway starting up...")
-    
+
     try:
         await service_discovery.health_check()
         # 주기적 헬스 체크 시작
         asyncio.create_task(periodic_health_check())
     except Exception as e:
         logger.error(f"Startup failed: {e}")
+
 
 async def periodic_health_check():
     """주기적 헬스 체크"""
@@ -108,7 +111,8 @@ async def periodic_health_check():
             logger.error(f"Health check error: {e}")
             await asyncio.sleep(30)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8080)
-EOF < /dev/null

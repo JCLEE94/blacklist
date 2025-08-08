@@ -5,13 +5,10 @@ GitHub Actions 워크플로우, Docker 빌드, ArgoCD 배포 등
 전체 CI/CD 파이프라인의 통합 테스트를 수행합니다.
 """
 
-import json
-import os
 import subprocess
 import time
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml

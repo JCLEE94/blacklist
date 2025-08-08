@@ -7,34 +7,22 @@ CI/CD 파이프라인 리팩토링을 위한 통합 테스트
 import json
 import os
 import sys
-from pathlib import Path
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
-import pytest
-import yaml
 
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 
 # Import shared pipeline classes
-from .test_cicd_stages import (
-    PipelineConfig,
-    PipelineStage,
-    CodeQualityStage,
-    BuildStage,
-    CICDTestStage,
-    DeploymentStage,
-    MockStageSuccess,
-    MockStageFail,
-    MockStageDryRun,
-    PipelineOrchestrator,
-)
+from .test_cicd_stages import (BuildStage, CICDTestStage, CodeQualityStage,
+                               DeploymentStage, MockStageDryRun, MockStageFail,
+                               MockStageSuccess, PipelineConfig,
+                               PipelineOrchestrator)
 
 
 def main():
     """Mock main function for CLI testing"""
-    pass
 
 
 class TestPipelineConfig:

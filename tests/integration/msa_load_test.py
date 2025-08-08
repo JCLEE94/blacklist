@@ -5,12 +5,10 @@ MSA 아키텍처 부하 테스트
 """
 
 import asyncio
-import json
 import logging
 import statistics
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List
 

@@ -16,7 +16,7 @@ from .test import TestStage
 # Export all public interfaces
 __all__ = [
     "PipelineConfig",
-    "PipelineStage", 
+    "PipelineStage",
     "CodeQualityStage",
     "TestStage",
     "BuildStage",
@@ -28,8 +28,9 @@ __all__ = [
 def main():
     """CLI entry point for backward compatibility"""
     import sys
+
     from .orchestrator import main as orchestrator_main
-    
+
     # Delegate to orchestrator main function
     orchestrator_main()
 

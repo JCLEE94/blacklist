@@ -4,11 +4,7 @@ Core Blacklist API 엔드포인트 테스트
 /, /health, /api/blacklist/active, /api/fortigate, /api/stats 엔드포인트 검증
 """
 
-import json
-import time
-from datetime import datetime
 
-import pytest
 import requests
 
 

@@ -6,10 +6,10 @@ Extracted from app.py for better organization.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
-from fastapi import HTTPException, Request
 import httpx
+from fastapi import HTTPException, Request
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ async def proxy_request(
     cache_category: str = "default",
 ) -> Dict[str, Any]:
     """서비스로 요청 프록시"""
-    from . import service_discovery, cache_manager, SERVICES
+    from . import SERVICES, cache_manager, service_discovery
 
     # 서비스 상태 확인
     if not service_discovery.is_service_healthy(service_name):

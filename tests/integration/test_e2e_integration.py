@@ -3,23 +3,17 @@
 통합 테스트: End-to-End (E2E)
 전체 시스템 플로우 테스트
 """
-import json
 import os
-import sqlite3
 import sys
 import tempfile
-import time
-from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from flask import Flask
 
 from src.core.app_compact import create_compact_app
-from src.core.container import BlacklistContainer, get_container
-from src.core.unified_service import UnifiedBlacklistService
+from src.core.container import get_container
 
 
 def test_complete_data_flow():

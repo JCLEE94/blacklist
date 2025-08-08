@@ -5,12 +5,15 @@ This module imports and re-exports all modular integration tests
 for backward compatibility and centralized test execution.
 """
 from .test_cache_database_integration import TestCacheDatabaseIntegration
+
 try:
     from .test_collection_integration import TestCollectionIntegration
 except ImportError:
     # Fallback if module doesn't exist
     class TestCollectionIntegration:
         pass
+
+
 from .test_error_recovery import TestServiceErrorRecovery
 # Import all modular test classes
 from .test_service_core import TestServiceCore

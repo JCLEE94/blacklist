@@ -4,7 +4,6 @@ Quick Integration Test for Blacklist Management System
 Tests cookie-based authentication and basic functionality
 """
 
-import json
 import sys
 import time
 from datetime import datetime
