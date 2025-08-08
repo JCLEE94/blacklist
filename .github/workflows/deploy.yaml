@@ -70,6 +70,7 @@ jobs:
           context: .
           file: ./deployment/Dockerfile
           push: true
+          no-cache: true
           tags: |
             registry.jclee.me/jclee94/blacklist:latest
             registry.jclee.me/jclee94/blacklist:${{ steps.meta.outputs.version }}
