@@ -21,11 +21,11 @@ spec:
   # 프로젝트 설정
   project: default
   
-  # Git 소스 설정
+  # Helm Chart 소스 설정
   source:
-    repoURL: https://github.com/JCLEE94/blacklist.git
-    targetRevision: main
-    path: charts/blacklist
+    repoURL: https://charts.jclee.me
+    chart: blacklist
+    targetRevision: "*"
     helm:
       valueFiles:
         - values.yaml
