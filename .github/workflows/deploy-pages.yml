@@ -31,10 +31,9 @@ jobs:
         run: |
           mkdir -p _site
           
-          # Copy main portfolio content
-          cp docs/index.md _site/index.md
-          cp -r portfolio _site/
-          cp README_EN.md _site/README.md
+          # Copy main portfolio content  
+          cp README.md _site/README.md
+          if [ -d portfolio ]; then cp -r portfolio _site/; fi
           
           # Create simple HTML wrapper
           cat > _site/index.html << 'EOF'
