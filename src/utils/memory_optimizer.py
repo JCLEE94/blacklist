@@ -13,6 +13,7 @@ This module now uses modular mixins for better code organization:
 
 
 from .memory.bulk_processor import BulkProcessorMixin
+
 # Import modular components
 from .memory.core_optimizer import CoreMemoryOptimizer
 from .memory.database_operations import DatabaseOptimizationMixin

@@ -15,10 +15,17 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 
 # Import shared pipeline classes
-from .test_cicd_stages import (BuildStage, CICDTestStage, CodeQualityStage,
-                               DeploymentStage, MockStageDryRun, MockStageFail,
-                               MockStageSuccess, PipelineConfig,
-                               PipelineOrchestrator)
+from .test_cicd_stages import (
+    BuildStage,
+    CICDTestStage,
+    CodeQualityStage,
+    DeploymentStage,
+    MockStageDryRun,
+    MockStageFail,
+    MockStageSuccess,
+    PipelineConfig,
+    PipelineOrchestrator,
+)
 
 
 def main():

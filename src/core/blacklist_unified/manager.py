@@ -50,8 +50,7 @@ class UnifiedBlacklistManager:
         if cache_backend:
             self.cache = cache_backend
         else:
-            from ...utils.advanced_cache import \
-                EnhancedSmartCache as CacheManager
+            from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
 
             cache_manager = CacheManager()
             self.cache = cache_manager.get_cache()

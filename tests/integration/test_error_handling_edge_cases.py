@@ -10,11 +10,18 @@ Extensive test cases have been moved to specialized modules:
 """
 import pytest
 
-from .edge_case_tests import (TestDataEdgeCases, TestDateEdgeCases,
-                              TestResourceExhaustionCases,
-                              TestSpecialInputCases)
-from .error_scenarios import (TestAuthenticationErrors, TestConcurrencyErrors,
-                              TestDatabaseErrors, TestNetworkErrors)
+from .edge_case_tests import (
+    TestDataEdgeCases,
+    TestDateEdgeCases,
+    TestResourceExhaustionCases,
+    TestSpecialInputCases,
+)
+from .error_scenarios import (
+    TestAuthenticationErrors,
+    TestConcurrencyErrors,
+    TestDatabaseErrors,
+    TestNetworkErrors,
+)
 from .test_helpers import BaseIntegrationTest
 
 

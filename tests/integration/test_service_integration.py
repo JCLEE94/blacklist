@@ -15,6 +15,7 @@ except ImportError:
 
 
 from .test_error_recovery import TestServiceErrorRecovery
+
 # Import all modular test classes
 from .test_service_core import TestServiceCore
 
