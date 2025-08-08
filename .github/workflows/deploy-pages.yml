@@ -1,12 +1,8 @@
-name: Deploy Portfolio to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'docs/**'
-      - 'portfolio/**'
-      - 'README*.md'
   workflow_dispatch:
 
 permissions:
@@ -29,9 +25,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Pages
-        uses: actions/configure-pages@v3
-        with:
-          enablement: true
+        uses: actions/configure-pages@v4
 
       - name: Create public portfolio
         run: |
