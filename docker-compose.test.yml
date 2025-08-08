@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # Test Database
+  test-postgres:
+    image: postgres:15-alpine
+    container_name: blacklist-test-postgres
+    environment:
+      POSTGRES_DB: blacklist_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass_123
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+      - ./tests/fixtures/init-test-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d blacklist_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - test-network
+
+  # Test Redis
+  test-redis:
+    image: redis:7-alpine
+    container_name: blacklist-test-redis
+    command: redis-server --appendonly yes --bind 0.0.0.0
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    volumes:
+      - test_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - test-network
+
+  # Test Application
+  test-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test  # Use test stage if exists, fallback to default
+    container_name: blacklist-test-app
+    environment:
+      - FLASK_ENV=testing
+      - TESTING=1
+      - DATABASE_URL=postgresql://test_user:test_pass_123@test-postgres:5432/blacklist_test
+      - REDIS_URL=redis://test-redis:6379/0
+      - CACHE_TYPE=redis
+      - FORCE_DISABLE_COLLECTION=false  # Allow collection in tests
+      - COLLECTION_ENABLED=true
+      - RESTART_PROTECTION=false
+      - SAFETY_PROTECTION=false
+      - DEBUG=true
+      - SECRET_KEY=test-secret-key-for-testing-only
+      - MAX_AUTH_ATTEMPTS=100
+      - REGTECH_USERNAME=test_regtech
+      - REGTECH_PASSWORD=test_pass
+      - SECUDIUM_USERNAME=test_secudium
+      - SECUDIUM_PASSWORD=test_pass
+    ports:
+      - "8542:8541"  # Different port for testing
+    volumes:
+      - .:/app
+      - test_app_data:/app/data
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8541/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["python", "-m", "pytest", "--setup-show", "tests/"]
+
+  # Test runner service (separate from app)
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blacklist-test-runner
+    environment:
+      - FLASK_ENV=testing
+      - TESTING=1
+      - DATABASE_URL=postgresql://test_user:test_pass_123@test-postgres:5432/blacklist_test
+      - REDIS_URL=redis://test-redis:6379/0
+      - PYTHONPATH=/app:/app/src
+    volumes:
+      - .:/app
+      - test_coverage:/app/htmlcov
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    networks:
+      - test-network
+    working_dir: /app
+    command: tail -f /dev/null  # Keep container running
+
+volumes:
+  test_postgres_data:
+  test_redis_data:
+  test_app_data:
+  test_coverage:
+
+networks:
+  test-network:
+    driver: bridge

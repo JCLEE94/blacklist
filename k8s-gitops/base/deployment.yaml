@@ -1,0 +1,365 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+  namespace: blacklist
+  labels:
+    app: blacklist
+    version: v1
+    component: backend
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: blacklist
+  template:
+    metadata:
+      labels:
+        app: blacklist
+        version: v1
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2541"
+        prometheus.io/path: "/metrics"
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      
+      serviceAccountName: blacklist
+      
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/jclee94/blacklist:latest
+        imagePullPolicy: Always
+        
+        ports:
+        - name: http
+          containerPort: 2541
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+          
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        - name: PORT
+          value: "2541"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        # 보안 기본 설정 (외부 인증 차단)
+        - name: FORCE_DISABLE_COLLECTION
+          value: "true"
+        - name: COLLECTION_ENABLED
+          value: "false"
+        - name: RESTART_PROTECTION
+          value: "true"
+        - name: MAX_AUTH_ATTEMPTS
+          value: "10"
+        - name: BLOCK_DURATION_HOURS
+          value: "24"
+        
+        envFrom:
+        - secretRef:
+            name: blacklist-secrets
+        - configMapRef:
+            name: blacklist-config
+            optional: true
+            
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+            
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+          
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+          
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 30
+          
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        - name: instance-volume
+          mountPath: /app/instance
+        - name: tmp-volume
+          mountPath: /tmp
+          
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: blacklist-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: blacklist-logs-pvc
+      - name: instance-volume
+        persistentVolumeClaim:
+          claimName: blacklist-instance-pvc
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 1Gi
+          
+      nodeSelector:
+        kubernetes.io/os: linux
+        
+      tolerations:
+      - key: "node-role.kubernetes.io/worker"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+        
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - blacklist
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: backend
+  annotations:
+    service.beta.kubernetes.io/external-traffic: OnlyLocal
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 2541
+    targetPort: http
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    app: blacklist
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist-nodeport
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: backend
+    service-type: nodeport
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 2541
+    targetPort: http
+    nodePort: 30541
+    protocol: TCP
+  selector:
+    app: blacklist
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: blacklist
+  namespace: blacklist
+  labels:
+    app: blacklist
+automountServiceAccountToken: false
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blacklist-config
+  namespace: blacklist
+  labels:
+    app: blacklist
+data:
+  # Application Configuration
+  FLASK_ENV: "production"
+  LOG_LEVEL: "INFO"
+  
+  # Cache Configuration
+  CACHE_TYPE: "redis"
+  CACHE_REDIS_HOST: "redis"
+  CACHE_REDIS_PORT: "6379"
+  CACHE_REDIS_DB: "0"
+  CACHE_DEFAULT_TIMEOUT: "300"
+  
+  # Database Configuration
+  DATABASE_URL: "sqlite:///app/instance/blacklist.db"
+  
+  # Collection Configuration (보안 기본값)
+  COLLECTION_ENABLED: "false"
+  FORCE_DISABLE_COLLECTION: "true"
+  
+  # Monitoring
+  METRICS_ENABLED: "true"
+  HEALTH_CHECK_ENABLED: "true"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blacklist-data-pvc
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blacklist-logs-pvc
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blacklist-instance-pvc
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blacklist-ingress
+  namespace: blacklist
+  labels:
+    app: blacklist
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - blacklist.jclee.me
+    secretName: blacklist-tls
+  rules:
+  - host: blacklist.jclee.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blacklist
+            port:
+              number: 2541
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: blacklist-pdb
+  namespace: blacklist
+  labels:
+    app: blacklist
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: blacklist

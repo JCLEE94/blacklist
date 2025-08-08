@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: blacklist-base
+  namespace: blacklist
+
+resources:
+- deployment.yaml
+- namespace.yaml
+- secrets.yaml
+- argocd-app.yaml
+
+commonLabels:
+  app: blacklist
+  version: v1
+  managed-by: kustomize
+
+images:
+- name: registry.jclee.me/jclee94/blacklist
+  newTag: latest
+
+namespace: blacklist
+
+replicas:
+- name: blacklist
+  count: 3
+
+patchesStrategicMerge:
+- production-patches.yaml

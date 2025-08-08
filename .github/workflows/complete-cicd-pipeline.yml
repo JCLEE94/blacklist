@@ -1,0 +1,324 @@
+name: Complete CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: jclee94/blacklist
+  NAMESPACE: blacklist
+
+jobs:
+  security-scan:
+    name: Security & Quality Checks
+    runs-on: self-hosted
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        pip install bandit safety black flake8 pytest-cov
+
+    - name: Security scan with Bandit
+      run: |
+        bandit -r src/ -ll -f json -o bandit-report.json || true
+        bandit -r src/ -ll
+
+    - name: Dependency vulnerability check
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check
+
+    - name: Code quality check
+      run: |
+        black --check src/ tests/ || true
+        flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 || true
+
+    - name: File size enforcement (500-line rule)
+      run: |
+        echo "Checking file sizes (500-line limit)..."
+        find src/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 {print "❌ File too large:", $2, "("$1" lines)"; exit_code=1} END {if(exit_code) exit 1}'
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  test:
+    name: Test Suite
+    runs-on: self-hosted
+    needs: security-scan
+    
+    strategy:
+      matrix:
+        test-type: [unit, integration]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Setup test environment
+      run: |
+        cp .env.example .env
+        # Set secure defaults for testing
+        echo "FORCE_DISABLE_COLLECTION=true" >> .env
+        echo "COLLECTION_ENABLED=false" >> .env
+        echo "RESTART_PROTECTION=true" >> .env
+        echo "TEST_MODE=true" >> .env
+        
+        # Initialize test database
+        PYTHONPATH=/home/jclee/app/blacklist python init_database.py
+
+    - name: Run unit tests
+      if: matrix.test-type == 'unit'
+      run: |
+        PYTHONPATH=/home/jclee/app/blacklist pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=html --junitxml=unit-test-results.xml
+
+    - name: Run integration tests
+      if: matrix.test-type == 'integration'
+      run: |
+        PYTHONPATH=/home/jclee/app/blacklist python tests/integration/run_integration_tests.py
+        PYTHONPATH=/home/jclee/app/blacklist pytest tests/integration/ -v --junitxml=integration-test-results.xml -m "not slow"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.test-type }}
+        path: |
+          *-test-results.xml
+          htmlcov/
+          coverage.xml
+
+  build:
+    name: Build & Push Container
+    runs-on: self-hosted
+    needs: [security-scan, test]
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      with:
+        config-inline: |
+          [registry."registry.jclee.me"]
+            http = true
+            insecure = true
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_REGISTRY_USER }}
+        password: ${{ secrets.DOCKER_REGISTRY_PASS }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push container
+      id: build
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./deployment/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ github.event.head_commit.timestamp }}
+          VCS_REF=${{ github.sha }}
+          VERSION=${{ github.ref_name }}
+
+    - name: Container image security scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  deploy-development:
+    name: Deploy to Development
+    runs-on: self-hosted
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Update Kubernetes manifests
+      run: |
+        sed -i "s|image: .*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|" k8s/development/deployment.yaml
+
+    - name: Deploy to development cluster
+      run: |
+        kubectl apply -k k8s/development/
+        kubectl rollout status deployment/blacklist -n blacklist-dev --timeout=300s
+
+    - name: Health check
+      run: |
+        sleep 30
+        curl -f http://blacklist-dev.jclee.me/health || exit 1
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: self-hosted
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Update staging manifests
+      run: |
+        sed -i "s|image: .*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|" k8s/staging/deployment.yaml
+
+    - name: Deploy to staging
+      run: |
+        kubectl apply -k k8s/staging/
+        kubectl rollout status deployment/blacklist -n blacklist-staging --timeout=300s
+
+    - name: Run smoke tests
+      run: |
+        sleep 30
+        curl -f http://blacklist-staging.jclee.me/health
+        curl -f http://blacklist-staging.jclee.me/api/blacklist/active
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: self-hosted
+    needs: [build, deploy-staging]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Update production manifests
+      run: |
+        sed -i "s|image: .*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|" k8s/production/deployment.yaml
+
+    - name: ArgoCD sync
+      run: |
+        # Update image annotation to trigger ArgoCD
+        kubectl annotate deployment blacklist -n blacklist \
+          deployment.kubernetes.io/image-tag="${{ github.sha }}" \
+          --overwrite
+
+    - name: Trigger ArgoCD sync
+      run: |
+        curl -X POST "https://argo.jclee.me/api/v1/applications/blacklist/sync" \
+          -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{"revision": "${{ github.sha }}"}'
+
+    - name: Wait for deployment
+      run: |
+        kubectl rollout status deployment/blacklist -n blacklist --timeout=600s
+
+    - name: Production health check
+      run: |
+        sleep 60
+        curl -f https://blacklist.jclee.me/health
+        curl -f https://blacklist.jclee.me/api/blacklist/active
+
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "🚀 Production deployment successful!"
+        echo "Version: ${{ github.sha }}"
+        echo "URL: https://blacklist.jclee.me"
+
+  notification:
+    name: Notification
+    runs-on: self-hosted
+    needs: [deploy-development, deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Deployment Status Summary
+      run: |
+        echo "🔄 CI/CD Pipeline Complete"
+        echo "==============================="
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Security Scan: ${{ needs.security-scan.result }}"
+        echo "Tests: ${{ needs.test.result }}"
+        echo "Build: ${{ needs.build.result }}"
+        
+        if [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+          echo "Development Deploy: ${{ needs.deploy-development.result }}"
+        elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          echo "Staging Deploy: ${{ needs.deploy-staging.result }}"
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "Production Deploy: ${{ needs.deploy-production.result }}"
+          fi
+        fi

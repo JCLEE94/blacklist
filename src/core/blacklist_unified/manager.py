@@ -213,3 +213,33 @@ class UnifiedBlacklistManager:
         except Exception as e:
             logger.error(f"Error generating FortiGate format: {e}")
             return "[]"
+
+    def get_system_stats(self) -> Dict[str, Any]:
+        """Get system statistics (backward compatibility)"""
+        try:
+            stats = self.statistics_service.get_statistics()
+            
+            # Format for backward compatibility
+            return {
+                "total_ips": stats.get("total_ips", 0),
+                "active_ips": stats.get("active_ips", 0),
+                "expired_ips": stats.get("expired_ips", 0),
+                "unique_countries": stats.get("unique_countries", 0),
+                "sources": stats.get("sources", {}),
+                "last_update": stats.get("last_update"),
+                "database_size": stats.get("database_size", "0 MB"),
+                "health": "healthy" if stats.get("active_ips", 0) > 0 else "warning"
+            }
+        except Exception as e:
+            logger.error(f"Error getting system stats: {e}")
+            return {
+                "total_ips": 0,
+                "active_ips": 0,
+                "expired_ips": 0,
+                "unique_countries": 0,
+                "sources": {},
+                "last_update": None,
+                "database_size": "0 MB",
+                "health": "error",
+                "error": str(e)
+            }
