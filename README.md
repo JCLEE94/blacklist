@@ -184,8 +184,8 @@ python3 tests/integration/performance_benchmark.py
 
 ## 👨‍💻 개발자 정보
 
-**김진철 (JinChul Kim)**  
-*DevOps Engineer & Security System Developer*
+**이재철 (Lee Jae Cheol)**  
+*DevOps Engineer & Security Engineer*
 
 **핵심 역량**: Python • Kubernetes • ArgoCD • 위협 인텔리전스 • CI/CD 파이프라인
 

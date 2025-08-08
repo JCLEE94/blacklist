@@ -190,14 +190,14 @@ jobs:
                   <h2>👨‍💻 Developer Contact</h2>
                   <div class="grid">
                       <div>
-                          <h3>JinChul Kim (김진철)</h3>
-                          <p><em>DevOps Engineer & Backend Developer</em></p>
+                          <h3>Lee Jae Cheol (이재철)</h3>
+                          <p><em>DevOps Engineer & Security Engineer</em></p>
                       </div>
                       <div>
                           <ul>
                               <li>📧 <strong>Email</strong>: jclee94@example.com</li>
                               <li>🐙 <strong>GitHub</strong>: <a href="https://github.com/JCLEE94">github.com/JCLEE94</a></li>
-                              <li>💼 <strong>LinkedIn</strong>: <a href="#">linkedin.com/in/jinchul-kim</a></li>
+                              <li>💼 <strong>LinkedIn</strong>: <a href="#">linkedin.com/in/jaecheol-lee</a></li>
                           </ul>
                       </div>
                   </div>
