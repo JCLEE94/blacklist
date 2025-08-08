@@ -19,15 +19,15 @@ spec:
   project: default
   source:
     repoURL: https://github.com/JCLEE94/blacklist.git
-    path: blacklist
+    path: charts/blacklist
     targetRevision: main
     helm:
       valueFiles:
         - values.yaml
       values: |
         image:
-          repository: registry.jclee.me/jclee94/blacklist
-          tag: latest
+          repository: registry.jclee.me/blacklist
+          tag: f88fd81
           pullPolicy: Always
         
         imagePullSecrets:
@@ -37,7 +37,7 @@ spec:
           type: NodePort
           port: 80
           targetPort: 8541
-          nodePort: 32452
+          nodePort: 32453
         
         ingress:
           enabled: true
