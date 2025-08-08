@@ -9,31 +9,12 @@
 """
 
 # 하위 호환성을 위한 임포트 - 새로운 모듈 구조에서 가져옴
-from .containers import (
-    BlacklistContainer,
-    ServiceContainer,
-    ServiceDefinition,
-    get_auth_manager,
-    get_blacklist_manager,
-    get_cache_manager,
-    get_collection_manager,
-    get_container,
-    inject,
-    reset_container,
-    resolve_service,
-)
-from .containers.tests import (
-    test_container_dependency_injection as _test_container_dependency_injection,
-)
-from .containers.tests import (
-    test_container_error_handling as _test_container_error_handling,
-)
-from .containers.tests import (
-    test_container_service_registration as _test_container_service_registration,
-)
-from .containers.tests import (
-    test_container_singleton_behavior as _test_container_singleton_behavior,
-)
+from .containers import (BlacklistContainer, ServiceContainer,
+                         ServiceDefinition, get_auth_manager,
+                         get_blacklist_manager, get_cache_manager,
+                         get_collection_manager, get_container, inject,
+                         reset_container, resolve_service)
+# 테스트 모듈 임포트 제거 - 모듈이 누락됨
 
 # 하위 호환성을 위한 별칭
 __all__ = [
@@ -48,10 +29,6 @@ __all__ = [
     "get_cache_manager",
     "get_collection_manager",
     "get_auth_manager",
-    "_test_container_service_registration",
-    "_test_container_singleton_behavior",
-    "_test_container_dependency_injection",
-    "_test_container_error_handling",
 ]
 
 # 이 파일은 하위 호환성을 위해 유지됩니다.

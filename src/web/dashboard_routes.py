@@ -11,7 +11,6 @@ from typing import Any, Dict
 
 from flask import Blueprint, flash, redirect, render_template, url_for
 
-
 logger = logging.getLogger(__name__)
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="")

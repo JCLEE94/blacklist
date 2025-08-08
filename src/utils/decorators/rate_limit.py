@@ -8,7 +8,6 @@ from typing import Callable, Optional
 
 from flask import g, request
 
-
 logger = logging.getLogger(__name__)
 
 

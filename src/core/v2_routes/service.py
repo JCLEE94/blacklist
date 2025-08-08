@@ -13,9 +13,7 @@ from ...core.blacklist_unified import UnifiedBlacklistManager
 from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
 from ...utils.performance_optimizer import optimizer, validate_ips_batch
 from ...utils.security import SecurityManager
-from ...utils.unified_decorators import (
-    unified_cache,
-)
+from ...utils.unified_decorators import unified_cache
 
 logger = logging.getLogger(__name__)
 

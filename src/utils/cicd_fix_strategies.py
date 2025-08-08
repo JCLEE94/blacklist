@@ -5,7 +5,6 @@ Claude Code v8.4.0 - 에러 별 수정 전략 구현
 """
 
 
-
 class FixStrategyManager:
     """CI/CD 에러 수정 전략 관리"""
 

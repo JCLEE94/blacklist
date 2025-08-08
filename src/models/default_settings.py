@@ -81,7 +81,8 @@ def get_default_settings():
             description="모든 외부 인증 차단 (보안 모드)",
             category=SettingCategory.SECURITY,
             setting_type=SettingType.BOOLEAN,
-            default_value=os.getenv("FORCE_DISABLE_COLLECTION", "true").lower() == "true",
+            default_value=os.getenv("FORCE_DISABLE_COLLECTION", "true").lower()
+            == "true",
         ),
         SettingDefinition(
             key="max_auth_attempts",
