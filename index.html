@@ -112,33 +112,72 @@
     <h2>System Architecture</h2>
     <div class="card">
         <h3>🏗️ Complete System Architecture</h3>
-        <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Data Sources  │    │  GitOps Pipeline │    │  Infrastructure │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ REGTECH API     │───▶│ GitHub Actions  │───▶│ Kubernetes      │
-│ SECUDIUM API    │    │ Docker Registry │    │ ArgoCD          │
-│ Public Intel    │    │ Security Scan   │    │ Helm Charts     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Collection Mgr  │    │  Processing     │    │  API Gateway    │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ Data Validation │───▶│ Redis Cache     │───▶│ REST Endpoints  │
-│ Format Convert  │    │ SQLite Storage  │    │ Authentication  │
-│ Schedule Jobs   │    │ Analytics       │    │ Rate Limiting   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │                       │
-                                ▼                       ▼
-                    ┌─────────────────┐    ┌─────────────────┐
-                    │   Monitoring    │    │  External Sys   │
-                    ├─────────────────┤    ├─────────────────┤
-                    │ Health Checks   │    │ FortiGate FW    │
-                    │ Performance     │    │ Security Tools  │
-                    │ Log Analysis    │    │ SIEM Systems    │
-                    └─────────────────┘    └─────────────────┘
-        </pre>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.4;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #1976d2;">
+                    <h4 style="margin: 0 0 10px 0; color: #1976d2;">📊 Data Sources</h4>
+                    <div>• REGTECH API</div>
+                    <div>• SECUDIUM API</div>
+                    <div>• Public Intel</div>
+                </div>
+                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #f57c00;">
+                    <h4 style="margin: 0 0 10px 0; color: #f57c00;">🔄 GitOps Pipeline</h4>
+                    <div>• GitHub Actions</div>
+                    <div>• Docker Registry</div>
+                    <div>• Security Scan</div>
+                </div>
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #388e3c;">
+                    <h4 style="margin: 0 0 10px 0; color: #388e3c;">☁️ Infrastructure</h4>
+                    <div>• Kubernetes</div>
+                    <div>• ArgoCD</div>
+                    <div>• Helm Charts</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #666;">
+                ↓ ↓ ↓
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #7b1fa2;">
+                    <h4 style="margin: 0 0 10px 0; color: #7b1fa2;">🔧 Collection Mgr</h4>
+                    <div>• Data Validation</div>
+                    <div>• Format Convert</div>
+                    <div>• Schedule Jobs</div>
+                </div>
+                <div style="background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #00695c;">
+                    <h4 style="margin: 0 0 10px 0; color: #00695c;">⚡ Processing</h4>
+                    <div>• Redis Cache</div>
+                    <div>• SQLite Storage</div>
+                    <div>• Analytics</div>
+                </div>
+                <div style="background: #fce4ec; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #c2185b;">
+                    <h4 style="margin: 0 0 10px 0; color: #c2185b;">🌐 API Gateway</h4>
+                    <div>• REST Endpoints</div>
+                    <div>• Authentication</div>
+                    <div>• Rate Limiting</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #666;">
+                ↓ ↓
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px; margin: 0 auto;">
+                <div style="background: #fff8e1; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #ff8f00;">
+                    <h4 style="margin: 0 0 10px 0; color: #ff8f00;">📈 Monitoring</h4>
+                    <div>• Health Checks</div>
+                    <div>• Performance</div>
+                    <div>• Log Analysis</div>
+                </div>
+                <div style="background: #efebe9; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #5d4037;">
+                    <h4 style="margin: 0 0 10px 0; color: #5d4037;">🔐 External Sys</h4>
+                    <div>• FortiGate FW</div>
+                    <div>• Security Tools</div>
+                    <div>• SIEM Systems</div>
+                </div>
+            </div>
+        </div>
         
         <h3>📊 Data Flow Process</h3>
         <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
@@ -152,33 +191,61 @@
     <h2>CI/CD Pipeline</h2>
     <div class="card">
         <h3>🔄 GitOps Workflow Diagram</h3>
-        <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
- [Push Code]         [GitHub Actions]         [Docker Registry]
-      │                      │                        │
-      ▼                      ▼                        ▼
-┌───────────┐    ┌─────────────────────┐    ┌─────────────────┐
-│   main    │───▶│  🔍 Code Quality    │───▶│  📦 Container   │
-│  branch   │    │  🧪 Unit Tests      │    │     Build       │
-│           │    │  🔒 Security Scan   │    │                 │
-└───────────┘    └─────────────────────┘    └─────────────────┘
-                            │                        │
-                            ▼                        ▼
-               ┌─────────────────────┐    ┌─────────────────┐
-               │  ✅ Integration     │    │  🚀 ArgoCD      │
-               │     Tests           │───▶│     Deployment  │
-               │  📈 Performance     │    │                 │
-               └─────────────────────┘    └─────────────────┘
-                                                  │
-                                                  ▼
-                               ┌─────────────────────────────────┐
-                               │       🎯 Kubernetes             │
-                               │  ┌─────────────────────────┐    │
-                               │  │   Pod Auto-scaling      │    │
-                               │  │   Health Monitoring     │    │
-                               │  │   Service Mesh          │    │
-                               │  └─────────────────────────┘    │
-                               └─────────────────────────────────┘
-        </pre>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; font-size: 13px; line-height: 1.4;">
+            <!-- Stage 1 -->
+            <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
+                <div style="background: #e1f5fe; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #0277bd; width: 150px;">
+                    <h4 style="margin: 0 0 10px 0; color: #0277bd;">📝 Push Code</h4>
+                    <div>main branch</div>
+                </div>
+                <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #7b1fa2; width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: #7b1fa2;">🔍 GitHub Actions</h4>
+                    <div>• Code Quality</div>
+                    <div>• Unit Tests</div>
+                    <div>• Security Scan</div>
+                </div>
+                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #f57c00; width: 150px;">
+                    <h4 style="margin: 0 0 10px 0; color: #f57c00;">📦 Container</h4>
+                    <div>Docker Build</div>
+                    <div>Registry Push</div>
+                </div>
+            </div>
+            
+            <!-- Flow arrows -->
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <div style="color: #666; font-size: 24px;">→ → → → → → → → → →</div>
+            </div>
+            
+            <!-- Stage 2 -->
+            <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #2e7d32; width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: #2e7d32;">✅ Integration</h4>
+                    <div>• Tests</div>
+                    <div>• Performance</div>
+                    <div>• Validation</div>
+                </div>
+                <div style="background: #fce4ec; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #c2185b; width: 180px;">
+                    <h4 style="margin: 0 0 10px 0; color: #c2185b;">🚀 ArgoCD</h4>
+                    <div>GitOps</div>
+                    <div>Deployment</div>
+                </div>
+            </div>
+            
+            <!-- Final flow arrow -->
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <div style="color: #666; font-size: 24px;">↓ ↓ ↓</div>
+            </div>
+            
+            <!-- Stage 3 -->
+            <div style="display: flex; justify-content: center;">
+                <div style="background: #e0f2f1; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #00695c; width: 300px;">
+                    <h4 style="margin: 0 0 15px 0; color: #00695c;">🎯 Kubernetes Production</h4>
+                    <div style="background: #b2dfdb; padding: 10px; border-radius: 5px; margin: 5px 0;">Pod Auto-scaling</div>
+                    <div style="background: #b2dfdb; padding: 10px; border-radius: 5px; margin: 5px 0;">Health Monitoring</div>
+                    <div style="background: #b2dfdb; padding: 10px; border-radius: 5px; margin: 5px 0;">Service Mesh</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <h2>API Endpoints</h2>
