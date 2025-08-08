@@ -2,9 +2,11 @@
 # Stage 1: Builder for production dependencies
 FROM python:3.9 AS builder
 
-# Build arguments - Force rebuild: 2025-07-06T03:11:00Z
-ARG BUILD_TIME="2025-07-06T03:11:00Z"  
+# Build arguments
+ARG BUILD_TIME
+ARG CACHE_BUST=1
 ENV BUILD_TIME=${BUILD_TIME}
+ENV CACHE_BUST=${CACHE_BUST}
 ENV TZ=Asia/Seoul
 
 # python:3.9 already includes gcc, g++, and other build tools

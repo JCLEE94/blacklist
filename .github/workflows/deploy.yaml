@@ -80,6 +80,8 @@ jobs:
             BUILD_DATE=${{ steps.meta.outputs.date }}
             VCS_REF=${{ steps.meta.outputs.sha_short }}
             VERSION=${{ steps.meta.outputs.version }}
+            BUILD_TIME=${{ steps.meta.outputs.date }}
+            CACHE_BUST=${{ github.run_number }}
       
       - name: Commit version bump
         run: |
