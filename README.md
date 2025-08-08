@@ -189,16 +189,12 @@ python3 tests/integration/performance_benchmark.py
 
 **핵심 역량**: Python • Kubernetes • ArgoCD • 보안 인텔리전스 • CI/CD 파이프라인
 
-📧 **Email**: jclee94@example.com  
+📧 **Email**: qws941@kakao.com  
 🐙 **GitHub**: [github.com/JCLEE94](https://github.com/JCLEE94)  
 💼 **Portfolio**: [jclee94.github.io/blacklist](https://jclee94.github.io/blacklist/)
 
 ---
 
-## 🚀 프로덕션 운영 정보
+## 🚀 시스템 정보
 
-**시스템 상태**: Production Ready | **버전**: v1.0.6 | **업데이트**: 2025년 8월
-
-> **📈 실제 운영 시스템**: 완전 자동화된 GitOps 파이프라인으로 배포 및 운영  
-> **🎯 포트폴리오 목적**: 엔터프라이즈급 DevOps 및 보안 시스템 개발 역량 증명  
-> **💼 채용 담당자**: 라이브 시연 및 기술 상담 가능 (연락처 위 참조)
+**Production Ready** | **v1.0.6** | **August 2025**

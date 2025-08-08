@@ -356,7 +356,7 @@ argocd app wait blacklist --health --grpc-web
 - **Database**: PostgreSQL, Redis, SQLite
 
 ### 📞 Contact Information
-- **Email**: jclee94@example.com
+- **Email**: qws941@kakao.com
 - **GitHub**: [github.com/JCLEE94](https://github.com/JCLEE94)
 - **LinkedIn**: [linkedin.com/in/jinchul-kim](https://linkedin.com/in/jinchul-kim)
 
