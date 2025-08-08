@@ -4,6 +4,7 @@ Statistics Service for Unified Blacklist Manager
 """
 
 import logging
+import os
 import sqlite3
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
@@ -403,7 +404,7 @@ class StatisticsService:
                       AND expires_at BETWEEN datetime('now') AND datetime('now', '+' || ? || ' days')
                     ORDER BY expires_at
                     """,
-                    (days,)
+                    (days,),
                 )
 
                 results = []

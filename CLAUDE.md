@@ -294,6 +294,11 @@ blacklist/
 │   │   ├── routes/        # Web-specific route modules
 │   │   └── static/        # Static assets
 │   └── utils/             # Application utilities
+│       ├── cicd_troubleshooter.py      # Main CI/CD troubleshooter interface
+│       ├── cicd_troubleshooter_core.py # Core orchestration logic (160 lines)
+│       ├── cicd_error_patterns.py      # Error pattern definitions (149 lines)
+│       ├── cicd_fix_strategies.py      # Fix implementations (278 lines)
+│       └── cicd_utils.py               # File and API utilities (211 lines)
 ├── services/              # MSA microservices
 ├── scripts/               # Deployment & management scripts
 ├── k8s/                   # Kubernetes manifests
@@ -362,6 +367,22 @@ cache.set(key, value, ttl=300)  # NOT timeout=300
 @cached(cache, ttl=300, key_prefix="stats")
 ```
 
+### CI/CD Troubleshooter Pattern (Modular)
+The CI/CD troubleshooter has been refactored into modular components:
+```python
+# Main interface (backward compatible)
+from src.utils.cicd_troubleshooter import CICDTroubleshooter, create_troubleshooter
+
+# Individual modules for specialized tasks
+from src.utils.cicd_troubleshooter_core import CICDTroubleshooter  # Core logic
+from src.utils.cicd_error_patterns import ErrorPatternManager     # Error matching
+from src.utils.cicd_fix_strategies import FixStrategyManager       # Fix implementations
+from src.utils.cicd_utils import CICDUtils                        # Utilities
+
+# Factory pattern usage
+troubleshooter = create_troubleshooter()
+```
+
 ### Error Handling Philosophy
 - Never crash the application
 - Always provide meaningful fallbacks
@@ -390,8 +411,12 @@ black src/ tests/ --check
 flake8 src/ --max-line-length=88
 bandit -r src/ -ll
 
-# File size enforcement (500-line rule)
+# File size enforcement (500-line rule) - STRICTLY ENFORCED
 find src/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 {print}'
+
+# All Python files MUST be under 500 lines
+# Files exceeding this limit should be split into logical modules
+# Recent example: cicd_troubleshooter.py was split into 5 modules
 ```
 
 ## Security & Authentication
