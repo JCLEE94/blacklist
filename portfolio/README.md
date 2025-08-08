@@ -75,7 +75,7 @@ portfolio/
 
 ## 👨‍💻 Developer Information
 
-**JinChul Kim (김진철)**  
+**Lee Jae Cheol (이재철)**  
 *DevOps Engineer & Backend Developer*
 
 ### Core Competencies
@@ -85,7 +85,7 @@ portfolio/
 - **Automation**: CI/CD Pipeline, Test Automation, Infrastructure as Code
 
 ### Contact
-- **Email**: jclee94@example.com
+- **Email**: qws941@kakao.com
 - **GitHub**: [github.com/JCLEE94](https://github.com/JCLEE94)
 - **LinkedIn**: [linkedin.com/in/jinchul-kim](https://linkedin.com/in/jinchul-kim)
 

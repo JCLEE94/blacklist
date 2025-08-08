@@ -112,72 +112,92 @@
     <h2>System Architecture</h2>
     <div class="card">
         <h3>🏗️ Complete System Architecture</h3>
-        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.4;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #1976d2;">
-                    <h4 style="margin: 0 0 10px 0; color: #1976d2;">📊 Data Sources</h4>
-                    <div>• REGTECH API</div>
-                    <div>• SECUDIUM API</div>
-                    <div>• Public Intel</div>
-                </div>
-                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #f57c00;">
-                    <h4 style="margin: 0 0 10px 0; color: #f57c00;">🔄 GitOps Pipeline</h4>
-                    <div>• GitHub Actions</div>
-                    <div>• Docker Registry</div>
-                    <div>• Security Scan</div>
-                </div>
-                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #388e3c;">
-                    <h4 style="margin: 0 0 10px 0; color: #388e3c;">☁️ Infrastructure</h4>
-                    <div>• Kubernetes</div>
-                    <div>• ArgoCD</div>
-                    <div>• Helm Charts</div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #666;">
-                ↓ ↓ ↓
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #7b1fa2;">
-                    <h4 style="margin: 0 0 10px 0; color: #7b1fa2;">🔧 Collection Mgr</h4>
-                    <div>• Data Validation</div>
-                    <div>• Format Convert</div>
-                    <div>• Schedule Jobs</div>
-                </div>
-                <div style="background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #00695c;">
-                    <h4 style="margin: 0 0 10px 0; color: #00695c;">⚡ Processing</h4>
-                    <div>• Redis Cache</div>
-                    <div>• SQLite Storage</div>
-                    <div>• Analytics</div>
-                </div>
-                <div style="background: #fce4ec; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #c2185b;">
-                    <h4 style="margin: 0 0 10px 0; color: #c2185b;">🌐 API Gateway</h4>
-                    <div>• REST Endpoints</div>
-                    <div>• Authentication</div>
-                    <div>• Rate Limiting</div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #666;">
-                ↓ ↓
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px; margin: 0 auto;">
-                <div style="background: #fff8e1; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #ff8f00;">
-                    <h4 style="margin: 0 0 10px 0; color: #ff8f00;">📈 Monitoring</h4>
-                    <div>• Health Checks</div>
-                    <div>• Performance</div>
-                    <div>• Log Analysis</div>
-                </div>
-                <div style="background: #efebe9; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #5d4037;">
-                    <h4 style="margin: 0 0 10px 0; color: #5d4037;">🔐 External Sys</h4>
-                    <div>• FortiGate FW</div>
-                    <div>• Security Tools</div>
-                    <div>• SIEM Systems</div>
-                </div>
-            </div>
-        </div>
+        <!-- Mermaid.js Diagram -->
+        <div id="systemDiagram" style="text-align: center; margin: 20px 0;"></div>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+        <script>
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'default',
+                themeVariables: {
+                    primaryColor: '#1976d2',
+                    primaryTextColor: '#333',
+                    primaryBorderColor: '#1976d2',
+                    lineColor: '#666',
+                    sectionBkgColor: '#f5f5f5',
+                    altSectionBkgColor: '#e8f4f8',
+                    gridColor: '#ddd',
+                    secondaryColor: '#f57c00',
+                    tertiaryColor: '#388e3c'
+                }
+            });
+
+            const diagram = `
+                graph TD
+                    subgraph Input["🔍 Data Collection Layer"]
+                        A[📊 REGTECH API]
+                        B[📊 SECUDIUM API]
+                        C[📊 Public Intel]
+                    end
+                    
+                    subgraph Process["⚡ Processing Layer"]
+                        D[🔧 Collection Manager]
+                        E[💾 Redis Cache]
+                        F[🗄️ SQLite Storage]
+                    end
+                    
+                    subgraph API["🌐 Service Layer"]
+                        G[🚀 API Gateway]
+                        H[🔒 Authentication]
+                        I[⚖️ Rate Limiting]
+                    end
+                    
+                    subgraph Infra["☁️ Infrastructure Layer"]
+                        J[🐳 Kubernetes]
+                        K[🔄 ArgoCD]
+                        L[📦 Docker Registry]
+                    end
+                    
+                    subgraph External["🔐 External Systems"]
+                        M[🛡️ FortiGate]
+                        N[🔍 SIEM Systems]
+                        O[🛠️ Security Tools]
+                    end
+                    
+                    A --> D
+                    B --> D
+                    C --> D
+                    D --> E
+                    D --> F
+                    E --> G
+                    F --> G
+                    G --> H
+                    G --> I
+                    H --> M
+                    I --> N
+                    G --> O
+                    
+                    J --> G
+                    K --> J
+                    L --> K
+                    
+                    classDef inputClass fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+                    classDef processClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+                    classDef apiClass fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+                    classDef infraClass fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+                    classDef externalClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+                    
+                    class A,B,C inputClass
+                    class D,E,F processClass
+                    class G,H,I apiClass
+                    class J,K,L infraClass
+                    class M,N,O externalClass
+            `;
+
+            mermaid.render('mermaid-diagram', diagram).then(({svg}) => {
+                document.getElementById('systemDiagram').innerHTML = svg;
+            });
+        </script>
         
         <h3>📊 Data Flow Process</h3>
         <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
@@ -191,61 +211,108 @@
     <h2>CI/CD Pipeline</h2>
     <div class="card">
         <h3>🔄 GitOps Workflow Diagram</h3>
-        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; font-size: 13px; line-height: 1.4;">
-            <!-- Stage 1 -->
-            <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
-                <div style="background: #e1f5fe; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #0277bd; width: 150px;">
-                    <h4 style="margin: 0 0 10px 0; color: #0277bd;">📝 Push Code</h4>
-                    <div>main branch</div>
-                </div>
-                <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #7b1fa2; width: 200px;">
-                    <h4 style="margin: 0 0 10px 0; color: #7b1fa2;">🔍 GitHub Actions</h4>
-                    <div>• Code Quality</div>
-                    <div>• Unit Tests</div>
-                    <div>• Security Scan</div>
-                </div>
-                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #f57c00; width: 150px;">
-                    <h4 style="margin: 0 0 10px 0; color: #f57c00;">📦 Container</h4>
-                    <div>Docker Build</div>
-                    <div>Registry Push</div>
-                </div>
-            </div>
+        <!-- SVG CI/CD Pipeline -->
+        <svg viewBox="0 0 800 400" style="width: 100%; height: 400px; background: #f8f9fa; border-radius: 8px;">
+            <!-- Background -->
+            <defs>
+                <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#64b5f6;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#1976d2;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ba68c8;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#7b1fa2;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ffb74d;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#f57c00;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#81c784;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#388e3c;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#f06292;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#c2185b;stop-opacity:1" />
+                </linearGradient>
+            </defs>
             
-            <!-- Flow arrows -->
-            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
-                <div style="color: #666; font-size: 24px;">→ → → → → → → → → →</div>
-            </div>
+            <!-- Stage 1: Source -->
+            <rect x="50" y="50" width="120" height="80" rx="10" fill="url(#blueGrad)" stroke="#1976d2" stroke-width="2"/>
+            <text x="110" y="75" text-anchor="middle" fill="white" font-size="14" font-weight="bold">📝 Source</text>
+            <text x="110" y="95" text-anchor="middle" fill="white" font-size="12">Git Push</text>
+            <text x="110" y="110" text-anchor="middle" fill="white" font-size="12">main branch</text>
             
-            <!-- Stage 2 -->
-            <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
-                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #2e7d32; width: 200px;">
-                    <h4 style="margin: 0 0 10px 0; color: #2e7d32;">✅ Integration</h4>
-                    <div>• Tests</div>
-                    <div>• Performance</div>
-                    <div>• Validation</div>
-                </div>
-                <div style="background: #fce4ec; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #c2185b; width: 180px;">
-                    <h4 style="margin: 0 0 10px 0; color: #c2185b;">🚀 ArgoCD</h4>
-                    <div>GitOps</div>
-                    <div>Deployment</div>
-                </div>
-            </div>
+            <!-- Arrow 1 -->
+            <path d="M170 90 L210 90" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
             
-            <!-- Final flow arrow -->
-            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
-                <div style="color: #666; font-size: 24px;">↓ ↓ ↓</div>
-            </div>
+            <!-- Stage 2: CI -->
+            <rect x="220" y="30" width="140" height="120" rx="10" fill="url(#purpleGrad)" stroke="#7b1fa2" stroke-width="2"/>
+            <text x="290" y="55" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🔍 GitHub Actions</text>
+            <text x="290" y="75" text-anchor="middle" fill="white" font-size="11">• Code Quality</text>
+            <text x="290" y="90" text-anchor="middle" fill="white" font-size="11">• Unit Tests</text>
+            <text x="290" y="105" text-anchor="middle" fill="white" font-size="11">• Security Scan</text>
+            <text x="290" y="120" text-anchor="middle" fill="white" font-size="11">• Performance</text>
+            <text x="290" y="135" text-anchor="middle" fill="white" font-size="11">• Integration</text>
             
-            <!-- Stage 3 -->
-            <div style="display: flex; justify-content: center;">
-                <div style="background: #e0f2f1; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #00695c; width: 300px;">
-                    <h4 style="margin: 0 0 15px 0; color: #00695c;">🎯 Kubernetes Production</h4>
-                    <div style="background: #b2dfdb; padding: 10px; border-radius: 5px; margin: 5px 0;">Pod Auto-scaling</div>
-                    <div style="background: #b2dfdb; padding: 10px; border-radius: 5px; margin: 5px 0;">Health Monitoring</div>
-                    <div style="background: #b2dfdb; padding: 10px; border-radius: 5px; margin: 5px 0;">Service Mesh</div>
-                </div>
-            </div>
-        </div>
+            <!-- Arrow 2 -->
+            <path d="M360 90 L400 90" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+            
+            <!-- Stage 3: Build -->
+            <rect x="410" y="50" width="120" height="80" rx="10" fill="url(#orangeGrad)" stroke="#f57c00" stroke-width="2"/>
+            <text x="470" y="75" text-anchor="middle" fill="white" font-size="14" font-weight="bold">📦 Build</text>
+            <text x="470" y="95" text-anchor="middle" fill="white" font-size="12">Docker</text>
+            <text x="470" y="110" text-anchor="middle" fill="white" font-size="12">Registry</text>
+            
+            <!-- Arrow 3 -->
+            <path d="M530 90 L570 90" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+            
+            <!-- Stage 4: Deploy -->
+            <rect x="580" y="30" width="120" height="120" rx="10" fill="url(#redGrad)" stroke="#c2185b" stroke-width="2"/>
+            <text x="640" y="55" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🚀 Deploy</text>
+            <text x="640" y="75" text-anchor="middle" fill="white" font-size="11">ArgoCD</text>
+            <text x="640" y="90" text-anchor="middle" fill="white" font-size="11">GitOps</text>
+            <text x="640" y="105" text-anchor="middle" fill="white" font-size="11">Sync</text>
+            
+            <!-- Arrow down -->
+            <path d="M640 150 L640 190" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+            
+            <!-- Stage 5: Production -->
+            <rect x="520" y="200" width="240" height="120" rx="10" fill="url(#greenGrad)" stroke="#388e3c" stroke-width="2"/>
+            <text x="640" y="225" text-anchor="middle" fill="white" font-size="16" font-weight="bold">🎯 Kubernetes Production</text>
+            
+            <!-- Sub-components -->
+            <rect x="540" y="240" width="60" height="30" rx="5" fill="rgba(255,255,255,0.3)" stroke="white"/>
+            <text x="570" y="258" text-anchor="middle" fill="white" font-size="10">Auto-scaling</text>
+            
+            <rect x="610" y="240" width="60" height="30" rx="5" fill="rgba(255,255,255,0.3)" stroke="white"/>
+            <text x="640" y="258" text-anchor="middle" fill="white" font-size="10">Health Mon</text>
+            
+            <rect x="680" y="240" width="60" height="30" rx="5" fill="rgba(255,255,255,0.3)" stroke="white"/>
+            <text x="710" y="258" text-anchor="middle" fill="white" font-size="10">Service Mesh</text>
+            
+            <rect x="540" y="280" width="60" height="30" rx="5" fill="rgba(255,255,255,0.3)" stroke="white"/>
+            <text x="570" y="298" text-anchor="middle" fill="white" font-size="10">Load Bal</text>
+            
+            <rect x="610" y="280" width="60" height="30" rx="5" fill="rgba(255,255,255,0.3)" stroke="white"/>
+            <text x="640" y="298" text-anchor="middle" fill="white" font-size="10">Monitoring</text>
+            
+            <rect x="680" y="280" width="60" height="30" rx="5" fill="rgba(255,255,255,0.3)" stroke="white"/>
+            <text x="710" y="298" text-anchor="middle" fill="white" font-size="10">Security</text>
+            
+            <!-- Arrow marker -->
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+            
+            <!-- Timeline -->
+            <text x="110" y="380" text-anchor="middle" fill="#666" font-size="12">0 min</text>
+            <text x="290" y="380" text-anchor="middle" fill="#666" font-size="12">2-3 min</text>
+            <text x="470" y="380" text-anchor="middle" fill="#666" font-size="12">4 min</text>
+            <text x="640" y="380" text-anchor="middle" fill="#666" font-size="12">5 min</text>
+        </svg>
     </div>
 
     <h2>API Endpoints</h2>

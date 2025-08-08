@@ -345,8 +345,8 @@ argocd app wait blacklist --health --grpc-web
 
 ## 🛠️ Developer Information
 
-**JinChul Kim (김진철)**  
-*DevOps Engineer & Backend Developer*
+**Lee Jae Cheol (이재철)**  
+*DevOps Engineer & Security Engineer*
 
 ### 🎯 Core Competencies
 - **Backend**: Python, Flask, FastAPI, SQLAlchemy
