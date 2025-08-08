@@ -37,7 +37,7 @@ class TestDataEdgeCases(BaseIntegrationTest):
     def test_large_response_handling(self, client):
         """Test handling of extremely large responses"""
         mock_service = Mock()
-        
+
         large_ip_list = [f"10.0.{i//256}.{i%256}" for i in range(10000)]
         mock_service.get_collection_status.return_value = {
             "enabled": True,

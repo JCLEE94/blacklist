@@ -44,7 +44,7 @@ def analyze_pipeline_errors(
     return troubleshooter.monitor_and_fix_pipeline(project_id, pipeline_id)
 
 
-# 하위 호환성을 위한 레거시 함수들 (deprecated)
+# Main function for testing
 def main():
     """테스트용 메인 함수"""
     troubleshooter = create_troubleshooter()

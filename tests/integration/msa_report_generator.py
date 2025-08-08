@@ -21,11 +21,11 @@ class MSAReportGenerator:
     def __init__(self):
         self.services = {
             "API Gateway": "http://localhost:8080",
-            "Collection Service": "http://localhost:8000", 
+            "Collection Service": "http://localhost:8000",
             "Blacklist Service": "http://localhost:8001",
             "Analytics Service": "http://localhost:8002",
         }
-        
+
         self.system_info = {}
         self.test_results = {}
         self.performance_metrics = {}
@@ -87,7 +87,9 @@ class MSAReportGenerator:
                 async with httpx.AsyncClient(timeout=10) as client:
                     response = await client.get(f"{base_url}/health")
                     health_results[service_name] = {
-                        "status": "healthy" if response.status_code == 200 else "unhealthy",
+                        "status": "healthy"
+                        if response.status_code == 200
+                        else "unhealthy",
                         "response_time": response.elapsed.total_seconds(),
                         "http_status": response.status_code,
                     }
@@ -119,7 +121,9 @@ class MSAReportGenerator:
                 async with httpx.AsyncClient(timeout=15) as client:
                     response = await client.get(url)
                     gateway_tests[test_name] = {
-                        "status": "success" if response.status_code == 200 else "failed",
+                        "status": "success"
+                        if response.status_code == 200
+                        else "failed",
                         "response_time": response.elapsed.total_seconds(),
                         "http_status": response.status_code,
                         "data_size": len(response.content) if response.content else 0,
@@ -137,11 +141,17 @@ class MSAReportGenerator:
         print("⚡ 성능 메트릭 측정 중...")
 
         metrics = {}
-        
+
         performance_endpoints = [
             ("gateway_health", f"{self.services['API Gateway']}/health"),
-            ("blacklist_active", f"{self.services['API Gateway']}/api/v1/blacklist/active"),
-            ("analytics_realtime", f"{self.services['API Gateway']}/api/v1/analytics/realtime"),
+            (
+                "blacklist_active",
+                f"{self.services['API Gateway']}/api/v1/blacklist/active",
+            ),
+            (
+                "analytics_realtime",
+                f"{self.services['API Gateway']}/api/v1/analytics/realtime",
+            ),
         ]
 
         for endpoint_name, url in performance_endpoints:
@@ -172,23 +182,33 @@ class MSAReportGenerator:
     def calculate_overall_score(self):
         """Calculate overall system score"""
         scores = []
-        
+
         # Service availability score (40%)
         if self.system_info:
-            healthy_count = sum(1 for s in self.system_info["services"].values() 
-                              if s["status"] == "healthy")
+            healthy_count = sum(
+                1
+                for s in self.system_info["services"].values()
+                if s["status"] == "healthy"
+            )
             total_count = len(self.system_info["services"])
-            availability_score = (healthy_count / total_count) * 40 if total_count > 0 else 0
+            availability_score = (
+                (healthy_count / total_count) * 40 if total_count > 0 else 0
+            )
             scores.append(availability_score)
-        
+
         # API Gateway routing score (30%)
         if "api_gateway" in self.test_results:
-            successful_routes = sum(1 for r in self.test_results["api_gateway"].values() 
-                                  if r["status"] == "success")
+            successful_routes = sum(
+                1
+                for r in self.test_results["api_gateway"].values()
+                if r["status"] == "success"
+            )
             total_routes = len(self.test_results["api_gateway"])
-            routing_score = (successful_routes / total_routes) * 30 if total_routes > 0 else 0
+            routing_score = (
+                (successful_routes / total_routes) * 30 if total_routes > 0 else 0
+            )
             scores.append(routing_score)
-        
+
         # Performance score (30%)
         if self.performance_metrics:
             perf_scores = []
@@ -200,10 +220,10 @@ class MSAReportGenerator:
                 else:
                     score = 100 - ((metrics["avg_response_time"] - 0.1) / 0.4) * 100
                     perf_scores.append(max(0, score))
-            
+
             if perf_scores:
                 avg_perf_score = sum(perf_scores) / len(perf_scores)
                 performance_score = avg_perf_score * 0.3
                 scores.append(performance_score)
-        
+
         return sum(scores) if scores else 0

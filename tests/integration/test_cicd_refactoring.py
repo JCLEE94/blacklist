@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 from scripts.lib.cicd_testability import (BuildStage, CodeQualityStage,
                                           DeploymentStage, PipelineConfig,
-                                          PipelineOrchestrator, PipelineStage,
-                                          TestStage as CICDTestStage)
+                                          PipelineOrchestrator, PipelineStage)
+from scripts.lib.cicd_testability import TestStage as CICDTestStage
 
 
 class TestPipelineConfig:

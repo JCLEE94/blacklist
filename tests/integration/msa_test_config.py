@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class ServiceConfig:
     """서비스 설정"""
+
     name: str
     url: str
     port: int
@@ -22,6 +23,7 @@ class ServiceConfig:
 @dataclass
 class TestResult:
     """테스트 결과"""
+
     name: str
     passed: bool
     response_time: float
@@ -32,7 +34,7 @@ class TestResult:
 
 class MSAServiceConfigs:
     """MSA 서비스 설정 관리"""
-    
+
     @staticmethod
     def get_default_services():
         """기본 서비스 설정 반환"""
@@ -62,7 +64,7 @@ class MSAServiceConfigs:
                 health_endpoint="/health",
             ),
         }
-    
+
     @staticmethod
     def get_test_routes():
         """테스트 라우트 설정 반환"""
@@ -92,7 +94,7 @@ class MSAServiceConfigs:
                 "description": "Gateway를 통한 Analytics Service 라우팅",
             },
         ]
-    
+
     @staticmethod
     def get_performance_tests():
         """성능 테스트 설정 반환"""

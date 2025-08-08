@@ -11,10 +11,14 @@ from typing import Any, Dict
 
 class MSAReportFormatter:
     """MSA 리포트 포맷터"""
-    
+
     @staticmethod
-    def format_final_report(system_info: Dict, test_results: Dict, performance_metrics: Dict, 
-                           overall_score: float) -> bool:
+    def format_final_report(
+        system_info: Dict,
+        test_results: Dict,
+        performance_metrics: Dict,
+        overall_score: float,
+    ) -> bool:
         """최종 리포트 생성 및 출력"""
         print("\n" + "=" * 100)
         print("🏗️  MSA 아키텍처 최종 통합 테스트 리포트")
@@ -35,23 +39,23 @@ class MSAReportFormatter:
 
         # 서비스 상태
         MSAReportFormatter._format_service_status(system_info)
-        
+
         # API Gateway 테스트 결과
         MSAReportFormatter._format_api_gateway_results(test_results)
-        
+
         # 성능 메트릭
         MSAReportFormatter._format_performance_metrics(performance_metrics)
-        
+
         # 최종 평가
         return MSAReportFormatter._format_final_evaluation(overall_score, system_info)
-    
+
     @staticmethod
     def _format_service_status(system_info: Dict):
         """서비스 상태 포맷팅"""
         services = system_info.get("services", {})
         if not services:
             return
-            
+
         print(f"\n🏥 서비스 상태 요약:")
         healthy_services = 0
         total_services = len(services)
@@ -69,13 +73,13 @@ class MSAReportFormatter:
         print(
             f"\n   📊 전체 서비스 가용성: {system_health_rate:.1f}% ({healthy_services}/{total_services})"
         )
-    
+
     @staticmethod
     def _format_api_gateway_results(test_results: Dict):
         """API Gateway 테스트 결과 포맷팅"""
         if "api_gateway" not in test_results:
             return
-            
+
         print(f"\n🚪 API Gateway 테스트 결과:")
         gateway_results = test_results["api_gateway"]
         successful_routes = sum(
@@ -90,13 +94,13 @@ class MSAReportFormatter:
             print(
                 f"   {status_emoji} {test_name.replace('_', ' ').title()}: {result['response_time']:.3f}초"
             )
-    
+
     @staticmethod
     def _format_performance_metrics(performance_metrics: Dict):
         """성능 메트릭 포맷팅"""
         if not performance_metrics:
             return
-            
+
         print(f"\n⚡ 성능 메트릭:")
 
         avg_response_times = []
@@ -112,7 +116,7 @@ class MSAReportFormatter:
         if avg_response_times:
             overall_avg = sum(avg_response_times) / len(avg_response_times)
             print(f"\n   📈 전체 평균 응답시간: {overall_avg:.3f}초")
-    
+
     @staticmethod
     def _format_final_evaluation(overall_score: float, system_info: Dict) -> bool:
         """최종 평가 포맷팅"""
@@ -145,29 +149,27 @@ class MSAReportFormatter:
 
         # 권장사항
         MSAReportFormatter._format_recommendations(overall_score)
-        
+
         # MSA 특화 권장사항
         MSAReportFormatter._format_msa_recommendations()
-        
+
         # 요약
         MSAReportFormatter._format_summary(overall_score, grade, system_info)
-        
+
         return overall_score >= 70
-    
+
     @staticmethod
     def _format_recommendations(overall_score: float):
         """권장사항 포맷팅"""
         print(f"\n📋 권장사항:")
-        
+
         recommendations = []
-        
+
         if overall_score < 80:
-            recommendations.extend([
-                "• 서비스 헬스체크 개선 필요",
-                "• 응답 시간 최적화 검토",
-                "• API Gateway 라우팅 안정성 강화"
-            ])
-        
+            recommendations.extend(
+                ["• 서비스 헬스체크 개선 필요", "• 응답 시간 최적화 검토", "• API Gateway 라우팅 안정성 강화"]
+            )
+
         if not recommendations:
             recommendations = [
                 "• 모든 시스템이 정상 작동 중입니다",
@@ -175,10 +177,10 @@ class MSAReportFormatter:
                 "• 부하 증가에 대비한 스케일링 계획 수립",
                 "• 보안 강화를 위한 정기적인 업데이트",
             ]
-        
+
         for recommendation in recommendations:
             print(f"   {recommendation}")
-    
+
     @staticmethod
     def _format_msa_recommendations():
         """MSA 특화 권장사항 포맷팅"""
@@ -189,15 +191,17 @@ class MSAReportFormatter:
         print(f"   • 서비스별 독립적인 CI/CD 파이프라인 구축")
         print(f"   • 카나리 배포 및 블루-그린 배포 전략 수립")
         print(f"   • 서비스별 SLA 및 모니터링 대시보드 구성")
-    
+
     @staticmethod
     def _format_summary(overall_score: float, grade: str, system_info: Dict):
         """요약 포맷팅"""
         services = system_info.get("services", {})
         healthy_count = sum(1 for s in services.values() if s["status"] == "healthy")
         total_count = len(services)
-        system_health_rate = (healthy_count / total_count) * 100 if total_count > 0 else 0
-        
+        system_health_rate = (
+            (healthy_count / total_count) * 100 if total_count > 0 else 0
+        )
+
         print(f"\n" + "=" * 100)
         print(f"✨ MSA 통합 테스트 완료 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"   테스트된 서비스: {total_count}개")

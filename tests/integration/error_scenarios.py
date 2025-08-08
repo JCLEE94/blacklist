@@ -20,9 +20,7 @@ class TestNetworkErrors(BaseIntegrationTest):
     def test_network_timeout_handling(self, client):
         """Test handling of network timeouts during collection"""
         mock_service = create_mock_service(failing=True)
-        mock_service.trigger_regtech_collection.side_effect = (
-            mock_service.network_error
-        )
+        mock_service.trigger_regtech_collection.side_effect = mock_service.network_error
 
         with patch("src.core.unified_routes.service", mock_service):
             response = client.post(

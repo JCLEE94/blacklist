@@ -3,10 +3,12 @@ Core service integration tests
 
 Tests basic service initialization, health checks, and core functionality.
 """
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
 
 from src.core.unified_service import UnifiedBlacklistService
+
 from .fixtures import IntegrationTestFixtures
 
 
@@ -17,7 +19,8 @@ class TestServiceCore(IntegrationTestFixtures):
     def service(self, mock_container):
         """Create service instance with mock container"""
         with patch(
-            "src.core.services.unified_service_core.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container",
+            return_value=mock_container,
         ):
             service = UnifiedBlacklistService()
             service.container = mock_container
@@ -30,7 +33,8 @@ class TestServiceCore(IntegrationTestFixtures):
     def test_service_initialization(self, mock_container):
         """Test service initializes with all dependencies"""
         with patch(
-            "src.core.services.unified_service_core.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container",
+            return_value=mock_container,
         ):
             service = UnifiedBlacklistService()
 
@@ -46,7 +50,8 @@ class TestServiceCore(IntegrationTestFixtures):
         mock_container.get.return_value = None
 
         with patch(
-            "src.core.services.unified_service_core.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container",
+            return_value=mock_container,
         ):
             service = UnifiedBlacklistService()
 

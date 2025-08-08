@@ -35,8 +35,9 @@ class MSAIntegrationTester:
     async def test_service_health(self, service_name: str, config) -> TestResult:
         """개별 서비스 헬스체크 - 간소화된 버전"""
         import time
+
         import httpx
-        
+
         start_time = time.time()
 
         try:
@@ -74,8 +75,9 @@ class MSAIntegrationTester:
     async def test_api_gateway_routing(self) -> List[TestResult]:
         """API Gateway 라우팅 테스트 - 간소화된 버전"""
         import time
+
         import httpx
-        
+
         results = []
         gateway_url = self.services["api_gateway"].url
         test_routes = MSAServiceConfigs.get_test_routes()
@@ -119,16 +121,16 @@ class MSAIntegrationTester:
     async def test_service_communication(self) -> List[TestResult]:
         """서비스 간 통신 테스트 - 간소화된 버전"""
         results = []
-        
+
         # 기본적인 서비스 간 통신 테스트
         communication_tests = [
             ("Collection to Blacklist", "/api/v1/collection/status"),
             ("Blacklist to Analytics", "/api/v1/blacklist/statistics"),
             ("Cross-Service Data Flow", "/api/v1/analytics/realtime"),
         ]
-        
+
         gateway_url = self.services["api_gateway"].url
-        
+
         for test_name, endpoint in communication_tests:
             try:
                 result = await self.performance_tester.test_database_connectivity()
@@ -147,7 +149,7 @@ class MSAIntegrationTester:
         return results
 
     # Communication test methods moved to MSAPerformanceTester
-    
+
     async def test_database_connectivity(self) -> TestResult:
         """데이터베이스 연결성 테스트 - 성능 테스터에 위임"""
         return await self.performance_tester.test_database_connectivity()
@@ -155,12 +157,14 @@ class MSAIntegrationTester:
     async def test_performance_benchmarks(self) -> List[TestResult]:
         """성능 벤치마크 테스트 - 성능 테스터에 위임"""
         performance_tests = MSAServiceConfigs.get_performance_tests()
-        return await self.performance_tester.test_performance_benchmarks(performance_tests)
+        return await self.performance_tester.test_performance_benchmarks(
+            performance_tests
+        )
 
     async def run_comprehensive_test(self) -> Dict[str, Any]:
         """종합 통합 테스트 실행 - 간소화된 버전"""
         import time
-        
+
         logger.info("MSA 종합 통합 테스트 시작")
         test_start_time = time.time()
 
@@ -193,7 +197,9 @@ class MSAIntegrationTester:
                 "total_tests": total_tests,
                 "passed_tests": passed_tests,
                 "failed_tests": total_tests - passed_tests,
-                "success_rate": (passed_tests / total_tests * 100) if total_tests > 0 else 0,
+                "success_rate": (passed_tests / total_tests * 100)
+                if total_tests > 0
+                else 0,
                 "total_test_time": total_test_time,
             },
             "healthy_services": self.healthy_services,
@@ -201,21 +207,17 @@ class MSAIntegrationTester:
             "recommendations": self._generate_simple_recommendations(),
         }
 
-
     def _generate_simple_recommendations(self) -> List[str]:
         """간단한 권장사항 생성"""
         failed_tests = [result for result in self.test_results if not result.passed]
-        
+
         if not failed_tests:
-            return [
-                "✅ 모든 MSA 통합 테스트가 성공적으로 완료되었습니다!",
-                "🚀 시스템이 프로덕션 배포 준비 상태입니다."
-            ]
+            return ["✅ 모든 MSA 통합 테스트가 성공적으로 완료되었습니다!", "🚀 시스템이 프로덕션 배포 준비 상태입니다."]
         else:
             return [
                 f"⚠️  {len(failed_tests)}개의 테스트가 실패했습니다.",
                 "🔧 서비스 상태 및 로그를 확인하세요.",
-                "📋 MSA 운영 권장사항을 적용하세요."
+                "📋 MSA 운영 권장사항을 적용하세요.",
             ]
 
 
@@ -226,13 +228,13 @@ async def main():
 
     try:
         results = await tester.run_comprehensive_test()
-        
+
         success_rate = results["test_summary"]["success_rate"]
         total_tests = results["test_summary"]["total_tests"]
         passed_tests = results["test_summary"]["passed_tests"]
-        
+
         print(f"📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)")
-        
+
         for rec in results["recommendations"]:
             print(f"💡 {rec}")
 
@@ -246,4 +248,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

@@ -112,50 +112,5 @@ class RateLimiter:
         return True, limit, limit
 
 
-# Backward compatibility functions
-def check_ip_whitelist(whitelist: list) -> bool:
-    """
-    IP 화이트리스트 확인
-
-    Deprecated: Use unified_auth decorator with ip_whitelist parameter instead
-    """
-    import warnings
-
-    warnings.warn(
-        "check_ip_whitelist is deprecated. Use unified_auth with ip_whitelist parameter",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    if not whitelist:
-        return True
-
-    from flask import request
-
-    client_ip = request.remote_addr
-
-    # X-Forwarded-For 헤더 확인 (프록시 환경)
-    if request.headers.get("X-Forwarded-For"):
-        client_ip = request.headers.get("X-Forwarded-For").split(",")[0].strip()
-
-    return client_ip in whitelist
-
-
-def require_ip_whitelist(whitelist: list):
-    """
-    IP 화이트리스트 요구 데코레이터
-
-    Deprecated: Use unified_auth decorator with ip_whitelist parameter instead
-    """
-    import warnings
-
-    warnings.warn(
-        "require_ip_whitelist is deprecated. Use unified_auth with ip_whitelist parameter",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    # Import here to avoid circular imports
-    from .unified_decorators import unified_auth
-
-    return unified_auth(required=False, ip_whitelist=whitelist)
+# Note: Deprecated functions have been removed
+# Use unified_auth decorator with ip_whitelist parameter instead

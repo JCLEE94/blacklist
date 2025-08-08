@@ -37,9 +37,9 @@ class TestCICDPipelineTriggers:
             workflow = yaml.safe_load(f)
 
         # YAML parsing issue: 'on' becomes boolean True, need to read as raw text
-        with open(workflow_path, 'r') as f:
+        with open(workflow_path, "r") as f:
             workflow_text = f.read()
-        
+
         # Check for main branch in push triggers via text search
         assert "branches: [ main" in workflow_text or "branches: [main" in workflow_text
 

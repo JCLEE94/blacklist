@@ -3,10 +3,12 @@ Error recovery and resilience tests
 
 Tests service behavior under various failure conditions.
 """
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
 from src.core.unified_service import UnifiedBlacklistService
+
 from .fixtures import IntegrationTestFixtures
 
 
@@ -37,7 +39,8 @@ class TestServiceErrorRecovery(IntegrationTestFixtures):
         mock_container.get("cache_manager").get.side_effect = cache_get
 
         with patch(
-            "src.core.services.unified_service_core.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container",
+            return_value=mock_container,
         ):
             return UnifiedBlacklistService()
 
@@ -64,7 +67,8 @@ class TestServiceErrorRecovery(IntegrationTestFixtures):
         )
 
         with patch(
-            "src.core.services.unified_service_core.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container",
+            return_value=mock_container,
         ):
             service = UnifiedBlacklistService()
 

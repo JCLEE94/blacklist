@@ -8,21 +8,14 @@ Extensive test cases have been moved to specialized modules:
 - error_scenarios.py: Network, auth, database errors
 - edge_case_tests.py: Data, date, resource exhaustion cases
 """
-from .edge_case_tests import (
-    TestDataEdgeCases,
-    TestDateEdgeCases, 
-    TestResourceExhaustionCases,
-    TestSpecialInputCases,
-)
-from .error_scenarios import (
-    TestAuthenticationErrors,
-    TestConcurrencyErrors,
-    TestDatabaseErrors,
-    TestNetworkErrors,
-)
-from .test_helpers import BaseIntegrationTest
-
 import pytest
+
+from .edge_case_tests import (TestDataEdgeCases, TestDateEdgeCases,
+                              TestResourceExhaustionCases,
+                              TestSpecialInputCases)
+from .error_scenarios import (TestAuthenticationErrors, TestConcurrencyErrors,
+                              TestDatabaseErrors, TestNetworkErrors)
+from .test_helpers import BaseIntegrationTest
 
 
 class TestErrorHandlingIntegration(BaseIntegrationTest):
@@ -32,17 +25,17 @@ class TestErrorHandlingIntegration(BaseIntegrationTest):
     pass
 
     # Test methods moved to specialized modules for better organization
-    
+
     def test_basic_error_response_format(self, client):
         """Test that error responses follow consistent format"""
-        from unittest.mock import patch, Mock
-        
+        from unittest.mock import Mock, patch
+
         mock_service = Mock()
         mock_service.get_collection_status.side_effect = Exception("Test error")
-        
+
         with patch("src.core.unified_routes.service", mock_service):
             response = client.get("/api/collection/status")
-            
+
             assert response.status_code == 500
             data = response.get_json()
             assert "error" in data
@@ -53,13 +46,13 @@ class TestErrorHandlingIntegration(BaseIntegrationTest):
 # This ensures all tests are discoverable by pytest while keeping code organized
 __all__ = [
     "TestErrorHandlingIntegration",
-    "TestNetworkErrors", 
+    "TestNetworkErrors",
     "TestAuthenticationErrors",
     "TestDatabaseErrors",
     "TestConcurrencyErrors",
     "TestDataEdgeCases",
     "TestDateEdgeCases",
-    "TestResourceExhaustionCases", 
+    "TestResourceExhaustionCases",
     "TestSpecialInputCases",
 ]
 

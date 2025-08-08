@@ -16,11 +16,13 @@ from .msa_test_config import TestResult
 
 class MSAPerformanceTester:
     """성능 테스트 전담 클래스"""
-    
+
     def __init__(self, gateway_url: str):
         self.gateway_url = gateway_url
-    
-    async def test_performance_benchmarks(self, performance_tests: List[dict]) -> List[TestResult]:
+
+    async def test_performance_benchmarks(
+        self, performance_tests: List[dict]
+    ) -> List[TestResult]:
         """성능 벤치마크 테스트"""
         results = []
 
@@ -76,7 +78,7 @@ class MSAPerformanceTester:
                 )
 
         return results
-    
+
     async def test_database_connectivity(self) -> TestResult:
         """데이터베이스 연결성 테스트"""
         start_time = time.time()
@@ -113,23 +115,25 @@ class MSAPerformanceTester:
                 response_time=time.time() - start_time,
                 error_message=str(e),
             )
-    
-    async def run_concurrent_load_test(self, endpoint: str, concurrent_requests: int = 10) -> TestResult:
+
+    async def run_concurrent_load_test(
+        self, endpoint: str, concurrent_requests: int = 10
+    ) -> TestResult:
         """동시 요청 부하 테스트"""
         start_time = time.time()
-        
+
         async def make_request():
             async with httpx.AsyncClient(timeout=10) as client:
                 response = await client.get(f"{self.gateway_url}{endpoint}")
                 return response.status_code == 200
-        
+
         try:
             tasks = [make_request() for _ in range(concurrent_requests)]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             successful_requests = sum(1 for r in results if r is True)
             total_time = time.time() - start_time
-            
+
             return TestResult(
                 name=f"Concurrent Load Test ({concurrent_requests} requests)",
                 passed=successful_requests >= concurrent_requests * 0.8,  # 80% 성공률
@@ -141,7 +145,7 @@ class MSAPerformanceTester:
                     "total_time": total_time,
                 },
             )
-        
+
         except Exception as e:
             return TestResult(
                 name=f"Concurrent Load Test ({concurrent_requests} requests)",

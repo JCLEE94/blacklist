@@ -5,13 +5,15 @@ Tests cache behavior, database operations, and performance characteristics.
 """
 import os
 import sqlite3
-import time
 import threading
-import pytest
+import time
 from datetime import datetime
 from unittest.mock import patch
 
+import pytest
+
 from src.core.unified_service import UnifiedBlacklistService
+
 from .fixtures import IntegrationTestFixtures
 
 
@@ -22,7 +24,8 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
     def service(self, mock_container):
         """Create service instance with mock container"""
         with patch(
-            "src.core.services.unified_service_core.get_container", return_value=mock_container
+            "src.core.services.unified_service_core.get_container",
+            return_value=mock_container,
         ):
             service = UnifiedBlacklistService()
             service.container = mock_container

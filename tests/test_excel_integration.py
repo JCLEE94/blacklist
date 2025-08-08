@@ -42,9 +42,9 @@ def test_excel_download():
 
         # 샘플 출력
         print("\n처음 5개 IP:")
-        sample_ips = list(ips)[:5] if hasattr(ips, '__iter__') else []
+        sample_ips = list(ips)[:5] if hasattr(ips, "__iter__") else []
         for i, entry in enumerate(sample_ips):
-            if hasattr(entry, 'ip'):
+            if hasattr(entry, "ip"):
                 print(f"  {i+1}. {entry.ip} ({entry.country}) - {entry.attack_type}")
             else:
                 print(f"  {i+1}. {entry}")

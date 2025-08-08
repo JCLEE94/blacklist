@@ -26,7 +26,7 @@ def create_test_app():
 def create_mock_service(failing=False):
     """Create standardized mock service"""
     service = Mock()
-    
+
     if failing:
         # Configure failure modes
         service.network_error = Exception("Network connection timeout")
@@ -40,7 +40,7 @@ def create_mock_service(failing=False):
         service.get_all_ips.return_value = [
             {
                 "ip": "1.1.1.1",
-                "source": "regtech", 
+                "source": "regtech",
                 "detection_date": datetime.now().isoformat(),
                 "is_active": True,
             }
@@ -49,7 +49,7 @@ def create_mock_service(failing=False):
             "enabled": True,
             "sources": {"regtech": {"enabled": True}},
         }
-    
+
     return service
 
 
@@ -78,13 +78,13 @@ def create_temp_db():
     )
     conn.commit()
     conn.close()
-    
+
     return db_path
 
 
 class BaseIntegrationTest:
     """Base class for integration tests with common fixtures"""
-    
+
     @pytest.fixture
     def app(self):
         """Create test Flask app"""
@@ -99,6 +99,7 @@ class BaseIntegrationTest:
     def temp_db(self):
         """Create temporary database"""
         import os
+
         db_path = create_temp_db()
         yield db_path
         try:

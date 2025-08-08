@@ -27,11 +27,11 @@ class MSAFinalReportGenerator(MSAReportGenerator):
     pass
 
     # run_quick_health_check method renamed to run_health_checks in parent class
-    
+
     async def test_service_integration(self):
         """Service integration test - simplified wrapper"""
         print("🔗 서비스 간 통합 테스트 중...")
-        
+
         # Basic integration test
         integration_tests = {"data_flow": {"overall_success": True}}
         self.test_results["integration"] = integration_tests
@@ -39,12 +39,9 @@ class MSAFinalReportGenerator(MSAReportGenerator):
     def generate_final_report(self):
         """최종 리포트 생성 - 리팩토링된 버전"""
         overall_score = self.calculate_overall_score()
-        
+
         return MSAReportFormatter.format_final_report(
-            self.system_info, 
-            self.test_results, 
-            self.performance_metrics,
-            overall_score
+            self.system_info, self.test_results, self.performance_metrics, overall_score
         )
 
 
