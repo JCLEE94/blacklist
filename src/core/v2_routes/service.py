@@ -3,14 +3,11 @@
 V2 API Service - Core service class for V2 API endpoints
 """
 
-import json
 import logging
 import os
-import sqlite3
-import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from ...core.blacklist_unified import UnifiedBlacklistManager
 from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
@@ -18,9 +15,6 @@ from ...utils.performance_optimizer import optimizer, validate_ips_batch
 from ...utils.security import SecurityManager
 from ...utils.unified_decorators import (
     unified_cache,
-    unified_monitoring,
-    unified_rate_limit,
-    unified_validation,
 )
 
 logger = logging.getLogger(__name__)

@@ -8,9 +8,9 @@ import logging
 import sqlite3
 from datetime import datetime
 
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
-from ..exceptions import ValidationError, create_error_response
+from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
 
 logger = logging.getLogger(__name__)
@@ -379,7 +379,7 @@ def api_monthly_data():
             month = current_date.month
 
             # 해당 월의 시작일과 끝일
-            month_start = current_date.strftime("%Y-%m-%d")
+            current_date.strftime("%Y-%m-%d")
 
             # 월 마지막 날 계산
             last_day = calendar.monthrange(year, month)[1]

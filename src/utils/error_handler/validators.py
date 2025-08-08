@@ -48,5 +48,5 @@ def validate_and_convert(
     """
     try:
         return converter(data)
-    except (ValueError, TypeError, KeyError) as e:
+    except (ValueError, TypeError, KeyError):
         raise ValidationError(message=error_message, field=field)

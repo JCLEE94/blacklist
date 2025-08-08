@@ -10,6 +10,7 @@ from loguru import logger
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False

@@ -6,7 +6,8 @@
 """
 
 # Re-export the main service and factory functions for backwards compatibility
-from .services.unified_service_core import ServiceHealth, UnifiedBlacklistService
+from .services.core_operations import ServiceHealth
+from .services.unified_service_core import UnifiedBlacklistService
 from .services.unified_service_factory import (
     get_unified_service,
     is_service_initialized,

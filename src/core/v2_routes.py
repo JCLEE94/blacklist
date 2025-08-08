@@ -23,8 +23,12 @@ def init_v2_services(blacklist_manager, cache_manager):
     service = V2APIService(blacklist_manager, cache_manager)
 
     # Initialize services for each route module
-    from src.core.v2_routes.analytics_routes import init_service as init_analytics_service
-    from src.core.v2_routes.blacklist_routes import init_service as init_blacklist_service
+    from src.core.v2_routes.analytics_routes import (
+        init_service as init_analytics_service,
+    )
+    from src.core.v2_routes.blacklist_routes import (
+        init_service as init_blacklist_service,
+    )
     from src.core.v2_routes.export_routes import init_service as init_export_service
     from src.core.v2_routes.health_routes import init_service as init_health_service
 

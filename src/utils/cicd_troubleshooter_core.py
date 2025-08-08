@@ -4,7 +4,6 @@ CI/CD 트러블슈터 코어 모듈
 Claude Code v8.4.0 - 메인 오케스트레이션 로직
 """
 
-import json
 from typing import Any, Dict, List
 
 import requests
@@ -120,7 +119,7 @@ class CICDTroubleshooter:
 
         # 에러 패턴 매칭 및 수정
         error_patterns = self.error_manager.get_error_patterns()
-        
+
         for error_type, error_config in error_patterns.items():
             for pattern in error_config["patterns"]:
                 if pattern.lower() in job_trace.lower():

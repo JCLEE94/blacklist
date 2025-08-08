@@ -8,7 +8,6 @@ from typing import Callable, Optional
 
 from flask import g, request
 
-from .registry import get_registry
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +60,6 @@ def unified_rate_limit(
 
             # Rate limiting completely disabled for stability
             # Skip all rate limiting logic to prevent health check failures
-            pass
 
             # Execute the function
             result = func(*args, **kwargs)

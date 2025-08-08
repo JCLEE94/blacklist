@@ -5,13 +5,10 @@ Unified Blacklist Manager - Main coordination class
 
 import logging
 import os
-import sqlite3
 import threading
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List
 
-from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_monitoring
 from ..database import DatabaseManager
 from .data_service import DataService

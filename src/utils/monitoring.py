@@ -2,13 +2,12 @@
 모니터링 및 메트릭 수집 유틸리티
 """
 
-import json
 import logging
 import time
 from collections import defaultdict, deque
 from datetime import datetime
 from functools import wraps
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 import psutil
 
@@ -144,7 +143,7 @@ class MetricsCollector:
 
     def record_metrics(self, metrics: Dict[str, Any]):
         """메트릭 기록 (monitoring loop용)"""
-        timestamp = time.time()
+        time.time()
         for key, value in metrics.items():
             if isinstance(value, (int, float)):
                 self.metrics[f"monitoring:{key}"].append(value)
@@ -270,7 +269,7 @@ def track_performance(metrics_collector: MetricsCollector):
 
                 return result
 
-            except Exception as e:
+            except Exception:
                 duration = time.time() - start_time
 
                 # 오류도 기록

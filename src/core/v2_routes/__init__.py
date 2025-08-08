@@ -17,10 +17,12 @@ v2_bp.register_blueprint(analytics_v2_bp)
 v2_bp.register_blueprint(export_v2_bp)
 v2_bp.register_blueprint(health_v2_bp)
 
+
 def register_v2_routes(app, blacklist_manager=None, cache_manager=None):
     """Register V2 routes with the Flask app - for backward compatibility"""
     app.register_blueprint(v2_bp)
     return v2_bp
+
 
 __all__ = [
     "v2_bp",

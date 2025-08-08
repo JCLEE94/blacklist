@@ -83,13 +83,16 @@ class DatabaseOperationsMixin:
         try:
             # Use instance directory from current working directory or temp
             import tempfile
+
             if os.path.exists("instance"):
                 db_path = "instance/blacklist.db"
             elif os.path.exists("/tmp"):
-                db_path = os.path.join(tempfile.gettempdir(), "blacklist_instance", "blacklist.db")
+                db_path = os.path.join(
+                    tempfile.gettempdir(), "blacklist_instance", "blacklist.db"
+                )
             else:
                 db_path = "/app/instance/blacklist.db"
-                
+
             if not os.path.exists(os.path.dirname(db_path)):
                 os.makedirs(os.path.dirname(db_path), exist_ok=True)
 

@@ -8,10 +8,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from ..database import DatabaseManager
-
 from .base_source import BaseIPSource, IPEntry, SourceConfig
 from .source_registry import registry
 

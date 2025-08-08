@@ -11,11 +11,11 @@ Claude Code v8.4.0 - 완전 자동화된 파이프라인 문제 해결
 - cicd_utils: 파일 및 API 유틸리티
 """
 
-# 모듈화된 구조에서 가져오기
-from .cicd_troubleshooter_core import CICDTroubleshooter
 from .cicd_error_patterns import ErrorPatternManager
 from .cicd_fix_strategies import FixStrategyManager
-from .cicd_utils import CICDUtils
+
+# 모듈화된 구조에서 가져오기
+from .cicd_troubleshooter_core import CICDTroubleshooter
 
 # 하위 호환성을 위한 aliases
 CICDTroubleshooterCore = CICDTroubleshooter
@@ -37,7 +37,9 @@ def create_fix_manager():
     return FixStrategyManager()
 
 
-def analyze_pipeline_errors(project_id: str, pipeline_id: str, gateway_url=None, api_key=None):
+def analyze_pipeline_errors(
+    project_id: str, pipeline_id: str, gateway_url=None, api_key=None
+):
     """파이프라인 에러 분석 단축 함수"""
     troubleshooter = create_troubleshooter(gateway_url, api_key)
     return troubleshooter.monitor_and_fix_pipeline(project_id, pipeline_id)

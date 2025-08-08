@@ -9,7 +9,8 @@ from datetime import datetime
 from typing import Iterator, List
 
 import requests
-from ..base_source import BaseIPSource, IPEntry, SourceConfig
+
+from ..base_source import BaseIPSource, IPEntry
 
 logger = logging.getLogger(__name__)
 

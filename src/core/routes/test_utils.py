@@ -22,8 +22,6 @@ def _test_collection_endpoints():
     These tests verify the collection management endpoints work correctly
     in an integrated environment with the Flask app and blueprints.
     """
-    import json
-    import tempfile
 
     logger.info("Running inline integration tests for collection endpoints...")
 

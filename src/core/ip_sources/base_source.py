@@ -65,19 +65,16 @@ class BaseIPSource(ABC):
     @abstractmethod
     def source_name(self) -> str:
         """소스 이름 반환"""
-        pass
 
     @property
     @abstractmethod
     def source_type(self) -> str:
         """소스 타입 반환 (api, file, database, etc.)"""
-        pass
 
     @property
     @abstractmethod
     def supported_formats(self) -> List[str]:
         """지원하는 데이터 형식 목록"""
-        pass
 
     @abstractmethod
     def fetch_data(self) -> Iterator[IPEntry]:
@@ -87,12 +84,10 @@ class BaseIPSource(ABC):
         Yields:
             IPEntry: 개별 IP 엔트리
         """
-        pass
 
     @abstractmethod
     def validate_config(self) -> bool:
         """설정 유효성 검사"""
-        pass
 
     def preprocess_data(self, raw_data: Any) -> Any:
         """

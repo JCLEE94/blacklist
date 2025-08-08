@@ -22,7 +22,6 @@ from .containers import (
     reset_container,
     resolve_service,
 )
-from .containers.tests import run_all_tests as _run_all_container_tests
 from .containers.tests import (
     test_container_dependency_injection as _test_container_dependency_injection,
 )

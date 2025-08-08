@@ -7,14 +7,11 @@
 
 import asyncio
 import multiprocessing as mp
-import queue
-import threading
 import time
-import weakref
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List
 
 from loguru import logger
 

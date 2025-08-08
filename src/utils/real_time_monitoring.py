@@ -3,13 +3,12 @@ Real-time System Monitoring
 Provides system health monitoring, performance metrics, and alerting
 """
 
-import json
 import logging
 import threading
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import psutil
 

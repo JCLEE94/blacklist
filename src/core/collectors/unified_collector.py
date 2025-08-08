@@ -7,14 +7,13 @@
 import asyncio
 import json
 import logging
-import os
 import traceback
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +107,6 @@ class BaseCollector(ABC):
     @abstractmethod
     def source_type(self) -> str:
         """소스 타입 반환"""
-        pass
 
     @property
     def is_running(self) -> bool:
@@ -131,7 +129,6 @@ class BaseCollector(ABC):
         실제 데이터 수집 구현
         각 수집기에서 구현해야 함
         """
-        pass
 
     def _should_cancel(self) -> bool:
         """취소 요청 확인"""

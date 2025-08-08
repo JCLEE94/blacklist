@@ -3,12 +3,10 @@ Web data routes for Blacklist Manager
 Data export, analytics and real-time features
 """
 
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

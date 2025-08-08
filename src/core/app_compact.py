@@ -14,45 +14,53 @@ from typing import Optional
 
 from flask import Flask
 
-from .app.config import AppConfigurationMixin
-from .app.middleware import MiddlewareMixin
-from .app.blueprints import BlueprintRegistrationMixin
-from .app.error_handlers import ErrorHandlerMixin
-from .container import get_container
 from ..utils.structured_logging import get_logger, setup_request_logging
+from .app.blueprints import BlueprintRegistrationMixin
+from .app.config import AppConfigurationMixin
+from .app.error_handlers import ErrorHandlerMixin
+from .app.middleware import MiddlewareMixin
+from .container import get_container
 
 # Use structured logger instead of basic logging
 logger = get_logger(__name__)
 
+
 # Fallback implementations for performance utilities
 def get_connection_manager():
     """Placeholder for connection manager"""
+
     class DummyConnectionManager:
         def get_pool_config(self):
             return {}
+
     return DummyConnectionManager()
+
 
 def get_profiler():
     """Placeholder for profiler"""
+
     class DummyProfiler:
         function_timings = {}
+
     return DummyProfiler()
 
 
 class CompactFlaskApp(
     AppConfigurationMixin,
-    MiddlewareMixin, 
+    MiddlewareMixin,
     BlueprintRegistrationMixin,
-    ErrorHandlerMixin
+    ErrorHandlerMixin,
 ):
     """Modular Flask application factory using mixins"""
-    
+
     def create_app(self, config_name: Optional[str] = None) -> Flask:
         """Create compact Flask application with modular architecture"""
         try:
             # Get the project root directory - fix path resolution for container
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.join(current_dir, "..", "..")  # /app/src/core -> /app
+            project_root = os.path.join(
+                current_dir, "..", ".."
+            )  # /app/src/core -> /app
             project_root = os.path.abspath(project_root)
 
             template_folder = os.path.join(project_root, "templates")
@@ -113,7 +121,7 @@ class CompactFlaskApp(
             logger.info(
                 "Blacklist API Server initialized successfully",
                 environment=config_name or "default",
-                orjson_enabled=has_orjson
+                orjson_enabled=has_orjson,
             )
             return app
 
@@ -126,12 +134,12 @@ class CompactFlaskApp(
             @error_app.route("/health")
             def health_error():
                 return {
-                    "status": "error", 
+                    "status": "error",
                     "message": f"Application initialization failed: {error_message}",
                 }, 503
 
             return error_app
-            
+
     def _setup_advanced_features(self, app, container):
         """Setup advanced caching, monitoring, and security features"""
         try:
@@ -158,7 +166,9 @@ class CompactFlaskApp(
                         else len(active_ips)
                     )
 
-                    cache_stats = cache.get_stats() if hasattr(cache, "get_stats") else {}
+                    cache_stats = (
+                        cache.get_stats() if hasattr(cache, "get_stats") else {}
+                    )
 
                     return {
                         "total_requests": getattr(app, "request_count", 0),
@@ -202,9 +212,9 @@ def create_app(config_name: Optional[str] = None) -> Flask:
     """Main factory function for Flask app creation"""
     return create_compact_app(config_name)
 
-            # Blueprint registration is now handled by BlueprintRegistrationMixin
-            # Error handlers are now handled by ErrorHandlerMixin 
-            # Middleware setup is now handled by MiddlewareMixin
+    # Blueprint registration is now handled by BlueprintRegistrationMixin
+    # Error handlers are now handled by ErrorHandlerMixin
+    # Middleware setup is now handled by MiddlewareMixin
 
 
 def main():

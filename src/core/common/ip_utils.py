@@ -5,7 +5,7 @@
 
 import ipaddress
 import re
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 
 class IPUtils:

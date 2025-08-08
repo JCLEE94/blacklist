@@ -4,7 +4,6 @@ CI/CD 수정 전략 모듈
 Claude Code v8.4.0 - 에러 별 수정 전략 구현
 """
 
-from typing import Any, Dict
 
 
 class FixStrategyManager:
@@ -23,7 +22,9 @@ class FixStrategyManager:
             "network": self.fix_network_issues,
         }
 
-    def apply_fix(self, error_type: str, project_id: str, error_log: str, utils) -> bool:
+    def apply_fix(
+        self, error_type: str, project_id: str, error_log: str, utils
+    ) -> bool:
         """에러 타입에 따른 수정 전략 적용"""
         if error_type in self.fix_methods:
             return self.fix_methods[error_type](project_id, error_log, utils)

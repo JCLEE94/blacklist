@@ -131,7 +131,6 @@ class BaseConfig:
     @classmethod
     def init_app(cls, app):
         """Initialize application with configuration"""
-        pass
 
     @classmethod
     def to_dict(cls) -> Dict[str, Any]:

@@ -21,7 +21,7 @@ from .decorators import (
 __all__ = [
     "DecoratorRegistry",
     "unified_cache",
-    "unified_rate_limit", 
+    "unified_rate_limit",
     "unified_auth",
     "unified_monitoring",
     "unified_validation",

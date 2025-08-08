@@ -15,8 +15,10 @@ from .custom_errors import BaseError
 try:
     from src.utils.github_issue_reporter import report_error_to_github
 except ImportError:
+
     def report_error_to_github(error, context):
         return None
+
 
 logger = logging.getLogger(__name__)
 
@@ -110,12 +112,14 @@ class ErrorHandler:
 
         # GitHub 이슈 생성 (심각한 에러만)
         should_create_issue = self._should_create_github_issue(error)
-        
+
         if should_create_issue:
             try:
                 issue_url = report_error_to_github(error, context)
                 if issue_url:
-                    logger.info(f"GitHub issue created for error {error_code}: {issue_url}")
+                    logger.info(
+                        f"GitHub issue created for error {error_code}: {issue_url}"
+                    )
                     error_log["github_issue"] = issue_url
             except Exception as github_error:
                 logger.error(f"Failed to create GitHub issue: {github_error}")
@@ -128,7 +132,9 @@ class ErrorHandler:
             return error.status_code >= 500
         return True  # 예상치 못한 예외는 모두 GitHub 이슈로 생성
 
-    def _log_error_message(self, error: Exception, error_code: str, context: Optional[Dict]):
+    def _log_error_message(
+        self, error: Exception, error_code: str, context: Optional[Dict]
+    ):
         """에러 메시지 로깅"""
         if isinstance(error, BaseError):
             if error.status_code >= 500:
@@ -156,15 +162,19 @@ class ErrorHandler:
 
     def handle_api_error(self, func: Callable) -> Callable:
         """예전 스타일 API 에러 처리 데코레이터"""
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                request_id = request.headers.get("X-Request-ID", str(datetime.utcnow().timestamp()))
+                request_id = request.headers.get(
+                    "X-Request-ID", str(datetime.utcnow().timestamp())
+                )
                 return func(*args, **kwargs)
             except (BaseError, HTTPException, Exception) as e:
                 self.log_error(e, {"function": func.__name__, "args": str(args)})
                 response, status_code = self.format_error_response(e, request_id)
                 return jsonify(response), status_code
+
         return wrapper
 
     def safe_execute(
@@ -178,7 +188,7 @@ class ErrorHandler:
         try:
             return func()
         except Exception as e:
-            self.log_error(e, {"function": getattr(func, '__name__', 'anonymous')})
+            self.log_error(e, {"function": getattr(func, "__name__", "anonymous")})
             if raise_on_error:
                 raise
             return default

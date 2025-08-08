@@ -5,15 +5,12 @@ Main dashboard and overview pages
 
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-import requests
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, url_for
 
-from src.config.settings import settings
 
 logger = logging.getLogger(__name__)
 

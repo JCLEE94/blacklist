@@ -16,7 +16,7 @@ from .validation import unified_validation
 __all__ = [
     # Core decorators
     "unified_cache",
-    "unified_auth", 
+    "unified_auth",
     "unified_monitoring",
     "unified_validation",
     "unified_rate_limit",
@@ -38,5 +38,6 @@ def get_registry():
     global _registry
     if _registry is None:
         from .registry import DecoratorRegistry
+
         _registry = DecoratorRegistry()
     return _registry

@@ -5,12 +5,10 @@ RegTech (금보원) IP 소스
 """
 
 import glob
-import json
 import logging
 import os
 import re
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 import requests
@@ -241,7 +239,7 @@ class RegTechSource(BaseIPSource):
                                         ip = line.strip()
                                         if self._is_valid_public_ip(ip):
                                             cached_ips.add(ip)
-                            except Exception as e:
+                            except Exception:
                                 continue
 
             if cached_ips:

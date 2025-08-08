@@ -9,7 +9,6 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from ..container import get_container
-from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
 
 logger = logging.getLogger(__name__)

@@ -1,9 +1,8 @@
 """루트 경로 라우트 추가"""
 
-import asyncio
 import logging
 
-from flask import Blueprint, jsonify, redirect, render_template
+from flask import Blueprint, jsonify
 
 root_bp = Blueprint("root", __name__)
 logger = logging.getLogger(__name__)

@@ -5,11 +5,10 @@ Cache Decorators for Advanced Cache
 
 import functools
 import hashlib
-import inspect
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 

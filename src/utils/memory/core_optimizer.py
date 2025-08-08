@@ -11,7 +11,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, List
 
 import psutil
 from loguru import logger
@@ -20,6 +20,7 @@ from loguru import logger
 @dataclass
 class MemoryStats:
     """메모리 사용량 통계"""
+
     total_memory_mb: float
     available_memory_mb: float
     used_memory_mb: float

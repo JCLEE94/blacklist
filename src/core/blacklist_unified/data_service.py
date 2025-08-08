@@ -4,17 +4,15 @@ Data Management Service for Unified Blacklist Manager
 """
 
 import ipaddress
-import json
 import logging
 import os
 import sqlite3
 import threading
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 
 from ...utils.advanced_cache import EnhancedSmartCache
-from ...utils.unified_decorators import unified_cache, unified_monitoring
+from ...utils.unified_decorators import unified_cache
 from ..database import DatabaseManager
 from .models import DataProcessingError
 

@@ -5,7 +5,7 @@
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 

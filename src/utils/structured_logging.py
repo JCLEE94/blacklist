@@ -12,7 +12,7 @@ import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 try:
     from pythonjsonlogger import jsonlogger
@@ -181,7 +181,7 @@ class StructuredLogger:
 
             conn.commit()
             conn.close()
-        except Exception as e:
+        except Exception:
             # DB 저장 실패는 무시 (로깅 시스템이 앱 동작을 방해하면 안됨)
             pass
 
@@ -335,7 +335,7 @@ class StructuredLogger:
 
             conn.close()
             return results
-        except Exception as e:
+        except Exception:
             return []
 
 

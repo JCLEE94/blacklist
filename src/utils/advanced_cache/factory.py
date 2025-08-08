@@ -4,7 +4,6 @@ Cache Factory Functions
 Provides factory methods for creating cache instances with backward compatibility
 """
 
-import hashlib
 import logging
 import os
 from functools import wraps

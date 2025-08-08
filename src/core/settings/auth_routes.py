@@ -13,6 +13,7 @@ import jwt
 from flask import Blueprint, jsonify, request
 
 from src.config.settings import settings
+
 from ..container import get_container
 
 logger = logging.getLogger(__name__)
@@ -168,9 +169,9 @@ def regtech_token_status():
 def test_regtech_collection():
     """REGTECH 수집 테스트"""
     try:
-        from datetime import datetime, timedelta
-        import requests
         import re
+
+        import requests
 
         from ..regtech_auto_login import get_regtech_auth
 

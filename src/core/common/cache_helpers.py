@@ -7,7 +7,7 @@ import hashlib
 import json
 import logging
 from functools import wraps
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 

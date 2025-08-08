@@ -11,24 +11,21 @@ This module now uses modular mixins for better code organization:
 - ReportingMixin: Memory usage analysis and reporting
 """
 
-# Import modular components
-from .memory.core_optimizer import CoreMemoryOptimizer, MemoryStats
-from .memory.database_operations import DatabaseOptimizationMixin
-from .memory.bulk_processor import BulkProcessorMixin
-from .memory.reporting import ReportingMixin
 
-from typing import Any, Dict, List
+from .memory.bulk_processor import BulkProcessorMixin
+
+# Import modular components
+from .memory.core_optimizer import CoreMemoryOptimizer
+from .memory.database_operations import DatabaseOptimizationMixin
+from .memory.reporting import ReportingMixin
 
 
 class MemoryOptimizer(
-    CoreMemoryOptimizer,
-    DatabaseOptimizationMixin,
-    BulkProcessorMixin, 
-    ReportingMixin
+    CoreMemoryOptimizer, DatabaseOptimizationMixin, BulkProcessorMixin, ReportingMixin
 ):
     """
     메모리 사용량 최적화 관리자 - 모든 기능을 통합
-    
+
     Uses multiple inheritance with specialized mixins for modular functionality:
     - CoreMemoryOptimizer: Memory monitoring, GC, and basic optimization
     - DatabaseOptimizationMixin: Database operation optimizations

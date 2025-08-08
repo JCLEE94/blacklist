@@ -264,7 +264,7 @@ def update_collection_intervals():
                 400,
             )
 
-        result = service.update_collection_intervals(regtech_days, secudium_days)
+        service.update_collection_intervals(regtech_days, secudium_days)
 
         return jsonify(
             {

@@ -4,12 +4,9 @@
 통계, 분석, 리포트 등의 통계 전용 기능
 """
 
-import json
-import logging
-import os
 import sqlite3
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 # Statistics service mixin for UnifiedBlacklistService

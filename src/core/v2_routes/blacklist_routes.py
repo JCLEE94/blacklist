@@ -3,13 +3,11 @@
 V2 Blacklist API Routes
 """
 
-import json
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, jsonify, request
 
 from ...utils.unified_decorators import (
     unified_cache,
-    unified_monitoring,
     unified_rate_limit,
     unified_validation,
 )

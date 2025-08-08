@@ -3,12 +3,11 @@
 V2 Analytics API Routes
 """
 
-import json
 from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 
-from ...utils.unified_decorators import unified_cache, unified_monitoring
+from ...utils.unified_decorators import unified_cache
 from .service import V2APIService
 
 analytics_v2_bp = Blueprint("analytics_v2", __name__)

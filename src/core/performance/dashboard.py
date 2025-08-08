@@ -9,7 +9,7 @@ import threading
 import time
 from collections import deque
 from dataclasses import asdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List
 
 import psutil
@@ -72,7 +72,7 @@ class PerformanceDashboard:
         """현재 성능 메트릭 수집"""
         with self._lock:
             # 시스템 메트릭
-            memory = psutil.virtual_memory()
+            psutil.virtual_memory()
             cpu_percent = psutil.cpu_percent(interval=0.1)
 
             # 프로세스 메트릭

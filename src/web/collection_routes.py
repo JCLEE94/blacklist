@@ -46,8 +46,8 @@ def api_raw_data():
         # Get query parameters
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 100, type=int)
-        date_filter = request.args.get("date")
-        source_filter = request.args.get("source")
+        request.args.get("date")
+        request.args.get("source")
 
         # Mock raw data
         mock_data = []

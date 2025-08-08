@@ -81,29 +81,30 @@ except ImportError:
 
 # CICD Troubleshooter modules (modularized for 500-line compliance)
 try:
-    from .cicd_troubleshooter import (
-        CICDTroubleshooter,
-        create_troubleshooter,
-        create_error_manager,
-        create_fix_manager,
-        analyze_pipeline_errors,
-    )
     from .cicd_error_patterns import ErrorPatternManager
     from .cicd_fix_strategies import FixStrategyManager
+    from .cicd_troubleshooter import (
+        CICDTroubleshooter,
+        analyze_pipeline_errors,
+        create_error_manager,
+        create_fix_manager,
+        create_troubleshooter,
+    )
     from .cicd_utils import CICDUtils
 except ImportError:
     # Fallback for missing CICD modules
     def create_troubleshooter(*args, **kwargs):
         return None
-    
+
     def create_error_manager():
         return None
-    
+
     def create_fix_manager():
         return None
-    
+
     def analyze_pipeline_errors(*args, **kwargs):
         return None
+
 
 __all__ = [
     # Cache utilities

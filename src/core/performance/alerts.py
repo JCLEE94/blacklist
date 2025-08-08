@@ -62,34 +62,54 @@ class AlertManager:
                     # eval 대신 안전한 평가 방식 사용
                     import ast
                     import operator as op
-                    
+
                     # 안전한 연산자만 허용
                     allowed_operators = {
-                        ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul,
-                        ast.Div: op.truediv, ast.Mod: op.mod, ast.Pow: op.pow,
-                        ast.Lt: op.lt, ast.Gt: op.gt, ast.LtE: op.le, ast.GtE: op.ge,
-                        ast.Eq: op.eq, ast.NotEq: op.ne, ast.And: op.and_, ast.Or: op.or_
+                        ast.Add: op.add,
+                        ast.Sub: op.sub,
+                        ast.Mult: op.mul,
+                        ast.Div: op.truediv,
+                        ast.Mod: op.mod,
+                        ast.Pow: op.pow,
+                        ast.Lt: op.lt,
+                        ast.Gt: op.gt,
+                        ast.LtE: op.le,
+                        ast.GtE: op.ge,
+                        ast.Eq: op.eq,
+                        ast.NotEq: op.ne,
+                        ast.And: op.and_,
+                        ast.Or: op.or_,
                     }
-                    
+
                     def safe_eval(node):
                         if isinstance(node, ast.Constant):
                             return node.value
                         elif isinstance(node, ast.Compare):
                             left = safe_eval(node.left)
-                            for operation, comparator in zip(node.ops, node.comparators):
+                            for operation, comparator in zip(
+                                node.ops, node.comparators
+                            ):
                                 right = safe_eval(comparator)
                                 if type(operation) in allowed_operators:
-                                    result = allowed_operators[type(operation)](left, right)
+                                    result = allowed_operators[type(operation)](
+                                        left, right
+                                    )
                                     if not result:
                                         return False
                                     left = right
                                 else:
-                                    raise ValueError(f"Unsupported operation: {operation}")
+                                    raise ValueError(
+                                        f"Unsupported operation: {operation}"
+                                    )
                             return True
                         elif isinstance(node, ast.BinOp):
-                            return allowed_operators[type(node.op)](safe_eval(node.left), safe_eval(node.right))
+                            return allowed_operators[type(node.op)](
+                                safe_eval(node.left), safe_eval(node.right)
+                            )
                         elif isinstance(node, ast.UnaryOp):
-                            return allowed_operators[type(node.op)](safe_eval(node.operand))
+                            return allowed_operators[type(node.op)](
+                                safe_eval(node.operand)
+                            )
                         elif isinstance(node, ast.BoolOp):
                             values = [safe_eval(value) for value in node.values]
                             if isinstance(node.op, ast.And):
@@ -98,14 +118,16 @@ class AlertManager:
                                 return any(values)
                         else:
                             raise ValueError(f"Unsupported node type: {type(node)}")
-                    
+
                     try:
-                        parsed = ast.parse(condition, mode='eval')
+                        parsed = ast.parse(condition, mode="eval")
                         condition_result = safe_eval(parsed.body)
                     except (ValueError, SyntaxError, TypeError):
-                        logger.warning(f"Failed to evaluate condition safely: {condition}")
+                        logger.warning(
+                            f"Failed to evaluate condition safely: {condition}"
+                        )
                         continue
-                        
+
                     if condition_result:
                         # 알림 발생 (중복 방지: 5분 내 동일 알림 무시)
                         if (

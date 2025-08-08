@@ -4,18 +4,16 @@ IP Search Service for Unified Blacklist Manager
 """
 
 import ipaddress
-import json
 import logging
 import os
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_cache, unified_monitoring
 from ..database import DatabaseManager
-from .models import SearchResult
 
 logger = logging.getLogger(__name__)
 

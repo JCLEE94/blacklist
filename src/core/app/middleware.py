@@ -7,6 +7,7 @@ Flask 미들웨어 및 요청/응답 처리
 
 import os
 import time
+
 from flask import g, request
 
 from src.core.constants import SECURITY_HEADERS
@@ -20,7 +21,7 @@ class MiddlewareMixin:
 
     def _setup_request_middleware(self, app, container):
         """요청/응답 미들웨어 설정"""
-        
+
         @app.before_request
         def before_request():
             """Request preprocessing with container injection"""
@@ -67,24 +68,24 @@ class MiddlewareMixin:
 
     def _setup_performance_middleware(self, app, container):
         """성능 모니터링 미들웨어"""
-        
+
         @app.before_request
         def performance_before_request():
             """Performance monitoring setup"""
             g.start_time = time.time()
-            g.profiler = getattr(app, 'profiler', None)
+            g.profiler = getattr(app, "profiler", None)
 
         @app.after_request
         def performance_after_request(response):
             """Performance metrics recording"""
             duration = time.time() - g.get("start_time", time.time())
-            
+
             # Safely handle profiler metrics
             try:
-                profiler = g.get('profiler')
-                if profiler and hasattr(profiler, 'function_timings'):
+                profiler = g.get("profiler")
+                if profiler and hasattr(profiler, "function_timings"):
                     endpoint_key = f"endpoint_{request.endpoint or 'unknown'}"
-                    if not hasattr(profiler.function_timings, '__getitem__'):
+                    if not hasattr(profiler.function_timings, "__getitem__"):
                         profiler.function_timings = {}
                     if endpoint_key not in profiler.function_timings:
                         profiler.function_timings[endpoint_key] = []
@@ -99,10 +100,11 @@ class MiddlewareMixin:
             response.headers["X-Compression-Enabled"] = str(
                 response.headers.get("Content-Encoding") == "gzip"
             )
-            
+
             # Check if orjson is available
             try:
-                import orjson
+                pass
+
                 json_engine = "orjson"
             except ImportError:
                 json_engine = "stdlib"
@@ -112,7 +114,7 @@ class MiddlewareMixin:
 
     def _setup_build_info_context(self, app):
         """빌드 정보 컨텍스트 처리기"""
-        
+
         @app.context_processor
         def inject_build_info():
             from pathlib import Path

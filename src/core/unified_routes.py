@@ -35,6 +35,7 @@ from .routes.test_utils import (
     run_all_tests,
 )
 
+
 # Main configuration function for backward compatibility
 def configure_routes(app):
     """Configure routes on Flask app for backward compatibility"""

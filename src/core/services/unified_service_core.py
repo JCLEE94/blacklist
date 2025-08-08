@@ -13,30 +13,28 @@ This module now uses modular mixins for better code organization:
 
 import logging
 import os
-from datetime import datetime
-from typing import Any, Dict
 
 from ..container import get_container
 from .collection_service import CollectionServiceMixin
-from .statistics_service import StatisticsServiceMixin
-from .core_operations import CoreOperationsMixin, ServiceHealth
+from .core_operations import CoreOperationsMixin
 from .database_operations import DatabaseOperationsMixin
 from .logging_operations import LoggingOperationsMixin
+from .statistics_service import StatisticsServiceMixin
 
 logger = logging.getLogger(__name__)
 
 
 class UnifiedBlacklistService(
-    CollectionServiceMixin, 
+    CollectionServiceMixin,
     StatisticsServiceMixin,
     CoreOperationsMixin,
-    DatabaseOperationsMixin, 
-    LoggingOperationsMixin
+    DatabaseOperationsMixin,
+    LoggingOperationsMixin,
 ):
     """
     통합 블랙리스트 서비스 - 모든 기능을 하나로 통합
     REGTECH, SECUDIUM 수집부터 API 서빙까지 단일 서비스로 처리
-    
+
     Uses multiple inheritance with specialized mixins for modular functionality.
     """
 

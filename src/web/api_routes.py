@@ -5,9 +5,9 @@ API endpoints for the web interface
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from flask import Blueprint, jsonify, request
 

@@ -17,12 +17,14 @@ class BlueprintRegistrationMixin:
         """핵심 블루프린트 등록"""
         # Register unified routes blueprint directly
         from ..unified_routes import unified_bp
+
         app.register_blueprint(unified_bp)
         logger.info("Unified routes registered successfully")
 
         # Register settings routes (non-conflicting admin functions)
         try:
             from ..settings_routes import settings_bp
+
             app.register_blueprint(settings_bp)
             logger.info("Settings routes registered successfully")
         except Exception as e:
@@ -37,7 +39,7 @@ class BlueprintRegistrationMixin:
         # Register V2 API routes (advanced features under /api/v2)
         try:
             from ..v2_routes import v2_bp
-            
+
             # Register the V2 blueprint
             app.register_blueprint(v2_bp)
             logger.info("V2 API routes registered successfully")
@@ -51,6 +53,7 @@ class BlueprintRegistrationMixin:
         # Register debug routes for troubleshooting
         try:
             from ..debug_routes import debug_bp
+
             app.register_blueprint(debug_bp)
             logger.info("Debug routes registered successfully")
         except Exception as e:

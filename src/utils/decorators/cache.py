@@ -53,7 +53,7 @@ def unified_cache(
                 return func(*args, **kwargs)
 
             registry = get_registry()
-            
+
             # Generate cache key
             if key_func:
                 cache_key = key_func()

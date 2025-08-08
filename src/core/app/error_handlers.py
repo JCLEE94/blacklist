@@ -6,6 +6,7 @@ Flask 오류 처리기 관리
 """
 
 from flask import request
+
 from src.core.exceptions import BlacklistError, create_error_response, handle_exception
 from src.utils.structured_logging import get_logger
 
@@ -17,7 +18,7 @@ class ErrorHandlerMixin:
 
     def _setup_error_handlers(self, app):
         """오류 처리기 등록"""
-        
+
         @app.errorhandler(BlacklistError)
         def handle_blacklist_error(error: BlacklistError):
             """Handle custom Blacklist exceptions"""

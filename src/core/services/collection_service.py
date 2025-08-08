@@ -5,11 +5,8 @@
 """
 
 import asyncio
-import json
-import logging
-import sqlite3
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 # Collection service mixin for UnifiedBlacklistService
@@ -256,7 +253,7 @@ class CollectionServiceMixin:
                     "component_available": False,
                 }
 
-            regtech_collector = self._components["regtech"]
+            self._components["regtech"]
 
             # 날짜 파라미터 처리
             if start_date or end_date:

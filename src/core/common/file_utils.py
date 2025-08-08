@@ -5,9 +5,8 @@
 
 import json
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, List, Set, Union
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,6 @@
 
 import asyncio
 import logging
-import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict
@@ -124,8 +123,8 @@ class CoreOperationsMixin:
                             three_months_ago = today - timedelta(days=90)
 
                             # 날짜 범위 설정 (3개월 전 ~ 오늘)
-                            start_date = three_months_ago.strftime("%Y%m%d")
-                            end_date = today.strftime("%Y%m%d")
+                            three_months_ago.strftime("%Y%m%d")
+                            today.strftime("%Y%m%d")
 
                             self.logger.info(
                                 f"📅 수집 기간: {three_months_ago.strftime('%Y-%m-%d')} ~ {today.strftime('%Y-%m-%d')}"
