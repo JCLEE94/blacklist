@@ -31,7 +31,7 @@ spec:
           pullPolicy: Always
         
         imagePullSecrets:
-          - name: regcred
+          - name: jclee-registry-secret
         
         service:
           type: NodePort

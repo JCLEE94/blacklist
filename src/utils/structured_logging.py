@@ -8,8 +8,11 @@ import json
 import logging
 import logging.handlers
 import os
+import sqlite3
 import sys
+import threading
 import traceback
+from collections import deque
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -20,9 +23,6 @@ try:
     HAS_JSON_LOGGER = True
 except ImportError:
     HAS_JSON_LOGGER = False
-import sqlite3
-import threading
-from collections import deque
 
 
 class StructuredLogger:
