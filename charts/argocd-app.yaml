@@ -3,56 +3,46 @@ kind: Application
 metadata:
   name: blacklist
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: myimage=registry.jclee.me/blacklist
+    argocd-image-updater.argoproj.io/myimage.update-strategy: latest
+    argocd-image-updater.argoproj.io/myimage.pull-secret: pullsecret:blacklist/regcred
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: main
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: http://charts.jclee.me
-    chart: blacklist
-    targetRevision: "3.1.0"
+    repoURL: https://github.com/JCLEE94/blacklist
+    path: charts/blacklist
+    targetRevision: main
     helm:
-      values: |
-        image:
-          repository: registry.jclee.me/jclee/blacklist
-          tag: "3.1.0"
-          pullPolicy: Always
-        
-        imagePullSecrets:
-          - name: jclee-registry-secret
-        
-        service:
-          type: NodePort
-          port: 80
-          targetPort: 8541
-          nodePort: 30080
-        
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1Gi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-        
-        env:
-          PORT: "8541"
-        
-        probes:
-          liveness:
-            path: /health
-            port: 8541
-            initialDelaySeconds: 60
-            periodSeconds: 30
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.repository
+          value: registry.jclee.me/blacklist
+        - name: image.tag
+          value: latest
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: microservices
+    namespace: blacklist
   
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
     syncOptions:
     - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
 

@@ -9,7 +9,7 @@ strategy:
 image:
   repository: registry.jclee.me/blacklist
   pullPolicy: Always
-  tag: "f88fd81"
+  tag: "latest"
 
 imagePullSecrets:
   - name: jclee-registry-secret
