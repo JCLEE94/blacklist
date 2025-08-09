@@ -54,7 +54,7 @@ class StatisticsService:
         return []
     
     def get_statistics(self) -> Dict[str, Any]:
-        """통합 통계 정보"""
+        """통합 통계 정보 (동기 버전)"""
         try:
             # 기본 통계 데이터 반환
             return {
