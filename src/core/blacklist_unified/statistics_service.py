@@ -52,3 +52,30 @@ class StatisticsService:
     def get_expiring_ips(self, days: int = 7) -> List[Dict[str, Any]]:
         """곧 만료될 IP 목록"""
         return []
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """통합 통계 정보"""
+        try:
+            # 기본 통계 데이터 반환
+            return {
+                "total_ips": 0,
+                "active_ips": 0,
+                "expired_ips": 0,
+                "unique_countries": 0,
+                "sources": {},
+                "last_update": datetime.now().isoformat(),
+                "database_size": "0 MB",
+                "status": "healthy"
+            }
+        except Exception as e:
+            return {
+                "total_ips": 0,
+                "active_ips": 0,
+                "expired_ips": 0,
+                "unique_countries": 0,
+                "sources": {},
+                "last_update": None,
+                "database_size": "0 MB",
+                "status": "error",
+                "error": str(e)
+            }
