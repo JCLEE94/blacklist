@@ -23,7 +23,7 @@ spec:
       {{- if eq .Values.service.type "NodePort" }}
       nodePort: {{ .Values.service.nodePort | default 32542 }}
       {{- end }}
-    {{- if and .Values.monitoring.enabled (ne .Values.service.port 8541) }}
+    {{- if .Values.monitoring.enabled }}
     - port: 9090
       targetPort: 8541
       protocol: TCP
