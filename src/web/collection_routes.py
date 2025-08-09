@@ -6,7 +6,8 @@ Collection control and monitoring pages
 import logging
 from datetime import datetime, timedelta
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import (Blueprint, flash, jsonify, redirect, render_template,
+                   request, url_for)
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +119,9 @@ def regtech_collector():
 
     except Exception as e:
         logger.error(f"REGTECH collector page error: {e}")
-        flash(f"REGTECH collector 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
+        flash(
+            f"REGTECH collector 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error"
+        )
         return redirect(url_for("dashboard.dashboard"))
 
 

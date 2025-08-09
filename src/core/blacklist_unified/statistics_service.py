@@ -52,7 +52,7 @@ class StatisticsService:
     def get_expiring_ips(self, days: int = 7) -> List[Dict[str, Any]]:
         """곧 만료될 IP 목록"""
         return []
-    
+
     def get_statistics(self) -> Dict[str, Any]:
         """통합 통계 정보 (동기 버전)"""
         try:
@@ -65,7 +65,7 @@ class StatisticsService:
                 "sources": {},
                 "last_update": datetime.now().isoformat(),
                 "database_size": "0 MB",
-                "status": "healthy"
+                "status": "healthy",
             }
         except Exception as e:
             return {
@@ -77,5 +77,5 @@ class StatisticsService:
                 "last_update": None,
                 "database_size": "0 MB",
                 "status": "error",
-                "error": str(e)
+                "error": str(e),
             }

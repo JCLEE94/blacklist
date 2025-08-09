@@ -51,10 +51,10 @@ class ExpirationService:
                 # Count expired IPs that are still active
                 cursor.execute(
                     """
-                    SELECT COUNT(*) 
-                    FROM ip_detections 
-                    WHERE is_active = 1 
-                      AND expires_at IS NOT NULL 
+                    SELECT COUNT(*)
+                    FROM ip_detections
+                    WHERE is_active = 1
+                      AND expires_at IS NOT NULL
                       AND expires_at < datetime('now')
                     """
                 )
@@ -63,11 +63,11 @@ class ExpirationService:
                 # Deactivate expired IPs
                 cursor.execute(
                     """
-                    UPDATE ip_detections 
-                    SET is_active = 0, 
-                        updated_at = datetime('now') 
-                    WHERE is_active = 1 
-                      AND expires_at IS NOT NULL 
+                    UPDATE ip_detections
+                    SET is_active = 0,
+                        updated_at = datetime('now')
+                    WHERE is_active = 1
+                      AND expires_at IS NOT NULL
                       AND expires_at < datetime('now')
                     """
                 )
@@ -132,10 +132,10 @@ class ExpirationService:
                 # Update expiration date
                 cursor.execute(
                     """
-                    UPDATE ip_detections 
-                    SET expires_at = ?, 
-                        updated_at = datetime('now') 
-                    WHERE ip_address = ? 
+                    UPDATE ip_detections
+                    SET expires_at = ?,
+                        updated_at = datetime('now')
+                    WHERE ip_address = ?
                       AND is_active = 1
                     """,
                     (expires_at.isoformat(), ip),
@@ -206,10 +206,10 @@ class ExpirationService:
                     try:
                         cursor.execute(
                             """
-                            UPDATE ip_detections 
-                            SET expires_at = ?, 
-                                updated_at = datetime('now') 
-                            WHERE ip_address = ? 
+                            UPDATE ip_detections
+                            SET expires_at = ?,
+                                updated_at = datetime('now')
+                            WHERE ip_address = ?
                               AND is_active = 1
                             """,
                             (expires_at.isoformat(), ip),
@@ -285,10 +285,10 @@ class ExpirationService:
                 # Update expiration date
                 cursor.execute(
                     """
-                    UPDATE ip_detections 
-                    SET expires_at = ?, 
-                        updated_at = datetime('now') 
-                    WHERE ip_address = ? 
+                    UPDATE ip_detections
+                    SET expires_at = ?,
+                        updated_at = datetime('now')
+                    WHERE ip_address = ?
                       AND is_active = 1
                     """,
                     (new_expiration.isoformat(), ip),

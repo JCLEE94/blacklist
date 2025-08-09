@@ -39,9 +39,11 @@ def health_check():
             "database": health.get("database", {}),
             "cache": health.get("cache", {}),
             "components": {
-                "blacklist_manager": "healthy"
-                if health.get("database", {}).get("active_ips", 0) > 0
-                else "degraded",
+                "blacklist_manager": (
+                    "healthy"
+                    if health.get("database", {}).get("active_ips", 0) > 0
+                    else "degraded"
+                ),
                 "cache_system": "healthy" if health.get("cache") else "unavailable",
                 "api_service": "healthy",
             },
@@ -155,9 +157,9 @@ def get_detailed_status():
                 "last_update": analytics.get("generated_at"),
             },
             "operational_metrics": {
-                "database_status": "operational"
-                if health.get("status") != "error"
-                else "error",
+                "database_status": (
+                    "operational" if health.get("status") != "error" else "error"
+                ),
                 "cache_status": "operational" if health.get("cache") else "degraded",
                 "api_status": "operational",
                 "data_freshness": "current",  # 실제 데이터 업데이트 시간 기반

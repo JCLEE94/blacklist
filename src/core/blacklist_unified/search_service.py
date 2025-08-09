@@ -153,7 +153,7 @@ class SearchService:
                 # Search in ip_detections table
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         ip_address,
                         source,
                         detection_date,
@@ -163,7 +163,7 @@ class SearchService:
                         is_active,
                         created_at,
                         updated_at
-                    FROM ip_detections 
+                    FROM ip_detections
                     WHERE ip_address = ? AND is_active = 1
                     ORDER BY detection_date DESC
                     """,
@@ -236,7 +236,7 @@ class SearchService:
                 # Insert search record
                 cursor.execute(
                     """
-                    INSERT INTO search_history (ip_address, found) 
+                    INSERT INTO search_history (ip_address, found)
                     VALUES (?, ?)
                     """,
                     (ip, found),

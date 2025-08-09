@@ -163,9 +163,11 @@ class PerformanceDashboard:
                     "total_requests": self.request_count,
                     "total_errors": self.error_count,
                     "error_rate_percent": round(
-                        (self.error_count / self.request_count * 100)
-                        if self.request_count > 0
-                        else 0,
+                        (
+                            (self.error_count / self.request_count * 100)
+                            if self.request_count > 0
+                            else 0
+                        ),
                         2,
                     ),
                 },

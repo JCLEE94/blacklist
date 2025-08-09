@@ -300,12 +300,12 @@ class AsyncProcessor:
             "completed_tasks": completed_count,
             "success_rate_percent": round(success_rate, 2),
             "thread_pool_workers": self.config.max_workers if self.thread_pool else 0,
-            "process_pool_workers": self.config.max_process_workers
-            if self.process_pool
-            else 0,
-            "queue_size": self.task_queue.qsize()
-            if hasattr(self.task_queue, "qsize")
-            else 0,
+            "process_pool_workers": (
+                self.config.max_process_workers if self.process_pool else 0
+            ),
+            "queue_size": (
+                self.task_queue.qsize() if hasattr(self.task_queue, "qsize") else 0
+            ),
         }
 
     def cleanup_completed_tasks(self, keep_recent: int = 100):

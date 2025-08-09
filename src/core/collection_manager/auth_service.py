@@ -30,9 +30,9 @@ class AuthService:
 
                 cursor.execute(
                     """
-                    SELECT COUNT(*) FROM auth_attempts 
-                    WHERE source = ? 
-                      AND success = 0 
+                    SELECT COUNT(*) FROM auth_attempts
+                    WHERE source = ?
+                      AND success = 0
                       AND created_at > ?
                     """,
                     (source, one_hour_ago.isoformat()),
@@ -103,11 +103,11 @@ class AuthService:
                     # 특정 소스에 대한 통계
                     cursor.execute(
                         """
-                        SELECT 
+                        SELECT
                             COUNT(*) as total_attempts,
                             SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_attempts,
                             SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_attempts
-                        FROM auth_attempts 
+                        FROM auth_attempts
                         WHERE source = ? AND created_at > ?
                         """,
                         (source, cutoff_time.isoformat()),
@@ -129,12 +129,12 @@ class AuthService:
                     # 전체 통계
                     cursor.execute(
                         """
-                        SELECT 
+                        SELECT
                             source,
                             COUNT(*) as total_attempts,
                             SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_attempts,
                             SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_attempts
-                        FROM auth_attempts 
+                        FROM auth_attempts
                         WHERE created_at > ?
                         GROUP BY source
                         ORDER BY total_attempts DESC
@@ -225,9 +225,9 @@ class AuthService:
                     cursor.execute(
                         """
                         SELECT source, success, details, created_at
-                        FROM auth_attempts 
+                        FROM auth_attempts
                         WHERE source = ?
-                        ORDER BY created_at DESC 
+                        ORDER BY created_at DESC
                         LIMIT ?
                         """,
                         (source, limit),
@@ -236,8 +236,8 @@ class AuthService:
                     cursor.execute(
                         """
                         SELECT source, success, details, created_at
-                        FROM auth_attempts 
-                        ORDER BY created_at DESC 
+                        FROM auth_attempts
+                        ORDER BY created_at DESC
                         LIMIT ?
                         """,
                         (limit,),

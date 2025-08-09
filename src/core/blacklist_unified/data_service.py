@@ -238,9 +238,9 @@ class DataService:
 
                 cursor.execute(
                     """
-                    SELECT DISTINCT ip_address 
-                    FROM ip_detections 
-                    WHERE is_active = 1 
+                    SELECT DISTINCT ip_address
+                    FROM ip_detections
+                    WHERE is_active = 1
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
                     ORDER BY ip_address
                     """
@@ -328,7 +328,7 @@ class DataService:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         ip_address,
                         source,
                         detection_date,
@@ -338,8 +338,8 @@ class DataService:
                         created_at,
                         updated_at,
                         expires_at
-                    FROM ip_detections 
-                    WHERE is_active = 1 
+                    FROM ip_detections
+                    WHERE is_active = 1
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
                     ORDER BY updated_at DESC, ip_address
                     """

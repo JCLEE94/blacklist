@@ -7,8 +7,11 @@ __pycache__/
 *.so
 .coverage
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 venv/
 env/
+.venv/
 
 # Project specific
 instance/

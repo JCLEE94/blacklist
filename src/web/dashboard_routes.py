@@ -193,9 +193,9 @@ def connection_status():
             connections.append(
                 {
                     "name": "Database",
-                    "status": "connected"
-                    if health["database"] == "connected"
-                    else "error",
+                    "status": (
+                        "connected" if health["database"] == "connected" else "error"
+                    ),
                     "details": f"Status: {health['database']}",
                 }
             )

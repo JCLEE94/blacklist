@@ -163,9 +163,9 @@ class PerformanceTracker:
             return {
                 "uptime_seconds": uptime_seconds,
                 "total_operations": self.total_operations,
-                "operations_per_second": self.total_operations / uptime_seconds
-                if uptime_seconds > 0
-                else 0,
+                "operations_per_second": (
+                    self.total_operations / uptime_seconds if uptime_seconds > 0 else 0
+                ),
                 "hit_rate_percent": self.get_hit_rate(),
                 "cache_hits": self.cache_hits,
                 "cache_misses": self.cache_misses,

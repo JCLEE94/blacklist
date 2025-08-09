@@ -385,7 +385,9 @@ class DataCleaningPipeline:
                 )
                 return result
             else:
-                logger.error(f"{source} 벌크 저장 실패: {result.get('error', 'Unknown')}")
+                logger.error(
+                    f"{source} 벌크 저장 실패: {result.get('error', 'Unknown')}"
+                )
                 return result
 
         except Exception as e:

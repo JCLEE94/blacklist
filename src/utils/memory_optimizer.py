@@ -11,9 +11,7 @@ This module now uses modular mixins for better code organization:
 - ReportingMixin: Memory usage analysis and reporting
 """
 
-
 from .memory.bulk_processor import BulkProcessorMixin
-
 # Import modular components
 from .memory.core_optimizer import CoreMemoryOptimizer
 from .memory.database_operations import DatabaseOptimizationMixin
@@ -135,7 +133,9 @@ if __name__ == "__main__":
         unique_ips = optimizer.efficient_ip_processing(test_ips)
 
         if len(unique_ips) != 1000:
-            print(f"❌ IP 처리 테스트 실패: expected 1000 unique IPs, got {len(unique_ips)}")
+            print(
+                f"❌ IP 처리 테스트 실패: expected 1000 unique IPs, got {len(unique_ips)}"
+            )
             all_tests_passed = False
 
         # 테스트 4: 객체 풀

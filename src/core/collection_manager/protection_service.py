@@ -145,7 +145,7 @@ class ProtectionService:
 
                 cursor.execute(
                     """
-                    INSERT INTO protection_events (event_type, description, data) 
+                    INSERT INTO protection_events (event_type, description, data)
                     VALUES (?, ?, ?)
                     """,
                     (
@@ -171,9 +171,9 @@ class ProtectionService:
 
                 cursor.execute(
                     """
-                    SELECT COUNT(*) FROM auth_attempts 
-                    WHERE success = 0 
-                      AND created_at > ? 
+                    SELECT COUNT(*) FROM auth_attempts
+                    WHERE success = 0
+                      AND created_at > ?
                     """,
                     (cutoff_time.isoformat(),),
                 )

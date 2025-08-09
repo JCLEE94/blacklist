@@ -4,7 +4,6 @@
 시스템에서 사용하는 모든 상수와 설정값을 중앙에서 관리합니다.
 """
 
-
 # ============ 버전 정보 ============
 API_VERSION = "2.1.0-unified"
 SYSTEM_NAME = "Secudium Blacklist Manager"

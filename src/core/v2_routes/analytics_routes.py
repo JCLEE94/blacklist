@@ -74,7 +74,9 @@ def get_trend_analysis():
 
         # 트렌드 분석
         if len(daily_data) > 1:
-            recent_avg = sum(d["unique_ips"] for d in daily_data[-7:]) / 7  # 최근 7일 평균
+            recent_avg = (
+                sum(d["unique_ips"] for d in daily_data[-7:]) / 7
+            )  # 최근 7일 평균
             previous_avg = (
                 sum(d["unique_ips"] for d in daily_data[-14:-7]) / 7
                 if len(daily_data) >= 14
@@ -84,9 +86,7 @@ def get_trend_analysis():
             trend_direction = (
                 "increasing"
                 if recent_avg > previous_avg
-                else "decreasing"
-                if recent_avg < previous_avg
-                else "stable"
+                else "decreasing" if recent_avg < previous_avg else "stable"
             )
             change_percent = (
                 ((recent_avg - previous_avg) / previous_avg * 100)
@@ -101,12 +101,12 @@ def get_trend_analysis():
             "trend_analysis": {
                 "direction": trend_direction,
                 "change_percent": round(change_percent, 2),
-                "recent_7day_avg": round(recent_avg, 1)
-                if "recent_avg" in locals()
-                else 0,
-                "previous_7day_avg": round(previous_avg, 1)
-                if "previous_avg" in locals()
-                else 0,
+                "recent_7day_avg": (
+                    round(recent_avg, 1) if "recent_avg" in locals() else 0
+                ),
+                "previous_7day_avg": (
+                    round(previous_avg, 1) if "previous_avg" in locals() else 0
+                ),
             },
             "daily_data": daily_data,
             "period_days": days,

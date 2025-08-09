@@ -69,88 +69,88 @@ DASHBOARD_HTML_TEMPLATE = """
     <title>Blacklist System - Performance Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { 
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0; 
-            padding: 20px; 
+            margin: 0;
+            padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
         }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: white; 
-            border-radius: 15px; 
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             padding: 30px;
         }
-        .header { 
-            text-align: center; 
-            margin-bottom: 40px; 
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
             padding-bottom: 20px;
             border-bottom: 2px solid #f0f0f0;
         }
-        .title { 
-            font-size: 2.5em; 
-            margin: 0; 
+        .title {
+            font-size: 2.5em;
+            margin: 0;
             color: #2c3e50;
             font-weight: 700;
         }
-        .subtitle { 
-            font-size: 1.2em; 
-            color: #7f8c8d; 
+        .subtitle {
+            font-size: 1.2em;
+            color: #7f8c8d;
             margin: 10px 0;
         }
-        .metrics-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 20px; 
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
             margin-bottom: 40px;
         }
-        .metric-card { 
+        .metric-card {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
-            padding: 25px; 
-            border-radius: 12px; 
+            padding: 25px;
+            border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
         }
-        .metric-card:hover { 
+        .metric-card:hover {
             transform: translateY(-5px);
         }
-        .metric-value { 
-            font-size: 2.5em; 
-            font-weight: bold; 
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
             margin: 0;
         }
-        .metric-label { 
-            font-size: 1.1em; 
+        .metric-label {
+            font-size: 1.1em;
             margin-top: 10px;
             opacity: 0.9;
         }
-        .chart-container { 
-            background: white; 
-            padding: 25px; 
-            border-radius: 12px; 
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
             margin-bottom: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        .refresh-btn { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 12px 24px; 
-            border-radius: 25px; 
-            cursor: pointer; 
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
             font-size: 16px;
             transition: background 0.3s ease;
         }
-        .refresh-btn:hover { 
-            background: #2980b9; 
+        .refresh-btn:hover {
+            background: #2980b9;
         }
-        .grade { 
-            font-size: 3em; 
-            font-weight: bold; 
+        .grade {
+            font-size: 3em;
+            font-weight: bold;
             text-align: center;
             margin: 20px 0;
         }
@@ -158,16 +158,16 @@ DASHBOARD_HTML_TEMPLATE = """
         .grade.B { color: #f39c12; }
         .grade.C { color: #e67e22; }
         .grade.D, .grade.F { color: #e74c3c; }
-        .alerts { 
-            background: #fff3cd; 
-            border: 1px solid #ffeaa7; 
-            padding: 15px; 
-            border-radius: 8px; 
+        .alerts {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
             margin: 20px 0;
         }
-        .loading { 
-            text-align: center; 
-            padding: 40px; 
+        .loading {
+            text-align: center;
+            padding: 40px;
             color: #7f8c8d;
             font-size: 1.2em;
         }
@@ -193,43 +193,43 @@ DASHBOARD_HTML_TEMPLATE = """
             <p class="subtitle">실시간 시스템 성능 모니터링</p>
             <button class="refresh-btn" onclick="refreshData()">🔄 새로고침</button>
         </div>
-        
+
         <div id="loading" class="loading">
             <div class="spinner"></div>
             데이터를 불러오는 중...
         </div>
-        
+
         <div id="dashboard" style="display: none;">
             <div class="metrics-grid" id="metricsGrid">
                 <!-- Metrics will be populated here -->
             </div>
-            
+
             <div class="chart-container">
                 <canvas id="performanceChart" width="400" height="200"></canvas>
             </div>
-            
+
             <div id="alerts"></div>
         </div>
     </div>
-    
+
     <script>
         let performanceChart;
-        
+
         function formatNumber(num) {
             if (num === undefined || num === null) return '0';
             return num.toLocaleString();
         }
-        
+
         function formatBytes(bytes) {
             if (bytes === 0) return '0 MB';
             return Math.round(bytes * 100) / 100 + ' MB';
         }
-        
+
         function formatPercent(percent) {
             if (percent === undefined || percent === null) return '0%';
             return Math.round(percent * 100) / 100 + '%';
         }
-        
+
         async function fetchMetrics() {
             try {
                 const response = await fetch('/api/performance/metrics');
@@ -240,12 +240,12 @@ DASHBOARD_HTML_TEMPLATE = """
                 throw error;
             }
         }
-        
+
         function updateMetrics(data) {
             const current = data.current_metrics;
             const stats = data.statistics;
             const grade = data.performance_grade;
-            
+
             const metricsGrid = document.getElementById('metricsGrid');
             metricsGrid.innerHTML = `
                 <div class="metric-card">
@@ -274,14 +274,14 @@ DASHBOARD_HTML_TEMPLATE = """
                 </div>
             `;
         }
-        
+
         function updateChart(data) {
             const timeSeries = data.time_series;
-            
+
             if (performanceChart) {
                 performanceChart.destroy();
             }
-            
+
             const ctx = document.getElementById('performanceChart').getContext('2d');
             performanceChart = new Chart(ctx, {
                 type: 'line',
@@ -317,49 +317,49 @@ DASHBOARD_HTML_TEMPLATE = """
                 }
             });
         }
-        
+
         function updateAlerts(data) {
             const alertsDiv = document.getElementById('alerts');
             const alerts = data.active_alerts || [];
-            
+
             if (alerts.length === 0) {
                 alertsDiv.innerHTML = '';
                 return;
             }
-            
+
             const alertsHtml = alerts.map(alert => `
                 <div class="alerts">
-                    <strong>[⚠️ ${alert.severity.toUpperCase()}]</strong> 
+                    <strong>[⚠️ ${alert.severity.toUpperCase()}]</strong>
                     ${alert.message}
                     <small style="float: right;">${new Date(alert.timestamp).toLocaleTimeString()}</small>
                 </div>
             `).join('');
-            
+
             alertsDiv.innerHTML = `<h3>활성 알림</h3>${alertsHtml}`;
         }
-        
+
         async function refreshData() {
             try {
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('dashboard').style.display = 'none';
-                
+
                 const data = await fetchMetrics();
-                
+
                 updateMetrics(data);
                 updateChart(data);
                 updateAlerts(data);
-                
+
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
-                
+
                 console.log('Dashboard updated successfully');
             } catch (error) {
                 console.error('Failed to refresh data:', error);
-                document.getElementById('loading').innerHTML = 
+                document.getElementById('loading').innerHTML =
                     '<div style="color: #e74c3c;">😨 데이터를 불러오는 데 실패했습니다.</div>';
             }
         }
-        
+
         // 초기 로드 및 자동 새로고침
         document.addEventListener('DOMContentLoaded', () => {
             refreshData();

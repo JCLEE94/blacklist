@@ -141,10 +141,10 @@ class StatisticsServiceMixin:
 
             cursor.execute(
                 """
-                SELECT DATE(created_at) as date, 
+                SELECT DATE(created_at) as date,
                        COUNT(*) as new_ips,
                        source
-                FROM blacklist_ip 
+                FROM blacklist_ip
                 WHERE created_at >= ?
                 GROUP BY DATE(created_at), source
                 ORDER BY date DESC
@@ -186,7 +186,7 @@ class StatisticsServiceMixin:
                 SELECT strftime('%Y-%m', created_at) as month,
                        COUNT(*) as total_ips,
                        source
-                FROM blacklist_ip 
+                FROM blacklist_ip
                 WHERE created_at BETWEEN ? AND ?
                 GROUP BY month, source
                 ORDER BY month DESC
@@ -252,9 +252,9 @@ class StatisticsServiceMixin:
                     "inactive_ips": total - active,
                     "first_collection": first_seen,
                     "last_collection": last_seen,
-                    "active_percentage": round((active / total) * 100, 2)
-                    if total > 0
-                    else 0,
+                    "active_percentage": (
+                        round((active / total) * 100, 2) if total > 0 else 0
+                    ),
                 }
 
             return source_stats
@@ -319,9 +319,9 @@ class StatisticsServiceMixin:
 
             # 기본 쿼리
             query = """
-                SELECT ip, created_at, detection_date, attack_type, 
+                SELECT ip, created_at, detection_date, attack_type,
                        country, source, is_active, updated_at
-                FROM blacklist_ip 
+                FROM blacklist_ip
                 WHERE is_active = 1
             """
 

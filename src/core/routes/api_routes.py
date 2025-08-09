@@ -392,18 +392,26 @@ def api_monthly_data():
                 {
                     "month": current_date.strftime("%Y-%m"),
                     "label": current_date.strftime("%Y년 %m월"),
-                    "total_ips": stats.get("total_ips", 0)
-                    if month == datetime.now().month
-                    else 0,
-                    "active_ips": stats.get("active_ips", 0)
-                    if month == datetime.now().month
-                    else 0,
-                    "regtech_count": stats.get("regtech_count", 0)
-                    if month == datetime.now().month
-                    else 0,
-                    "secudium_count": stats.get("secudium_count", 0)
-                    if month == datetime.now().month
-                    else 0,
+                    "total_ips": (
+                        stats.get("total_ips", 0)
+                        if month == datetime.now().month
+                        else 0
+                    ),
+                    "active_ips": (
+                        stats.get("active_ips", 0)
+                        if month == datetime.now().month
+                        else 0
+                    ),
+                    "regtech_count": (
+                        stats.get("regtech_count", 0)
+                        if month == datetime.now().month
+                        else 0
+                    ),
+                    "secudium_count": (
+                        stats.get("secudium_count", 0)
+                        if month == datetime.now().month
+                        else 0
+                    ),
                 }
             )
 

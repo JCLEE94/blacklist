@@ -142,7 +142,9 @@ def trigger_secudium_collection():
 
         # SECUDIUM은 현재 계정 문제로 비활성화됨
         if progress_tracker:
-            progress_tracker.fail_collection("secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다.")
+            progress_tracker.fail_collection(
+                "secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다."
+            )
 
         return (
             jsonify(

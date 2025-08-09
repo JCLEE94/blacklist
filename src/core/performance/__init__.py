@@ -5,7 +5,7 @@ Blacklist 시스템의 성능을 실시간으로 모니터링하고 시각화하
 
 주요 구성 요소:
 - PerformanceMetric: 성능 메트릭 데이터 구조
-- AlertRule: 알림 규칙 데이터 구조  
+- AlertRule: 알림 규칙 데이터 구조
 - AlertManager: 알림 및 경고 관리
 - PerformanceDashboard: 메인 대시보드 클래스
 - dashboard_bp: Flask 블루프린트

@@ -5,7 +5,7 @@
 
 This module now uses modular mixins for better code organization:
 - CoreOperationsMixin: Service lifecycle and health management
-- DatabaseOperationsMixin: Database-specific operations  
+- DatabaseOperationsMixin: Database-specific operations
 - LoggingOperationsMixin: Logging and monitoring functionality
 - CollectionServiceMixin: Collection-related operations
 - StatisticsServiceMixin: Analytics and statistics
