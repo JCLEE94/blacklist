@@ -2,9 +2,9 @@
 
 Extracted from test_error_handling_edge_cases.py for better organization.
 """
+
 import time
 from unittest.mock import Mock, patch
-
 
 from .test_helpers import BaseIntegrationTest
 

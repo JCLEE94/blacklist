@@ -1,6 +1,7 @@
 """
 Shared test fixtures for integration tests
 """
+
 import os
 import sqlite3
 import tempfile

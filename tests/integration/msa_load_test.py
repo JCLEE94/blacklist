@@ -192,7 +192,9 @@ class MSALoadTester:
         duration = 30  # 30초
         concurrent_users = 10
 
-        print(f"🏃 {endpoint_name} - {concurrent_users}명 동시 사용자, {duration}초간 지속")
+        print(
+            f"🏃 {endpoint_name} - {concurrent_users}명 동시 사용자, {duration}초간 지속"
+        )
 
         results = []
         start_time = time.time()
@@ -277,7 +279,9 @@ class MSALoadTester:
         concurrent_users = 5
         requests_per_user = 5
 
-        print(f"🔀 모든 서비스 엔드포인트 동시 테스트 - {concurrent_users}명/{requests_per_user}회")
+        print(
+            f"🔀 모든 서비스 엔드포인트 동시 테스트 - {concurrent_users}명/{requests_per_user}회"
+        )
 
         for endpoint_name, url in all_endpoints:
             await self.concurrent_load_test(
@@ -327,9 +331,7 @@ class MSALoadTester:
             status_emoji = (
                 "✅"
                 if result.error_rate < 5
-                else "⚠️"
-                if result.error_rate < 15
-                else "❌"
+                else "⚠️" if result.error_rate < 15 else "❌"
             )
             print(f"   {status_emoji} {result.endpoint}")
             print(
@@ -381,7 +383,9 @@ class MSALoadTester:
             print(f"   • 평균 처리량 {avg_throughput:.1f} req/s - 확장성 개선 권장")
 
         if overall_success_rate < 95:
-            print(f"   • 전체 성공률 {overall_success_rate:.1f}% - 시스템 안정성 점검 필요")
+            print(
+                f"   • 전체 성공률 {overall_success_rate:.1f}% - 시스템 안정성 점검 필요"
+            )
         else:
             print(f"   • 전체 성공률 {overall_success_rate:.1f}% - 우수한 안정성")
 

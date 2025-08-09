@@ -197,9 +197,9 @@ class MSAIntegrationTester:
                 "total_tests": total_tests,
                 "passed_tests": passed_tests,
                 "failed_tests": total_tests - passed_tests,
-                "success_rate": (passed_tests / total_tests * 100)
-                if total_tests > 0
-                else 0,
+                "success_rate": (
+                    (passed_tests / total_tests * 100) if total_tests > 0 else 0
+                ),
                 "total_test_time": total_test_time,
             },
             "healthy_services": self.healthy_services,
@@ -212,7 +212,10 @@ class MSAIntegrationTester:
         failed_tests = [result for result in self.test_results if not result.passed]
 
         if not failed_tests:
-            return ["✅ 모든 MSA 통합 테스트가 성공적으로 완료되었습니다!", "🚀 시스템이 프로덕션 배포 준비 상태입니다."]
+            return [
+                "✅ 모든 MSA 통합 테스트가 성공적으로 완료되었습니다!",
+                "🚀 시스템이 프로덕션 배포 준비 상태입니다.",
+            ]
         else:
             return [
                 f"⚠️  {len(failed_tests)}개의 테스트가 실패했습니다.",
@@ -233,7 +236,9 @@ async def main():
         total_tests = results["test_summary"]["total_tests"]
         passed_tests = results["test_summary"]["passed_tests"]
 
-        print(f"📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)")
+        print(
+            f"📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)"
+        )
 
         for rec in results["recommendations"]:
             print(f"💡 {rec}")

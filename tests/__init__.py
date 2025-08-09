@@ -7,6 +7,7 @@ Test suite for Blacklist Manager
 - 성능 테스트 (performance tests)
 - API 엔드포인트 테스트
 """
+
 from unittest.mock import Mock
 
 from flask import Flask

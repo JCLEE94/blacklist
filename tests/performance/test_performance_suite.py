@@ -2,6 +2,7 @@
 Performance test suite for Blacklist Management System
 Comprehensive performance benchmarking and load testing
 """
+
 import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed

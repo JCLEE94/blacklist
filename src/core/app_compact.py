@@ -189,7 +189,8 @@ class CompactFlaskApp(
             security_manager = get_security_manager()
             app.security_manager = security_manager
 
-            # Initialize unified decorators with container services (rate limiting disabled)
+            # Initialize unified decorators with container services
+            # (rate limiting disabled)
             from ..utils.unified_decorators import initialize_decorators
 
             initialize_decorators(

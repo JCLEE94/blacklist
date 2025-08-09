@@ -3,6 +3,7 @@ Error recovery and resilience tests
 
 Tests service behavior under various failure conditions.
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -33,9 +34,9 @@ class TestServiceErrorRecovery(IntegrationTestFixtures):
                 raise Exception("Temporary cache error")
             return None
 
-        mock_container.get(
-            "blacklist_manager"
-        ).get_all_ips.side_effect = blacklist_get_all
+        mock_container.get("blacklist_manager").get_all_ips.side_effect = (
+            blacklist_get_all
+        )
         mock_container.get("cache_manager").get.side_effect = cache_get
 
         with patch(

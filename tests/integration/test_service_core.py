@@ -3,6 +3,7 @@ Core service integration tests
 
 Tests basic service initialization, health checks, and core functionality.
 """
+
 from unittest.mock import Mock, patch
 
 import pytest

@@ -2,6 +2,7 @@
 통합 테스트 설정 및 픽스쳐 모듈
 모듈화된 테스트 인프라를 통한 간소화된 구성
 """
+
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,7 @@ from tests.test_collection_mocks import enable_collection_for_tests
 
 # Import modularized test components
 from tests.test_config import TestEnvironmentManager, create_test_app
-from tests.test_database import init_test_database
+from tests.test_database import init_test_database, _create_additional_test_tables
 from tests.test_fixtures import (
     blacklist_manager,
     enhanced_mock_container,
@@ -66,6 +67,7 @@ __all__ = [
     "client",
     # Database fixtures
     "init_test_database",
+    "_create_additional_test_tables",
     # Mock fixtures
     "mock_redis",
     "mock_cache",

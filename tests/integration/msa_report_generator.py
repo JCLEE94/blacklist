@@ -85,9 +85,9 @@ class MSAReportGenerator:
                 async with httpx.AsyncClient(timeout=10) as client:
                     response = await client.get(f"{base_url}/health")
                     health_results[service_name] = {
-                        "status": "healthy"
-                        if response.status_code == 200
-                        else "unhealthy",
+                        "status": (
+                            "healthy" if response.status_code == 200 else "unhealthy"
+                        ),
                         "response_time": response.elapsed.total_seconds(),
                         "http_status": response.status_code,
                     }
@@ -119,9 +119,9 @@ class MSAReportGenerator:
                 async with httpx.AsyncClient(timeout=15) as client:
                     response = await client.get(url)
                     gateway_tests[test_name] = {
-                        "status": "success"
-                        if response.status_code == 200
-                        else "failed",
+                        "status": (
+                            "success" if response.status_code == 200 else "failed"
+                        ),
                         "response_time": response.elapsed.total_seconds(),
                         "http_status": response.status_code,
                         "data_size": len(response.content) if response.content else 0,

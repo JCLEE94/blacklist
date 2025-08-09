@@ -2,6 +2,7 @@
 
 Shared utilities to reduce duplication across test files.
 """
+
 import json
 import sqlite3
 import tempfile

@@ -25,12 +25,15 @@ unified_bp.register_blueprint(collection_routes_bp)
 unified_bp.register_blueprint(admin_routes_bp)
 
 # Import test utilities for backwards compatibility
-from .routes.test_utils import (_test_collection_data_flow,
-                                _test_collection_endpoints,
-                                _test_collection_state_consistency,
-                                _test_concurrent_requests,
-                                _test_database_api_consistency,
-                                _test_statistics_integration, run_all_tests)
+from .routes.test_utils import (
+    _test_collection_data_flow,
+    _test_collection_endpoints,
+    _test_collection_state_consistency,
+    _test_concurrent_requests,
+    _test_database_api_consistency,
+    _test_statistics_integration,
+    run_all_tests,
+)
 
 
 # Main configuration function for backward compatibility

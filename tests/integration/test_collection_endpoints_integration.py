@@ -4,6 +4,7 @@ Integration tests for collection management endpoints
 These tests verify the collection management API endpoints work correctly
 in an integrated environment with real services and database interactions.
 """
+
 import threading
 import time
 
