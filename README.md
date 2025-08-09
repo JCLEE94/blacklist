@@ -198,3 +198,4 @@ python3 tests/integration/performance_benchmark.py
 ## 🚀 시스템 정보
 
 **Production Ready** | **v1.0.6** | **August 2025**
+# Force rebuild
