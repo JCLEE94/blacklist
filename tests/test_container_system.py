@@ -6,8 +6,8 @@
 
 import logging
 
-from .blacklist_container import BlacklistContainer
-from .utils import get_container
+from src.core.containers.blacklist_container import BlacklistContainer
+from tests.utils import get_container
 
 logger = logging.getLogger(__name__)
 
