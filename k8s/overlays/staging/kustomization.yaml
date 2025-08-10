@@ -4,11 +4,10 @@ kind: Kustomization
 namespace: blacklist-staging
 
 resources:
-  - ../../base
-  - ingress.yaml
+- ../../base
+- ingress.yaml
 
 namePrefix: staging-
-nameSuffix: ""
 
 commonLabels:
   environment: staging
@@ -18,30 +17,30 @@ commonAnnotations:
   environment: staging
 
 patchesStrategicMerge:
-  - deployment-patch.yaml
-  - service-patch.yaml
+- deployment-patch.yaml
+- service-patch.yaml
 
 configMapGenerator:
-  - name: blacklist-config
-    behavior: merge
-    literals:
-      - LOG_LEVEL=info
-      - FLASK_ENV=staging
-      - ENABLE_METRICS=true
-      - COLLECTION_ENABLED=true
-      - REDIS_URL=redis://redis-staging:6379/0
+- behavior: merge
+  literals:
+  - LOG_LEVEL=info
+  - FLASK_ENV=staging
+  - ENABLE_METRICS=true
+  - COLLECTION_ENABLED=true
+  - REDIS_URL=redis://redis-staging:6379/0
+  name: blacklist-config
 
 secretGenerator:
-  - name: blacklist-secrets
-    behavior: merge
-    files:
-      - secrets.env
+- behavior: merge
+  files:
+  - secrets.env
+  name: blacklist-secrets
 
 images:
-  - name: blacklist
-    newName: registry.jclee.me/blacklist
-    newTag: staging-latest
+- name: blacklist
+  newName: registry.jclee.me/blacklist
+  newTag: 1.0.43
 
 replicas:
-  - name: blacklist
-    count: 2
+- count: 2
+  name: blacklist
