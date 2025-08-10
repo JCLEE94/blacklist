@@ -11,7 +11,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: fast-ssd
+  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -26,7 +26,7 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  storageClassName: fast-ssd
+  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -41,7 +41,7 @@ spec:
   resources:
     requests:
       storage: 2Gi
-  storageClassName: fast-ssd
+  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -56,4 +56,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: fast-ssd
+  storageClassName: local-path

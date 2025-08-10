@@ -22,7 +22,7 @@ replicas:
 images:
 - name: blacklist
   newName: registry.jclee.me/jclee94/blacklist
-  newTag: 1.0.17
+  newTag: latest
 
 
 commonAnnotations:

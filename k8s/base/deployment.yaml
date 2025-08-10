@@ -27,6 +27,8 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: blacklist-service-account
+      imagePullSecrets:
+      - name: registry-credentials
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
