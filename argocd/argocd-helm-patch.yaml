@@ -27,7 +27,7 @@ spec:
       values: |
         image:
           repository: registry.jclee.me/blacklist
-          tag: acc97a5
+          tag: e66ca09
           pullPolicy: Always
         
         imagePullSecrets:
