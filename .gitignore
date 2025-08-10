@@ -155,3 +155,16 @@ archive/deprecated_templates/
 !CLAUDE.md
 !docs/**/*.md
 !charts/**/README.md
+!README_EN.md
+!PROJECT_STRUCTURE.md
+
+# Coverage reports
+htmlcov/
+test-reports/
+coverage.xml
+.coverage
+
+# Temporary scripts
+*_git_*.sh
+*_git_*.py
+commit_message.txt
