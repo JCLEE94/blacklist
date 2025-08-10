@@ -39,7 +39,7 @@ secretGenerator:
 images:
 - name: blacklist
   newName: registry.jclee.me/blacklist
-  newTag: 1.0.11
+  newTag: 1.0.12
 
 replicas:
 - count: 2
