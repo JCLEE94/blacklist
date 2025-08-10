@@ -360,7 +360,8 @@ def get_system_stats():
         return jsonify(create_error_response(e)), 500
 
 
-@api_routes_bp.route("/api/stats/monthly-data", methods=["GET"])
+@api_routes_bp.route("/api/stats/monthly", methods=["GET"])
+@api_routes_bp.route("/api/stats/monthly-data", methods=["GET"])  # 하위 호환성
 def api_monthly_data():
     """월별 블랙리스트 데이터 추이"""
     try:
