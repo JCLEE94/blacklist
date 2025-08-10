@@ -23,7 +23,7 @@ spec:
         component: api
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "2541"
+        prometheus.io/port: "32542"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: blacklist-service-account
@@ -37,13 +37,13 @@ spec:
         imagePullPolicy: Always
         ports:
         - name: http
-          containerPort: 2541
+          containerPort: 32542
           protocol: TCP
         env:
         - name: FLASK_ENV
           value: "production"
         - name: PORT
-          value: "2541"
+          value: "32542"
         - name: HOST
           value: "0.0.0.0"
         - name: REDIS_URL
@@ -74,7 +74,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 2541
+            port: 32542
           initialDelaySeconds: 30
           periodSeconds: 30
           timeoutSeconds: 10
@@ -83,7 +83,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /ready
-            port: 2541
+            port: 32542
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
@@ -92,7 +92,7 @@ spec:
         startupProbe:
           httpGet:
             path: /health
-            port: 2541
+            port: 32542
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
