@@ -14,11 +14,11 @@ spec:
       - name: blacklist
         resources:
           requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
             cpu: 500m
             memory: 512Mi
-          limits:
-            cpu: 2000m
-            memory: 2Gi
         livenessProbe:
           initialDelaySeconds: 60
           periodSeconds: 30
