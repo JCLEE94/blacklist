@@ -10,7 +10,6 @@ resources:
 patchesStrategicMerge:
 - deployment-patch.yaml
 - service-patch.yaml
-- hpa-patch.yaml
 
 images:
 - name: blacklist
