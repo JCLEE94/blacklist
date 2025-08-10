@@ -7,41 +7,23 @@ resources:
   - ../../base
   - ingress.yaml
   - redis.yaml
-  - vpa.yaml
 
 patchesStrategicMerge:
   - deployment-patch.yaml
   - service-patch.yaml
   - hpa-patch.yaml
-  - pdb-patch.yaml
 
 images:
   - name: blacklist
     newName: registry.jclee.me/blacklist
-    newTag: latest  # ArgoCD Image Updater가 자동 업데이트
+    newTag: latest
 
 configMapGenerator:
   - name: blacklist-config
-    behavior: merge
     literals:
       - NODE_ENV=production
-      - LOG_LEVEL=warning
+      - LOG_LEVEL=info
       - FLASK_ENV=production
       - ENABLE_METRICS=true
-      - ENABLE_TRACING=true
-      - COLLECTION_ENABLED=true
       - REDIS_URL=redis://redis:6379/0
-      - CACHE_TTL=3600
       - PORT=2541
-      - SECURE_COOKIES=true
-      - SESSION_TIMEOUT=3600
-
-secretGenerator:
-  - name: blacklist-secret
-    behavior: merge
-    envs:
-      - .env.secret  # 민감 정보 파일 (Git에 포함하지 않음)
-
-components:
-  - ../../components/security
-  - ../../components/monitoring
