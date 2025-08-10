@@ -34,7 +34,7 @@ def health_check():
                 "status": "healthy",
                 "timestamp": datetime.utcnow().isoformat(),
                 "service": "blacklist-unified",
-                "version": "2.0.0",
+                "version": "2.0.1-watchtower-test",
                 "details": health_info,
             }
         )
