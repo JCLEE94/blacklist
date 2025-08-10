@@ -19,8 +19,8 @@ patches:
 
 images:
 - name: blacklist
-  newName: registry.jclee.me/jclee94/blacklist
-  newTag: 1.0.10
+  newName: registry.jclee.me/blacklist
+  newTag: 1.0.11
 
 configMapGenerator:
 - literals:
