@@ -55,5 +55,5 @@ __all__ = [
 
 logger.info("Unified routes initialized with modular structure")
 logger.info(
-    f"Registered blueprints: web_routes, api_routes, collection_routes, admin_routes"
+    "Registered blueprints: web_routes, api_routes, collection_routes, admin_routes"
 )

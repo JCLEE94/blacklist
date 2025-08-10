@@ -26,5 +26,5 @@ __all__ = ["collection_routes_bp"]
 
 logger.info("Collection routes initialized with modular structure")
 logger.info(
-    f"Registered blueprints: collection_status, collection_trigger, collection_logs"
+    "Registered blueprints: collection_status, collection_trigger, collection_logs"
 )

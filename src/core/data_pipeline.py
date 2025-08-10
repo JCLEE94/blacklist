@@ -463,7 +463,7 @@ def test_data_pipeline():
     pipeline = DataCleaningPipeline()
     result = pipeline.process_collector_data(test_data, "TEST")
 
-    print(f"✅ 데이터 파이프라인 테스트 결과:")
+    print("✅ 데이터 파이프라인 테스트 결과:")
     print(f"   - 처리된 데이터: {result['processed_count']}개")
     print(f"   - 통계: {result['stats']}")
 
