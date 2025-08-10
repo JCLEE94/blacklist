@@ -37,7 +37,7 @@ spec:
           type: NodePort
           port: 80
           targetPort: 8541
-          nodePort: 32453
+          nodePort: 32542
         
         ingress:
           enabled: true
