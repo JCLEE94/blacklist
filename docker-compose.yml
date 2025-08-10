@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # Main Application
+  blacklist:
+    image: registry.jclee.me/jclee94/blacklist:latest
+    container_name: blacklist
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.monitor-only=false"
+    ports:
+      - "2541:2541"
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=production
+      - PORT=2541
+      - HOST=0.0.0.0
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:////app/instance/blacklist.db
+      # 🔴 보안 기본 설정 (외부 인증 차단)
+      - FORCE_DISABLE_COLLECTION=true
+      - COLLECTION_ENABLED=false
+      - RESTART_PROTECTION=true
+      - MAX_AUTH_ATTEMPTS=10
+      - BLOCK_DURATION_HOURS=24
+    volumes:
+      - ./instance:/app/instance
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - blacklist-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  blacklist-network:
+    driver: bridge

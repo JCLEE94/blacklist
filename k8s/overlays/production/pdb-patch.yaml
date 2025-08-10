@@ -1,7 +1,0 @@
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: blacklist
-spec:
-  minAvailable: 2
-  maxUnavailable: 1

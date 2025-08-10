@@ -1,47 +1,45 @@
 # Blacklist Management System
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Available-brightgreen.svg)](https://jclee94.github.io/blacklist/)
 [![Production](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
-[![Uptime](https://img.shields.io/badge/Uptime-99.9%25-success.svg)]()
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)]()
 [![Response](https://img.shields.io/badge/Response-50ms-blue.svg)]()
 
-**엔터프라이즈 위협 인텔리전스 플랫폼** - 자동화 중심의 위협 정보 수집/처리 시스템으로 업무 효율성과 시스템 성능을 대폭 개선
+**엔터프라이즈 위협 인텔리전스 플랫폼** - 간소화된 Docker Compose 기반의 위협 정보 수집/처리 시스템
 
-## 🎯 자동화 성과
+## 🚀 빠른 시작
 
-| 영역 | 기존 방식 | 자동화 결과 | 개선 효과 |
-|------|-----------|-------------|-----------|
-| **데이터 수집** | 수동 수집/처리 | 자동화 파이프라인 | 10,000+ IP 자동 처리 |
-| **배포 프로세스** | 수동 배포 4시간 | GitOps 자동화 | 5분 완전 자동화 |
-| **시스템 모니터링** | 수동 점검 | 실시간 모니터링 | 99.9% 가용성 달성 |
-| **성능 최적화** | 단일 캐시 200ms | 다층 캐시 자동화 | 50ms 응답시간 |
+### 1. 환경 설정
+```bash
+# 저장소 클론
+git clone <repository-url>
+cd blacklist
+
+# 환경 초기화 (자동)
+make init
+```
+
+### 2. 서비스 시작
+```bash
+# Docker Compose로 시작 (권장)
+make start
+
+# 또는 직접 실행
+./start.sh start
+```
+
+### 3. 접속 확인
+- **메인 애플리케이션**: http://localhost:2541
+- **헬스 체크**: http://localhost:2541/health
 
 ## 🛠️ 핵심 기술
 
 **Backend & Infrastructure**
 - Python 3.9+ • Flask • Redis • SQLite
-- Kubernetes • ArgoCD GitOps • Docker • Helm Charts
+- Docker Compose • 단일 컨테이너 배포
 
-**DevSecOps Pipeline**
-- GitHub Actions • 자동화 테스팅 • 보안 스캔
-- 위협 인텔리전스 • FortiGate 연동 • 실시간 모니터링
-
-## 🚀 빠른 시작
-
-### 로컬 개발 환경
-```bash
-cp .env.example .env && nano .env        # 환경설정
-source scripts/load-env.sh               # 환경변수 로드
-pip install -r requirements.txt          # 의존성 설치
-python3 main.py --debug                  # 개발서버 실행
-```
-
-### 프로덕션 배포 (GitOps)
-```bash
-./scripts/k8s-management.sh init         # ArgoCD 초기화
-./scripts/k8s-management.sh deploy       # Kubernetes 배포
-./scripts/multi-deploy.sh                # 다중서버 배포
-```
+**Security & Collection**
+- 위협 인텔리전스 • FortiGate 연동
+- 자동화 데이터 수집 • 보안 차단 시스템
 
 ## 🏗️ 시스템 아키텍처
 
@@ -197,5 +195,5 @@ python3 tests/integration/performance_benchmark.py
 
 ## 🚀 시스템 정보
 
-**Production Ready** | **v1.0.6** | **August 2025**
-# Force rebuild
+**Production Ready** | **v1.0.12** | **August 2025**
+# Watchtower Auto-Deploy Test - 2025-08-11 02:11

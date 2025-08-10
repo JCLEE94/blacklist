@@ -4,27 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Blacklist Management System** - Enterprise threat intelligence platform with dual architecture support (Monolithic & MSA), GitOps deployment via ArgoCD, multi-source data collection, and FortiGate External Connector integration. Default security mode blocks all external authentication to prevent server lockouts.
+**Blacklist Management System** - Enterprise threat intelligence platform with simplified Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Default security mode blocks all external authentication to prevent server lockouts.
 
 ## Development Commands
 
 ### Quick Start
 ```bash
-# Setup
-cp .env.example .env && nano .env  # Configure credentials
-source scripts/load-env.sh
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # For testing
-python3 init_database.py
+# 1. 환경 초기화
+make init                          # 자동 환경 설정
 
-# Run (Monolithic)
-python3 main.py                    # Dev server (port 8541)
-python3 main.py --debug           # Debug mode
-gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application  # Production
+# 2. 서비스 시작 (Docker Compose)
+make start                         # 또는 ./start.sh
+# 또는
+docker-compose up -d              # 직접 실행
 
-# Run (MSA)
-./scripts/msa-deployment.sh deploy-docker    # Full MSA stack
-cd services/collection-service && python app.py    # Individual services
+# 3. 상태 확인
+make status                        # 또는 ./start.sh status
+
+# 4. 로그 확인
+make logs                          # 또는 ./start.sh logs
+
+# 로컬 개발 (Docker 없이)
+make dev                           # 개발 서버 (port 8541)
 ```
 
 ### Testing
@@ -42,29 +43,28 @@ python3 tests/integration/performance_benchmark.py
 # Inline tests (Rust-style)
 python3 -c "from src.core.unified_routes import _test_collection_status_inline; _test_collection_status_inline()"
 
-# MSA tests
-./scripts/msa-deployment.sh test
-curl http://localhost:8080/health  # API Gateway health
+# Using Makefile
+make test                          # Run all tests with coverage
 ```
 
-### Deployment
+### Deployment (단일 Docker Compose)
 ```bash
-# ArgoCD GitOps (Production)
-./scripts/k8s-management.sh init    # Initial setup
-./scripts/k8s-management.sh deploy  # Deploy
-./scripts/k8s-management.sh status  # Check status
-./scripts/k8s-management.sh sync    # Manual sync
-./scripts/k8s-management.sh rollback  # Rollback
+# 기본 배포 (권장)
+make start                         # 서비스 시작
+make stop                          # 서비스 종료
+make restart                       # 서비스 재시작
 
-# Docker
-docker-compose -f deployment/docker-compose.yml up -d --build
+# 또는 직접 스크립트 사용
+./start.sh start                   # 서비스 시작
+./start.sh stop                    # 서비스 종료
+./start.sh logs                    # 로그 확인
+./start.sh status                  # 상태 확인
+./start.sh update                  # 이미지 업데이트
 
-# Multi-server
-./scripts/multi-deploy.sh          # Deploy to all clusters
-
-# CI/CD Status
-./scripts/check-cicd-status.sh     # Pipeline health check
-gh run list --workflow=deploy.yaml --limit=5  # GitHub Actions status
+# 직접 Docker Compose 사용
+docker-compose up -d               # 백그라운드 시작
+docker-compose down                # 종료
+docker-compose logs -f             # 로그 확인
 ```
 
 ### Code Quality
@@ -115,11 +115,14 @@ Services split into specialized components under `src/core/services/`:
 - `unified_service` - Service orchestrator (now modular with mixins)
 - `auth_manager` - Authentication and authorization
 
-### MSA Services (Port 8080 API Gateway)
+### MSA Services (Docker Compose)
 - Collection Service (8000) - REGTECH/SECUDIUM collection
-- Blacklist Service (8001) - IP management
+- Blacklist Service (8001) - IP management  
 - Analytics Service (8002) - Statistics and trends
 - API Gateway (8080) - Request routing and caching
+- Redis (6379) - Distributed caching
+- PostgreSQL (5432) - Persistent data storage
+- RabbitMQ (5672/15672) - Message queuing
 
 ### Security System (Default: All external auth blocked)
 ```bash

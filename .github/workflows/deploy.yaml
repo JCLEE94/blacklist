@@ -1,4 +1,4 @@
-name: Kustomize-based CI/CD Pipeline
+name: Watchtower Auto-Deploy Pipeline
 on:
   push:
     branches: [main]
@@ -6,10 +6,10 @@ on:
 
 env:
   REGISTRY: registry.jclee.me
-  IMAGE_NAME: blacklist
+  IMAGE_NAME: jclee94/blacklist
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: self-hosted
     permissions:
       contents: write
@@ -37,182 +37,79 @@ jobs:
           username: ${{ secrets.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DOCKER_REGISTRY_PASS }}
       
-      - name: Generate build metadata and version
+      - name: Generate version and tags
         id: meta
         run: |
+          # Generate version info
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-          echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
           
-          # Get current version from VERSION file or default
+          # Auto-increment version
           if [ -f VERSION ]; then
             CURRENT_VERSION=$(cat VERSION)
           else
             CURRENT_VERSION="1.0.0"
           fi
           
-          # Parse version components
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-          
-          # Increment patch version
           PATCH=$((PATCH + 1))
           
-          # Handle patch overflow (reset at 100)
           if [ $PATCH -ge 100 ]; then
             PATCH=0
             MINOR=$((MINOR + 1))
           fi
           
-          # Handle minor overflow (reset at 100)
           if [ $MINOR -ge 100 ]; then
             MINOR=0
             MAJOR=$((MAJOR + 1))
           fi
           
-          # Construct new version
           NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-          
-          # Save new version
           echo "$NEW_VERSION" > VERSION
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Version bumped from $CURRENT_VERSION to $NEW_VERSION"
           
-          # Generate Docker tags
-          echo "tags<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${NEW_VERSION}" >> $GITHUB_OUTPUT
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "🔄 Version: $CURRENT_VERSION → $NEW_VERSION"
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./deployment/Dockerfile
+          file: ./Dockerfile
           push: true
-          no-cache: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
           build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
             BUILD_DATE=${{ steps.meta.outputs.date }}
             VCS_REF=${{ steps.meta.outputs.sha_short }}
-            VERSION=${{ steps.meta.outputs.version }}
-            BUILD_TIME=${{ steps.meta.outputs.date }}
-            CACHE_BUST=${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      - name: Setup Kustomize
-        uses: imranismail/setup-kustomize@v1
-        with:
-          kustomize-version: "4.5.7"
-      
-      - name: Update Kustomize manifests
-        run: |
-          # Update image in base kustomization
-          cd k8s/base
-          kustomize edit set image blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-          
-          # Update production overlay
-          cd ../overlays/production
-          kustomize edit set image blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-          
-          # Create dev overlay if it doesn't exist
-          if [ ! -d ../dev ]; then
-            mkdir -p ../dev
-            cat > ../dev/kustomization.yaml << EOF
-          apiVersion: kustomize.config.k8s.io/v1beta1
-          kind: Kustomization
-          
-          namespace: blacklist-dev
-          
-          resources:
-            - ../../base
-          
-          images:
-            - name: blacklist
-              newName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-              newTag: ${{ steps.meta.outputs.version }}
-          
-          configMapGenerator:
-            - name: blacklist-config
-              literals:
-                - NODE_ENV=development
-                - LOG_LEVEL=debug
-                - FLASK_ENV=development
-          EOF
-          fi
-          
-          # Update staging overlay if it exists
-          if [ -d ../staging ]; then
-            cd ../staging
-            kustomize edit set image blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-          fi
-          
-          cd ../../..
-          echo "Updated Kustomize manifests with image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}"
-      
-      - name: Commit and push manifest updates
+      - name: Commit version update
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Add Claude as co-author
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
           
-          # Stage all changes
-          git add VERSION k8s/
-          
-          # Create conventional commit with Claude co-author
           if ! git diff --staged --quiet; then
-            git commit -m "feat: update to Kustomize-based deployment v${{ steps.meta.outputs.version }}
-
-          - Migrate from Helm to Kustomize deployment strategy
-          - Update image tags in base and overlay configurations  
-          - Enable GitOps auto-sync with ArgoCD Image Updater
-          - Add multi-environment overlay support (dev/staging/prod)
-          - Implement Docker layer caching for faster builds
-          
-          Co-authored-by: Claude <claude@anthropic.com>
-          [skip ci]"
-            
-            git push origin main || echo "No changes to push"
-          else
-            echo "No changes to commit"
+            git commit -m "chore: bump version to ${{ steps.meta.outputs.version }} [skip ci]"
+            git push origin main
           fi
       
-      - name: Trigger ArgoCD sync and monitoring
+      - name: Trigger Watchtower update
         run: |
-          echo "🚀 Kustomize-based deployment pipeline completed successfully!"
+          echo "🚀 Deployment Summary"
+          echo "===================="
+          echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "🏷️  Version: ${{ steps.meta.outputs.version }}"
+          echo "🔄 SHA: ${{ steps.meta.outputs.sha_short }}"
           echo ""
-          echo "📦 Docker Image Details:"
-          echo "  Registry: ${{ env.REGISTRY }}"
-          echo "  Image: ${{ env.IMAGE_NAME }}"
-          echo "  Version: ${{ steps.meta.outputs.version }}"
-          echo "  SHA: ${{ steps.meta.outputs.sha_short }}"
-          echo "  Build Date: ${{ steps.meta.outputs.date }}"
+          echo "⏰ Watchtower will automatically detect and deploy this update within 2-5 minutes"
           echo ""
-          echo "🔄 GitOps Status:"
-          echo "  ✅ Kustomize manifests updated"
-          echo "  ✅ Git commit with Claude co-author created"
-          echo "  ✅ ArgoCD auto-sync triggered"
+          echo "📍 Deployment targets with Watchtower:"
+          echo "  • Synology NAS (192.168.50.215)"
+          echo "  • Production servers with Watchtower enabled"
           echo ""
-          echo "🎯 Deployment Targets:"
-          echo "  - Development: k8s/overlays/dev/"
-          echo "  - Production: k8s/overlays/production/"
-          echo ""
-          echo "📊 Next Steps:"
-          echo "  1. ArgoCD Image Updater will detect new image within 2 minutes"
-          echo "  2. Automatic deployment to Kubernetes clusters"
-          echo "  3. Health checks and rollout verification"
-          echo "  4. Monitor via ArgoCD dashboard: https://argo.jclee.me"
-          
-          # Optional: Trigger ArgoCD sync if webhook is configured
-          if [ ! -z "${{ secrets.ARGOCD_TOKEN }}" ]; then
-            echo "  5. Manual ArgoCD sync triggered"
-            curl -X POST "https://argo.jclee.me/api/v1/applications/blacklist/sync" \
-              -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
-              -H "Content-Type: application/json" \
-              -d '{"prune": true, "dryRun": false}' || echo "Manual sync failed, auto-sync will handle it"
-          fi
+          echo "✅ No manual intervention required - Watchtower handles everything!"

@@ -1,6 +1,6 @@
 # Makefile for Blacklist Management System
 
-.PHONY: help init test lint security build deploy clean
+.PHONY: help init test lint start stop restart logs status clean
 
 # Default target
 help:
@@ -8,29 +8,30 @@ help:
 	@echo "====================================="
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make help        Show this help message"
-	@echo "  make init        Initialize development environment"
-	@echo "  make test        Run all tests"
-	@echo "  make lint        Run code linting"
-	@echo "  make security    Run security checks"
-	@echo "  make build       Build Docker image"
-	@echo "  make deploy      Deploy to Kubernetes"
-	@echo "  make clean       Clean up resources"
+	@echo "  make help         Show this help message"
+	@echo "  make init         Initialize environment"
+	@echo "  make test         Run all tests"
+	@echo "  make lint         Run code linting"
+	@echo "  make start        Start services"
+	@echo "  make stop         Stop services"
+	@echo "  make restart      Restart services"
+	@echo "  make logs         Show logs"
+	@echo "  make status       Check status"
+	@echo "  make clean        Clean up resources"
 	@echo ""
 	@echo "Quick start:"
-	@echo "  make init        # Setup environment"
-	@echo "  make test        # Run tests"
-	@echo "  make build       # Build image"
-	@echo "  make deploy      # Deploy application"
+	@echo "  make init         # Setup environment"
+	@echo "  make start        # Start services"
+	@echo "  make logs         # Check logs"
 
 # Initialize environment
 init:
-	@echo "Initializing development environment..."
+	@echo "Initializing environment..."
 	@pip install -r requirements.txt
 	@pip install -r requirements-dev.txt || echo "No dev requirements"
 	@python3 init_database.py
-	@./scripts/manage.sh init
-	@echo "Environment initialized!"
+	@cp .env.example .env 2>/dev/null || echo ".env already exists"
+	@echo "Environment initialized! Edit .env if needed."
 
 # Run tests
 test:
@@ -44,22 +45,25 @@ lint:
 	@black --check src/
 	@isort --check-only src/
 
-# Run security checks
-security:
-	@echo "Running security checks..."
-	@bandit -r src/ -f json -o bandit-report.json || true
-	@safety check --json > safety-report.json || true
-	@./scripts/manage.sh security
+# Start services
+start:
+	@./start.sh start
 
-# Build Docker image
-build:
-	@echo "Building Docker image..."
-	@docker build -f deployment/Dockerfile.optimized -t registry.jclee.me/blacklist:latest .
+# Stop services
+stop:
+	@./start.sh stop
 
-# Deploy application
-deploy:
-	@echo "Deploying application..."
-	@./scripts/manage.sh deploy
+# Restart services
+restart:
+	@./start.sh restart
+
+# Show logs
+logs:
+	@./start.sh logs
+
+# Check status
+status:
+	@./start.sh status
 
 # Clean up
 clean:
@@ -67,13 +71,13 @@ clean:
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete
 	@rm -rf .coverage htmlcov/
-	@rm -f *-report.json *-report.xml
+	@./start.sh clean
 	@echo "Cleanup completed!"
 
 # Development shortcuts
 .PHONY: run dev install
 
-# Run development server
+# Run development server (local)
 run:
 	@python3 main.py --debug
 
@@ -81,6 +85,6 @@ run:
 install:
 	@pip install -r requirements.txt
 
-# Development mode with auto-reload
+# Development mode with auto-reload (local)
 dev:
 	@FLASK_ENV=development python3 main.py --debug
