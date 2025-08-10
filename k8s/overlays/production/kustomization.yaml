@@ -4,26 +4,26 @@ kind: Kustomization
 namespace: blacklist
 
 resources:
-  - ../../base
-  - ingress.yaml
-  - redis.yaml
+- ../../base
+- ingress.yaml
+- redis.yaml
 
 patchesStrategicMerge:
-  - deployment-patch.yaml
-  - service-patch.yaml
-  - hpa-patch.yaml
+- deployment-patch.yaml
+- service-patch.yaml
+- hpa-patch.yaml
 
 images:
-  - name: blacklist
-    newName: registry.jclee.me/blacklist
-    newTag: latest
+- name: blacklist
+  newName: registry.jclee.me/blacklist
+  newTag: 1.0.43
 
 configMapGenerator:
-  - name: blacklist-config
-    literals:
-      - NODE_ENV=production
-      - LOG_LEVEL=info
-      - FLASK_ENV=production
-      - ENABLE_METRICS=true
-      - REDIS_URL=redis://redis:6379/0
-      - PORT=2541
+- literals:
+  - NODE_ENV=production
+  - LOG_LEVEL=info
+  - FLASK_ENV=production
+  - ENABLE_METRICS=true
+  - REDIS_URL=redis://redis:6379/0
+  - PORT=2541
+  name: blacklist-config

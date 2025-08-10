@@ -4,18 +4,18 @@ kind: Kustomization
 namespace: blacklist
 
 resources:
-  - namespace.yaml
-  - configmap.yaml
-  - secret.yaml
-  - deployment.yaml
-  - service.yaml
-  - hpa.yaml
+- namespace.yaml
+- configmap.yaml
+- secret.yaml
+- deployment.yaml
+- service.yaml
+- hpa.yaml
 
 commonLabels:
   app: blacklist
   managed-by: kustomize
 
 images:
-  - name: blacklist
-    newName: registry.jclee.me/blacklist
-    newTag: latest
+- name: blacklist
+  newName: registry.jclee.me/blacklist
+  newTag: 1.0.43
