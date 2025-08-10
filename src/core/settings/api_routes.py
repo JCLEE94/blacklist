@@ -209,9 +209,7 @@ def save_settings():
         except Exception as cache_error:
             logger.warning(f"캐시 클리어 실패: {cache_error}")
 
-        return jsonify(
-            {"success": True, "message": "설정이 성공적으로 저장되었습니다."}
-        )
+        return jsonify({"success": True, "message": "설정이 성공적으로 저장되었습니다."})
 
     except Exception as e:
         logger.error(f"설정 저장 오류: {e}")

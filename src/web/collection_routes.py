@@ -119,9 +119,7 @@ def regtech_collector():
 
     except Exception as e:
         logger.error(f"REGTECH collector page error: {e}")
-        flash(
-            f"REGTECH collector 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error"
-        )
+        flash(f"REGTECH collector 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))
 
 

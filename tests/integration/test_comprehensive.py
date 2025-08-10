@@ -46,9 +46,7 @@ class IntegrationTester:
                     self.log_test("시스템 헬스체크", True, f"시스템 정상 ({status})")
                 else:
                     issues = health_data.get("issues", [])
-                    self.log_test(
-                        "시스템 헬스체크", False, f"시스템 상태: {status}", issues
-                    )
+                    self.log_test("시스템 헬스체크", False, f"시스템 상태: {status}", issues)
             else:
                 self.log_test("시스템 헬스체크", False, f"HTTP {response.status_code}")
 
@@ -81,9 +79,7 @@ class IntegrationTester:
                         data.get("message", "Unknown error"),
                     )
             else:
-                self.log_test(
-                    "수집 시스템 활성화", False, f"HTTP {response.status_code}"
-                )
+                self.log_test("수집 시스템 활성화", False, f"HTTP {response.status_code}")
 
         except Exception as e:
             self.log_test("수집 시스템 활성화", False, f"오류: {e}")
@@ -108,9 +104,7 @@ class IntegrationTester:
                 else:
                     # 로그인 실패는 예상된 결과 (자격증명 문제)
                     if "로그인" in message or "세션" in message:
-                        self.log_test(
-                            "REGTECH 수집", True, f"예상된 로그인 실패: {message}"
-                        )
+                        self.log_test("REGTECH 수집", True, f"예상된 로그인 실패: {message}")
                     else:
                         self.log_test("REGTECH 수집", False, message)
             else:
@@ -121,9 +115,7 @@ class IntegrationTester:
 
     def test_secudium_collection(self):
         """SECUDIUM 수집기 테스트 - 비활성화됨"""
-        self.log_test(
-            "SECUDIUM 수집", True, "SECUDIUM 수집이 비활성화되었습니다 (사용자 요청)"
-        )
+        self.log_test("SECUDIUM 수집", True, "SECUDIUM 수집이 비활성화되었습니다 (사용자 요청)")
 
     def test_api_endpoints(self):
         """주요 API 엔드포인트 테스트"""
@@ -186,13 +178,9 @@ class IntegrationTester:
             if times:
                 avg_time = sum(times) / len(times) * 1000  # ms로 변환
                 if avg_time < 500:  # 500ms 이하면 성공
-                    self.log_test(
-                        "성능 테스트", True, f"평균 응답시간: {avg_time:.1f}ms"
-                    )
+                    self.log_test("성능 테스트", True, f"평균 응답시간: {avg_time:.1f}ms")
                 else:
-                    self.log_test(
-                        "성능 테스트", False, f"응답시간 초과: {avg_time:.1f}ms"
-                    )
+                    self.log_test("성능 테스트", False, f"응답시간 초과: {avg_time:.1f}ms")
             else:
                 self.log_test("성능 테스트", False, "응답 시간 측정 실패")
 
@@ -244,9 +232,7 @@ class IntegrationTester:
             print("  ✅ 모든 테스트가 성공했습니다!")
         else:
             print("  🔧 실패한 테스트를 확인하고 문제를 해결하세요.")
-            print(
-                "  📋 REGTECH/SECUDIUM 자격증명이 없는 경우 로그인 실패는 정상입니다."
-            )
+            print("  📋 REGTECH/SECUDIUM 자격증명이 없는 경우 로그인 실패는 정상입니다.")
 
         return failed_tests == 0
 

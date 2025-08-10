@@ -77,9 +77,7 @@ class CICDUtils:
                 print(f"✅ 파이프라인 재시도 시작: {pipeline_id}")
                 return True
             else:
-                print(
-                    f"❌ 파이프라인 재시도 실패 ({pipeline_id}): {response.status_code}"
-                )
+                print(f"❌ 파이프라인 재시도 실패 ({pipeline_id}): {response.status_code}")
                 return False
         except Exception as e:
             print(f"❌ 파이프라인 재시도 실패 ({pipeline_id}): {e}")

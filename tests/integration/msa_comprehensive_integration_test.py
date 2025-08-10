@@ -236,9 +236,7 @@ async def main():
         total_tests = results["test_summary"]["total_tests"]
         passed_tests = results["test_summary"]["passed_tests"]
 
-        print(
-            f"📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)"
-        )
+        print(f"📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)")
 
         for rec in results["recommendations"]:
             print(f"💡 {rec}")

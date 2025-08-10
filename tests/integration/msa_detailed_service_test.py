@@ -316,9 +316,9 @@ class MSAServiceTester:
                             else response.text
                         )
                 else:
-                    result["error"] = (
-                        f"Status {response.status_code}: {response.text[:200]}"
-                    )
+                    result[
+                        "error"
+                    ] = f"Status {response.status_code}: {response.text[:200]}"
 
                 self.results.append(result)
 
@@ -468,9 +468,7 @@ class MSAServiceTester:
             print("🎉 모든 MSA 서비스가 정상적으로 작동합니다!")
             return True
         else:
-            print(
-                f"⚠️  {failed_tests}개의 테스트가 실패했습니다. 시스템 점검이 필요합니다."
-            )
+            print(f"⚠️  {failed_tests}개의 테스트가 실패했습니다. 시스템 점검이 필요합니다.")
             return False
 
 
