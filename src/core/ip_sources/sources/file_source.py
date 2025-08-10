@@ -8,11 +8,9 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator
-from typing import List
+from typing import Iterator, List
 
-from ..base_source import BaseIPSource
-from ..base_source import IPEntry
+from ..base_source import BaseIPSource, IPEntry
 
 logger = logging.getLogger(__name__)
 

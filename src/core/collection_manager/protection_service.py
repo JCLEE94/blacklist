@@ -8,12 +8,9 @@ import json
 import logging
 import os
 import sqlite3
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict
-from typing import Optional
-from typing import Tuple
+from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +32,9 @@ class ProtectionService:
         ).lower() in ("true", "1", "yes", "on")
 
         logger.info(
-            f"Protection Service initialized - restart_protection: {self.restart_protection_enabled}, force_disable: {self.force_disable_collection}"
+            f"Protection Service initialized - restart_protection: "
+            f"{self.restart_protection_enabled}, "
+            f"force_disable: {self.force_disable_collection}"
         )
 
     def is_collection_safe_to_enable(self) -> Tuple[bool, str]:

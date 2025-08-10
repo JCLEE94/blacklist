@@ -1,0 +1,15 @@
+{
+  "generated_at": "2025-08-10T19:14:33.002892",
+  "project_name": "blacklist",
+  "primary_nodeport": 30805,
+  "templates_generated": 7,
+  "files": [
+    "/home/jclee/app/blacklist/templates-generated/k8s-service.yaml",
+    "/home/jclee/app/blacklist/templates-generated/argocd-application.yaml",
+    "/home/jclee/app/blacklist/templates-generated/kustomization.yaml",
+    "/home/jclee/app/blacklist/templates-generated/msa-api-gateway-service.yaml",
+    "/home/jclee/app/blacklist/templates-generated/msa-collection-service-service.yaml",
+    "/home/jclee/app/blacklist/templates-generated/msa-analytics-service-service.yaml",
+    "/home/jclee/app/blacklist/templates-generated/msa-blacklist-service-service.yaml"
+  ]
+}

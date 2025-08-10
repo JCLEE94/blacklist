@@ -1,7 +1,6 @@
 """Configuration and dependency related exceptions"""
 
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
 from .base_exceptions import BlacklistError
 

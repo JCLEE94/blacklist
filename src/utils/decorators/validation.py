@@ -5,11 +5,9 @@ Validation Decorators - Unified input validation functionality
 import logging
 from datetime import datetime
 from functools import wraps
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional
 
-from flask import jsonify
-from flask import request
+from flask import jsonify, request
 
 logger = logging.getLogger(__name__)
 

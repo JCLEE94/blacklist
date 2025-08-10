@@ -125,7 +125,7 @@ service:
   type: NodePort
   port: 80
   targetPort: 2541
-  nodePort: 32452
+  nodePort: 32542
 
 ingress:
   enabled: true

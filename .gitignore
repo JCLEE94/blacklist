@@ -165,6 +165,6 @@ coverage.xml
 .coverage
 
 # Temporary scripts
-*_git_*.sh
+# *_git_*.sh  # Temporarily allow git_commit.sh
 *_git_*.py
-commit_message.txt
+# commit_message.txt  # Temporarily allow commit message

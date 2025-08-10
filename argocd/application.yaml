@@ -18,7 +18,7 @@ spec:
   source:
     repoURL: https://charts.jclee.me
     chart: blacklist
-    targetRevision: 1.0.3
+    targetRevision: 1.0.5-f88fd81
     helm:
       valueFiles:
         - values.yaml

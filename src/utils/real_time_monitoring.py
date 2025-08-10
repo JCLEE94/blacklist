@@ -6,13 +6,9 @@ Provides system health monitoring, performance metrics, and alerting
 import logging
 import threading
 import time
-from collections import defaultdict
-from collections import deque
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
+from collections import defaultdict, deque
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
 import psutil
 
@@ -407,8 +403,7 @@ def setup_monitoring(app=None):
 
             @app.after_request
             def after_request(response):
-                from flask import g
-                from flask import request
+                from flask import g, request
 
                 if hasattr(g, "start_time"):
                     response_time_ms = (time.time() - g.start_time) * 1000

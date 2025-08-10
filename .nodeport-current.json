@@ -1,0 +1,17 @@
+{
+  "project_name": "blacklist",
+  "primary_nodeport": 32542,
+  "additional_ports": {
+    "api-gateway": 30806,
+    "collection-service": 30807,
+    "analytics-service": 30808,
+    "blacklist-service": 30809
+  },
+  "allocation_method": "hash-based",
+  "hash_source": "SHA-256 of 'blacklist'",
+  "allocated_at": "2025-08-10T19:13:09.516299",
+  "port_range": {
+    "min": 30000,
+    "max": 32767
+  }
+}

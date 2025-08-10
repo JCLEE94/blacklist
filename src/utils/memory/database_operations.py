@@ -5,8 +5,7 @@
 """
 
 import sqlite3
-from typing import Any
-from typing import List
+from typing import Any, List
 
 from loguru import logger
 

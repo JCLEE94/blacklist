@@ -8,10 +8,7 @@ import logging
 import sqlite3
 from datetime import datetime
 
-from flask import Blueprint
-from flask import Response
-from flask import jsonify
-from flask import request
+from flask import Blueprint, Response, jsonify, request
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
@@ -203,8 +200,9 @@ def export_txt():
         ips = service.get_active_blacklist_ips()
 
         # 헤더 정보 포함한 텍스트 파일
-        header = f"# Blacklist Export\n"
-        header += f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        header = "# Blacklist Export\n"
+        header += f"# Generated: {timestamp}\n"
         header += f"# Total IPs: {len(ips)}\n"
         header += "#" + "=" * 50 + "\n\n"
 
@@ -370,7 +368,7 @@ def api_monthly_data():
     try:
         # 최근 12개월 데이터 조회
         monthly_stats = []
-        import calendar
+        # import calendar  # 현재 미사용
         from datetime import timedelta
 
         end_date = datetime.now()
@@ -385,9 +383,9 @@ def api_monthly_data():
             # 해당 월의 시작일과 끝일
             current_date.strftime("%Y-%m-%d")
 
-            # 월 마지막 날 계산
-            last_day = calendar.monthrange(year, month)[1]
-            month_end = current_date.replace(day=last_day).strftime("%Y-%m-%d")
+            # 월 마지막 날 계산 (사용되지 않음)
+            # last_day = calendar.monthrange(year, month)[1]
+            # month_end = current_date.replace(day=last_day).strftime("%Y-%m-%d")
 
             # 해당 월의 통계 조회 (간소화된 버전)
             stats = service.get_system_health()

@@ -4,11 +4,9 @@ Rate Limit Decorators - Unified rate limiting functionality
 
 import logging
 from functools import wraps
-from typing import Callable
-from typing import Optional
+from typing import Callable, Optional
 
-from flask import g
-from flask import request
+# from flask import g, request  # 현재 미사용
 
 logger = logging.getLogger(__name__)
 
@@ -40,24 +38,27 @@ def unified_rate_limit(
                 return func(*args, **kwargs)
 
             # Generate rate limit key
-            if key_func:
-                identifier = key_func()
-            else:
+            # Rate limiting is completely disabled - no need to compute identifiers
+            if False:  # Disabled block
+                if key_func:
+                    identifier = key_func()
                 # Use authenticated user ID if available and requested
-                if use_user_id and hasattr(g, "auth_user") and g.auth_user:
-                    identifier = g.auth_user.get(
-                        "user_id", g.auth_user.get("client_name")
-                    )
-                else:
-                    # Default to IP address
-                    client_ip = request.remote_addr
-                    if request.headers.get("X-Forwarded-For"):
-                        client_ip = (
-                            request.headers.get("X-Forwarded-For").split(",")[0].strip()
-                        )
-                    identifier = client_ip
+                # Rate limiting is disabled - no need to compute identifier
+                # if use_user_id and hasattr(g, "auth_user") and g.auth_user:
+                #     identifier = g.auth_user.get(
+                #         "user_id", g.auth_user.get("client_name")
+                #     )
+                # else:
+                #     # Default to IP address
+                #     client_ip = request.remote_addr
+                #     if request.headers.get("X-Forwarded-For"):
+                #         client_ip = (
+                #             request.headers.get("X-Forwarded-For").split(",")[0].strip()
+                #         )
+                #     identifier = client_ip
+                pass
 
-                rate_key = f"rate_limit:{func.__name__}:{identifier}"
+                # rate_key = f"rate_limit:{func.__name__}:{identifier}"  # 현재 미사용
 
             # Rate limiting completely disabled for stability
             # Skip all rate limiting logic to prevent health check failures

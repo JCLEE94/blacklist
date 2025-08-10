@@ -6,11 +6,9 @@ Performance Tracker for Advanced Cache
 import logging
 import threading
 import time
-from collections import defaultdict
-from collections import deque
+from collections import defaultdict, deque
 from datetime import datetime
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 

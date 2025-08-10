@@ -7,11 +7,9 @@ has been modularized into the collection_manager/ package.
 """
 
 # Import everything from the modular package
-from .collection_manager import AuthService
-from .collection_manager import CollectionConfigService
-from .collection_manager import CollectionManager
-from .collection_manager import ProtectionService
-from .collection_manager import StatusService
+from .collection_manager import (AuthService, CollectionConfigService,
+                                 CollectionManager, ProtectionService,
+                                 StatusService)
 
 # Re-export for backward compatibility
 __all__ = [

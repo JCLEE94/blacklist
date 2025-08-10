@@ -8,9 +8,9 @@
 # Re-export the main service and factory functions for backwards compatibility
 from .services.core_operations import ServiceHealth
 from .services.unified_service_core import UnifiedBlacklistService
-from .services.unified_service_factory import get_unified_service
-from .services.unified_service_factory import is_service_initialized
-from .services.unified_service_factory import reset_unified_service
+from .services.unified_service_factory import (get_unified_service,
+                                               is_service_initialized,
+                                               reset_unified_service)
 
 # Alias for backward compatibility
 UnifiedService = UnifiedBlacklistService

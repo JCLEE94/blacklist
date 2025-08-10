@@ -4,16 +4,10 @@ Collection control and monitoring pages
 """
 
 import logging
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from flask import Blueprint
-from flask import flash
-from flask import jsonify
-from flask import redirect
-from flask import render_template
-from flask import request
-from flask import url_for
+from flask import (Blueprint, flash, jsonify, redirect, render_template,
+                   request, url_for)
 
 logger = logging.getLogger(__name__)
 

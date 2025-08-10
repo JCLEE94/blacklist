@@ -4,9 +4,7 @@ SECUDIUM 수집기 더미 구현
 """
 
 import logging
-from typing import Any
-from typing import Dict
-from typing import List
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

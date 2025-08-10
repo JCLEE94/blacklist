@@ -77,6 +77,11 @@ flake8 src/ --max-line-length=88 --extend-ignore=E203,W503
 # Security scan
 bandit -r src/ -ll                 # Security issues
 safety check                       # Dependency vulnerabilities
+
+# Using Makefile shortcuts
+make lint                          # Run all linters
+make security                      # Run security checks
+make test                          # Run tests with coverage
 ```
 
 ## Architecture
@@ -391,17 +396,37 @@ troubleshooter = create_troubleshooter()
 
 ## Development Workflow
 
+### Development Server Options
+```bash
+# Development options
+python3 main.py                    # Standard dev server (port 8541)
+python3 main.py --debug           # Debug mode with verbose logging
+make dev                           # Development with auto-reload
+make run                           # Quick run command
+
+# Production deployment
+gunicorn -w 4 -b 0.0.0.0:2541 --timeout 120 main:application
+```
+
 ### Single Test Execution
 ```bash
 # Run specific test
 pytest tests/test_apis.py::test_regtech_apis -v
 
-# Run with markers
-pytest -m "not slow" -v  # Skip slow tests
-pytest -m integration -v # Only integration tests
+# Run with markers (see pytest.ini for all available markers)
+pytest -m "not slow" -v     # Skip slow tests
+pytest -m integration -v    # Only integration tests
+pytest -m unit -v           # Only unit tests
+pytest -m api -v            # API tests only
+pytest -m collection -v     # Collection system tests
+pytest -m regtech -v        # REGTECH-specific tests
+pytest -m secudium -v       # SECUDIUM-specific tests
 
 # Debug failing test
 pytest --pdb tests/failing_test.py
+
+# Run tests with specific patterns
+pytest -k "test_collection" -v  # All tests with 'collection' in name
 ```
 
 ### Code Quality Enforcement
@@ -434,4 +459,37 @@ kubectl create secret generic blacklist-secrets \
   --from-literal=regtech-password=$REGTECH_PASSWORD \
   --from-literal=secudium-username=$SECUDIUM_USERNAME \
   --from-literal=secudium-password=$SECUDIUM_PASSWORD
+```
+
+## Development Tools & Utilities
+
+### Makefile Commands
+```bash
+# Quick development workflow
+make init                          # Initialize environment
+make test                          # Run tests with coverage
+make lint                          # Code quality checks
+make security                      # Security scans
+make build                         # Build Docker image
+make deploy                        # Deploy application
+make clean                         # Clean up artifacts
+
+# Individual components
+make install                       # Install dependencies only
+make run                           # Run development server
+make dev                           # Development mode with reload
+```
+
+### Script Utilities
+```bash
+# Environment and configuration
+source scripts/load-env.sh         # Load environment variables
+./scripts/k8s-management.sh         # Kubernetes operations
+./scripts/build-and-push.sh        # Build and push to registry
+./scripts/performance-optimizer.sh  # Performance optimization
+
+# CI/CD and monitoring
+./scripts/pipeline-health-monitor.sh # Monitor CI/CD health
+./scripts/auto-rollback.sh          # Automated rollback
+./scripts/cleanup-artifacts.sh     # Clean build artifacts
 ```

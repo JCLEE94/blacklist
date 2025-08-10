@@ -8,12 +8,8 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Set
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Set
 
 from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_cache
@@ -397,7 +393,8 @@ class DataService:
 
                 # Mark all records as inactive instead of deleting
                 cursor.execute(
-                    "UPDATE ip_detections SET is_active = 0, updated_at = ? WHERE is_active = 1",
+                    "UPDATE ip_detections SET is_active = 0, updated_at = ? "
+                    "WHERE is_active = 1",
                     (datetime.now(),),
                 )
 

@@ -139,10 +139,11 @@ class FixStrategyManager:
             # SSH 연결 옵션 개선
             ci_config = utils.get_file_content(project_id, ".gitlab-ci.yml")
 
-            ssh_improvements = [
-                "ssh-keyscan -p $DEPLOY_PORT -H $DEPLOY_HOST >> ~/.ssh/known_hosts",
-                "ssh -o ConnectTimeout=30 -o ServerAliveInterval=60",
-            ]
+            # SSH 개선 옵션들 (현재 미사용)
+            # ssh_improvements = [
+            #     "ssh-keyscan -p $DEPLOY_PORT -H $DEPLOY_HOST >> ~/.ssh/known_hosts",
+            #     "ssh -o ConnectTimeout=30 -o ServerAliveInterval=60",
+            # ]
 
             # SSH 명령어를 개선된 버전으로 교체
             if "ssh -p $DEPLOY_PORT" in ci_config and "ConnectTimeout" not in ci_config:

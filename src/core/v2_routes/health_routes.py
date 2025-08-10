@@ -5,8 +5,7 @@ V2 Health and Performance API Routes
 
 from datetime import datetime
 
-from flask import Blueprint
-from flask import jsonify
+from flask import Blueprint, jsonify
 
 from ...utils.unified_decorators import unified_cache
 from .service import V2APIService
@@ -209,12 +208,12 @@ def get_diagnostics():
                 ],
             },
             "connectivity": {
-                "database": self._test_database_connection(),
-                "cache": self._test_cache_connection(),
+                "database": _test_database_connection(),
+                "cache": _test_cache_connection(),
                 "external_apis": "not_implemented",  # 외부 API 연결 테스트
             },
             "data_integrity": {
-                "blacklist_consistency": self._check_data_consistency(),
+                "blacklist_consistency": _check_data_consistency(),
                 "index_health": "good",  # DB 인덱스 상태
                 "data_validation": "passed",
             },

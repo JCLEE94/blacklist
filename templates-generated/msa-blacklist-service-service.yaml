@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: blacklist-blacklist-service
+    generated-by: template-generator
+    service: blacklist-service
+  name: blacklist-blacklist-service
+  namespace: blacklist
+spec:
+  ports:
+  - name: http
+    nodePort: 30809
+    port: 8001
+    protocol: TCP
+    targetPort: 8001
+  selector:
+    app: blacklist-blacklist-service
+  type: NodePort

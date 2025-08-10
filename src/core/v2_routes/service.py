@@ -6,16 +6,12 @@ V2 API Service - Core service class for V2 API endpoints
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
 from ...core.blacklist_unified import UnifiedBlacklistManager
 from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
-from ...utils.performance_optimizer import optimizer
-from ...utils.performance_optimizer import validate_ips_batch
+from ...utils.performance_optimizer import optimizer, validate_ips_batch
 from ...utils.security import SecurityManager
 from ...utils.unified_decorators import unified_cache
 

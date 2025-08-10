@@ -46,6 +46,8 @@ class IntegrationTestFixtures:
         # Create simple mock services
         blacklist_manager = Mock()
         blacklist_manager.get_active_ips.return_value = (["192.168.1.1", "10.0.0.1"], 2)
+        blacklist_manager.get_all_ips.return_value = ["192.168.1.1", "10.0.0.1"]
+        blacklist_manager.get_ip_count.return_value = 2
         blacklist_manager.add_ip.return_value = True
         blacklist_manager.remove_ip.return_value = True
 
@@ -56,6 +58,7 @@ class IntegrationTestFixtures:
 
         collection_manager = Mock()
         collection_manager.collection_enabled = True
+        collection_manager.is_collection_enabled.return_value = True
         collection_manager.enable_collection.return_value = {
             "success": True,
             "enabled": True,
@@ -64,12 +67,26 @@ class IntegrationTestFixtures:
             "success": True,
             "enabled": False,
         }
+        collection_manager.get_status.return_value = {
+            "enabled": True,
+            "last_collection": "2024-01-01 00:00:00",
+            "protection_active": True,
+        }
 
         regtech_collector = Mock()
         regtech_collector.collect_data.return_value = {
             "success": True,
             "data": ["192.168.1.1", "192.168.1.2"],
             "count": 2,
+            "collected": 2,
+            "message": "Collection successful",
+        }
+        regtech_collector.collect_from_web.return_value = []
+        regtech_collector.auto_collect.return_value = {
+            "success": True,
+            "collected": 2,
+            "data": ["192.168.1.1", "192.168.1.2"],
+            "message": "Mock REGTECH collection successful",
         }
 
         # Configure container to return mocks
