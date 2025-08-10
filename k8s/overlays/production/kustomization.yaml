@@ -6,7 +6,6 @@ namespace: blacklist
 resources:
 - ../../base
 - ingress.yaml
-- redis.yaml
 
 patchesStrategicMerge:
 - deployment-patch.yaml
@@ -24,7 +23,7 @@ configMapGenerator:
   - LOG_LEVEL=info
   - FLASK_ENV=production
   - ENABLE_METRICS=true
-  - REDIS_URL=redis://redis:6379/0
+  - REDIS_URL=
   - DATABASE_URL=sqlite:////app/data/blacklist.db
   - PORT=2541
   name: blacklist-config
