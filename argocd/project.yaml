@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: blacklist-project
+  namespace: argocd
+  labels:
+    app: blacklist
+    tier: security
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: "Blacklist Management System Project - Threat Intelligence Platform"
+  sourceRepos:
+    - 'https://github.com/JCLEE94/blacklist.git'
+    - 'https://registry.jclee.me/jclee94/*'
+  destinations:
+    - namespace: 'blacklist-system'
+      server: 'https://k8s.jclee.me'
+    - namespace: 'blacklist-*'
+      server: 'https://k8s.jclee.me'
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: storage.k8s.io
+      kind: StorageClass
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ServiceAccount
+    - group: ''
+      kind: PersistentVolumeClaim
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: ReplicaSet
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+    - group: monitoring.coreos.com
+      kind: PrometheusRule
+  roles:
+    - name: admin
+      description: "Admin access to blacklist project"
+      policies:
+        - p, proj:blacklist-project:admin, applications, *, blacklist-project/*, allow
+        - p, proj:blacklist-project:admin, repositories, *, *, allow
+      groups:
+        - blacklist-admins
+    - name: developer
+      description: "Developer access to blacklist project"
+      policies:
+        - p, proj:blacklist-project:developer, applications, get, blacklist-project/*, allow
+        - p, proj:blacklist-project:developer, applications, sync, blacklist-project/*, allow
+        - p, proj:blacklist-project:developer, applications, action/*, blacklist-project/*, allow
+        - p, proj:blacklist-project:developer, repositories, get, *, allow
+      groups:
+        - blacklist-developers
+  orphanedResources:
+    warn: true
+    ignore:
+      - group: apps/v1
+        kind: ReplicaSet
+        name: '*-*'

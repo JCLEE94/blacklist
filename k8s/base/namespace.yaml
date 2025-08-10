@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blacklist-system
+  labels:
+    name: blacklist-system
+    app: blacklist
+    tier: application
+  annotations:
+    description: "Blacklist Management System namespace"

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist-service
+  labels:
+    app: blacklist
+    component: api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 2541
+    protocol: TCP
+    name: http
+  selector:
+    app: blacklist
+    component: api
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: blacklist-service-account
+  labels:
+    app: blacklist
+automountServiceAccountToken: false

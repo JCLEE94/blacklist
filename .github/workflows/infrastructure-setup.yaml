@@ -1,0 +1,222 @@
+name: Infrastructure Setup
+on:
+  workflow_dispatch:
+    inputs:
+      setup_type:
+        description: 'Setup type'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - secrets
+        - argocd
+        - monitoring
+
+env:
+  REGISTRY: registry.jclee.me
+  ARGOCD_SERVER: argo.jclee.me
+  K8S_CLUSTER: k8s.jclee.me
+
+jobs:
+  setup-secrets:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.setup_type == 'all' || github.event.inputs.setup_type == 'secrets'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      
+    - name: Configure kubectl
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      run: |
+        mkdir -p ~/.kube
+        echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+        kubectl config set-cluster k8s-cluster --server=https://${{ env.K8S_CLUSTER }}
+        
+    - name: Create namespace
+      run: |
+        kubectl create namespace blacklist-system --dry-run=client -o yaml | kubectl apply -f -
+        
+    - name: Create Docker registry secret
+      env:
+        DOCKER_REGISTRY_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
+        DOCKER_REGISTRY_PASS: ${{ secrets.DOCKER_REGISTRY_PASS }}
+      run: |
+        kubectl create secret docker-registry blacklist-registry-secret \
+          --docker-server=${{ env.REGISTRY }} \
+          --docker-username="$DOCKER_REGISTRY_USER" \
+          --docker-password="$DOCKER_REGISTRY_PASS" \
+          --namespace=blacklist-system \
+          --dry-run=client -o yaml | kubectl apply -f -
+          
+    - name: Create application secrets
+      env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        REGTECH_USERNAME: ${{ secrets.REGTECH_USERNAME }}
+        REGTECH_PASSWORD: ${{ secrets.REGTECH_PASSWORD }}
+        SECUDIUM_USERNAME: ${{ secrets.SECUDIUM_USERNAME }}
+        SECUDIUM_PASSWORD: ${{ secrets.SECUDIUM_PASSWORD }}
+      run: |
+        kubectl create secret generic blacklist-secrets \
+          --from-literal=SECRET_KEY="$SECRET_KEY" \
+          --from-literal=JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+          --from-literal=REGTECH_USERNAME="$REGTECH_USERNAME" \
+          --from-literal=REGTECH_PASSWORD="$REGTECH_PASSWORD" \
+          --from-literal=SECUDIUM_USERNAME="$SECUDIUM_USERNAME" \
+          --from-literal=SECUDIUM_PASSWORD="$SECUDIUM_PASSWORD" \
+          --namespace=blacklist-system \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+  setup-argocd:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.setup_type == 'all' || github.event.inputs.setup_type == 'argocd'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup ArgoCD CLI
+      run: |
+        curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+        
+    - name: Login to ArgoCD
+      env:
+        ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+      run: |
+        argocd login ${{ env.ARGOCD_SERVER }} --auth-token $ARGOCD_AUTH_TOKEN --insecure
+        
+    - name: Create ArgoCD Project
+      run: |
+        argocd proj create -f argocd/project.yaml || echo "Project already exists"
+        
+    - name: Create ArgoCD Application
+      run: |
+        argocd app create -f argocd/application.yaml || echo "Application already exists"
+        
+    - name: Configure Repository Access
+      run: |
+        argocd repo add https://github.com/JCLEE94/blacklist.git \
+          --username ${{ secrets.GH_USERNAME }} \
+          --password ${{ secrets.GH_TOKEN }} \
+          --insecure-skip-server-verification || echo "Repository already configured"
+
+  setup-monitoring:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.setup_type == 'all' || github.event.inputs.setup_type == 'monitoring'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      
+    - name: Configure kubectl
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      run: |
+        mkdir -p ~/.kube
+        echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+        
+    - name: Create ServiceMonitor
+      run: |
+        kubectl apply -f - <<EOF
+        apiVersion: monitoring.coreos.com/v1
+        kind: ServiceMonitor
+        metadata:
+          name: blacklist-monitor
+          namespace: blacklist-system
+          labels:
+            app: blacklist
+        spec:
+          selector:
+            matchLabels:
+              app: blacklist
+              component: api
+          endpoints:
+          - port: http
+            path: /metrics
+            interval: 30s
+        EOF
+        
+    - name: Create PrometheusRule
+      run: |
+        kubectl apply -f - <<EOF
+        apiVersion: monitoring.coreos.com/v1
+        kind: PrometheusRule
+        metadata:
+          name: blacklist-alerts
+          namespace: blacklist-system
+          labels:
+            app: blacklist
+        spec:
+          groups:
+          - name: blacklist.rules
+            rules:
+            - alert: BlacklistHighMemoryUsage
+              expr: container_memory_usage_bytes{pod=~"blacklist-.*"} / container_spec_memory_limit_bytes > 0.8
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Blacklist pod {{ \$labels.pod }} high memory usage"
+                description: "Memory usage is above 80% for 5 minutes"
+            - alert: BlacklistHighCPUUsage
+              expr: rate(container_cpu_usage_seconds_total{pod=~"blacklist-.*"}[5m]) > 0.8
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Blacklist pod {{ \$labels.pod }} high CPU usage"
+                description: "CPU usage is above 80% for 5 minutes"
+            - alert: BlacklistPodDown
+              expr: up{job="blacklist-service"} == 0
+              for: 1m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Blacklist service is down"
+                description: "Blacklist service has been down for more than 1 minute"
+        EOF
+
+  validation:
+    runs-on: ubuntu-latest
+    needs: [setup-secrets, setup-argocd, setup-monitoring]
+    if: always() && github.event.inputs.setup_type == 'all'
+    
+    steps:
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      
+    - name: Configure kubectl
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      run: |
+        mkdir -p ~/.kube
+        echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+        
+    - name: Validate Infrastructure Setup
+      run: |
+        echo "🔍 Validating infrastructure setup..."
+        
+        # Check namespace
+        kubectl get namespace blacklist-system || exit 1
+        
+        # Check secrets
+        kubectl get secret blacklist-secrets -n blacklist-system || exit 1
+        kubectl get secret blacklist-registry-secret -n blacklist-system || exit 1
+        
+        # Check ArgoCD application
+        if command -v argocd &> /dev/null; then
+          argocd login ${{ env.ARGOCD_SERVER }} --auth-token ${{ secrets.ARGOCD_AUTH_TOKEN }} --insecure
+          argocd app get blacklist-app || exit 1
+        fi
+        
+        echo "✅ Infrastructure validation complete!"

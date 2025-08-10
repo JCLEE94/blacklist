@@ -1,0 +1,55 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: blacklist-base
+  annotations:
+    config.kubernetes.io/local-config: "true"
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - configmap.yaml
+  - secret.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
+  - persistentvolumeclaim.yaml
+
+commonLabels:
+  app: blacklist
+  version: "1.0.15"
+
+namespace: blacklist-system
+
+images:
+  - name: blacklist
+    newName: registry.jclee.me/jclee94/blacklist
+    newTag: latest
+
+configMapGenerator:
+  - name: blacklist-config
+    literals:
+      - FLASK_ENV=production
+      - PORT=2541
+      - HOST=0.0.0.0
+      - REDIS_URL=redis://redis-service:6379/0
+      - DATABASE_URL=sqlite:////app/instance/blacklist.db
+      - PYTHONUNBUFFERED=1
+      - GUNICORN_WORKERS=2
+      - GUNICORN_THREADS=4
+
+secretGenerator:
+  - name: blacklist-secrets
+    literals:
+      - SECRET_KEY=changeme-production-secret
+      - JWT_SECRET_KEY=changeme-jwt-secret
+      - REGTECH_USERNAME=changeme
+      - REGTECH_PASSWORD=changeme
+      - SECUDIUM_USERNAME=changeme
+      - SECUDIUM_PASSWORD=changeme
+
+replicas:
+  - name: blacklist-deployment
+    count: 2

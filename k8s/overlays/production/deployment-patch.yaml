@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist-deployment
+spec:
+  replicas: 3
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2541"
+        prometheus.io/path: "/metrics"
+        fluentd.org/include: "true"
+    spec:
+      containers:
+      - name: blacklist
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        env:
+        - name: GUNICORN_WORKERS
+          value: "4"
+        - name: GUNICORN_THREADS
+          value: "8"
+        - name: MAX_AUTH_ATTEMPTS
+          value: "10"
+        - name: BLOCK_DURATION_HOURS
+          value: "2"

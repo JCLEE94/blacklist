@@ -1,0 +1,45 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: blacklist-production
+  annotations:
+    config.kubernetes.io/local-config: "true"
+
+namespace: blacklist-system
+
+resources:
+- ../../base
+- horizontal-pod-autoscaler.yaml
+- network-policy.yaml
+- pod-disruption-budget.yaml
+
+patchesStrategicMerge:
+- deployment-patch.yaml
+- ingress-patch.yaml
+
+replicas:
+- name: blacklist-deployment
+  count: 3
+
+images:
+- name: blacklist
+  newName: registry.jclee.me/jclee94/blacklist
+  newTag: latest
+
+configMapGenerator:
+- name: blacklist-config
+  behavior: merge
+  literals:
+  - FLASK_ENV=production
+  - GUNICORN_WORKERS=4
+  - GUNICORN_THREADS=8
+  - MAX_AUTH_ATTEMPTS=10
+  - BLOCK_DURATION_HOURS=2
+
+commonLabels:
+  environment: production
+  version: "1.0.15"
+
+commonAnnotations:
+  deployment.kubernetes.io/revision: "1"

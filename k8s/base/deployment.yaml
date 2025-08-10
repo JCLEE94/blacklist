@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist-deployment
+  labels:
+    app: blacklist
+    component: api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: blacklist
+      component: api
+  template:
+    metadata:
+      labels:
+        app: blacklist
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2541"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: blacklist-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: blacklist
+        image: blacklist
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 2541
+          protocol: TCP
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        - name: PORT
+          value: "2541"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: REDIS_URL
+          value: "redis://redis-service:6379/0"
+        - name: DATABASE_URL
+          value: "sqlite:////app/instance/blacklist.db"
+        - name: FORCE_DISABLE_COLLECTION
+          value: "false"
+        - name: COLLECTION_ENABLED
+          value: "true"
+        - name: RESTART_PROTECTION
+          value: "false"
+        - name: MAX_AUTH_ATTEMPTS
+          value: "5"
+        - name: BLOCK_DURATION_HOURS
+          value: "1"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: GUNICORN_WORKERS
+          value: "2"
+        - name: GUNICORN_THREADS
+          value: "4"
+        envFrom:
+        - secretRef:
+            name: blacklist-secrets
+        - configMapRef:
+            name: blacklist-config
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 2541
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 2541
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 30
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        volumeMounts:
+        - name: instance-volume
+          mountPath: /app/instance
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: instance-volume
+        persistentVolumeClaim:
+          claimName: blacklist-instance-pvc
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: blacklist-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: blacklist-logs-pvc
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - blacklist
+              topologyKey: kubernetes.io/hostname
