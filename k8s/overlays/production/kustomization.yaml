@@ -14,7 +14,7 @@ patchesStrategicMerge:
 images:
 - name: blacklist
   newName: registry.jclee.me/blacklist
-  newTag: 1.0.9
+  newTag: 1.0.10
 
 configMapGenerator:
 - literals:
