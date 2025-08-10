@@ -14,11 +14,11 @@ spec:
       - name: blacklist
         resources:
           requests:
-            cpu: 100m
-            memory: 256Mi
+            cpu: 50m
+            memory: 64Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 200m
+            memory: 128Mi
         livenessProbe:
           initialDelaySeconds: 60
           periodSeconds: 30
@@ -34,16 +34,7 @@ spec:
         - name: PYTHONUNBUFFERED
           value: "1"
         - name: GUNICORN_WORKERS
-          value: "4"
+          value: "1"
         - name: GUNICORN_THREADS
-          value: "2"
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - blacklist
-            topologyKey: kubernetes.io/hostname
+          value: "1"
+      # Anti-affinity removed for single-node deployment
