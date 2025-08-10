@@ -7,5 +7,10 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
     service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
 spec:
-  type: LoadBalancer
-  externalTrafficPolicy: Local
+  type: NodePort
+  ports:
+  - port: 8541
+    targetPort: 2541
+    nodePort: 32542
+    protocol: TCP
+    name: http

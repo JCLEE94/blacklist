@@ -7,13 +7,19 @@ resources:
 - ../../base
 - ingress.yaml
 
-patchesStrategicMerge:
-- deployment-patch.yaml
-- service-patch.yaml
+patches:
+- path: deployment-patch.yaml
+  target:
+    kind: Deployment
+    name: blacklist
+- path: service-patch.yaml
+  target:
+    kind: Service
+    name: blacklist
 
 images:
 - name: blacklist
-  newName: registry.jclee.me/blacklist
+  newName: registry.jclee.me/jclee94/blacklist
   newTag: 1.0.10
 
 configMapGenerator:
