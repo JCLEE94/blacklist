@@ -12,7 +12,7 @@ from typing import Dict
 from unittest.mock import patch
 
 
-class _TestConfig:
+class TestConfig:
     """Centralized test configuration management"""
 
     def __init__(self):
@@ -153,11 +153,11 @@ class _TestConfig:
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
-class _TestEnvironmentManager:
+class TestEnvironmentManager:
     """Manages test environment context"""
 
     def __init__(self):
-        self.config = _TestConfig()
+        self.config = TestConfig()
         self.original_env = {}
         self.patches = []
 
@@ -190,14 +190,14 @@ class _TestEnvironmentManager:
         self.config.cleanup()
 
 
-def get_test_config() -> _TestConfig:
+def get_test_config() -> TestConfig:
     """Get test configuration instance"""
-    return _TestConfig()
+    return TestConfig()
 
 
 def pytest_configure():
     """Configure pytest with test settings"""
-    config = _TestConfig()
+    config = TestConfig()
     config.setup_test_environment()
 
 
@@ -278,7 +278,7 @@ def create_test_app(config_name: str = "testing"):
         app.config["WTF_CSRF_ENABLED"] = False  # Disable CSRF for testing
 
         # Override data directory
-        test_config = _TestConfig()
+        test_config = TestConfig()
         app.config["DATA_DIR"] = test_config.temp_dir
 
         return app
@@ -311,8 +311,7 @@ def create_test_data(count: int = 10) -> list:
 
 
 # Type aliases for public interface
-TestConfig = _TestConfig
-TestEnvironmentManager = _TestEnvironmentManager
+# Legacy aliases removed - use TestConfig and TestEnvironmentManager directly
 
 # Global test configuration instance
 TEST_CONFIG = get_test_config()
