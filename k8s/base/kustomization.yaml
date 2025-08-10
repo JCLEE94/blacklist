@@ -11,11 +11,12 @@ resources:
 - deployment.yaml
 - service.yaml
 
-commonLabels:
-  app: blacklist
-  managed-by: kustomize
+labels:
+- pairs:
+    app: blacklist
+    managed-by: kustomize
 
 images:
 - name: blacklist
   newName: registry.jclee.me/blacklist
-  newTag: 1.0.11
+  newTag: 20250811-9ed5d2a
