@@ -85,3 +85,79 @@ def settings_page():
 def settings_management():
     """새로운 설정 관리 대시보드"""
     return render_template("settings/dashboard.html")
+
+
+@ui_settings_bp.route("/settings/regtech", methods=["GET", "POST"])
+def handle_regtech_settings():
+    """REGTECH 설정 조회 및 저장 API"""
+    from flask import jsonify, request
+
+    if request.method == "GET":
+        # 설정 조회
+        try:
+            from src.models.settings import get_settings_manager
+
+            settings_manager = get_settings_manager()
+
+            # REGTECH 설정 가져오기
+            regtech_settings = {
+                "username": settings_manager.get_setting("regtech_username", ""),
+                "has_password": bool(
+                    settings_manager.get_setting("regtech_password", "")
+                ),
+                "status": "configured"
+                if settings_manager.get_setting("regtech_username", "")
+                else "not_configured",
+            }
+
+            return jsonify(regtech_settings)
+
+        except Exception as e:
+            logger.error(f"REGTECH 설정 조회 오류: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    elif request.method == "POST":
+        # 설정 저장
+        try:
+            data = request.get_json() if request.is_json else request.form.to_dict()
+
+            if not data:
+                return jsonify({"error": "데이터가 제공되지 않았습니다"}), 400
+
+            username = data.get("username")
+            password = data.get("password")
+
+            if not username or not password:
+                return jsonify({"error": "사용자명과 비밀번호가 필요합니다"}), 400
+
+            from src.models.settings import get_settings_manager
+
+            settings_manager = get_settings_manager()
+
+            # 설정 저장
+            settings_manager.set_setting(
+                "regtech_username", username, "string", "credentials"
+            )
+            settings_manager.set_setting(
+                "regtech_password", password, "password", "credentials"
+            )
+
+            logger.info(f"REGTECH 설정 저장 완료: username={username}")
+
+            # 환경변수 업데이트
+            import os
+
+            os.environ["REGTECH_USERNAME"] = username
+            os.environ["REGTECH_PASSWORD"] = password
+
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "REGTECH 설정이 저장되었습니다",
+                    "username": username,
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"REGTECH 설정 저장 오류: {e}")
+            return jsonify({"error": str(e)}), 500
