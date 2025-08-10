@@ -25,5 +25,6 @@ configMapGenerator:
   - FLASK_ENV=production
   - ENABLE_METRICS=true
   - REDIS_URL=redis://redis:6379/0
+  - DATABASE_URL=sqlite:////app/data/blacklist.db
   - PORT=2541
   name: blacklist-config
