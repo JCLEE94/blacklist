@@ -7,26 +7,21 @@ has been modularized into the advanced_cache/ package.
 """
 
 # Import everything from the modular package
-from .advanced_cache import (
-    EnhancedSmartCache,
-    MemoryBackend,
-    PerformanceTracker,
-    RedisBackend,
-    SerializationManager,
-    cache_decorator,
-    cache_lock,
-)
-
+from .advanced_cache import EnhancedSmartCache
+from .advanced_cache import MemoryBackend
+from .advanced_cache import PerformanceTracker
+from .advanced_cache import RedisBackend
+from .advanced_cache import SerializationManager
+from .advanced_cache import cache_decorator
+from .advanced_cache import cache_lock
 # Import decorator utilities
-from .advanced_cache.decorators import (
-    CacheManager,
-    cache_long,
-    cache_medium,
-    cache_result_only,
-    cache_short,
-    get_cache_instance,
-    set_cache_instance,
-)
+from .advanced_cache.decorators import CacheManager
+from .advanced_cache.decorators import cache_long
+from .advanced_cache.decorators import cache_medium
+from .advanced_cache.decorators import cache_result_only
+from .advanced_cache.decorators import cache_short
+from .advanced_cache.decorators import get_cache_instance
+from .advanced_cache.decorators import set_cache_instance
 
 # Re-export for backward compatibility
 __all__ = [

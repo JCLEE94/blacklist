@@ -5,9 +5,11 @@ Cache Decorators - Unified caching functionality
 import hashlib
 import logging
 from functools import wraps
-from typing import Callable, Optional
+from typing import Callable
+from typing import Optional
 
-from flask import g, request
+from flask import g
+from flask import request
 
 from .registry import get_registry
 

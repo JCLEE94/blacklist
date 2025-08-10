@@ -6,7 +6,9 @@ import json
 import logging
 import time
 from functools import wraps
-from typing import Any, Dict, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 from .registry import get_registry
 

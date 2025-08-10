@@ -7,7 +7,9 @@ import logging
 import os
 import threading
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 from ...utils.unified_decorators import unified_monitoring
 from ..database import DatabaseManager
@@ -50,7 +52,8 @@ class UnifiedBlacklistManager:
         if cache_backend:
             self.cache = cache_backend
         else:
-            from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
+            from ...utils.advanced_cache import \
+                EnhancedSmartCache as CacheManager
 
             cache_manager = CacheManager()
             self.cache = cache_manager.get_cache()

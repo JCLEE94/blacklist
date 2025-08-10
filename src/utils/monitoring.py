@@ -4,23 +4,24 @@
 
 import logging
 import time
-from collections import defaultdict, deque
+from collections import defaultdict
+from collections import deque
 from datetime import datetime
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any
+from typing import Callable
+from typing import Dict
 
 import psutil
 
 logger = logging.getLogger(__name__)
 
 try:
-    from prometheus_client import (
-        CollectorRegistry,
-        Counter,
-        Gauge,
-        Histogram,
-        generate_latest,
-    )
+    from prometheus_client import CollectorRegistry
+    from prometheus_client import Counter
+    from prometheus_client import Gauge
+    from prometheus_client import Histogram
+    from prometheus_client import generate_latest
 
     PROMETHEUS_AVAILABLE = True
 except ImportError:

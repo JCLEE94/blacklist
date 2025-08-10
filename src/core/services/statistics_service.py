@@ -5,8 +5,11 @@
 """
 
 import sqlite3
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 
 # Statistics service mixin for UnifiedBlacklistService

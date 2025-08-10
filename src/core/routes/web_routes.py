@@ -6,7 +6,11 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint, jsonify, redirect, render_template, url_for
+from flask import Blueprint
+from flask import jsonify
+from flask import redirect
+from flask import render_template
+from flask import url_for
 
 from ..unified_service import get_unified_service
 

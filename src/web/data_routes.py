@@ -4,9 +4,12 @@ Data export, analytics and real-time features
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint
+from flask import jsonify
+from flask import request
 
 logger = logging.getLogger(__name__)
 

@@ -4,9 +4,11 @@ Rate Limit Decorators - Unified rate limiting functionality
 
 import logging
 from functools import wraps
-from typing import Callable, Optional
+from typing import Callable
+from typing import Optional
 
-from flask import g, request
+from flask import g
+from flask import request
 
 logger = logging.getLogger(__name__)
 

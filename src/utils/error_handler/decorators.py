@@ -2,11 +2,16 @@
 
 import functools
 import logging
-from typing import Any, Callable, Union
+from typing import Any
+from typing import Callable
+from typing import Union
 
-from flask import Response, jsonify
+from flask import Response
+from flask import jsonify
 
-from .custom_errors import AuthenticationError, AuthorizationError, ValidationError
+from .custom_errors import AuthenticationError
+from .custom_errors import AuthorizationError
+from .custom_errors import ValidationError
 
 logger = logging.getLogger(__name__)
 

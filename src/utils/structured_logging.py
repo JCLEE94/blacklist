@@ -15,7 +15,9 @@ import traceback
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 try:
     from pythonjsonlogger import jsonlogger
@@ -213,7 +215,8 @@ class StructuredLogger:
 
         # 요청 컨텍스트 추가
         try:
-            from flask import g, request
+            from flask import g
+            from flask import request
 
             if request:
                 record["context"]["request"] = {
@@ -412,7 +415,8 @@ def setup_request_logging(app):
     """Flask 요청 로깅 설정"""
     import uuid
 
-    from flask import g, request
+    from flask import g
+    from flask import request
 
     logger = get_logger("request")
 

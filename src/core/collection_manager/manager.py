@@ -11,7 +11,10 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from .auth_service import AuthService
 from .config_service import CollectionConfigService
@@ -334,7 +337,8 @@ class CollectionManager:
                     return True
 
                 # 마지막 업데이트가 24시간 이전이면 초기 수집 필요
-                from datetime import datetime, timedelta
+                from datetime import datetime
+                from datetime import timedelta
 
                 try:
                     last_update_dt = datetime.fromisoformat(

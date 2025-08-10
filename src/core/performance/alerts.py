@@ -7,12 +7,16 @@
 import threading
 from collections import deque
 from dataclasses import asdict
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
 
 from loguru import logger
 
-from .metrics import AlertRule, PerformanceMetric
+from .metrics import AlertRule
+from .metrics import PerformanceMetric
 
 
 class AlertManager:
