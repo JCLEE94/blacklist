@@ -6,20 +6,13 @@ metadata:
     app: blacklist
     component: api
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
   - port: 80
     targetPort: 32542
+    nodePort: 32452
     protocol: TCP
     name: http
   selector:
     app: blacklist
     component: api
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: blacklist-service-account
-  labels:
-    app: blacklist
-automountServiceAccountToken: false
