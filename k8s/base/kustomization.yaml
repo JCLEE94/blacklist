@@ -5,6 +5,7 @@ namespace: blacklist
 
 resources:
 - namespace.yaml
+- serviceaccount.yaml
 - configmap.yaml
 - secret.yaml
 - deployment.yaml
