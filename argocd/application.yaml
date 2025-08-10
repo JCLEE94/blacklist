@@ -43,7 +43,7 @@ spec:
     - name: 'Owner'
       value: 'jclee94@jclee.me'
     - name: 'Version'
-      value: '1.0.15'
+      value: '1.0.17'
   ignoreDifferences:
     - group: apps
       kind: Deployment

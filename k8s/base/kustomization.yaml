@@ -8,6 +8,7 @@ metadata:
 
 resources:
 - namespace.yaml
+- serviceaccount.yaml
 - deployment.yaml
 - service.yaml
 - ingress.yaml
@@ -16,6 +17,7 @@ resources:
 - redis-deployment.yaml
 - redis-service.yaml
 - persistentvolumeclaim.yaml
+- monitoring.yaml
 
 
 namespace: blacklist-system
@@ -23,7 +25,7 @@ namespace: blacklist-system
 images:
 - name: blacklist
   newName: registry.jclee.me/jclee94/blacklist
-  newTag: latest
+  newTag: 1.0.17
 
 # ConfigMaps and Secrets are managed via YAML files
 
@@ -34,4 +36,4 @@ labels:
 - includeSelectors: true
   pairs:
     app: blacklist
-    version: 1.0.15
+    version: 1.0.17

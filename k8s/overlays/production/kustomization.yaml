@@ -22,7 +22,7 @@ replicas:
 images:
 - name: blacklist
   newName: registry.jclee.me/jclee94/blacklist
-  newTag: latest
+  newTag: 1.0.17
 
 
 commonAnnotations:
@@ -31,7 +31,7 @@ labels:
 - includeSelectors: true
   pairs:
     environment: production
-    version: 1.0.15
+    version: 1.0.17
 patches:
 - path: deployment-patch.yaml
 - path: ingress-patch.yaml
