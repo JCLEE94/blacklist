@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  blacklist:
+    image: registry.jclee.me/jclee94/blacklist:emergency
+    container_name: blacklist-local
+    restart: unless-stopped
+    ports:
+      - "2541:2541"
+    environment:
+      - FLASK_ENV=development
+      - PORT=2541
+      - HOST=0.0.0.0
+      - FORCE_DISABLE_COLLECTION=true
+      - COLLECTION_ENABLED=false
+      - RESTART_PROTECTION=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

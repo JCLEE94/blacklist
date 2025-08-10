@@ -38,8 +38,13 @@ except ImportError:
         return decorator
 
 
-from .monitoring import (HealthChecker, MetricsCollector, get_health_checker,
-                         get_metrics_collector, track_performance)
+from .monitoring import (
+    HealthChecker,
+    MetricsCollector,
+    get_health_checker,
+    get_metrics_collector,
+    track_performance,
+)
 
 try:
     from .performance_optimizer import measure_performance, profile_function
@@ -78,10 +83,13 @@ except ImportError:
 try:
     from .cicd_error_patterns import ErrorPatternManager
     from .cicd_fix_strategies import FixStrategyManager
-    from .cicd_troubleshooter import (CICDTroubleshooter,
-                                      analyze_pipeline_errors,
-                                      create_error_manager, create_fix_manager,
-                                      create_troubleshooter)
+    from .cicd_troubleshooter import (
+        CICDTroubleshooter,
+        analyze_pipeline_errors,
+        create_error_manager,
+        create_fix_manager,
+        create_troubleshooter,
+    )
     from .cicd_utils import CICDUtils
 except ImportError:
     # Fallback for missing CICD modules

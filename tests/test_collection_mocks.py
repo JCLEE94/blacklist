@@ -8,8 +8,7 @@ def enable_collection_for_tests(monkeypatch):
     """Automatically enable collection for all tests"""
     # Directly patch the service modules that are imported in routes
     try:
-        from src.core.routes.collection_status_routes import \
-            service as status_service
+        from src.core.routes.collection_status_routes import service as status_service
 
         # Create a property that always returns True and ignores setter
         def always_true():
@@ -29,8 +28,7 @@ def enable_collection_for_tests(monkeypatch):
         pass
 
     try:
-        from src.core.routes.collection_trigger_routes import \
-            service as trigger_service
+        from src.core.routes.collection_trigger_routes import service as trigger_service
 
         monkeypatch.setattr(trigger_service, "collection_enabled", True)
         monkeypatch.setattr(trigger_service, "daily_collection_enabled", True)
