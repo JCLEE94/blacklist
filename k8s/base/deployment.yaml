@@ -100,12 +100,14 @@ spec:
           value: "10"
         - name: BLOCK_DURATION_HOURS
           value: "24"
+        - name: ENVIRONMENT
+          value: "development"
         resources:
           requests:
-            cpu: 50m
-            memory: 128Mi
+            cpu: 100m
+            memory: 256Mi
           limits:
-            cpu: 200m
+            cpu: 250m
             memory: 256Mi
         livenessProbe:
           httpGet:
