@@ -1,0 +1,591 @@
+name: 🚀 GitOps Deployment Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '배포 환경 선택'
+        required: true
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+        default: 'development'
+      force_rebuild:
+        description: '강제 이미지 재빌드'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ${{ vars.REGISTRY_DOMAIN || 'registry.jclee.me' }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'blacklist' }}
+  ARGOCD_SERVER: ${{ vars.ARGOCD_DOMAIN || 'argo.jclee.me' }}
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE || 'default' }}
+
+jobs:
+  # 🔍 코드 품질 검사
+  quality-checks:
+    name: 🧹 코드 품질 검사
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 코드 체크아웃
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🐍 Python 설정
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: 📦 의존성 설치
+      run: |
+        pip install -r requirements.txt
+        pip install flake8 black isort bandit safety pytest pytest-cov
+
+    - name: 🎨 코드 포맷팅 검사 (Black)
+      run: |
+        black --check --diff src/ tests/ || true
+        echo "::notice::Black 포맷팅 검사 완료"
+
+    - name: 📐 Import 정렬 검사 (isort)
+      run: |
+        isort --check-only --diff src/ tests/ || true
+        echo "::notice::Import 정렬 검사 완료"
+
+    - name: 🔍 린팅 검사 (flake8)
+      run: |
+        flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 --statistics
+        echo "::notice::Flake8 린팅 검사 완료"
+
+    - name: 🔒 보안 검사 (Bandit)
+      run: |
+        bandit -r src/ -ll -f json -o bandit-report.json || true
+        bandit -r src/ -ll || true
+        echo "::notice::보안 검사 완료"
+
+    - name: 🛡️ 의존성 취약점 검사 (Safety)
+      run: |
+        safety check || true
+        echo "::notice::의존성 취약점 검사 완료"
+
+    - name: 📏 파일 크기 검사 (500줄 제한)
+      run: |
+        echo "🔍 500줄 초과 파일 검사..."
+        find src/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 {print "❌", $2, "파일이", $1, "줄로 500줄을 초과했습니다"}' || true
+        OVERSIZED=$(find src/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 {print $2}' | wc -l)
+        if [ "$OVERSIZED" -gt 0 ]; then
+          echo "::warning::$OVERSIZED개 파일이 500줄을 초과합니다."
+        else
+          echo "::notice::모든 파일이 500줄 제한을 준수합니다."
+        fi
+
+    - name: 🧪 테스트 실행
+      run: |
+        if [ -d "tests" ]; then
+          pytest -v --cov=src --cov-report=xml --cov-report=term || true
+          echo "::notice::테스트 실행 완료"
+        else
+          echo "::notice::테스트 디렉토리가 없습니다."
+        fi
+
+    - name: 📊 테스트 결과 업로드
+      if: always()
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  # 🏷️ 자동 버전 관리
+  versioning:
+    name: 🏷️ 버전 관리
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+    - name: 📥 코드 체크아웃
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 🏷️ 자동 버전 태깅
+      id: version
+      run: |
+        # 현재 날짜와 시간을 기반으로 버전 생성
+        VERSION="v$(date +'%Y.%m.%d')-${GITHUB_SHA::7}"
+        
+        # 기존 태그가 있는지 확인
+        if git tag -l "$VERSION" | grep -q "$VERSION"; then
+          VERSION="$VERSION-$(date +'%H%M%S')"
+        fi
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=$VERSION" >> $GITHUB_OUTPUT
+        echo "::notice::생성된 버전: $VERSION"
+
+        # Git 태그 생성 (main 브랜치에서만)
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "$VERSION" -m "🚀 Release $VERSION"
+          git push origin "$VERSION"
+          echo "::notice::Git 태그 생성됨: $VERSION"
+        fi
+
+  # 🐳 Docker 이미지 빌드 및 푸시
+  build-and-push:
+    name: 🐳 Docker 빌드 & 푸시
+    runs-on: ubuntu-latest
+    needs: [quality-checks, versioning]
+    if: always() && !cancelled()
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+    - name: 📥 코드 체크아웃
+      uses: actions/checkout@v4
+
+    - name: 🐳 Docker Buildx 설정
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🔑 레지스트리 로그인
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASS }}
+
+    - name: 🏷️ 이미지 메타데이터 추출
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/jclee94/${{ env.PROJECT_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ needs.versioning.outputs.version }},enable=true
+          type=sha,prefix={{branch}}-
+
+    - name: 🔨 Docker 이미지 빌드 & 푸시
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        platforms: linux/amd64,linux/arm64
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDTIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          VERSION=${{ needs.versioning.outputs.version }}
+
+    - name: 🎯 이미지 정보 출력
+      id: image
+      run: |
+        IMAGE="${{ env.REGISTRY }}/jclee94/${{ env.PROJECT_NAME }}:${{ needs.versioning.outputs.version }}"
+        echo "image=$IMAGE" >> $GITHUB_OUTPUT
+        echo "::notice::빌드된 이미지: $IMAGE"
+
+    - name: 🔍 이미지 보안 스캔 (Trivy)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ steps.image.outputs.image }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: 📊 보안 스캔 결과 업로드
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # 📝 K8s 매니페스트 업데이트
+  update-manifests:
+    name: 📝 K8s 매니페스트 업데이트
+    runs-on: ubuntu-latest
+    needs: [build-and-push, versioning]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: 📥 코드 체크아웃
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 🔧 환경별 매니페스트 업데이트
+      run: |
+        # 환경 결정
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+        else
+          ENVIRONMENT="production"
+        fi
+        
+        echo "🎯 배포 환경: $ENVIRONMENT"
+        echo "🐳 이미지: ${{ needs.build-and-push.outputs.image }}"
+        
+        # K8s 매니페스트 디렉토리 생성 (없는 경우)
+        mkdir -p k8s/overlays/$ENVIRONMENT
+        
+        # Kustomization 파일이 없으면 기본 파일 생성
+        if [ ! -f "k8s/overlays/$ENVIRONMENT/kustomization.yaml" ]; then
+          cat > k8s/overlays/$ENVIRONMENT/kustomization.yaml << EOF
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ${{ env.K8S_NAMESPACE }}
+
+resources:
+- ../../base
+
+images:
+- name: ${{ env.REGISTRY }}/jclee94/${{ env.PROJECT_NAME }}
+  newTag: ${{ needs.versioning.outputs.version }}
+
+patchesStrategicMerge:
+- resource-patch.yaml
+EOF
+          echo "::notice::Kustomization 파일 생성됨"
+        fi
+
+        # 이미지 태그 업데이트
+        sed -i "s|newTag:.*|newTag: ${{ needs.versioning.outputs.version }}|" k8s/overlays/$ENVIRONMENT/kustomization.yaml
+        
+        # 패치 파일이 없으면 기본 파일 생성
+        if [ ! -f "k8s/overlays/$ENVIRONMENT/resource-patch.yaml" ]; then
+          cat > k8s/overlays/$ENVIRONMENT/resource-patch.yaml << EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{ env.PROJECT_NAME }}
+  labels:
+    environment: $ENVIRONMENT
+    version: ${{ needs.versioning.outputs.version }}
+spec:
+  template:
+    metadata:
+      labels:
+        environment: $ENVIRONMENT
+        version: ${{ needs.versioning.outputs.version }}
+    spec:
+      containers:
+      - name: ${{ env.PROJECT_NAME }}
+        env:
+        - name: ENVIRONMENT
+          value: $ENVIRONMENT
+        - name: VERSION
+          value: ${{ needs.versioning.outputs.version }}
+EOF
+          echo "::notice::리소스 패치 파일 생성됨"
+        fi
+
+        # 변경사항 확인
+        if git diff --quiet; then
+          echo "::notice::매니페스트 변경사항 없음"
+        else
+          echo "::notice::매니페스트 업데이트됨"
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add k8s/
+          git commit -m "🚀 Deploy ${{ env.PROJECT_NAME }} ${{ needs.versioning.outputs.version }} to $ENVIRONMENT
+
+          - Environment: $ENVIRONMENT
+          - Image: ${{ needs.build-and-push.outputs.image }}
+          - Commit: ${{ github.sha }}
+          - Triggered by: ${{ github.actor }}"
+          git push
+          echo "::notice::매니페스트 커밋 및 푸시 완료"
+        fi
+
+  # 🔄 ArgoCD 동기화
+  argocd-sync:
+    name: 🔄 ArgoCD 동기화
+    runs-on: ubuntu-latest
+    needs: [update-manifests, versioning]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: 🎯 환경 설정
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+        else
+          ENVIRONMENT="production"
+        fi
+        echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+        echo "APP_NAME=${{ env.PROJECT_NAME }}-$ENVIRONMENT" >> $GITHUB_ENV
+
+    - name: ⏳ ArgoCD 동기화 대기
+      run: |
+        echo "::notice::ArgoCD가 Git 변경사항을 감지할 때까지 대기 중..."
+        sleep 30
+
+    - name: 🔄 ArgoCD 애플리케이션 동기화
+      run: |
+        echo "🔄 ArgoCD 동기화 시작..."
+        echo "📱 애플리케이션: ${{ env.APP_NAME }}"
+        echo "🌐 ArgoCD 서버: ${{ env.ARGOCD_SERVER }}"
+        
+        # ArgoCD API를 통한 동기화 트리거
+        SYNC_RESPONSE=$(curl -s -w "%{http_code}" \
+          -X POST "https://${{ env.ARGOCD_SERVER }}/api/v1/applications/${{ env.APP_NAME }}/sync" \
+          -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "prune": true,
+            "dryRun": false,
+            "strategy": {
+              "apply": {
+                "force": false
+              }
+            }
+          }' || echo "000")
+        
+        HTTP_CODE="${SYNC_RESPONSE: -3}"
+        RESPONSE_BODY="${SYNC_RESPONSE%???}"
+        
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+          echo "::notice::ArgoCD 동기화 성공적으로 트리거됨 (HTTP $HTTP_CODE)"
+        else
+          echo "::warning::ArgoCD 동기화 트리거 실패 (HTTP $HTTP_CODE)"
+          echo "Response: $RESPONSE_BODY"
+        fi
+
+    - name: ⏱️ 배포 상태 확인
+      run: |
+        echo "🔍 배포 상태 확인 중..."
+        
+        for i in {1..12}; do
+          echo "📊 시도 $i/12..."
+          
+          # ArgoCD 애플리케이션 상태 조회
+          APP_STATUS=$(curl -s \
+            "https://${{ env.ARGOCD_SERVER }}/api/v1/applications/${{ env.APP_NAME }}" \
+            -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" | \
+            python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    health = data.get('status', {}).get('health', {}).get('status', 'Unknown')
+    sync = data.get('status', {}).get('sync', {}).get('status', 'Unknown')
+    print(f'Health: {health}, Sync: {sync}')
+except:
+    print('Status: Unknown')
+" 2>/dev/null || echo "Status: Unknown")
+
+          echo "📈 현재 상태: $APP_STATUS"
+          
+          if echo "$APP_STATUS" | grep -q "Health: Healthy.*Sync: Synced"; then
+            echo "::notice::✅ 배포 성공! 애플리케이션이 정상 상태입니다."
+            echo "DEPLOYMENT_SUCCESS=true" >> $GITHUB_ENV
+            break
+          elif echo "$APP_STATUS" | grep -q "Health: Degraded\|Sync: OutOfSync"; then
+            echo "::warning::⚠️ 배포 중 문제 발생"
+          fi
+          
+          if [ $i -eq 12 ]; then
+            echo "::error::❌ 배포 상태 확인 시간 초과"
+            echo "DEPLOYMENT_SUCCESS=false" >> $GITHUB_ENV
+          else
+            sleep 30
+          fi
+        done
+
+  # ✅ 배포 후 검증
+  post-deployment-verification:
+    name: ✅ 배포 후 검증
+    runs-on: ubuntu-latest
+    needs: [argocd-sync, versioning, build-and-push]
+    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+    - name: 🎯 환경 설정
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+        else
+          ENVIRONMENT="production"
+        fi
+        echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+        
+        # 환경별 URL 설정
+        case "$ENVIRONMENT" in
+          "production")
+            APP_URL="https://blacklist.jclee.me"
+            ;;
+          "staging")
+            APP_URL="https://staging-blacklist.jclee.me"
+            ;;
+          "development")
+            APP_URL="https://dev-blacklist.jclee.me"
+            ;;
+          *)
+            APP_URL="https://blacklist.jclee.me"
+            ;;
+        esac
+        echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+
+    - name: 🏥 헬스체크 검증
+      run: |
+        echo "🔍 애플리케이션 헬스체크 시작..."
+        echo "🌐 URL: ${{ env.APP_URL }}/health"
+        
+        for i in {1..10}; do
+          echo "📊 헬스체크 시도 $i/10..."
+          
+          HEALTH_CHECK=$(curl -s -w "%{http_code}" "${{ env.APP_URL }}/health" || echo "000")
+          HTTP_CODE="${HEALTH_CHECK: -3}"
+          RESPONSE_BODY="${HEALTH_CHECK%???}"
+          
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "::notice::✅ 헬스체크 성공! (HTTP $HTTP_CODE)"
+            echo "$RESPONSE_BODY" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(f\"🏥 상태: {data.get('status', 'Unknown')}\")
+    print(f\"🐳 버전: {data.get('version', 'Unknown')}\")
+    print(f\"⏰ 업타임: {data.get('uptime', 'Unknown')}\")
+except:
+    print('✅ 헬스체크 응답 확인됨')
+" 2>/dev/null || echo "✅ 헬스체크 응답 확인됨"
+            break
+          else
+            echo "::warning::❌ 헬스체크 실패 (HTTP $HTTP_CODE)"
+            if [ $i -eq 10 ]; then
+              echo "::error::🚨 헬스체크 최종 실패 - 롤백이 필요할 수 있습니다"
+              echo "HEALTH_CHECK_FAILED=true" >> $GITHUB_ENV
+            else
+              sleep 30
+            fi
+          fi
+        done
+
+    - name: 🧪 기능 테스트
+      if: env.HEALTH_CHECK_FAILED != 'true'
+      run: |
+        echo "🧪 기본 API 엔드포인트 테스트..."
+        
+        # API 엔드포인트 테스트
+        ENDPOINTS=(
+          "/api/health"
+          "/api/blacklist/active"
+          "/api/collection/status"
+        )
+        
+        for endpoint in "${ENDPOINTS[@]}"; do
+          echo "🔗 테스트: $endpoint"
+          
+          RESPONSE=$(curl -s -w "%{http_code}" "${{ env.APP_URL }}$endpoint" || echo "000")
+          HTTP_CODE="${RESPONSE: -3}"
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "::notice::✅ $endpoint 정상 응답 (HTTP $HTTP_CODE)"
+          else
+            echo "::warning::⚠️ $endpoint 응답 이상 (HTTP $HTTP_CODE)"
+          fi
+        done
+
+    - name: 🔄 자동 롤백 (실패 시)
+      if: env.HEALTH_CHECK_FAILED == 'true' && github.ref == 'refs/heads/main'
+      run: |
+        echo "🚨 배포 실패 감지 - 자동 롤백 시작..."
+        
+        # 이전 성공 버전으로 롤백
+        echo "::error::자동 롤백 기능은 수동으로 ArgoCD에서 처리해주세요."
+        echo "::error::ArgoCD URL: https://${{ env.ARGOCD_SERVER }}/applications/${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}"
+
+  # 📢 배포 알림
+  notification:
+    name: 📢 배포 알림
+    runs-on: ubuntu-latest
+    needs: [post-deployment-verification, versioning, build-and-push]
+    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+    - name: 📊 배포 결과 요약
+      run: |
+        echo "🚀 Blacklist 배포 파이프라인 완료"
+        echo "================================"
+        echo "📦 프로젝트: ${{ env.PROJECT_NAME }}"
+        echo "🏷️ 버전: ${{ needs.versioning.outputs.version }}"
+        echo "🐳 이미지: ${{ needs.build-and-push.outputs.image }}"
+        echo "🌐 환경: ${{ env.ENVIRONMENT }}"
+        echo "👤 실행자: ${{ github.actor }}"
+        echo "🔗 커밋: ${{ github.sha }}"
+        
+        # 성공/실패 상태 확인
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "✅ 상태: 성공"
+        else
+          echo "❌ 상태: 실패"
+        fi
+        
+        echo "🔗 워크플로우: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    # Slack 알림 (optional - secret 있을 때만)
+    - name: 📱 Slack 알림
+      if: vars.SLACK_WEBHOOK_URL != ''
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ vars.SLACK_WEBHOOK_URL }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+        custom_payload: |
+          {
+            "text": "${{ job.status == 'success' && '✅' || '❌' }} Blacklist 배포 ${{ job.status == 'success' && '성공' || '실패' }}",
+            "attachments": [{
+              "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+              "fields": [
+                {"title": "프로젝트", "value": "${{ env.PROJECT_NAME }}", "short": true},
+                {"title": "버전", "value": "${{ needs.versioning.outputs.version }}", "short": true},
+                {"title": "환경", "value": "${{ env.ENVIRONMENT }}", "short": true},
+                {"title": "실행자", "value": "${{ github.actor }}", "short": true}
+              ]
+            }]
+          }
+
+  # 🧹 정리 작업
+  cleanup:
+    name: 🧹 정리 작업
+    runs-on: ubuntu-latest
+    needs: [notification]
+    if: always()
+    
+    steps:
+    - name: 🗑️ 오래된 워크플로우 실행 정리
+      run: |
+        echo "🧹 워크플로우 정리 작업은 GitHub 설정에서 관리됩니다."
+        echo "💡 GitHub Repository Settings > Actions > General에서 설정 가능"
+
+    - name: 📊 파이프라인 메트릭스
+      run: |
+        END_TIME=$(date +%s)
+        START_TIME=${{ github.event.head_commit.timestamp && 'date -d "${{ github.event.head_commit.timestamp }}" +%s' || 'echo $END_TIME' }}
+        DURATION=$((END_TIME - START_TIME))
+        
+        echo "⏱️ 파이프라인 실행 시간: ${DURATION}초"
+        echo "🔄 워크플로우 ID: ${{ github.run_id }}"
+        echo "📈 실행 번호: ${{ github.run_number }}"

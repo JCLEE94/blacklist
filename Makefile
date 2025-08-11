@@ -75,7 +75,7 @@ clean:
 	@echo "Cleanup completed!"
 
 # Development shortcuts
-.PHONY: run dev install
+.PHONY: run dev install docker-build docker-push k8s-deploy k8s-status argocd-sync
 
 # Run development server (local)
 run:
@@ -88,3 +88,76 @@ install:
 # Development mode with auto-reload (local)
 dev:
 	@FLASK_ENV=development python3 main.py --debug
+
+# Docker operations
+docker-build:
+	@echo "Building Docker image..."
+	@docker build -t registry.jclee.me/jclee94/blacklist:latest .
+	@echo "Docker image built successfully!"
+
+docker-push:
+	@echo "Pushing Docker image to registry..."
+	@docker push registry.jclee.me/jclee94/blacklist:latest
+	@echo "Docker image pushed successfully!"
+
+docker-run:
+	@echo "Running Docker container locally..."
+	@docker run -d --name blacklist-test \
+		-p 2541:2541 \
+		-e FLASK_ENV=production \
+		registry.jclee.me/jclee94/blacklist:latest
+
+# Kubernetes operations
+k8s-deploy:
+	@echo "Deploying to Kubernetes..."
+	@kubectl apply -k k8s/overlays/production
+	@echo "Kubernetes deployment initiated!"
+
+k8s-status:
+	@echo "Kubernetes deployment status:"
+	@kubectl get pods -l app=blacklist -o wide
+	@echo ""
+	@kubectl get services -l app=blacklist
+	@echo ""
+	@kubectl get ingress blacklist-ingress
+
+k8s-logs:
+	@echo "Fetching Kubernetes logs..."
+	@kubectl logs -l app=blacklist --tail=100
+
+k8s-describe:
+	@echo "Describing Kubernetes resources..."
+	@kubectl describe deployment blacklist
+	@echo ""
+	@kubectl describe service blacklist-service
+
+# ArgoCD operations
+argocd-sync:
+	@echo "Triggering ArgoCD sync..."
+	@curl -k -X POST https://argo.jclee.me/api/v1/applications/blacklist-production/sync \
+		-H "Authorization: Bearer $(ARGOCD_TOKEN)" || echo "Manual sync required via ArgoCD UI"
+
+argocd-status:
+	@echo "ArgoCD application status:"
+	@curl -k -s https://argo.jclee.me/api/v1/applications/blacklist-production \
+		-H "Authorization: Bearer $(ARGOCD_TOKEN)" | jq '.status.sync, .status.health' || echo "Check ArgoCD UI manually"
+
+# Complete deployment workflow
+deploy:
+	@echo "🚀 Complete GitOps Deployment Workflow"
+	@echo "======================================"
+	@echo ""
+	@echo "1. Building and pushing Docker image..."
+	@make docker-build
+	@make docker-push
+	@echo ""
+	@echo "2. Waiting for ArgoCD auto-sync (2 minutes)..."
+	@sleep 120
+	@echo ""
+	@echo "3. Checking deployment status..."
+	@make k8s-status
+	@echo ""
+	@echo "🎯 Deployment URLs:"
+	@echo "   Application: https://blacklist.jclee.me"
+	@echo "   ArgoCD: https://argo.jclee.me"
+	@echo "   Health: https://blacklist.jclee.me/health"

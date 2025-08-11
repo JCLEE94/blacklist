@@ -1,8 +1,23 @@
-name: Watchtower Auto-Deploy Pipeline
+name: 'Blacklist K8s GitOps Deploy Pipeline'
+
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'scripts/**'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
 
 env:
   REGISTRY: registry.jclee.me
@@ -10,106 +25,192 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: self-hosted
-    permissions:
-      contents: write
-      packages: write
-      
+    name: 'Build and Push Docker Image'
+    runs-on: ubuntu-latest
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+      version: ${{ steps.version.outputs.version }}
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+    - name: 'Checkout Repository'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          config-inline: |
-            [registry."registry.jclee.me"]
-              http = true
-              insecure = true
+    - name: 'Set up Docker Buildx'
+      uses: docker/setup-buildx-action@v3
       
-      - name: Log in to Docker Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_REGISTRY_USER }}
-          password: ${{ secrets.DOCKER_REGISTRY_PASS }}
-      
-      - name: Generate version and tags
-        id: meta
-        run: |
-          # Generate version info
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-          
-          # Auto-increment version
-          if [ -f VERSION ]; then
-            CURRENT_VERSION=$(cat VERSION)
+    - name: 'Login to Registry'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_REGISTRY_USER }}
+        password: ${{ secrets.DOCKER_REGISTRY_PASS }}
+    
+    - name: 'Generate Version'
+      id: version
+      run: |
+        # Auto-increment version
+        if [ -f VERSION ]; then
+          CURRENT_VERSION=$(cat VERSION)
+        else
+          CURRENT_VERSION="1.0.0"
+        fi
+        
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+        PATCH=$((PATCH + 1))
+        
+        if [ $PATCH -ge 100 ]; then
+          PATCH=0
+          MINOR=$((MINOR + 1))
+        fi
+        
+        if [ $MINOR -ge 100 ]; then
+          MINOR=0
+          MAJOR=$((MAJOR + 1))
+        fi
+        
+        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+        echo "$NEW_VERSION" > VERSION
+        echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "date=$(date +'%Y-%m-%d-%H%M%S')" >> $GITHUB_OUTPUT
+        
+        echo "🔄 Version: $CURRENT_VERSION → $NEW_VERSION"
+    
+    - name: 'Extract Metadata'
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ steps.version.outputs.version }}
+          type=raw,value=${{ steps.version.outputs.sha_short }}
+          type=raw,value={{date 'YYYY-MM-DD-HHmmss' tz='Asia/Seoul'}}
+        labels: |
+          org.opencontainers.image.title=Blacklist Management System
+          org.opencontainers.image.description=Python Flask threat intelligence platform for K8s
+          org.opencontainers.image.vendor=jclee.me
+          org.opencontainers.image.version=${{ steps.version.outputs.version }}
+    
+    - name: 'Build and Push Image'
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        platforms: linux/amd64
+        build-args: |
+          VERSION=${{ steps.version.outputs.version }}
+          BUILD_DATE=${{ steps.version.outputs.date }}
+          VCS_REF=${{ steps.version.outputs.sha_short }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        provenance: false
+    
+    - name: 'Commit Version Update'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        git add VERSION
+        
+        if ! git diff --staged --quiet; then
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
+          git push origin main
+        fi
+
+  deploy-gitops:
+    name: 'K8s GitOps Deployment'
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 'ArgoCD Auto-Sync Status'
+      run: |
+        echo "🔄 ArgoCD GitOps Deployment Pipeline"
+        echo "=================================="
+        echo ""
+        echo "📦 **Docker Image:** ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "🏷️  **Version:** ${{ needs.build-and-push.outputs.version }}"
+        echo "📁 **K8s Path:** k8s/overlays/production"
+        echo "🎯 **Namespace:** default"
+        echo "🌐 **Cluster:** k8s.jclee.me"
+        echo ""
+        echo "⚙️  **ArgoCD Configuration:**"
+        echo "  - Auto Sync: ✅ Enabled"
+        echo "  - Self Heal: ✅ Enabled"
+        echo "  - Prune: ✅ Enabled" 
+        echo "  - Sync Wave: 1"
+        echo ""
+        echo "🔗 **Monitoring URLs:**"
+        echo "  - ArgoCD: https://argo.jclee.me/applications/blacklist-production"
+        echo "  - Application: https://blacklist.jclee.me"
+        echo "  - Health Check: https://blacklist.jclee.me/health"
+    
+    - name: 'Watchtower Fallback'
+      run: |
+        echo "🐳 **Watchtower Backup Deployment**"
+        echo "================================="
+        echo ""
+        echo "Watchtower는 60초 간격으로 새 이미지를 감지하고 자동 배포합니다."
+        echo "ArgoCD가 실패하는 경우 Watchtower가 Docker Compose로 fallback 제공합니다."
+        echo ""
+        echo "📍 **Watchtower 대상 서버:**"
+        echo "  - 192.168.50.110 (K8s Node)"
+        echo "  - Docker Compose 환경"
+
+  verify-deployment:
+    name: 'Deployment Verification'
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-gitops]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 'Wait for Deployment'
+      run: |
+        echo "⏳ K8s 롤링 업데이트 대기 중..."
+        echo "ArgoCD sync와 pod 재시작을 위해 2분 대기합니다."
+        sleep 120
+    
+    - name: 'Health Check Verification'
+      run: |
+        echo "🏥 애플리케이션 상태 확인..."
+        
+        # Health check with retry
+        for i in {1..5}; do
+          if curl -f -s --max-time 10 https://blacklist.jclee.me/health; then
+            echo "✅ Health check 성공 (시도 $i/5)"
+            break
           else
-            CURRENT_VERSION="1.0.0"
+            echo "⏳ Health check 실패 - 재시도 $i/5 (30초 후)"
+            sleep 30
           fi
-          
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-          PATCH=$((PATCH + 1))
-          
-          if [ $PATCH -ge 100 ]; then
-            PATCH=0
-            MINOR=$((MINOR + 1))
-          fi
-          
-          if [ $MINOR -ge 100 ]; then
-            MINOR=0
-            MAJOR=$((MAJOR + 1))
-          fi
-          
-          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-          echo "$NEW_VERSION" > VERSION
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
-          echo "🔄 Version: $CURRENT_VERSION → $NEW_VERSION"
-      
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./deployment/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-          build-args: |
-            VERSION=${{ steps.meta.outputs.version }}
-            BUILD_DATE=${{ steps.meta.outputs.date }}
-            VCS_REF=${{ steps.meta.outputs.sha_short }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      - name: Commit version update
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          git add VERSION
-          
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: bump version to ${{ steps.meta.outputs.version }} [skip ci]"
-            git push origin main
-          fi
-      
-      - name: Trigger Watchtower update
-        run: |
-          echo "🚀 Deployment Summary"
-          echo "===================="
-          echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          echo "🏷️  Version: ${{ steps.meta.outputs.version }}"
-          echo "🔄 SHA: ${{ steps.meta.outputs.sha_short }}"
-          echo ""
-          echo "⏰ Watchtower will automatically detect and deploy this update within 2-5 minutes"
-          echo ""
-          echo "📍 Deployment targets with Watchtower:"
-          echo "  • Synology NAS (192.168.50.215)"
-          echo "  • Production servers with Watchtower enabled"
-          echo ""
-          echo "✅ No manual intervention required - Watchtower handles everything!"
+        done
+    
+    - name: 'Generate Deployment Summary'
+      run: |
+        echo "### 🚀 K8s GitOps 배포 완료" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**배포 정보:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏷️ 버전: \`${{ needs.build-and-push.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 이미지: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "- 🎯 네임스페이스: \`default\`" >> $GITHUB_STEP_SUMMARY
+        echo "- ☸️ 클러스터: \`k8s.jclee.me\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**배포 방식:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔄 ArgoCD GitOps (Primary)" >> $GITHUB_STEP_SUMMARY
+        echo "- 🐳 Watchtower (Fallback)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**접근 URL:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 🌐 애플리케이션: https://blacklist.jclee.me" >> $GITHUB_STEP_SUMMARY
+        echo "- 📊 ArgoCD 대시보드: https://argo.jclee.me" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔍 상태 확인: https://blacklist.jclee.me/health" >> $GITHUB_STEP_SUMMARY

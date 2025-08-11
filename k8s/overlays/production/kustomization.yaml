@@ -1,19 +1,43 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: blacklist-system
+metadata:
+  name: blacklist-production
+  annotations:
+    description: "Blacklist Production Environment Configuration"
+
+namespace: default
 
 resources:
-  - ../../base
+- ../../base
 
 patchesStrategicMerge:
-  - replica-patch.yaml
-  - resource-patch.yaml
+- resource-patch.yaml
 
 images:
-  - name: registry.jclee.me/blacklist
-    newTag: latest
+- name: registry.jclee.me/jclee94/blacklist
+  newTag: latest
 
 commonLabels:
   environment: production
   tier: production
+  app.kubernetes.io/managed-by: argocd
+
+replicas:
+- name: blacklist
+  count: 3
+
+configMapGenerator:
+- name: blacklist-prod-config
+  literals:
+  - FLASK_ENV=production
+  - LOG_LEVEL=INFO
+  - COLLECTION_ENABLED=true
+  - MAX_AUTH_ATTEMPTS=3
+  - RATE_LIMIT_REQUESTS=50
+
+secretGenerator:
+- name: blacklist-prod-secrets
+  literals:
+  - SECRET_KEY=production-secret-change-me
+  - JWT_SECRET_KEY=production-jwt-secret-change-me

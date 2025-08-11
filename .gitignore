@@ -164,6 +164,17 @@ test-reports/
 coverage.xml
 .coverage
 
+# Temporary reports and analysis files
+.*-report.json
+.*-report.md
+.project-profile.json
+.infrastructure-report.json
+.code-quality-report.json
+.test-execution-report.json
+.argocd-auth-status.json
+.nodeport-current.json
+.build_trigger
+
 # Temporary scripts
 # *_git_*.sh  # Temporarily allow git_commit.sh
 *_git_*.py
