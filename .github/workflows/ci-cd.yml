@@ -1,0 +1,486 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: jclee94/blacklist
+  HELM_CHART_NAME: blacklist
+  HELM_REGISTRY: https://charts.jclee.me
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.11']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-mock black isort flake8 bandit safety
+
+    - name: Run code quality checks
+      run: |
+        echo "Running code quality checks..."
+        black --check src/ tests/ || echo "Code formatting issues found"
+        isort --check-only src/ tests/ || echo "Import sorting issues found"
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 src/ --count --max-line-length=88 --extend-ignore=E203,W503 --statistics
+
+    - name: Security scan
+      run: |
+        bandit -r src/ -ll -f json -o bandit-report.json || true
+        safety check --json --output safety-report.json || true
+
+    - name: File size check (500 line rule)
+      run: |
+        echo "Checking file sizes (max 500 lines)..."
+        find src/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 { print "❌ " $2 " has " $1 " lines (exceeds 500 limit)"; exit 1 }' || echo "✅ All files within 500 line limit"
+
+    - name: Run tests with coverage
+      run: |
+        python -m pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing
+      env:
+        FLASK_ENV: testing
+        FORCE_DISABLE_COLLECTION: true
+        COLLECTION_ENABLED: false
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security-scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner (filesystem)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-fs-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-fs-results.sarif'
+
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-,format=short
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+    - name: Run Trivy vulnerability scanner (image)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-image-results.sarif'
+
+    - name: Upload Trivy image scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-image-results.sarif'
+
+  package-helm:
+    name: Package and Push Helm Chart
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: '3.12.0'
+
+    - name: Create Helm chart if not exists
+      run: |
+        if [ ! -d "helm-chart" ]; then
+          mkdir -p helm-chart
+          helm create helm-chart/${{ env.HELM_CHART_NAME }}
+          
+          # Update Chart.yaml with project metadata
+          cat > helm-chart/${{ env.HELM_CHART_NAME }}/Chart.yaml << EOF
+        apiVersion: v2
+        name: ${{ env.HELM_CHART_NAME }}
+        description: Enterprise threat intelligence blacklist management system
+        type: application
+        version: 3.2.10
+        appVersion: "2.0.1"
+        home: https://github.com/JCLEE94/blacklist
+        sources:
+          - https://github.com/JCLEE94/blacklist
+        maintainers:
+          - name: JCLEE94
+            email: jclee@jclee.me
+        keywords:
+          - blacklist
+          - security
+          - threat-intelligence
+          - fortigate
+        EOF
+        fi
+
+    - name: Update deployment template with current image
+      run: |
+        mkdir -p helm-chart/${{ env.HELM_CHART_NAME }}/templates
+        
+        # Create comprehensive deployment template
+        cat > helm-chart/${{ env.HELM_CHART_NAME }}/templates/deployment.yaml << 'EOF'
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: {{ include "blacklist.fullname" . }}
+          labels:
+            {{- include "blacklist.labels" . | nindent 4 }}
+        spec:
+          replicas: {{ .Values.replicaCount }}
+          selector:
+            matchLabels:
+              {{- include "blacklist.selectorLabels" . | nindent 6 }}
+          template:
+            metadata:
+              labels:
+                {{- include "blacklist.selectorLabels" . | nindent 8 }}
+            spec:
+              {{- if .Values.imagePullSecrets }}
+              imagePullSecrets:
+                {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+              {{- end }}
+              containers:
+                - name: {{ .Chart.Name }}
+                  image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+                  imagePullPolicy: {{ .Values.image.pullPolicy }}
+                  ports:
+                    - name: http
+                      containerPort: 2541
+                      protocol: TCP
+                  livenessProbe:
+                    httpGet:
+                      path: /health
+                      port: http
+                    initialDelaySeconds: 30
+                    periodSeconds: 30
+                  readinessProbe:
+                    httpGet:
+                      path: /ready
+                      port: http
+                    initialDelaySeconds: 5
+                    periodSeconds: 10
+                  env:
+                    - name: FLASK_ENV
+                      value: "production"
+                    - name: PORT
+                      value: "2541"
+                    - name: FORCE_DISABLE_COLLECTION
+                      value: "{{ .Values.security.forceDisableCollection }}"
+                    - name: COLLECTION_ENABLED
+                      value: "{{ .Values.collection.enabled }}"
+                  resources:
+                    {{- toYaml .Values.resources | nindent 12 }}
+                  volumeMounts:
+                    - name: data
+                      mountPath: /app/instance
+                    - name: logs
+                      mountPath: /app/logs
+              volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: {{ include "blacklist.fullname" . }}-data
+                - name: logs
+                  persistentVolumeClaim:
+                    claimName: {{ include "blacklist.fullname" . }}-logs
+        EOF
+
+        # Update values.yaml with production settings
+        cat > helm-chart/${{ env.HELM_CHART_NAME }}/values.yaml << EOF
+        replicaCount: 2
+
+        image:
+          repository: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          pullPolicy: Always
+          tag: "latest"
+
+        imagePullSecrets:
+          - name: registry-secret
+
+        service:
+          type: ClusterIP
+          port: 80
+          targetPort: 2541
+
+        ingress:
+          enabled: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: "letsencrypt-prod"
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+          hosts:
+            - host: blacklist.jclee.me
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: blacklist-tls
+              hosts:
+                - blacklist.jclee.me
+
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+
+        security:
+          forceDisableCollection: "false"
+          
+        collection:
+          enabled: "true"
+
+        persistence:
+          data:
+            enabled: true
+            size: 1Gi
+            storageClass: "default"
+          logs:
+            enabled: true
+            size: 500Mi
+            storageClass: "default"
+
+        redis:
+          enabled: true
+          auth:
+            enabled: false
+          master:
+            persistence:
+              enabled: true
+              size: 256Mi
+
+        autoscaling:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 10
+          targetCPUUtilizationPercentage: 70
+        EOF
+
+    - name: Package Helm chart
+      run: |
+        cd helm-chart
+        helm package ${{ env.HELM_CHART_NAME }} --destination ../chart/
+
+    - name: Configure Helm registry
+      run: |
+        helm registry login ${{ env.REGISTRY }} \
+          --username ${{ secrets.REGISTRY_USERNAME }} \
+          --password ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Push Helm chart to registry
+      run: |
+        CHART_VERSION=$(helm show chart helm-chart/${{ env.HELM_CHART_NAME }} | grep '^version:' | awk '{print $2}')
+        helm push chart/${{ env.HELM_CHART_NAME }}-${CHART_VERSION}.tgz oci://${{ env.REGISTRY }}/helm
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, package-helm]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > /tmp/kubeconfig
+        export KUBECONFIG=/tmp/kubeconfig
+        kubectl cluster-info
+
+    - name: Create namespace if not exists
+      run: |
+        export KUBECONFIG=/tmp/kubeconfig
+        kubectl create namespace blacklist || true
+
+    - name: Create registry secret
+      run: |
+        export KUBECONFIG=/tmp/kubeconfig
+        kubectl create secret docker-registry registry-secret \
+          --docker-server=${{ env.REGISTRY }} \
+          --docker-username=${{ secrets.REGISTRY_USERNAME }} \
+          --docker-password=${{ secrets.REGISTRY_PASSWORD }} \
+          -n blacklist --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Trigger ArgoCD sync
+      run: |
+        curl -k -X POST \
+          -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{"prune": true, "dryRun": false, "strategy": {"hook": {"force": true}}}' \
+          https://argo.jclee.me/api/v1/applications/blacklist/sync
+        
+        # Wait for sync to complete
+        sleep 30
+
+    - name: Verify ArgoCD application status
+      run: |
+        STATUS=$(curl -k -s -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+          https://argo.jclee.me/api/v1/applications/blacklist | \
+          jq -r '.status.sync.status // "Unknown"')
+        
+        HEALTH=$(curl -k -s -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+          https://argo.jclee.me/api/v1/applications/blacklist | \
+          jq -r '.status.health.status // "Unknown"')
+        
+        echo "ArgoCD Sync Status: $STATUS"
+        echo "ArgoCD Health Status: $HEALTH"
+        
+        if [ "$STATUS" = "Synced" ] && [ "$HEALTH" = "Healthy" ]; then
+          echo "✅ ArgoCD deployment successful"
+        else
+          echo "❌ ArgoCD deployment failed or unhealthy"
+          exit 1
+        fi
+
+    - name: Wait for deployment rollout
+      run: |
+        export KUBECONFIG=/tmp/kubeconfig
+        kubectl rollout status deployment/blacklist -n blacklist --timeout=600s
+
+    - name: Verify deployment health
+      run: |
+        export KUBECONFIG=/tmp/kubeconfig
+        
+        # Get pod status
+        kubectl get pods -l app=blacklist -n blacklist
+        
+        # Check if pods are ready
+        READY_PODS=$(kubectl get pods -l app=blacklist -n blacklist -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -c "True" || echo "0")
+        TOTAL_PODS=$(kubectl get pods -l app=blacklist -n blacklist --no-headers | wc -l)
+        
+        echo "Ready pods: $READY_PODS/$TOTAL_PODS"
+        
+        if [ "$READY_PODS" -eq "$TOTAL_PODS" ] && [ "$TOTAL_PODS" -gt "0" ]; then
+          echo "✅ All pods are ready"
+        else
+          echo "❌ Some pods are not ready"
+          kubectl describe pods -l app=blacklist -n blacklist
+          exit 1
+        fi
+
+    - name: Run health check
+      run: |
+        # Internal cluster health check
+        export KUBECONFIG=/tmp/kubeconfig
+        
+        # Port forward for testing
+        kubectl port-forward -n blacklist svc/blacklist 8080:80 &
+        sleep 10
+        
+        # Health check
+        if curl -f http://localhost:8080/health > /dev/null 2>&1; then
+          echo "✅ Application health check passed"
+        else
+          echo "❌ Application health check failed"
+          exit 1
+        fi
+
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+
+    steps:
+    - name: Send deployment status
+      run: |
+        if [ "${{ needs.deploy.result }}" = "success" ]; then
+          echo "🚀 Deployment successful!"
+          echo "✅ Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "✅ ArgoCD: https://argo.jclee.me/applications/blacklist"
+          echo "✅ Application: https://blacklist.jclee.me"
+        else
+          echo "❌ Deployment failed!"
+          echo "Please check the logs and ArgoCD status"
+        fi

@@ -1,0 +1,174 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+  labels:
+    app: blacklist
+    environment: production
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/JCLEE94/blacklist.git
+    targetRevision: HEAD
+    path: helm-chart/blacklist
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        image:
+          repository: registry.jclee.me/jclee94/blacklist
+          tag: latest
+          pullPolicy: Always
+        
+        replicaCount: 2
+        
+        service:
+          type: ClusterIP
+          port: 80
+          targetPort: 2541
+        
+        ingress:
+          enabled: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: "letsencrypt-prod"
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+          hosts:
+            - host: blacklist.jclee.me
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: blacklist-tls
+              hosts:
+                - blacklist.jclee.me
+        
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        
+        autoscaling:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 10
+          targetCPUUtilizationPercentage: 70
+        
+        persistence:
+          data:
+            enabled: true
+            size: 1Gi
+            storageClass: "default"
+          logs:
+            enabled: true
+            size: 500Mi
+            storageClass: "default"
+        
+        security:
+          forceDisableCollection: "false"
+          
+        collection:
+          enabled: "true"
+        
+        redis:
+          enabled: true
+          auth:
+            enabled: false
+          master:
+            persistence:
+              enabled: true
+              size: 256Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  revisionHistoryLimit: 3
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: blacklist-project
+  namespace: argocd
+spec:
+  description: Blacklist Management System Project
+  
+  sourceRepos:
+    - 'https://github.com/JCLEE94/blacklist.git'
+    - 'registry.jclee.me/helm/*'
+  
+  destinations:
+    - namespace: blacklist
+      server: https://kubernetes.default.svc
+    - namespace: blacklist-*
+      server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: '*'
+    - group: 'apps'
+      kind: '*'
+    - group: 'networking.k8s.io'
+      kind: '*'
+    - group: 'extensions'
+      kind: '*'
+    - group: 'policy'
+      kind: '*'
+    - group: 'autoscaling'
+      kind: '*'
+  
+  roles:
+    - name: admin
+      description: Admin role for blacklist project
+      policies:
+        - p, proj:blacklist-project:admin, applications, *, blacklist-project/*, allow
+        - p, proj:blacklist-project:admin, repositories, *, *, allow
+      groups:
+        - blacklist-admins
+    
+    - name: developer
+      description: Developer role for blacklist project  
+      policies:
+        - p, proj:blacklist-project:developer, applications, get, blacklist-project/*, allow
+        - p, proj:blacklist-project:developer, applications, sync, blacklist-project/*, allow
+      groups:
+        - blacklist-developers

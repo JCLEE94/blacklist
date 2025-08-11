@@ -1,0 +1,43 @@
+apiVersion: v2
+name: blacklist
+description: Enterprise threat intelligence blacklist management system with FortiGate integration
+type: application
+version: 3.2.10
+appVersion: "2.0.1"
+
+home: https://github.com/JCLEE94/blacklist
+sources:
+  - https://github.com/JCLEE94/blacklist
+
+maintainers:
+  - name: JCLEE94
+    email: jclee@jclee.me
+    url: https://github.com/JCLEE94
+
+keywords:
+  - blacklist
+  - security
+  - threat-intelligence
+  - fortigate
+  - flask
+  - python
+
+annotations:
+  category: Security
+  licenses: MIT
+  artifacthub.io/changes: |
+    - Added comprehensive CI/CD pipeline
+    - Enhanced GitOps integration with ArgoCD
+    - Multi-environment deployment support
+    - Production-ready security configurations
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/images: |
+    - name: blacklist
+      image: registry.jclee.me/jclee94/blacklist:2.0.1
+
+dependencies:
+  - name: redis
+    version: "18.1.5"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled

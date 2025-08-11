@@ -1,0 +1,51 @@
+{{- if .Values.persistence.data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "blacklist.fullname" . }}-data
+  labels:
+    {{- include "blacklist.labels" . | nindent 4 }}
+    component: data
+spec:
+  accessModes:
+    {{- range .Values.persistence.data.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size | quote }}
+  {{- if .Values.persistence.data.storageClass }}
+  {{- if (eq "-" .Values.persistence.data.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: "{{ .Values.persistence.data.storageClass }}"
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+---
+
+{{- if .Values.persistence.logs.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "blacklist.fullname" . }}-logs
+  labels:
+    {{- include "blacklist.labels" . | nindent 4 }}
+    component: logs
+spec:
+  accessModes:
+    {{- range .Values.persistence.logs.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.logs.size | quote }}
+  {{- if .Values.persistence.logs.storageClass }}
+  {{- if (eq "-" .Values.persistence.logs.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: "{{ .Values.persistence.logs.storageClass }}"
+  {{- end }}
+  {{- end }}
+{{- end }}
