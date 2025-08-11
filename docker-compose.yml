@@ -12,12 +12,12 @@ services:
       - "com.centurylinklabs.watchtower.cleanup=true"
       - "com.centurylinklabs.watchtower.notification-level=info"
     ports:
-      - "32542:32542"
+      - "32542:2541"
     env_file:
       - .env
     environment:
       - FLASK_ENV=production
-      - PORT=32542
+      - PORT=2541
       - HOST=0.0.0.0
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=sqlite:////app/instance/blacklist.db
@@ -42,7 +42,7 @@ services:
     networks:
       - blacklist-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:32542/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
       interval: 30s
       timeout: 10s
       retries: 3

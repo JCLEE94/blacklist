@@ -2,19 +2,17 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: blacklist
+  namespace: blacklist
   labels:
     app: blacklist
+    component: ingress
+    version: v1
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
-  ingressClassName: nginx
   tls:
   - hosts:
     - blacklist.jclee.me
@@ -29,4 +27,4 @@ spec:
           service:
             name: blacklist
             port:
-              number: 32542
+              number: 80

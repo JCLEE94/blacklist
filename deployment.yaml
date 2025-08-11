@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:20250811-153043-861108f
+        image: registry.jclee.me/blacklist:latest
         ports:
         - containerPort: 2541
           name: http
