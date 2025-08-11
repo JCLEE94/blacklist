@@ -12,11 +12,11 @@ spec:
   ports:
   - name: http
     port: 80
-    targetPort: 2541
+    targetPort: 32542
     protocol: TCP
   - name: https
     port: 443
-    targetPort: 2541
+    targetPort: 32542
     protocol: TCP
   selector:
     app: blacklist
@@ -57,8 +57,8 @@ spec:
   type: NodePort
   ports:
   - name: http
-    port: 2541
-    targetPort: 2541
+    port: 32542
+    targetPort: 32542
     nodePort: 32542
     protocol: TCP
   selector:

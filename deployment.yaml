@@ -23,10 +23,10 @@ spec:
         imagePullPolicy: Always
         ports:
         - name: http
-          containerPort: 2541
+          containerPort: 32542
         env:
         - name: PORT
-          value: "2541"
+          value: "32542"
         - name: HOST
           value: "0.0.0.0"
         - name: FLASK_ENV
@@ -38,9 +38,9 @@ spec:
         - name: DATABASE_URL
           value: "sqlite:////tmp/blacklist.db"
         - name: FORCE_DISABLE_COLLECTION
-          value: "true"
-        - name: COLLECTION_ENABLED
           value: "false"
+        - name: COLLECTION_ENABLED
+          value: "true"
         resources:
           requests:
             memory: "128Mi"
