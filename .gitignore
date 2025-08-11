@@ -103,9 +103,10 @@ document/
 .env.regtech
 .gitlab-runner-config.toml
 
-# Chart archives and temporary files
+# Chart archives and temporary files  
 charts/**/*.tgz
 !charts/blacklist/blacklist-*.tgz
+chart/**/*.tgz
 *.tgz.backup
 
 # AI helper files
