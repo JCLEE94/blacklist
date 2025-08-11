@@ -18,13 +18,13 @@ spec:
     spec:
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:latest
+        image: registry.jclee.me/blacklist:20250811-150204-7a24ea2
         ports:
-        - containerPort: 32542
+        - containerPort: 2541
           name: http
         env:
         - name: PORT
-          value: "32542"
+          value: "2541"
         - name: HOST
           value: "0.0.0.0"
         - name: FLASK_ENV
@@ -41,21 +41,21 @@ spec:
           value: "true"
         resources:
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "128Mi"
+            cpu: "200m"
           requests:
-            memory: "256Mi" 
-            cpu: "250m"
+            memory: "64Mi" 
+            cpu: "50m"
         livenessProbe:
           httpGet:
             path: /health
-            port: 32542
+            port: 2541
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 32542
+            port: 2541
           initialDelaySeconds: 5
           periodSeconds: 5
       imagePullSecrets:

@@ -8,8 +8,8 @@ spec:
   type: NodePort
   ports:
   - port: 32542
-    targetPort: 32542
-    nodePort: 32542
+    targetPort: 2541
+    nodePort: 32543
     name: http
   selector:
     app: blacklist
