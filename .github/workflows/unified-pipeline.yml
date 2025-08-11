@@ -56,21 +56,48 @@ jobs:
     
     - name: 'Update Helm Chart Version'
       run: |
+        # Increment chart version
+        CHART_VERSION=$(grep '^version:' ${{ env.HELM_CHART_PATH }}/Chart.yaml | awk '{print $2}')
+        NEW_CHART_VERSION=$(echo $CHART_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+        
+        # Update Chart.yaml with new versions
+        sed -i "s/^version: .*/version: $NEW_CHART_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
         sed -i "s/appVersion: \".*\"/appVersion: \"${{ steps.version.outputs.version }}\"/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
-        sed -i "s/tag: .*/tag: ${{ steps.version.outputs.version }}/" ${{ env.HELM_CHART_PATH }}/values.yaml
-        echo "Updated Helm chart to version ${{ steps.version.outputs.version }}"
+        
+        # Update values.yaml with latest tag
+        sed -i "s/tag: .*/tag: latest/" ${{ env.HELM_CHART_PATH }}/values.yaml
+        
+        echo "Updated Helm chart version to $NEW_CHART_VERSION"
+        echo "chart_version=$NEW_CHART_VERSION" >> $GITHUB_OUTPUT
     
-    - name: 'Commit and Push Changes'
+    - name: 'Package and Push Helm Chart'
+      run: |
+        # Package Helm chart
+        helm package ${{ env.HELM_CHART_PATH }}
+        
+        # Push to charts.jclee.me
+        CHART_PACKAGE="${{ env.IMAGE_NAME }}-${{ steps.version.outputs.chart_version }}.tgz"
+        curl -u admin:${{ secrets.HELM_REPO_PASSWORD }} \
+          --data-binary "@${CHART_PACKAGE}" \
+          https://charts.jclee.me/api/charts
+        
+        echo "Helm chart pushed to charts.jclee.me"
+        
+        # Clean up package file
+        rm -f ${CHART_PACKAGE}
+    
+    - name: 'Commit Chart Updates'
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git add ${{ env.HELM_CHART_PATH }}/Chart.yaml ${{ env.HELM_CHART_PATH }}/values.yaml
-        git commit -m "ci: update Helm chart to version ${{ steps.version.outputs.version }}
+        git commit -m "ci: update Helm chart to version ${{ steps.version.outputs.chart_version }}
         
-        🚀 Automated GitOps deployment
-        - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-        - Chart version updated automatically
-        - ArgoCD will sync within 3 minutes
+        🚀 Automated GitOps deployment via Helm Charts
+        - Docker Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        - Helm Chart: ${{ env.IMAGE_NAME }}-${{ steps.version.outputs.chart_version }}
+        - Repository: https://charts.jclee.me
+        - ArgoCD will auto-sync from Helm repository
         
         🤖 Generated with [Claude Code](https://claude.ai/code)
         Co-Authored-By: Claude <noreply@anthropic.com>" || echo "No changes to commit"
