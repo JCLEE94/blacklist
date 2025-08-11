@@ -39,6 +39,18 @@ class BlueprintRegistrationMixin:
         # Register V2 API routes (advanced features under /api/v2)
         try:
             from ..v2_routes import v2_bp
+            from ..v2_routes_wrapper import init_v2_services
+
+            # Initialize V2 services with dependencies from container
+            blacklist_manager = container.get('blacklist_manager')
+            cache_manager = container.get('cache_manager')
+            
+            if blacklist_manager and cache_manager:
+                # Initialize V2 services for all route modules
+                v2_service = init_v2_services(blacklist_manager, cache_manager)
+                logger.info("V2 API services initialized successfully")
+            else:
+                logger.warning("V2 API services not initialized - missing dependencies")
 
             # Register the V2 blueprint
             app.register_blueprint(v2_bp)
