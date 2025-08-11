@@ -7,10 +7,15 @@ metadata:
     description: "Blacklist 애플리케이션 기본 매니페스트"
 
 resources:
-- deployment.yaml
-- service.yaml
+- namespace.yaml
 - configmap.yaml
 - secret.yaml
+- persistentvolumeclaim.yaml
+- service.yaml
+- deployment.yaml
+- redis-deployment.yaml
+- redis-service.yaml
+- ingress.yaml
 
 commonLabels:
   app: blacklist
