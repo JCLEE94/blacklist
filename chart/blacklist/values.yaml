@@ -52,6 +52,8 @@ config:
   redis_url: "redis://redis:6379/0"
   collection_enabled: true
   force_disable_collection: false
+  # GitOps deployment trigger: 2025-08-11T14:30:00Z
+  deployment_trigger: "gitops-helm-pipeline-20250811-143000"
 
 health:
   liveness:
