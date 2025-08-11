@@ -33,9 +33,11 @@ def get_collection_status():
 
         # 오늘 수집 통계 계산
         today = datetime.now().strftime("%Y-%m-%d")
-        today_stats = next(
-            (stat for stat in daily_stats if stat["date"] == today), None
-        )
+        today_stats = None
+        if daily_stats:
+            today_stats = next(
+                (stat for stat in daily_stats if stat.get("date") == today), None
+            )
 
         # 시스템 통계 가져오기
         try:
@@ -58,14 +60,16 @@ def get_collection_status():
                 "stats": {
                     "total_ips": stats.get("total_ips", 0),
                     "active_ips": stats.get("active_ips", 0),
-                    "today_collected": today_stats["count"] if today_stats else 0,
+                    "today_collected": today_stats.get("count", 0)
+                    if today_stats
+                    else 0,
                     "today_sources": (
                         today_stats.get("sources", {}) if today_stats else {}
                     ),
                 },
                 "daily_collection": {
-                    "today": today_stats["count"] if today_stats else 0,
-                    "recent_days": daily_stats[:7],  # 최근 7일
+                    "today": today_stats.get("count", 0) if today_stats else 0,
+                    "recent_days": daily_stats[:7] if daily_stats else [],  # 최근 7일
                 },
                 "sources": collection_status.get("sources", {}),
                 "logs": recent_logs,

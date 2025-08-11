@@ -277,6 +277,7 @@ class StatisticsServiceMixin:
                     if date_str not in daily_stats:
                         daily_stats[date_str] = {
                             "date": date_str,
+                            "count": 0,  # 'count' 키 추가
                             "collections": 0,
                             "successful": 0,
                             "failed": 0,
@@ -284,6 +285,7 @@ class StatisticsServiceMixin:
                         }
 
                     daily_stats[date_str]["collections"] += 1
+                    daily_stats[date_str]["count"] += 1  # count도 증가
                     if "error" not in log:
                         daily_stats[date_str]["successful"] += 1
                     else:
@@ -293,10 +295,12 @@ class StatisticsServiceMixin:
                 except Exception:
                     continue
 
-            # Set을 list로 변환
+            # Set을 list로 변환하고 sources를 dict로 변환
             result = []
             for date_str, stats in sorted(daily_stats.items(), reverse=True):
-                stats["sources"] = list(stats["sources"])
+                stats["sources"] = {
+                    source: stats["count"] for source in stats["sources"]
+                }
                 result.append(stats)
 
             return result[:30]  # 최대 30일

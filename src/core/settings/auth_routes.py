@@ -21,6 +21,196 @@ logger = logging.getLogger(__name__)
 auth_settings_bp = Blueprint("auth_settings", __name__)
 
 
+@auth_settings_bp.route("/api/auth-config", methods=["GET"])
+def get_auth_config():
+    """인증 설정 정보 조회"""
+    try:
+        from src.models.settings import get_settings_manager
+
+        settings_manager = get_settings_manager()
+
+        # 현재 저장된 인증 정보 조회 (비밀번호는 마스킹)
+        regtech_username = settings_manager.get_setting("regtech_username", "")
+        secudium_username = settings_manager.get_setting("secudium_username", "")
+
+        # 인증 상태 확인
+        regtech_configured = bool(
+            regtech_username and settings_manager.get_setting("regtech_password")
+        )
+        secudium_configured = bool(
+            secudium_username and settings_manager.get_setting("secudium_password")
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "regtech": {
+                        "username": regtech_username,
+                        "password": "********" if regtech_configured else "",
+                        "configured": regtech_configured,
+                    },
+                    "secudium": {
+                        "username": secudium_username,
+                        "password": "********" if secudium_configured else "",
+                        "configured": secudium_configured,
+                    },
+                },
+            }
+        )
+    except Exception as e:
+        logger.error(f"인증 설정 조회 오류: {e}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "data": {
+                        "regtech": {
+                            "username": "",
+                            "password": "",
+                            "configured": False,
+                        },
+                        "secudium": {
+                            "username": "",
+                            "password": "",
+                            "configured": False,
+                        },
+                    },
+                }
+            ),
+            500,
+        )
+
+
+@auth_settings_bp.route("/api/auth-config", methods=["POST"])
+def save_auth_config():
+    """인증 설정 정보 저장"""
+    try:
+        data = request.get_json() or {}
+
+        # 요청 데이터 검증
+        if not data:
+            return jsonify({"success": False, "error": "데이터가 제공되지 않았습니다."}), 400
+
+        results = {"regtech": None, "secudium": None}
+
+        # REGTECH 인증 정보 처리
+        if "regtech" in data:
+            regtech_data = data["regtech"]
+            if regtech_data.get("username") and regtech_data.get("password"):
+                try:
+                    from src.models.settings import get_settings_manager
+
+                    settings_manager = get_settings_manager()
+
+                    # 마스킹된 비밀번호가 아닌 경우만 저장
+                    if regtech_data["password"] != "********":
+                        settings_manager.set_setting(
+                            "regtech_username",
+                            regtech_data["username"],
+                            "string",
+                            "credentials",
+                        )
+                        settings_manager.set_setting(
+                            "regtech_password",
+                            regtech_data["password"],
+                            "password",
+                            "credentials",
+                        )
+                    else:
+                        # 사용자명만 업데이트
+                        settings_manager.set_setting(
+                            "regtech_username",
+                            regtech_data["username"],
+                            "string",
+                            "credentials",
+                        )
+
+                    results["regtech"] = {
+                        "success": True,
+                        "message": "REGTECH 인증 정보 저장됨",
+                    }
+                    logger.info("REGTECH 인증 정보 저장 성공")
+
+                except Exception as e:
+                    results["regtech"] = {"success": False, "error": str(e)}
+                    logger.error(f"REGTECH 인증 정보 저장 실패: {e}")
+
+        # SECUDIUM 인증 정보 처리
+        if "secudium" in data:
+            secudium_data = data["secudium"]
+            if secudium_data.get("username") and secudium_data.get("password"):
+                try:
+                    from src.models.settings import get_settings_manager
+
+                    settings_manager = get_settings_manager()
+
+                    # 마스킹된 비밀번호가 아닌 경우만 저장
+                    if secudium_data["password"] != "********":
+                        settings_manager.set_setting(
+                            "secudium_username",
+                            secudium_data["username"],
+                            "string",
+                            "credentials",
+                        )
+                        settings_manager.set_setting(
+                            "secudium_password",
+                            secudium_data["password"],
+                            "password",
+                            "credentials",
+                        )
+                    else:
+                        # 사용자명만 업데이트
+                        settings_manager.set_setting(
+                            "secudium_username",
+                            secudium_data["username"],
+                            "string",
+                            "credentials",
+                        )
+
+                    results["secudium"] = {
+                        "success": True,
+                        "message": "SECUDIUM 인증 정보 저장됨",
+                    }
+                    logger.info("SECUDIUM 인증 정보 저장 성공")
+
+                except Exception as e:
+                    results["secudium"] = {"success": False, "error": str(e)}
+                    logger.error(f"SECUDIUM 인증 정보 저장 실패: {e}")
+
+        # 캐시 클리어
+        try:
+            container = get_container()
+            cache_manager = container.resolve("cache_manager")
+            if cache_manager:
+                cache_manager.clear()
+                logger.info("인증 설정 변경 후 캐시 클리어됨")
+        except Exception as e:
+            logger.warning(f"캐시 클리어 실패: {e}")
+
+        # 전체 성공 여부 판단
+        overall_success = any(
+            result and result.get("success")
+            for result in results.values()
+            if result is not None
+        )
+
+        return jsonify(
+            {
+                "success": overall_success,
+                "message": "인증 설정이 저장되었습니다."
+                if overall_success
+                else "인증 설정 저장에 실패했습니다.",
+                "results": results,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"인증 설정 저장 오류: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @auth_settings_bp.route("/api/settings/regtech/auth", methods=["POST"])
 def update_regtech_auth():
     """REGTECH 인증 정보 업데이트"""
