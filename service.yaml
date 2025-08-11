@@ -93,7 +93,7 @@ spec:
   - name: http
     port: 2541
     targetPort: 2541
-    nodePort: 32541
+    nodePort: 32452
     protocol: TCP
   selector:
     app: blacklist
