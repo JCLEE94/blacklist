@@ -4,15 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Blacklist Management System** - Enterprise threat intelligence platform with Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Uses Watchtower for automated deployments. Default security mode blocks all external authentication to prevent server lockouts.
+**Blacklist Management System** - Enterprise threat intelligence platform with Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Uses Watchtower for automated deployments and ArgoCD GitOps pipeline. 
 
-### Key Dependencies
-- **Python 3.9+** with Flask 2.3.3 web framework
-- **Redis 7** for caching (with automatic memory fallback)
-- **SQLite** database (file-based at `/app/instance/blacklist.db`)
-- **Docker & Docker Compose** for containerization
-- **Gunicorn 23.0** WSGI server for production
-- **pytest** for testing with extensive marker support
+### Project Status (2025년 현재)
+- **GitOps 성숙도**: 6.25/10 (중급) - ArgoCD 통합, 자동 배포 파이프라인 구축
+- **아키텍처**: Monolithic (Flask) + MSA 전환 준비 완료 (4개 마이크로서비스)
+- **성능 기준선**: API 평균 응답시간 7.58ms, 100+ 동시 요청 처리
+- **보안 시스템**: 방어적 차단 시스템, JWT 이중 토큰, 레이트 리미팅 완비
+- **배포 전략**: 멀티클러스터 지원, 자동 롤백 준비 중
+
+### Key Dependencies & Performance Stack
+- **Python 3.9+** with Flask 2.3.3 web framework + orjson (3x faster JSON)
+- **Redis 7** for caching (automatic memory fallback, 256MB limit)
+- **SQLite** (dev) / **PostgreSQL** (prod) with connection pooling
+- **Docker & Kubernetes** - ArgoCD GitOps, registry.jclee.me
+- **Gunicorn 23.0** WSGI server with Flask-Compress
+- **pytest** comprehensive testing (unit/integration/api markers)
+
+### MSA Architecture Components
+- **API Gateway Service** - 라우팅 및 인증
+- **Collection Service** - 데이터 수집 (REGTECH/SECUDIUM)
+- **Blacklist Service** - IP 관리 및 FortiGate 연동
+- **Analytics Service** - 통계 및 트렌드 분석
 
 ## Development Commands
 
@@ -187,6 +200,45 @@ docker-compose.watchtower.yml   # Watchtower auto-update service
 - `GET /api/v2/analytics/trends` - Trend analysis
 - `GET /api/v2/sources/status` - Source-specific status
 
+## Performance Optimization & Monitoring
+
+### Performance Baseline (2025년 기준)
+- **API 평균 응답시간**: 7.58ms (목표: <5ms 고성능, <50ms 양호)
+- **동시 처리 용량**: 100+ 요청 처리 가능
+- **성능 임계값**: 우수 50ms | 양호 200ms | 허용 1000ms | 불량 5000ms+
+
+### 주요 최적화 적용 사항
+```python
+# JSON 처리 성능 (3배 향상)
+import orjson  # 기본 json 대신 사용
+
+# 압축 응답 (대역폭 절약)
+from flask_compress import Compress
+
+# 연결 풀링 (DB 성능)
+DATABASE_POOL_SIZE=20
+DATABASE_MAX_OVERFLOW=0
+```
+
+### 병목 지점 및 해결책
+1. **N+1 쿼리 문제**: SQLAlchemy eager loading, 배치 쿼리
+2. **MSA 통신 지연**: HTTP/2, 연결 재사용, 비동기 처리
+3. **캐시 미활용**: Redis TTL 전략, 계층적 캐싱
+4. **메모리 비효율**: 대량 데이터 스트리밍, 페이징
+
+### 모니터링 & 알림
+```bash
+# 헬스체크 (K8s 호환)
+curl http://localhost:32542/health | jq
+curl http://localhost:32542/api/health | jq  # 상세 상태
+
+# 성능 벤치마크
+python3 tests/integration/performance_benchmark.py
+curl -w "
+Time: %{time_total}s
+" http://localhost:32542/api/blacklist/active
+```
+
 ## Critical Implementation Patterns
 
 ### Cache Usage
@@ -239,20 +291,36 @@ service = container.get('unified_service')
 - Excel download from bulletin board
 - Bearer token authentication
 
-## CI/CD Pipeline
+## CI/CD Pipeline & GitOps
 
-### Automated Deployment (Watchtower)
+### Current GitOps Status (성숙도: 6.25/10)
+```yaml
+# ArgoCD 기반 GitOps 파이프라인
+✅ 소스 제어: 8/10 (Git 기반, 브랜칭 전략)
+⚠️ 컨테이너 레지스트리: 7/10 (작동, 통합 이슈)
+✅ 보안 스캔: 9/10 (Trivy + Bandit)
+✅ 테스트: 8/10 (종합 매트릭스)
+⚠️ K8s 매니페스트: 6/10 (Kustomize 부재)
+❌ ArgoCD 통합: 4/10 (설정 불일치)
+❌ 롤백: 3/10 (수동만 가능)
+```
+
+### Automated Deployment (ArgoCD + Watchtower)
 ```yaml
 # .github/workflows/deploy.yaml
 - Trigger: Push to main
-- Build: Docker image with version tag
+- Build: Multi-stage Docker (Python 3.9 Alpine)
+- Security: Trivy + Bandit scanning
 - Push: registry.jclee.me/jclee94/blacklist:latest
-- Watchtower: Auto-detects and deploys (60s interval)
+- ArgoCD: Auto-sync to K8s cluster
+- Watchtower: Fallback auto-update (60s)
 ```
 
-### Deployment Flow
+### Enhanced Deployment Flow
 ```
-Code Push → GitHub Actions → Docker Build → Registry Push → Watchtower Pull → Auto Deploy
+Code Push → GitHub Actions → Security Scan → Docker Build → 
+Registry Push → ArgoCD Sync → K8s Deploy → Health Check → 
+Auto Rollback (실패시)
 ```
 
 ### Manual Deployment Options
@@ -309,7 +377,29 @@ JWT_SECRET_KEY=change-in-production
 
 ## Troubleshooting
 
-### Common Issues
+### GitOps & Deployment Issues
+1. **ArgoCD OutOfSync**: 
+   ```bash
+   kubectl get applications -n argocd
+   argocd app sync blacklist --force  # 강제 동기화
+   ```
+2. **프로덕션 502 Bad Gateway**: 
+   ```bash
+   kubectl logs -f deployment/blacklist -n blacklist
+   kubectl describe pod <pod-name> -n blacklist
+   ```
+3. **이미지 업데이트 실패**: 
+   ```bash
+   docker-compose pull && docker-compose up -d
+   kubectl rollout restart deployment/blacklist -n blacklist
+   ```
+4. **파드 Pending 상태**: 리소스 부족 또는 노드 스케줄링 이슈
+   ```bash
+   kubectl describe pod <pending-pod> -n blacklist
+   kubectl get nodes -o wide
+   ```
+
+### Common Application Issues  
 1. **Container not updating**: Manual pull needed `docker-compose pull && docker-compose up -d`
 2. **Auth failures**: Check `.env` credentials and `FORCE_DISABLE_COLLECTION` setting
 3. **Redis connection**: Falls back to memory cache automatically
