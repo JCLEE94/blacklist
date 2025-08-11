@@ -1,19 +1,19 @@
 global:
   registry: registry.jclee.me
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   
-replicaCount: 1
+replicaCount: 2
 image:
-  repository: blacklist
+  repository: jclee94/blacklist
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 nameOverride: ""
 fullnameOverride: ""
 
 service:
   type: ClusterIP
-  port: 80
+  port: 2541
   targetPort: 2541
 
 ingress:
@@ -36,10 +36,10 @@ resources:
     memory: 64Mi
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
@@ -52,8 +52,8 @@ config:
   redis_url: "redis://redis:6379/0"
   collection_enabled: true
   force_disable_collection: false
-  # GitOps deployment trigger: 2025-08-11T14:30:00Z
-  deployment_trigger: "gitops-helm-pipeline-20250811-143000"
+  # GitOps deployment trigger: 2025-08-12T00:40:00Z
+  deployment_trigger: "gitops-argocd-sync-fix-20250812-004000"
 
 health:
   liveness:
@@ -71,8 +71,11 @@ health:
     timeoutSeconds: 3
     failureThreshold: 3
 
+imagePullSecrets:
+  - name: jclee-registry-secret
+
 redis:
-  enabled: true
+  enabled: false
   image:
     repository: redis
     tag: latest
