@@ -3,7 +3,7 @@ name: blacklist
 description: Enterprise Threat Intelligence Platform - Blacklist Management System
 type: application
 version: 1.0.0
-appVersion: "20250811-211001-ff38dea"
+appVersion: "20250811-211241-33db076"
 home: https://github.com/JCLEE94/blacklist
 sources:
   - https://github.com/JCLEE94/blacklist
