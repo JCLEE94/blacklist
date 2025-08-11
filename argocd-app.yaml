@@ -3,21 +3,18 @@ kind: Application
 metadata:
   name: blacklist
   namespace: argocd
-  labels:
-    app.kubernetes.io/name: blacklist
-    environment: production
 spec:
   project: default
   source:
     repoURL: https://github.com/JCLEE94/blacklist.git
-    path: k8s/overlays/production
     targetRevision: main
+    path: .
   destination:
     server: https://kubernetes.default.svc
     namespace: blacklist-system
   syncPolicy:
     automated:
-      selfHeal: true
       prune: true
+      selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
