@@ -179,3 +179,4 @@ coverage.xml
 # *_git_*.sh  # Temporarily allow git_commit.sh
 *_git_*.py
 # commit_message.txt  # Temporarily allow commit message
+data/
