@@ -1,59 +1,52 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis-deployment
+  name: redis
   labels:
-    app: blacklist
-    component: redis
+    app: redis
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: blacklist
-      component: redis
+      app: redis
   template:
     metadata:
       labels:
-        app: blacklist
-        component: redis
+        app: redis
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/component: cache
     spec:
-      serviceAccountName: blacklist-service-account
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 999
-        fsGroup: 999
       containers:
       - name: redis
         image: redis:7-alpine
-        imagePullPolicy: Always
         ports:
-        - name: redis
-          containerPort: 6379
+        - containerPort: 6379
+          name: redis
           protocol: TCP
         command:
         - redis-server
-        - --appendonly
-        - "yes"
         - --maxmemory
-        - "256mb"
+        - 256mb
         - --maxmemory-policy
-        - "allkeys-lru"
+        - allkeys-lru
         - --save
-        - "900 1"
-        - --save
-        - "300 10"
-        - --save
-        - "60 10000"
+        - ""
+        - --appendonly
+        - "no"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
         livenessProbe:
-          exec:
-            command:
-            - redis-cli
-            - ping
+          tcpSocket:
+            port: redis
           initialDelaySeconds: 30
           periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 3
         readinessProbe:
           exec:
             command:
@@ -61,27 +54,7 @@ spec:
             - ping
           initialDelaySeconds: 5
           periodSeconds: 5
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 3
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 100m
-            memory: 128Mi
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
         securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          capabilities:
-            drop:
-            - ALL
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: redis-data-pvc
-      restartPolicy: Always

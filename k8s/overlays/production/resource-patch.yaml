@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+spec:
+  template:
+    spec:
+      containers:
+      - name: blacklist
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        - name: GUNICORN_WORKERS
+          value: "4"
+        - name: GUNICORN_THREADS
+          value: "2"

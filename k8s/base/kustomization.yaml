@@ -1,39 +1,19 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-metadata:
-  annotations:
-    config.kubernetes.io/local-config: "true"
-  name: blacklist-base
-
 resources:
-- namespace.yaml
-- serviceaccount.yaml
-- deployment.yaml
-- service.yaml
-- ingress.yaml
-- configmap.yaml
-- secret.yaml
-- redis-deployment.yaml
-- redis-service.yaml
-- persistentvolumeclaim.yaml
-- monitoring.yaml
+  - namespace.yaml
+  - deployment.yaml
+  - redis-deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - pvc.yaml
+  - secret.yaml
 
-
-namespace: blacklist-system
+commonLabels:
+  app.kubernetes.io/instance: blacklist
+  app.kubernetes.io/managed-by: argocd
 
 images:
-- name: blacklist
-  newName: registry.jclee.me/jclee94/blacklist
-  newTag: latest
-
-# ConfigMaps and Secrets are managed via YAML files
-
-replicas:
-- count: 2
-  name: blacklist-deployment
-labels:
-- includeSelectors: true
-  pairs:
-    app: blacklist
-    version: 1.0.17
+  - name: registry.jclee.me/blacklist
+    newTag: latest

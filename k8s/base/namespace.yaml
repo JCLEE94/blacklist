@@ -4,7 +4,5 @@ metadata:
   name: blacklist-system
   labels:
     name: blacklist-system
-    app: blacklist
-    tier: application
-  annotations:
-    description: "Blacklist Management System namespace"
+    app.kubernetes.io/name: blacklist
+    app.kubernetes.io/part-of: blacklist-system

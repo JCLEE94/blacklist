@@ -41,10 +41,20 @@ SUPPORTED_IP_FORMATS = [
 
 # IP 주소 정규표현식 패턴
 IP_PATTERNS = {
-    "ipv4": r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+    "ipv4": (
+        r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}"
+        r"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+    ),
     "ipv6": r"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$",
-    "cidr_v4": r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:[0-9]|[1-2][0-9]|3[0-2])$",
-    "cidr_v6": r"^(?:[0-9a-fA-F]{1,4}:){1,7}:\/(?:[0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8])$",
+    "cidr_v4": (
+        r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}"
+        r"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+        r"\/(?:[0-9]|[1-2][0-9]|3[0-2])$"
+    ),
+    "cidr_v6": (
+        r"^(?:[0-9a-fA-F]{1,4}:){1,7}:"
+        r"\/(?:[0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8])$"
+    ),
 }
 
 # ============ API 설정 ============
@@ -94,8 +104,14 @@ LOG_LEVELS = {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40, "CRITICAL": 5
 
 LOG_FORMATS = {
     "default": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    "detailed": "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
-    "json": '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}',
+    "detailed": (
+        "%(asctime)s - %(name)s - %(levelname)s - "
+        "%(filename)s:%(lineno)d - %(message)s"
+    ),
+    "json": (
+        '{"timestamp": "%(asctime)s", "logger": "%(name)s", '
+        '"level": "%(levelname)s", "message": "%(message)s"}'
+    ),
 }
 
 # ============ HTTP 상태 코드 ============
@@ -138,7 +154,13 @@ SECURITY_HEADERS = {
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-    "Content-Security-Policy": "default-src 'self' https://cdn.jsdelivr.net; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: https:;",
+    "Content-Security-Policy": (
+        "default-src 'self' https://cdn.jsdelivr.net; "
+        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "font-src 'self' https://cdn.jsdelivr.net data:; "
+        "img-src 'self' data: https:;"
+    ),
     "Referrer-Policy": "strict-origin-when-cross-origin",
 }
 

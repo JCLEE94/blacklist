@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
-from ..regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
+from ..regtech_simple_collector import \
+    RegtechSimpleCollector as RegtechCollector
 
 logger = logging.getLogger(__name__)
 

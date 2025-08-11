@@ -464,7 +464,8 @@ class DataService:
 
                 # Mark old records as inactive
                 cursor.execute(
-                    "UPDATE ip_detections SET is_active = 0, updated_at = ? WHERE created_at < ? AND is_active = 1",
+                    "UPDATE ip_detections SET is_active = 0, updated_at = ? "
+                    "WHERE created_at < ? AND is_active = 1",
                     (datetime.now(), cutoff_date),
                 )
 

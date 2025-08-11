@@ -14,14 +14,8 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 # Test utilities and fixtures
-from .conftest import (
-    app,
-    blacklist_manager,
-    client,
-    mock_cache,
-    sample_ips,
-    temp_data_dir,
-)
+from .conftest import (app, blacklist_manager, client, mock_cache, sample_ips,
+                       temp_data_dir)
 
 # Test markers for organization
 # These are defined in conftest.py and available for use in tests
