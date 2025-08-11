@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:20250811-120059-f933403
+        image: registry.jclee.me/blacklist:20250811-120224-714f5da
         imagePullPolicy: Always
         ports:
         - name: http
