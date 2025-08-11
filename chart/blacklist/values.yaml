@@ -5,7 +5,7 @@ global:
 replicaCount: 1
 image:
   repository: blacklist
-  tag: 20250811-205916-cb90c0b
+  tag: 20250811-210548-6cc2fd8
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -73,7 +73,7 @@ redis:
   enabled: true
   image:
     repository: redis
-    tag: 20250811-205916-cb90c0b
+    tag: 7-alpine
     pullPolicy: IfNotPresent
   resources:
     limits:
