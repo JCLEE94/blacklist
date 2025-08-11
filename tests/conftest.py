@@ -8,13 +8,20 @@ from pathlib import Path
 import pytest
 
 from tests.test_collection_mocks import enable_collection_for_tests
+
 # Import modularized test components
 from tests.test_config import TestEnvironmentManager, create_test_app
-from tests.test_database import (_create_additional_test_tables,
-                                 init_test_database)
-from tests.test_fixtures import (blacklist_manager, enhanced_mock_container,
-                                 mock_cache, mock_redis, reset_environment,
-                                 sample_ips, sample_test_data, temp_data_dir)
+from tests.test_database import _create_additional_test_tables, init_test_database
+from tests.test_fixtures import (
+    blacklist_manager,
+    enhanced_mock_container,
+    mock_cache,
+    mock_redis,
+    reset_environment,
+    sample_ips,
+    sample_test_data,
+    temp_data_dir,
+)
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
