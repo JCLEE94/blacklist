@@ -93,18 +93,24 @@ class DataService:
                 # Ensure table exists
                 cursor.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS ip_detections (
+                    CREATE TABLE IF NOT EXISTS blacklist_ip (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ip_address TEXT NOT NULL,
+                        ip TEXT NOT NULL,
+                        ip_address TEXT,
                         source TEXT,
-                        detection_date TEXT,
+                        detection_date TIMESTAMP,
+                        reg_date TIMESTAMP,
+                        attack_type TEXT,
+                        reason TEXT,
                         country TEXT,
-                        threat_type TEXT,
-                        confidence_score REAL DEFAULT 1.0,
+                        threat_level TEXT,
+                        as_name TEXT,
+                        city TEXT,
                         is_active INTEGER DEFAULT 1,
                         expires_at DATETIME,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        extra_data TEXT
                     )
                     """
                 )
@@ -135,9 +141,9 @@ class DataService:
                         # Batch insert with upsert logic
                         cursor.executemany(
                             """
-                            INSERT OR REPLACE INTO ip_detections (
-                                ip_address, source, detection_date, country,
-                                threat_type, confidence_score, is_active,
+                            INSERT OR REPLACE INTO blacklist_ip (
+                                ip, source, detection_date, country,
+                                attack_type, threat_level, is_active,
                                 expires_at, created_at, updated_at
                             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """,
@@ -238,11 +244,11 @@ class DataService:
 
                 cursor.execute(
                     """
-                    SELECT DISTINCT ip_address
-                    FROM ip_detections
+                    SELECT DISTINCT ip
+                    FROM blacklist_ip
                     WHERE is_active = 1
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
-                    ORDER BY ip_address
+                    ORDER BY ip
                     """
                 )
 

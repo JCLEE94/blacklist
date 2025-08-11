@@ -202,7 +202,14 @@ class CoreOperationsMixin:
                 return []
 
             # 블랙리스트 매니저에서 활성 IP 목록 조회
-            ips, _ = self.blacklist_manager.get_active_ips()
+            result = self.blacklist_manager.get_active_ips()
+            
+            # 결과가 튜플인 경우와 리스트인 경우 모두 처리
+            if isinstance(result, tuple):
+                ips = result[0] if result else []
+            else:
+                ips = result if result else []
+            
             return ips
 
         except Exception as e:

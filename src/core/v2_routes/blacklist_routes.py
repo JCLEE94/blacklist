@@ -66,7 +66,7 @@ def get_blacklist_with_metadata_v2_route():
 
 
 @blacklist_v2_bp.route("/blacklist/batch-check", methods=["POST"])
-@unified_validation
+@unified_validation(validate_json=True)
 @unified_rate_limit(limit=100, per=3600)  # 100 requests per hour
 def batch_ip_check():
     """배치 IP 검사 (V2)"""
@@ -89,7 +89,7 @@ def batch_ip_check():
 
 
 @blacklist_v2_bp.route("/blacklist/search", methods=["POST"])
-@unified_validation
+@unified_validation(validate_json=True)
 def search_blacklist():
     """블랙리스트 검색 (V2)"""
     try:

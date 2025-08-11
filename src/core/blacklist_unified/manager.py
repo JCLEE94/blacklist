@@ -84,11 +84,18 @@ class UnifiedBlacklistManager:
 
         for directory in directories:
             try:
+                # Skip if directory is actually a file (like blacklist.db)
+                if os.path.isfile(directory):
+                    continue
                 os.makedirs(directory, exist_ok=True)
                 logger.debug(f"Directory ensured: {directory}")
             except Exception as e:
-                logger.error(f"Failed to create directory {directory}: {e}")
-                raise
+                # Log but don't raise if it's actually a file
+                if os.path.isfile(directory):
+                    logger.debug(f"Skipping {directory} as it's a file")
+                else:
+                    logger.error(f"Failed to create directory {directory}: {e}")
+                    raise
 
     def _setup_cleanup_scheduler(self):
         """Setup periodic cleanup of old data"""

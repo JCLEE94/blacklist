@@ -23,9 +23,9 @@ def unified_validation(
     Consolidates input validation logic
     """
 
-    def validation_decorator(func):
+    def decorator(func):
         @wraps(func)
-        def unified_validation_wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs):
             errors = []
 
             # Validate JSON body
@@ -79,6 +79,6 @@ def unified_validation(
 
             return func(*args, **kwargs)
 
-        return unified_validation_wrapper
+        return wrapper
 
-    return validation_decorator
+    return decorator

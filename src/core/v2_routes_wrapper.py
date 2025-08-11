@@ -7,7 +7,7 @@ has been modularized into the v2_routes/ package.
 """
 
 # Import everything from the modular package
-from src.core.v2_routes import (
+from .v2_routes import (
     V2APIService,
     analytics_v2_bp,
     blacklist_v2_bp,
