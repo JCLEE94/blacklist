@@ -85,7 +85,7 @@ class CoreOperationsMixin:
 
         # REGTECH 수집기 초기화
         if self.config["regtech_enabled"]:
-            self._components["regtech"] = RegtechCollector("data", self.cache)
+            self._components["regtech"] = RegtechCollector("data")
             self.logger.info("✅ REGTECH 수집기 초기화 완료")
 
         self.logger.info("✅ 모든 컴포넌트 초기화 완료")

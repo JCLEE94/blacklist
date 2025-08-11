@@ -265,10 +265,22 @@ class CollectionServiceMixin:
                 if not end_date:
                     end_date = datetime.now().strftime("%Y-%m-%d")
 
-                # 비동기 작업으로 처리
-                asyncio.create_task(
-                    self._collect_regtech_data_with_date(start_date, end_date)
-                )
+                # 직접 동기 수집 실행
+                try:
+                    result = self._components["regtech"].collect_from_web(
+                        start_date=start_date.replace("-", ""),
+                        end_date=end_date.replace("-", ""),
+                    )
+                    if not result.get("success"):
+                        return {
+                            "success": False,
+                            "message": f"REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
+                        }
+                except Exception as collect_e:
+                    return {
+                        "success": False,
+                        "message": f"REGTECH 수집 중 오류: {str(collect_e)}",
+                    }
 
                 # 로그 남기기
                 self.add_collection_log(
@@ -289,8 +301,19 @@ class CollectionServiceMixin:
                     "triggered_at": datetime.now().isoformat(),
                 }
             else:
-                # 기본 수집
-                asyncio.create_task(self._collect_regtech_data(force=force))
+                # 기본 수집 - 직접 실행
+                try:
+                    result = self._components["regtech"].collect_from_web()
+                    if not result.get("success"):
+                        return {
+                            "success": False,
+                            "message": f"REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
+                        }
+                except Exception as collect_e:
+                    return {
+                        "success": False,
+                        "message": f"REGTECH 수집 중 오류: {str(collect_e)}",
+                    }
 
                 # 로그 남기기
                 self.add_collection_log(

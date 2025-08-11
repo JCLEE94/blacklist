@@ -95,6 +95,9 @@ class UnifiedBlacklistService(
         # Mark as running for basic health checks
         self._running = True
 
+        # 컴포넌트 즉시 초기화 (웹 서버에서도 사용할 수 있도록)
+        self._sync_component_init()
+
         # 최초 실행 시 자동 수집 수행 (즉시 실행) - now from CoreOperationsMixin
         if (
             self.collection_manager
@@ -102,6 +105,29 @@ class UnifiedBlacklistService(
         ):
             self.logger.info("🔥 최초 실행 - 즉시 수집 시작")
             self._perform_initial_collection_now()
+
+    def _sync_component_init(self):
+        """동기적 컴포넌트 초기화"""
+        try:
+            from ..regtech_simple_collector import (
+                RegtechSimpleCollector as RegtechCollector,
+            )
+
+            # REGTECH 수집기 초기화
+            if self.config["regtech_enabled"]:
+                self._components["regtech"] = RegtechCollector("data")
+                self.logger.info("✅ REGTECH 수집기 동기 초기화 완료")
+        except Exception as e:
+            self.logger.error(f"동기 컴포넌트 초기화 실패: {e}")
+
+    async def _immediate_component_init(self):
+        """즉시 컴포넌트 초기화"""
+        try:
+            await self._initialize_components()
+        except Exception as e:
+            self.logger.error(f"즉시 컴포넌트 초기화 실패: {e}")
+            # 동기적으로 시도
+            self._sync_component_init()
 
     # _perform_initial_collection_now is now provided by CoreOperationsMixin
 
