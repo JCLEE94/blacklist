@@ -40,7 +40,11 @@ class DataService:
         ):
             self.db_path = db_manager.db_url.replace("sqlite:///", "")
         else:
-            self.db_path = os.path.join(self.data_dir, "database.db")
+            # Check for instance/blacklist.db first
+            if os.path.exists("instance/blacklist.db"):
+                self.db_path = "instance/blacklist.db"
+            else:
+                self.db_path = os.path.join(self.data_dir, "database.db")
 
     def _is_valid_ip(self, ip_str: str) -> bool:
         """Validate IP address format"""
@@ -235,10 +239,10 @@ class DataService:
         except Exception as e:
             logger.error(f"Error updating file storage: {e}")
 
-    @unified_cache(ttl=300)
     def get_active_ips(self) -> List[str]:
         """Get all active IP addresses from database"""
         try:
+            logger.debug(f"Getting active IPs from database: {self.db_path}")
             with sqlite3.connect(self.db_path, timeout=10) as conn:
                 cursor = conn.cursor()
 
@@ -252,7 +256,9 @@ class DataService:
                     """
                 )
 
-                return [row[0] for row in cursor.fetchall()]
+                result = [row[0] for row in cursor.fetchall()]
+                logger.info(f"Found {len(result)} active IPs from database")
+                return result
 
         except sqlite3.Error as e:
             logger.error(f"Database error getting active IPs: {e}")

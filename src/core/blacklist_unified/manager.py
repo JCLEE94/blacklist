@@ -52,8 +52,7 @@ class UnifiedBlacklistManager:
         else:
             from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
 
-            cache_manager = CacheManager()
-            self.cache = cache_manager.get_cache()
+            self.cache = CacheManager()
 
         # Initialize services
         self.search_service = SearchService(self.data_dir, self.db_manager, self.cache)
