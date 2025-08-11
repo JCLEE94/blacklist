@@ -4,26 +4,24 @@ metadata:
   name: blacklist
   labels:
     app: blacklist
-    component: api-server
+    version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: blacklist
-      component: api-server
   template:
     metadata:
       labels:
         app: blacklist
-        component: api-server
+        version: v1
     spec:
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:20250811-150204-7a24ea2
-        imagePullPolicy: Always
+        image: registry.jclee.me/blacklist:latest
         ports:
-        - name: http
-          containerPort: 32542
+        - containerPort: 32542
+          name: http
         env:
         - name: PORT
           value: "32542"
@@ -34,7 +32,7 @@ spec:
         - name: PYTHONUNBUFFERED
           value: "1"
         - name: REDIS_URL
-          value: "redis://blacklist-redis:6379/0"
+          value: "redis://redis:6379/0"
         - name: DATABASE_URL
           value: "sqlite:////tmp/blacklist.db"
         - name: FORCE_DISABLE_COLLECTION
@@ -42,24 +40,24 @@ spec:
         - name: COLLECTION_ENABLED
           value: "true"
         resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
           limits:
             memory: "512Mi"
             cpu: "500m"
+          requests:
+            memory: "256Mi" 
+            cpu: "250m"
         livenessProbe:
           httpGet:
             path: /health
-            port: http
+            port: 32542
           initialDelaySeconds: 30
-          periodSeconds: 30
+          periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /ready
-            port: http
-          initialDelaySeconds: 10
-          periodSeconds: 10
+            path: /health
+            port: 32542
+          initialDelaySeconds: 5
+          periodSeconds: 5
       imagePullSecrets:
       - name: registry-secret
 

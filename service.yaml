@@ -1,32 +1,24 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: blacklist-service
+  name: blacklist
   labels:
     app: blacklist
-    component: api-server
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
-  - name: http
-    port: 80
+  - port: 32542
     targetPort: 32542
-    protocol: TCP
-  - name: https
-    port: 443
-    targetPort: 32542
-    protocol: TCP
+    nodePort: 32542
+    name: http
   selector:
     app: blacklist
-    component: api-server
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: blacklist-redis
+  name: redis
   labels:
     app: blacklist
     component: redis
@@ -40,27 +32,3 @@ spec:
   selector:
     app: blacklist
     component: redis
-
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: blacklist-nodeport
-  labels:
-    app: blacklist
-    component: api-server
-    service-type: nodeport
-  annotations:
-    description: "NodePort service for external access during testing"
-spec:
-  type: NodePort
-  ports:
-  - name: http
-    port: 32542
-    targetPort: 32542
-    nodePort: 32542
-    protocol: TCP
-  selector:
-    app: blacklist
-    component: api-server
