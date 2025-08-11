@@ -8,13 +8,18 @@ spec:
   source:
     repoURL: https://github.com/JCLEE94/blacklist.git
     targetRevision: main
-    path: .
+    path: chart/blacklist
+    helm:
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: blacklist
   syncPolicy:
     automated:
-      prune: false
+      prune: true
       selfHeal: true
     syncOptions:
     - CreateNamespace=true
+    - PruneLast=true
+    - RespectIgnoreDifferences=true

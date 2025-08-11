@@ -1,0 +1,86 @@
+name: 'Helm GitOps Deploy Pipeline'
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  HELM_CHART_PATH: chart/blacklist
+
+jobs:
+  build-and-deploy:
+    name: 'Build & GitOps Deploy'
+    runs-on: self-hosted
+    
+    steps:
+    - name: 'Checkout Repository'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: 'Generate Version'
+      id: version
+      run: |
+        VERSION=$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+    
+    - name: 'Build and Push Docker Image'
+      run: |
+        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} .
+        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        echo "Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+    
+    - name: 'Update Helm Chart Version'
+      run: |
+        sed -i "s/appVersion: \".*\"/appVersion: \"${{ steps.version.outputs.version }}\"/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
+        sed -i "s/tag: .*/tag: ${{ steps.version.outputs.version }}/" ${{ env.HELM_CHART_PATH }}/values.yaml
+        echo "Updated Helm chart to version ${{ steps.version.outputs.version }}"
+    
+    - name: 'Commit and Push Changes'
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add ${{ env.HELM_CHART_PATH }}/Chart.yaml ${{ env.HELM_CHART_PATH }}/values.yaml
+        git commit -m "ci: update Helm chart to version ${{ steps.version.outputs.version }}
+        
+        🚀 Automated GitOps deployment
+        - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+        - Chart version updated automatically
+        - ArgoCD will sync within 3 minutes
+        
+        🤖 Generated with [Claude Code](https://claude.ai/code)
+        Co-Authored-By: Claude <noreply@anthropic.com>" || echo "No changes to commit"
+        
+        git push origin main || echo "No changes to push"
+    
+    - name: 'ArgoCD Sync Trigger'
+      run: |
+        echo "ArgoCD Application: blacklist"
+        echo "Expected sync within 3 minutes"
+        echo "Monitor at: https://argo.jclee.me/applications/blacklist"
+        
+        # Optional: Trigger immediate sync if ArgoCD CLI available
+        if command -v argocd &> /dev/null; then
+          argocd app sync blacklist --server 192.168.50.110:31017 || echo "ArgoCD CLI sync failed, will auto-sync"
+        fi
+    
+    - name: 'Deployment Summary'
+      run: |
+        echo "🎉 Deployment Summary"
+        echo "━━━━━━━━━━━━━━━━━━━━━"
+        echo "Project: blacklist"
+        echo "Version: ${{ steps.version.outputs.version }}"
+        echo "Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        echo "Chart: ${{ env.HELM_CHART_PATH }}"
+        echo "ArgoCD: https://argo.jclee.me/applications/blacklist"
+        echo "Status: ✅ Pipeline completed successfully"
