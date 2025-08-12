@@ -8,7 +8,7 @@ image:
   repository: registry.jclee.me/jclee94/blacklist
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "all-fixes-implemented"
 
 imagePullSecrets:
   - name: registry-credentials
@@ -113,11 +113,9 @@ security:
 collection:
   enabled: "true"
 
-# Redis dependency
+# Redis dependency removed - using memory fallback
 redis:
-  enabled: true
-  auth:
-    enabled: false
+  enabled: false
 
 # Environment variables
 env:
@@ -128,7 +126,7 @@ env:
   - name: DATABASE_URL
     value: "sqlite:////app/instance/blacklist.db"
   - name: REDIS_URL
-    value: "redis://blacklist-redis:6379/0"
+    value: "redis://localhost:6379/0"
 
 # Probes configuration
 livenessProbe:

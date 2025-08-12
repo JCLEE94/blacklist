@@ -2,8 +2,8 @@ apiVersion: v2
 name: blacklist
 description: Enterprise threat intelligence blacklist management system with FortiGate integration
 type: application
-version: 3.2.15
-appVersion: "2.0.1"
+version: 4.0.0
+appVersion: "all-fixes-implemented"
 
 home: https://github.com/JCLEE94/blacklist
 sources:
@@ -34,10 +34,6 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/images: |
     - name: blacklist
-      image: registry.jclee.me/jclee94/blacklist:2.0.1
+      image: registry.jclee.me/jclee94/blacklist:all-fixes-implemented
 
-dependencies:
-  - name: redis
-    version: "18.1.5"
-    repository: https://charts.bitnami.com/bitnami
-    condition: redis.enabled
+# Dependencies removed - using simplified deployment
