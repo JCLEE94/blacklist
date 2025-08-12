@@ -7,12 +7,9 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
-from flask import Blueprint
-from flask import jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

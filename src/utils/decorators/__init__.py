@@ -6,9 +6,7 @@ Maintains backward compatibility with the original unified_decorators module
 # Import all decorators to maintain backward compatibility
 from .auth import unified_auth
 from .cache import unified_cache
-from .convenience import admin_endpoint
-from .convenience import api_endpoint
-from .convenience import public_endpoint
+from .convenience import admin_endpoint, api_endpoint, public_endpoint
 
 
 # Monitoring decorator removed for performance optimization
@@ -22,8 +20,7 @@ def unified_monitoring(operation_name=None):
 
 
 from .rate_limit import unified_rate_limit
-from .registry import DecoratorRegistry
-from .registry import initialize_decorators
+from .registry import DecoratorRegistry, initialize_decorators
 from .validation import unified_validation
 
 # Export all public interfaces

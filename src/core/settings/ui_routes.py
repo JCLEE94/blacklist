@@ -6,8 +6,7 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint
-from flask import render_template
+from flask import Blueprint, render_template
 
 from ..container import get_container
 
@@ -91,8 +90,7 @@ def settings_management():
 @ui_settings_bp.route("/settings/regtech", methods=["GET", "POST"])
 def handle_regtech_settings():
     """REGTECH 설정 조회 및 저장 API"""
-    from flask import jsonify
-    from flask import request
+    from flask import jsonify, request
 
     if request.method == "GET":
         # 설정 조회

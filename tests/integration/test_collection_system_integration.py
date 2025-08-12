@@ -6,10 +6,8 @@
 import os
 import sys
 import tempfile
-from datetime import datetime
-from datetime import timedelta
-from unittest.mock import Mock
-from unittest.mock import patch
+from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 

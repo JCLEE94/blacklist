@@ -3,12 +3,9 @@
 V2 Analytics API Routes
 """
 
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from flask import Blueprint
-from flask import jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
 from ...utils.unified_decorators import unified_cache
 from .service import V2APIService

@@ -9,13 +9,10 @@ Refactored: Core logic moved to specialized modules for better organization.
 import asyncio
 import logging
 import sys
-from typing import Any
-from typing import Dict
-from typing import List
+from typing import Any, Dict, List
 
 from .msa_performance_tests import MSAPerformanceTester
-from .msa_test_config import MSAServiceConfigs
-from .msa_test_config import TestResult
+from .msa_test_config import MSAServiceConfigs, TestResult
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

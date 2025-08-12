@@ -8,12 +8,9 @@ import json
 import logging
 import os
 import traceback
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any
-from typing import Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -320,8 +317,7 @@ class GitHubIssueReporter:
 
             # Flask 컨텍스트에서 요청 정보 추출
             try:
-                from flask import has_request_context
-                from flask import request
+                from flask import has_request_context, request
 
                 if has_request_context():
                     error_data.update(

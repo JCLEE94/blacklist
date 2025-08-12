@@ -6,8 +6,7 @@ Tests for collection system integration with external sources.
 
 import os
 import sys
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 

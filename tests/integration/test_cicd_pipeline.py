@@ -8,8 +8,7 @@ GitHub Actions 워크플로우, Docker 빌드, ArgoCD 배포 등
 import subprocess
 import time
 from pathlib import Path
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml

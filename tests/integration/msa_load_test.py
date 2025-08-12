@@ -10,9 +10,7 @@ import statistics
 import sys
 import time
 from dataclasses import dataclass
-from typing import Any
-from typing import Dict
-from typing import List
+from typing import Any, Dict, List
 
 import httpx
 

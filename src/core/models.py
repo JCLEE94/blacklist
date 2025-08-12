@@ -5,15 +5,10 @@
 """
 
 import json
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Any, Dict, List, Optional, Union
 
 
 class HealthStatus(Enum):
@@ -69,8 +64,7 @@ class BlacklistEntry:
         """만료 날짜 계산"""
         if self.last_seen:
             try:
-                from datetime import datetime
-                from datetime import timedelta
+                from datetime import datetime, timedelta
 
                 last_date = datetime.strptime(self.last_seen, "%Y-%m")
                 expire_date = last_date + timedelta(days=90)
@@ -141,8 +135,7 @@ class MonthData:
         """초기화 후 처리"""
         if self.detection_date and not self.expiry_date:
             try:
-                from datetime import datetime
-                from datetime import timedelta
+                from datetime import datetime, timedelta
 
                 detection = datetime.fromisoformat(
                     self.detection_date.replace("Z", "+00:00")

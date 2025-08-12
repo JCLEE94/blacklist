@@ -8,15 +8,10 @@ import hashlib
 import logging
 import secrets
 import time
-from collections import defaultdict
-from collections import deque
-from datetime import datetime
-from datetime import timedelta
+from collections import defaultdict, deque
+from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
+from typing import Any, Callable, Dict, List
 
 import jwt
 
@@ -207,9 +202,7 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import current_app
-            from flask import g
-            from flask import request
+            from flask import current_app, g, request
 
             try:
                 security_manager = getattr(current_app, "security_manager", None)
@@ -268,8 +261,7 @@ def rate_limit(limit: int = 100, window_seconds: int = 3600):
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import current_app
-            from flask import request
+            from flask import current_app, request
 
             try:
                 security_manager = getattr(current_app, "security_manager", None)
