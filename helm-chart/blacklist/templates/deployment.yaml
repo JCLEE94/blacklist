@@ -78,6 +78,26 @@ spec:
               value: {{ .Values.security.forceDisableCollection | quote }}
             - name: COLLECTION_ENABLED
               value: {{ .Values.collection.enabled | quote }}
+            - name: REGTECH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: api-credentials
+                  key: REGTECH_USERNAME
+            - name: REGTECH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: api-credentials
+                  key: REGTECH_PASSWORD
+            - name: SECUDIUM_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: api-credentials
+                  key: SECUDIUM_USERNAME
+            - name: SECUDIUM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: api-credentials
+                  key: SECUDIUM_PASSWORD
           volumeMounts:
             {{- if .Values.persistence.data.enabled }}
             - name: data

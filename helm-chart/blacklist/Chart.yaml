@@ -2,7 +2,7 @@ apiVersion: v2
 name: blacklist
 description: Enterprise threat intelligence blacklist management system with FortiGate integration
 type: application
-version: 3.2.12
+version: 3.2.14
 appVersion: "2.0.1"
 
 home: https://github.com/JCLEE94/blacklist
@@ -26,10 +26,10 @@ annotations:
   category: Security
   licenses: MIT
   artifacthub.io/changes: |
-    - Added comprehensive CI/CD pipeline
-    - Enhanced GitOps integration with ArgoCD
-    - Multi-environment deployment support
-    - Production-ready security configurations
+    - Added API credentials secret integration
+    - Fixed DATABASE_URL to use persistent volume path  
+    - Enabled collection service for production
+    - Resolved 502 Bad Gateway deployment issue
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/prerelease: "false"
   artifacthub.io/images: |
