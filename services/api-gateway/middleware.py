@@ -65,7 +65,7 @@ class CacheManager:
 
         path = request.url.path
         query = str(request.query_params)
-        return hashlib.md5(f"{path}:{query}".encode()).hexdigest()
+        return hashlib.sha256(f"{path}:{query}".encode()).hexdigest()
 
     def get(self, key: str, category: str = "default"):
         """캠시 조회"""

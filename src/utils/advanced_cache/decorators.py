@@ -177,7 +177,7 @@ def _generate_cache_key(
 
     # Hash if key is too long (Redis has a 512MB key limit, but shorter is better)
     if len(cache_key) > 200:
-        cache_key_hash = hashlib.md5(cache_key.encode()).hexdigest()
+        cache_key_hash = hashlib.sha256(cache_key.encode()).hexdigest()
         short_prefix = key_parts[0] if key_parts else "func"
         cache_key = f"{short_prefix}:hash:{cache_key_hash}"
 

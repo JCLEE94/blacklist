@@ -190,6 +190,18 @@ class TestEnvironmentManager:
         self.config.cleanup()
 
 
+class TestConfig:
+    """Test configuration wrapper class"""
+    
+    def __init__(self):
+        self.config = TestConfigManager()
+    
+    def cleanup(self):
+        """Clean up test configuration"""
+        if hasattr(self.config, 'cleanup'):
+            self.config.cleanup()
+
+
 def get_test_config() -> TestConfig:
     """Get test configuration instance"""
     return TestConfig()

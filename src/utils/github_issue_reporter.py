@@ -54,7 +54,7 @@ class GitHubIssueReporter:
     ) -> str:
         """에러 고유 식별자 생성"""
         content = f"{error_type}:{error_message}:{stack_trace[:500]}"  # 스택트레이스 일부만 사용
-        return hashlib.md5(content.encode()).hexdigest()[:12]
+        return hashlib.sha256(content.encode()).hexdigest()[:12]
 
     def _is_duplicate_error(self, error_hash: str) -> bool:
         """중복 에러 체크"""

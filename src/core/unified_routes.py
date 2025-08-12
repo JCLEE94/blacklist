@@ -9,8 +9,10 @@ import logging
 from flask import Blueprint
 
 from .routes.admin_routes import admin_routes_bp
+from .routes.analytics_routes import analytics_routes_bp
 from .routes.api_routes import api_routes_bp
 from .routes.collection_routes import collection_routes_bp
+from .routes.export_routes import export_routes_bp
 from .routes.web_routes import web_routes_bp
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,8 @@ unified_bp = Blueprint("unified", __name__)
 # Register all sub-blueprints
 unified_bp.register_blueprint(web_routes_bp)
 unified_bp.register_blueprint(api_routes_bp)
+unified_bp.register_blueprint(export_routes_bp)
+unified_bp.register_blueprint(analytics_routes_bp)
 unified_bp.register_blueprint(collection_routes_bp)
 unified_bp.register_blueprint(admin_routes_bp)
 
@@ -56,5 +60,5 @@ __all__ = [
 
 logger.info("Unified routes initialized with modular structure")
 logger.info(
-    "Registered blueprints: web_routes, api_routes, collection_routes, admin_routes"
+    "Registered blueprints: web_routes, api_routes, export_routes, analytics_routes, collection_routes, admin_routes"
 )

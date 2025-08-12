@@ -71,7 +71,7 @@ def unified_cache(
 
                 prefix = f"unified:{key_prefix}:" if key_prefix else "unified:"
                 cache_key = (
-                    prefix + hashlib.md5(":".join(key_parts).encode()).hexdigest()
+                    prefix + hashlib.sha256(":".join(key_parts).encode()).hexdigest()
                 )
 
             # Try to get from cache

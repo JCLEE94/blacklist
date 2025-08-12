@@ -288,7 +288,7 @@ class DataCleaningPipeline:
 
     def _generate_ip_hash(self, ip: str) -> str:
         """IP 주소 해시 생성"""
-        return hashlib.md5(ip.encode("utf-8")).hexdigest()
+        return hashlib.sha256(ip.encode("utf-8")).hexdigest()
 
     def _analyze_ip_region(self, ip: str) -> Dict[str, str]:
         """
