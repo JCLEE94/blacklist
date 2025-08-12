@@ -88,7 +88,7 @@ class CollectionProgressTracker:
                 total_steps=total_steps,
                 started_at=datetime.now(),
             )
-            logger.info(f"[{source}] 수집 시작")
+            logger.info("[{source}] 수집 시작")
 
     def update_status(
         self, source: str, status: CollectionStatus, message: str = ""
@@ -125,7 +125,7 @@ class CollectionProgressTracker:
             ]:
                 progress.completed_at = datetime.now()
 
-            logger.info(f"[{source}] 상태 변경: {status.value} - {message}")
+            logger.info("[{source}] 상태 변경: {status.value} - {message}")
 
     def update_progress(
         self,
@@ -152,7 +152,7 @@ class CollectionProgressTracker:
             if message:
                 progress.message = message
             else:
-                progress.message = f"{current_item}/{total_items} 처리 중..."
+                progress.message = "{current_item}/{total_items} 처리 중..."
 
     def set_error(self, source: str, error: str) -> None:
         """에러 설정"""
@@ -163,9 +163,9 @@ class CollectionProgressTracker:
             progress = self._progress_map[source]
             progress.status = CollectionStatus.FAILED
             progress.error = error
-            progress.message = f"오류 발생: {error}"
+            progress.message = "오류 발생: {error}"
             progress.completed_at = datetime.now()
-            logger.error(f"[{source}] 수집 실패: {error}")
+            logger.error("[{source}] 수집 실패: {error}")
 
     def fail_collection(self, source: str, error: str) -> None:
         """수집 실패 처리 (set_error의 별칭)"""
@@ -191,7 +191,7 @@ class CollectionProgressTracker:
             if details:
                 progress.details.update(details)
 
-            logger.info(f"[{source}] 수집 완료: {message}")
+            logger.info("[{source}] 수집 완료: {message}")
 
     def get_progress(self, source: str) -> Optional[Dict[str, Any]]:
         """특정 소스의 진행 상황 조회"""

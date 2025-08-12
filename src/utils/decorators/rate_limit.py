@@ -41,7 +41,7 @@ def unified_rate_limit(
             # Rate limiting is completely disabled - no need to compute identifiers
             if False:  # Disabled block
                 if key_func:
-                    identifier = key_func()
+                    key_func()  # Call but don't store result
                 # Use authenticated user ID if available and requested
                 # Rate limiting is disabled - no need to compute identifier
                 # if use_user_id and hasattr(g, "auth_user") and g.auth_user:
@@ -58,7 +58,7 @@ def unified_rate_limit(
                 #     identifier = client_ip
                 pass
 
-                # rate_key = f"rate_limit:{func.__name__}:{identifier}"  # 현재 미사용
+                # rate_key = "rate_limit:{func.__name__}:{identifier}"  # 현재 미사용
 
             # Rate limiting completely disabled for stability
             # Skip all rate limiting logic to prevent health check failures

@@ -59,7 +59,7 @@ def get_auth_config():
             }
         )
     except Exception as e:
-        logger.error(f"인증 설정 조회 오류: {e}")
+        logger.error("인증 설정 조회 오류: {e}")
         return (
             jsonify(
                 {
@@ -135,7 +135,7 @@ def save_auth_config():
 
                 except Exception as e:
                     results["regtech"] = {"success": False, "error": str(e)}
-                    logger.error(f"REGTECH 인증 정보 저장 실패: {e}")
+                    logger.error("REGTECH 인증 정보 저장 실패: {e}")
 
         # SECUDIUM 인증 정보 처리
         if "secudium" in data:
@@ -177,7 +177,7 @@ def save_auth_config():
 
                 except Exception as e:
                     results["secudium"] = {"success": False, "error": str(e)}
-                    logger.error(f"SECUDIUM 인증 정보 저장 실패: {e}")
+                    logger.error("SECUDIUM 인증 정보 저장 실패: {e}")
 
         # 캐시 클리어
         try:
@@ -187,7 +187,7 @@ def save_auth_config():
                 cache_manager.clear()
                 logger.info("인증 설정 변경 후 캐시 클리어됨")
         except Exception as e:
-            logger.warning(f"캐시 클리어 실패: {e}")
+            logger.warning("캐시 클리어 실패: {e}")
 
         # 전체 성공 여부 판단
         overall_success = any(
@@ -207,7 +207,7 @@ def save_auth_config():
         )
 
     except Exception as e:
-        logger.error(f"인증 설정 저장 오류: {e}")
+        logger.error("인증 설정 저장 오류: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -245,7 +245,7 @@ def update_regtech_auth():
                 )
                 logger.info("REGTECH 인증정보가 DB에 저장되었습니다.")
             except Exception as db_error:
-                logger.warning(f"DB 저장 실패: {db_error}")
+                logger.warning("DB 저장 실패: {db_error}")
 
             # 토큰 정보 가져오기
             token = auth._current_token
@@ -262,7 +262,7 @@ def update_regtech_auth():
                     cache_manager.clear()
                     logger.info("REGTECH 인증 후 캐시가 클리어되었습니다")
             except Exception as e:
-                logger.warning(f"캐시 클리어 실패: {e}")
+                logger.warning("캐시 클리어 실패: {e}")
 
             return jsonify(
                 {
@@ -282,7 +282,7 @@ def update_regtech_auth():
             )
 
     except Exception as e:
-        logger.error(f"REGTECH 인증 업데이트 오류: {e}")
+        logger.error("REGTECH 인증 업데이트 오류: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -316,7 +316,7 @@ def refresh_regtech_token():
             return jsonify({"success": False, "error": "토큰 갱신 실패. 인증 정보를 확인하세요."})
 
     except Exception as e:
-        logger.error(f"토큰 갱신 오류: {e}")
+        logger.error("토큰 갱신 오류: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -351,7 +351,7 @@ def regtech_token_status():
             return jsonify({"has_token": False, "is_valid": False})
 
     except Exception as e:
-        logger.error(f"토큰 상태 확인 오류: {e}")
+        logger.error("토큰 상태 확인 오류: {e}")
         return jsonify({"has_token": False, "is_valid": False, "error": str(e)})
 
 
@@ -395,14 +395,14 @@ def test_regtech_collection():
                 {
                     "success": True,
                     "ip_count": ip_count,
-                    "message": f"REGTECH 접근 성공. 총 {ip_count}개 IP 확인",
+                    "message": "REGTECH 접근 성공. 총 {ip_count}개 IP 확인",
                 }
             )
         else:
             return jsonify({"success": False, "error": "데이터 접근 실패"})
 
     except Exception as e:
-        logger.error(f"수집 테스트 오류: {e}")
+        logger.error("수집 테스트 오류: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -437,7 +437,7 @@ def update_secudium_auth():
             )
             logger.info("SECUDIUM 인증정보가 DB에 저장되었습니다.")
         except Exception as db_error:
-            logger.warning(f"DB 저장 실패: {db_error}")
+            logger.warning("DB 저장 실패: {db_error}")
 
         # 설정 파일에도 저장 (백업용)
         try:
@@ -456,7 +456,7 @@ def update_secudium_auth():
             os.chmod(config_file, 0o600)
             logger.info("SECUDIUM 인증정보가 파일에도 저장되었습니다.")
         except Exception as file_error:
-            logger.warning(f"파일 저장 실패: {file_error}")
+            logger.warning("파일 저장 실패: {file_error}")
 
         # 캐시 클리어
         try:
@@ -466,7 +466,7 @@ def update_secudium_auth():
                 cache_manager.clear()
                 logger.info("SECUDIUM 인증 정보 업데이트 후 캐시가 클리어되었습니다")
         except Exception as e:
-            logger.warning(f"캐시 클리어 실패: {e}")
+            logger.warning("캐시 클리어 실패: {e}")
 
         return jsonify(
             {
@@ -476,5 +476,5 @@ def update_secudium_auth():
         )
 
     except Exception as e:
-        logger.error(f"SECUDIUM 인증 업데이트 오류: {e}")
+        logger.error("SECUDIUM 인증 업데이트 오류: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

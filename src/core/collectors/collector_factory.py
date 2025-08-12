@@ -49,7 +49,7 @@ class CollectorFactory:
             logger.info("모든 수집기 등록 완료")
 
         except Exception as e:
-            logger.error(f"수집기 등록 실패: {e}")
+            logger.error("수집기 등록 실패: {e}")
             raise
 
     def _create_regtech_collector(self) -> Optional[RegtechCollector]:
@@ -81,7 +81,7 @@ class CollectorFactory:
             return RegtechCollector(config)
 
         except Exception as e:
-            logger.error(f"REGTECH 수집기 생성 실패: {e}")
+            logger.error("REGTECH 수집기 생성 실패: {e}")
             return None
 
     def _create_secudium_collector(self) -> Optional["SecudiumCollector"]:
@@ -103,7 +103,7 @@ class CollectorFactory:
             return SecudiumCollector(config)
 
         except Exception as e:
-            logger.error(f"SECUDIUM 수집기 생성 실패: {e}")
+            logger.error("SECUDIUM 수집기 생성 실패: {e}")
             return None
 
     def _should_enable_collection(self, source: str) -> bool:
@@ -114,7 +114,7 @@ class CollectorFactory:
                 os.getenv("FORCE_DISABLE_COLLECTION", "false").lower() == "true"
             )
             if force_disable:
-                logger.info(f"{source} 수집기: FORCE_DISABLE_COLLECTION으로 비활성화")
+                logger.info("{source} 수집기: FORCE_DISABLE_COLLECTION으로 비활성화")
                 return False
 
             # 개별 수집기 활성화 확인
@@ -122,20 +122,20 @@ class CollectorFactory:
                 os.getenv("COLLECTION_ENABLED", "false").lower() == "true"
             )
             if not collection_enabled:
-                logger.info(f"{source} 수집기: COLLECTION_ENABLED=false로 비활성화")
+                logger.info("{source} 수집기: COLLECTION_ENABLED=false로 비활성화")
                 return False
 
             # 개별 소스 활성화 확인
-            source_enabled = os.getenv(f"{source}_ENABLED", "true").lower() == "true"
+            source_enabled = os.getenv("{source}_ENABLED", "true").lower() == "true"
             if not source_enabled:
-                logger.info(f"{source} 수집기: {source}_ENABLED=false로 비활성화")
+                logger.info("{source} 수집기: {source}_ENABLED=false로 비활성화")
                 return False
 
-            logger.info(f"{source} 수집기: 활성화됨")
+            logger.info("{source} 수집기: 활성화됨")
             return True
 
         except Exception as e:
-            logger.error(f"{source} 수집기 활성화 여부 확인 실패: {e}")
+            logger.error("{source} 수집기 활성화 여부 확인 실패: {e}")
             return False
 
     def get_collector_status(self) -> Dict[str, any]:
@@ -152,10 +152,10 @@ class CollectorFactory:
 
         try:
             self.manager.enable_collector(name)
-            logger.info(f"수집기 활성화: {name}")
+            logger.info("수집기 활성화: {name}")
             return True
         except Exception as e:
-            logger.error(f"수집기 활성화 실패 ({name}): {e}")
+            logger.error("수집기 활성화 실패 ({name}): {e}")
             return False
 
     def disable_collector(self, name: str) -> bool:
@@ -165,10 +165,10 @@ class CollectorFactory:
 
         try:
             self.manager.disable_collector(name)
-            logger.info(f"수집기 비활성화: {name}")
+            logger.info("수집기 비활성화: {name}")
             return True
         except Exception as e:
-            logger.error(f"수집기 비활성화 실패 ({name}): {e}")
+            logger.error("수집기 비활성화 실패 ({name}): {e}")
             return False
 
     async def collect_from_source(self, source_name: str) -> Dict[str, any]:
@@ -183,10 +183,10 @@ class CollectorFactory:
             else:
                 return {
                     "success": False,
-                    "error": f"Collector '{source_name}' not found",
+                    "error": "Collector '{source_name}' not found",
                 }
         except Exception as e:
-            logger.error(f"소스별 수집 실패 ({source_name}): {e}")
+            logger.error("소스별 수집 실패 ({source_name}): {e}")
             return {"success": False, "error": str(e)}
 
     async def collect_all(self) -> Dict[str, any]:
@@ -201,7 +201,7 @@ class CollectorFactory:
                 "results": {name: result.to_dict() for name, result in results.items()},
             }
         except Exception as e:
-            logger.error(f"전체 수집 실패: {e}")
+            logger.error("전체 수집 실패: {e}")
             return {"success": False, "error": str(e)}
 
 

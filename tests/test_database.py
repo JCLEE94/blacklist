@@ -13,7 +13,7 @@ os.environ["TESTING"] = "1"
 os.environ["CACHE_TYPE"] = "simple"
 
 test_db = tempfile.mktemp(suffix=".db")
-os.environ["DATABASE_URL"] = f"sqlite:///{test_db}"
+os.environ["DATABASE_URL"] = "sqlite:///{test_db}"
 os.environ["FORCE_DISABLE_COLLECTION"] = "false"  # Allow collection in tests
 os.environ["COLLECTION_ENABLED"] = "true"  # Enable collection for tests
 os.environ["RESTART_PROTECTION"] = "false"  # Disable restart protection for tests

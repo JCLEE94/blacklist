@@ -86,7 +86,7 @@ class StructuredLogger:
         # Docker 환경에서 로그 폴더 권한 설정 후 활성화 필요
         try:
             # 파일 핸들러 (JSON 로그)
-            json_file = self.log_dir / f"{self.name}.json"
+            json_file = self.log_dir / "{self.name}.json"
             json_handler = logging.handlers.RotatingFileHandler(
                 json_file, maxBytes=10 * 1024 * 1024, backupCount=5  # 10MB
             )
@@ -95,7 +95,7 @@ class StructuredLogger:
             logger.addHandler(json_handler)
 
             # 에러 파일 핸들러
-            error_file = self.log_dir / f"{self.name}_errors.log"
+            error_file = self.log_dir / "{self.name}_errors.log"
             error_handler = logging.handlers.RotatingFileHandler(
                 error_file, maxBytes=5 * 1024 * 1024, backupCount=3  # 5MB
             )

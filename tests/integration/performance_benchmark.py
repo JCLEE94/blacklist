@@ -137,7 +137,7 @@ try:
         all_results = []
 
         for endpoint in endpoints:
-            print(f"\n📊 Testing {endpoint}")
+            print("\n📊 Testing {endpoint}")
             print("-" * 40)
 
             # Run performance test
@@ -149,11 +149,11 @@ try:
             # Print results
             if "error" not in result:
                 print(
-                    f"Average Response Time: {result['response_times']['average_ms']}ms"
+                    "Average Response Time: {result['response_times']['average_ms']}ms"
                 )
-                print(f"95th Percentile: {result['response_times']['p95_ms']}ms")
-                print(f"Requests/Second: {result['requests_per_second']}")
-                print(f"Error Rate: {result['error_rate_percent']}%")
+                print("95th Percentile: {result['response_times']['p95_ms']}ms")
+                print("Requests/Second: {result['requests_per_second']}")
+                print("Error Rate: {result['error_rate_percent']}%")
 
                 # Performance validation
                 avg_time = result["response_times"]["average_ms"]
@@ -166,7 +166,7 @@ try:
                 else:
                     print("❌ PERFORMANCE: FAILED")
             else:
-                print(f"❌ ERROR: {result['error']}")
+                print("❌ ERROR: {result['error']}")
 
         # Summary report
         print("\n" + "=" * 60)
@@ -181,16 +181,16 @@ try:
             ]
             total_rps = sum(r["requests_per_second"] for r in successful_tests)
 
-            print(f"Total Endpoints Tested: {len(endpoints)}")
-            print(f"Successful Tests: {len(successful_tests)}")
+            print("Total Endpoints Tested: {len(endpoints)}")
+            print("Successful Tests: {len(successful_tests)}")
             print(
-                f"Overall Average Response Time: {round(statistics.mean(avg_response_times), 2)}ms"
+                "Overall Average Response Time: {round(statistics.mean(avg_response_times), 2)}ms"
             )
-            print(f"Combined Requests/Second: {round(total_rps, 2)}")
+            print("Combined Requests/Second: {round(total_rps, 2)}")
 
             # Performance criteria
             fast_endpoints = len([t for t in avg_response_times if t < 25])
-            print(f"Fast Endpoints (< 25ms): {fast_endpoints}/{len(successful_tests)}")
+            print("Fast Endpoints (< 25ms): {fast_endpoints}/{len(successful_tests)}")
 
             if statistics.mean(avg_response_times) < 50:
                 print("✅ OVERALL PERFORMANCE: EXCELLENT")
@@ -213,7 +213,7 @@ try:
         concurrency_levels = [10, 25, 50, 100]
 
         for concurrency in concurrency_levels:
-            print(f"\n🧪 Testing with {concurrency} concurrent threads")
+            print("\n🧪 Testing with {concurrency} concurrent threads")
             result = run_performance_test(
                 endpoint, num_requests=concurrency * 5, concurrent_threads=concurrency
             )
@@ -222,17 +222,17 @@ try:
                 avg_time = result["response_times"]["average_ms"]
                 error_rate = result["error_rate_percent"]
 
-                print(f"Average Response Time: {avg_time}ms")
-                print(f"Error Rate: {error_rate}%")
+                print("Average Response Time: {avg_time}ms")
+                print("Error Rate: {error_rate}%")
 
                 if error_rate < 1 and avg_time < 100:
-                    print(f"✅ {concurrency} concurrent: PASSED")
+                    print("✅ {concurrency} concurrent: PASSED")
                 elif error_rate < 5 and avg_time < 200:
-                    print(f"⚠️  {concurrency} concurrent: ACCEPTABLE")
+                    print("⚠️  {concurrency} concurrent: ACCEPTABLE")
                 else:
-                    print(f"❌ {concurrency} concurrent: FAILED")
+                    print("❌ {concurrency} concurrent: FAILED")
             else:
-                print(f"❌ {concurrency} concurrent: ERROR - {result['error']}")
+                print("❌ {concurrency} concurrent: ERROR - {result['error']}")
 
     if __name__ == "__main__":
         print("Integration Tests Performance Benchmark")
@@ -254,11 +254,11 @@ try:
             )
 
         except Exception as e:
-            print(f"❌ BENCHMARK FAILED: {e}")
+            print("❌ BENCHMARK FAILED: {e}")
             sys.exit(1)
 
 except ImportError as e:
-    print(f"⚠️  Missing dependencies for performance benchmark: {e}")
+    print("⚠️  Missing dependencies for performance benchmark: {e}")
     print("This is a demonstration of what the benchmark would look like.")
     print()
     print("Expected benchmark results:")

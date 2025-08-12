@@ -50,9 +50,9 @@ class ResourceNotFoundError(BaseError):
     """리소스 미발견 에러"""
 
     def __init__(self, resource: str, identifier: Optional[str] = None, **kwargs):
-        message = f"{resource}을(를) 찾을 수 없습니다"
+        message = "{resource}을(를) 찾을 수 없습니다"
         if identifier:
-            message += f" (ID: {identifier})"
+            message += " (ID: {identifier})"
         super().__init__(
             message=message,
             code="RESOURCE_NOT_FOUND",
@@ -66,7 +66,7 @@ class ExternalServiceError(BaseError):
 
     def __init__(self, service: str, message: str, **kwargs):
         super().__init__(
-            message=f"{service} 서비스 오류: {message}",
+            message="{service} 서비스 오류: {message}",
             code="EXTERNAL_SERVICE_ERROR",
             status_code=503,
             details={"service": service},
@@ -78,7 +78,7 @@ class CollectionError(BaseError):
 
     def __init__(self, source: str, message: str, **kwargs):
         super().__init__(
-            message=f"{source} 수집 오류: {message}",
+            message="{source} 수집 오류: {message}",
             code="COLLECTION_ERROR",
             status_code=500,
             details={"source": source},
@@ -90,7 +90,7 @@ class DatabaseError(BaseError):
 
     def __init__(self, operation: str, message: str, **kwargs):
         super().__init__(
-            message=f"데이터베이스 {operation} 오류: {message}",
+            message="데이터베이스 {operation} 오류: {message}",
             code="DATABASE_ERROR",
             status_code=500,
             details={"operation": operation},

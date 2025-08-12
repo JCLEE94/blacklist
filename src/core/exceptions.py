@@ -76,7 +76,7 @@ except ImportError:
             self.error_code = error_code or self.__class__.__name__
             self.details = details or {}
             self.cause = cause
-            logger.error(f"{self.error_code}: {message}")
+            logger.error("{self.error_code}: {message}")
 
         def to_api_response(self) -> Dict[str, Any]:
             return {
@@ -93,10 +93,10 @@ except ImportError:
     def handle_exception(
         exc: Exception, context: Optional[Dict[str, Any]] = None
     ) -> BlacklistError:
-        return BlacklistError(f"Error: {exc}", details=context)
+        return BlacklistError("Error: {exc}", details=context)
 
     def log_exception(exc: Exception, logger_instance: Optional[logging.Logger] = None):
-        (logger_instance or logger).error(f"Exception: {exc}")
+        (logger_instance or logger).error("Exception: {exc}")
 
     def create_error_response(
         exc: Exception, include_details: bool = False

@@ -36,7 +36,7 @@ class MSAPerformanceTester:
                 try:
                     async with httpx.AsyncClient(timeout=30) as client:
                         response = await client.get(
-                            f"{self.gateway_url}{test['endpoint']}"
+                            "{self.gateway_url}{test['endpoint']}"
                         )
                         response_time = time.time() - start_time
 
@@ -44,10 +44,10 @@ class MSAPerformanceTester:
                             total_time += response_time
                             successful_requests += 1
                         else:
-                            errors.append(f"Request {i+1}: HTTP {response.status_code}")
+                            errors.append("Request {i+1}: HTTP {response.status_code}")
 
                 except Exception as e:
-                    errors.append(f"Request {i+1}: {str(e)}")
+                    errors.append("Request {i+1}: {str(e)}")
 
             if successful_requests > 0:
                 average_time = total_time / successful_requests
@@ -73,7 +73,7 @@ class MSAPerformanceTester:
                         name=test["name"],
                         passed=False,
                         response_time=0.0,
-                        error_message=f"All requests failed: {errors}",
+                        error_message="All requests failed: {errors}",
                     )
                 )
 
@@ -87,7 +87,7 @@ class MSAPerformanceTester:
             # API Gateway를 통해 DB가 필요한 엔드포인트 테스트
             async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.get(
-                    f"{self.gateway_url}/api/v1/blacklist/statistics"
+                    "{self.gateway_url}/api/v1/blacklist/statistics"
                 )
                 response_time = time.time() - start_time
 
@@ -104,7 +104,7 @@ class MSAPerformanceTester:
                         name="Database Connectivity",
                         passed=False,
                         response_time=response_time,
-                        error_message=f"DB connection test failed: HTTP {response.status_code}",
+                        error_message="DB connection test failed: HTTP {response.status_code}",
                         status_code=response.status_code,
                     )
 
@@ -124,7 +124,7 @@ class MSAPerformanceTester:
 
         async def make_request():
             async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(f"{self.gateway_url}{endpoint}")
+                response = await client.get("{self.gateway_url}{endpoint}")
                 return response.status_code == 200
 
         try:
@@ -135,7 +135,7 @@ class MSAPerformanceTester:
             total_time = time.time() - start_time
 
             return TestResult(
-                name=f"Concurrent Load Test ({concurrent_requests} requests)",
+                name="Concurrent Load Test ({concurrent_requests} requests)",
                 passed=successful_requests >= concurrent_requests * 0.8,  # 80% 성공률
                 response_time=total_time,
                 response_data={
@@ -148,7 +148,7 @@ class MSAPerformanceTester:
 
         except Exception as e:
             return TestResult(
-                name=f"Concurrent Load Test ({concurrent_requests} requests)",
+                name="Concurrent Load Test ({concurrent_requests} requests)",
                 passed=False,
                 response_time=time.time() - start_time,
                 error_message=str(e),

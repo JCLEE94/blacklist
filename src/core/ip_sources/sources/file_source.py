@@ -39,7 +39,7 @@ class FileSource(BaseIPSource):
             return False
 
         if not os.path.exists(file_path):
-            self.logger.error(f"File not found: {file_path}")
+            self.logger.error("File not found: {file_path}")
             return False
 
         return True
@@ -69,10 +69,10 @@ class FileSource(BaseIPSource):
             elif file_format == "log":
                 yield from self._parse_log_file(file_path, category)
             else:
-                raise ValueError(f"Unsupported file format: {file_format}")
+                raise ValueError("Unsupported file format: {file_format}")
 
         except Exception as e:
-            self.logger.error(f"Failed to parse file {file_path}: {e}")
+            self.logger.error("Failed to parse file {file_path}: {e}")
             raise
 
     def _detect_format(self, file_path: str) -> str:
@@ -104,7 +104,7 @@ class FileSource(BaseIPSource):
                 if ip and self.is_valid_ip(ip):
                     yield IPEntry(
                         ip_address=ip,
-                        source_name=f"{self.source_name}:{Path(file_path).name}",
+                        source_name="{self.source_name}:{Path(file_path).name}",
                         category=category,
                         confidence=1.0,
                         detection_date=datetime.utcnow(),
@@ -143,11 +143,11 @@ class FileSource(BaseIPSource):
                     # 다른 컬럼들을 메타데이터에 추가
                     for i, value in enumerate(row):
                         if i != ip_column:
-                            metadata[f"column_{i}"] = value
+                            metadata["column_{i}"] = value
 
                     yield IPEntry(
                         ip_address=ip,
-                        source_name=f"{self.source_name}:{Path(file_path).name}",
+                        source_name="{self.source_name}:{Path(file_path).name}",
                         category=category,
                         confidence=1.0,
                         detection_date=datetime.utcnow(),
@@ -168,7 +168,7 @@ class FileSource(BaseIPSource):
                 if isinstance(ip, str) and self.is_valid_ip(ip):
                     yield IPEntry(
                         ip_address=ip,
-                        source_name=f"{self.source_name}:{Path(file_path).name}",
+                        source_name="{self.source_name}:{Path(file_path).name}",
                         category=category,
                         confidence=1.0,
                         detection_date=datetime.utcnow(),
@@ -186,18 +186,18 @@ class FileSource(BaseIPSource):
         def extract_ips(obj, path=""):
             if isinstance(obj, dict):
                 for key, value in obj.items():
-                    new_path = f"{path}.{key}" if path else key
+                    new_path = "{path}.{key}" if path else key
                     yield from extract_ips(value, new_path)
             elif isinstance(obj, list):
                 for i, item in enumerate(obj):
-                    yield from extract_ips(item, f"{path}[{i}]")
+                    yield from extract_ips(item, "{path}[{i}]")
             elif isinstance(obj, str) and self.is_valid_ip(obj):
                 yield obj, path
 
         for ip, json_path in extract_ips(data):
             yield IPEntry(
                 ip_address=ip,
-                source_name=f"{self.source_name}:{Path(file_path).name}",
+                source_name="{self.source_name}:{Path(file_path).name}",
                 category=category,
                 confidence=1.0,
                 detection_date=datetime.utcnow(),
@@ -218,7 +218,7 @@ class FileSource(BaseIPSource):
                     if self.is_valid_ip(ip):
                         yield IPEntry(
                             ip_address=ip,
-                            source_name=f"{self.source_name}:{Path(file_path).name}",
+                            source_name="{self.source_name}:{Path(file_path).name}",
                             category=category,
                             confidence=0.8,  # 로그에서 추출한 IP는 확신도 낮음
                             detection_date=datetime.utcnow(),

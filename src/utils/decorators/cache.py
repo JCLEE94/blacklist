@@ -55,7 +55,7 @@ def unified_cache(
 
                 # Add user context if requested
                 if per_user and hasattr(g, "user_id"):
-                    key_parts.append(f"user_{g.user_id}")
+                    key_parts.append("user_{g.user_id}")
 
                 # Add request context for routes
                 try:
@@ -67,7 +67,7 @@ def unified_cache(
                     # Outside of request context, which is fine for tests
                     pass
 
-                prefix = f"unified:{key_prefix}:" if key_prefix else "unified:"
+                prefix = "unified:{key_prefix}:" if key_prefix else "unified:"
                 cache_key = (
                     prefix + hashlib.sha256(":".join(key_parts).encode()).hexdigest()
                 )
@@ -77,10 +77,10 @@ def unified_cache(
                 try:
                     cached_result = registry.cache.get(cache_key)
                     if cached_result is not None:
-                        logger.debug(f"Cache hit for key: {cache_key}")
+                        logger.debug("Cache hit for key: {cache_key}")
                         return cached_result
                 except Exception as e:
-                    logger.warning(f"Cache get error: {e}")
+                    logger.warning("Cache get error: {e}")
 
             # Execute function and cache result
             result = func(*args, **kwargs)
@@ -88,12 +88,12 @@ def unified_cache(
             if registry.cache is not None and hasattr(registry.cache, "set"):
                 try:
                     registry.cache.set(cache_key, result, ttl=ttl)
-                    logger.debug(f"Cached result for key: {cache_key}")
+                    logger.debug("Cached result for key: {cache_key}")
                 except Exception as e:
-                    logger.warning(f"Cache set error: {e}")
+                    logger.warning("Cache set error: {e}")
             else:
                 logger.debug(
-                    f"Cache not available, skipping cache set for key: {cache_key}"
+                    "Cache not available, skipping cache set for key: {cache_key}"
                 )
 
             return result

@@ -25,7 +25,7 @@ class Colors:
 
 def run_test_module(module_path):
     """개별 테스트 모듈 실행"""
-    print(f"\n{Colors.BLUE}Running: {module_path}{Colors.RESET}")
+    print("\n{Colors.BLUE}Running: {module_path}{Colors.RESET}")
 
     start_time = time.time()
 
@@ -106,26 +106,26 @@ def generate_report(results):
     total_failed = sum(r["failed"] for r in results)
     total_time = sum(r["elapsed_time"] for r in results)
 
-    print(f"\n{Colors.BOLD}{'='*80}{Colors.RESET}")
-    print(f"{Colors.BOLD}📊 INTEGRATION TEST SUMMARY REPORT{Colors.RESET}")
-    print(f"{Colors.BOLD}{'='*80}{Colors.RESET}")
+    print("\n{Colors.BOLD}{'='*80}{Colors.RESET}")
+    print("{Colors.BOLD}📊 INTEGRATION TEST SUMMARY REPORT{Colors.RESET}")
+    print("{Colors.BOLD}{'='*80}{Colors.RESET}")
 
     print(
-        f"\n{Colors.BOLD}Test Execution Time:{Colors.RESET} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        "\n{Colors.BOLD}Test Execution Time:{Colors.RESET} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
-    print(f"{Colors.BOLD}Total Duration:{Colors.RESET} {total_time:.2f} seconds")
+    print("{Colors.BOLD}Total Duration:{Colors.RESET} {total_time:.2f} seconds")
 
-    print(f"\n{Colors.BOLD}Overall Results:{Colors.RESET}")
+    print("\n{Colors.BOLD}Overall Results:{Colors.RESET}")
     if total_failed == 0:
-        print(f"  {Colors.GREEN}✅ ALL TESTS PASSED!{Colors.RESET}")
+        print("  {Colors.GREEN}✅ ALL TESTS PASSED!{Colors.RESET}")
     else:
-        print(f"  {Colors.RED}❌ SOME TESTS FAILED{Colors.RESET}")
+        print("  {Colors.RED}❌ SOME TESTS FAILED{Colors.RESET}")
 
-    print(f"  Total Passed: {Colors.GREEN}{total_passed}{Colors.RESET}")
-    print(f"  Total Failed: {Colors.RED}{total_failed}{Colors.RESET}")
+    print("  Total Passed: {Colors.GREEN}{total_passed}{Colors.RESET}")
+    print("  Total Failed: {Colors.RED}{total_failed}{Colors.RESET}")
 
-    print(f"\n{Colors.BOLD}Detailed Results by Module:{Colors.RESET}")
-    print(f"{'Module':<40} {'Status':<10} {'Passed':<8} {'Failed':<8} {'Time(s)':<10}")
+    print("\n{Colors.BOLD}Detailed Results by Module:{Colors.RESET}")
+    print("{'Module':<40} {'Status':<10} {'Passed':<8} {'Failed':<8} {'Time(s)':<10}")
     print("-" * 80)
 
     for result in results:
@@ -133,37 +133,37 @@ def generate_report(results):
             result["module"].replace("test_", "").replace("_integration.py", "")
         )
         status = (
-            f"{Colors.GREEN}PASS{Colors.RESET}"
+            "{Colors.GREEN}PASS{Colors.RESET}"
             if result["failed"] == 0
-            else f"{Colors.RED}FAIL{Colors.RESET}"
+            else "{Colors.RED}FAIL{Colors.RESET}"
         )
 
         print(
-            f"{module_name:<40} {status:<19} "
-            f"{result['passed']:<8} {result['failed']:<8} "
-            f"{result['elapsed_time']:<10.2f}"
+            "{module_name:<40} {status:<19} "
+            "{result['passed']:<8} {result['failed']:<8} "
+            "{result['elapsed_time']:<10.2f}"
         )
 
     # 실패한 테스트 상세 정보
     failed_tests = [r for r in results if r["failed"] > 0]
     if failed_tests:
-        print(f"\n{Colors.BOLD}{Colors.RED}Failed Test Details:{Colors.RESET}")
+        print("\n{Colors.BOLD}{Colors.RED}Failed Test Details:{Colors.RESET}")
         for result in failed_tests:
-            print(f"\n{Colors.YELLOW}Module: {result['module']}{Colors.RESET}")
+            print("\n{Colors.YELLOW}Module: {result['module']}{Colors.RESET}")
             if result["error"]:
-                print(f"Error: {result['error']}")
+                print("Error: {result['error']}")
             # 출력에서 실패 정보 추출
             output_lines = result["output"].split("\n")
             for line in output_lines:
                 if "❌" in line or "failed" in line.lower() or "error" in line.lower():
-                    print(f"  {line}")
+                    print("  {line}")
 
     # 성능 통계
-    print(f"\n{Colors.BOLD}Performance Statistics:{Colors.RESET}")
+    print("\n{Colors.BOLD}Performance Statistics:{Colors.RESET}")
     avg_time = total_time / len(results) if results else 0
-    print(f"  Average test duration: {avg_time:.2f}s")
-    print(f"  Fastest test: {min(r['elapsed_time'] for r in results):.2f}s")
-    print(f"  Slowest test: {max(r['elapsed_time'] for r in results):.2f}s")
+    print("  Average test duration: {avg_time:.2f}s")
+    print("  Fastest test: {min(r['elapsed_time'] for r in results):.2f}s")
+    print("  Slowest test: {max(r['elapsed_time'] for r in results):.2f}s")
 
     # JSON 보고서 저장
     report_data = {
@@ -178,18 +178,18 @@ def generate_report(results):
     with open(report_path, "w") as f:
         json.dump(report_data, f, indent=2)
 
-    print(f"\n{Colors.BOLD}Report saved to:{Colors.RESET} {report_path}")
+    print("\n{Colors.BOLD}Report saved to:{Colors.RESET} {report_path}")
 
     return total_failed == 0
 
 
 def main():
     """메인 실행 함수"""
-    print(f"{Colors.BOLD}{Colors.PURPLE}")
+    print("{Colors.BOLD}{Colors.PURPLE}")
     print("╔═══════════════════════════════════════════════════════╗")
     print("║     🚀 BLACKLIST INTEGRATION TEST SUITE 🚀           ║")
     print("╚═══════════════════════════════════════════════════════╝")
-    print(f"{Colors.RESET}")
+    print("{Colors.RESET}")
 
     # 테스트 모듈 찾기
     test_dir = Path(__file__).parent
@@ -202,15 +202,15 @@ def main():
     )
 
     if not test_modules:
-        print(f"{Colors.RED}No test modules found!{Colors.RESET}")
+        print("{Colors.RED}No test modules found!{Colors.RESET}")
         sys.exit(1)
 
-    print(f"Found {len(test_modules)} test modules:")
+    print("Found {len(test_modules)} test modules:")
     for module in test_modules:
-        print(f"  • {module.name}")
+        print("  • {module.name}")
 
     # 환경 준비
-    print(f"\n{Colors.BOLD}Preparing test environment...{Colors.RESET}")
+    print("\n{Colors.BOLD}Preparing test environment...{Colors.RESET}")
     os.environ["TESTING"] = "true"
     os.environ["FLASK_ENV"] = "testing"
 
@@ -218,7 +218,7 @@ def main():
     results = []
     for i, module in enumerate(test_modules, 1):
         print(
-            f"\n{Colors.BOLD}[{i}/{len(test_modules)}] Testing {module.name}...{Colors.RESET}"
+            "\n{Colors.BOLD}[{i}/{len(test_modules)}] Testing {module.name}...{Colors.RESET}"
         )
         result = run_test_module(str(module))
         results.append(result)
@@ -226,11 +226,11 @@ def main():
         # 간단한 결과 표시
         if result["failed"] == 0:
             print(
-                f"{Colors.GREEN}✅ PASSED{Colors.RESET} ({result['passed']} tests in {result['elapsed_time']:.2f}s)"
+                "{Colors.GREEN}✅ PASSED{Colors.RESET} ({result['passed']} tests in {result['elapsed_time']:.2f}s)"
             )
         else:
             print(
-                f"{Colors.RED}❌ FAILED{Colors.RESET} ({result['failed']} failures in {result['elapsed_time']:.2f}s)"
+                "{Colors.RED}❌ FAILED{Colors.RESET} ({result['failed']} failures in {result['elapsed_time']:.2f}s)"
             )
 
     # 최종 보고서 생성
@@ -245,12 +245,12 @@ def main():
     # 종료 코드
     if success:
         print(
-            f"\n{Colors.GREEN}{Colors.BOLD}🎉 All integration tests passed! 🎉{Colors.RESET}"
+            "\n{Colors.GREEN}{Colors.BOLD}🎉 All integration tests passed! 🎉{Colors.RESET}"
         )
         sys.exit(0)
     else:
         print(
-            f"\n{Colors.RED}{Colors.BOLD}💔 Some tests failed. Please check the details above.{Colors.RESET}"
+            "\n{Colors.RED}{Colors.BOLD}💔 Some tests failed. Please check the details above.{Colors.RESET}"
         )
         sys.exit(1)
 

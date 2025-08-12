@@ -113,7 +113,7 @@ class CompactFlaskApp(
                 initialize_system_stability()
                 logger.info("System stability monitoring initialized")
             except Exception as e:
-                logger.warning(f"Failed to initialize system monitoring: {e}")
+                logger.warning("Failed to initialize system monitoring: {e}")
 
             logger.info(
                 "Blacklist API Server initialized successfully",
@@ -132,7 +132,7 @@ class CompactFlaskApp(
             def health_error():
                 return {
                     "status": "error",
-                    "message": f"Application initialization failed: {error_message}",
+                    "message": "Application initialization failed: {error_message}",
                 }, 503
 
             return error_app
@@ -222,7 +222,7 @@ def main():
         logger.warning(
             "Production mode - use Gunicorn",
             command=(
-                f"gunicorn -w 4 -b 0.0.0.0:{port} "
+                "gunicorn -w 4 -b 0.0.0.0:{port} "
                 "core.app_compact:create_compact_app()"
             ),
         )

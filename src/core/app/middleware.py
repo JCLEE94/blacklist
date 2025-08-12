@@ -52,7 +52,7 @@ class MiddlewareMixin:
             # Performance tracking
             if hasattr(g, "start_time"):
                 response_time = (time.time() - g.start_time) * 1000
-                response.headers["X-Response-Time"] = f"{response_time:.2f}ms"
+                response.headers["X-Response-Time"] = "{response_time:.2f}ms"
 
             # Enhanced cache control
             if request.path.startswith("/api/blacklist"):
@@ -74,7 +74,7 @@ class MiddlewareMixin:
             """Basic performance tracking - response time only"""
             if hasattr(g, "start_time"):
                 duration = time.time() - g.start_time
-                response.headers["X-Response-Time"] = f"{duration:.3f}s"
+                response.headers["X-Response-Time"] = "{duration:.3f}s"
 
             return response
 

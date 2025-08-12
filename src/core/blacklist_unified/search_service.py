@@ -56,10 +56,10 @@ class SearchService:
             }
 
         # Check cache first
-        cache_key = f"ip_search_{ip}"
+        cache_key = "ip_search_{ip}"
         cached_result = self.cache.get(cache_key)
         if cached_result:
-            logger.debug(f"Cache hit for IP search: {ip}")
+            logger.debug("Cache hit for IP search: {ip}")
             return cached_result
 
         # Search in files and database
@@ -116,7 +116,7 @@ class SearchService:
                                 if ip in f.read():
                                     found_sources.append(filename.replace(".txt", ""))
                         except Exception as e:
-                            logger.warning(f"Error reading {file_path}: {e}")
+                            logger.warning("Error reading {file_path}: {e}")
                             continue
 
             # Search in detection directory
@@ -130,13 +130,13 @@ class SearchService:
                                 if ip in content:
                                     # Extract date from filename
                                     date_part = filename.replace(".txt", "")
-                                    found_sources.append(f"detection_{date_part}")
+                                    found_sources.append("detection_{date_part}")
                         except Exception as e:
-                            logger.warning(f"Error reading {file_path}: {e}")
+                            logger.warning("Error reading {file_path}: {e}")
                             continue
 
         except Exception as e:
-            logger.error(f"Error searching IP in files: {e}")
+            logger.error("Error searching IP in files: {e}")
 
         return {
             "found": len(found_sources) > 0,
@@ -207,10 +207,10 @@ class SearchService:
                 }
 
         except sqlite3.Error as e:
-            logger.error(f"Database error during IP search: {e}")
+            logger.error("Database error during IP search: {e}")
             return None
         except Exception as e:
-            logger.error(f"Unexpected error during database search: {e}")
+            logger.error("Unexpected error during database search: {e}")
             return None
 
     def _record_ip_search(self, ip: str, found: bool):
@@ -244,7 +244,7 @@ class SearchService:
 
                 conn.commit()
         except Exception as e:
-            logger.warning(f"Failed to record search history: {e}")
+            logger.warning("Failed to record search history: {e}")
 
     @unified_cache(ttl=600)
     def search_ips(
@@ -270,7 +270,7 @@ class SearchService:
                     result = future.result()
                     results.append(result)
                 except Exception as e:
-                    logger.error(f"Error searching IP {ip}: {e}")
+                    logger.error("Error searching IP {ip}: {e}")
                     results.append(
                         {
                             "ip": ip,

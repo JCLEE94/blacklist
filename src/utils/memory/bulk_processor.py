@@ -26,7 +26,7 @@ class BulkProcessorMixin:
 
         # numpy 사용 가능하면 벡터화 처리
         if HAS_NUMPY and len(ip_list) > 10000:
-            logger.info(f"Using numpy for efficient processing of {len(ip_list)} IPs")
+            logger.info("Using numpy for efficient processing of {len(ip_list)} IPs")
 
             # numpy 배열로 변환 (메모리 효율적)
             ip_array = np.array(ip_list, dtype="U15")  # 최대 15자 IP 주소
@@ -38,7 +38,7 @@ class BulkProcessorMixin:
 
         else:
             # 표준 Python 최적화
-            logger.info(f"Using standard Python for processing {len(ip_list)} IPs")
+            logger.info("Using standard Python for processing {len(ip_list)} IPs")
 
             # 집합을 사용한 중복 제거 (메모리 효율적)
             unique_ips = set()
@@ -49,6 +49,6 @@ class BulkProcessorMixin:
                     unique_ips.update(chunk)
 
                     if chunk_num % 5 == 0:
-                        logger.debug(f"Processed chunk {chunk_num}/{total_chunks}")
+                        logger.debug("Processed chunk {chunk_num}/{total_chunks}")
 
             return list(unique_ips)

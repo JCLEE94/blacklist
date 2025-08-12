@@ -28,7 +28,7 @@ def test_excel_download():
     end_date = datetime.now()
     start_date = end_date - timedelta(days=30)
 
-    print(f"날짜 범위: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}")
+    print("날짜 범위: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}")
 
     # 수집 실행
     ips = collector.collect_from_web(
@@ -36,25 +36,25 @@ def test_excel_download():
     )
 
     if ips:
-        print(f"\n✅ 수집 성공!")
-        print(f"총 {len(ips)}개 IP 수집됨")
+        print("\n✅ 수집 성공!")
+        print("총 {len(ips)}개 IP 수집됨")
 
         # 샘플 출력
         print("\n처음 5개 IP:")
         sample_ips = list(ips)[:5] if hasattr(ips, "__iter__") else []
         for i, entry in enumerate(sample_ips):
             if hasattr(entry, "ip"):
-                print(f"  {i+1}. {entry.ip} ({entry.country}) - {entry.attack_type}")
+                print("  {i+1}. {entry.ip} ({entry.country}) - {entry.attack_type}")
             else:
-                print(f"  {i+1}. {entry}")
+                print("  {i+1}. {entry}")
 
-        print(f"\n수집 방법: Excel 다운로드")
+        print("\n수집 방법: Excel 다운로드")
 
         # 데이터베이스에 저장 가능 여부 확인
         print("\n💾 데이터베이스 저장 가능 여부:")
-        print(f"  - IP 형식: ✓")
-        print(f"  - 필수 필드: ✓")
-        print(f"  - 소스: REGTECH")
+        print("  - IP 형식: ✓")
+        print("  - 필수 필드: ✓")
+        print("  - 소스: REGTECH")
 
         return True
     else:
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     try:
         import pandas
 
-        print(f"✅ pandas {pandas.__version__} 사용 가능\n")
+        print("✅ pandas {pandas.__version__} 사용 가능\n")
     except ImportError:
         print("❌ pandas가 설치되지 않음\n")
         exit(1)

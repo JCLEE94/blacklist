@@ -62,7 +62,7 @@ def export_data(format):
             )
 
         else:
-            return jsonify({"error": f"Unsupported format: {format}"}), 400
+            return jsonify({"error": "Unsupported format: {format}"}), 400
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

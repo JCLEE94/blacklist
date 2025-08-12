@@ -50,19 +50,19 @@ class SecudiumCollector(BaseCollector):
         try:
             # 로그인 및 데이터 수집 로직
             session = self._create_session()
-            
+
             # 로그인
             if not await self._login(session):
                 raise Exception("SECUDIUM 로그인 실패")
-            
+
             # 데이터 수집
             collected_data = await self._collect_bulletin_data(session)
-            
-            self.logger.info(f"SECUDIUM 수집 완료: {len(collected_data)}개")
+
+            self.logger.info("SECUDIUM 수집 완료: {len(collected_data)}개")
             return collected_data
-            
+
         except Exception as e:
-            self.logger.error(f"SECUDIUM 수집 실패: {e}")
+            self.logger.error("SECUDIUM 수집 실패: {e}")
             raise
         """
 

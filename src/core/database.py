@@ -171,9 +171,9 @@ class DatabaseManager:
                 try:
                     conn.execute(text(index_sql))
                     conn.commit()
-                    logger.debug(f"인덱스 생성 완료: {index_sql.split()[-1]}")
+                    logger.debug("인덱스 생성 완료: {index_sql.split()[-1]}")
                 except Exception as e:
-                    logger.warning(f"Index creation failed: {e}")
+                    logger.warning("Index creation failed: {e}")
 
     def optimize_database(self):
         """데이터베이스 최적화"""
@@ -199,7 +199,7 @@ class DatabaseManager:
             )
             os.makedirs(backup_dir, exist_ok=True)
             backup_path = os.path.join(
-                backup_dir, f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db'
+                backup_dir, 'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db'
             )
 
         if "sqlite" in self.database_url:
@@ -207,7 +207,7 @@ class DatabaseManager:
 
             db_path = self.database_url.replace("sqlite:///", "")
             shutil.copy2(db_path, backup_path)
-            logger.info(f"Database backed up to: {backup_path}")
+            logger.info("Database backed up to: {backup_path}")
         else:
             # PostgreSQL pg_dump 사용
             logger.warning("PostgreSQL backup requires pg_dump")
@@ -275,8 +275,8 @@ class DatabaseManager:
         with self.Session() as session:
             # 오래된 탐지 기록 삭제
             result = session.execute(
-                text("DELETE FROM ip_detection WHERE detection_date < :cutoff"),
-                {"cutoff": cutoff_date},
+                text("DELETE FROM ip_detection WHERE detection_date < :cutof"),
+                {"cutof": cutoff_date},
             )
             deleted_count += result.rowcount
 
@@ -295,7 +295,7 @@ class DatabaseManager:
 
             session.commit()
 
-        logger.info(f"Cleaned up {deleted_count} old records")
+        logger.info("Cleaned up {deleted_count} old records")
         return deleted_count
 
 
@@ -324,7 +324,7 @@ class MigrationManager:
                 return result
         except Exception as e:
             # 마이그레이션 테이블이 없는 경우
-            logger.debug(f"Migration table not found: {e}")
+            logger.debug("Migration table not found: {e}")
             return None
 
     def init_migrations_table(self):
@@ -349,7 +349,7 @@ class MigrationManager:
 
         for migration in sorted(self.migrations, key=lambda x: x["version"]):
             if not current_version or migration["version"] > current_version:
-                logger.info(f"Running migration: {migration['version']}")
+                logger.info("Running migration: {migration['version']}")
 
                 try:
                     migration["up"](self.db)
@@ -364,8 +364,8 @@ class MigrationManager:
                         )
                         session.commit()
 
-                    logger.info(f"Migration {migration['version']} completed")
+                    logger.info("Migration {migration['version']} completed")
 
                 except Exception as e:
-                    logger.error(f"Migration {migration['version']} failed: {e}")
+                    logger.error("Migration {migration['version']} failed: {e}")
                     raise

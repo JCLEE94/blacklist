@@ -92,7 +92,7 @@ except ImportError:
             self.code = code
             self.status_code = status_code
             self.details = details or {}
-            logger.error(f"{self.code}: {message}")
+            logger.error("{self.code}: {message}")
 
     # 기본 예외 클래스들 정의
     ValidationError = type("ValidationError", (BaseError,), {})
@@ -105,7 +105,7 @@ except ImportError:
             self.error_stats = {}
 
         def log_error(self, error, context=None):
-            logger.error(f"Error: {error}")
+            logger.error("Error: {error}")
 
         def format_error_response(self, error, request_id=None):
             return {"error": {"message": str(error), "code": "ERROR"}}, 500
@@ -121,7 +121,7 @@ except ImportError:
         try:
             return func()
         except Exception as e:
-            logger.error(f"Safe execute error: {e}")
+            logger.error("Safe execute error: {e}")
             return default
 
     def register_error_handlers(app):

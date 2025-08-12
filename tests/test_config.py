@@ -38,8 +38,8 @@ class TestConfigManager:
             "TESTING": "1",
             "DEBUG": "true",
             # Database
-            "DATABASE_URL": f"sqlite:///{self.test_db_path}",
-            "TEST_DATABASE_URL": f"sqlite:///{self.test_db_path}",
+            "DATABASE_URL": "sqlite:///{self.test_db_path}",
+            "TEST_DATABASE_URL": "sqlite:///{self.test_db_path}",
             # Cache
             "CACHE_TYPE": "simple",
             "REDIS_URL": "redis://localhost:6380/0",  # Different port for testing
@@ -57,7 +57,7 @@ class TestConfigManager:
             "SECUDIUM_USERNAME": "test_secudium",
             "SECUDIUM_PASSWORD": "test_pass",
             # Paths
-            "PYTHONPATH": f"{self.project_root}:{self.project_root / 'src'}",
+            "PYTHONPATH": "{self.project_root}:{self.project_root / 'src'}",
             "DATA_DIR": self.temp_dir,
         }
 
@@ -91,7 +91,7 @@ class TestConfigManager:
                         detection_date DATE,
                         is_active BOOLEAN DEFAULT 1
                     );
-                    
+
                     CREATE TABLE IF NOT EXISTS auth_attempts (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         source TEXT NOT NULL,
@@ -101,14 +101,14 @@ class TestConfigManager:
                         error_message TEXT,
                         ip_address TEXT
                     );
-                    
+
                     CREATE TABLE IF NOT EXISTS collection_config (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         config_data TEXT NOT NULL,
                         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                     );
-                    
+
                     CREATE TABLE IF NOT EXISTS collection_logs (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         source TEXT NOT NULL,
@@ -118,7 +118,7 @@ class TestConfigManager:
                         collection_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         duration_seconds INTEGER DEFAULT 0
                     );
-                    
+
                     CREATE INDEX IF NOT EXISTS idx_blacklist_ip ON blacklist(ip);
                     CREATE INDEX IF NOT EXISTS idx_blacklist_source ON blacklist(source);
                     CREATE INDEX IF NOT EXISTS idx_blacklist_created_at ON blacklist(created_at);
@@ -134,7 +134,7 @@ class TestConfigManager:
                         ('192.168.1.100', 'REGTECH', '{"severity": "high", "category": "malware"}', '2024-01-01'),
                         ('10.0.0.100', 'SECUDIUM', '{"severity": "medium", "category": "spam"}', '2024-01-02'),
                         ('172.16.0.100', 'MANUAL', '{"severity": "low", "category": "suspicious"}', '2024-01-03');
-                    
+
                     INSERT OR IGNORE INTO collection_logs (source, status, message, data_count, duration_seconds) VALUES
                         ('REGTECH', 'success', 'Test collection successful', 100, 30),
                         ('SECUDIUM', 'success', 'Test collection successful', 150, 45);
@@ -143,7 +143,7 @@ class TestConfigManager:
 
                 conn.commit()
         except Exception as e:
-            print(f"Warning: Failed to create test database: {e}")
+            print("Warning: Failed to create test database: {e}")
 
     def cleanup(self):
         """Clean up test environment"""
@@ -296,7 +296,7 @@ def create_test_app(config_name: str = "testing"):
         return app
 
     except ImportError as e:
-        print(f"Warning: Could not import app_compact: {e}")
+        print("Warning: Could not import app_compact: {e}")
         # Fallback to minimal app
         from flask import Flask
 
@@ -309,17 +309,17 @@ def assert_response_format(response, expected_keys: list, status_code: int = 200
     """Assert response format and content"""
     assert (
         response.status_code == status_code
-    ), f"Expected {status_code}, got {response.status_code}"
+    ), "Expected {status_code}, got {response.status_code}"
 
     if response.is_json:
         data = response.get_json()
         for key in expected_keys:
-            assert key in data, f"Expected key '{key}' not found in response"
+            assert key in data, "Expected key '{key}' not found in response"
 
 
 def create_test_data(count: int = 10) -> list:
     """Create test IP data"""
-    return [f"192.168.1.{i}" for i in range(1, count + 1)]
+    return ["192.168.1.{i}" for i in range(1, count + 1)]
 
 
 # Type aliases for public interface

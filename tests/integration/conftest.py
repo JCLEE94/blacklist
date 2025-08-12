@@ -31,7 +31,7 @@ def temp_workspace():
 def mock_github_event():
     """모의 GitHub 이벤트"""
     return {
-        "ref": "refs/heads/main",
+        "re": "refs/heads/main",
         "repository": {"full_name": "JCLEE94/blacklist", "default_branch": "main"},
         "head_commit": {
             "id": "abc123def456789",
@@ -253,7 +253,7 @@ def create_workflow_file(workspace: Path, workflow: dict):
 
 def create_k8s_manifest(workspace: Path, name: str, manifest: dict):
     """Kubernetes 매니페스트 생성"""
-    manifest_path = workspace / "k8s" / f"{name}.yaml"
+    manifest_path = workspace / "k8s" / "{name}.yaml"
     create_test_file(manifest_path, yaml.dump(manifest))
     return manifest_path
 
@@ -269,18 +269,18 @@ def test_data_generator():
         for i in range(count):
             commits.append(
                 {
-                    "sha": f"commit{i:03d}sha",
-                    "message": f"Test commit {i}",
-                    "author": {"name": f"User{i}", "email": f"user{i}@test.com"},
+                    "sha": "commit{i:03d}sha",
+                    "message": "Test commit {i}",
+                    "author": {"name": "User{i}", "email": "user{i}@test.com"},
                 }
             )
         return commits
 
     def generate_docker_tags(base_name="test", count=3):
         """Docker 태그 생성"""
-        tags = [f"{base_name}:latest"]
+        tags = ["{base_name}:latest"]
         for i in range(1, count):
-            tags.append(f"{base_name}:v{i}.0.0")
+            tags.append("{base_name}:v{i}.0.0")
         return tags
 
     return {"commits": generate_commit_data, "docker_tags": generate_docker_tags}

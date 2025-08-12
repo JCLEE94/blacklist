@@ -42,13 +42,13 @@ class MSAIntegrationTester:
 
         try:
             async with httpx.AsyncClient(timeout=config.timeout) as client:
-                response = await client.get(f"{config.url}{config.health_endpoint}")
+                response = await client.get("{config.url}{config.health_endpoint}")
                 response_time = time.time() - start_time
 
                 if response.status_code == 200:
                     self.healthy_services.append(service_name)
                     return TestResult(
-                        name=f"{config.name} Health Check",
+                        name="{config.name} Health Check",
                         passed=True,
                         response_time=response_time,
                         status_code=response.status_code,
@@ -56,17 +56,17 @@ class MSAIntegrationTester:
                     )
                 else:
                     return TestResult(
-                        name=f"{config.name} Health Check",
+                        name="{config.name} Health Check",
                         passed=False,
                         response_time=response_time,
-                        error_message=f"HTTP {response.status_code}",
+                        error_message="HTTP {response.status_code}",
                         status_code=response.status_code,
                     )
 
         except Exception as e:
             response_time = time.time() - start_time
             return TestResult(
-                name=f"{config.name} Health Check",
+                name="{config.name} Health Check",
                 passed=False,
                 response_time=response_time,
                 error_message=str(e),
@@ -86,7 +86,7 @@ class MSAIntegrationTester:
             start_time = time.time()
             try:
                 async with httpx.AsyncClient(timeout=30) as client:
-                    response = await client.get(f"{gateway_url}{route['url']}")
+                    response = await client.get("{gateway_url}{route['url']}")
                     response_time = time.time() - start_time
 
                     expected_statuses = (
@@ -218,7 +218,7 @@ class MSAIntegrationTester:
             ]
         else:
             return [
-                f"⚠️  {len(failed_tests)}개의 테스트가 실패했습니다.",
+                "⚠️  {len(failed_tests)}개의 테스트가 실패했습니다.",
                 "🔧 서비스 상태 및 로그를 확인하세요.",
                 "📋 MSA 운영 권장사항을 적용하세요.",
             ]
@@ -236,15 +236,15 @@ async def main():
         total_tests = results["test_summary"]["total_tests"]
         passed_tests = results["test_summary"]["passed_tests"]
 
-        print(f"📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)")
+        print("📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)")
 
         for rec in results["recommendations"]:
-            print(f"💡 {rec}")
+            print("💡 {rec}")
 
         sys.exit(0 if success_rate >= 80 else 1)
 
     except Exception as e:
-        print(f"💥 테스트 실행 중 오류 발생: {e}")
+        print("💥 테스트 실행 중 오류 발생: {e}")
         logger.exception("Test execution failed")
         sys.exit(1)
 

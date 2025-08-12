@@ -46,7 +46,7 @@ class CoreOperationsMixin:
             self.logger.info("✅ 통합 블랙리스트 서비스 시작 완료")
 
         except Exception as e:
-            self.logger.error(f"❌ 서비스 시작 실패: {e}")
+            self.logger.error("❌ 서비스 시작 실패: {e}")
             raise
 
     async def stop(self) -> None:
@@ -127,14 +127,14 @@ class CoreOperationsMixin:
                             today.strftime("%Y%m%d")
 
                             self.logger.info(
-                                f"📅 수집 기간: {three_months_ago.strftime('%Y-%m-%d')} ~ {today.strftime('%Y-%m-%d')}"
+                                "📅 수집 기간: {three_months_ago.strftime('%Y-%m-%d')} ~ {today.strftime('%Y-%m-%d')}"
                             )
 
                 # 다음 체크까지 대기 (1시간)
                 await asyncio.sleep(3600)
 
             except Exception as e:
-                self.logger.error(f"❌ 주기적 수집 오류: {e}")
+                self.logger.error("❌ 주기적 수집 오류: {e}")
                 await asyncio.sleep(60)  # 오류 시 1분 후 재시도
 
     async def _cleanup_components(self):
@@ -146,7 +146,7 @@ class CoreOperationsMixin:
                 if hasattr(component, "cleanup"):
                     await component.cleanup()
             except Exception as e:
-                self.logger.warning(f"컴포넌트 {name} 정리 중 오류: {e}")
+                self.logger.warning("컴포넌트 {name} 정리 중 오류: {e}")
 
     def is_running(self) -> bool:
         """서비스 실행 상태 확인"""
@@ -180,7 +180,7 @@ class CoreOperationsMixin:
             }
 
         except Exception as e:
-            self.logger.error(f"Failed to get system health: {e}")
+            self.logger.error("Failed to get system health: {e}")
             return {
                 "status": "error",
                 "message": str(e),
@@ -213,7 +213,7 @@ class CoreOperationsMixin:
             return ips
 
         except Exception as e:
-            self.logger.error(f"Failed to get active blacklist IPs: {e}")
+            self.logger.error("Failed to get active blacklist IPs: {e}")
             return []
 
     def clear_all_database_data(self) -> Dict[str, Any]:
@@ -236,7 +236,7 @@ class CoreOperationsMixin:
             return result
 
         except Exception as e:
-            self.logger.error(f"Failed to clear database: {e}")
+            self.logger.error("Failed to clear database: {e}")
             return {"success": False, "error": str(e)}
 
     def get_health(self) -> ServiceHealth:
@@ -251,7 +251,7 @@ class CoreOperationsMixin:
                 else:
                     component_status[name] = "healthy"
             except Exception as e:
-                component_status[name] = f"error: {e}"
+                component_status[name] = "error: {e}"
 
         # 전체 상태 결정
         overall_status = "healthy" if self._running else "stopped"
@@ -269,7 +269,7 @@ class CoreOperationsMixin:
         """활성 블랙리스트 조회 - 성능 최적화 버전"""
         try:
             # 성능 캐시 키 생성
-            cache_key = f"active_blacklist_{format_type}_v2"
+            cache_key = "active_blacklist_{format_type}_v2"
 
             # 캐시에서 먼저 확인
             if self.cache:
@@ -309,7 +309,7 @@ class CoreOperationsMixin:
 
             return result
         except Exception as e:
-            self.logger.error(f"활성 블랙리스트 조회 실패: {e}")
+            self.logger.error("활성 블랙리스트 조회 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -335,6 +335,6 @@ class CoreOperationsMixin:
             self.logger.info("✅ 초기 설정 완료 - 수집은 수동으로 진행하세요")
 
         except Exception as e:
-            self.logger.error(f"초기 설정 오류: {e}")
+            self.logger.error("초기 설정 오류: {e}")
             # 오류가 있어도 완료 표시 (무한 루프 방지)
             self.collection_manager.mark_initial_collection_done()

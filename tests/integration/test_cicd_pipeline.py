@@ -21,7 +21,7 @@ class TestCICDPipelineTriggers:
         """main 브랜치 푸시가 전체 파이프라인을 트리거하는지 테스트"""
         # GitHub Actions 이벤트 시뮬레이션
         event = {
-            "ref": "refs/heads/main",
+            "re": "refs/heads/main",
             "event_name": "push",
             "repository": "JCLEE94/blacklist",
         }
@@ -303,7 +303,7 @@ class TestEndToEndFlow:
     def mock_github_event(self):
         """GitHub 이벤트 모킹"""
         return {
-            "ref": "refs/heads/main",
+            "re": "refs/heads/main",
             "repository": {"full_name": "JCLEE94/blacklist"},
             "head_commit": {
                 "id": "abc123def456",
@@ -333,7 +333,7 @@ class TestEndToEndFlow:
 
         # 모든 단계가 성공해야 함
         for stage, result in results.items():
-            assert result["success"], f"{stage} 단계 실패: {result.get('error')}"
+            assert result["success"], "{stage} 단계 실패: {result.get('error')}"
 
     def _run_code_quality(self, event):
         """코드 품질 검사 실행"""
@@ -350,7 +350,7 @@ class TestEndToEndFlow:
         # Docker 빌드 시뮬레이션
         return {
             "success": True,
-            "image": f"registry.jclee.me/blacklist:sha-{event['head_commit']['id'][:7]}",
+            "image": "registry.jclee.me/blacklist:sha-{event['head_commit']['id'][:7]}",
             "duration": 180,
         }
 
@@ -441,7 +441,7 @@ def run_command(cmd, check=True):
     """명령 실행 헬퍼"""
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if check and result.returncode != 0:
-        raise RuntimeError(f"Command failed: {cmd}\n{result.stderr}")
+        raise RuntimeError("Command failed: {cmd}\n{result.stderr}")
     return result
 
 

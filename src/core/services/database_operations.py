@@ -25,7 +25,7 @@ class DatabaseOperationsMixin:
                     "/app" if os.path.exists("/app") else ".", "instance/blacklist.db"
                 )
 
-            self.logger.info(f"Initializing database tables at: {db_path}")
+            self.logger.info("Initializing database tables at: {db_path}")
 
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
@@ -71,7 +71,7 @@ class DatabaseOperationsMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"Database initialization failed: {e}")
+            self.logger.error("Database initialization failed: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -116,7 +116,7 @@ class DatabaseOperationsMixin:
             conn.close()
 
         except Exception as e:
-            self.logger.warning(f"Failed to ensure log table: {e}")
+            self.logger.warning("Failed to ensure log table: {e}")
 
     def _save_log_to_db(self, log_entry: Dict):
         """로그를 데이터베이스에 저장"""
@@ -141,7 +141,7 @@ class DatabaseOperationsMixin:
             conn.close()
 
         except Exception as e:
-            self.logger.warning(f"Failed to save log to database: {e}")
+            self.logger.warning("Failed to save log to database: {e}")
 
     def _load_logs_from_db(self, limit: int = 100) -> list[Dict]:
         """데이터베이스에서 로그 로드"""
@@ -167,7 +167,7 @@ class DatabaseOperationsMixin:
                     "source": row[1],
                     "action": row[2],
                     "details": json.loads(row[3]) if row[3] else {},
-                    "message": f"[{row[1]}] {row[2]}",
+                    "message": "[{row[1]}] {row[2]}",
                 }
                 logs.append(log_entry)
 
@@ -175,7 +175,7 @@ class DatabaseOperationsMixin:
             return logs
 
         except Exception as e:
-            self.logger.warning(f"Failed to load logs from database: {e}")
+            self.logger.warning("Failed to load logs from database: {e}")
             return []
 
     def clear_collection_logs(self):
@@ -192,4 +192,4 @@ class DatabaseOperationsMixin:
 
             self.logger.info("수집 로그가 클리어되었습니다")
         except Exception as e:
-            self.logger.error(f"로그 클리어 실패: {e}")
+            self.logger.error("로그 클리어 실패: {e}")

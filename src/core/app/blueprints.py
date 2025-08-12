@@ -47,7 +47,7 @@ class BlueprintRegistrationMixin:
 
             if blacklist_manager and cache_manager:
                 # Initialize V2 services for all route modules
-                v2_service = init_v2_services(blacklist_manager, cache_manager)
+                init_v2_services(blacklist_manager, cache_manager)
                 logger.info("V2 API services initialized successfully")
             else:
                 logger.warning("V2 API services not initialized - missing dependencies")

@@ -45,7 +45,7 @@ def login():
         valid_users = {k: v for k, v in valid_users.items() if k and v}
 
         if username not in valid_users or valid_users[username] != password:
-            logger.warning(f"로그인 실패: {username}")
+            logger.warning("로그인 실패: {username}")
             return jsonify({"success": False, "error": "사용자명 또는 비밀번호가 올바르지 않습니다"}), 401
 
         # 사용자 역할 결정
@@ -73,7 +73,7 @@ def login():
             user_id=username, roles=["refresh"], expires_hours=24 * 7  # 갱신 전용 토큰  # 7일
         )
 
-        logger.info(f"로그인 성공: {username}")
+        logger.info("로그인 성공: {username}")
 
         return jsonify(
             {
@@ -87,7 +87,7 @@ def login():
         )
 
     except Exception as e:
-        logger.error(f"로그인 처리 실패: {e}")
+        logger.error("로그인 처리 실패: {e}")
         return jsonify({"success": False, "error": "로그인 처리 중 오류가 발생했습니다"}), 500
 
 
@@ -139,7 +139,7 @@ def refresh_token():
             user_id=username, roles=["refresh"], expires_hours=24 * 7  # 7일
         )
 
-        logger.info(f"토큰 갱신 성공: {username}")
+        logger.info("토큰 갱신 성공: {username}")
 
         return jsonify(
             {
@@ -152,7 +152,7 @@ def refresh_token():
         )
 
     except Exception as e:
-        logger.error(f"토큰 갱신 실패: {e}")
+        logger.error("토큰 갱신 실패: {e}")
         return jsonify({"success": False, "error": "토큰 갱신 중 오류가 발생했습니다"}), 500
 
 
@@ -170,7 +170,7 @@ def logout():
         )
 
     except Exception as e:
-        logger.error(f"로그아웃 처리 실패: {e}")
+        logger.error("로그아웃 처리 실패: {e}")
         return jsonify({"success": False, "error": "로그아웃 처리 중 오류가 발생했습니다"}), 500
 
 
@@ -208,7 +208,7 @@ def verify_token():
             )
 
     except Exception as e:
-        logger.error(f"토큰 검증 실패: {e}")
+        logger.error("토큰 검증 실패: {e}")
         return jsonify({"success": False, "error": "토큰 검증 중 오류가 발생했습니다"}), 500
 
 
@@ -228,7 +228,7 @@ def change_password():
         return jsonify({"success": False, "error": "현재 환경에서는 비밀번호 변경이 지원되지 않습니다"}), 501
 
     except Exception as e:
-        logger.error(f"비밀번호 변경 실패: {e}")
+        logger.error("비밀번호 변경 실패: {e}")
         return jsonify({"success": False, "error": "비밀번호 변경 중 오류가 발생했습니다"}), 500
 
 
@@ -269,7 +269,7 @@ def get_profile():
         )
 
     except Exception as e:
-        logger.error(f"프로필 조회 실패: {e}")
+        logger.error("프로필 조회 실패: {e}")
         return jsonify({"success": False, "error": "프로필 조회 중 오류가 발생했습니다"}), 500
 
 

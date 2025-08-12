@@ -124,7 +124,7 @@ class ErrorPatternManager:
         self.error_patterns[error_type] = {
             "patterns": patterns,
             "severity": severity,
-            "description": description or f"사용자 정의 에러: {error_type}",
+            "description": description or "사용자 정의 에러: {error_type}",
         }
 
     def remove_pattern(self, error_type: str) -> bool:

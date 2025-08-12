@@ -27,4 +27,4 @@ web_bp.register_blueprint(data_bp)
 __all__ = ["web_bp"]
 
 logger.info("Web routes initialized with modular structure")
-logger.info(f"Registered blueprints: dashboard, api, collection, data")
+logger.info("Registered blueprints: dashboard, api, collection, data")

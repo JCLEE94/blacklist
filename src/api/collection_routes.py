@@ -30,7 +30,7 @@ def get_collection_status():
         )
 
     except Exception as e:
-        logger.error(f"수집 상태 조회 실패: {e}")
+        logger.error("수집 상태 조회 실패: {e}")
         return jsonify({"success": False, "error": "수집 상태를 가져올 수 없습니다"}), 500
 
 
@@ -68,7 +68,7 @@ def list_collectors():
         )
 
     except Exception as e:
-        logger.error(f"수집기 목록 조회 실패: {e}")
+        logger.error("수집기 목록 조회 실패: {e}")
         return jsonify({"success": False, "error": "수집기 목록을 가져올 수 없습니다"}), 500
 
 
@@ -81,20 +81,18 @@ def enable_collector(collector_name: str):
         success = factory.enable_collector(collector_name)
 
         if success:
-            logger.info(f"수집기 활성화 성공: {collector_name}")
+            logger.info("수집기 활성화 성공: {collector_name}")
             return jsonify(
-                {"success": True, "message": f"{collector_name} 수집기가 활성화되었습니다"}
+                {"success": True, "message": "{collector_name} 수집기가 활성화되었습니다"}
             )
         else:
             return (
-                jsonify(
-                    {"success": False, "error": f"{collector_name} 수집기를 찾을 수 없습니다"}
-                ),
+                jsonify({"success": False, "error": "{collector_name} 수집기를 찾을 수 없습니다"}),
                 404,
             )
 
     except Exception as e:
-        logger.error(f"수집기 활성화 실패 ({collector_name}): {e}")
+        logger.error("수집기 활성화 실패 ({collector_name}): {e}")
         return jsonify({"success": False, "error": "수집기 활성화 중 오류가 발생했습니다"}), 500
 
 
@@ -107,20 +105,18 @@ def disable_collector(collector_name: str):
         success = factory.disable_collector(collector_name)
 
         if success:
-            logger.info(f"수집기 비활성화 성공: {collector_name}")
+            logger.info("수집기 비활성화 성공: {collector_name}")
             return jsonify(
-                {"success": True, "message": f"{collector_name} 수집기가 비활성화되었습니다"}
+                {"success": True, "message": "{collector_name} 수집기가 비활성화되었습니다"}
             )
         else:
             return (
-                jsonify(
-                    {"success": False, "error": f"{collector_name} 수집기를 찾을 수 없습니다"}
-                ),
+                jsonify({"success": False, "error": "{collector_name} 수집기를 찾을 수 없습니다"}),
                 404,
             )
 
     except Exception as e:
-        logger.error(f"수집기 비활성화 실패 ({collector_name}): {e}")
+        logger.error("수집기 비활성화 실패 ({collector_name}): {e}")
         return jsonify({"success": False, "error": "수집기 비활성화 중 오류가 발생했습니다"}), 500
 
 
@@ -144,11 +140,11 @@ def trigger_collection(collector_name: str):
             loop.close()
 
         if result["success"]:
-            logger.info(f"수집 수동 실행 성공: {collector_name}")
+            logger.info("수집 수동 실행 성공: {collector_name}")
             return jsonify(
                 {
                     "success": True,
-                    "message": f"{collector_name} 수집이 완료되었습니다",
+                    "message": "{collector_name} 수집이 완료되었습니다",
                     "result": result["result"],
                 }
             )
@@ -159,7 +155,7 @@ def trigger_collection(collector_name: str):
             )
 
     except Exception as e:
-        logger.error(f"수집 수동 실행 실패 ({collector_name}): {e}")
+        logger.error("수집 수동 실행 실패 ({collector_name}): {e}")
         return jsonify({"success": False, "error": "수집 실행 중 오류가 발생했습니다"}), 500
 
 
@@ -196,7 +192,7 @@ def trigger_all_collections():
             )
 
     except Exception as e:
-        logger.error(f"전체 수집 수동 실행 실패: {e}")
+        logger.error("전체 수집 수동 실행 실패: {e}")
         return jsonify({"success": False, "error": "전체 수집 실행 중 오류가 발생했습니다"}), 500
 
 
@@ -211,27 +207,25 @@ def cancel_collection(collector_name: str):
         collector = manager.get_collector(collector_name)
         if not collector:
             return (
-                jsonify(
-                    {"success": False, "error": f"{collector_name} 수집기를 찾을 수 없습니다"}
-                ),
+                jsonify({"success": False, "error": "{collector_name} 수집기를 찾을 수 없습니다"}),
                 404,
             )
 
         if not collector.is_running:
             return (
                 jsonify(
-                    {"success": False, "error": f"{collector_name} 수집기가 실행 중이 아닙니다"}
+                    {"success": False, "error": "{collector_name} 수집기가 실행 중이 아닙니다"}
                 ),
                 400,
             )
 
         collector.cancel()
-        logger.info(f"수집 취소 요청: {collector_name}")
+        logger.info("수집 취소 요청: {collector_name}")
 
-        return jsonify({"success": True, "message": f"{collector_name} 수집 취소가 요청되었습니다"})
+        return jsonify({"success": True, "message": "{collector_name} 수집 취소가 요청되었습니다"})
 
     except Exception as e:
-        logger.error(f"수집 취소 실패 ({collector_name}): {e}")
+        logger.error("수집 취소 실패 ({collector_name}): {e}")
         return jsonify({"success": False, "error": "수집 취소 중 오류가 발생했습니다"}), 500
 
 
@@ -249,7 +243,7 @@ def cancel_all_collections():
         return jsonify({"success": True, "message": "모든 수집 취소가 요청되었습니다"})
 
     except Exception as e:
-        logger.error(f"전체 수집 취소 실패: {e}")
+        logger.error("전체 수집 취소 실패: {e}")
         return jsonify({"success": False, "error": "전체 수집 취소 중 오류가 발생했습니다"}), 500
 
 
@@ -291,7 +285,7 @@ def get_collection_history():
         )
 
     except Exception as e:
-        logger.error(f"수집 히스토리 조회 실패: {e}")
+        logger.error("수집 히스토리 조회 실패: {e}")
         return jsonify({"success": False, "error": "수집 히스토리를 가져올 수 없습니다"}), 500
 
 
@@ -315,7 +309,7 @@ def get_collection_config():
         return jsonify({"success": True, "config": config_info})
 
     except Exception as e:
-        logger.error(f"수집 설정 조회 실패: {e}")
+        logger.error("수집 설정 조회 실패: {e}")
         return jsonify({"success": False, "error": "수집 설정을 가져올 수 없습니다"}), 500
 
 
@@ -362,7 +356,7 @@ def update_collection_config():
         )
 
     except Exception as e:
-        logger.error(f"수집 설정 업데이트 실패: {e}")
+        logger.error("수집 설정 업데이트 실패: {e}")
         return jsonify({"success": False, "error": "수집 설정 업데이트 중 오류가 발생했습니다"}), 500
 
 

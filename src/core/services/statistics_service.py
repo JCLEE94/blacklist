@@ -54,7 +54,7 @@ class StatisticsServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"통계 조회 실패: {e}")
+            self.logger.error("통계 조회 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -84,7 +84,7 @@ class StatisticsServiceMixin:
                 },
             }
         except Exception as e:
-            self.logger.error(f"블랙리스트 요약 조회 실패: {e}")
+            self.logger.error("블랙리스트 요약 조회 실패: {e}")
             return {"success": False, "error": str(e)}
 
     def _get_source_counts_from_db(self) -> Dict[str, int]:
@@ -107,7 +107,7 @@ class StatisticsServiceMixin:
 
             return {source: count for source, count in results}
         except Exception as e:
-            self.logger.error(f"소스별 수 조회 실패: {e}")
+            self.logger.error("소스별 수 조회 실패: {e}")
             return {}
 
     def get_analytics_summary(self, days: int = 7) -> Dict[str, Any]:
@@ -122,7 +122,7 @@ class StatisticsServiceMixin:
             }
             return summary
         except Exception as e:
-            self.logger.error(f"분석 요약 실패: {e}")
+            self.logger.error("분석 요약 실패: {e}")
             return {"success": False, "error": str(e)}
 
     def get_daily_stats(self, days: int = 30) -> list:
@@ -166,7 +166,7 @@ class StatisticsServiceMixin:
 
             return list(daily_data.values())
         except Exception as e:
-            self.logger.error(f"일별 통계 실패: {e}")
+            self.logger.error("일별 통계 실패: {e}")
             return []
 
     def get_monthly_stats(self, start_date: str, end_date: str) -> Dict[str, Any]:
@@ -208,12 +208,12 @@ class StatisticsServiceMixin:
 
             return {
                 "success": True,
-                "period": f"{start_date} ~ {end_date}",
+                "period": "{start_date} ~ {end_date}",
                 "monthly_stats": list(monthly_data.values()),
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"월별 통계 실패: {e}")
+            self.logger.error("월별 통계 실패: {e}")
             return {"success": False, "error": str(e)}
 
     def get_source_statistics(self) -> dict:
@@ -259,7 +259,7 @@ class StatisticsServiceMixin:
 
             return source_stats
         except Exception as e:
-            self.logger.error(f"소스 통계 실패: {e}")
+            self.logger.error("소스 통계 실패: {e}")
             return {}
 
     def get_daily_collection_stats(self) -> list:
@@ -305,7 +305,7 @@ class StatisticsServiceMixin:
 
             return result[:30]  # 최대 30일
         except Exception as e:
-            self.logger.error(f"일별 수집 통계 실패: {e}")
+            self.logger.error("일별 수집 통계 실패: {e}")
             return []
 
     def get_blacklist_with_metadata(
@@ -383,7 +383,7 @@ class StatisticsServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"메타데이터 블랙리스트 조회 실패: {e}")
+            self.logger.error("메타데이터 블랙리스트 조회 실패: {e}")
             return {"success": False, "error": str(e)}
 
     def search_ip(self, ip: str) -> Dict[str, Any]:
@@ -402,7 +402,7 @@ class StatisticsServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"아이피 검색 실패 ({ip}): {e}")
+            self.logger.error("아이피 검색 실패 ({ip}): {e}")
             return {
                 "success": False,
                 "ip": ip,
@@ -433,7 +433,7 @@ class StatisticsServiceMixin:
 
             return fortigate_format
         except Exception as e:
-            self.logger.error(f"FortiGate 형식 변환 실패: {e}")
+            self.logger.error("FortiGate 형식 변환 실패: {e}")
             return {"success": False, "error": str(e)}
 
     def get_blacklist_paginated(
@@ -446,5 +446,5 @@ class StatisticsServiceMixin:
                 limit=per_page, offset=offset, source_filter=source_filter
             )
         except Exception as e:
-            self.logger.error(f"페이지 블랙리스트 조회 실패: {e}")
+            self.logger.error("페이지 블랙리스트 조회 실패: {e}")
             return {"success": False, "error": str(e)}

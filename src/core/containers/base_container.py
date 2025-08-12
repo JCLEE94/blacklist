@@ -50,7 +50,7 @@ class ServiceContainer:
     ) -> None:
         """서비스 등록"""
         if name in self._services:
-            logger.warning(f"Service '{name}' is already registered. Overriding.")
+            logger.warning("Service '{name}' is already registered. Overriding.")
 
         self._services[name] = ServiceDefinition(
             service_type=service_type,
@@ -59,12 +59,12 @@ class ServiceContainer:
             dependencies=dependencies or {},
         )
 
-        logger.debug(f"Registered service: {name} -> {service_type.__name__}")
+        logger.debug("Registered service: {name} -> {service_type.__name__}")
 
     def get(self, name: str) -> Any:
         """서비스 인스턴스 반환"""
         if name not in self._services:
-            raise ValueError(f"Service '{name}' is not registered")
+            raise ValueError("Service '{name}' is not registered")
 
         service_def = self._services[name]
 
@@ -74,7 +74,7 @@ class ServiceContainer:
 
         # 순환 의존성 검사
         if name in self._resolving:
-            raise ValueError(f"Circular dependency detected: {name}")
+            raise ValueError("Circular dependency detected: {name}")
 
         try:
             self._resolving.add(name)
@@ -103,8 +103,8 @@ class ServiceContainer:
                 )
                 return service_def.service_type(**dependencies)
         except Exception as e:
-            logger.error(f"Failed to create service '{name}': {e}")
-            raise RuntimeError(f"Service creation failed: {name}") from e
+            logger.error("Failed to create service '{name}': {e}")
+            raise RuntimeError("Service creation failed: {name}") from e
 
     def _resolve_dependencies(self, dependencies: Dict[str, str]) -> Dict[str, Any]:
         """의존성 해결"""
@@ -136,9 +136,9 @@ class ServiceContainer:
             if hasattr(instance, "shutdown"):
                 try:
                     instance.shutdown()
-                    logger.debug(f"Shutdown service: {name}")
+                    logger.debug("Shutdown service: {name}")
                 except Exception as e:
-                    logger.error(f"Failed to shutdown service {name}: {e}")
+                    logger.error("Failed to shutdown service {name}: {e}")
 
         self.clear_instances()
         logger.info("Service container shut down")
@@ -158,7 +158,7 @@ class ServiceContainer:
                 else:
                     healthy_services += 1  # 건강 검사가 없으면 정상으로 간주
             except Exception as e:
-                logger.warning(f"Health check failed for {name}: {e}")
+                logger.warning("Health check failed for {name}: {e}")
                 unhealthy_services.append(name)
 
         return {

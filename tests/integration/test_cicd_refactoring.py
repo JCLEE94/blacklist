@@ -204,7 +204,7 @@ class TestBuildStage:
         stage = BuildStage(config)
 
         with patch("pathlib.Path.exists", return_value=True):
-            with patch.object(stage, "_get_commit_sha", return_value="abc123def"):
+            with patch.object(stage, "_get_commit_sha", return_value="abc123de"):
                 result = stage.run()
 
         assert result is True

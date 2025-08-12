@@ -24,7 +24,7 @@ def get_stats() -> Dict[str, Any]:
             with open(stats_path, "r", encoding="utf-8") as f:
                 return json.load(f)
     except Exception as e:
-        logger.error(f"Failed to get stats: {e}")
+        logger.error("Failed to get stats: {e}")
 
     # Return default stats if file doesn't exist or has errors
     return {
@@ -75,7 +75,7 @@ def api_search():
         )
 
     except Exception as e:
-        logger.error(f"Search API error: {e}")
+        logger.error("Search API error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -92,7 +92,7 @@ def refresh_data():
             }
         )
     except Exception as e:
-        logger.error(f"Refresh data error: {e}")
+        logger.error("Refresh data error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -112,7 +112,7 @@ def get_month_details(month):
         }
 
         # Generate daily breakdown for the month
-        start_date = datetime.strptime(f"{month}-01", "%Y-%m-%d")
+        start_date = datetime.strptime("{month}-01", "%Y-%m-%d")
         for day in range(1, 29):  # Simplified to 28 days
             current_date = start_date.replace(day=day)
             mock_data["daily_breakdown"].append(
@@ -130,7 +130,7 @@ def get_month_details(month):
         )
 
     except Exception as e:
-        logger.error(f"Month details error: {e}")
+        logger.error("Month details error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -145,7 +145,7 @@ def get_daily_ips(month, date):
         for i in range(50):
             mock_ips.append(
                 {
-                    "ip": f"192.168.{i//10}.{i%10}",
+                    "ip": "192.168.{i//10}.{i%10}",
                     "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
                     "country": "KR" if i % 3 == 0 else "US",
                     "attack_type": "Malware" if i % 2 == 0 else "Phishing",
@@ -163,7 +163,7 @@ def get_daily_ips(month, date):
         )
 
     except Exception as e:
-        logger.error(f"Daily IPs error: {e}")
+        logger.error("Daily IPs error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -180,17 +180,15 @@ def download_daily_ips(month, date):
 
         # Create text content
         text_lines = []
-        text_lines.append(f"# Blacklist IPs for {date}")
-        text_lines.append(
-            f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        )
-        text_lines.append(f"# Total IPs: {len(ips_data)}")
+        text_lines.append("# Blacklist IPs for {date}")
+        text_lines.append("# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        text_lines.append("# Total IPs: {len(ips_data)}")
         text_lines.append("#" + "=" * 50)
         text_lines.append("")
 
         for ip_info in ips_data:
             text_lines.append(
-                f"{ip_info['ip']}  # {ip_info['source']} - {ip_info['attack_type']}"
+                "{ip_info['ip']}  # {ip_info['source']} - {ip_info['attack_type']}"
             )
 
         content = "\n".join(text_lines)
@@ -201,12 +199,12 @@ def download_daily_ips(month, date):
             content,
             mimetype="text/plain",
             headers={
-                "Content-Disposition": f"attachment; filename=blacklist_{date}.txt"
+                "Content-Disposition": "attachment; filename=blacklist_{date}.txt"
             },
         )
 
     except Exception as e:
-        logger.error(f"Download daily IPs error: {e}")
+        logger.error("Download daily IPs error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -233,7 +231,7 @@ def export_data(format):
             total = stats.get("total_ips", 0)
             for source, count in stats.get("sources", {}).items():
                 percentage = round((count / total) * 100, 2) if total > 0 else 0
-                csv_lines.append(f"{source},{count},{percentage}%")
+                csv_lines.append("{source},{count},{percentage}%")
 
             csv_content = "\n".join(csv_lines)
 
@@ -250,7 +248,7 @@ def export_data(format):
             return jsonify({"success": False, "error": "Unsupported format"}), 400
 
     except Exception as e:
-        logger.error(f"Export error: {e}")
+        logger.error("Export error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -271,5 +269,5 @@ def api_stats_simple():
         return jsonify(simple_stats)
 
     except Exception as e:
-        logger.error(f"Simple stats error: {e}")
+        logger.error("Simple stats error: {e}")
         return jsonify({"total": 0, "active": 0, "sources": 0, "error": str(e)}), 500

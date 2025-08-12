@@ -63,7 +63,7 @@ class SerializationManager:
             return data
 
         except Exception as e:
-            logger.error(f"Serialization error for value type {type(value)}: {e}")
+            logger.error("Serialization error for value type {type(value)}: {e}")
             # Fallback to pickle
             return pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -90,7 +90,7 @@ class SerializationManager:
             return pickle.loads(data)
 
         except Exception as e:
-            logger.error(f"Deserialization error: {e}")
+            logger.error("Deserialization error: {e}")
             raise
 
     def get_stats(self) -> Dict[str, Any]:

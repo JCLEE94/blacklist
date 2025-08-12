@@ -28,7 +28,7 @@ def get_system_stats():
         stats = service.get_system_health()
         return jsonify(stats)
     except Exception as e:
-        logger.error(f"System stats error: {e}")
+        logger.error("System stats error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -98,7 +98,7 @@ def get_blacklist_with_metadata():
             sample_data.append(
                 {
                     "id": i + 1,
-                    "ip": f"192.168.1.{i+1}",
+                    "ip": "192.168.1.{i+1}",
                     "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
                     "is_expired": False,
                     "days_until_expiry": 85 - (i * 5),
@@ -121,7 +121,7 @@ def get_blacklist_with_metadata():
             }
         )
     except Exception as e:
-        logger.error(f"Metadata error: {e}")
+        logger.error("Metadata error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -196,7 +196,7 @@ def api_monthly_data():
         )
 
     except Exception as e:
-        logger.error(f"Monthly data error: {e}")
+        logger.error("Monthly data error: {e}")
         return jsonify({"success": False, "error": str(e), "data": []}), 500
 
 
@@ -258,5 +258,5 @@ def api_sources_distribution():
         )
 
     except Exception as e:
-        logger.error(f"Sources distribution error: {e}")
+        logger.error("Sources distribution error: {e}")
         return jsonify({"success": False, "error": str(e), "data": []}), 500

@@ -77,13 +77,13 @@ class RegtechCollector(BaseCollector):
                 )
 
                 # 성공적으로 수집 완료
-                self.logger.info(f"REGTECH 수집 완료: {len(collected_ips)}개 IP")
+                self.logger.info("REGTECH 수집 완료: {len(collected_ips)}개 IP")
                 break
 
             except requests.exceptions.ConnectionError as e:
                 session_retry_count += 1
                 self.logger.warning(
-                    f"연결 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
+                    "연결 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
                 )
                 if session_retry_count < self.session_retry_limit:
                     await asyncio.sleep(5 * session_retry_count)  # 지수적 백오프
@@ -91,13 +91,13 @@ class RegtechCollector(BaseCollector):
             except requests.exceptions.Timeout as e:
                 session_retry_count += 1
                 self.logger.warning(
-                    f"타임아웃 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
+                    "타임아웃 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
                 )
                 if session_retry_count < self.session_retry_limit:
                     await asyncio.sleep(3 * session_retry_count)
 
             except Exception as e:
-                self.logger.error(f"예상치 못한 오류: {e}")
+                self.logger.error("예상치 못한 오류: {e}")
                 session_retry_count += 1
                 if session_retry_count < self.session_retry_limit:
                     await asyncio.sleep(2 * session_retry_count)
@@ -108,7 +108,7 @@ class RegtechCollector(BaseCollector):
                     self.current_session = None
 
         if session_retry_count >= self.session_retry_limit:
-            raise Exception(f"최대 재시도 횟수 ({self.session_retry_limit}) 초과")
+            raise Exception("최대 재시도 횟수 ({self.session_retry_limit}) 초과")
 
         return collected_ips
 
@@ -144,14 +144,14 @@ class RegtechCollector(BaseCollector):
 
         while login_attempts < max_login_attempts:
             try:
-                self.logger.info(f"로그인 시도 {login_attempts + 1}/{max_login_attempts}")
+                self.logger.info("로그인 시도 {login_attempts + 1}/{max_login_attempts}")
 
                 # 로그인 페이지 접근
-                login_page_url = f"{self.base_url}/login/loginForm"
+                login_page_url = "{self.base_url}/login/loginForm"
                 response = session.get(login_page_url)
 
                 if response.status_code != 200:
-                    raise Exception(f"로그인 페이지 접근 실패: {response.status_code}")
+                    raise Exception("로그인 페이지 접근 실패: {response.status_code}")
 
                 # CSRF 토큰이나 숨겨진 필드 추출 시도
                 soup = BeautifulSoup(response.text, "html.parser")
@@ -174,7 +174,7 @@ class RegtechCollector(BaseCollector):
                         login_data[name] = value
 
                 # 로그인 요청
-                login_url = f"{self.base_url}/login/addLogin"
+                login_url = "{self.base_url}/login/addLogin"
                 login_response = session.post(
                     login_url,
                     data=login_data,
@@ -189,12 +189,12 @@ class RegtechCollector(BaseCollector):
                 else:
                     login_attempts += 1
                     if login_attempts < max_login_attempts:
-                        self.logger.warning(f"로그인 실패, {2} 초 후 재시도")
+                        self.logger.warning("로그인 실패, {2} 초 후 재시도")
                         await asyncio.sleep(2)
 
             except Exception as e:
                 login_attempts += 1
-                self.logger.error(f"로그인 중 오류: {e}")
+                self.logger.error("로그인 중 오류: {e}")
                 if login_attempts < max_login_attempts:
                     await asyncio.sleep(3)
 
@@ -233,7 +233,7 @@ class RegtechCollector(BaseCollector):
             return True
 
         except Exception as e:
-            self.logger.error(f"로그인 검증 중 오류: {e}")
+            self.logger.error("로그인 검증 중 오류: {e}")
             return False
 
     async def _robust_collect_ips(
@@ -245,7 +245,7 @@ class RegtechCollector(BaseCollector):
         consecutive_errors = 0
         max_pages = 100  # 안전장치
 
-        self.logger.info(f"IP 수집 시작: {start_date} ~ {end_date}")
+        self.logger.info("IP 수집 시작: {start_date} ~ {end_date}")
 
         while page < max_pages and consecutive_errors < self.max_page_errors:
             try:
@@ -264,14 +264,14 @@ class RegtechCollector(BaseCollector):
                 )
 
                 if not page_ips:
-                    self.logger.info(f"페이지 {page + 1}에서 더 이상 데이터 없음, 수집 종료")
+                    self.logger.info("페이지 {page + 1}에서 더 이상 데이터 없음, 수집 종료")
                     break
 
                 all_ips.extend(page_ips)
                 consecutive_errors = 0  # 성공 시 에러 카운트 리셋
 
                 self.logger.info(
-                    f"페이지 {page + 1}: {len(page_ips)}개 수집 (총 {len(all_ips)}개)"
+                    "페이지 {page + 1}: {len(page_ips)}개 수집 (총 {len(all_ips)}개)"
                 )
                 page += 1
 
@@ -286,17 +286,17 @@ class RegtechCollector(BaseCollector):
 
             except Exception as e:
                 consecutive_errors += 1
-                self.logger.error(f"페이지 {page + 1} 처리 중 예상치 못한 오류: {e}")
+                self.logger.error("페이지 {page + 1} 처리 중 예상치 못한 오류: {e}")
 
                 if consecutive_errors < self.max_page_errors:
                     await asyncio.sleep(1)
 
         if consecutive_errors >= self.max_page_errors:
-            self.logger.error(f"연속 페이지 에러 한계 도달 ({self.max_page_errors})")
+            self.logger.error("연속 페이지 에러 한계 도달 ({self.max_page_errors})")
 
         # 중복 제거
         unique_ips = self._remove_duplicates(all_ips)
-        self.logger.info(f"중복 제거 후 최종 수집: {len(unique_ips)}개 IP")
+        self.logger.info("중복 제거 후 최종 수집: {len(unique_ips)}개 IP")
 
         return unique_ips
 
@@ -322,7 +322,7 @@ class RegtechCollector(BaseCollector):
             }
 
             # 요청 전송
-            url = f"{self.base_url}/fcti/securityAdvisory/advisoryList"
+            url = "{self.base_url}/fcti/securityAdvisory/advisoryList"
             response = session.post(
                 url,
                 data=data,
@@ -332,7 +332,7 @@ class RegtechCollector(BaseCollector):
 
             if response.status_code != 200:
                 raise requests.exceptions.RequestException(
-                    f"HTTP {response.status_code}"
+                    "HTTP {response.status_code}"
                 )
 
             # HTML 파싱
@@ -346,9 +346,9 @@ class RegtechCollector(BaseCollector):
             return self._extract_ips_from_soup(soup, page)
 
         except asyncio.TimeoutError:
-            raise requests.exceptions.Timeout(f"페이지 {page + 1} 요청 타임아웃")
+            raise requests.exceptions.Timeout("페이지 {page + 1} 요청 타임아웃")
         except Exception as e:
-            raise Exception(f"페이지 {page + 1} 처리 실패: {e}")
+            raise Exception("페이지 {page + 1} 처리 실패: {e}")
 
     def _extract_ips_from_soup(
         self, soup: BeautifulSoup, page: int
@@ -394,7 +394,7 @@ class RegtechCollector(BaseCollector):
 
                         except Exception as e:
                             self.logger.warning(
-                                f"행 처리 중 오류 (페이지 {page + 1}, 행 {row_idx + 1}): {e}"
+                                "행 처리 중 오류 (페이지 {page + 1}, 행 {row_idx + 1}): {e}"
                             )
                             continue
 
@@ -403,7 +403,7 @@ class RegtechCollector(BaseCollector):
             return page_ips
 
         except Exception as e:
-            self.logger.error(f"IP 추출 중 오류 (페이지 {page + 1}): {e}")
+            self.logger.error("IP 추출 중 오류 (페이지 {page + 1}): {e}")
             return []
 
     def _is_valid_ip(self, ip: str) -> bool:

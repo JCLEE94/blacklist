@@ -75,7 +75,7 @@ def get_system_health():
         )
 
     except Exception as e:
-        logger.error(f"헬스 체크 실행 실패: {e}")
+        logger.error("헬스 체크 실행 실패: {e}")
         return (
             jsonify(
                 {
@@ -125,7 +125,7 @@ def get_performance_metrics():
         )
 
     except Exception as e:
-        logger.error(f"성능 메트릭 조회 실패: {e}")
+        logger.error("성능 메트릭 조회 실패: {e}")
         return jsonify({"success": False, "error": "성능 메트릭을 조회할 수 없습니다"}), 500
 
 
@@ -141,7 +141,7 @@ def cleanup_performance_data():
         return jsonify({"success": True, "message": "성능 데이터가 정리되었습니다"})
 
     except Exception as e:
-        logger.error(f"성능 데이터 정리 실패: {e}")
+        logger.error("성능 데이터 정리 실패: {e}")
         return jsonify({"success": False, "error": "성능 데이터를 정리할 수 없습니다"}), 500
 
 
@@ -160,9 +160,9 @@ def get_specific_health_check(check_name: str):
         return jsonify({"success": True, "check_name": check_name, "result": result})
 
     except Exception as e:
-        logger.error(f"개별 헬스 체크 실행 실패 ({check_name}): {e}")
+        logger.error("개별 헬스 체크 실행 실패 ({check_name}): {e}")
         return (
-            jsonify({"success": False, "error": f"헬스 체크 {check_name}을 실행할 수 없습니다"}),
+            jsonify({"success": False, "error": "헬스 체크 {check_name}을 실행할 수 없습니다"}),
             500,
         )
 
@@ -186,7 +186,7 @@ def get_system_metrics():
         )
 
     except Exception as e:
-        logger.error(f"시스템 메트릭 조회 실패: {e}")
+        logger.error("시스템 메트릭 조회 실패: {e}")
         return jsonify({"success": False, "error": "시스템 메트릭을 가져올 수 없습니다"}), 500
 
 
@@ -201,7 +201,7 @@ def get_error_summary():
         return jsonify({"success": True, "error_summary": summary})
 
     except Exception as e:
-        logger.error(f"에러 요약 조회 실패: {e}")
+        logger.error("에러 요약 조회 실패: {e}")
         return jsonify({"success": False, "error": "에러 요약을 가져올 수 없습니다"}), 500
 
 
@@ -215,10 +215,10 @@ def clear_old_errors():
         error_collector = get_error_collector()
         error_collector.clear_old_errors(hours)
 
-        return jsonify({"success": True, "message": f"{hours}시간 이전의 오래된 에러가 정리되었습니다"})
+        return jsonify({"success": True, "message": "{hours}시간 이전의 오래된 에러가 정리되었습니다"})
 
     except Exception as e:
-        logger.error(f"에러 정리 실패: {e}")
+        logger.error("에러 정리 실패: {e}")
         return jsonify({"success": False, "error": "에러 정리 중 오류가 발생했습니다"}), 500
 
 
@@ -255,7 +255,7 @@ def get_overall_status():
         )
 
     except Exception as e:
-        logger.error(f"전체 상태 조회 실패: {e}")
+        logger.error("전체 상태 조회 실패: {e}")
         return jsonify({"success": False, "status": "error", "error": str(e)}), 500
 
 
@@ -277,7 +277,7 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "not_available", "type": "database"}
         except Exception as e:
-            raise Exception(f"Database connection failed: {e}")
+            raise Exception("Database connection failed: {e}")
 
     def cache_check():
         """캐시 연결 체크"""
@@ -301,7 +301,7 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "not_available", "type": "cache"}
         except Exception as e:
-            raise Exception(f"Cache connection failed: {e}")
+            raise Exception("Cache connection failed: {e}")
 
     def collection_check():
         """수집 시스템 체크"""
@@ -320,7 +320,7 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "no_collectors", "type": "collection"}
         except Exception as e:
-            raise Exception(f"Collection system check failed: {e}")
+            raise Exception("Collection system check failed: {e}")
 
     def disk_space_check():
         """디스크 공간 체크"""
@@ -332,7 +332,7 @@ def _register_default_health_checks(health_checker):
             free_percent = (disk_usage.free / disk_usage.total) * 100
 
             if free_percent < 10:
-                raise Exception(f"Low disk space: {free_percent:.1f}% free")
+                raise Exception("Low disk space: {free_percent:.1f}% free")
             elif free_percent < 20:
                 return {
                     "status": "warning",
@@ -342,7 +342,7 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "ok", "free_percent": round(free_percent, 1)}
         except Exception as e:
-            raise Exception(f"Disk space check failed: {e}")
+            raise Exception("Disk space check failed: {e}")
 
     # 헬스 체크들 등록
     health_checker.register_check("database", database_check)
@@ -392,7 +392,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
             {
                 "type": "critical",
                 "area": "response_time",
-                "message": f"평균 응답시간이 {metrics.avg_response_time}ms로 매우 느립니다",
+                "message": "평균 응답시간이 {metrics.avg_response_time}ms로 매우 느립니다",
                 "suggestion": "데이터베이스 쿼리 최적화, 캐시 활용 증대, 인덱스 추가를 검토하세요",
             }
         )
@@ -401,7 +401,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
             {
                 "type": "warning",
                 "area": "response_time",
-                "message": f"평균 응답시간이 {metrics.avg_response_time}ms로 개선이 필요합니다",
+                "message": "평균 응답시간이 {metrics.avg_response_time}ms로 개선이 필요합니다",
                 "suggestion": "주요 API 엔드포인트의 성능을 모니터링하고 병목 지점을 식별하세요",
             }
         )
@@ -412,7 +412,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
             {
                 "type": "warning",
                 "area": "cache",
-                "message": f"캐시 적중률이 {metrics.cache_hit_rate}%로 낮습니다",
+                "message": "캐시 적중률이 {metrics.cache_hit_rate}%로 낮습니다",
                 "suggestion": "캐시 TTL 설정 최적화, 자주 사용되는 데이터의 캐시 적용을 검토하세요",
             }
         )
@@ -423,7 +423,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
             {
                 "type": "critical",
                 "area": "database",
-                "message": f"{len(slow_queries)}개의 느린 쿼리가 감지되었습니다",
+                "message": "{len(slow_queries)}개의 느린 쿼리가 감지되었습니다",
                 "suggestion": "쿼리 최적화, 인덱스 추가, 데이터베이스 스키마 개선을 검토하세요",
             }
         )
@@ -440,7 +440,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
                 {
                     "type": "critical",
                     "area": "memory",
-                    "message": f"메모리 사용률이 {health.memory_percent}%로 매우 높습니다",
+                    "message": "메모리 사용률이 {health.memory_percent}%로 매우 높습니다",
                     "suggestion": "메모리 누수 확인, 불필요한 객체 정리, 메모리 캐시 크기 조정을 검토하세요",
                 }
             )
@@ -449,7 +449,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
                 {
                     "type": "warning",
                     "area": "memory",
-                    "message": f"메모리 사용률이 {health.memory_percent}%로 높습니다",
+                    "message": "메모리 사용률이 {health.memory_percent}%로 높습니다",
                     "suggestion": "메모리 사용 패턴을 모니터링하고 최적화를 검토하세요",
                 }
             )
@@ -459,7 +459,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
                 {
                     "type": "warning",
                     "area": "cpu",
-                    "message": f"CPU 사용률이 {health.cpu_percent}%로 높습니다",
+                    "message": "CPU 사용률이 {health.cpu_percent}%로 높습니다",
                     "suggestion": "비동기 처리, 배치 처리, 워커 프로세스 추가를 검토하세요",
                 }
             )

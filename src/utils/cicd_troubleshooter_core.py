@@ -37,7 +37,7 @@ class CICDTroubleshooter:
         self, project_id: str, pipeline_id: str
     ) -> Dict[str, Any]:
         """파이프라인 모니터링 및 자동 수정 - 메인 오케스트레이션"""
-        print(f"🔧 파이프라인 자동 트러블슈팅 시작: {pipeline_id}")
+        print("🔧 파이프라인 자동 트러블슈팅 시작: {pipeline_id}")
 
         # 1. 파이프라인 상태 확인
         pipeline_status = self.get_pipeline_status(project_id, pipeline_id)
@@ -55,7 +55,7 @@ class CICDTroubleshooter:
 
         # 3. 수정 후 재시도
         if fixes_applied:
-            print(f"✅ 적용된 수정사항: {', '.join(fixes_applied)}")
+            print("✅ 적용된 수정사항: {', '.join(fixes_applied)}")
             retry_result = self.utils.retry_pipeline(project_id, pipeline_id)
 
             return {
@@ -73,7 +73,7 @@ class CICDTroubleshooter:
         """파이프라인 상태 확인"""
         try:
             response = self.session.get(
-                f"{self.base_url}/api/v1/pipelines/{pipeline_id}",
+                "{self.base_url}/api/v1/pipelines/{pipeline_id}",
                 params={"project_id": project_id},
             )
             if response.status_code == 200:
@@ -82,7 +82,7 @@ class CICDTroubleshooter:
             else:
                 return "unknown"
         except Exception as e:
-            print(f"❌ 파이프라인 상태 확인 실패: {e}")
+            print("❌ 파이프라인 상태 확인 실패: {e}")
             return "unknown"
 
     def get_failed_jobs(
@@ -91,7 +91,7 @@ class CICDTroubleshooter:
         """실패한 작업 목록 조회"""
         try:
             response = self.session.get(
-                f"{self.base_url}/api/v1/pipelines/{pipeline_id}/jobs",
+                "{self.base_url}/api/v1/pipelines/{pipeline_id}/jobs",
                 params={"project_id": project_id},
             )
             if response.status_code == 200:
@@ -105,7 +105,7 @@ class CICDTroubleshooter:
             else:
                 return []
         except Exception as e:
-            print(f"❌ 실패한 작업 조회 실패: {e}")
+            print("❌ 실패한 작업 조회 실패: {e}")
             return []
 
     def analyze_and_fix_job(self, project_id: str, job: Dict[str, Any]) -> List[str]:
@@ -113,7 +113,7 @@ class CICDTroubleshooter:
         job_name = job.get("name", "unknown")
         job_trace = job.get("trace", "")
 
-        print(f"🔍 분석 중: {job_name}")
+        print("🔍 분석 중: {job_name}")
 
         fixes_applied = []
 
@@ -123,7 +123,7 @@ class CICDTroubleshooter:
         for error_type, error_config in error_patterns.items():
             for pattern in error_config["patterns"]:
                 if pattern.lower() in job_trace.lower():
-                    print(f"🎯 감지된 문제: {error_type} - {pattern}")
+                    print("🎯 감지된 문제: {error_type} - {pattern}")
 
                     try:
                         # 수정 전략 적용
@@ -131,12 +131,12 @@ class CICDTroubleshooter:
                             error_type, project_id, job_trace, self.utils
                         )
                         if fix_result:
-                            fixes_applied.append(f"{error_type}_fix")
-                            print(f"✅ 수정 완료: {error_type}")
+                            fixes_applied.append("{error_type}_fix")
+                            print("✅ 수정 완료: {error_type}")
                         else:
-                            print(f"❌ 수정 실패: {error_type}")
+                            print("❌ 수정 실패: {error_type}")
                     except Exception as e:
-                        print(f"❌ 수정 중 오류: {error_type} - {e}")
+                        print("❌ 수정 중 오류: {error_type} - {e}")
 
                     break  # 첫 번째 매칭된 패턴만 처리
 
@@ -152,7 +152,7 @@ def main():
     pipeline_id = "12345"  # 실제 파이프라인 ID로 교체
 
     result = troubleshooter.monitor_and_fix_pipeline(project_id, pipeline_id)
-    print(f"🎯 트러블슈팅 결과: {result}")
+    print("🎯 트러블슈팅 결과: {result}")
 
 
 if __name__ == "__main__":

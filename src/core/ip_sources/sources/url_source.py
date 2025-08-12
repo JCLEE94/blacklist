@@ -60,7 +60,7 @@ class URLSource(BaseIPSource):
             }
             default_headers.update(headers)
 
-            self.logger.info(f"Downloading from URL: {url}")
+            self.logger.info("Downloading from URL: {url}")
             response = requests.get(url, headers=default_headers, timeout=timeout)
             response.raise_for_status()
 
@@ -82,7 +82,7 @@ class URLSource(BaseIPSource):
                 yield from self._parse_text(response.text, category, url)
 
         except Exception as e:
-            self.logger.error(f"Failed to fetch data from URL {url}: {e}")
+            self.logger.error("Failed to fetch data from URL {url}: {e}")
             raise
 
     def _detect_format(self, response: requests.Response) -> str:
@@ -115,7 +115,7 @@ class URLSource(BaseIPSource):
                 if self.is_valid_ip(ip):
                     yield IPEntry(
                         ip_address=ip,
-                        source_name=f"{self.source_name}:{url}",
+                        source_name="{self.source_name}:{url}",
                         category=category,
                         confidence=1.0,
                         detection_date=datetime.utcnow(),
@@ -147,11 +147,11 @@ class URLSource(BaseIPSource):
 
                 for i, value in enumerate(row):
                     if i != ip_column:
-                        metadata[f"column_{i}"] = value
+                        metadata["column_{i}"] = value
 
                 yield IPEntry(
                     ip_address=ip,
-                    source_name=f"{self.source_name}:{url}",
+                    source_name="{self.source_name}:{url}",
                     category=category,
                     confidence=1.0,
                     detection_date=datetime.utcnow(),
@@ -171,7 +171,7 @@ class URLSource(BaseIPSource):
                     if isinstance(ip, str) and self.is_valid_ip(ip):
                         yield IPEntry(
                             ip_address=ip,
-                            source_name=f"{self.source_name}:{url}",
+                            source_name="{self.source_name}:{url}",
                             category=category,
                             confidence=1.0,
                             detection_date=datetime.utcnow(),
@@ -182,7 +182,7 @@ class URLSource(BaseIPSource):
                 yield from self._extract_ips_from_json(data, category, url)
 
         except json.JSONDecodeError as e:
-            self.logger.error(f"Invalid JSON content from {url}: {e}")
+            self.logger.error("Invalid JSON content from {url}: {e}")
 
     def _parse_xml(self, content: str, category: str, url: str) -> Iterator[IPEntry]:
         """XML 형식 파싱"""
@@ -200,7 +200,7 @@ class URLSource(BaseIPSource):
                         if self.is_valid_ip(ip):
                             yield IPEntry(
                                 ip_address=ip,
-                                source_name=f"{self.source_name}:{url}",
+                                source_name="{self.source_name}:{url}",
                                 category=category,
                                 confidence=1.0,
                                 detection_date=datetime.utcnow(),
@@ -208,7 +208,7 @@ class URLSource(BaseIPSource):
                             )
 
         except Exception as e:
-            self.logger.error(f"Error parsing XML from {url}: {e}")
+            self.logger.error("Error parsing XML from {url}: {e}")
 
     def _extract_ips_from_json(
         self, data: dict, category: str, url: str
@@ -218,18 +218,18 @@ class URLSource(BaseIPSource):
         def extract_ips(obj, path=""):
             if isinstance(obj, dict):
                 for key, value in obj.items():
-                    new_path = f"{path}.{key}" if path else key
+                    new_path = "{path}.{key}" if path else key
                     yield from extract_ips(value, new_path)
             elif isinstance(obj, list):
                 for i, item in enumerate(obj):
-                    yield from extract_ips(item, f"{path}[{i}]")
+                    yield from extract_ips(item, "{path}[{i}]")
             elif isinstance(obj, str) and self.is_valid_ip(obj):
                 yield obj, path
 
         for ip, json_path in extract_ips(data):
             yield IPEntry(
                 ip_address=ip,
-                source_name=f"{self.source_name}:{url}",
+                source_name="{self.source_name}:{url}",
                 category=category,
                 confidence=1.0,
                 detection_date=datetime.utcnow(),

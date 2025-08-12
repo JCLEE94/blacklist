@@ -80,8 +80,8 @@ class AsyncProcessor:
 
         self._shutdown = False
         logger.info(
-            f"AsyncProcessor initialized with {self.config.max_workers} thread workers, "
-            f"{self.config.max_process_workers} process workers"
+            "AsyncProcessor initialized with {self.config.max_workers} thread workers, "
+            "{self.config.max_process_workers} process workers"
         )
 
     async def submit_async_task(
@@ -94,7 +94,7 @@ class AsyncProcessor:
     ) -> str:
         """비동기 작업 제출"""
         if task_id is None:
-            task_id = f"task_{int(time.time() * 1000000)}"
+            task_id = "task_{int(time.time() * 1000000)}"
 
         if self._shutdown:
             raise RuntimeError("AsyncProcessor is shutting down")
@@ -134,7 +134,7 @@ class AsyncProcessor:
             return task_id
 
         except Exception as e:
-            logger.error(f"Failed to submit task {task_id}: {e}")
+            logger.error("Failed to submit task {task_id}: {e}")
             return self._create_task_result(
                 task_id, False, error=str(e), started_at=started_at
             )
@@ -176,7 +176,7 @@ class AsyncProcessor:
 
             self.completed_tasks[task_id] = task_result
             self.task_stats["total_failed"] += 1
-            logger.error(f"Task {task_id} failed: {e}")
+            logger.error("Task {task_id} failed: {e}")
 
         finally:
             # 활성 작업에서 제거
@@ -237,7 +237,7 @@ class AsyncProcessor:
             task_id = await self.submit_async_task(
                 func,
                 batch,
-                task_id=f"batch_{i}_{int(time.time() * 1000)}",
+                task_id="batch_{i}_{int(time.time() * 1000)}",
                 use_process_pool=use_process_pool,
             )
             task_ids.append(task_id)
@@ -256,7 +256,7 @@ class AsyncProcessor:
             for completed_id in completed_ids:
                 task_ids.remove(completed_id)
 
-        logger.info(f"Batch processing completed: {len(results)} batches processed")
+        logger.info("Batch processing completed: {len(results)} batches processed")
         return results
 
     def get_task_status(self, task_id: str) -> Dict[str, Any]:
@@ -321,7 +321,7 @@ class AsyncProcessor:
         # 최근 작업만 유지
         self.completed_tasks = dict(sorted_tasks[:keep_recent])
         logger.info(
-            f"Cleaned up old completed tasks, keeping {len(self.completed_tasks)} recent tasks"
+            "Cleaned up old completed tasks, keeping {len(self.completed_tasks)} recent tasks"
         )
 
     async def shutdown(self, wait_for_completion: bool = True):
@@ -333,7 +333,7 @@ class AsyncProcessor:
             # 활성 작업 완료 대기
             while self.active_tasks:
                 logger.info(
-                    f"Waiting for {len(self.active_tasks)} active tasks to complete..."
+                    "Waiting for {len(self.active_tasks)} active tasks to complete..."
                 )
                 await asyncio.sleep(1)
 
@@ -412,7 +412,7 @@ if __name__ == "__main__":
 
             result = processor.completed_tasks[task_id]
             if not result.success or result.result != 10:
-                print(f"❌ 기본 비동기 작업 테스트 실패: {result}")
+                print("❌ 기본 비동기 작업 테스트 실패: {result}")
                 all_tests_passed = False
 
             # 테스트 2: 배치 처리
@@ -439,14 +439,14 @@ if __name__ == "__main__":
 
             if all_tests_passed:
                 print("✅ 비동기 처리 시스템 검증 완료 - 모든 테스트 통과")
-                print(f"📊 최종 통계: {stats}")
+                print("📊 최종 통계: {stats}")
                 return 0
             else:
                 print("❌ 일부 테스트 실패")
                 return 1
 
         except Exception as e:
-            print(f"❌ 테스트 중 오류 발생: {e}")
+            print("❌ 테스트 중 오류 발생: {e}")
             import traceback
 
             traceback.print_exc()

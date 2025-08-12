@@ -94,7 +94,7 @@ class CollectionService:
                     cmd.extend(["--end-date", params["end_date"]])
 
             # Run collector
-            logger.info(f"Running REGTECH collector: {' '.join(cmd)}")
+            logger.info("Running REGTECH collector: {' '.join(cmd)}")
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -148,7 +148,7 @@ class CollectionService:
         except Exception as e:
             self.status["sources"]["regtech"]["status"] = "error"
             self.status["sources"]["regtech"]["last_error"] = str(e)
-            logger.error(f"REGTECH collection error: {e}")
+            logger.error("REGTECH collection error: {e}")
             return {"success": False, "error": str(e)}
 
     def trigger_secudium(self, params=None):
@@ -181,7 +181,7 @@ class CollectionService:
                     cmd.extend(["--end-date", params["end_date"]])
 
             # Run collector
-            logger.info(f"Running SECUDIUM collector: {' '.join(cmd)}")
+            logger.info("Running SECUDIUM collector: {' '.join(cmd)}")
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -232,7 +232,7 @@ class CollectionService:
         except Exception as e:
             self.status["sources"]["secudium"]["status"] = "error"
             self.status["sources"]["secudium"]["last_error"] = str(e)
-            logger.error(f"SECUDIUM collection error: {e}")
+            logger.error("SECUDIUM collection error: {e}")
             return {"success": False, "error": str(e)}
 
 

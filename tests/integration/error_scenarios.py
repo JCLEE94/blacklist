@@ -153,7 +153,7 @@ class TestConcurrencyErrors(BaseIntegrationTest):
                 results.append((thread_id, response.status_code))
 
             for i in range(5):
-                t = threading.Thread(target=make_request, args=(i,), name=f"Thread-{i}")
+                t = threading.Thread(target=make_request, args=(i,), name="Thread-{i}")
                 threads.append(t)
                 t.start()
 

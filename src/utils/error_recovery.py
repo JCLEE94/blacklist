@@ -37,7 +37,7 @@ class CircuitBreaker:
                 if self._should_attempt_reset():
                     self.state = "HALF_OPEN"
                 else:
-                    raise Exception(f"Circuit breaker is OPEN for {func.__name__}")
+                    raise Exception("Circuit breaker is OPEN for {func.__name__}")
 
             try:
                 result = func(*args, **kwargs)
@@ -68,9 +68,7 @@ class CircuitBreaker:
 
         if self.failure_count >= self.failure_threshold:
             self.state = "OPEN"
-            logger.warning(
-                f"Circuit breaker opened after {self.failure_count} failures"
-            )
+            logger.warning("Circuit breaker opened after {self.failure_count} failures")
 
 
 def retry_with_backoff(
@@ -93,7 +91,7 @@ def retry_with_backoff(
                     last_exception = e
 
                     if attempt == max_retries:
-                        logger.error(f"Final retry failed for {func.__name__}: {e}")
+                        logger.error("Final retry failed for {func.__name__}: {e}")
                         raise e
 
                     # 지수적 백오프 계산
@@ -151,10 +149,10 @@ class ErrorCollector:
             if len(self.errors) > self.max_errors:
                 self.errors = self.errors[-self.max_errors :]
 
-            logger.error(f"Error recorded: {error_type} in {context}: {error}")
+            logger.error("Error recorded: {error_type} in {context}: {error}")
 
         except Exception as e:
-            logger.error(f"Failed to record error: {e}")
+            logger.error("Failed to record error: {e}")
 
     def get_error_summary(self) -> Dict[str, Any]:
         """에러 요약 통계"""
@@ -192,7 +190,7 @@ class ErrorCollector:
 
         cleared_count = original_count - len(self.errors)
         if cleared_count > 0:
-            logger.info(f"Cleared {cleared_count} old errors")
+            logger.info("Cleared {cleared_count} old errors")
 
 
 class HealthChecker:
@@ -205,14 +203,14 @@ class HealthChecker:
     def register_check(self, name: str, check_func: Callable):
         """헬스 체크 함수 등록"""
         self.checks[name] = check_func
-        logger.info(f"Health check registered: {name}")
+        logger.info("Health check registered: {name}")
 
     def run_check(self, name: str) -> Dict[str, Any]:
         """개별 헬스 체크 실행"""
         if name not in self.checks:
             return {
                 "status": "error",
-                "message": f"Unknown health check: {name}",
+                "message": "Unknown health check: {name}",
                 "timestamp": datetime.now().isoformat(),
             }
 
@@ -239,7 +237,7 @@ class HealthChecker:
             }
 
             self.last_check_results[name] = error_result
-            logger.error(f"Health check failed for {name}: {e}")
+            logger.error("Health check failed for {name}: {e}")
             return error_result
 
     def run_all_checks(self) -> Dict[str, Any]:
@@ -301,7 +299,7 @@ class ResourceMonitor:
             return metrics
 
         except Exception as e:
-            logger.error(f"Failed to collect metrics: {e}")
+            logger.error("Failed to collect metrics: {e}")
             return {"error": str(e), "timestamp": datetime.now().isoformat()}
 
     def get_metrics_summary(self, hours: int = 1) -> Dict[str, Any]:
@@ -317,7 +315,7 @@ class ResourceMonitor:
         ]
 
         if not recent_metrics:
-            return {"error": f"No metrics in last {hours} hours"}
+            return {"error": "No metrics in last {hours} hours"}
 
         # 평균 계산
         cpu_values = [
@@ -387,12 +385,12 @@ def log_performance(threshold_ms: float = 1000):
 
                 if duration_ms > threshold_ms:
                     logger.warning(
-                        f"Slow execution: {func.__name__} took {duration_ms:.2f}ms "
-                        f"(threshold: {threshold_ms}ms)"
+                        "Slow execution: {func.__name__} took {duration_ms:.2f}ms "
+                        "(threshold: {threshold_ms}ms)"
                     )
                 else:
                     logger.debug(
-                        f"Performance: {func.__name__} took {duration_ms:.2f}ms"
+                        "Performance: {func.__name__} took {duration_ms:.2f}ms"
                     )
 
                 return result
@@ -400,7 +398,7 @@ def log_performance(threshold_ms: float = 1000):
             except Exception as e:
                 duration_ms = (time.time() - start_time) * 1000
                 logger.error(
-                    f"Function {func.__name__} failed after {duration_ms:.2f}ms: {e}"
+                    "Function {func.__name__} failed after {duration_ms:.2f}ms: {e}"
                 )
                 raise
 

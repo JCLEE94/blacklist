@@ -59,15 +59,15 @@ def test_kubernetes_manifests():
 
     for file_name in required_files:
         file_path = k8s_base_path / file_name
-        assert file_path.exists(), f"Missing {file_name}"
+        assert file_path.exists(), "Missing {file_name}"
 
         # YAML 구문 검증
         try:
             with open(file_path, "r") as f:
                 yaml_content = yaml.safe_load(f)
-                assert yaml_content is not None, f"Empty {file_name}"
+                assert yaml_content is not None, "Empty {file_name}"
         except yaml.YAMLError as e:
-            assert False, f"Invalid YAML in {file_name}: {e}"
+            assert False, "Invalid YAML in {file_name}: {e}"
 
     print("✅ Base manifests validation passed")
 
@@ -120,7 +120,7 @@ def test_kubernetes_manifests():
                 assert "resources" in kustomization
                 assert "namespace" in kustomization
 
-                print(f"✅ {env.upper()} overlay validation passed")
+                print("✅ {env.upper()} overlay validation passed")
 
     return True
 
@@ -166,7 +166,7 @@ def test_argocd_application():
                     assert "prune" in sync_policy["automated"]
                     assert "selfHeal" in sync_policy["automated"]
 
-            print(f"✅ {app_file.name} validation passed")
+            print("✅ {app_file.name} validation passed")
 
     return True
 
@@ -224,9 +224,9 @@ def test_deployment_scripts():
                 first_line = f.readline()
                 assert first_line.startswith(
                     "#!/bin/bash"
-                ), f"{script_name} missing shebang"
+                ), "{script_name} missing shebang"
 
-            print(f"✅ {script_name} validation passed")
+            print("✅ {script_name} validation passed")
 
     assert len(found_scripts) > 0, "No deployment scripts found"
 
@@ -320,7 +320,7 @@ def test_resource_limits():
         assert "cpu" in resources["requests"]
 
         print(
-            f"✅ Resource requests: CPU={resources['requests']['cpu']}, Memory={resources['requests']['memory']}"
+            "✅ Resource requests: CPU={resources['requests']['cpu']}, Memory={resources['requests']['memory']}"
         )
 
         # Limits
@@ -329,7 +329,7 @@ def test_resource_limits():
         assert "cpu" in resources["limits"]
 
         print(
-            f"✅ Resource limits: CPU={resources['limits']['cpu']}, Memory={resources['limits']['memory']}"
+            "✅ Resource limits: CPU={resources['limits']['cpu']}, Memory={resources['limits']['memory']}"
         )
 
     return True
@@ -348,7 +348,7 @@ def test_hpa_configuration():
             assert hpa["kind"] == "HorizontalPodAutoscaler"
             spec = hpa["spec"]
 
-            assert "scaleTargetRef" in spec
+            assert "scaleTargetRe" in spec
             assert "minReplicas" in spec
             assert "maxReplicas" in spec
 
@@ -357,7 +357,7 @@ def test_hpa_configuration():
             assert spec["maxReplicas"] > spec["minReplicas"]
 
             print(
-                f"✅ HPA configured: min={spec['minReplicas']}, max={spec['maxReplicas']}"
+                "✅ HPA configured: min={spec['minReplicas']}, max={spec['maxReplicas']}"
             )
     else:
         print("⚠️ HPA not configured (optional)")
@@ -392,16 +392,16 @@ def run_all_deployment_integration_tests():
                 passed += 1
             else:
                 failed += 1
-                print(f"❌ {test_name} test failed")
+                print("❌ {test_name} test failed")
         except Exception as e:
             failed += 1
-            print(f"❌ {test_name} test failed with error: {e}")
+            print("❌ {test_name} test failed with error: {e}")
             import traceback
 
             traceback.print_exc()
 
     print("\n" + "=" * 60)
-    print(f"📊 Test Results: {passed} passed, {failed} failed")
+    print("📊 Test Results: {passed} passed, {failed} failed")
     print("=" * 60)
 
     return failed == 0

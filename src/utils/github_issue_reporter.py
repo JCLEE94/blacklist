@@ -23,14 +23,14 @@ class GitHubIssueReporter:
         self.repo_owner = os.getenv("GITHUB_REPO_OWNER", "JCLEE94")
         self.repo_name = os.getenv("GITHUB_REPO_NAME", "blacklist")
         self.base_url = (
-            f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}"
+            "https://api.github.com/repos/{self.repo_owner}/{self.repo_name}"
         )
         self.session = requests.Session()
 
         if self.github_token:
             self.session.headers.update(
                 {
-                    "Authorization": f"token {self.github_token}",
+                    "Authorization": "token {self.github_token}",
                     "Accept": "application/vnd.github.v3+json",
                     "User-Agent": "Blacklist-Error-Reporter/1.0",
                 }
@@ -50,7 +50,7 @@ class GitHubIssueReporter:
         self, error_type: str, error_message: str, stack_trace: str
     ) -> str:
         """에러 고유 식별자 생성"""
-        content = f"{error_type}:{error_message}:{stack_trace[:500]}"  # 스택트레이스 일부만 사용
+        content = "{error_type}:{error_message}:{stack_trace[:500]}"  # 스택트레이스 일부만 사용
         return hashlib.sha256(content.encode()).hexdigest()[:12]
 
     def _is_duplicate_error(self, error_hash: str) -> bool:
@@ -77,7 +77,7 @@ class GitHubIssueReporter:
             items_to_keep = sorted_items[-self.max_cache_size :]
             self.error_cache = dict(items_to_keep)
             logger.info(
-                f"Cache size exceeded {self.max_cache_size}, cleaned to {len(self.error_cache)} items"
+                "Cache size exceeded {self.max_cache_size}, cleaned to {len(self.error_cache)} items"
             )
 
     def _validate_configuration(self):
@@ -106,7 +106,7 @@ class GitHubIssueReporter:
             return False
 
         try:
-            response = self.session.get(f"{self.base_url}", timeout=5)
+            response = self.session.get("{self.base_url}", timeout=5)
             if response.status_code == 200:
                 logger.info("✅ GitHub API connection test successful")
                 return True
@@ -115,14 +115,14 @@ class GitHubIssueReporter:
                 return False
             elif response.status_code == 404:
                 logger.error(
-                    f"❌ GitHub repository not found: {self.repo_owner}/{self.repo_name}"
+                    "❌ GitHub repository not found: {self.repo_owner}/{self.repo_name}"
                 )
                 return False
             else:
-                logger.error(f"❌ GitHub API connection failed: {response.status_code}")
+                logger.error("❌ GitHub API connection failed: {response.status_code}")
                 return False
         except Exception as e:
-            logger.error(f"❌ GitHub API connection test failed: {e}")
+            logger.error("❌ GitHub API connection test failed: {e}")
             return False
 
     def _format_error_title(
@@ -133,7 +133,7 @@ class GitHubIssueReporter:
         short_message = (
             error_message[:60] + "..." if len(error_message) > 60 else error_message
         )
-        return f"🚨 {error_type}: {short_message} ({error_hash})"
+        return "🚨 {error_type}: {short_message} ({error_hash})"
 
     def _format_error_body(self, error_data: Dict[str, Any]) -> str:
         """에러 이슈 본문 포맷"""
@@ -147,7 +147,7 @@ class GitHubIssueReporter:
         request_method = error_data.get("request_method", "Unknown")
         server_info = error_data.get("server_info", {})
 
-        body = f"""## 🚨 자동 에러 리포트
+        body = """## 🚨 자동 에러 리포트
 
 ### 📊 에러 정보
 - **발생 시간**: {timestamp}
@@ -202,7 +202,7 @@ class GitHubIssueReporter:
 
             # 중복 에러 체크
             if self._is_duplicate_error(error_hash):
-                logger.info(f"Duplicate error {error_hash}, skipping issue creation")
+                logger.info("Duplicate error {error_hash}, skipping issue creation")
                 return None
 
             # 캐시 정리
@@ -226,12 +226,12 @@ class GitHubIssueReporter:
             for attempt in range(self.max_retries):
                 try:
                     response = self.session.post(
-                        f"{self.base_url}/issues", json=issue_data, timeout=10
+                        "{self.base_url}/issues", json=issue_data, timeout=10
                     )
 
                     if response.status_code == 201:
                         issue_url = response.json().get("html_url")
-                        logger.info(f"GitHub issue created successfully: {issue_url}")
+                        logger.info("GitHub issue created successfully: {issue_url}")
 
                         # 에러 보고 완료 표시
                         self._mark_error_reported(error_hash)
@@ -259,13 +259,13 @@ class GitHubIssueReporter:
                             continue
                     else:
                         logger.error(
-                            f"Failed to create GitHub issue: {response.status_code} - {response.text}"
+                            "Failed to create GitHub issue: {response.status_code} - {response.text}"
                         )
                         return None
 
                 except requests.exceptions.Timeout:
                     logger.warning(
-                        f"GitHub API timeout (attempt {attempt + 1}/{self.max_retries})"
+                        "GitHub API timeout (attempt {attempt + 1}/{self.max_retries})"
                     )
                     if attempt < self.max_retries - 1:
                         import time
@@ -288,7 +288,7 @@ class GitHubIssueReporter:
                     return None
 
         except Exception as e:
-            logger.error(f"Error creating GitHub issue: {e}")
+            logger.error("Error creating GitHub issue: {e}")
             return None
 
     def report_exception(
@@ -334,7 +334,7 @@ class GitHubIssueReporter:
             return self.create_issue(error_data)
 
         except Exception as e:
-            logger.error(f"Error in report_exception: {e}")
+            logger.error("Error in report_exception: {e}")
             return None
 
 

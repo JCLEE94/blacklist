@@ -153,7 +153,7 @@ class RegtechAnalyzer:
 
             ranges = []
             for row in cursor.fetchall():
-                ranges.append({"range": f"{row[0]}.x.x.x", "count": row[1]})
+                ranges.append({"range": "{row[0]}.x.x.x", "count": row[1]})
 
             conn.close()
             return ranges
@@ -175,7 +175,7 @@ class RegtechAnalyzer:
                     ORDER BY ip ASC
                     LIMIT ?
                 """
-                cursor.execute(query, (f"%{search_term}%", limit))
+                cursor.execute(query, ("%{search_term}%", limit))
             else:
                 query = """
                     SELECT ip, attack_type, detection_date, metadata

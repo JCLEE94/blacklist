@@ -64,7 +64,7 @@ class RedisBackend:
 
         except Exception as e:
             logger.warning(
-                f"Redis connection failed: {e}. Falling back to memory cache."
+                "Redis connection failed: {e}. Falling back to memory cache."
             )
             self.redis = None
             self.is_available = False
@@ -77,7 +77,7 @@ class RedisBackend:
         try:
             return self.redis.get(key)
         except Exception as e:
-            logger.error(f"Redis GET error for key '{key}': {e}")
+            logger.error("Redis GET error for key '{key}': {e}")
             return None
 
     def set(self, key: str, value: bytes, ttl: Optional[int] = None) -> bool:
@@ -91,7 +91,7 @@ class RedisBackend:
             else:
                 return bool(self.redis.set(key, value))
         except Exception as e:
-            logger.error(f"Redis SET error for key '{key}': {e}")
+            logger.error("Redis SET error for key '{key}': {e}")
             return False
 
     def delete(self, key: str) -> bool:
@@ -102,7 +102,7 @@ class RedisBackend:
         try:
             return bool(self.redis.delete(key))
         except Exception as e:
-            logger.error(f"Redis DELETE error for key '{key}': {e}")
+            logger.error("Redis DELETE error for key '{key}': {e}")
             return False
 
     def delete_pattern(self, pattern: str) -> int:
@@ -116,7 +116,7 @@ class RedisBackend:
                 return self.redis.delete(*keys)
             return 0
         except Exception as e:
-            logger.error(f"Redis DELETE PATTERN error for pattern '{pattern}': {e}")
+            logger.error("Redis DELETE PATTERN error for pattern '{pattern}': {e}")
             return 0
 
     def exists(self, key: str) -> bool:
@@ -127,7 +127,7 @@ class RedisBackend:
         try:
             return bool(self.redis.exists(key))
         except Exception as e:
-            logger.error(f"Redis EXISTS error for key '{key}': {e}")
+            logger.error("Redis EXISTS error for key '{key}': {e}")
             return False
 
     def clear_all(self) -> bool:
@@ -139,7 +139,7 @@ class RedisBackend:
             self.redis.flushdb()
             return True
         except Exception as e:
-            logger.error(f"Redis FLUSHDB error: {e}")
+            logger.error("Redis FLUSHDB error: {e}")
             return False
 
     def get_keys_by_pattern(self, pattern: str) -> List[str]:
@@ -153,7 +153,7 @@ class RedisBackend:
                 key.decode("utf-8") if isinstance(key, bytes) else key for key in keys
             ]
         except Exception as e:
-            logger.error(f"Redis KEYS error for pattern '{pattern}': {e}")
+            logger.error("Redis KEYS error for pattern '{pattern}': {e}")
             return []
 
     def set_expiry(self, key: str, ttl: int) -> bool:
@@ -164,7 +164,7 @@ class RedisBackend:
         try:
             return bool(self.redis.expire(key, ttl))
         except Exception as e:
-            logger.error(f"Redis EXPIRE error for key '{key}': {e}")
+            logger.error("Redis EXPIRE error for key '{key}': {e}")
             return False
 
     def get_ttl(self, key: str) -> Optional[int]:
@@ -176,7 +176,7 @@ class RedisBackend:
             ttl = self.redis.ttl(key)
             return ttl if ttl >= 0 else None
         except Exception as e:
-            logger.error(f"Redis TTL error for key '{key}': {e}")
+            logger.error("Redis TTL error for key '{key}': {e}")
             return None
 
     def increment(self, key: str, amount: int = 1) -> Optional[int]:
@@ -187,7 +187,7 @@ class RedisBackend:
         try:
             return self.redis.incrby(key, amount)
         except Exception as e:
-            logger.error(f"Redis INCRBY error for key '{key}': {e}")
+            logger.error("Redis INCRBY error for key '{key}': {e}")
             return None
 
     def get_info(self) -> Dict[str, Any]:
@@ -209,7 +209,7 @@ class RedisBackend:
                 "uptime_in_seconds": info.get("uptime_in_seconds"),
             }
         except Exception as e:
-            logger.error(f"Redis INFO error: {e}")
+            logger.error("Redis INFO error: {e}")
             return {"status": "error", "error": str(e)}
 
     def get_stats(self) -> Dict[str, Any]:
@@ -262,7 +262,7 @@ class RedisBackend:
             }
 
         except Exception as e:
-            logger.error(f"Redis health check failed: {e}")
+            logger.error("Redis health check failed: {e}")
             return {"status": "unhealthy", "available": False, "error": str(e)}
 
     def pipeline_operations(self, operations: List[Dict[str, Any]]) -> List[Any]:
@@ -281,12 +281,12 @@ class RedisBackend:
                 if hasattr(pipe, cmd):
                     getattr(pipe, cmd)(*args, **kwargs)
                 else:
-                    logger.warning(f"Unknown Redis command: {cmd}")
+                    logger.warning("Unknown Redis command: {cmd}")
 
             return pipe.execute()
 
         except Exception as e:
-            logger.error(f"Redis pipeline error: {e}")
+            logger.error("Redis pipeline error: {e}")
             return []
 
     def __del__(self):

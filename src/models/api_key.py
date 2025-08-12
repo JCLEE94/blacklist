@@ -91,7 +91,7 @@ class ApiKeyManager:
         Returns: (원본_키, ApiKey_객체)
         """
         # 고유한 키 생성
-        raw_key = f"ak_{secrets.token_urlsafe(32)}"
+        raw_key = "ak_{secrets.token_urlsafe(32)}"
         key_hash = self._hash_key(raw_key)
         key_id = secrets.token_hex(16)
 
@@ -118,8 +118,17 @@ class ApiKeyManager:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """
-                INSERT INTO api_keys 
-                (key_id, key_hash, name, description, permissions, created_at, expires_at, is_active)
+                INSERT INTO api_keys
+                (
+                    key_id,
+                    key_hash,
+                    name,
+                    description,
+                    permissions,
+                    created_at,
+                    expires_at,
+                    is_active
+                )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
@@ -147,9 +156,9 @@ class ApiKeyManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """
-                SELECT key_id, key_hash, name, description, permissions, 
+                SELECT key_id, key_hash, name, description, permissions,
                        created_at, expires_at, is_active, last_used_at, usage_count
-                FROM api_keys 
+                FROM api_keys
                 WHERE key_hash = ? AND is_active = 1
             """,
                 (key_hash,),
@@ -181,7 +190,7 @@ class ApiKeyManager:
             current_time = datetime.now()
             conn.execute(
                 """
-                UPDATE api_keys 
+                UPDATE api_keys
                 SET last_used_at = ?, usage_count = usage_count + 1
                 WHERE key_id = ?
             """,
@@ -199,7 +208,7 @@ class ApiKeyManager:
         """API 키 목록 조회"""
         with sqlite3.connect(self.db_path) as conn:
             query = """
-                SELECT key_id, key_hash, name, description, permissions, 
+                SELECT key_id, key_hash, name, description, permissions,
                        created_at, expires_at, is_active, last_used_at, usage_count
                 FROM api_keys
             """
@@ -255,9 +264,9 @@ class ApiKeyManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """
-                SELECT key_id, key_hash, name, description, permissions, 
+                SELECT key_id, key_hash, name, description, permissions,
                        created_at, expires_at, is_active, last_used_at, usage_count
-                FROM api_keys 
+                FROM api_keys
                 WHERE key_id = ?
             """,
                 (key_id,),

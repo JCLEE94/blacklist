@@ -149,15 +149,15 @@ JWT_SETTINGS = {
 
 # 보안 헤더
 SECURITY_HEADERS = {
-    "X-Content-Type-Options": "nosniff",
+    "X-Content-Type-Options": "nosnif",
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Content-Security-Policy": (
-        "default-src 'self' https://cdn.jsdelivr.net; "
-        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
-        "font-src 'self' https://cdn.jsdelivr.net data:; "
+        "default-src 'sel' https://cdn.jsdelivr.net; "
+        "script-src 'sel' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'sel' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "font-src 'sel' https://cdn.jsdelivr.net data:; "
         "img-src 'self' data: https:;"
     ),
     "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -206,7 +206,7 @@ ERROR_MESSAGES = {
     "service_unavailable": "서비스를 사용할 수 없습니다",
     "internal_error": "내부 서버 오류가 발생했습니다",
     "validation_failed": "입력 데이터 검증에 실패했습니다",
-    "batch_size_exceeded": f"배치 크기는 {MAX_BATCH_SIZE}개를 초과할 수 없습니다",
+    "batch_size_exceeded": "배치 크기는 {MAX_BATCH_SIZE}개를 초과할 수 없습니다",
 }
 
 # ============ 성공 메시지 ============

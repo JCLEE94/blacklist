@@ -71,13 +71,13 @@ def get_stats() -> Dict[str, Any]:
             with open(stats_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         else:
-            logger.warning(f"통계 파일이 존재하지 않음: {stats_path}")
+            logger.warning("통계 파일이 존재하지 않음: {stats_path}")
     except json.JSONDecodeError as e:
-        logger.error(f"통계 파일 JSON 파싱 오류: {e}")
+        logger.error("통계 파일 JSON 파싱 오류: {e}")
     except IOError as e:
-        logger.error(f"통계 파일 읽기 오류: {e}")
+        logger.error("통계 파일 읽기 오류: {e}")
     except Exception as e:
-        logger.error(f"통계 파일 처리 중 예상치 못한 오류: {e}")
+        logger.error("통계 파일 처리 중 예상치 못한 오류: {e}")
 
     # Return default stats if file doesn't exist or has errors
     return {
@@ -146,11 +146,11 @@ def dashboard():
         )
 
     except Exception as e:
-        logger.error(f"Dashboard error: {e}")
+        logger.error("Dashboard error: {e}")
         # Return a simple error page
         return (
-            f"<h1>Dashboard Error</h1><p>Error: {str(e)}</p>"
-            f'<p><a href="/test">Test Page</a></p>',
+            "<h1>Dashboard Error</h1><p>Error: {str(e)}</p>"
+            '<p><a href="/test">Test Page</a></p>',
             500,
         )
 
@@ -168,8 +168,8 @@ def data_management():
             current_time=datetime.now(),
         )
     except Exception as e:
-        logger.error(f"Data management page error: {e}")
-        flash(f"페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
+        logger.error("Data management page error: {e}")
+        flash("페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))
 
 
@@ -196,7 +196,7 @@ def connection_status():
                     "status": (
                         "connected" if health["database"] == "connected" else "error"
                     ),
-                    "details": f"Status: {health['database']}",
+                    "details": "Status: {health['database']}",
                 }
             )
         except Exception as e:
@@ -204,7 +204,7 @@ def connection_status():
                 {
                     "name": "Database",
                     "status": "error",
-                    "details": f"Error: {str(e)}",
+                    "details": "Error: {str(e)}",
                 }
             )
 
@@ -221,7 +221,7 @@ def connection_status():
                     {
                         "name": api["name"],
                         "status": "connected",  # Mock status
-                        "details": f"URL: {api['url']}",
+                        "details": "URL: {api['url']}",
                     }
                 )
             except Exception as e:
@@ -229,7 +229,7 @@ def connection_status():
                     {
                         "name": api["name"],
                         "status": "error",
-                        "details": f"Error: {str(e)}",
+                        "details": "Error: {str(e)}",
                     }
                 )
 
@@ -240,8 +240,8 @@ def connection_status():
         )
 
     except Exception as e:
-        logger.error(f"Connection status error: {e}")
-        flash(f"연결 상태 확인 중 오류가 발생했습니다: {str(e)}", "error")
+        logger.error("Connection status error: {e}")
+        flash("연결 상태 확인 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))
 
 
@@ -282,6 +282,6 @@ def system_logs():
         )
 
     except Exception as e:
-        logger.error(f"System logs error: {e}")
-        flash(f"로그 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
+        logger.error("System logs error: {e}")
+        flash("로그 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))

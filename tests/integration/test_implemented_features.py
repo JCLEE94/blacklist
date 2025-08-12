@@ -329,10 +329,10 @@ class TestSystemIntegration:
                 service_instance = container.get(service)
                 # 서비스가 None이 아니면 성공
                 print(
-                    f"Service {service}: {'Available' if service_instance else 'Not available'}"
+                    "Service {service}: {'Available' if service_instance else 'Not available'}"
                 )
             except Exception as e:
-                print(f"Service {service}: Error - {e}")
+                print("Service {service}: Error - {e}")
 
     def test_performance_monitoring(self):
         """성능 모니터링 테스트"""

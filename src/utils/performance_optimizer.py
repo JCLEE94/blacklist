@@ -184,7 +184,7 @@ class MemoryOptimizer:
     def get_from_pool(self, pool_name: str):
         """객체 풀에서 객체 획득"""
         if pool_name not in self.object_pools:
-            raise ValueError(f"Unknown pool: {pool_name}")
+            raise ValueError("Unknown pool: {pool_name}")
 
         pool_info = self.object_pools[pool_name]
         with pool_info["lock"]:
@@ -294,7 +294,7 @@ def cached_result(ttl: int = 3600, key_func: Callable = None):
             if key_func:
                 cache_key = key_func(*args, **kwargs)
             else:
-                cache_key = f"{func.__name__}:{hash(str(args) + str(kwargs))}"
+                cache_key = "{func.__name__}:{hash(str(args) + str(kwargs))}"
 
             # 캐시에서 조회
             cached_value = g_performance_monitor.smart_cache.get(cache_key)
@@ -353,7 +353,7 @@ def optimize_database_queries():
         logger.warning("Slow queries detected:")
         for query_name, stats in slow_queries.items():
             logger.warning(
-                f"  {query_name}: avg {stats['avg_time']:.3f}s, max {stats['max_time']:.3f}s"
+                "  {query_name}: avg {stats['avg_time']:.3f}s, max {stats['max_time']:.3f}s"
             )
 
     return slow_queries
@@ -362,7 +362,7 @@ def optimize_database_queries():
 def cleanup_performance_data():
     """성능 데이터 정리"""
     expired_count = g_performance_monitor.smart_cache.clear_expired()
-    logger.info(f"Cleaned up {expired_count} expired cache entries")
+    logger.info("Cleaned up {expired_count} expired cache entries")
 
     # 메트릭 히스토리 정리 (7일 이상 된 것)
     cutoff_date = datetime.now() - timedelta(days=7)

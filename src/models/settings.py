@@ -108,7 +108,13 @@ class SettingsManager:
             str_value = str(value)
 
         query = """
-        INSERT OR REPLACE INTO app_settings (key, value, setting_type, category, updated_at)
+        INSERT OR REPLACE INTO app_settings (
+            key,
+            value,
+            setting_type,
+            category,
+            updated_at
+        )
         VALUES (?, ?, ?, ?, datetime('now'))
         """
 

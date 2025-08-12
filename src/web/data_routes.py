@@ -26,7 +26,7 @@ def api_ips_recent():
             days_ago = i // 10
             recent_ips.append(
                 {
-                    "ip": f"192.168.{i//10}.{i%10}",
+                    "ip": "192.168.{i//10}.{i%10}",
                     "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
                     "country": "KR" if i % 3 == 0 else "US",
                     "attack_type": "Malware" if i % 2 == 0 else "Phishing",
@@ -50,7 +50,7 @@ def api_ips_recent():
         )
 
     except Exception as e:
-        logger.error(f"Recent IPs error: {e}")
+        logger.error("Recent IPs error: {e}")
         return (
             jsonify(
                 {
@@ -103,7 +103,7 @@ def api_daily_stats():
         )
 
     except Exception as e:
-        logger.error(f"Daily stats error: {e}")
+        logger.error("Daily stats error: {e}")
         return (
             jsonify(
                 {
@@ -139,7 +139,7 @@ def api_ips_by_date(date):
         for i in range(75):  # Mock 75 IPs for the date
             mock_ips.append(
                 {
-                    "ip": f"10.0.{i//10}.{i%10}",
+                    "ip": "10.0.{i//10}.{i%10}",
                     "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
                     "country": ["KR", "US", "CN", "JP"][i % 4],
                     "attack_type": ["Malware", "Phishing", "Spam", "Botnet"][i % 4],
@@ -174,7 +174,7 @@ def api_ips_by_date(date):
         )
 
     except Exception as e:
-        logger.error(f"IPs by date error: {e}")
+        logger.error("IPs by date error: {e}")
         return (
             jsonify(
                 {
@@ -233,7 +233,7 @@ def realtime_status():
         )
 
     except Exception as e:
-        logger.error(f"Realtime status error: {e}")
+        logger.error("Realtime status error: {e}")
         return (
             jsonify(
                 {
@@ -270,13 +270,13 @@ def realtime_feed():
                 "type": activity_type,
                 "message": base_message,
                 "timestamp": timestamp.isoformat(),
-                "time_ago": f"{i*2} minutes ago" if i > 0 else "just now",
+                "time_ago": "{i*2} minutes ago" if i > 0 else "just now",
             }
 
             # Add type-specific details
             if activity_type == "ip_added":
                 activity["details"] = {
-                    "ip": f"192.168.1.{i+100}",
+                    "ip": "192.168.1.{i+100}",
                     "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
                 }
             elif activity_type == "collection_completed":
@@ -297,7 +297,7 @@ def realtime_feed():
         )
 
     except Exception as e:
-        logger.error(f"Realtime feed error: {e}")
+        logger.error("Realtime feed error: {e}")
         return (
             jsonify(
                 {
@@ -317,13 +317,13 @@ def api_blacklist_active_simple():
         # Mock active IPs
         active_ips = []
         for i in range(100):  # Mock 100 active IPs
-            active_ips.append(f"10.0.{i//10}.{i%10}")
+            active_ips.append("10.0.{i//10}.{i%10}")
 
         return "\n".join(active_ips), 200, {"Content-Type": "text/plain"}
 
     except Exception as e:
-        logger.error(f"Active blacklist simple error: {e}")
-        return f"Error: {str(e)}", 500
+        logger.error("Active blacklist simple error: {e}")
+        return "Error: {str(e)}", 500
 
 
 @data_bp.route("/fortigate-simple")
@@ -333,7 +333,7 @@ def api_fortigate_simple():
         # Mock FortiGate format
         active_ips = []
         for i in range(100):
-            active_ips.append(f"10.0.{i//10}.{i%10}")
+            active_ips.append("10.0.{i//10}.{i%10}")
 
         fortigate_data = {
             "type": "IP",
@@ -344,5 +344,5 @@ def api_fortigate_simple():
         return jsonify(fortigate_data)
 
     except Exception as e:
-        logger.error(f"FortiGate simple error: {e}")
+        logger.error("FortiGate simple error: {e}")
         return jsonify({"error": str(e)}), 500

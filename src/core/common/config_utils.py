@@ -44,7 +44,7 @@ class ConfigLoader:
         # 값이 없는 경우
         if value is None:
             if required and default is None:
-                raise ValueError(f"Required environment variable '{key}' is not set")
+                raise ValueError("Required environment variable '{key}' is not set")
             return default
 
         # 타입 변환
@@ -64,12 +64,12 @@ class ConfigLoader:
                 converted_value = value
 
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Failed to convert '{key}' to {var_type.__name__}: {e}")
+            raise ValueError("Failed to convert '{key}' to {var_type.__name__}: {e}")
 
         # 선택지 검증
         if choices and converted_value not in choices:
             raise ValueError(
-                f"'{key}' must be one of {choices}, got '{converted_value}'"
+                "'{key}' must be one of {choices}, got '{converted_value}'"
             )
 
         return converted_value
@@ -85,9 +85,9 @@ class ConfigLoader:
         value = ConfigLoader.get_env(key, default, var_type=int)
 
         if min_val is not None and value < min_val:
-            raise ValueError(f"'{key}' must be >= {min_val}, got {value}")
+            raise ValueError("'{key}' must be >= {min_val}, got {value}")
         if max_val is not None and value > max_val:
-            raise ValueError(f"'{key}' must be <= {max_val}, got {value}")
+            raise ValueError("'{key}' must be <= {max_val}, got {value}")
 
         return value
 
@@ -145,10 +145,10 @@ class ConfigValidator:
         exists = key in os.environ and os.environ[key]
 
         if required and not exists:
-            error_msg = message or f"Environment variable '{key}' is required"
+            error_msg = message or "Environment variable '{key}' is required"
             self.errors.append(error_msg)
         elif not required and not exists:
-            warning_msg = message or f"Environment variable '{key}' is recommended"
+            warning_msg = message or "Environment variable '{key}' is recommended"
             self.warnings.append(warning_msg)
 
         return self
@@ -160,10 +160,10 @@ class ConfigValidator:
         exists = os.path.exists(path)
 
         if required and not exists:
-            error_msg = message or f"Required file not found: {path}"
+            error_msg = message or "Required file not found: {path}"
             self.errors.append(error_msg)
         elif not required and not exists:
-            warning_msg = message or f"Recommended file not found: {path}"
+            warning_msg = message or "Recommended file not found: {path}"
             self.warnings.append(warning_msg)
 
         return self
@@ -176,12 +176,12 @@ class ConfigValidator:
             if create:
                 try:
                     os.makedirs(path, exist_ok=True)
-                    logger.info(f"Created directory: {path}")
+                    logger.info("Created directory: {path}")
                 except Exception as e:
-                    error_msg = message or f"Failed to create directory {path}: {e}"
+                    error_msg = message or "Failed to create directory {path}: {e}"
                     self.errors.append(error_msg)
             else:
-                error_msg = message or f"Directory not found: {path}"
+                error_msg = message or "Directory not found: {path}"
                 self.errors.append(error_msg)
 
         return self
@@ -190,11 +190,11 @@ class ConfigValidator:
         """검증 수행 및 결과 반환"""
         if self.warnings:
             for warning in self.warnings:
-                logger.warning(f"Config warning: {warning}")
+                logger.warning("Config warning: {warning}")
 
         if self.errors:
             for error in self.errors:
-                logger.error(f"Config error: {error}")
+                logger.error("Config error: {error}")
             return False
 
         return True

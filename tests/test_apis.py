@@ -28,7 +28,7 @@ def analyze_postman_collection(json_file):
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    print(f"\n📄 Collection: {data['info']['name']}")
+    print("\n📄 Collection: {data['info']['name']}")
 
     endpoints = []
 
@@ -40,7 +40,7 @@ def analyze_postman_collection(json_file):
                 folder_name = item.get("name", "")
                 extract_items(
                     item["item"],
-                    f"{parent_name}/{folder_name}" if parent_name else folder_name,
+                    "{parent_name}/{folder_name}" if parent_name else folder_name,
                 )
             elif "request" in item:
                 # 요청인 경우
@@ -73,7 +73,7 @@ def test_regtech_apis():
 
     endpoints = analyze_postman_collection(regtech_file)
 
-    print(f"\n📁 총 {len(endpoints)}개 엔드포인트 발견:")
+    print("\n📁 총 {len(endpoints)}개 엔드포인트 발견:")
 
     # 주요 엔드포인트 표시
     for i, ep in enumerate(endpoints, 1):
@@ -83,9 +83,9 @@ def test_regtech_apis():
         else:
             url_str = str(url)
 
-        print(f"\n{i}. {ep['name']}")
-        print(f"   Method: {ep['method']}")
-        print(f"   URL: {url_str}")
+        print("\n{i}. {ep['name']}")
+        print("   Method: {ep['method']}")
+        print("   URL: {url_str}")
 
         # 로그인 관련 엔드포인트 특별 표시
         if "login" in url_str.lower() or "auth" in url_str.lower():
@@ -98,7 +98,7 @@ def test_regtech_apis():
                 if params:
                     print("   📝 파라미터:")
                     for param in params:
-                        print(f"      - {param.get('key')}: {param.get('value', '')}")
+                        print("      - {param.get('key')}: {param.get('value', '')}")
 
 
 def test_secudium_apis():
@@ -114,7 +114,7 @@ def test_secudium_apis():
 
     endpoints = analyze_postman_collection(secudium_file)
 
-    print(f"\n📁 총 {len(endpoints)}개 엔드포인트 발견:")
+    print("\n📁 총 {len(endpoints)}개 엔드포인트 발견:")
 
     # 주요 엔드포인트 표시
     for i, ep in enumerate(endpoints, 1):
@@ -124,9 +124,9 @@ def test_secudium_apis():
         else:
             url_str = str(url)
 
-        print(f"\n{i}. {ep['name']}")
-        print(f"   Method: {ep['method']}")
-        print(f"   URL: {url_str}")
+        print("\n{i}. {ep['name']}")
+        print("   Method: {ep['method']}")
+        print("   URL: {url_str}")
 
         # 로그인 관련 엔드포인트 특별 표시
         if "login" in url_str.lower() or "auth" in url_str.lower():
@@ -139,7 +139,7 @@ def test_secudium_apis():
                 if params:
                     print("   📝 파라미터:")
                     for param in params:
-                        print(f"      - {param.get('key')}: {param.get('value', '')}")
+                        print("      - {param.get('key')}: {param.get('value', '')}")
 
 
 @pytest.mark.integration
@@ -153,8 +153,8 @@ def test_regtech_login():
     username = settings.regtech_username or "nextrade"
     password = settings.regtech_password or "Sprtmxm1@3"
 
-    print(f"   Username: {username}")
-    print(f"   Password: {'*' * len(password)}")
+    print("   Username: {username}")
+    print("   Password: {'*' * len(password)}")
 
     # 기본 REGTECH URL
     base_url = "https://regtech.fsec.or.kr"
@@ -172,34 +172,34 @@ def test_regtech_login():
     try:
         # 1. 메인 페이지 접속
         print("\n1. 메인 페이지 접속...")
-        resp = session.get(f"{base_url}/main/main")
-        print(f"   Status: {resp.status_code}")
+        resp = session.get("{base_url}/main/main")
+        print("   Status: {resp.status_code}")
 
         # 2. 로그인 페이지 확인
         print("\n2. 로그인 페이지 확인...")
-        login_page = session.get(f"{base_url}/login/login")
-        print(f"   Status: {login_page.status_code}")
+        login_page = session.get("{base_url}/login/login")
+        print("   Status: {login_page.status_code}")
 
         # 3. 로그인 시도
         print("\n3. 로그인 시도...")
         login_data = {"loginId": username, "loginPw": password}
 
         login_resp = session.post(
-            f"{base_url}/login/loginProcess",
+            "{base_url}/login/loginProcess",
             data=login_data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        print(f"   Status: {login_resp.status_code}")
+        print("   Status: {login_resp.status_code}")
         if login_resp.status_code == 200:
             print("   ✅ 로그인 성공!")
 
             # 4. 블랙리스트 페이지 접근
             print("\n4. 블랙리스트 페이지 테스트...")
             blacklist_resp = session.get(
-                f"{base_url}/fcti/securityAdvisory/blackListView"
+                "{base_url}/fcti/securityAdvisory/blackListView"
             )
-            print(f"   Status: {blacklist_resp.status_code}")
+            print("   Status: {blacklist_resp.status_code}")
 
             if blacklist_resp.status_code == 200:
                 print("   ✅ 블랙리스트 페이지 접근 성공!")
@@ -210,7 +210,7 @@ def test_regtech_login():
             print("   ❌ 로그인 실패")
 
     except Exception as e:
-        print(f"\n❌ 오류 발생: {e}")
+        print("\n❌ 오류 발생: {e}")
 
     finally:
         session.close()
@@ -221,7 +221,7 @@ def main():
     메인 함수
     """
     print("🔍 API 분석 및 테스트 시작")
-    print(f"   시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("   시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     # REGTECH API 분석
     test_regtech_apis()

@@ -156,11 +156,11 @@ class DataService:
 
                         processed += len(batch)
                         logger.debug(
-                            f"Processed batch {i//batch_size + 1}, total: {processed}"
+                            "Processed batch {i//batch_size + 1}, total: {processed}"
                         )
 
                     except Exception as e:
-                        error_msg = f"Error processing batch {i//batch_size + 1}: {e}"
+                        error_msg = "Error processing batch {i//batch_size + 1}: {e}"
                         logger.error(error_msg)
                         errors.append(error_msg)
 
@@ -170,7 +170,7 @@ class DataService:
                 self._update_file_storage(valid_ips, source)
 
         except Exception as e:
-            error_msg = f"Database error during bulk import: {e}"
+            error_msg = "Database error during bulk import: {e}"
             logger.error(error_msg)
             raise DataProcessingError(error_msg, operation="bulk_import")
 
@@ -192,9 +192,7 @@ class DataService:
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(
-            f"Bulk import completed: {processed}/{len(valid_ips)} IPs processed"
-        )
+        logger.info("Bulk import completed: {processed}/{len(valid_ips)} IPs processed")
         return result
 
     def _update_file_storage(self, ips_data: List[Dict[str, Any]], source: str):
@@ -205,7 +203,7 @@ class DataService:
             os.makedirs(self.detection_dir, exist_ok=True)
 
             # Update source file
-            source_file = os.path.join(self.blacklist_dir, f"{source}.txt")
+            source_file = os.path.join(self.blacklist_dir, "{source}.txt")
             with open(source_file, "w", encoding="utf-8") as f:
                 ips_by_source = [
                     ip_data["ip"]
@@ -228,21 +226,21 @@ class DataService:
                         ips_by_month[month_key].add(ip_data["ip"])
                     except ValueError:
                         logger.warning(
-                            f"Invalid detection date format: {detection_date}"
+                            "Invalid detection date format: {detection_date}"
                         )
 
             for month_key, ips in ips_by_month.items():
-                month_file = os.path.join(self.detection_dir, f"{month_key}.txt")
+                month_file = os.path.join(self.detection_dir, "{month_key}.txt")
                 with open(month_file, "w", encoding="utf-8") as f:
                     f.write("\n".join(sorted(ips)))
 
         except Exception as e:
-            logger.error(f"Error updating file storage: {e}")
+            logger.error("Error updating file storage: {e}")
 
     def get_active_ips(self) -> List[str]:
         """Get all active IP addresses from database"""
         try:
-            logger.debug(f"Getting active IPs from database: {self.db_path}")
+            logger.debug("Getting active IPs from database: {self.db_path}")
             with sqlite3.connect(self.db_path, timeout=10) as conn:
                 cursor = conn.cursor()
 
@@ -257,11 +255,11 @@ class DataService:
                 )
 
                 result = [row[0] for row in cursor.fetchall()]
-                logger.info(f"Found {len(result)} active IPs from database")
+                logger.info("Found {len(result)} active IPs from database")
                 return result
 
         except sqlite3.Error as e:
-            logger.error(f"Database error getting active IPs: {e}")
+            logger.error("Database error getting active IPs: {e}")
             # Fallback to file-based method
             return self._get_active_ips_from_files()
 
@@ -281,7 +279,7 @@ class DataService:
                                 if ip and self._is_valid_ip(ip):
                                     all_ips.add(ip)
                     except Exception as e:
-                        logger.warning(f"Error reading {file_path}: {e}")
+                        logger.warning("Error reading {file_path}: {e}")
 
         # Load REGTECH IPs specifically
         regtech_ips = self._load_regtech_ips()
@@ -325,7 +323,7 @@ class DataService:
 
                 except Exception as e:
                     logger.warning(
-                        f"Error processing REGTECH Excel file {excel_file}: {e}"
+                        "Error processing REGTECH Excel file {excel_file}: {e}"
                     )
 
         return regtech_ips
@@ -376,7 +374,7 @@ class DataService:
                 return results
 
         except sqlite3.Error as e:
-            logger.error(f"Database error getting all active IPs: {e}")
+            logger.error("Database error getting all active IPs: {e}")
             # Fallback to simple IP list
             simple_ips = self.get_active_ips()
             return [
@@ -420,7 +418,7 @@ class DataService:
                         os.remove(file_path)
                         cleared_items["files_removed"] += 1
                     except Exception as e:
-                        logger.warning(f"Could not remove {file_path}: {e}")
+                        logger.warning("Could not remove {file_path}: {e}")
 
             if os.path.exists(self.detection_dir):
                 for filename in os.listdir(self.detection_dir):
@@ -429,7 +427,7 @@ class DataService:
                         os.remove(file_path)
                         cleared_items["files_removed"] += 1
                     except Exception as e:
-                        logger.warning(f"Could not remove {file_path}: {e}")
+                        logger.warning("Could not remove {file_path}: {e}")
 
                 cleared_items["directories_cleaned"] = 2
 
@@ -440,9 +438,9 @@ class DataService:
                 cleared_items["cache_keys_cleared"] += cleared_count
 
         except Exception as e:
-            logger.error(f"Error during clear_all operation: {e}")
+            logger.error("Error during clear_all operation: {e}")
             raise DataProcessingError(
-                f"Clear operation failed: {e}", operation="clear_all"
+                "Clear operation failed: {e}", operation="clear_all"
             )
 
         end_time = datetime.now()
@@ -456,7 +454,7 @@ class DataService:
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(f"Clear all completed: {cleared_items}")
+        logger.info("Clear all completed: {cleared_items}")
         return result
 
     def cleanup_old_data(self, days: int = 365):
@@ -483,12 +481,12 @@ class DataService:
 
                 conn.commit()
 
-                logger.info(f"Cleaned up {count} records older than {days} days")
+                logger.info("Cleaned up {count} records older than {days} days")
                 return {
                     "cleaned_records": count,
                     "cutoff_date": cutoff_date.isoformat(),
                 }
 
         except sqlite3.Error as e:
-            logger.error(f"Error during cleanup: {e}")
+            logger.error("Error during cleanup: {e}")
             return {"error": str(e)}

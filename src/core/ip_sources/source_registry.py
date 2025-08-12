@@ -26,7 +26,7 @@ class SourceRegistry:
             source_class: BaseIPSource를 상속한 클래스
         """
         if not issubclass(source_class, BaseIPSource):
-            raise ValueError(f"Source class must inherit from BaseIPSource")
+            raise ValueError("Source class must inherit from BaseIPSource")
 
         # 임시 인스턴스를 생성하여 source_name 획득
         try:
@@ -36,11 +36,11 @@ class SourceRegistry:
             temp_instance = source_class(temp_config)
             source_name = temp_instance.source_name
         except Exception as e:
-            logger.error(f"Failed to get source name from {source_class.__name__}: {e}")
+            logger.error("Failed to get source name from {source_class.__name__}: {e}")
             source_name = source_class.__name__
 
         self._sources[source_name] = source_class
-        logger.info(f"Registered IP source: {source_name}")
+        logger.info("Registered IP source: {source_name}")
 
     def get_source_class(self, name: str) -> Type[BaseIPSource]:
         """
@@ -53,7 +53,7 @@ class SourceRegistry:
             소스 클래스
         """
         if name not in self._sources:
-            raise KeyError(f"Unknown source: {name}")
+            raise KeyError("Unknown source: {name}")
         return self._sources[name]
 
     def list_sources(self) -> List[str]:
@@ -117,12 +117,12 @@ class SourceRegistry:
             # self.register(DatabaseSource)
 
             self._initialized = True
-            logger.info(f"Auto-discovered {len(self._sources)} IP sources")
+            logger.info("Auto-discovered {len(self._sources)} IP sources")
 
         except ImportError as e:
-            logger.warning(f"Some sources could not be imported: {e}")
+            logger.warning("Some sources could not be imported: {e}")
         except Exception as e:
-            logger.error(f"Error during auto-discovery: {e}")
+            logger.error("Error during auto-discovery: {e}")
 
 
 # 전역 레지스트리 인스턴스

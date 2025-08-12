@@ -54,7 +54,7 @@ class CacheKeyBuilder:
     @staticmethod
     def build_pattern(prefix: str, pattern: str = "*") -> str:
         """캐시 키 패턴 생성 (삭제용)"""
-        return f"{prefix}:{pattern}"
+        return "{prefix}:{pattern}"
 
 
 class CacheHelper:
@@ -89,7 +89,7 @@ class CacheHelper:
                         key_prefix,
                         func.__name__,
                         *args,
-                        **{k: v for k, v in kwargs.items() if k != "self"},
+                        **{k: v for k, v in kwargs.items() if k != "sel"},
                     )
 
                 # 캐시 조회
@@ -104,7 +104,7 @@ class CacheHelper:
                 # 캐시 저장
                 if result is not None:  # None이 아닌 경우만 캐싱
                     cache_manager.set(cache_key, result, ttl=ttl)
-                    logger.debug(f"Cache set: {cache_key}")
+                    logger.debug("Cache set: {cache_key}")
 
                 return result
 
@@ -129,7 +129,7 @@ class CacheHelper:
         """
         pattern = CacheKeyBuilder.build(prefix, *identifiers, "*")
         count = cache_manager.clear_pattern(pattern)
-        logger.info(f"Invalidated {count} cache entries matching {pattern}")
+        logger.info("Invalidated {count} cache entries matching {pattern}")
         return count
 
     @staticmethod
@@ -188,7 +188,7 @@ class CacheWarmer:
 
         for task in self.warming_tasks:
             try:
-                logger.info(f"Warming cache for {task['name']}")
+                logger.info("Warming cache for {task['name']}")
                 value = task["func"]()
 
                 if value is not None:
@@ -200,7 +200,7 @@ class CacheWarmer:
                     results["tasks"].append({"name": task["name"], "status": "no_data"})
 
             except Exception as e:
-                logger.error(f"Cache warming failed for {task['name']}: {e}")
+                logger.error("Cache warming failed for {task['name']}: {e}")
                 results["failed"] += 1
                 results["tasks"].append(
                     {"name": task["name"], "status": "error", "error": str(e)}

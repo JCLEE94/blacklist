@@ -44,7 +44,7 @@ def clear_database():
         try:
             result = service.clear_all_database_data()
         except Exception as e:
-            logger.error(f"Failed to clear database: {e}")
+            logger.error("Failed to clear database: {e}")
             result = {"success": False, "error": str(e)}
 
         if result.get("success"):
@@ -67,7 +67,7 @@ def clear_database():
             )
 
     except Exception as e:
-        logger.error(f"Database clear error: {e}")
+        logger.error("Database clear error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -85,12 +85,12 @@ def maintenance_cleanup():
             {
                 "success": True,
                 "deleted_count": deleted_count,
-                "message": f"{deleted_count}개의 오래된 레코드가 정리되었습니다.",
+                "message": "{deleted_count}개의 오래된 레코드가 정리되었습니다.",
             }
         )
 
     except Exception as e:
-        logger.error(f"Maintenance cleanup error: {e}")
+        logger.error("Maintenance cleanup error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -105,7 +105,7 @@ def maintenance_clear_cache():
         return jsonify({"success": True, "message": "캐시가 초기화되었습니다."})
 
     except Exception as e:
-        logger.error(f"Clear cache error: {e}")
+        logger.error("Clear cache error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -156,19 +156,19 @@ def get_raw_data():
 
         if ip_search:
             where_conditions.append("ip LIKE ?")
-            params.append(f"%{ip_search}%")
+            params.append("%{ip_search}%")
 
         where_clause = (
             " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
         )
 
         # Get total count
-        count_query = f"SELECT COUNT(*) FROM blacklist_ip{where_clause}"
+        count_query = "SELECT COUNT(*) FROM blacklist_ip{where_clause}"
         cursor.execute(count_query, params)
         total_count = cursor.fetchone()[0]
 
         # Get paginated data
-        data_query = f"""
+        data_query = """
         SELECT
             id,
             ip,
@@ -217,7 +217,7 @@ def get_raw_data():
         )
 
     except Exception as e:
-        logger.error(f"Failed to get raw data: {e}")
+        logger.error("Failed to get raw data: {e}")
         return (
             jsonify(
                 {
@@ -252,7 +252,7 @@ def get_expiring_ips():
             }
         )
     except Exception as e:
-        logger.error(f"Get expiring IPs error: {e}")
+        logger.error("Get expiring IPs error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -307,7 +307,7 @@ def set_ip_expiration(ip):
     except ValidationError as e:
         return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
-        logger.error(f"Set IP expiration error: {e}")
+        logger.error("Set IP expiration error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -328,7 +328,7 @@ def update_expiration_status():
 
         return jsonify(result)
     except Exception as e:
-        logger.error(f"Update expiration status error: {e}")
+        logger.error("Update expiration status error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -348,7 +348,7 @@ def search_single_ip(ip: str):
 
         return jsonify({"success": True, "data": result})
     except Exception as e:
-        logger.error(f"Single IP search error: {e}")
+        logger.error("Single IP search error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -393,7 +393,7 @@ def search_batch_ips():
 
         return jsonify({"success": True, "results": results})
     except Exception as e:
-        logger.error(f"Batch IP search error: {e}")
+        logger.error("Batch IP search error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -428,7 +428,7 @@ def not_found_error(error):
 @admin_routes_bp.errorhandler(500)
 def internal_error(error):
     """500 에러 핸들러"""
-    logger.error(f"Internal server error: {error}")
+    logger.error("Internal server error: {error}")
     return (
         jsonify(
             {

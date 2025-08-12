@@ -87,13 +87,13 @@ class UnifiedBlacklistManager:
                 if os.path.isfile(directory):
                     continue
                 os.makedirs(directory, exist_ok=True)
-                logger.debug(f"Directory ensured: {directory}")
+                logger.debug("Directory ensured: {directory}")
             except Exception as e:
                 # Log but don't raise if it's actually a file
                 if os.path.isfile(directory):
-                    logger.debug(f"Skipping {directory} as it's a file")
+                    logger.debug("Skipping {directory} as it's a file")
                 else:
-                    logger.error(f"Failed to create directory {directory}: {e}")
+                    logger.error("Failed to create directory {directory}: {e}")
                     raise
 
     def _setup_cleanup_scheduler(self):
@@ -114,7 +114,7 @@ class UnifiedBlacklistManager:
 
                     logger.info("Scheduled cleanup completed")
                 except Exception as e:
-                    logger.error(f"Error in cleanup scheduler: {e}")
+                    logger.error("Error in cleanup scheduler: {e}")
 
         cleanup_worker = threading.Thread(target=cleanup_thread, daemon=True)
         cleanup_worker.start()
@@ -216,7 +216,7 @@ class UnifiedBlacklistManager:
             return json.dumps(fortigate_data, indent=2)
 
         except Exception as e:
-            logger.error(f"Error generating FortiGate format: {e}")
+            logger.error("Error generating FortiGate format: {e}")
             return "[]"
 
     def get_system_stats(self) -> Dict[str, Any]:
@@ -236,7 +236,7 @@ class UnifiedBlacklistManager:
                 "health": "healthy" if stats.get("active_ips", 0) > 0 else "warning",
             }
         except Exception as e:
-            logger.error(f"Error getting system stats: {e}")
+            logger.error("Error getting system stats: {e}")
             return {
                 "total_ips": 0,
                 "active_ips": 0,

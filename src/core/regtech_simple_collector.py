@@ -34,7 +34,7 @@ class RegtechSimpleCollector:
                 "REGTECH_USERNAME and REGTECH_PASSWORD environment variables must be set"
             )
 
-        logger.info(f"REGTECH 단순 수집기 초기화: {self.regtech_dir}")
+        logger.info("REGTECH 단순 수집기 초기화: {self.regtech_dir}")
 
     def collect_from_web(
         self, start_date: str = None, end_date: str = None
@@ -49,7 +49,7 @@ class RegtechSimpleCollector:
             if not start_date:
                 start_date = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
 
-            logger.info(f"수집 기간: {start_date} ~ {end_date}")
+            logger.info("수집 기간: {start_date} ~ {end_date}")
 
             # 세션 생성
             session = requests.Session()
@@ -71,7 +71,7 @@ class RegtechSimpleCollector:
             # 3. 결과 저장
             if ips:
                 self._save_results(ips)
-                logger.info(f"✅ 수집 완료: {len(ips)}개 IP")
+                logger.info("✅ 수집 완료: {len(ips)}개 IP")
                 return {
                     "success": True,
                     "total_collected": len(ips),
@@ -87,7 +87,7 @@ class RegtechSimpleCollector:
                 }
 
         except Exception as e:
-            logger.error(f"수집 중 오류: {e}")
+            logger.error("수집 중 오류: {e}")
             return {"success": False, "error": str(e), "total_collected": 0}
 
     def _simple_login(self, session: requests.Session) -> bool:
@@ -96,9 +96,9 @@ class RegtechSimpleCollector:
             logger.info("단순 로그인 시도")
 
             # 로그인 페이지 접근
-            login_page = session.get(f"{self.base_url}/login/loginForm")
+            login_page = session.get("{self.base_url}/login/loginForm")
             if login_page.status_code != 200:
-                logger.error(f"로그인 페이지 접근 실패: {login_page.status_code}")
+                logger.error("로그인 페이지 접근 실패: {login_page.status_code}")
                 return False
 
             # 로그인 요청
@@ -113,7 +113,7 @@ class RegtechSimpleCollector:
             }
 
             login_resp = session.post(
-                f"{self.base_url}/login/addLogin",
+                "{self.base_url}/login/addLogin",
                 data=login_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 allow_redirects=True,
@@ -124,11 +124,11 @@ class RegtechSimpleCollector:
                 logger.info("단순 로그인 성공")
                 return True
             else:
-                logger.error(f"로그인 실패: {login_resp.status_code}, URL: {login_resp.url}")
+                logger.error("로그인 실패: {login_resp.status_code}, URL: {login_resp.url}")
                 return False
 
         except Exception as e:
-            logger.error(f"로그인 중 오류: {e}")
+            logger.error("로그인 중 오류: {e}")
             return False
 
     def _collect_ips(
@@ -136,14 +136,14 @@ class RegtechSimpleCollector:
     ) -> List[Dict[str, Any]]:
         """다중 페이지 IP 수집 - 최대한 많은 데이터 수집"""
         try:
-            logger.info(f"대규모 다중 페이지 IP 데이터 수집 시작 (기간: {start_date} ~ {end_date})")
+            logger.info("대규모 다중 페이지 IP 데이터 수집 시작 (기간: {start_date} ~ {end_date})")
 
             all_ips = []
             max_pages = 99999  # 거의 완전 무제한으로 수집
             page = 0
 
             while page < max_pages:
-                logger.info(f"페이지 {page + 1}/{max_pages} 수집 중...")
+                logger.info("페이지 {page + 1}/{max_pages} 수집 중...")
 
                 # 수집 요청 데이터
                 data = {
@@ -163,13 +163,13 @@ class RegtechSimpleCollector:
 
                 # 요청 보내기
                 response = session.post(
-                    f"{self.base_url}/fcti/securityAdvisory/advisoryList",
+                    "{self.base_url}/fcti/securityAdvisory/advisoryList",
                     data=data,
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                 )
 
                 if response.status_code != 200:
-                    logger.error(f"데이터 요청 실패 (페이지 {page}): {response.status_code}")
+                    logger.error("데이터 요청 실패 (페이지 {page}): {response.status_code}")
                     break
 
                 # HTML 파싱
@@ -187,13 +187,13 @@ class RegtechSimpleCollector:
                 for table in tables:
                     caption = table.find("caption")
                     if caption and "요주의 IP" in caption.text:
-                        logger.info(f"페이지 {page + 1}에서 요주의 IP 테이블 발견")
+                        logger.info("페이지 {page + 1}에서 요주의 IP 테이블 발견")
 
                         tbody = table.find("tbody")
                         if tbody:
                             rows = tbody.find_all("tr")
                             logger.info(
-                                f"페이지 {page + 1} 테이블 행 수: {len(rows)} (페이지당 최대 9999개)"
+                                "페이지 {page + 1} 테이블 행 수: {len(rows)} (페이지당 최대 9999개)"
                             )
 
                             for row in rows:
@@ -214,18 +214,18 @@ class RegtechSimpleCollector:
                                             "source": "REGTECH",
                                         }
                                         page_ips.append(ip_data)
-                                        logger.debug(f"IP 추가: {ip} ({country})")
+                                        logger.debug("IP 추가: {ip} ({country})")
 
                             break
 
                 # 이 페이지에서 IP를 찾지 못했다면 더 이상 페이지가 없다고 가정
                 if not page_ips:
-                    logger.info(f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료")
+                    logger.info("페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료")
                     break
 
                 all_ips.extend(page_ips)
                 logger.info(
-                    f"페이지 {page + 1}에서 {len(page_ips)}개 IP 수집됨 (누적: {len(all_ips)}개)"
+                    "페이지 {page + 1}에서 {len(page_ips)}개 IP 수집됨 (누적: {len(all_ips)}개)"
                 )
 
                 page += 1
@@ -239,12 +239,12 @@ class RegtechSimpleCollector:
                     seen.add(ip_data["ip"])
 
             logger.info(
-                f"총 수집된 IP: {len(unique_ips)}개 (중복 제거 후, 페이지당 최대 9999개, 최대 {max_pages}페이지 탐색)"
+                "총 수집된 IP: {len(unique_ips)}개 (중복 제거 후, 페이지당 최대 9999개, 최대 {max_pages}페이지 탐색)"
             )
             return unique_ips
 
         except Exception as e:
-            logger.error(f"IP 수집 중 오류: {e}")
+            logger.error("IP 수집 중 오류: {e}")
             return []
 
     def _is_valid_ip(self, ip: str) -> bool:
@@ -277,7 +277,7 @@ class RegtechSimpleCollector:
         """결과 저장"""
         try:
             # JSON 파일로 저장
-            filename = f"regtech_simple_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            filename = "regtech_simple_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             filepath = os.path.join(self.regtech_dir, filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
@@ -294,13 +294,13 @@ class RegtechSimpleCollector:
                     indent=2,
                 )
 
-            logger.info(f"결과 저장: {filepath}")
+            logger.info("결과 저장: {filepath}")
 
             # 데이터베이스에도 저장 시도
             self._save_to_database(ips)
 
         except Exception as e:
-            logger.error(f"결과 저장 중 오류: {e}")
+            logger.error("결과 저장 중 오류: {e}")
 
     def _save_to_database(self, ips: List[Dict[str, Any]]):
         """데이터베이스 저장"""
@@ -331,14 +331,14 @@ class RegtechSimpleCollector:
                     formatted_data, source="REGTECH"
                 )
                 if result.get("success"):
-                    logger.info(f"데이터베이스 저장 성공: {result.get('imported_count', 0)}개")
+                    logger.info("데이터베이스 저장 성공: {result.get('imported_count', 0)}개")
                 else:
-                    logger.error(f"데이터베이스 저장 실패: {result.get('error')}")
+                    logger.error("데이터베이스 저장 실패: {result.get('error')}")
             else:
                 logger.warning("blacklist_manager를 찾을 수 없음")
 
         except Exception as e:
-            logger.error(f"데이터베이스 저장 중 오류: {e}")
+            logger.error("데이터베이스 저장 중 오류: {e}")
 
 
 # 독립 실행 지원

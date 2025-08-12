@@ -162,7 +162,7 @@ class ResponseBuilder:
         """
         response_data = {
             "success": False,
-            "error": f"{resource} not found",
+            "error": "{resource} not found",
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -306,7 +306,7 @@ class ResponseBuilder:
                     content,
                     mimetype="text/plain",
                     headers={
-                        "Content-Disposition": f'attachment; filename=export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+                        "Content-Disposition": 'attachment; filename=export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
                     },
                 ),
                 200,
@@ -319,6 +319,6 @@ class ResponseBuilder:
                 "export_data": data,
                 "format": format_type,
                 "exported_at": datetime.now().isoformat(),
-                "note": f"Format {format_type} not specifically supported, returned as JSON",
+                "note": "Format {format_type} not specifically supported, returned as JSON",
             }
             return jsonify(response_data), 200

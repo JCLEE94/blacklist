@@ -29,35 +29,35 @@ class IntegrationTester:
         self.test_results.append(result)
 
         status = "✅" if success else "❌"
-        print(f"{status} {test_name}: {message}")
+        print("{status} {test_name}: {message}")
         if details and not success:
-            print(f"   상세: {details}")
+            print("   상세: {details}")
 
     def test_system_health(self):
         """시스템 헬스체크 테스트"""
         try:
-            response = self.session.get(f"{self.base_url}/health", timeout=10)
+            response = self.session.get("{self.base_url}/health", timeout=10)
 
             if response.status_code == 200:
                 health_data = response.json()
                 status = health_data.get("status", "unknown")
 
                 if status == "healthy":
-                    self.log_test("시스템 헬스체크", True, f"시스템 정상 ({status})")
+                    self.log_test("시스템 헬스체크", True, "시스템 정상 ({status})")
                 else:
                     issues = health_data.get("issues", [])
-                    self.log_test("시스템 헬스체크", False, f"시스템 상태: {status}", issues)
+                    self.log_test("시스템 헬스체크", False, "시스템 상태: {status}", issues)
             else:
-                self.log_test("시스템 헬스체크", False, f"HTTP {response.status_code}")
+                self.log_test("시스템 헬스체크", False, "HTTP {response.status_code}")
 
         except Exception as e:
-            self.log_test("시스템 헬스체크", False, f"연결 실패: {e}")
+            self.log_test("시스템 헬스체크", False, "연결 실패: {e}")
 
     def test_collection_enable(self):
         """수집 시스템 활성화 테스트"""
         try:
             response = self.session.post(
-                f"{self.base_url}/api/collection/enable",
+                "{self.base_url}/api/collection/enable",
                 headers={"Content-Type": "application/json"},
                 json={},
                 timeout=30,
@@ -70,7 +70,7 @@ class IntegrationTester:
                     self.log_test(
                         "수집 시스템 활성화",
                         True,
-                        f"활성화 성공 ({cleared_items}개 항목 클리어)",
+                        "활성화 성공 ({cleared_items}개 항목 클리어)",
                     )
                 else:
                     self.log_test(
@@ -79,16 +79,16 @@ class IntegrationTester:
                         data.get("message", "Unknown error"),
                     )
             else:
-                self.log_test("수집 시스템 활성화", False, f"HTTP {response.status_code}")
+                self.log_test("수집 시스템 활성화", False, "HTTP {response.status_code}")
 
         except Exception as e:
-            self.log_test("수집 시스템 활성화", False, f"오류: {e}")
+            self.log_test("수집 시스템 활성화", False, "오류: {e}")
 
     def test_regtech_collection(self):
         """REGTECH 수집기 테스트"""
         try:
             response = self.session.post(
-                f"{self.base_url}/api/collection/regtech/trigger", timeout=60
+                "{self.base_url}/api/collection/regtech/trigger", timeout=60
             )
 
             if response.status_code in [
@@ -104,14 +104,14 @@ class IntegrationTester:
                 else:
                     # 로그인 실패는 예상된 결과 (자격증명 문제)
                     if "로그인" in message or "세션" in message:
-                        self.log_test("REGTECH 수집", True, f"예상된 로그인 실패: {message}")
+                        self.log_test("REGTECH 수집", True, "예상된 로그인 실패: {message}")
                     else:
                         self.log_test("REGTECH 수집", False, message)
             else:
-                self.log_test("REGTECH 수집", False, f"HTTP {response.status_code}")
+                self.log_test("REGTECH 수집", False, "HTTP {response.status_code}")
 
         except Exception as e:
-            self.log_test("REGTECH 수집", False, f"오류: {e}")
+            self.log_test("REGTECH 수집", False, "오류: {e}")
 
     def test_secudium_collection(self):
         """SECUDIUM 수집기 테스트 - 비활성화됨"""
@@ -129,38 +129,36 @@ class IntegrationTester:
         for endpoint, method, description in endpoints:
             try:
                 if method == "GET":
-                    response = self.session.get(
-                        f"{self.base_url}{endpoint}", timeout=10
-                    )
+                    response = self.session.get("{self.base_url}{endpoint}", timeout=10)
                 else:
                     response = self.session.post(
-                        f"{self.base_url}{endpoint}", timeout=10
+                        "{self.base_url}{endpoint}", timeout=10
                     )
 
                 if response.status_code == 200:
                     try:
                         data = response.json()
                         self.log_test(
-                            f"API 엔드포인트: {description}",
+                            "API 엔드포인트: {description}",
                             True,
-                            f"응답 정상 ({len(str(data))} bytes)",
+                            "응답 정상 ({len(str(data))} bytes)",
                         )
                     except:
                         # JSON이 아닌 응답 (예: 텍스트)
                         self.log_test(
-                            f"API 엔드포인트: {description}",
+                            "API 엔드포인트: {description}",
                             True,
-                            f"응답 정상 ({len(response.text)} bytes)",
+                            "응답 정상 ({len(response.text)} bytes)",
                         )
                 else:
                     self.log_test(
-                        f"API 엔드포인트: {description}",
+                        "API 엔드포인트: {description}",
                         False,
-                        f"HTTP {response.status_code}",
+                        "HTTP {response.status_code}",
                     )
 
             except Exception as e:
-                self.log_test(f"API 엔드포인트: {description}", False, f"오류: {e}")
+                self.log_test("API 엔드포인트: {description}", False, "오류: {e}")
 
     def test_performance(self):
         """성능 테스트"""
@@ -169,7 +167,7 @@ class IntegrationTester:
             times = []
             for i in range(5):
                 start_time = time.time()
-                response = self.session.get(f"{self.base_url}/api/stats", timeout=10)
+                response = self.session.get("{self.base_url}/api/stats", timeout=10)
                 end_time = time.time()
 
                 if response.status_code == 200:
@@ -178,14 +176,14 @@ class IntegrationTester:
             if times:
                 avg_time = sum(times) / len(times) * 1000  # ms로 변환
                 if avg_time < 500:  # 500ms 이하면 성공
-                    self.log_test("성능 테스트", True, f"평균 응답시간: {avg_time:.1f}ms")
+                    self.log_test("성능 테스트", True, "평균 응답시간: {avg_time:.1f}ms")
                 else:
-                    self.log_test("성능 테스트", False, f"응답시간 초과: {avg_time:.1f}ms")
+                    self.log_test("성능 테스트", False, "응답시간 초과: {avg_time:.1f}ms")
             else:
                 self.log_test("성능 테스트", False, "응답 시간 측정 실패")
 
         except Exception as e:
-            self.log_test("성능 테스트", False, f"오류: {e}")
+            self.log_test("성능 테스트", False, "오류: {e}")
 
     def run_all_tests(self):
         """모든 테스트 실행"""
@@ -215,17 +213,17 @@ class IntegrationTester:
         passed_tests = sum(1 for result in self.test_results if result["success"])
         failed_tests = total_tests - passed_tests
 
-        print(f"총 테스트: {total_tests}")
-        print(f"성공: {passed_tests}")
-        print(f"실패: {failed_tests}")
-        print(f"성공률: {(passed_tests/total_tests)*100:.1f}%")
-        print(f"실행시간: {end_time - start_time:.1f}초")
+        print("총 테스트: {total_tests}")
+        print("성공: {passed_tests}")
+        print("실패: {failed_tests}")
+        print("성공률: {(passed_tests/total_tests)*100:.1f}%")
+        print("실행시간: {end_time - start_time:.1f}초")
 
         if failed_tests > 0:
             print("\n❌ 실패한 테스트:")
             for result in self.test_results:
                 if not result["success"]:
-                    print(f"  - {result['test']}: {result['message']}")
+                    print("  - {result['test']}: {result['message']}")
 
         print("\n🎯 권장사항:")
         if failed_tests == 0:

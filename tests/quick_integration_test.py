@@ -18,15 +18,15 @@ LOCAL_URL = "http://localhost:8541"
 def print_test(test_name, passed, message=""):
     """Print test result with formatting"""
     status = "✅ PASS" if passed else "❌ FAIL"
-    print(f"{status} - {test_name}")
+    print("{status} - {test_name}")
     if message:
-        print(f"    {message}")
+        print("    {message}")
 
 
 def test_health_endpoint(base_url):
     """Test health endpoint"""
     try:
-        response = requests.get(f"{base_url}/health", timeout=10)
+        response = requests.get("{base_url}/health", timeout=10)
         data = response.json()
 
         passed = (
@@ -35,7 +35,7 @@ def test_health_endpoint(base_url):
             and "details" in data
         )
 
-        message = f"Status: {data.get('status')}, Total IPs: {data.get('details', {}).get('total_ips', 0)}"
+        message = "Status: {data.get('status')}, Total IPs: {data.get('details', {}).get('total_ips', 0)}"
         print_test("Health Endpoint", passed, message)
         return passed
     except Exception as e:
@@ -46,13 +46,13 @@ def test_health_endpoint(base_url):
 def test_collection_status(base_url):
     """Test collection status endpoint"""
     try:
-        response = requests.get(f"{base_url}/api/collection/status", timeout=10)
+        response = requests.get("{base_url}/api/collection/status", timeout=10)
         data = response.json()
 
         passed = response.status_code == 200
         enabled = data.get("collection_enabled", False)
 
-        message = f"Collection Enabled: {enabled}"
+        message = "Collection Enabled: {enabled}"
         print_test("Collection Status", passed, message)
         return passed
     except Exception as e:
@@ -63,13 +63,13 @@ def test_collection_status(base_url):
 def test_fortigate_endpoint(base_url):
     """Test FortiGate endpoint"""
     try:
-        response = requests.get(f"{base_url}/api/fortigate", timeout=10)
+        response = requests.get("{base_url}/api/fortigate", timeout=10)
         data = response.json()
 
         passed = response.status_code == 200 and "status" in data and "ipList" in data
 
         ip_count = len(data.get("ipList", []))
-        message = f"IP Count: {ip_count}"
+        message = "IP Count: {ip_count}"
         print_test("FortiGate Endpoint", passed, message)
         return passed
     except Exception as e:
@@ -82,7 +82,7 @@ def test_regtech_trigger(base_url):
     try:
         # Try to trigger collection
         response = requests.post(
-            f"{base_url}/api/collection/regtech/trigger",
+            "{base_url}/api/collection/regtech/trigger",
             json={"start_date": "20250101", "end_date": "20250117"},
             timeout=30,
         )
@@ -93,10 +93,10 @@ def test_regtech_trigger(base_url):
         if response.status_code == 200:
             data = response.json()
             message = (
-                f"Success: {data.get('success')}, Message: {data.get('message', '')}"
+                "Success: {data.get('success')}, Message: {data.get('message', '')}"
             )
         else:
-            message = f"Status Code: {response.status_code}"
+            message = "Status Code: {response.status_code}"
 
         print_test("REGTECH Trigger", passed, message)
         return passed
@@ -109,7 +109,7 @@ def test_secudium_disabled(base_url):
     """Test SECUDIUM is properly disabled"""
     try:
         response = requests.post(
-            f"{base_url}/api/collection/secudium/trigger", timeout=10
+            "{base_url}/api/collection/secudium/trigger", timeout=10
         )
 
         # Should return 503 Service Unavailable
@@ -117,7 +117,7 @@ def test_secudium_disabled(base_url):
         data = response.json() if response.text else {}
 
         message = (
-            f"Status: {response.status_code}, Disabled: {data.get('disabled', False)}"
+            "Status: {response.status_code}, Disabled: {data.get('disabled', False)}"
         )
         print_test("SECUDIUM Disabled", passed, message)
         return passed
@@ -142,7 +142,7 @@ def test_cookie_configuration():
         has_bearer = collector.cookies.get("regtech-va", "").startswith("Bearer")
 
         passed = all_present and has_bearer
-        message = f"Cookies configured: {all_present}, Bearer token: {has_bearer}"
+        message = "Cookies configured: {all_present}, Bearer token: {has_bearer}"
         print_test("Cookie Configuration", passed, message)
         return passed
     except ImportError:
@@ -159,8 +159,8 @@ def test_cookie_configuration():
 
 def run_integration_tests(base_url=BASE_URL):
     """Run all integration tests"""
-    print(f"\n🧪 Running Integration Tests for {base_url}")
-    print(f"📅 Test Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("\n🧪 Running Integration Tests for {base_url}")
+    print("📅 Test Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
     tests = [
@@ -187,10 +187,10 @@ def run_integration_tests(base_url=BASE_URL):
     total = len(results)
     success_rate = (passed / total * 100) if total > 0 else 0
 
-    print(f"Total Tests: {total}")
-    print(f"Passed: {passed}")
-    print(f"Failed: {total - passed}")
-    print(f"Success Rate: {success_rate:.1f}%")
+    print("Total Tests: {total}")
+    print("Passed: {passed}")
+    print("Failed: {total - passed}")
+    print("Success Rate: {success_rate:.1f}%")
 
     if success_rate == 100:
         print("\n🎉 All tests passed!")

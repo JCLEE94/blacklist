@@ -56,7 +56,7 @@ class BaseIPSource(ABC):
 
     def __init__(self, config: SourceConfig):
         self.config = config
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.logger = logging.getLogger("{__name__}.{self.__class__.__name__}")
         self._last_update = None
         self._error_count = 0
         self._max_errors = 5
@@ -118,7 +118,7 @@ class BaseIPSource(ABC):
 
         if self._error_count >= self._max_errors:
             self.logger.warning(
-                f"Source {self.source_name} disabled due to too many errors"
+                "Source {self.source_name} disabled due to too many errors"
             )
             return False
 
@@ -139,7 +139,7 @@ class BaseIPSource(ABC):
             return {"status": "skipped", "reason": "not_needed"}
 
         try:
-            self.logger.info(f"Updating data from {self.source_name}")
+            self.logger.info("Updating data from {self.source_name}")
 
             start_time = datetime.utcnow()
             entries = list(self.fetch_data())
@@ -158,13 +158,13 @@ class BaseIPSource(ABC):
             }
 
             self.logger.info(
-                f"Successfully fetched {len(entries)} entries from {self.source_name}"
+                "Successfully fetched {len(entries)} entries from {self.source_name}"
             )
             return result
 
         except Exception as e:
             self._error_count += 1
-            self.logger.error(f"Error updating from {self.source_name}: {str(e)}")
+            self.logger.error("Error updating from {self.source_name}: {str(e)}")
 
             return {
                 "status": "error",

@@ -55,7 +55,7 @@ def main():
     pipeline_id = "12345"  # 실제 파이프라인 ID로 교체
 
     result = troubleshooter.monitor_and_fix_pipeline(project_id, pipeline_id)
-    print(f"🎯 트러블슈팅 결과: {result}")
+    print("🎯 트러블슈팅 결과: {result}")
 
 
 if __name__ == "__main__":

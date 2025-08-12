@@ -74,10 +74,10 @@ class UnifiedBlacklistService(
                 if self.collection_manager:
                     self.collection_enabled = self.collection_manager.collection_enabled
             except Exception as e:
-                self.logger.warning(f"Collection Manager not available: {e}")
+                self.logger.warning("Collection Manager not available: {e}")
                 self.collection_manager = None
         except Exception as e:
-            self.logger.error(f"Failed to initialize core services: {e}")
+            self.logger.error("Failed to initialize core services: {e}")
             self.blacklist_manager = None
             self.cache = None
             self.collection_manager = None
@@ -90,7 +90,7 @@ class UnifiedBlacklistService(
             existing_logs = self._load_logs_from_db(100)
             self.collection_logs = existing_logs
         except Exception as e:
-            self.logger.warning(f"Failed to load existing logs: {e}")
+            self.logger.warning("Failed to load existing logs: {e}")
 
         # Mark as running for basic health checks
         self._running = True
@@ -118,14 +118,14 @@ class UnifiedBlacklistService(
                 self._components["regtech"] = RegtechCollector("data")
                 self.logger.info("✅ REGTECH 수집기 동기 초기화 완료")
         except Exception as e:
-            self.logger.error(f"동기 컴포넌트 초기화 실패: {e}")
+            self.logger.error("동기 컴포넌트 초기화 실패: {e}")
 
     async def _immediate_component_init(self):
         """즉시 컴포넌트 초기화"""
         try:
             await self._initialize_components()
         except Exception as e:
-            self.logger.error(f"즉시 컴포넌트 초기화 실패: {e}")
+            self.logger.error("즉시 컴포넌트 초기화 실패: {e}")
             # 동기적으로 시도
             self._sync_component_init()
 

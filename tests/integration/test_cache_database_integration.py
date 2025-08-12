@@ -136,7 +136,7 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
         # Generate large number of IPs
         large_ip_list = [
             {
-                "ip": f"10.0.{i//256}.{i%256}",
+                "ip": "10.0.{i//256}.{i%256}",
                 "source": "regtech",
                 "detection_date": datetime.now(),
                 "reason": "Bulk test",

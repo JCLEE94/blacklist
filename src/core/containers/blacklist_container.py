@@ -101,9 +101,9 @@ class BlacklistContainer(ServiceContainer):
                 ),
                 dependencies={},
             )
-            logger.info(f"Collection Manager registered with db_path: {db_path}")
+            logger.info("Collection Manager registered with db_path: {db_path}")
         except Exception as e:
-            logger.warning(f"Collection Manager registration failed: {e}")
+            logger.warning("Collection Manager registration failed: {e}")
 
         # REGTECH Collector - Only use the working Simple collector
         try:
@@ -119,7 +119,7 @@ class BlacklistContainer(ServiceContainer):
                 "Simple REGTECH Collector registered in container (working version)"
             )
         except Exception as e:
-            logger.error(f"Simple REGTECH Collector registration failed: {e}")
+            logger.error("Simple REGTECH Collector registration failed: {e}")
 
         # SECUDIUM Collector
         try:
@@ -133,7 +133,7 @@ class BlacklistContainer(ServiceContainer):
             )
             logger.info("SECUDIUM Collector registered in container")
         except Exception as e:
-            logger.warning(f"SECUDIUM Collector registration failed: {e}")
+            logger.warning("SECUDIUM Collector registration failed: {e}")
 
     def _configure_tracking_services(self):
         """추적 서비스 구성"""
@@ -150,12 +150,12 @@ class BlacklistContainer(ServiceContainer):
             )
             logger.info("Collection Progress Tracker registered in container")
         except Exception as e:
-            logger.warning(f"Progress Tracker registration failed: {e}")
+            logger.warning("Progress Tracker registration failed: {e}")
 
     def register_factory(self, name: str, factory: callable, singleton: bool = True):
         """팩토리 방식으로 서비스 등록"""
         # 가짜 타입 생성 (팩토리에서 만들어질 인스턴스의 타입)
-        mock_type = type(f"{name.title()}Service", (), {})
+        mock_type = type("{name.title()}Service", (), {})
         self.register(
             name=name, service_type=mock_type, factory=factory, singleton=singleton
         )
@@ -177,7 +177,7 @@ class BlacklistContainer(ServiceContainer):
             g.cache_manager = self.get("cache_manager")
             g.auth_manager = self.get("auth_manager")
         except Exception as e:
-            logger.warning(f"Failed to inject services to Flask g: {e}")
+            logger.warning("Failed to inject services to Flask g: {e}")
 
     def get_unified_service(self):
         """

@@ -75,7 +75,7 @@ class DatabaseStabilityManager:
             yield conn
 
         except Exception as e:
-            logger.error(f"Database connection error: {e}")
+            logger.error("Database connection error: {e}")
             if conn:
                 try:
                     conn.rollback()
@@ -92,7 +92,7 @@ class DatabaseStabilityManager:
                         else:
                             conn.close()
                 except Exception as e:
-                    logger.error(f"Error returning connection to pool: {e}")
+                    logger.error("Error returning connection to pool: {e}")
                     try:
                         conn.close()
                     except:
@@ -108,7 +108,7 @@ class DatabaseStabilityManager:
                 # 테이블 개수 확인
                 cursor = conn.execute(
                     """
-                    SELECT COUNT(*) FROM sqlite_master 
+                    SELECT COUNT(*) FROM sqlite_master
                     WHERE type='table' AND name NOT LIKE 'sqlite_%'
                 """
                 )
@@ -124,7 +124,7 @@ class DatabaseStabilityManager:
                 # 인덱스 상태 확인
                 cursor = conn.execute(
                     """
-                    SELECT COUNT(*) FROM sqlite_master 
+                    SELECT COUNT(*) FROM sqlite_master
                     WHERE type='index' AND name NOT LIKE 'sqlite_%'
                 """
                 )
@@ -139,7 +139,7 @@ class DatabaseStabilityManager:
                 }
 
         except Exception as e:
-            logger.error(f"Database health check failed: {e}")
+            logger.error("Database health check failed: {e}")
             return {
                 "status": "error",
                 "error": str(e),
@@ -168,14 +168,14 @@ class DatabaseStabilityManager:
                 r.ping()
                 return {"status": "healthy", "available": True}
             except Exception as e:
-                logger.debug(f"Redis not available: {e}")
+                logger.debug("Redis not available: {e}")
                 return {
                     "status": "degraded",
                     "available": False,
                     "error": "Using memory cache",
                 }
         except Exception as e:
-            logger.debug(f"Cache health check failed: {e}")
+            logger.debug("Cache health check failed: {e}")
             return {"status": "degraded", "available": False, "error": str(e)}
 
     def optimize_database(self) -> bool:
@@ -194,7 +194,7 @@ class DatabaseStabilityManager:
                 cutoff_date = datetime.now() - timedelta(days=30)
                 conn.execute(
                     """
-                    DELETE FROM system_logs 
+                    DELETE FROM system_logs
                     WHERE timestamp < ?
                 """,
                     (cutoff_date.isoformat(),),
@@ -204,7 +204,7 @@ class DatabaseStabilityManager:
                 cutoff_date = datetime.now() - timedelta(days=7)
                 conn.execute(
                     """
-                    DELETE FROM auth_attempts 
+                    DELETE FROM auth_attempts
                     WHERE attempt_time < ?
                 """,
                     (cutoff_date.isoformat(),),
@@ -215,7 +215,7 @@ class DatabaseStabilityManager:
                 return True
 
         except Exception as e:
-            logger.error(f"Database optimization failed: {e}")
+            logger.error("Database optimization failed: {e}")
             return False
 
 
@@ -249,18 +249,18 @@ class SystemMonitor:
             # 경고 메시지 생성
             warnings = []
             if cpu_percent > 80:
-                warnings.append(f"높은 CPU 사용률: {cpu_percent:.1f}%")
+                warnings.append("높은 CPU 사용률: {cpu_percent:.1f}%")
             if memory.percent > 80:
-                warnings.append(f"높은 메모리 사용률: {memory.percent:.1f}%")
+                warnings.append("높은 메모리 사용률: {memory.percent:.1f}%")
             if disk.percent > 80:
-                warnings.append(f"높은 디스크 사용률: {disk.percent:.1f}%")
+                warnings.append("높은 디스크 사용률: {disk.percent:.1f}%")
             if db_health["status"] != "healthy":
-                warnings.append(f"데이터베이스 상태 이상: {db_health.get('error', 'Unknown')}")
+                warnings.append("데이터베이스 상태 이상: {db_health.get('error', 'Unknown')}")
 
             # Get actual cache status
             cache_health = self._check_cache_status()
             if cache_health["status"] != "healthy":
-                warnings.append(f"캐시 상태 이상: {cache_health.get('error', 'Unknown')}")
+                warnings.append("캐시 상태 이상: {cache_health.get('error', 'Unknown')}")
 
             return SystemHealth(
                 cpu_percent=cpu_percent,
@@ -275,10 +275,8 @@ class SystemMonitor:
             )
 
         except Exception as e:
-            logger.error(f"System health check failed: {e}")
-            return SystemHealth(
-                database_status="error", warnings=[f"모니터링 오류: {str(e)}"]
-            )
+            logger.error("System health check failed: {e}")
+            return SystemHealth(database_status="error", warnings=["모니터링 오류: {str(e)}"])
 
     def _count_recent_errors(self) -> int:
         """최근 1시간 에러 수 계산"""
@@ -287,8 +285,8 @@ class SystemMonitor:
             with self.db_manager.get_connection() as conn:
                 cursor = conn.execute(
                     """
-                    SELECT COUNT(*) FROM system_logs 
-                    WHERE level IN ('ERROR', 'CRITICAL') 
+                    SELECT COUNT(*) FROM system_logs
+                    WHERE level IN ('ERROR', 'CRITICAL')
                     AND timestamp > ?
                 """,
                     (cutoff_time.isoformat(),),
@@ -303,8 +301,8 @@ class SystemMonitor:
             with self.db_manager.get_connection() as conn:
                 conn.execute(
                     """
-                    INSERT INTO system_logs 
-                    (level, message, module, additional_data) 
+                    INSERT INTO system_logs
+                    (level, message, module, additional_data)
                     VALUES (?, ?, ?, ?)
                 """,
                     (
@@ -315,7 +313,7 @@ class SystemMonitor:
                     ),
                 )
         except Exception as e:
-            logger.error(f"Failed to log system event: {e}")
+            logger.error("Failed to log system event: {e}")
 
     def start_monitoring(self, interval: int = 300):
         """백그라운드 모니터링 시작 (기본 5분 간격)"""
@@ -353,12 +351,12 @@ class SystemMonitor:
                     time.sleep(interval)
 
                 except Exception as e:
-                    logger.error(f"Monitoring loop error: {e}")
+                    logger.error("Monitoring loop error: {e}")
                     time.sleep(60)  # 에러 시 1분 대기
 
         self._monitor_thread = threading.Thread(target=monitor_loop, daemon=True)
         self._monitor_thread.start()
-        logger.info(f"System monitoring started (interval: {interval}s)")
+        logger.info("System monitoring started (interval: {interval}s)")
 
     def stop_monitoring(self):
         """모니터링 중지"""
@@ -375,7 +373,7 @@ class SystemMonitor:
         if health.database_status != "healthy":
             success = self.db_manager.optimize_database()
             self.log_system_event(
-                "INFO", f"Database optimization: {'success' if success else 'failed'}"
+                "INFO", "Database optimization: {'success' if success else 'failed'}"
             )
 
         # 메모리 정리 (가비지 컬렉션)
@@ -392,7 +390,7 @@ def safe_execute(func: Callable, default_return=None, log_errors: bool = True) -
         return func()
     except Exception as e:
         if log_errors:
-            logger.error(f"Safe execution failed for {func.__name__}: {e}")
+            logger.error("Safe execution failed for {func.__name__}: {e}")
         return default_return
 
 

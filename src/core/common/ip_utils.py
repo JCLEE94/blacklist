@@ -158,7 +158,7 @@ class IPUtils:
         """
         try:
             ip = ipaddress.ip_address(ip_address)
-            network = ipaddress.ip_network(f"{ip}/{prefix_length}", strict=False)
+            network = ipaddress.ip_network("{ip}/{prefix_length}", strict=False)
             return str(network)
         except ValueError:
             return None

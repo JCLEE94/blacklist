@@ -32,9 +32,9 @@ class ProtectionService:
         ).lower() in ("true", "1", "yes", "on")
 
         logger.info(
-            f"Protection Service initialized - restart_protection: "
-            f"{self.restart_protection_enabled}, "
-            f"force_disable: {self.force_disable_collection}"
+            "Protection Service initialized - restart_protection: "
+            "{self.restart_protection_enabled}, "
+            "force_disable: {self.force_disable_collection}"
         )
 
     def is_collection_safe_to_enable(self) -> Tuple[bool, str]:
@@ -52,7 +52,7 @@ class ProtectionService:
         # 3. 인증 시도 횟수 검사
         recent_failures = self._count_recent_auth_failures()
         if recent_failures >= 10:  # 기본 리밋
-            return False, f"최근 인증 실패 {recent_failures}회 초과 - 임시 차단"
+            return False, "최근 인증 실패 {recent_failures}회 초과 - 임시 차단"
 
         return True, "수집 활성화 안전"
 
@@ -75,7 +75,7 @@ class ProtectionService:
 
             if len(recent_restarts) >= 3:  # 10분 내 3회 이상 재시작
                 logger.warning(
-                    f"Rapid restart detected: {len(recent_restarts)} restarts in 10 minutes"
+                    "Rapid restart detected: {len(recent_restarts)} restarts in 10 minutes"
                 )
                 self._record_restart_protection_event()
                 return True
@@ -84,7 +84,7 @@ class ProtectionService:
             self._update_restart_data(len(recent_restarts) + 1)
 
         except Exception as e:
-            logger.error(f"Error detecting rapid restart: {e}")
+            logger.error("Error detecting rapid restart: {e}")
             # 오류 시 보수적으로 차단
             return True
 
@@ -97,7 +97,7 @@ class ProtectionService:
                 with open(self.restart_data_path, "r", encoding="utf-8") as f:
                     return json.load(f)
         except Exception as e:
-            logger.warning(f"Error loading restart data: {e}")
+            logger.warning("Error loading restart data: {e}")
 
         return {"restart_count": 0, "restart_timestamps": [], "last_restart": None}
 
@@ -125,7 +125,7 @@ class ProtectionService:
                 json.dump(restart_data, f, ensure_ascii=False, indent=2)
 
         except Exception as e:
-            logger.error(f"Error updating restart data: {e}")
+            logger.error("Error updating restart data: {e}")
 
     def _record_restart_protection_event(self):
         """재시작 보호 이벤트 기록"""
@@ -161,7 +161,7 @@ class ProtectionService:
                 logger.info("Restart protection event recorded")
 
         except Exception as e:
-            logger.error(f"Error recording protection event: {e}")
+            logger.error("Error recording protection event: {e}")
 
     def _count_recent_auth_failures(self, hours: int = 1) -> int:
         """최근 인증 실패 횟수 조회"""
@@ -184,7 +184,7 @@ class ProtectionService:
                 return row[0] if row else 0
 
         except Exception as e:
-            logger.error(f"Error counting recent auth failures: {e}")
+            logger.error("Error counting recent auth failures: {e}")
             return 0
 
     def reset_protection_state(self) -> Dict[str, bool]:
@@ -207,7 +207,7 @@ class ProtectionService:
                 logger.info("Auth failure history cleared")
 
         except Exception as e:
-            logger.error(f"Error resetting protection state: {e}")
+            logger.error("Error resetting protection state: {e}")
 
         return result
 
@@ -244,12 +244,12 @@ class ProtectionService:
                 json.dump(bypass_data, f, ensure_ascii=False, indent=2)
 
             logger.warning(
-                f"Protection bypass created: {reason} (expires in {duration_minutes} minutes)"
+                "Protection bypass created: {reason} (expires in {duration_minutes} minutes)"
             )
             return {"success": True, "bypass_data": bypass_data}
 
         except Exception as e:
-            logger.error(f"Error creating protection bypass: {e}")
+            logger.error("Error creating protection bypass: {e}")
             return {"success": False, "error": str(e)}
 
     def check_protection_bypass(self) -> Optional[Dict]:
@@ -272,5 +272,5 @@ class ProtectionService:
             return bypass_data
 
         except Exception as e:
-            logger.error(f"Error checking protection bypass: {e}")
+            logger.error("Error checking protection bypass: {e}")
             return None

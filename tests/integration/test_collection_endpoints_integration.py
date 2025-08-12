@@ -268,7 +268,7 @@ class TestCollectionEndpointsIntegration:
             t.join(timeout=5)
 
         # Verify results
-        assert len(errors) == 0, f"Errors occurred: {errors}"
+        assert len(errors) == 0, "Errors occurred: {errors}"
         assert len(results) == 10
         assert all(status == 200 for status in results)
 

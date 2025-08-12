@@ -45,7 +45,7 @@ def cached(cache, ttl=300, key_prefix=""):
             # Generate cache key
             args_str = str(args) if args else ""
             kwargs_str = str(sorted(kwargs.items())) if kwargs else ""
-            cache_key = f"{key_prefix}:{func.__name__}:{hash(args_str + kwargs_str)}"
+            cache_key = "{key_prefix}:{func.__name__}:{hash(args_str + kwargs_str)}"
 
             # Try to get from cache
             if cache:
@@ -54,7 +54,7 @@ def cached(cache, ttl=300, key_prefix=""):
                     if cached_result is not None:
                         return cached_result
                 except Exception as e:
-                    logger.warning(f"Cache get failed: {e}")
+                    logger.warning("Cache get failed: {e}")
 
             # Execute function
             result = func(*args, **kwargs)
@@ -64,7 +64,7 @@ def cached(cache, ttl=300, key_prefix=""):
                 try:
                     cache.set(cache_key, result, ttl=ttl)
                 except Exception as e:
-                    logger.warning(f"Cache set failed: {e}")
+                    logger.warning("Cache set failed: {e}")
 
             return result
 

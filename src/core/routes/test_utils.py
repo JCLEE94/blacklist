@@ -87,7 +87,7 @@ def _test_collection_endpoints():
             response = client.get("/api/collection/status")
             assert (
                 response.status_code == 200
-            ), f"Expected 200, got {response.status_code}"
+            ), "Expected 200, got {response.status_code}"
             data = response.get_json()
             assert data["enabled"] is True, "Collection should always be enabled"
             assert data["status"] == "active", "Status should be active"
@@ -101,7 +101,7 @@ def _test_collection_endpoints():
             )
             assert (
                 response.status_code == 200
-            ), f"Expected 200, got {response.status_code}"
+            ), "Expected 200, got {response.status_code}"
             data = response.get_json()
             assert data["success"] is True, "Enable should always succeed"
             assert data["collection_enabled"] is True, "Should be enabled"
@@ -115,7 +115,7 @@ def _test_collection_endpoints():
             )
             assert (
                 response.status_code == 200
-            ), f"Expected 200, got {response.status_code}"
+            ), "Expected 200, got {response.status_code}"
             data = response.get_json()
             assert data["success"] is True, "REGTECH trigger should succeed"
             assert data["source"] == "regtech", "Source should be regtech"
@@ -129,7 +129,7 @@ def _test_collection_endpoints():
             )
             assert (
                 response.status_code == 503
-            ), f"Expected 503, got {response.status_code}"
+            ), "Expected 503, got {response.status_code}"
             data = response.get_json()
             assert data["success"] is False, "SECUDIUM should be disabled"
             assert data["disabled"] is True, "Should indicate disabled status"
@@ -238,14 +238,14 @@ def _test_concurrent_requests():
                 t.join()
 
             # Verify results
-            assert len(results) == 5, f"Expected 5 results, got {len(results)}"
-            assert all(r == 200 for r in results), f"Some requests failed: {results}"
+            assert len(results) == 5, "Expected 5 results, got {len(results)}"
+            assert all(r == 200 for r in results), "Some requests failed: {results}"
             assert (
                 len(concurrent_calls["errors"]) == 0
-            ), f"Errors occurred: {concurrent_calls['errors']}"
+            ), "Errors occurred: {concurrent_calls['errors']}"
 
             logger.debug(
-                f"Max concurrent requests: {concurrent_calls['max_concurrent']}"
+                "Max concurrent requests: {concurrent_calls['max_concurrent']}"
             )
             logger.debug("All requests completed successfully")
 
@@ -271,7 +271,7 @@ def _test_statistics_integration():
             # 1. 기본 통계 API 테스트
             response = client.get("/api/stats")
             if response.status_code != 200:
-                print(f"  ⚠️ Stats API 비활성화 또는 오류: {response.status_code}")
+                print("  ⚠️ Stats API 비활성화 또는 오류: {response.status_code}")
                 return True  # Skip test if API not available
 
             stats_data = response.get_json()
@@ -281,13 +281,13 @@ def _test_statistics_integration():
             total_ips = stats_data["total_ips"]
             active_ips = stats_data["active_ips"]
 
-            print(f"    - 총 IP 수: {total_ips}")
-            print(f"    - 활성 IP 수: {active_ips}")
+            print("    - 총 IP 수: {total_ips}")
+            print("    - 활성 IP 수: {active_ips}")
 
             print("  ✓ 모든 통계 데이터가 일관성 있게 반환됨")
 
     except Exception as e:
-        print(f"❌ 통계 통합 테스트 실패: {e}")
+        print("❌ 통계 통합 테스트 실패: {e}")
         import traceback
 
         traceback.print_exc()
@@ -324,8 +324,8 @@ def _test_database_api_consistency():
 
         conn.close()
 
-        print(f"  ✓ DB 활성 IP 수: {db_active_count}")
-        print(f"  ✓ DB 소스별 카운트: {db_sources}")
+        print("  ✓ DB 활성 IP 수: {db_active_count}")
+        print("  ✓ DB 소스별 카운트: {db_sources}")
 
         # 2. API 응답과 비교
         test_app = Flask(__name__)
@@ -340,19 +340,19 @@ def _test_database_api_consistency():
             if response.status_code == 200:
                 stats_data = response.get_json()
                 api_active_count = stats_data.get("active_ips", 0)
-                print(f"  ✓ API 활성 IP 수: {api_active_count}")
+                print("  ✓ API 활성 IP 수: {api_active_count}")
 
                 # 3. 일관성 검증
                 if db_active_count != api_active_count:
                     print(
-                        f"  ⚠️ 활성 IP 수 차이: DB={db_active_count}, API={api_active_count}"
+                        "  ⚠️ 활성 IP 수 차이: DB={db_active_count}, API={api_active_count}"
                     )
                     # 소차이는 허용 (캐시, 업데이트 타이밍 등)
 
                 print("  ✓ 데이터베이스와 API가 일관된 데이터 반환")
 
     except Exception as e:
-        print(f"❌ 데이터베이스-API 일관성 테스트 실패: {e}")
+        print("❌ 데이터베이스-API 일관성 테스트 실패: {e}")
         import traceback
 
         traceback.print_exc()
@@ -386,7 +386,7 @@ def _test_collection_data_flow():
             if response.status_code == 200:
                 before_stats = response.get_json()
                 before_count = before_stats.get("total_ips", 0)
-                print(f"  ✓ 수집 전 IP 수: {before_count}")
+                print("  ✓ 수집 전 IP 수: {before_count}")
 
             # 3. 활성 IP 목록 API 테스트
             print("  ✓ 활성 IP 목록 API 테스트...")
@@ -410,7 +410,7 @@ def _test_collection_data_flow():
                         [line for line in text_data.split("\n") if line.strip()]
                     )
 
-                print(f"  ✓ 활성 IP 목록 크기: {active_count}")
+                print("  ✓ 활성 IP 목록 크기: {active_count}")
 
                 # 4. FortiGate 형식 API 테스트
                 print("  ✓ FortiGate API 형식 테스트...")
@@ -420,10 +420,10 @@ def _test_collection_data_flow():
                     if isinstance(fortigate_data, dict):
                         print("  ✓ FortiGate 형식 정상 반환")
 
-                print(f"  ✓ 모든 API가 일관된 데이터 반환")
+                print("  ✓ 모든 API가 일관된 데이터 반환")
 
     except Exception as e:
-        print(f"❌ 수집 데이터 플로우 테스트 실패: {e}")
+        print("❌ 수집 데이터 플로우 테스트 실패: {e}")
         import traceback
 
         traceback.print_exc()
@@ -461,7 +461,7 @@ def run_all_tests():
             return False
 
     except Exception as e:
-        print(f"\n❌ Test execution failed: {e}")
+        print("\n❌ Test execution failed: {e}")
         import traceback
 
         traceback.print_exc()

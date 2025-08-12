@@ -116,16 +116,16 @@ def update_settings_bulk():
                 updated_count += 1
 
             except Exception as e:
-                logger.warning(f"Failed to update setting {key}: {e}")
+                logger.warning("Failed to update setting {key}: {e}")
 
         return jsonify(
             {
                 "success": True,
-                "message": f"{updated_count} settings updated successfully",
+                "message": "{updated_count} settings updated successfully",
             }
         )
     except Exception as e:
-        logger.error(f"Failed to update settings: {e}")
+        logger.error("Failed to update settings: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -147,10 +147,10 @@ def update_individual_setting(key: str):
         settings_manager.set_setting(key, value, setting_type, category)
 
         return jsonify(
-            {"success": True, "message": f"Setting {key} updated successfully"}
+            {"success": True, "message": "Setting {key} updated successfully"}
         )
     except Exception as e:
-        logger.error(f"Failed to update setting {key}: {e}")
+        logger.error("Failed to update setting {key}: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -193,11 +193,11 @@ def save_settings():
 
                     settings_manager.set_setting(key, value, setting_type, category)
                     logger.info(
-                        f"설정 저장됨: {key} = {'***' if 'password' in key else value}"
+                        "설정 저장됨: {key} = {'***' if 'password' in key else value}"
                     )
 
                 except Exception as e:
-                    logger.warning(f"설정 저장 실패 {key}: {e}")
+                    logger.warning("설정 저장 실패 {key}: {e}")
 
         # 캐시 클리어 - 설정 변경 후 즉시 반영되도록
         try:
@@ -207,13 +207,13 @@ def save_settings():
                 cache_manager.clear()
                 logger.info("설정 변경 후 캐시가 클리어되었습니다")
         except Exception as cache_error:
-            logger.warning(f"캐시 클리어 실패: {cache_error}")
+            logger.warning("캐시 클리어 실패: {cache_error}")
 
         return jsonify({"success": True, "message": "설정이 성공적으로 저장되었습니다."})
 
     except Exception as e:
-        logger.error(f"설정 저장 오류: {e}")
-        return jsonify({"success": False, "message": f"설정 저장 실패: {str(e)}"}), 500
+        logger.error("설정 저장 오류: {e}")
+        return jsonify({"success": False, "message": "설정 저장 실패: {str(e)}"}), 500
 
 
 @api_settings_bp.route("/api/settings/reset", methods=["POST"])
@@ -241,5 +241,5 @@ def reset_all_settings():
             {"success": True, "message": "All settings reset to defaults successfully"}
         )
     except Exception as e:
-        logger.error(f"Failed to reset settings: {e}")
+        logger.error("Failed to reset settings: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

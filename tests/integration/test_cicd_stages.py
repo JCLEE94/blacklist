@@ -81,9 +81,9 @@ class BuildStage(PipelineStage):
     def run(self):
         sha = self._get_commit_sha()
         self.image_tags = [
-            f"{self.config.registry}/{self.config.image_name}:latest",
-            f"{self.config.registry}/{self.config.image_name}:sha-{sha[:7]}",
-            f"{self.config.registry}/{self.config.image_name}:date-{datetime.datetime.now().strftime('%Y%m%d')}",
+            "{self.config.registry}/{self.config.image_name}:latest",
+            "{self.config.registry}/{self.config.image_name}:sha-{sha[:7]}",
+            "{self.config.registry}/{self.config.image_name}:date-{datetime.datetime.now().strftime('%Y%m%d')}",
         ]
         return True
 

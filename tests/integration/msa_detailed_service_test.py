@@ -47,14 +47,14 @@ class MSAServiceTester:
         tests = [
             ServiceTest(
                 name="Collection Health",
-                url=f"{base_url}/health",
+                url="{base_url}/health",
                 expected_status=200,
                 description="Collection Service 헬스체크",
                 expected_keys=["status", "service"],
             ),
             ServiceTest(
                 name="Collection Status",
-                url=f"{base_url}/api/v1/status",
+                url="{base_url}/api/v1/status",
                 expected_status=200,
                 description="수집 상태 조회",
                 expected_keys=["collection_enabled", "sources"],
@@ -72,27 +72,27 @@ class MSAServiceTester:
         tests = [
             ServiceTest(
                 name="Blacklist Health",
-                url=f"{base_url}/health",
+                url="{base_url}/health",
                 expected_status=200,
                 description="Blacklist Service 헬스체크",
                 expected_keys=["status", "service"],
             ),
             ServiceTest(
                 name="Active IPs",
-                url=f"{base_url}/api/v1/active-ips",
+                url="{base_url}/api/v1/active-ips",
                 expected_status=200,
                 description="활성 IP 목록 조회",
             ),
             ServiceTest(
                 name="IP Statistics",
-                url=f"{base_url}/api/v1/statistics",
+                url="{base_url}/api/v1/statistics",
                 expected_status=200,
                 description="IP 통계 조회",
                 expected_keys=["total_ips", "by_source"],
             ),
             ServiceTest(
                 name="FortiGate Format",
-                url=f"{base_url}/api/v1/fortigate",
+                url="{base_url}/api/v1/fortigate",
                 expected_status=200,
                 description="FortiGate 형식 조회",
             ),
@@ -109,32 +109,32 @@ class MSAServiceTester:
         tests = [
             ServiceTest(
                 name="Analytics Health",
-                url=f"{base_url}/health",
+                url="{base_url}/health",
                 expected_status=200,
                 description="Analytics Service 헬스체크",
                 expected_keys=["status", "service"],
             ),
             ServiceTest(
                 name="Realtime Metrics",
-                url=f"{base_url}/api/v1/realtime",
+                url="{base_url}/api/v1/realtime",
                 expected_status=200,
                 description="실시간 메트릭 조회",
             ),
             ServiceTest(
                 name="Trends Analysis",
-                url=f"{base_url}/api/v1/trends",
+                url="{base_url}/api/v1/trends",
                 expected_status=200,
                 description="트렌드 분석 조회",
             ),
             ServiceTest(
                 name="Geographic Distribution",
-                url=f"{base_url}/api/v1/geographic",
+                url="{base_url}/api/v1/geographic",
                 expected_status=200,
                 description="지리적 분포 조회",
             ),
             ServiceTest(
                 name="Threat Types",
-                url=f"{base_url}/api/v1/threat-types",
+                url="{base_url}/api/v1/threat-types",
                 expected_status=200,
                 description="위협 유형 분석",
             ),
@@ -151,7 +151,7 @@ class MSAServiceTester:
         tests = [
             ServiceTest(
                 name="Gateway Health",
-                url=f"{base_url}/health",
+                url="{base_url}/health",
                 expected_status=200,
                 description="API Gateway 헬스체크",
                 expected_keys=["status", "service", "services"],
@@ -159,39 +159,39 @@ class MSAServiceTester:
             # Collection 라우팅
             ServiceTest(
                 name="Collection via Gateway",
-                url=f"{base_url}/api/v1/collection/status",
+                url="{base_url}/api/v1/collection/status",
                 expected_status=200,
                 description="Gateway를 통한 Collection 접근",
             ),
             # Blacklist 라우팅
             ServiceTest(
                 name="Blacklist Active via Gateway",
-                url=f"{base_url}/api/v1/blacklist/active",
+                url="{base_url}/api/v1/blacklist/active",
                 expected_status=200,
                 description="Gateway를 통한 Blacklist 활성 IP 접근",
             ),
             ServiceTest(
                 name="Blacklist Statistics via Gateway",
-                url=f"{base_url}/api/v1/blacklist/statistics",
+                url="{base_url}/api/v1/blacklist/statistics",
                 expected_status=200,
                 description="Gateway를 통한 Blacklist 통계 접근",
             ),
             ServiceTest(
                 name="FortiGate via Gateway",
-                url=f"{base_url}/api/v1/blacklist/fortigate",
+                url="{base_url}/api/v1/blacklist/fortigate",
                 expected_status=200,
                 description="Gateway를 통한 FortiGate 형식 접근",
             ),
             # Analytics 라우팅
             ServiceTest(
                 name="Analytics Realtime via Gateway",
-                url=f"{base_url}/api/v1/analytics/realtime",
+                url="{base_url}/api/v1/analytics/realtime",
                 expected_status=200,
                 description="Gateway를 통한 Analytics 실시간 메트릭 접근",
             ),
             ServiceTest(
                 name="Analytics Trends via Gateway",
-                url=f"{base_url}/api/v1/analytics/trends",
+                url="{base_url}/api/v1/analytics/trends",
                 expected_status=200,
                 description="Gateway를 통한 Analytics 트렌드 접근",
             ),
@@ -205,14 +205,14 @@ class MSAServiceTester:
         print("\n⚡ 서비스 성능 테스트 중...")
 
         performance_tests = [
-            ("API Gateway", f"{self.services['api_gateway']}/health", 0.1),
+            ("API Gateway", "{self.services['api_gateway']}/health", 0.1),
             (
                 "Collection Service",
-                f"{self.services['collection_service']}/health",
+                "{self.services['collection_service']}/health",
                 0.1,
             ),
-            ("Blacklist Service", f"{self.services['blacklist_service']}/health", 0.1),
-            ("Analytics Service", f"{self.services['analytics_service']}/health", 0.1),
+            ("Blacklist Service", "{self.services['blacklist_service']}/health", 0.1),
+            ("Analytics Service", "{self.services['analytics_service']}/health", 0.1),
         ]
 
         for service_name, url, target_time in performance_tests:
@@ -226,13 +226,13 @@ class MSAServiceTester:
         db_tests = [
             ServiceTest(
                 name="DB - Statistics Query",
-                url=f"{self.services['blacklist_service']}/api/v1/statistics",
+                url="{self.services['blacklist_service']}/api/v1/statistics",
                 expected_status=200,
                 description="데이터베이스 통계 쿼리 테스트",
             ),
             ServiceTest(
                 name="DB - Active IPs Query",
-                url=f"{self.services['blacklist_service']}/api/v1/active-ips",
+                url="{self.services['blacklist_service']}/api/v1/active-ips",
                 expected_status=200,
                 description="데이터베이스 활성 IP 쿼리 테스트",
             ),
@@ -251,19 +251,19 @@ class MSAServiceTester:
         inter_service_tests = [
             ServiceTest(
                 name="Gateway → Collection",
-                url=f"{gateway_url}/api/v1/collection/status",
+                url="{gateway_url}/api/v1/collection/status",
                 expected_status=200,
                 description="Gateway에서 Collection Service로의 라우팅",
             ),
             ServiceTest(
                 name="Gateway → Blacklist",
-                url=f"{gateway_url}/api/v1/blacklist/statistics",
+                url="{gateway_url}/api/v1/blacklist/statistics",
                 expected_status=200,
                 description="Gateway에서 Blacklist Service로의 라우팅",
             ),
             ServiceTest(
                 name="Gateway → Analytics",
-                url=f"{gateway_url}/api/v1/analytics/realtime",
+                url="{gateway_url}/api/v1/analytics/realtime",
                 expected_status=200,
                 description="Gateway에서 Analytics Service로의 라우팅",
             ),
@@ -307,7 +307,7 @@ class MSAServiceTester:
                             ]
                             if missing_keys:
                                 result["success"] = False
-                                result["error"] = f"Missing keys: {missing_keys}"
+                                result["error"] = "Missing keys: {missing_keys}"
                     except json.JSONDecodeError:
                         # JSON이 아닌 응답도 허용 (예: plain text)
                         result["data"] = (
@@ -318,17 +318,17 @@ class MSAServiceTester:
                 else:
                     result[
                         "error"
-                    ] = f"Status {response.status_code}: {response.text[:200]}"
+                    ] = "Status {response.status_code}: {response.text[:200]}"
 
                 self.results.append(result)
 
                 status_emoji = "✅" if success else "❌"
                 print(
-                    f"   {status_emoji} {test.name}: {response.status_code} ({response_time:.3f}s)"
+                    "   {status_emoji} {test.name}: {response.status_code} ({response_time:.3f}s)"
                 )
 
                 if not success:
-                    print(f"      오류: {result['error']}")
+                    print("      오류: {result['error']}")
 
         except Exception as e:
             response_time = time.time() - start_time
@@ -344,8 +344,8 @@ class MSAServiceTester:
                 "data": None,
             }
             self.results.append(result)
-            print(f"   ❌ {test.name}: 연결 실패 ({response_time:.3f}s)")
-            print(f"      오류: {str(e)}")
+            print("   ❌ {test.name}: 연결 실패 ({response_time:.3f}s)")
+            print("      오류: {str(e)}")
 
     async def _test_performance(self, service_name: str, url: str, target_time: float):
         """성능 테스트"""
@@ -370,9 +370,9 @@ class MSAServiceTester:
             success = avg_time <= target_time
 
             result = {
-                "name": f"{service_name} Performance",
+                "name": "{service_name} Performance",
                 "url": url,
-                "description": f"{service_name} 성능 테스트 (목표: {target_time}s)",
+                "description": "{service_name} 성능 테스트 (목표: {target_time}s)",
                 "expected_status": 200,
                 "actual_status": 200,
                 "response_time": avg_time,
@@ -380,7 +380,7 @@ class MSAServiceTester:
                 "error": (
                     None
                     if success
-                    else f"Target: {target_time}s, Actual: {avg_time:.3f}s"
+                    else "Target: {target_time}s, Actual: {avg_time:.3f}s"
                 ),
                 "data": {
                     "avg_time": avg_time,
@@ -395,13 +395,13 @@ class MSAServiceTester:
 
             status_emoji = "✅" if success else "❌"
             print(
-                f"   {status_emoji} {service_name} Performance: {avg_time:.3f}s (목표: {target_time}s)"
+                "   {status_emoji} {service_name} Performance: {avg_time:.3f}s (목표: {target_time}s)"
             )
         else:
             result = {
-                "name": f"{service_name} Performance",
+                "name": "{service_name} Performance",
                 "url": url,
-                "description": f"{service_name} 성능 테스트",
+                "description": "{service_name} 성능 테스트",
                 "expected_status": 200,
                 "actual_status": 0,
                 "response_time": 0,
@@ -410,7 +410,7 @@ class MSAServiceTester:
                 "data": None,
             }
             self.results.append(result)
-            print(f"   ❌ {service_name} Performance: 테스트 실패")
+            print("   ❌ {service_name} Performance: 테스트 실패")
 
     async def run_all_tests(self):
         """모든 테스트 실행"""
@@ -440,17 +440,17 @@ class MSAServiceTester:
         print("\n" + "=" * 80)
         print("📊 MSA 상세 테스트 결과 요약")
         print("=" * 80)
-        print(f"• 총 테스트: {total_tests}개")
-        print(f"• 성공: {passed_tests}개")
-        print(f"• 실패: {failed_tests}개")
-        print(f"• 성공률: {(passed_tests/total_tests*100):.1f}%")
-        print(f"• 총 실행 시간: {total_time:.2f}초")
+        print("• 총 테스트: {total_tests}개")
+        print("• 성공: {passed_tests}개")
+        print("• 실패: {failed_tests}개")
+        print("• 성공률: {(passed_tests/total_tests*100):.1f}%")
+        print("• 총 실행 시간: {total_time:.2f}초")
 
         if failed_tests > 0:
-            print(f"\n❌ 실패한 테스트:")
+            print("\n❌ 실패한 테스트:")
             for result in self.results:
                 if not result["success"]:
-                    print(f"   • {result['name']}: {result['error']}")
+                    print("   • {result['name']}: {result['error']}")
 
         # 성능 분석
         performance_results = [
@@ -460,7 +460,7 @@ class MSAServiceTester:
             avg_response_time = sum(
                 r["response_time"] for r in performance_results
             ) / len(performance_results)
-            print(f"\n⚡ 평균 응답 시간: {avg_response_time:.3f}초")
+            print("\n⚡ 평균 응답 시간: {avg_response_time:.3f}초")
 
         print("\n" + "=" * 80)
 
@@ -468,7 +468,7 @@ class MSAServiceTester:
             print("🎉 모든 MSA 서비스가 정상적으로 작동합니다!")
             return True
         else:
-            print(f"⚠️  {failed_tests}개의 테스트가 실패했습니다. 시스템 점검이 필요합니다.")
+            print("⚠️  {failed_tests}개의 테스트가 실패했습니다. 시스템 점검이 필요합니다.")
             return False
 
 
@@ -484,7 +484,7 @@ async def main():
         print("\n⏹️  테스트가 사용자에 의해 중단되었습니다.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n💥 테스트 실행 중 오류 발생: {e}")
+        print("\n💥 테스트 실행 중 오류 발생: {e}")
         sys.exit(1)
 
 

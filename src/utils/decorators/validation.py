@@ -43,7 +43,7 @@ def unified_validation(
                     value = request.args.get(param)
 
                     if requirements.get("required", False) and not value:
-                        errors.append(f"Required parameter '{param}' missing")
+                        errors.append("Required parameter '{param}' missing")
 
                     if value and "type" in requirements:
                         try:
@@ -53,7 +53,7 @@ def unified_validation(
                                 float(value)
                         except ValueError:
                             errors.append(
-                                f"Parameter '{param}' must be {requirements['type']}"
+                                "Parameter '{param}' must be {requirements['type']}"
                             )
 
             # Validate headers
@@ -62,7 +62,7 @@ def unified_validation(
                     value = request.headers.get(header)
 
                     if requirements.get("required", False) and not value:
-                        errors.append(f"Required header '{header}' missing")
+                        errors.append("Required header '{header}' missing")
 
             # Return validation errors
             if errors:

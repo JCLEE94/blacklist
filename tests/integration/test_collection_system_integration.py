@@ -156,12 +156,12 @@ def test_regtech_collector_mock_integration():
             # Collect data
             ips = collector.collect_ips()
 
-            assert len(ips) == 2, f"Expected 2 IPs, got {len(ips)}"
+            assert len(ips) == 2, "Expected 2 IPs, got {len(ips)}"
             assert ips[0]["ip"] == "192.168.1.1"
             assert ips[0]["source"] == "REGTECH"
             assert ips[1]["ip"] == "10.0.0.1"
 
-            print(f"✅ Mock data collection test passed ({len(ips)} IPs)")
+            print("✅ Mock data collection test passed ({len(ips)} IPs)")
 
             # Verify session was used correctly
             assert session_instance.get.called
@@ -216,7 +216,13 @@ def test_data_lifecycle_integration():
             expires_at = detection_date + timedelta(days=90)
             cursor.execute(
                 """
-                INSERT INTO blacklist_ip (ip, source, detection_date, expires_at, is_active)
+                INSERT INTO blacklist_ip (
+                    ip,
+                    source,
+                    detection_date,
+                    expires_at,
+                    is_active
+                )
                 VALUES (?, ?, ?, ?, ?)
             """,
                 (ip, source, detection_date, expires_at, 1),
@@ -227,7 +233,7 @@ def test_data_lifecycle_integration():
         # 2. Test data retrieval
         cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
         total_count = cursor.fetchone()[0]
-        assert total_count == 3, f"Expected 3 IPs, got {total_count}"
+        assert total_count == 3, "Expected 3 IPs, got {total_count}"
 
         print("✅ Data insertion test passed")
 
@@ -235,8 +241,8 @@ def test_data_lifecycle_integration():
         # Update expired records
         cursor.execute(
             """
-            UPDATE blacklist_ip 
-            SET is_active = 0 
+            UPDATE blacklist_ip
+            SET is_active = 0
             WHERE expires_at < ?
         """,
             (now,),
@@ -244,7 +250,7 @@ def test_data_lifecycle_integration():
 
         cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1")
         active_count = cursor.fetchone()[0]
-        assert active_count == 2, f"Expected 2 active IPs, got {active_count}"
+        assert active_count == 2, "Expected 2 active IPs, got {active_count}"
 
         print("✅ Expiration handling test passed")
 
@@ -389,16 +395,16 @@ def run_all_collection_integration_tests():
                 passed += 1
             else:
                 failed += 1
-                print(f"❌ {test_name} test failed")
+                print("❌ {test_name} test failed")
         except Exception as e:
             failed += 1
-            print(f"❌ {test_name} test failed with error: {e}")
+            print("❌ {test_name} test failed with error: {e}")
             import traceback
 
             traceback.print_exc()
 
     print("\n" + "=" * 60)
-    print(f"📊 Test Results: {passed} passed, {failed} failed")
+    print("📊 Test Results: {passed} passed, {failed} failed")
     print("=" * 60)
 
     return failed == 0

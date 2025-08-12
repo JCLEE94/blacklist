@@ -34,7 +34,7 @@ class CollectionServiceMixin:
                 else:
                     total_failed += 1
             except Exception as e:
-                self.logger.error(f"REGTECH 수집 실패: {e}")
+                self.logger.error("REGTECH 수집 실패: {e}")
                 results["regtech"] = {"success": False, "error": str(e)}
                 total_failed += 1
 
@@ -48,7 +48,7 @@ class CollectionServiceMixin:
                 else:
                     total_failed += 1
             except Exception as e:
-                self.logger.error(f"SECUDIUM 수집 실패: {e}")
+                self.logger.error("SECUDIUM 수집 실패: {e}")
                 results["secudium"] = {"success": False, "error": str(e)}
                 total_failed += 1
 
@@ -103,7 +103,7 @@ class CollectionServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"IP 검색 실패 ({ip}): {e}")
+            self.logger.error("IP 검색 실패 ({ip}): {e}")
             return {
                 "success": False,
                 "ip": ip,
@@ -138,7 +138,7 @@ class CollectionServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"수집 활성화 실패: {e}")
+            self.logger.error("수집 활성화 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -164,7 +164,7 @@ class CollectionServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"수집 비활성화 실패: {e}")
+            self.logger.error("수집 비활성화 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -208,7 +208,7 @@ class CollectionServiceMixin:
 
             return status
         except Exception as e:
-            self.logger.error(f"수집 상태 조회 실패: {e}")
+            self.logger.error("수집 상태 조회 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -227,7 +227,7 @@ class CollectionServiceMixin:
             asyncio.create_task(self._collect_secudium_data(force=True))
             return "SECUDIUM 수집이 시작되었습니다."
         else:
-            return f"알 수 없는 소스: {source}"
+            return "알 수 없는 소스: {source}"
 
     def trigger_regtech_collection(
         self,
@@ -274,12 +274,12 @@ class CollectionServiceMixin:
                     if not result.get("success"):
                         return {
                             "success": False,
-                            "message": f"REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
+                            "message": "REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
                         }
                 except Exception as collect_e:
                     return {
                         "success": False,
-                        "message": f"REGTECH 수집 중 오류: {str(collect_e)}",
+                        "message": "REGTECH 수집 중 오류: {str(collect_e)}",
                     }
 
                 # 로그 남기기
@@ -295,7 +295,7 @@ class CollectionServiceMixin:
 
                 return {
                     "success": True,
-                    "message": f"REGTECH 수집이 시작되었습니다 ({start_date} ~ {end_date})",
+                    "message": "REGTECH 수집이 시작되었습니다 ({start_date} ~ {end_date})",
                     "start_date": start_date,
                     "end_date": end_date,
                     "triggered_at": datetime.now().isoformat(),
@@ -307,12 +307,12 @@ class CollectionServiceMixin:
                     if not result.get("success"):
                         return {
                             "success": False,
-                            "message": f"REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
+                            "message": "REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
                         }
                 except Exception as collect_e:
                     return {
                         "success": False,
-                        "message": f"REGTECH 수집 중 오류: {str(collect_e)}",
+                        "message": "REGTECH 수집 중 오류: {str(collect_e)}",
                     }
 
                 # 로그 남기기
@@ -326,10 +326,10 @@ class CollectionServiceMixin:
                     "triggered_at": datetime.now().isoformat(),
                 }
         except Exception as e:
-            self.logger.error(f"REGTECH 수집 트리거 실패: {e}")
+            self.logger.error("REGTECH 수집 트리거 실패: {e}")
             return {
                 "success": False,
-                "message": f"REGTECH 수집 트리거 실패: {str(e)}",
+                "message": "REGTECH 수집 트리거 실패: {str(e)}",
                 "error": str(e),
             }
 
@@ -364,10 +364,10 @@ class CollectionServiceMixin:
                 "triggered_at": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error(f"SECUDIUM 수집 트리거 실패: {e}")
+            self.logger.error("SECUDIUM 수집 트리거 실패: {e}")
             return {
                 "success": False,
-                "message": f"SECUDIUM 수집 트리거 실패: {str(e)}",
+                "message": "SECUDIUM 수집 트리거 실패: {str(e)}",
                 "error": str(e),
             }
 
@@ -387,7 +387,7 @@ class CollectionServiceMixin:
 
             return missing_dates
         except Exception as e:
-            self.logger.error(f"누락 날짜 조회 실패: {e}")
+            self.logger.error("누락 날짜 조회 실패: {e}")
             return []
 
     def _has_data_for_date(self, source: str, date_str: str) -> bool:

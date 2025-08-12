@@ -7,7 +7,7 @@ import json
 import logging
 from datetime import datetime
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, jsonify
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
@@ -42,7 +42,7 @@ def export_json():
         )
         return response
     except Exception as e:
-        logger.error(f"Export JSON error: {e}")
+        logger.error("Export JSON error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -55,8 +55,8 @@ def export_txt():
         # 헤더 정보 포함한 텍스트 파일
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         header = "# Blacklist Export\n"
-        header += f"# Generated: {timestamp}\n"
-        header += f"# Total IPs: {len(ips)}\n"
+        header += "# Generated: {timestamp}\n"
+        header += "# Total IPs: {len(ips)}\n"
         header += "#" + "=" * 50 + "\n\n"
 
         ip_list = "\n".join(ips) if ips else ""
@@ -70,7 +70,7 @@ def export_txt():
         )
         return response
     except Exception as e:
-        logger.error(f"Export TXT error: {e}")
+        logger.error("Export TXT error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -106,5 +106,5 @@ def export_data(format):
                 400,
             )
     except Exception as e:
-        logger.error(f"Export data error: {e}")
+        logger.error("Export data error: {e}")
         return jsonify(create_error_response(e)), 500

@@ -34,8 +34,8 @@ def raw_data_viewer():
             current_time=datetime.now(),
         )
     except Exception as e:
-        logger.error(f"Raw data viewer error: {e}")
-        flash(f"Raw data 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
+        logger.error("Raw data viewer error: {e}")
+        flash("Raw data 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))
 
 
@@ -59,7 +59,7 @@ def api_raw_data():
             mock_data.append(
                 {
                     "id": i + 1,
-                    "ip": f"192.168.{i//255}.{i%255}",
+                    "ip": "192.168.{i//255}.{i%255}",
                     "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
                     "country": "KR" if i % 3 == 0 else "US",
                     "attack_type": "Malware" if i % 2 == 0 else "Phishing",
@@ -84,7 +84,7 @@ def api_raw_data():
         )
 
     except Exception as e:
-        logger.error(f"Raw data API error: {e}")
+        logger.error("Raw data API error: {e}")
         return (
             jsonify(
                 {
@@ -117,8 +117,8 @@ def regtech_collector():
         )
 
     except Exception as e:
-        logger.error(f"REGTECH collector page error: {e}")
-        flash(f"REGTECH collector 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
+        logger.error("REGTECH collector page error: {e}")
+        flash("REGTECH collector 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))
 
 
@@ -142,7 +142,7 @@ def api_secudium_test():
             }
         )
     except Exception as e:
-        logger.error(f"SECUDIUM test error: {e}")
+        logger.error("SECUDIUM test error: {e}")
         return (
             jsonify(
                 {
@@ -169,7 +169,7 @@ def api_secudium_trigger():
             }
         )
     except Exception as e:
-        logger.error(f"SECUDIUM trigger error: {e}")
+        logger.error("SECUDIUM trigger error: {e}")
         return (
             jsonify(
                 {
@@ -200,7 +200,7 @@ def api_secudium_progress():
             }
         )
     except Exception as e:
-        logger.error(f"SECUDIUM progress error: {e}")
+        logger.error("SECUDIUM progress error: {e}")
         return (
             jsonify(
                 {
@@ -246,7 +246,7 @@ def api_secudium_logs():
             }
         )
     except Exception as e:
-        logger.error(f"SECUDIUM logs error: {e}")
+        logger.error("SECUDIUM logs error: {e}")
         return (
             jsonify(
                 {
@@ -277,7 +277,7 @@ def api_secudium_status():
             }
         )
     except Exception as e:
-        logger.error(f"SECUDIUM status error: {e}")
+        logger.error("SECUDIUM status error: {e}")
         return (
             jsonify(
                 {
@@ -302,7 +302,7 @@ def api_secudium_stop():
             }
         )
     except Exception as e:
-        logger.error(f"SECUDIUM stop error: {e}")
+        logger.error("SECUDIUM stop error: {e}")
         return (
             jsonify(
                 {
@@ -337,7 +337,7 @@ def api_regtech_collect():
         )
 
     except Exception as e:
-        logger.error(f"REGTECH collect error: {e}")
+        logger.error("REGTECH collect error: {e}")
         return (
             jsonify(
                 {
@@ -371,7 +371,7 @@ def api_regtech_stats():
         )
 
     except Exception as e:
-        logger.error(f"REGTECH stats error: {e}")
+        logger.error("REGTECH stats error: {e}")
         return (
             jsonify(
                 {
@@ -413,7 +413,7 @@ def api_sources_stats():
         )
 
     except Exception as e:
-        logger.error(f"Sources stats error: {e}")
+        logger.error("Sources stats error: {e}")
         return (
             jsonify(
                 {

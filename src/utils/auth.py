@@ -71,7 +71,7 @@ class AuthManager:
             logger.warning("Token expired")
             return None
         except jwt.InvalidTokenError as e:
-            logger.warning(f"Invalid token: {e}")
+            logger.warning("Invalid token: {e}")
             return None
 
     def verify_api_key(self, api_key: str) -> Optional[str]:

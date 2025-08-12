@@ -25,13 +25,13 @@ def test_health_endpoint_integration():
     with app.test_client() as client:
         # 1. 기본 헬스체크
         response = client.get("/health")
-        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        assert response.status_code == 200, "Expected 200, got {response.status_code}"
 
         data = response.get_json()
         assert data["status"] in [
             "healthy",
             "degraded",
-        ], f"Invalid status: {data['status']}"
+        ], "Invalid status: {data['status']}"
         assert "database" in data["components"], "Missing database component"
         assert "cache" in data["components"], "Missing cache component"
 
@@ -68,9 +68,9 @@ def test_blacklist_api_integration():
             for ip in ips[:5]:  # 처음 5개만 검증
                 if ip:  # 빈 줄 제외
                     parts = ip.split(".")
-                    assert len(parts) == 4, f"Invalid IP format: {ip}"
+                    assert len(parts) == 4, "Invalid IP format: {ip}"
 
-        print(f"✅ Active IPs test passed ({len(ips)} IPs)")
+        print("✅ Active IPs test passed ({len(ips)} IPs)")
 
         # 2. FortiGate JSON 포맷
         response = client.get("/api/fortigate")
@@ -82,7 +82,7 @@ def test_blacklist_api_integration():
         assert "blacklist" in data
         assert isinstance(data["blacklist"], list)
 
-        print(f"✅ FortiGate format test passed")
+        print("✅ FortiGate format test passed")
 
         # 3. 통계 API
         response = client.get("/api/stats")
@@ -150,16 +150,16 @@ def test_search_functionality_integration():
     with app.test_client() as client:
         # 1. 단일 IP 검색
         test_ip = "192.168.1.1"
-        response = client.get(f"/api/search/{test_ip}")
+        response = client.get("/api/search/{test_ip}")
         assert response.status_code in [200, 404]
 
         if response.status_code == 200:
             data = response.get_json()
             assert "ip" in data
             assert "found" in data
-            print(f"✅ Single IP search test passed - {test_ip}")
+            print("✅ Single IP search test passed - {test_ip}")
         else:
-            print(f"✅ Single IP search test passed - {test_ip} not found")
+            print("✅ Single IP search test passed - {test_ip} not found")
 
         # 2. 배치 검색
         batch_data = {"ips": ["192.168.1.1", "10.0.0.1", "172.16.0.1"]}
@@ -267,9 +267,9 @@ def test_performance_integration():
         elapsed = (time.time() - start) * 1000  # ms
 
         assert response.status_code == 200
-        assert elapsed < 100, f"Health endpoint too slow: {elapsed:.2f}ms"
+        assert elapsed < 100, "Health endpoint too slow: {elapsed:.2f}ms"
 
-        print(f"✅ Health endpoint performance: {elapsed:.2f}ms")
+        print("✅ Health endpoint performance: {elapsed:.2f}ms")
 
         # 2. Blacklist API 응답 시간
         start = time.time()
@@ -277,9 +277,9 @@ def test_performance_integration():
         elapsed = (time.time() - start) * 1000
 
         assert response.status_code == 200
-        assert elapsed < 500, f"Blacklist API too slow: {elapsed:.2f}ms"
+        assert elapsed < 500, "Blacklist API too slow: {elapsed:.2f}ms"
 
-        print(f"✅ Blacklist API performance: {elapsed:.2f}ms")
+        print("✅ Blacklist API performance: {elapsed:.2f}ms")
 
         # 3. 동시 요청 테스트
         import concurrent.futures
@@ -324,16 +324,16 @@ def run_all_integration_tests():
                 passed += 1
             else:
                 failed += 1
-                print(f"❌ {test_name} test failed")
+                print("❌ {test_name} test failed")
         except Exception as e:
             failed += 1
-            print(f"❌ {test_name} test failed with error: {e}")
+            print("❌ {test_name} test failed with error: {e}")
             import traceback
 
             traceback.print_exc()
 
     print("\n" + "=" * 60)
-    print(f"📊 Test Results: {passed} passed, {failed} failed")
+    print("📊 Test Results: {passed} passed, {failed} failed")
     print("=" * 60)
 
     return failed == 0

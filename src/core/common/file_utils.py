@@ -31,7 +31,7 @@ class FileUtils:
         file_path = Path(file_path)
 
         if not file_path.exists():
-            logger.warning(f"IP file not found: {file_path}")
+            logger.warning("IP file not found: {file_path}")
             return set() if as_set else []
 
         try:
@@ -41,7 +41,7 @@ class FileUtils:
             return set(ips) if as_set else ips
 
         except Exception as e:
-            logger.error(f"Error reading IP file {file_path}: {e}")
+            logger.error("Error reading IP file {file_path}: {e}")
             return set() if as_set else []
 
     @staticmethod
@@ -75,12 +75,12 @@ class FileUtils:
             # 파일 쓰기
             with open(file_path, "w", encoding="utf-8") as f:
                 for ip in ip_list:
-                    f.write(f"{ip}\n")
+                    f.write("{ip}\n")
 
             return True
 
         except Exception as e:
-            logger.error(f"Error writing IP file {file_path}: {e}")
+            logger.error("Error writing IP file {file_path}: {e}")
             return False
 
     @staticmethod
@@ -104,7 +104,7 @@ class FileUtils:
             with open(file_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"Error reading JSON file {file_path}: {e}")
+            logger.error("Error reading JSON file {file_path}: {e}")
             return default
 
     @staticmethod
@@ -135,7 +135,7 @@ class FileUtils:
             return True
 
         except Exception as e:
-            logger.error(f"Error writing JSON file {file_path}: {e}")
+            logger.error("Error writing JSON file {file_path}: {e}")
             return False
 
     @staticmethod
@@ -156,7 +156,7 @@ class FileUtils:
                 file_path.unlink()
             return True
         except Exception as e:
-            logger.error(f"Error removing file {file_path}: {e}")
+            logger.error("Error removing file {file_path}: {e}")
             return False
 
     @staticmethod

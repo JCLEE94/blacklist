@@ -50,7 +50,7 @@ class MSAReportGenerator:
         for service_name, base_url in self.services.items():
             try:
                 async with httpx.AsyncClient(timeout=10) as client:
-                    response = await client.get(f"{base_url}/health")
+                    response = await client.get("{base_url}/health")
                     if response.status_code == 200:
                         health_data = response.json()
                         system_info["services"][service_name] = {
@@ -63,7 +63,7 @@ class MSAReportGenerator:
                         system_info["services"][service_name] = {
                             "status": "unhealthy",
                             "url": base_url,
-                            "error": f"HTTP {response.status_code}",
+                            "error": "HTTP {response.status_code}",
                         }
             except Exception as e:
                 system_info["services"][service_name] = {
@@ -83,7 +83,7 @@ class MSAReportGenerator:
         for service_name, base_url in self.services.items():
             try:
                 async with httpx.AsyncClient(timeout=10) as client:
-                    response = await client.get(f"{base_url}/health")
+                    response = await client.get("{base_url}/health")
                     health_results[service_name] = {
                         "status": (
                             "healthy" if response.status_code == 200 else "unhealthy"
@@ -107,11 +107,11 @@ class MSAReportGenerator:
         gateway_tests = {}
 
         routing_tests = [
-            ("collection_status", f"{gateway_url}/api/v1/collection/status"),
-            ("blacklist_active", f"{gateway_url}/api/v1/blacklist/active"),
-            ("blacklist_statistics", f"{gateway_url}/api/v1/blacklist/statistics"),
-            ("analytics_realtime", f"{gateway_url}/api/v1/analytics/realtime"),
-            ("fortigate_format", f"{gateway_url}/api/v1/blacklist/fortigate"),
+            ("collection_status", "{gateway_url}/api/v1/collection/status"),
+            ("blacklist_active", "{gateway_url}/api/v1/blacklist/active"),
+            ("blacklist_statistics", "{gateway_url}/api/v1/blacklist/statistics"),
+            ("analytics_realtime", "{gateway_url}/api/v1/analytics/realtime"),
+            ("fortigate_format", "{gateway_url}/api/v1/blacklist/fortigate"),
         ]
 
         for test_name, url in routing_tests:
@@ -141,14 +141,14 @@ class MSAReportGenerator:
         metrics = {}
 
         performance_endpoints = [
-            ("gateway_health", f"{self.services['API Gateway']}/health"),
+            ("gateway_health", "{self.services['API Gateway']}/health"),
             (
                 "blacklist_active",
-                f"{self.services['API Gateway']}/api/v1/blacklist/active",
+                "{self.services['API Gateway']}/api/v1/blacklist/active",
             ),
             (
                 "analytics_realtime",
-                f"{self.services['API Gateway']}/api/v1/analytics/realtime",
+                "{self.services['API Gateway']}/api/v1/analytics/realtime",
             ),
         ]
 

@@ -46,7 +46,7 @@ class DateUtils:
         try:
             return datetime.strptime(month, cls.MONTH_FORMAT)
         except ValueError:
-            logger.warning(f"Invalid month format: {month}")
+            logger.warning("Invalid month format: {month}")
             return None
 
     @classmethod
@@ -101,7 +101,7 @@ class DateUtils:
         """
         month_date = cls.parse_month(month)
         if not month_date:
-            raise ValueError(f"Invalid month format: {month}")
+            raise ValueError("Invalid month format: {month}")
 
         # 월의 첫날
         start_date = month_date.replace(day=1)
@@ -145,7 +145,7 @@ class MonthlyDataManager:
 
             month_name = month_dir.name
             if not DateUtils.validate_month_format(month_name):
-                logger.warning(f"Invalid month directory: {month_name}")
+                logger.warning("Invalid month directory: {month_name}")
                 continue
 
             # 기본 정보
@@ -163,7 +163,7 @@ class MonthlyDataManager:
                     with open(month_dir / "ips.txt", "r") as f:
                         info["ip_count"] = sum(1 for line in f if line.strip())
                 except Exception as e:
-                    logger.error(f"Error counting IPs for {month_name}: {e}")
+                    logger.error("Error counting IPs for {month_name}: {e}")
                     info["ip_count"] = 0
             else:
                 info["ip_count"] = 0
@@ -234,8 +234,8 @@ class MonthlyDataManager:
                 try:
                     shutil.rmtree(month_info["path"])
                     removed_months.append(month_info["month"])
-                    logger.info(f"Removed expired month: {month_info['month']}")
+                    logger.info("Removed expired month: {month_info['month']}")
                 except Exception as e:
-                    logger.error(f"Error removing month {month_info['month']}: {e}")
+                    logger.error("Error removing month {month_info['month']}: {e}")
 
         return removed_months

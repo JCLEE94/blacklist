@@ -65,12 +65,12 @@ class StatusService:
             }
 
         except Exception as e:
-            logger.error(f"Error getting collection status: {e}")
+            logger.error("Error getting collection status: {e}")
             return {
                 "error": str(e),
                 "enabled": False,
                 "safe_to_enable": False,
-                "protection_reason": f"상태 조회 오류: {e}",
+                "protection_reason": "상태 조회 오류: {e}",
                 "last_updated": datetime.now().isoformat(),
             }
 
@@ -99,7 +99,7 @@ class StatusService:
                 "last_collection": source_config.get("last_collection"),
                 "blocked": is_blocked,
                 "block_reason": block_reason if is_blocked else None,
-                "credentials_configured": bool(os.getenv(f"{source.upper()}_USERNAME")),
+                "credentials_configured": bool(os.getenv("{source.upper()}_USERNAME")),
             }
 
         return sources_status
@@ -137,7 +137,7 @@ class StatusService:
                 }
             ]
         except Exception as e:
-            logger.warning(f"Could not load config history: {e}")
+            logger.warning("Could not load config history: {e}")
             return []
 
     def _get_system_health_info(self) -> Dict[str, Any]:
@@ -153,7 +153,7 @@ class StatusService:
         except ImportError:
             return {"note": "psutil not available - system metrics unavailable"}
         except Exception as e:
-            return {"error": f"System health check failed: {e}"}
+            return {"error": "System health check failed: {e}"}
 
     def is_collection_enabled(self, source: Optional[str] = None) -> bool:
         """수집 활성화 상태 확인"""
@@ -182,7 +182,7 @@ class StatusService:
             return True
 
         except Exception as e:
-            logger.error(f"Error checking collection enabled status: {e}")
+            logger.error("Error checking collection enabled status: {e}")
             return False
 
     def get_collection_summary(self) -> Dict[str, Any]:
@@ -234,7 +234,7 @@ class StatusService:
         protection_status = self.protection_service.get_protection_status()
         if not protection_status["safe_to_enable"]:
             validation_results["issues"].append(
-                f"보호 시스템 차단: {protection_status['safety_reason']}"
+                "보호 시스템 차단: {protection_status['safety_reason']}"
             )
             validation_results["valid"] = False
         else:

@@ -89,7 +89,7 @@ class TestHelpers:
             data = response.get_json()
             if expected_keys:
                 for key in expected_keys:
-                    assert key in data, f"Expected key '{key}' not found in response"
+                    assert key in data, "Expected key '{key}' not found in response"
 
         return (
             response.get_json()
@@ -130,7 +130,7 @@ class TestHelpers:
             details = {
                 "month": month,
                 "total_ips": len(ips),
-                "detection_date": f"{month}-01T00:00:00Z",
+                "detection_date": "{month}-01T00:00:00Z",
             }
             details_file.write_text(json.dumps(details, indent=2))
 

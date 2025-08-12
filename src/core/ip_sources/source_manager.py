@@ -61,7 +61,7 @@ class IPSourceManager:
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(default_config, f, indent=2, ensure_ascii=False)
 
-            logger.info(f"Created default sources config: {config_path}")
+            logger.info("Created default sources config: {config_path}")
 
         try:
             with open(config_path, "r", encoding="utf-8") as f:
@@ -72,12 +72,12 @@ class IPSourceManager:
                 try:
                     self.add_source(source_name, source_config)
                 except Exception as e:
-                    logger.error(f"Failed to add source {source_name}: {e}")
+                    logger.error("Failed to add source {source_name}: {e}")
 
-            logger.info(f"Loaded {len(self.sources)} IP sources from config")
+            logger.info("Loaded {len(self.sources)} IP sources from config")
 
         except Exception as e:
-            logger.error(f"Failed to load sources config: {e}")
+            logger.error("Failed to load sources config: {e}")
 
     def add_source(self, name: str, config_data: Dict[str, Any]):
         """
@@ -105,13 +105,13 @@ class IPSourceManager:
 
             # 설정 유효성 검사
             if not source_instance.validate_config():
-                raise ValueError(f"Invalid configuration for source {name}")
+                raise ValueError("Invalid configuration for source {name}")
 
             self.sources[name] = source_instance
-            logger.info(f"Added IP source: {name}")
+            logger.info("Added IP source: {name}")
 
         except Exception as e:
-            logger.error(f"Failed to add source {name}: {e}")
+            logger.error("Failed to add source {name}: {e}")
             raise
 
     def _substitute_env_vars(self, settings: Dict[str, Any]) -> Dict[str, Any]:
@@ -150,7 +150,7 @@ class IPSourceManager:
         results = {}
         total_entries = 0
 
-        logger.info(f"Starting update for {len(self.sources)} sources")
+        logger.info("Starting update for {len(self.sources)} sources")
 
         # 우선순위별로 소스 정렬
         sorted_sources = sorted(
@@ -176,7 +176,7 @@ class IPSourceManager:
                         total_entries += result["entries_count"]
 
                 except Exception as e:
-                    logger.error(f"Error updating source {source_name}: {e}")
+                    logger.error("Error updating source {source_name}: {e}")
                     results[source_name] = {
                         "status": "error",
                         "error": str(e),
@@ -204,7 +204,7 @@ class IPSourceManager:
         self.update_stats = summary
 
         logger.info(
-            f"Update completed: {summary['successful_sources']}/{summary['total_sources']} sources, {total_entries} entries"
+            "Update completed: {summary['successful_sources']}/{summary['total_sources']} sources, {total_entries} entries"
         )
 
         return summary
@@ -223,10 +223,10 @@ class IPSourceManager:
                     metadata=entry.metadata,
                 )
 
-            logger.info(f"Saved {len(entries)} entries from {source_name} to database")
+            logger.info("Saved {len(entries)} entries from {source_name} to database")
 
         except Exception as e:
-            logger.error(f"Failed to save entries from {source_name}: {e}")
+            logger.error("Failed to save entries from {source_name}: {e}")
 
     def get_source_status(self) -> Dict[str, Any]:
         """모든 소스의 상태 정보 반환"""
@@ -251,13 +251,13 @@ class IPSourceManager:
         """소스 활성화"""
         if source_name in self.sources:
             self.sources[source_name].config.enabled = True
-            logger.info(f"Enabled source: {source_name}")
+            logger.info("Enabled source: {source_name}")
 
     def disable_source(self, source_name: str):
         """소스 비활성화"""
         if source_name in self.sources:
             self.sources[source_name].config.enabled = False
-            logger.info(f"Disabled source: {source_name}")
+            logger.info("Disabled source: {source_name}")
 
     def get_available_sources(self) -> List[str]:
         """사용 가능한 모든 소스 목록"""

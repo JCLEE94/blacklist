@@ -45,7 +45,7 @@ class SecurityManager:
             return password_hash.hex(), salt
 
         except Exception as e:
-            logger.error(f"Password hashing error: {e}")
+            logger.error("Password hashing error: {e}")
             raise
 
     def verify_password(self, password: str, password_hash: str, salt: str) -> bool:
@@ -55,7 +55,7 @@ class SecurityManager:
             return secrets.compare_digest(password_hash, computed_hash)
 
         except Exception as e:
-            logger.error(f"Password verification error: {e}")
+            logger.error("Password verification error: {e}")
             return False
 
     def generate_jwt_token(
@@ -74,7 +74,7 @@ class SecurityManager:
             return token
 
         except Exception as e:
-            logger.error(f"JWT generation error: {e}")
+            logger.error("JWT generation error: {e}")
             raise
 
     def verify_jwt_token(self, token: str) -> Dict[str, Any]:
@@ -87,10 +87,10 @@ class SecurityManager:
             logger.warning("JWT token expired")
             return None
         except jwt.InvalidTokenError as e:
-            logger.warning(f"Invalid JWT token: {e}")
+            logger.warning("Invalid JWT token: {e}")
             return None
         except Exception as e:
-            logger.error(f"JWT verification error: {e}")
+            logger.error("JWT verification error: {e}")
             return None
 
     def check_rate_limit(
@@ -114,7 +114,7 @@ class SecurityManager:
             return True
 
         except Exception as e:
-            logger.error(f"Rate limit check error: {e}")
+            logger.error("Rate limit check error: {e}")
             return True  # Allow on error
 
     def record_failed_attempt(
@@ -135,13 +135,13 @@ class SecurityManager:
             # Check if should be blocked
             if attempt_data["count"] >= max_attempts:
                 self.blocked_ips.add(identifier)
-                logger.warning(f"IP blocked due to failed attempts: {identifier}")
+                logger.warning("IP blocked due to failed attempts: {identifier}")
                 return False
 
             return True
 
         except Exception as e:
-            logger.error(f"Failed attempt recording error: {e}")
+            logger.error("Failed attempt recording error: {e}")
             return True
 
     def is_blocked(self, identifier: str) -> bool:
@@ -156,7 +156,7 @@ class SecurityManager:
     def generate_api_key(self, prefix: str = "ak") -> str:
         """Generate secure API key"""
         random_part = secrets.token_urlsafe(32)
-        return f"{prefix}_{random_part}"
+        return "{prefix}_{random_part}"
 
     def validate_api_key_format(self, api_key: str) -> bool:
         """Validate API key format"""
@@ -174,11 +174,11 @@ class SecurityHeaders:
     def get_security_headers() -> Dict[str, str]:
         """Get standard security headers"""
         return {
-            "X-Content-Type-Options": "nosniff",
+            "X-Content-Type-Options": "nosnif",
             "X-Frame-Options": "DENY",
             "X-XSS-Protection": "1; mode=block",
             "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-            "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
+            "Content-Security-Policy": "default-src 'sel'; script-src 'sel' 'unsafe-inline'; style-src 'sel' 'unsafe-inline';",
             "Referrer-Policy": "strict-origin-when-cross-origin",
             "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
         }
@@ -192,7 +192,7 @@ class SecurityHeaders:
                 response.headers[header] = value
             return response
         except Exception as e:
-            logger.error(f"Error applying security headers: {e}")
+            logger.error("Error applying security headers: {e}")
             return response
 
 
@@ -238,7 +238,7 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
 
                         if validated_key:
                             g.current_user = {
-                                "user_id": f"api_user_{validated_key.key_id}",
+                                "user_id": "api_user_{validated_key.key_id}",
                                 "roles": validated_key.permissions,
                                 "api_key_name": validated_key.name,
                             }
@@ -247,7 +247,7 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
                 return {"error": "Authentication required"}, 401
 
             except Exception as e:
-                logger.error(f"Authentication error: {e}")
+                logger.error("Authentication error: {e}")
                 return {"error": "Authentication failed"}, 401
 
         return decorated_function
@@ -284,7 +284,7 @@ def rate_limit(limit: int = 100, window_seconds: int = 3600):
                 return f(*args, **kwargs)
 
             except Exception as e:
-                logger.error(f"Rate limiting error: {e}")
+                logger.error("Rate limiting error: {e}")
                 return f(*args, **kwargs)  # Allow on error
 
         return decorated_function
@@ -307,7 +307,7 @@ def input_validation(schema: Dict[str, Any]):
                     # Basic validation
                     for field, rules in schema.items():
                         if rules.get("required", False) and field not in data:
-                            return {"error": f"Missing required field: {field}"}, 400
+                            return {"error": "Missing required field: {field}"}, 400
 
                         if field in data:
                             value = data[field]
@@ -315,19 +315,19 @@ def input_validation(schema: Dict[str, Any]):
                             # Type validation
                             expected_type = rules.get("type")
                             if expected_type and not isinstance(value, expected_type):
-                                return {"error": f"Invalid type for {field}"}, 400
+                                return {"error": "Invalid type for {field}"}, 400
 
                             # Length validation for strings
                             if isinstance(value, str):
                                 min_len = rules.get("min_length", 0)
-                                max_len = rules.get("max_length", float("inf"))
+                                max_len = rules.get("max_length", float("in"))
                                 if not (min_len <= len(value) <= max_len):
-                                    return {"error": f"Invalid length for {field}"}, 400
+                                    return {"error": "Invalid length for {field}"}, 400
 
                 return f(*args, **kwargs)
 
             except Exception as e:
-                logger.error(f"Input validation error: {e}")
+                logger.error("Input validation error: {e}")
                 return {"error": "Validation failed"}, 400
 
         return decorated_function
@@ -350,7 +350,7 @@ def setup_security(app, secret_key: str, jwt_secret: str = None):
         return True
 
     except Exception as e:
-        logger.error(f"Security setup failed: {e}")
+        logger.error("Security setup failed: {e}")
         return False
 
 

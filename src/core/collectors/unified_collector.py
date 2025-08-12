@@ -98,7 +98,7 @@ class BaseCollector(ABC):
     def __init__(self, name: str, config: CollectionConfig):
         self.name = name
         self.config = config
-        self.logger = logging.getLogger(f"{__name__}.{name}")
+        self.logger = logging.getLogger("{__name__}.{name}")
         self._current_result = None
         self._is_running = False
         self._cancel_requested = False
@@ -121,7 +121,7 @@ class BaseCollector(ABC):
     def cancel(self):
         """수집 취소 요청"""
         self._cancel_requested = True
-        self.logger.info(f"수집 취소 요청: {self.name}")
+        self.logger.info("수집 취소 요청: {self.name}")
 
     @abstractmethod
     async def _collect_data(self) -> List[Any]:
@@ -139,7 +139,7 @@ class BaseCollector(ABC):
         수집 실행 (공통 로직)
         """
         if not self.config.enabled:
-            self.logger.info(f"수집기 비활성화됨: {self.name}")
+            self.logger.info("수집기 비활성화됨: {self.name}")
             return CollectionResult(
                 source_name=self.name,
                 status=CollectionStatus.CANCELLED,
@@ -147,7 +147,7 @@ class BaseCollector(ABC):
             )
 
         if self._is_running:
-            self.logger.warning(f"수집기 이미 실행 중: {self.name}")
+            self.logger.warning("수집기 이미 실행 중: {self.name}")
             return CollectionResult(
                 source_name=self.name,
                 status=CollectionStatus.FAILED,
@@ -186,7 +186,7 @@ class BaseCollector(ABC):
                 self._current_result.collected_count = len(collected_data)
                 self._current_result.end_time = datetime.now()
 
-                self.logger.info(f"수집 완료: {self.name} - {len(collected_data)}개 수집")
+                self.logger.info("수집 완료: {self.name} - {len(collected_data)}개 수집")
                 break
 
             except asyncio.TimeoutError:
@@ -196,14 +196,14 @@ class BaseCollector(ABC):
                     self._current_result.error_message = "사용자에 의해 취소됨"
                     break
 
-                error_msg = f"수집 타임아웃: {self.name} ({self.config.timeout}초)"
+                error_msg = "수집 타임아웃: {self.name} ({self.config.timeout}초)"
                 self.logger.error(error_msg)
                 self._current_result.error_message = error_msg
                 self._current_result.status = CollectionStatus.FAILED
                 retries += 1
 
             except Exception as e:
-                error_msg = f"수집 오류: {self.name} - {str(e)}"
+                error_msg = "수집 오류: {self.name} - {str(e)}"
                 self.logger.error(error_msg)
                 self.logger.error(traceback.format_exc())
 
@@ -267,7 +267,7 @@ class UnifiedCollectionManager:
                 self._save_config(default_config)
                 return default_config
         except Exception as e:
-            self.logger.error(f"설정 파일 로드 실패: {e}")
+            self.logger.error("설정 파일 로드 실패: {e}")
             return {"global_enabled": True, "collectors": {}}
 
     def _save_config(self, config: Dict[str, Any]):
@@ -277,18 +277,18 @@ class UnifiedCollectionManager:
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            self.logger.error(f"설정 파일 저장 실패: {e}")
+            self.logger.error("설정 파일 저장 실패: {e}")
 
     def register_collector(self, collector: BaseCollector):
         """수집기 등록"""
         self.collectors[collector.name] = collector
-        self.logger.info(f"수집기 등록: {collector.name}")
+        self.logger.info("수집기 등록: {collector.name}")
 
     def unregister_collector(self, name: str):
         """수집기 등록 해제"""
         if name in self.collectors:
             del self.collectors[name]
-            self.logger.info(f"수집기 등록 해제: {name}")
+            self.logger.info("수집기 등록 해제: {name}")
 
     def get_collector(self, name: str) -> Optional[BaseCollector]:
         """수집기 조회"""
@@ -351,7 +351,7 @@ class UnifiedCollectionManager:
         """단일 수집기 실행"""
         collector = self.collectors.get(collector_name)
         if not collector:
-            self.logger.error(f"수집기를 찾을 수 없습니다: {collector_name}")
+            self.logger.error("수집기를 찾을 수 없습니다: {collector_name}")
             return None
 
         result = await collector.collect()
@@ -406,14 +406,14 @@ class UnifiedCollectionManager:
         collector = self.collectors.get(name)
         if collector:
             collector.config.enabled = True
-            self.logger.info(f"수집기 활성화: {name}")
+            self.logger.info("수집기 활성화: {name}")
 
     def disable_collector(self, name: str):
         """수집기 비활성화"""
         collector = self.collectors.get(name)
         if collector:
             collector.config.enabled = False
-            self.logger.info(f"수집기 비활성화: {name}")
+            self.logger.info("수집기 비활성화: {name}")
 
 
 # 사용 예시
@@ -432,6 +432,6 @@ if __name__ == "__main__":
 
         # 결과 출력
         for name, result in results.items():
-            print(f"{name}: {result.status.value} - {result.collected_count}개 수집")
+            print("{name}: {result.status.value} - {result.collected_count}개 수집")
 
     asyncio.run(main())

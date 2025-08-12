@@ -91,7 +91,7 @@ class Settings:
     @property
     def database_uri(self) -> str:
         return os.getenv(
-            "DATABASE_URI", f"sqlite:///{self.base_dir}/instance/blacklist.db"
+            "DATABASE_URI", "sqlite:///{self.base_dir}/instance/blacklist.db"
         )
 
     @property

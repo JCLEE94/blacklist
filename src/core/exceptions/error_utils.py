@@ -30,13 +30,13 @@ def handle_exception(
     if isinstance(exc, ValueError):
         return ValidationError(str(exc), cause=exc)
     elif isinstance(exc, FileNotFoundError):
-        return DataProcessingError(f"File not found: {exc}", cause=exc)
+        return DataProcessingError("File not found: {exc}", cause=exc)
     elif isinstance(exc, PermissionError):
-        return AuthorizationError(f"Permission denied: {exc}", cause=exc)
+        return AuthorizationError("Permission denied: {exc}", cause=exc)
     elif isinstance(exc, ConnectionError):
-        return ServiceUnavailableError(f"Connection failed: {exc}", cause=exc)
+        return ServiceUnavailableError("Connection failed: {exc}", cause=exc)
     else:
-        return BlacklistError(f"Unexpected error: {exc}", cause=exc, details=context)
+        return BlacklistError("Unexpected error: {exc}", cause=exc, details=context)
 
 
 def log_exception(exc: Exception, logger_instance: Optional[logging.Logger] = None):
@@ -51,7 +51,7 @@ def log_exception(exc: Exception, logger_instance: Optional[logging.Logger] = No
 
     if isinstance(exc, BlacklistError):
         log.error(
-            f"{exc.error_code}: {exc.message}",
+            "{exc.error_code}: {exc.message}",
             extra={
                 "error_code": exc.error_code,
                 "details": exc.details,
@@ -59,7 +59,7 @@ def log_exception(exc: Exception, logger_instance: Optional[logging.Logger] = No
             },
         )
     else:
-        log.error(f"Unhandled exception: {exc}", exc_info=True)
+        log.error("Unhandled exception: {exc}", exc_info=True)
 
 
 def create_error_response(
