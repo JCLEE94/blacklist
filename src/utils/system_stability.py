@@ -75,11 +75,11 @@ class DatabaseStabilityManager:
             yield conn
 
         except Exception as e:
-            logger.error("Database connection error: {e}")
+            logger.error(f"Database connection error: {e}")
             if conn:
                 try:
                     conn.rollback()
-                except:
+                except Exception as e:
                     pass
             raise
         finally:
@@ -92,10 +92,10 @@ class DatabaseStabilityManager:
                         else:
                             conn.close()
                 except Exception as e:
-                    logger.error("Error returning connection to pool: {e}")
+                    logger.error(f"Error returning connection to pool: {e}")
                     try:
                         conn.close()
-                    except:
+                    except Exception as e:
                         pass
 
     def check_database_health(self) -> Dict[str, Any]:
@@ -139,7 +139,7 @@ class DatabaseStabilityManager:
                 }
 
         except Exception as e:
-            logger.error("Database health check failed: {e}")
+            logger.error(f"Database health check failed: {e}")
             return {
                 "status": "error",
                 "error": str(e),
@@ -168,14 +168,14 @@ class DatabaseStabilityManager:
                 r.ping()
                 return {"status": "healthy", "available": True}
             except Exception as e:
-                logger.debug("Redis not available: {e}")
+                logger.debug(f"Redis not available: {e}")
                 return {
                     "status": "degraded",
                     "available": False,
                     "error": "Using memory cache",
                 }
         except Exception as e:
-            logger.debug("Cache health check failed: {e}")
+            logger.debug(f"Cache health check failed: {e}")
             return {"status": "degraded", "available": False, "error": str(e)}
 
     def optimize_database(self) -> bool:
@@ -215,7 +215,7 @@ class DatabaseStabilityManager:
                 return True
 
         except Exception as e:
-            logger.error("Database optimization failed: {e}")
+            logger.error(f"Database optimization failed: {e}")
             return False
 
 
@@ -275,7 +275,7 @@ class SystemMonitor:
             )
 
         except Exception as e:
-            logger.error("System health check failed: {e}")
+            logger.error(f"System health check failed: {e}")
             return SystemHealth(database_status="error", warnings=["모니터링 오류: {str(e)}"])
 
     def _count_recent_errors(self) -> int:
@@ -292,7 +292,7 @@ class SystemMonitor:
                     (cutoff_time.isoformat(),),
                 )
                 return cursor.fetchone()[0]
-        except Exception:
+        except Exception as e:
             return 0
 
     def log_system_event(self, level: str, message: str, module: str = None, **kwargs):
@@ -313,7 +313,7 @@ class SystemMonitor:
                     ),
                 )
         except Exception as e:
-            logger.error("Failed to log system event: {e}")
+            logger.error(f"Failed to log system event: {e}")
 
     def start_monitoring(self, interval: int = 300):
         """백그라운드 모니터링 시작 (기본 5분 간격)"""
@@ -351,12 +351,12 @@ class SystemMonitor:
                     time.sleep(interval)
 
                 except Exception as e:
-                    logger.error("Monitoring loop error: {e}")
+                    logger.error(f"Monitoring loop error: {e}")
                     time.sleep(60)  # 에러 시 1분 대기
 
         self._monitor_thread = threading.Thread(target=monitor_loop, daemon=True)
         self._monitor_thread.start()
-        logger.info("System monitoring started (interval: {interval}s)")
+        logger.info(f"System monitoring started (interval: {interval}s)")
 
     def stop_monitoring(self):
         """모니터링 중지"""
@@ -390,7 +390,7 @@ def safe_execute(func: Callable, default_return=None, log_errors: bool = True) -
         return func()
     except Exception as e:
         if log_errors:
-            logger.error("Safe execution failed for {func.__name__}: {e}")
+            logger.error(f"Safe execution failed for {func.__name__}: {e}")
         return default_return
 
 

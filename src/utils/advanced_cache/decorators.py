@@ -73,7 +73,7 @@ def cache_decorator(
                 return result
 
             except Exception as e:
-                logger.error("Error in cached function {func.__name__}: {e}")
+                logger.error(f"Error in cached function {func.__name__}: {e}")
                 raise
 
         # Add cache management methods to the decorated function
@@ -261,7 +261,7 @@ class CacheManager:
                 success_count += 1
 
             except Exception as e:
-                logger.error("Error warming cache for {func.__name__}: {e}")
+                logger.error(f"Error warming cache for {func.__name__}: {e}")
 
         return success_count
 

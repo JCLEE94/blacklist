@@ -75,7 +75,7 @@ def get_system_health():
         )
 
     except Exception as e:
-        logger.error("헬스 체크 실행 실패: {e}")
+        logger.error(f"헬스 체크 실행 실패: {e}")
         return (
             jsonify(
                 {
@@ -125,7 +125,7 @@ def get_performance_metrics():
         )
 
     except Exception as e:
-        logger.error("성능 메트릭 조회 실패: {e}")
+        logger.error(f"성능 메트릭 조회 실패: {e}")
         return jsonify({"success": False, "error": "성능 메트릭을 조회할 수 없습니다"}), 500
 
 
@@ -141,7 +141,7 @@ def cleanup_performance_data():
         return jsonify({"success": True, "message": "성능 데이터가 정리되었습니다"})
 
     except Exception as e:
-        logger.error("성능 데이터 정리 실패: {e}")
+        logger.error(f"성능 데이터 정리 실패: {e}")
         return jsonify({"success": False, "error": "성능 데이터를 정리할 수 없습니다"}), 500
 
 
@@ -160,7 +160,7 @@ def get_specific_health_check(check_name: str):
         return jsonify({"success": True, "check_name": check_name, "result": result})
 
     except Exception as e:
-        logger.error("개별 헬스 체크 실행 실패 ({check_name}): {e}")
+        logger.error(f"개별 헬스 체크 실행 실패 ({check_name}): {e}")
         return (
             jsonify({"success": False, "error": "헬스 체크 {check_name}을 실행할 수 없습니다"}),
             500,
@@ -186,7 +186,7 @@ def get_system_metrics():
         )
 
     except Exception as e:
-        logger.error("시스템 메트릭 조회 실패: {e}")
+        logger.error(f"시스템 메트릭 조회 실패: {e}")
         return jsonify({"success": False, "error": "시스템 메트릭을 가져올 수 없습니다"}), 500
 
 
@@ -201,7 +201,7 @@ def get_error_summary():
         return jsonify({"success": True, "error_summary": summary})
 
     except Exception as e:
-        logger.error("에러 요약 조회 실패: {e}")
+        logger.error(f"에러 요약 조회 실패: {e}")
         return jsonify({"success": False, "error": "에러 요약을 가져올 수 없습니다"}), 500
 
 
@@ -218,7 +218,7 @@ def clear_old_errors():
         return jsonify({"success": True, "message": "{hours}시간 이전의 오래된 에러가 정리되었습니다"})
 
     except Exception as e:
-        logger.error("에러 정리 실패: {e}")
+        logger.error(f"에러 정리 실패: {e}")
         return jsonify({"success": False, "error": "에러 정리 중 오류가 발생했습니다"}), 500
 
 
@@ -255,7 +255,7 @@ def get_overall_status():
         )
 
     except Exception as e:
-        logger.error("전체 상태 조회 실패: {e}")
+        logger.error(f"전체 상태 조회 실패: {e}")
         return jsonify({"success": False, "status": "error", "error": str(e)}), 500
 
 
@@ -463,7 +463,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
                     "suggestion": "비동기 처리, 배치 처리, 워커 프로세스 추가를 검토하세요",
                 }
             )
-    except Exception:
+    except Exception as e:
         pass  # 시스템 모니터링 실패 시 권장사항 제외
 
     return recommendations

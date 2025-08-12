@@ -24,7 +24,7 @@ def get_stats() -> Dict[str, Any]:
             with open(stats_path, "r", encoding="utf-8") as f:
                 return json.load(f)
     except Exception as e:
-        logger.error("Failed to get stats: {e}")
+        logger.error(f"Failed to get stats: {e}")
 
     # Return default stats if file doesn't exist or has errors
     return {
@@ -75,7 +75,7 @@ def api_search():
         )
 
     except Exception as e:
-        logger.error("Search API error: {e}")
+        logger.error(f"Search API error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -92,7 +92,7 @@ def refresh_data():
             }
         )
     except Exception as e:
-        logger.error("Refresh data error: {e}")
+        logger.error(f"Refresh data error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -130,7 +130,7 @@ def get_month_details(month):
         )
 
     except Exception as e:
-        logger.error("Month details error: {e}")
+        logger.error(f"Month details error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -163,7 +163,7 @@ def get_daily_ips(month, date):
         )
 
     except Exception as e:
-        logger.error("Daily IPs error: {e}")
+        logger.error(f"Daily IPs error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -204,7 +204,7 @@ def download_daily_ips(month, date):
         )
 
     except Exception as e:
-        logger.error("Download daily IPs error: {e}")
+        logger.error(f"Download daily IPs error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -248,7 +248,7 @@ def export_data(format):
             return jsonify({"success": False, "error": "Unsupported format"}), 400
 
     except Exception as e:
-        logger.error("Export error: {e}")
+        logger.error(f"Export error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -269,5 +269,5 @@ def api_stats_simple():
         return jsonify(simple_stats)
 
     except Exception as e:
-        logger.error("Simple stats error: {e}")
+        logger.error(f"Simple stats error: {e}")
         return jsonify({"total": 0, "active": 0, "sources": 0, "error": str(e)}), 500

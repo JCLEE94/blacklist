@@ -119,10 +119,10 @@ class GitHubIssueReporter:
                 )
                 return False
             else:
-                logger.error("❌ GitHub API connection failed: {response.status_code}")
+                logger.error(f"❌ GitHub API connection failed: {response.status_code}")
                 return False
         except Exception as e:
-            logger.error("❌ GitHub API connection test failed: {e}")
+            logger.error(f"❌ GitHub API connection test failed: {e}")
             return False
 
     def _format_error_title(
@@ -202,7 +202,7 @@ class GitHubIssueReporter:
 
             # 중복 에러 체크
             if self._is_duplicate_error(error_hash):
-                logger.info("Duplicate error {error_hash}, skipping issue creation")
+                logger.info(f"Duplicate error {error_hash}, skipping issue creation")
                 return None
 
             # 캐시 정리
@@ -231,7 +231,7 @@ class GitHubIssueReporter:
 
                     if response.status_code == 201:
                         issue_url = response.json().get("html_url")
-                        logger.info("GitHub issue created successfully: {issue_url}")
+                        logger.info(f"GitHub issue created successfully: {issue_url}")
 
                         # 에러 보고 완료 표시
                         self._mark_error_reported(error_hash)
@@ -288,7 +288,7 @@ class GitHubIssueReporter:
                     return None
 
         except Exception as e:
-            logger.error("Error creating GitHub issue: {e}")
+            logger.error(f"Error creating GitHub issue: {e}")
             return None
 
     def report_exception(
@@ -328,13 +328,13 @@ class GitHubIssueReporter:
                             "remote_addr": request.remote_addr,
                         }
                     )
-            except:
+            except Exception as e:
                 pass
 
             return self.create_issue(error_data)
 
         except Exception as e:
-            logger.error("Error in report_exception: {e}")
+            logger.error(f"Error in report_exception: {e}")
             return None
 
 

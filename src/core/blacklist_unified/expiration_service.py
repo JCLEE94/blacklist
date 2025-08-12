@@ -91,19 +91,19 @@ class ExpirationService:
                 }
 
                 if expired_count > 0:
-                    logger.info("Deactivated {expired_count} expired IPs")
+                    logger.info(f"Deactivated {expired_count} expired IPs")
 
                 return result
 
         except sqlite3.Error as e:
-            logger.error("Database error updating expiration status: {e}")
+            logger.error(f"Database error updating expiration status: {e}")
             return {
                 "success": False,
                 "error": "Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            logger.error("Unexpected error updating expiration status: {e}")
+            logger.error(f"Unexpected error updating expiration status: {e}")
             return {
                 "success": False,
                 "error": "Unexpected error: {e}",
@@ -157,14 +157,14 @@ class ExpirationService:
                 }
 
         except sqlite3.Error as e:
-            logger.error("Database error setting IP expiration: {e}")
+            logger.error(f"Database error setting IP expiration: {e}")
             return {
                 "success": False,
                 "error": "Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            logger.error("Unexpected error setting IP expiration: {e}")
+            logger.error(f"Unexpected error setting IP expiration: {e}")
             return {
                 "success": False,
                 "error": "Unexpected error: {e}",
@@ -238,14 +238,14 @@ class ExpirationService:
                 }
 
         except sqlite3.Error as e:
-            logger.error("Database error in bulk expiration update: {e}")
+            logger.error(f"Database error in bulk expiration update: {e}")
             return {
                 "success": False,
                 "error": "Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            logger.error("Unexpected error in bulk expiration update: {e}")
+            logger.error(f"Unexpected error in bulk expiration update: {e}")
             return {
                 "success": False,
                 "error": "Unexpected error: {e}",
@@ -312,14 +312,14 @@ class ExpirationService:
                 }
 
         except sqlite3.Error as e:
-            logger.error("Database error extending IP expiration: {e}")
+            logger.error(f"Database error extending IP expiration: {e}")
             return {
                 "success": False,
                 "error": "Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            logger.error("Unexpected error extending IP expiration: {e}")
+            logger.error(f"Unexpected error extending IP expiration: {e}")
             return {
                 "success": False,
                 "error": "Unexpected error: {e}",

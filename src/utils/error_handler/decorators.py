@@ -53,7 +53,7 @@ def handle_api_errors(func: Callable) -> Callable:
         try:
             return func(*args, **kwargs)
         except ValidationError as e:
-            logger.warning("Validation error in {func.__name__}: {e.message}")
+            logger.warning(f"Validation error in {func.__name__}: {e.message}")
             return (
                 jsonify(
                     {
@@ -65,13 +65,13 @@ def handle_api_errors(func: Callable) -> Callable:
                 422,
             )
         except AuthenticationError as e:
-            logger.warning("Authentication error in {func.__name__}: {e.message}")
+            logger.warning(f"Authentication error in {func.__name__}: {e.message}")
             return jsonify({"error": e.message, "error_code": e.code}), 401
         except AuthorizationError as e:
-            logger.warning("Authorization error in {func.__name__}: {e.message}")
+            logger.warning(f"Authorization error in {func.__name__}: {e.message}")
             return jsonify({"error": e.message, "error_code": e.code}), 403
         except Exception as e:
-            logger.error("Unexpected error in {func.__name__}: {e}")
+            logger.error(f"Unexpected error in {func.__name__}: {e}")
             return (
                 jsonify(
                     {"error": "Internal server error", "error_code": "INTERNAL_ERROR"}
@@ -103,7 +103,7 @@ def retry_on_error(
                     return func(*args, **kwargs)
                 except exceptions as e:
                     if attempt == max_attempts:
-                        logger.error("{func.__name__} 최대 재시도 횟수 초과: {e}")
+                        logger.error(f"{func.__name__} 최대 재시도 횟수 초과: {e}")
                         raise
 
                     logger.warning(
@@ -148,14 +148,14 @@ def log_performance(operation: str) -> Callable:
                 elapsed = time.time() - start_time
 
                 if elapsed > 1.0:  # 1초 이상 걸린 작업만 로깅
-                    logger.warning("{operation} took {elapsed:.2f}s")
+                    logger.warning(f"{operation} took {elapsed:.2f}s")
                 else:
-                    logger.debug("{operation} completed in {elapsed:.3f}s")
+                    logger.debug(f"{operation} completed in {elapsed:.3f}s")
 
                 return result
             except Exception as e:
                 elapsed = time.time() - start_time
-                logger.error("{operation} failed after {elapsed:.2f}s: {e}")
+                logger.error(f"{operation} failed after {elapsed:.2f}s: {e}")
                 raise
 
         return wrapper

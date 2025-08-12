@@ -26,16 +26,16 @@ class MSAReportFormatter:
 
         # 시스템 개요
         print("\n📋 시스템 개요:")
-        print("   • 테스트 일시: {system_info.get('test_timestamp', 'N/A')}")
-        print("   • 아키텍처: {system_info.get('architecture', 'N/A')}")
-        print("   • 배포 방식: {system_info.get('deployment_method', 'N/A')}")
-        print("   • 서비스 수: {len(system_info.get('services', {}))}개")
+        print(f"   • 테스트 일시: {system_info.get('test_timestamp', 'N/A')}")
+        print(f"   • 아키텍처: {system_info.get('architecture', 'N/A')}")
+        print(f"   • 배포 방식: {system_info.get('deployment_method', 'N/A')}")
+        print(f"   • 서비스 수: {len(system_info.get('services', {}))}개")
 
         # 인프라 정보
         if "infrastructure" in system_info:
             print("\n🏗️  인프라 구성:")
             for component, version in system_info["infrastructure"].items():
-                print("   • {component.replace('_', ' ').title()}: {version}")
+                print(f"   • {component.replace('_', ' ').title()}: {version}")
 
         # 서비스 상태
         MSAReportFormatter._format_service_status(system_info)
@@ -62,12 +62,12 @@ class MSAReportFormatter:
 
         for service_name, service_info in services.items():
             status_emoji = "✅" if service_info["status"] == "healthy" else "❌"
-            print("   {status_emoji} {service_name}: {service_info['status']}")
+            print(f"   {status_emoji} {service_name}: {service_info['status']}")
 
             if service_info["status"] == "healthy":
                 healthy_services += 1
-                print("      URL: {service_info['url']}")
-                print("      응답시간: {service_info['response_time']:.3f}초")
+                print(f"      URL: {service_info['url']}")
+                print(f"      응답시간: {service_info['response_time']:.3f}초")
 
         system_health_rate = (healthy_services / total_services) * 100
         print(
@@ -87,7 +87,7 @@ class MSAReportFormatter:
         )
         total_routes = len(gateway_results)
 
-        print("   • 라우팅 테스트: {successful_routes}/{total_routes} 성공")
+        print(f"   • 라우팅 테스트: {successful_routes}/{total_routes} 성공")
 
         for test_name, result in gateway_results.items():
             status_emoji = "✅" if result["status"] == "success" else "❌"
@@ -106,16 +106,16 @@ class MSAReportFormatter:
         avg_response_times = []
         for endpoint_name, metrics in performance_metrics.items():
             avg_response_times.append(metrics["avg_response_time"])
-            print("   • {endpoint_name.replace('_', ' ').title()}:")
-            print("     - 평균 응답시간: {metrics['avg_response_time']:.3f}초")
+            print(f"   • {endpoint_name.replace('_', ' ').title()}:")
+            print(f"     - 평균 응답시간: {metrics['avg_response_time']:.3f}초")
             print(
                 "     - 최소/최대: {metrics['min_response_time']:.3f}s / {metrics['max_response_time']:.3f}s"
             )
-            print("     - 성공률: {metrics['success_rate']:.1f}%")
+            print(f"     - 성공률: {metrics['success_rate']:.1f}%")
 
         if avg_response_times:
             overall_avg = sum(avg_response_times) / len(avg_response_times)
-            print("\n   📈 전체 평균 응답시간: {overall_avg:.3f}초")
+            print(f"\n   📈 전체 평균 응답시간: {overall_avg:.3f}초")
 
     @staticmethod
     def _format_final_evaluation(overall_score: float, system_info: Dict) -> bool:
@@ -124,7 +124,7 @@ class MSAReportFormatter:
         print("🎯 최종 평가 및 권장사항")
         print("=" * 100)
 
-        print("📊 종합 점수: {overall_score:.1f}/100")
+        print(f"📊 종합 점수: {overall_score:.1f}/100")
 
         # 등급 판정
         if overall_score >= 90:
@@ -144,8 +144,8 @@ class MSAReportFormatter:
             grade_emoji = "❌"
             status_message = "MSA 아키텍처에 중요한 문제가 있어 개선이 필요합니다."
 
-        print("🏆 시스템 등급: {grade_emoji} {grade}")
-        print("\n💡 상태: {status_message}")
+        print(f"🏆 시스템 등급: {grade_emoji} {grade}")
+        print(f"\n💡 상태: {status_message}")
 
         # 권장사항
         MSAReportFormatter._format_recommendations(overall_score)
@@ -183,7 +183,7 @@ class MSAReportFormatter:
             ]
 
         for recommendation in recommendations:
-            print("   {recommendation}")
+            print(f"   {recommendation}")
 
     @staticmethod
     def _format_msa_recommendations():
@@ -207,8 +207,8 @@ class MSAReportFormatter:
         )
 
         print("\n" + "=" * 100)
-        print("✨ MSA 통합 테스트 완료 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print("   테스트된 서비스: {total_count}개")
-        print("   전체 가용성: {system_health_rate:.1f}%")
-        print("   종합 점수: {overall_score:.1f}/100 ({grade})")
+        print(f"✨ MSA 통합 테스트 완료 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"   테스트된 서비스: {total_count}개")
+        print(f"   전체 가용성: {system_health_rate:.1f}%")
+        print(f"   종합 점수: {overall_score:.1f}/100 ({grade})")
         print("=" * 100)

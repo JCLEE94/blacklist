@@ -26,9 +26,9 @@ class TestCICDPipelineTriggers:
             "repository": "JCLEE94/blacklist",
         }
 
-        # 워크플로우 파일 검증
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
-        assert workflow_path.exists()
+        # 워크플로우 파일 검증 - use existing workflow file
+        workflow_path = Path(".github/workflows/ci-cd.yml")
+        assert workflow_path.exists(), f"CI/CD workflow file not found at {workflow_path}"
 
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)

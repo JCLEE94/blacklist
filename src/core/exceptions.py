@@ -76,7 +76,7 @@ except ImportError:
             self.error_code = error_code or self.__class__.__name__
             self.details = details or {}
             self.cause = cause
-            logger.error("{self.error_code}: {message}")
+            logger.error(f"{self.error_code}: {message}")
 
         def to_api_response(self) -> Dict[str, Any]:
             return {

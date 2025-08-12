@@ -45,7 +45,7 @@ class DatabaseOptimizationMixin:
 
             except Exception as e:
                 conn.rollback()
-                logger.error("Database operation failed: {e}")
+                logger.error(f"Database operation failed: {e}")
                 raise
 
         return results

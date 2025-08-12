@@ -139,7 +139,7 @@ class BaseIPSource(ABC):
             return {"status": "skipped", "reason": "not_needed"}
 
         try:
-            self.logger.info("Updating data from {self.source_name}")
+            self.logger.info(f"Updating data from {self.source_name}")
 
             start_time = datetime.utcnow()
             entries = list(self.fetch_data())
@@ -164,7 +164,7 @@ class BaseIPSource(ABC):
 
         except Exception as e:
             self._error_count += 1
-            self.logger.error("Error updating from {self.source_name}: {str(e)}")
+            self.logger.error(f"Error updating from {self.source_name}: {str(e)}")
 
             return {
                 "status": "error",

@@ -49,3 +49,66 @@ Selector labels
 app.kubernetes.io/name: {{ include "blacklist.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "blacklist.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "blacklist.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Redis connection string
+*/}}
+{{- define "blacklist.redisUrl" -}}
+{{- if .Values.redis.enabled -}}
+redis://{{ include "blacklist.fullname" . }}-redis:6379/0
+{{- else -}}
+memory://localhost
+{{- end -}}
+{{- end }}
+
+{{/*
+Database URL
+*/}}
+{{- define "blacklist.databaseUrl" -}}
+{{- if .Values.persistence.data.enabled -}}
+sqlite:////app/instance/blacklist.db
+{{- else -}}
+sqlite:///:memory:
+{{- end -}}
+{{- end }}
+
+{{/*
+Security context for containers
+*/}}
+{{- define "blacklist.securityContext" -}}
+{{- with .Values.containerSecurityContext }}
+{{- toYaml . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Pod security context
+*/}}
+{{- define "blacklist.podSecurityContext" -}}
+{{- with .Values.securityContext }}
+{{- toYaml . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Image pull secrets
+*/}}
+{{- define "blacklist.imagePullSecrets" -}}
+{{- if .Values.imagePullSecrets }}
+imagePullSecrets:
+  {{- range .Values.imagePullSecrets }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

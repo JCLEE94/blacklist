@@ -44,6 +44,6 @@ def get_config(config_name: str = None) -> Type[BaseConfig]:
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.warning("Configuration warnings: {'; '.join(errors)}")
+        logger.warning(f"Configuration warnings: {'; '.join(errors)}")
 
     return config_class

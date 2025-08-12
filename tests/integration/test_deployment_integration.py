@@ -120,7 +120,7 @@ def test_kubernetes_manifests():
                 assert "resources" in kustomization
                 assert "namespace" in kustomization
 
-                print("✅ {env.upper()} overlay validation passed")
+                print(f"✅ {env.upper()} overlay validation passed")
 
     return True
 
@@ -166,7 +166,7 @@ def test_argocd_application():
                     assert "prune" in sync_policy["automated"]
                     assert "selfHeal" in sync_policy["automated"]
 
-            print("✅ {app_file.name} validation passed")
+            print(f"✅ {app_file.name} validation passed")
 
     return True
 
@@ -226,7 +226,7 @@ def test_deployment_scripts():
                     "#!/bin/bash"
                 ), "{script_name} missing shebang"
 
-            print("✅ {script_name} validation passed")
+            print(f"✅ {script_name} validation passed")
 
     assert len(found_scripts) > 0, "No deployment scripts found"
 
@@ -392,16 +392,16 @@ def run_all_deployment_integration_tests():
                 passed += 1
             else:
                 failed += 1
-                print("❌ {test_name} test failed")
+                print(f"❌ {test_name} test failed")
         except Exception as e:
             failed += 1
-            print("❌ {test_name} test failed with error: {e}")
+            print(f"❌ {test_name} test failed with error: {e}")
             import traceback
 
             traceback.print_exc()
 
     print("\n" + "=" * 60)
-    print("📊 Test Results: {passed} passed, {failed} failed")
+    print(f"📊 Test Results: {passed} passed, {failed} failed")
     print("=" * 60)
 
     return failed == 0

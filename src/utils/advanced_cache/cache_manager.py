@@ -88,7 +88,7 @@ class EnhancedSmartCache:
             return value
 
         except Exception as e:
-            logger.error("Cache GET error for key '{key}': {e}")
+            logger.error(f"Cache GET error for key '{key}': {e}")
             if self.performance:
                 self.performance.record_operation(
                     "get", time.time() - start_time, success=False
@@ -132,7 +132,7 @@ class EnhancedSmartCache:
             return success
 
         except Exception as e:
-            logger.error("Cache SET error for key '{key}': {e}")
+            logger.error(f"Cache SET error for key '{key}': {e}")
             if self.performance:
                 self.performance.record_operation(
                     "set", time.time() - start_time, success=False
@@ -152,7 +152,7 @@ class EnhancedSmartCache:
             return success
 
         except Exception as e:
-            logger.error("Cache DELETE error for key '{key}': {e}")
+            logger.error(f"Cache DELETE error for key '{key}': {e}")
             if self.performance:
                 self.performance.record_operation(
                     "delete", time.time() - start_time, success=False
@@ -172,7 +172,7 @@ class EnhancedSmartCache:
             return deleted_count
 
         except Exception as e:
-            logger.error("Cache DELETE PATTERN error for pattern '{pattern}': {e}")
+            logger.error(f"Cache DELETE PATTERN error for pattern '{pattern}': {e}")
             if self.performance:
                 self.performance.record_operation(
                     "delete_pattern", time.time() - start_time, success=False
@@ -192,7 +192,7 @@ class EnhancedSmartCache:
             return success
 
         except Exception as e:
-            logger.error("Cache CLEAR error: {e}")
+            logger.error(f"Cache CLEAR error: {e}")
             if self.performance:
                 self.performance.record_operation(
                     "clear", time.time() - start_time, success=False
@@ -212,7 +212,7 @@ class EnhancedSmartCache:
             return exists
 
         except Exception as e:
-            logger.error("Cache EXISTS error for key '{key}': {e}")
+            logger.error(f"Cache EXISTS error for key '{key}': {e}")
             if self.performance:
                 self.performance.record_operation(
                     "exists", time.time() - start_time, success=False
@@ -264,7 +264,7 @@ class EnhancedSmartCache:
                 "warm_cache", time.time() - start_time, success=success_count > 0
             )
 
-        logger.info("Cache warmed with {success_count}/{len(data)} entries")
+        logger.info(f"Cache warmed with {success_count}/{len(data)} entries")
 
     def _handle_tags(self, key: str, tags: List[str]):
         """Handle tag-based invalidation (Redis only)"""
@@ -279,7 +279,7 @@ class EnhancedSmartCache:
                     # Add key to tag set
                     self.redis_backend.redis.sadd(tag_key, key)
             except Exception as e:
-                logger.warning("Tag handling error for key '{key}': {e}")
+                logger.warning(f"Tag handling error for key '{key}': {e}")
 
     def invalidate_tags(self, tags: List[str]) -> int:
         """Invalidate all cache entries with given tags"""
@@ -308,7 +308,7 @@ class EnhancedSmartCache:
             return total_deleted
 
         except Exception as e:
-            logger.error("Tag invalidation error: {e}")
+            logger.error(f"Tag invalidation error: {e}")
             return 0
 
     def health_check(self) -> Dict[str, Any]:

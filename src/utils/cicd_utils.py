@@ -26,7 +26,7 @@ class CICDUtils:
                 return response.json().get("content", "")
             return ""
         except Exception as e:
-            print("❌ 파일 조회 실패 ({file_path}): {e}")
+            print(f"❌ 파일 조회 실패 ({file_path}): {e}")
             return ""
 
     def update_file(self, project_id: str, file_path: str, content: str) -> bool:
@@ -40,13 +40,13 @@ class CICDUtils:
             }
             response = self.session.post("{self.base_url}/api/v1/files", json=data)
             if response.status_code in [200, 201]:
-                print("✅ 파일 업데이트 완료: {file_path}")
+                print(f"✅ 파일 업데이트 완료: {file_path}")
                 return True
             else:
-                print("❌ 파일 업데이트 실패 ({file_path}): {response.status_code}")
+                print(f"❌ 파일 업데이트 실패 ({file_path}): {response.status_code}")
                 return False
         except Exception as e:
-            print("❌ 파일 업데이트 실패 ({file_path}): {e}")
+            print(f"❌ 파일 업데이트 실패 ({file_path}): {e}")
             return False
 
     def set_cicd_variable(self, project_id: str, key: str, value: str) -> bool:
@@ -57,13 +57,13 @@ class CICDUtils:
                 "{self.base_url}/api/v1/projects/{project_id}/variables", json=data
             )
             if response.status_code in [200, 201]:
-                print("✅ CI/CD 변수 설정 완료: {key}")
+                print(f"✅ CI/CD 변수 설정 완료: {key}")
                 return True
             else:
-                print("❌ CI/CD 변수 설정 실패 ({key}): {response.status_code}")
+                print(f"❌ CI/CD 변수 설정 실패 ({key}): {response.status_code}")
                 return False
         except Exception as e:
-            print("❌ CI/CD 변수 설정 실패 ({key}): {e}")
+            print(f"❌ CI/CD 변수 설정 실패 ({key}): {e}")
             return False
 
     def retry_pipeline(self, project_id: str, pipeline_id: str) -> bool:
@@ -74,13 +74,13 @@ class CICDUtils:
                 json={"project_id": project_id},
             )
             if response.status_code in [200, 201]:
-                print("✅ 파이프라인 재시도 시작: {pipeline_id}")
+                print(f"✅ 파이프라인 재시도 시작: {pipeline_id}")
                 return True
             else:
-                print("❌ 파이프라인 재시도 실패 ({pipeline_id}): {response.status_code}")
+                print(f"❌ 파이프라인 재시도 실패 ({pipeline_id}): {response.status_code}")
                 return False
         except Exception as e:
-            print("❌ 파이프라인 재시도 실패 ({pipeline_id}): {e}")
+            print(f"❌ 파이프라인 재시도 실패 ({pipeline_id}): {e}")
             return False
 
     def get_project_info(self, project_id: str) -> Dict[str, Any]:
@@ -91,7 +91,7 @@ class CICDUtils:
                 return response.json().get("data", {})
             return {}
         except Exception as e:
-            print("❌ 프로젝트 정보 조회 실패: {e}")
+            print(f"❌ 프로젝트 정보 조회 실패: {e}")
             return {}
 
     def list_pipelines(self, project_id: str, status: str = "failed") -> list:
@@ -105,7 +105,7 @@ class CICDUtils:
                 return response.json().get("data", {}).get("pipelines", [])
             return []
         except Exception as e:
-            print("❌ 파이프라인 목록 조회 실패: {e}")
+            print(f"❌ 파이프라인 목록 조회 실패: {e}")
             return []
 
     def create_issue(self, project_id: str, title: str, description: str) -> bool:
@@ -119,11 +119,11 @@ class CICDUtils:
             }
             response = self.session.post("{self.base_url}/api/v1/issues", json=data)
             if response.status_code in [200, 201]:
-                print("✅ 이슈 생성 완료: {title}")
+                print(f"✅ 이슈 생성 완료: {title}")
                 return True
             return False
         except Exception as e:
-            print("❌ 이슈 생성 실패: {e}")
+            print(f"❌ 이슈 생성 실패: {e}")
             return False
 
     def send_notification(
@@ -142,7 +142,7 @@ class CICDUtils:
             )
             return response.status_code in [200, 201]
         except Exception as e:
-            print("❌ 알림 발송 실패: {e}")
+            print(f"❌ 알림 발송 실패: {e}")
             return False
 
     def backup_file(self, project_id: str, file_path: str) -> str:
@@ -155,7 +155,7 @@ class CICDUtils:
                     return backup_path
             return ""
         except Exception as e:
-            print("❌ 파일 백업 실패: {e}")
+            print(f"❌ 파일 백업 실패: {e}")
             return ""
 
     def validate_yaml_syntax(self, yaml_content: str) -> bool:
@@ -167,7 +167,7 @@ class CICDUtils:
             yaml.safe_load(yaml_content)
             return True
         except yaml.YAMLError as e:
-            print("❌ YAML 문법 오류: {e}")
+            print(f"❌ YAML 문법 오류: {e}")
             return False
         except ImportError:
             print("⚠️ PyYAML이 설치되지 않음 - YAML 검증 생략")

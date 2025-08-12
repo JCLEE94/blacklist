@@ -65,7 +65,7 @@ class StatusService:
             }
 
         except Exception as e:
-            logger.error("Error getting collection status: {e}")
+            logger.error(f"Error getting collection status: {e}")
             return {
                 "error": str(e),
                 "enabled": False,
@@ -137,7 +137,7 @@ class StatusService:
                 }
             ]
         except Exception as e:
-            logger.warning("Could not load config history: {e}")
+            logger.warning(f"Could not load config history: {e}")
             return []
 
     def _get_system_health_info(self) -> Dict[str, Any]:
@@ -182,7 +182,7 @@ class StatusService:
             return True
 
         except Exception as e:
-            logger.error("Error checking collection enabled status: {e}")
+            logger.error(f"Error checking collection enabled status: {e}")
             return False
 
     def get_collection_summary(self) -> Dict[str, Any]:

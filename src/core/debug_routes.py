@@ -108,5 +108,5 @@ def raw_source_check():
         )
 
     except Exception as e:
-        logger.error("Debug API error: {e}")
+        logger.error(f"Debug API error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

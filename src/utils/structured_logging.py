@@ -156,8 +156,62 @@ class StructuredLogger:
         conn.close()
 
     def _save_to_db(self, record: Dict[str, Any]):
-        """DB 저장 비활성화 (성능 최적화)"""
-        pass
+        """DB 저장 구현 (선택적 활성화)"""
+        if not hasattr(self, 'db_enabled') or not self.db_enabled:
+            return  # DB 저장 비활성화 상태
+            
+        try:
+            import sqlite3
+            from datetime import datetime
+            
+            # 데이터베이스 연결 (기존 blacklist.db 사용)
+            db_path = "/home/jclee/app/blacklist/instance/blacklist.db"
+            
+            with sqlite3.connect(db_path, timeout=5.0) as conn:
+                cursor = conn.cursor()
+                
+                # logs 테이블이 없으면 생성
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS structured_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        level TEXT NOT NULL,
+                        logger_name TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        context TEXT,  -- JSON 문자열
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # 로그 레코드 삽입
+                cursor.execute('''
+                    INSERT INTO structured_logs 
+                    (timestamp, level, logger_name, message, context)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (
+                    record.get('timestamp', datetime.now().isoformat()),
+                    record.get('level', 'INFO'),
+                    record.get('name', 'unknown'),
+                    record.get('message', ''),
+                    str(record.get('context', {})) if record.get('context') else None
+                ))
+                
+                conn.commit()
+                
+        except Exception as e:
+            # DB 저장 실패 시 조용히 무시 (로깅 시스템 자체에서 오류 방지)
+            import logging
+            logging.getLogger(__name__).debug(f"DB logging failed: {e}")
+    
+    def enable_db_logging(self, enabled: bool = True):
+        """DB 로깅 활성화/비활성화"""
+        self.db_enabled = enabled
+        if enabled:
+            import logging
+            logging.getLogger(__name__).info("Structured logging DB storage enabled")
+        else:
+            import logging  
+            logging.getLogger(__name__).info("Structured logging DB storage disabled")
 
     def _add_to_buffer(self, record: Dict[str, Any]):
         """로그를 버퍼에 추가"""
@@ -198,7 +252,7 @@ class StructuredLogger:
                 }
                 if hasattr(g, "request_id"):
                     record["context"]["request_id"] = g.request_id
-        except:
+        except Exception as e:
             pass
 
         # 예외 정보 추가
@@ -303,7 +357,7 @@ class BufferHandler(logging.Handler):
                 log_entry["traceback"] = self.format(record)
 
             self.structured_logger._add_to_buffer(log_entry)
-        except Exception:
+        except Exception as e:
             self.handleError(record)
 
 

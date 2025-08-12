@@ -332,7 +332,7 @@ class TestSystemIntegration:
                     "Service {service}: {'Available' if service_instance else 'Not available'}"
                 )
             except Exception as e:
-                print("Service {service}: Error - {e}")
+                print(f"Service {service}: Error - {e}")
 
     def test_performance_monitoring(self):
         """성능 모니터링 테스트"""

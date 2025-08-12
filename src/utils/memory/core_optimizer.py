@@ -120,7 +120,7 @@ class CoreMemoryOptimizer:
             # 후 통계
             new_stats = self.get_memory_stats()
             freed_mb = stats.process_memory_mb - new_stats.process_memory_mb
-            logger.info("GC completed, freed {freed_mb:.1f}MB memory")
+            logger.info(f"GC completed, freed {freed_mb:.1f}MB memory")
 
             return True
 
@@ -152,7 +152,7 @@ class CoreMemoryOptimizer:
                 del chunk
 
         except Exception as e:
-            logger.error("Chunked processing error: {e}")
+            logger.error(f"Chunked processing error: {e}")
             raise
 
     def start_memory_monitoring(self):
@@ -192,7 +192,7 @@ class CoreMemoryOptimizer:
                 time.sleep(self.monitoring_interval)
 
             except Exception as e:
-                logger.error("Memory monitoring error: {e}")
+                logger.error(f"Memory monitoring error: {e}")
                 time.sleep(self.monitoring_interval)
 
     def get_object_from_pool(self, object_type: str, factory: callable = None) -> Any:

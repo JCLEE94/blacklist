@@ -35,7 +35,7 @@ def settings_page():
         "data_retention_days": settings_manager.get_setting("data_retention_days", 90),
         "max_ips_per_source": settings_manager.get_setting("max_ips_per_source", 50000),
     }
-    logger.info("설정 로드됨: regtech_username={settings_dict['regtech_username']}")
+    logger.info(f"설정 로드됨: regtech_username={settings_dict['regtech_username']}")
 
     # 수집 상태 가져오기 - 기본값 False로 변경
     collection_enabled = False
@@ -49,14 +49,14 @@ def settings_page():
                 "수집 상태: {collection_enabled}, sources: {status.get('sources', {})}"
             )
     except Exception as e:
-        logger.warning("Collection Manager에서 수집 상태 확인 실패: {e}")
+        logger.warning(f"Collection Manager에서 수집 상태 확인 실패: {e}")
         # Unified Service로 폴백
         try:
             unified_service = container.resolve("unified_service")
             if unified_service:
                 collection_enabled = unified_service.collection_enabled
         except Exception as e2:
-            logger.warning("Unified Service에서 수집 상태 확인 실패: {e2}")
+            logger.warning(f"Unified Service에서 수집 상태 확인 실패: {e2}")
 
     # 업데이트 주기 설정 추가
     settings_dict["update_interval"] = (
@@ -75,7 +75,7 @@ def settings_page():
         "active_ips": "계산 중...",
     }
 
-    logger.info("🔴 Context 전달됨: settings={settings_dict}")
+    logger.info(f"🔴 Context 전달됨: settings={settings_dict}")
     logger.info("🔴 템플릿 렌더링 시작")
 
     return render_template("settings.html", **context)
@@ -113,7 +113,7 @@ def handle_regtech_settings():
             return jsonify(regtech_settings)
 
         except Exception as e:
-            logger.error("REGTECH 설정 조회 오류: {e}")
+            logger.error(f"REGTECH 설정 조회 오류: {e}")
             return jsonify({"error": str(e)}), 500
 
     elif request.method == "POST":
@@ -142,7 +142,7 @@ def handle_regtech_settings():
                 "regtech_password", password, "password", "credentials"
             )
 
-            logger.info("REGTECH 설정 저장 완료: username={username}")
+            logger.info(f"REGTECH 설정 저장 완료: username={username}")
 
             # 환경변수 업데이트
             import os
@@ -159,5 +159,5 @@ def handle_regtech_settings():
             )
 
         except Exception as e:
-            logger.error("REGTECH 설정 저장 오류: {e}")
+            logger.error(f"REGTECH 설정 저장 오류: {e}")
             return jsonify({"error": str(e)}), 500

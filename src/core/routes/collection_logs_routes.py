@@ -59,7 +59,7 @@ def api_collection_logs():
                                     }
                                 )
                 except Exception as e:
-                    logger.warning("Failed to read log file {log_path}: {e}")
+                    logger.warning(f"Failed to read log file {log_path}: {e}")
 
         # unified_service에서 최근 로그 가져오기
         try:
@@ -88,7 +88,7 @@ def api_collection_logs():
 
                 logs.append(formatted_log)
         except Exception as e:
-            logger.warning("Failed to get memory logs: {e}")
+            logger.warning(f"Failed to get memory logs: {e}")
 
         # 시간순 정렬
         logs.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
@@ -103,7 +103,7 @@ def api_collection_logs():
         )
 
     except Exception as e:
-        logger.error("Collection logs error: {e}")
+        logger.error(f"Collection logs error: {e}")
         return jsonify({"success": False, "error": str(e), "logs": []}), 500
 
 
@@ -138,7 +138,7 @@ def get_realtime_logs():
             }
         )
     except Exception as e:
-        logger.error("Realtime logs error: {e}")
+        logger.error(f"Realtime logs error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -179,5 +179,5 @@ def get_collection_logs():
             }
         )
     except Exception as e:
-        logger.error("Collection logs error: {e}")
+        logger.error(f"Collection logs error: {e}")
         return jsonify(create_error_response(e)), 500

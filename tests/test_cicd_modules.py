@@ -15,7 +15,7 @@ def test_imports():
         print("✅ All imports successful")
         return True
     except Exception as e:
-        print("❌ Import failed: {e}")
+        print(f"❌ Import failed: {e}")
         return False
 
 
@@ -48,7 +48,7 @@ def test_functionality():
 
         return True
     except Exception as e:
-        print("❌ Functionality test failed: {e}")
+        print(f"❌ Functionality test failed: {e}")
         return False
 
 
@@ -79,7 +79,7 @@ def test_integration():
 
         return True
     except Exception as e:
-        print("❌ Integration test failed: {e}")
+        print(f"❌ Integration test failed: {e}")
         return False
 
 
@@ -96,10 +96,10 @@ def test_line_count_compliance():
     for file_path in cicd_files:
         line_count = len(file_path.read_text().splitlines())
         if line_count > 500:
-            print("❌ {file_path.name}: {line_count} lines (exceeds 500)")
+            print(f"❌ {file_path.name}: {line_count} lines (exceeds 500)")
             all_compliant = False
         else:
-            print("✅ {file_path.name}: {line_count} lines (compliant)")
+            print(f"✅ {file_path.name}: {line_count} lines (compliant)")
 
     return all_compliant
 
@@ -120,20 +120,20 @@ def main():
     total = len(tests)
 
     for test_name, test_func in tests:
-        print("\n{test_name}")
+        print(f"\n{test_name}")
         print("-" * 30)
 
         try:
             if test_func():
                 passed += 1
-                print("✅ {test_name} PASSED")
+                print(f"✅ {test_name} PASSED")
             else:
-                print("❌ {test_name} FAILED")
+                print(f"❌ {test_name} FAILED")
         except Exception as e:
-            print("❌ {test_name} ERROR: {e}")
+            print(f"❌ {test_name} ERROR: {e}")
 
     print("\n" + "=" * 50)
-    print("🏁 Test Results: {passed}/{total} passed")
+    print(f"🏁 Test Results: {passed}/{total} passed")
 
     if passed == total:
         print("🎉 All tests passed! Modularization successful.")

@@ -31,7 +31,7 @@ class NodePortManager:
                 # https://github.com/user/repo.git 또는 git@github.com:user/repo.git 형식
                 repo_name = url.split('/')[-1].replace('.git', '')
                 return repo_name
-        except Exception:
+        except Exception as e:
             pass
         
         # Fallback: 현재 디렉토리 이름 사용

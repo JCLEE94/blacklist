@@ -163,7 +163,7 @@ class MSAReportGenerator:
                         response_times.append(response.elapsed.total_seconds())
                         if response.status_code == 200:
                             success_count += 1
-                except Exception:
+                except Exception as e:
                     pass
 
             if response_times:

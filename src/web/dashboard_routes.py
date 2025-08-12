@@ -26,7 +26,7 @@ def get_build_time():
                     if line.startswith("BUILD_TIME="):
                         return line.split("=", 1)[1].strip('"')
         return "2025-06-19 17:56:00 KST"  # Fallback to current build time
-    except:
+    except Exception as e:
         return "2025-06-19 17:56:00 KST"  # Fallback to current build time
 
 
@@ -40,7 +40,7 @@ def get_build_version():
                     if line.startswith("BUILD_VERSION="):
                         return line.split("=", 1)[1].strip('"')
         return "v2.1-202506191756"  # Fallback
-    except:
+    except Exception as e:
         return "v2.1-202506191756"  # Fallback
 
 
@@ -71,13 +71,13 @@ def get_stats() -> Dict[str, Any]:
             with open(stats_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         else:
-            logger.warning("통계 파일이 존재하지 않음: {stats_path}")
+            logger.warning(f"통계 파일이 존재하지 않음: {stats_path}")
     except json.JSONDecodeError as e:
-        logger.error("통계 파일 JSON 파싱 오류: {e}")
+        logger.error(f"통계 파일 JSON 파싱 오류: {e}")
     except IOError as e:
-        logger.error("통계 파일 읽기 오류: {e}")
+        logger.error(f"통계 파일 읽기 오류: {e}")
     except Exception as e:
-        logger.error("통계 파일 처리 중 예상치 못한 오류: {e}")
+        logger.error(f"통계 파일 처리 중 예상치 못한 오류: {e}")
 
     # Return default stats if file doesn't exist or has errors
     return {
@@ -146,7 +146,7 @@ def dashboard():
         )
 
     except Exception as e:
-        logger.error("Dashboard error: {e}")
+        logger.error(f"Dashboard error: {e}")
         # Return a simple error page
         return (
             "<h1>Dashboard Error</h1><p>Error: {str(e)}</p>"
@@ -168,7 +168,7 @@ def data_management():
             current_time=datetime.now(),
         )
     except Exception as e:
-        logger.error("Data management page error: {e}")
+        logger.error(f"Data management page error: {e}")
         flash("페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))
 
@@ -240,7 +240,7 @@ def connection_status():
         )
 
     except Exception as e:
-        logger.error("Connection status error: {e}")
+        logger.error(f"Connection status error: {e}")
         flash("연결 상태 확인 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))
 
@@ -282,6 +282,6 @@ def system_logs():
         )
 
     except Exception as e:
-        logger.error("System logs error: {e}")
+        logger.error(f"System logs error: {e}")
         flash("로그 페이지 로드 중 오류가 발생했습니다: {str(e)}", "error")
         return redirect(url_for("dashboard.dashboard"))

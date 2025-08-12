@@ -6,33 +6,46 @@ metadata:
   labels:
     app: blacklist
     environment: production
+    gitops.jclee.me/managed: "true"
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/manifest-generate-paths: "chart/blacklist"
 spec:
-  project: default
+  project: blacklist-project
   
   source:
     repoURL: https://github.com/JCLEE94/blacklist.git
     targetRevision: HEAD
-    path: helm-chart/blacklist
+    path: chart/blacklist
     helm:
       valueFiles:
         - values.yaml
       parameters:
         - name: image.tag
           value: "latest"
+        - name: image.pullPolicy
+          value: "Always"
+        - name: replicaCount
+          value: "1"
+        - name: service.nodePort.enabled
+          value: "true"
+        - name: service.nodePort.port
+          value: "32542"
       values: |
         image:
           repository: registry.jclee.me/jclee94/blacklist
           tag: latest
           pullPolicy: Always
         
-        replicaCount: 2
+        replicaCount: 1
         
         service:
           type: ClusterIP
           port: 80
           targetPort: 2541
+          nodePort:
+            enabled: true
+            port: 32542
         
         ingress:
           enabled: true
@@ -53,33 +66,38 @@ spec:
         
         resources:
           limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
             cpu: 200m
             memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
         
         autoscaling:
-          enabled: true
-          minReplicas: 2
-          maxReplicas: 10
+          enabled: false
+          minReplicas: 1
+          maxReplicas: 3
           targetCPUUtilizationPercentage: 70
         
         persistence:
           data:
-            enabled: false
+            enabled: true
             size: 1Gi
             storageClass: "local-path"
-          logs:
-            enabled: false
-            size: 500Mi
-            storageClass: "local-path"
+            mountPath: "/app/instance"
         
-        security:
-          forceDisableCollection: "false"
-          
-        collection:
-          enabled: "true"
+        env:
+          - name: FLASK_ENV
+            value: "production"
+          - name: PORT
+            value: "2541"
+          - name: DATABASE_URL
+            value: "sqlite:////app/instance/blacklist.db"
+          - name: COLLECTION_ENABLED
+            value: "true"
+          - name: FORCE_DISABLE_COLLECTION
+            value: "false"
+          - name: REDIS_URL
+            value: "redis://redis:6379/0"
         
         redis:
           enabled: true
@@ -103,6 +121,8 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:
@@ -117,6 +137,16 @@ spec:
       kind: Deployment
       jsonPointers:
         - /spec/replicas
+    - group: v1
+      kind: Service
+      name: blacklist-nodeport
+      jsonPointers:
+        - /spec/ports
+    - group: v1
+      kind: Namespace
+      name: default
+      jsonPointers:
+        - /metadata
 
 ---
 apiVersion: argoproj.io/v1alpha1

@@ -176,7 +176,7 @@ class ConfigValidator:
             if create:
                 try:
                     os.makedirs(path, exist_ok=True)
-                    logger.info("Created directory: {path}")
+                    logger.info(f"Created directory: {path}")
                 except Exception as e:
                     error_msg = message or "Failed to create directory {path}: {e}"
                     self.errors.append(error_msg)
@@ -190,11 +190,11 @@ class ConfigValidator:
         """검증 수행 및 결과 반환"""
         if self.warnings:
             for warning in self.warnings:
-                logger.warning("Config warning: {warning}")
+                logger.warning(f"Config warning: {warning}")
 
         if self.errors:
             for error in self.errors:
-                logger.error("Config error: {error}")
+                logger.error(f"Config error: {error}")
             return False
 
         return True

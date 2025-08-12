@@ -37,7 +37,7 @@ class LoggingOperationsMixin:
             self._save_log_to_db(log_entry)
 
         except Exception as e:
-            self.logger.warning("Failed to add collection log: {e}")
+            self.logger.warning(f"Failed to add collection log: {e}")
 
     def get_collection_logs(self, limit: int = 50) -> List[Dict]:
         """수집 로그 조회"""
@@ -45,5 +45,5 @@ class LoggingOperationsMixin:
             # 메모리에서 최신 로그 반환
             return self.collection_logs[:limit]
         except Exception as e:
-            self.logger.warning("Failed to get collection logs: {e}")
+            self.logger.warning(f"Failed to get collection logs: {e}")
             return []

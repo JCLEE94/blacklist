@@ -6,7 +6,7 @@
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -64,8 +64,6 @@ class BlacklistEntry:
         """만료 날짜 계산"""
         if self.last_seen:
             try:
-                from datetime import datetime, timedelta
-
                 last_date = datetime.strptime(self.last_seen, "%Y-%m")
                 expire_date = last_date + timedelta(days=90)
                 return expire_date.isoformat()
@@ -135,8 +133,6 @@ class MonthData:
         """초기화 후 처리"""
         if self.detection_date and not self.expiry_date:
             try:
-                from datetime import datetime, timedelta
-
                 detection = datetime.fromisoformat(
                     self.detection_date.replace("Z", "+00:00")
                 )
@@ -158,8 +154,6 @@ class MonthData:
     def month_date(self) -> Optional[str]:
         """월 날짜 ISO 형식"""
         try:
-            from datetime import datetime
-
             month_dt = datetime.strptime(self.month, "%Y-%m")
             return month_dt.isoformat()
         except ValueError:
@@ -225,7 +219,10 @@ class SystemHealth:
         additional_info: Optional[Dict] = None,
     ):
         """서비스 상태 추가"""
-        service_info = {"status": status, "last_check": datetime.now().isoformat()}
+        service_info = {
+            "status": status,
+            "last_check": datetime.now().isoformat()
+        }
 
         if response_time is not None:
             service_info["response_time_ms"] = response_time
@@ -382,17 +379,24 @@ class APIResponse:
 
     @classmethod
     def success_response(
-        cls, data: Any = None, message: str = None, metadata: Dict[str, Any] = None
+        cls,
+        data: Any = None,
+        message: str = None,
+        metadata: Dict[str, Any] = None
     ) -> "APIResponse":
         """성공 응답 생성"""
-        return cls(success=True, data=data, message=message, metadata=metadata or {})
+        return cls(
+            success=True, data=data, message=message, metadata=metadata or {}
+        )
 
     @classmethod
     def error_response(
         cls, error: str, data: Any = None, metadata: Dict[str, Any] = None
     ) -> "APIResponse":
         """에러 응답 생성"""
-        return cls(success=False, error=error, data=data, metadata=metadata or {})
+        return cls(
+            success=False, error=error, data=data, metadata=metadata or {}
+        )
 
 
 @dataclass
@@ -414,15 +418,11 @@ class CacheEntry:
     @property
     def is_expired(self) -> bool:
         """만료 여부 확인"""
-        from datetime import timedelta
-
         return datetime.now() > self.created_at + timedelta(seconds=self.ttl)
 
     @property
     def remaining_ttl(self) -> int:
         """남은 TTL (초)"""
-        from datetime import timedelta
-
         if self.is_expired:
             return 0
 

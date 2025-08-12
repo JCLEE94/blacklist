@@ -53,7 +53,7 @@ class DataCleaningPipeline:
         Returns:
             처리 결과 통계
         """
-        logger.info("{source} 데이터 정제 시작: {len(raw_data)}개 항목")
+        logger.info(f"{source} 데이터 정제 시작: {len(raw_data)}개 항목")
 
         # 통계 초기화
         self.validation_stats = {key: 0 for key in self.validation_stats.keys()}
@@ -73,7 +73,7 @@ class DataCleaningPipeline:
                 ip_hash = self._generate_ip_hash(validated_entry["ip"])
                 if ip_hash in self.processed_ips:
                     self.validation_stats["duplicates"] += 1
-                    logger.debug("중복 IP 스킵: {validated_entry['ip']}")
+                    logger.debug(f"중복 IP 스킵: {validated_entry['ip']}")
                     continue
 
                 self.processed_ips.add(ip_hash)
@@ -89,7 +89,7 @@ class DataCleaningPipeline:
                 self.validation_stats["valid_ips"] += 1
 
             except Exception as e:
-                logger.error("데이터 처리 중 오류: {e}, 데이터: {raw_entry}")
+                logger.error(f"데이터 처리 중 오류: {e}, 데이터: {raw_entry}")
                 self.validation_stats["errors"] += 1
 
         # 5. 벌크 저장
@@ -97,7 +97,7 @@ class DataCleaningPipeline:
             save_result = self._bulk_save_to_db(cleaned_data, source)
             self.validation_stats["saved"] = save_result.get("imported_count", 0)
 
-        logger.info("{source} 데이터 정제 완료: {len(cleaned_data)}개 정제됨")
+        logger.info(f"{source} 데이터 정제 완료: {len(cleaned_data)}개 정제됨")
         return {
             "success": True,
             "source": source,
@@ -123,12 +123,12 @@ class DataCleaningPipeline:
             # IP 주소 추출
             ip_str = entry.get("ip", "").strip()
             if not ip_str:
-                logger.debug("IP 주소 누락: {entry}")
+                logger.debug(f"IP 주소 누락: {entry}")
                 return None
 
             # IP 주소 형식 검증
             if not self._is_valid_public_ip(ip_str):
-                logger.debug("유효하지 않은 IP: {ip_str}")
+                logger.debug(f"유효하지 않은 IP: {ip_str}")
                 return None
 
             # 기본 엔트리 구조 생성
@@ -146,7 +146,7 @@ class DataCleaningPipeline:
             return validated
 
         except Exception as e:
-            logger.error("IP 엔트리 검증 오류: {e}")
+            logger.error(f"IP 엔트리 검증 오류: {e}")
             return None
 
     def _is_valid_public_ip(self, ip_str: str) -> bool:
@@ -345,7 +345,7 @@ class DataCleaningPipeline:
                 score += 10
             elif days_ago <= 30:
                 score += 5
-        except Exception:
+        except Exception as e:
             pass
 
         return min(max(score, 0), 100)  # 0-100 범위로 제한
@@ -368,7 +368,7 @@ class DataCleaningPipeline:
                 logger.error("BlacklistManager가 초기화되지 않음")
                 return {"success": False, "error": "No blacklist manager"}
 
-            logger.info("{source} 데이터 벌크 저장 시작: {len(cleaned_data)}개")
+            logger.info(f"{source} 데이터 벌크 저장 시작: {len(cleaned_data)}개")
 
             # UnifiedBlacklistManager의 bulk_import_ips 사용
             result = self.blacklist_manager.bulk_import_ips(
@@ -385,11 +385,11 @@ class DataCleaningPipeline:
                 )
                 return result
             else:
-                logger.error("{source} 벌크 저장 실패: {result.get('error', 'Unknown')}")
+                logger.error(f"{source} 벌크 저장 실패: {result.get('error', 'Unknown')}")
                 return result
 
         except Exception as e:
-            logger.error("벌크 저장 중 오류: {e}")
+            logger.error(f"벌크 저장 중 오류: {e}")
             return {"success": False, "error": str(e)}
 
     def get_processing_stats(self) -> Dict[str, Any]:
@@ -464,8 +464,8 @@ def test_data_pipeline():
     result = pipeline.process_collector_data(test_data, "TEST")
 
     print("✅ 데이터 파이프라인 테스트 결과:")
-    print("   - 처리된 데이터: {result['processed_count']}개")
-    print("   - 통계: {result['stats']}")
+    print(f"   - 처리된 데이터: {result['processed_count']}개")
+    print(f"   - 통계: {result['stats']}")
 
     return result
 

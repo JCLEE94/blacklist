@@ -39,7 +39,7 @@ class FileSource(BaseIPSource):
             return False
 
         if not os.path.exists(file_path):
-            self.logger.error("File not found: {file_path}")
+            self.logger.error(f"File not found: {file_path}")
             return False
 
         return True
@@ -72,7 +72,7 @@ class FileSource(BaseIPSource):
                 raise ValueError("Unsupported file format: {file_format}")
 
         except Exception as e:
-            self.logger.error("Failed to parse file {file_path}: {e}")
+            self.logger.error(f"Failed to parse file {file_path}: {e}")
             raise
 
     def _detect_format(self, file_path: str) -> str:

@@ -161,7 +161,7 @@ def test_regtech_collector_mock_integration():
             assert ips[0]["source"] == "REGTECH"
             assert ips[1]["ip"] == "10.0.0.1"
 
-            print("✅ Mock data collection test passed ({len(ips)} IPs)")
+            print(f"✅ Mock data collection test passed ({len(ips)} IPs)")
 
             # Verify session was used correctly
             assert session_instance.get.called
@@ -395,16 +395,16 @@ def run_all_collection_integration_tests():
                 passed += 1
             else:
                 failed += 1
-                print("❌ {test_name} test failed")
+                print(f"❌ {test_name} test failed")
         except Exception as e:
             failed += 1
-            print("❌ {test_name} test failed with error: {e}")
+            print(f"❌ {test_name} test failed with error: {e}")
             import traceback
 
             traceback.print_exc()
 
     print("\n" + "=" * 60)
-    print("📊 Test Results: {passed} passed, {failed} failed")
+    print(f"📊 Test Results: {passed} passed, {failed} failed")
     print("=" * 60)
 
     return failed == 0

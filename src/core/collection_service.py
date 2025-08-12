@@ -4,6 +4,7 @@ Collection service for managing data collection
 """
 import logging
 import os
+import re
 import subprocess
 from datetime import datetime
 
@@ -94,7 +95,7 @@ class CollectionService:
                     cmd.extend(["--end-date", params["end_date"]])
 
             # Run collector
-            logger.info("Running REGTECH collector: {' '.join(cmd)}")
+            logger.info(f"Running REGTECH collector: {' '.join(cmd)}")
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -110,15 +111,14 @@ class CollectionService:
                     for line in lines:
                         if "collected" in line.lower():
                             # Extract number from line
-                            import re
-
+                            # re imported at module level
                             match = re.search(r"\d+", line)
                             if match:
                                 count = int(match.group())
                                 self.status["sources"]["regtech"][
                                     "total_collected"
                                 ] += count
-                except Exception:
+                except Exception as e:
                     pass
 
                 self.status["sources"]["regtech"]["status"] = "completed"
@@ -148,7 +148,7 @@ class CollectionService:
         except Exception as e:
             self.status["sources"]["regtech"]["status"] = "error"
             self.status["sources"]["regtech"]["last_error"] = str(e)
-            logger.error("REGTECH collection error: {e}")
+            logger.error(f"REGTECH collection error: {e}")
             return {"success": False, "error": str(e)}
 
     def trigger_secudium(self, params=None):
@@ -181,7 +181,7 @@ class CollectionService:
                     cmd.extend(["--end-date", params["end_date"]])
 
             # Run collector
-            logger.info("Running SECUDIUM collector: {' '.join(cmd)}")
+            logger.info(f"Running SECUDIUM collector: {' '.join(cmd)}")
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -194,15 +194,14 @@ class CollectionService:
                 # Parse output for count
                 try:
                     if "SUCCESS" in result.stdout:
-                        import re
-
+                        # re imported at module level
                         match = re.search(r"총 (\d+)개", result.stdout)
                         if match:
                             count = int(match.group(1))
                             self.status["sources"]["secudium"][
                                 "total_collected"
                             ] += count
-                except Exception:
+                except Exception as e:
                     pass
 
                 self.status["sources"]["secudium"]["status"] = "completed"
@@ -232,7 +231,7 @@ class CollectionService:
         except Exception as e:
             self.status["sources"]["secudium"]["status"] = "error"
             self.status["sources"]["secudium"]["last_error"] = str(e)
-            logger.error("SECUDIUM collection error: {e}")
+            logger.error(f"SECUDIUM collection error: {e}")
             return {"success": False, "error": str(e)}
 
 

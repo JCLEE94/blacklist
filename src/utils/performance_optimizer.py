@@ -362,7 +362,7 @@ def optimize_database_queries():
 def cleanup_performance_data():
     """성능 데이터 정리"""
     expired_count = g_performance_monitor.smart_cache.clear_expired()
-    logger.info("Cleaned up {expired_count} expired cache entries")
+    logger.info(f"Cleaned up {expired_count} expired cache entries")
 
     # 메트릭 히스토리 정리 (7일 이상 된 것)
     cutoff_date = datetime.now() - timedelta(days=7)

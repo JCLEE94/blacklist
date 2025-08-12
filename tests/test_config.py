@@ -12,7 +12,7 @@ from typing import Dict
 from unittest.mock import patch
 
 
-class TestConfigManager:
+class ConfigManagerHelper:
     """Centralized test configuration management"""
 
     def __init__(self):
@@ -143,7 +143,7 @@ class TestConfigManager:
 
                 conn.commit()
         except Exception as e:
-            print("Warning: Failed to create test database: {e}")
+            print(f"Warning: Failed to create test database: {e}")
 
     def cleanup(self):
         """Clean up test environment"""
@@ -153,11 +153,11 @@ class TestConfigManager:
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
-class TestEnvironmentManager:
+class EnvironmentManagerHelper:
     """Manages test environment context"""
 
     def __init__(self):
-        self.config = TestConfigManager()
+        self.config = ConfigManagerHelper()
         self.original_env = {}
         self.patches = []
 
@@ -190,11 +190,11 @@ class TestEnvironmentManager:
         self.config.cleanup()
 
 
-class TestConfig:
+class ConfigHelper:
     """Test configuration wrapper class"""
 
     def __init__(self):
-        self.config = TestConfigManager()
+        self.config = ConfigManagerHelper()
 
     def cleanup(self):
         """Clean up test configuration"""
@@ -202,14 +202,14 @@ class TestConfig:
             self.config.cleanup()
 
 
-def get_test_config() -> TestConfig:
+def get_test_config() -> ConfigHelper:
     """Get test configuration instance"""
-    return TestConfig()
+    return ConfigHelper()
 
 
 def pytest_configure():
     """Configure pytest with test settings"""
-    config = TestConfig()
+    config = ConfigHelper()
     config.setup_test_environment()
 
 
@@ -290,13 +290,13 @@ def create_test_app(config_name: str = "testing"):
         app.config["WTF_CSRF_ENABLED"] = False  # Disable CSRF for testing
 
         # Override data directory
-        test_config = TestConfig()
+        test_config = ConfigHelper()
         app.config["DATA_DIR"] = test_config.temp_dir
 
         return app
 
     except ImportError as e:
-        print("Warning: Could not import app_compact: {e}")
+        print(f"Warning: Could not import app_compact: {e}")
         # Fallback to minimal app
         from flask import Flask
 
@@ -323,7 +323,7 @@ def create_test_data(count: int = 10) -> list:
 
 
 # Type aliases for public interface
-# Legacy aliases removed - use TestConfig and TestEnvironmentManager directly
+# Legacy aliases removed - use ConfigHelper and EnvironmentManagerHelper directly
 
 # Global test configuration instance
 TEST_CONFIG = get_test_config()

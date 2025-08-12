@@ -34,7 +34,7 @@ class CollectionServiceMixin:
                 else:
                     total_failed += 1
             except Exception as e:
-                self.logger.error("REGTECH 수집 실패: {e}")
+                self.logger.error(f"REGTECH 수집 실패: {e}")
                 results["regtech"] = {"success": False, "error": str(e)}
                 total_failed += 1
 
@@ -48,7 +48,7 @@ class CollectionServiceMixin:
                 else:
                     total_failed += 1
             except Exception as e:
-                self.logger.error("SECUDIUM 수집 실패: {e}")
+                self.logger.error(f"SECUDIUM 수집 실패: {e}")
                 results["secudium"] = {"success": False, "error": str(e)}
                 total_failed += 1
 
@@ -103,7 +103,7 @@ class CollectionServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error("IP 검색 실패 ({ip}): {e}")
+            self.logger.error(f"IP 검색 실패 ({ip}): {e}")
             return {
                 "success": False,
                 "ip": ip,
@@ -138,7 +138,7 @@ class CollectionServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error("수집 활성화 실패: {e}")
+            self.logger.error(f"수집 활성화 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -164,7 +164,7 @@ class CollectionServiceMixin:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error("수집 비활성화 실패: {e}")
+            self.logger.error(f"수집 비활성화 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -195,7 +195,7 @@ class CollectionServiceMixin:
             # 최근 로그 추가
             try:
                 status["recent_logs"] = self.get_collection_logs(limit=5)
-            except Exception:
+            except Exception as e:
                 status["recent_logs"] = []
 
             # 소스 상태 확인
@@ -208,7 +208,7 @@ class CollectionServiceMixin:
 
             return status
         except Exception as e:
-            self.logger.error("수집 상태 조회 실패: {e}")
+            self.logger.error(f"수집 상태 조회 실패: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -326,7 +326,7 @@ class CollectionServiceMixin:
                     "triggered_at": datetime.now().isoformat(),
                 }
         except Exception as e:
-            self.logger.error("REGTECH 수집 트리거 실패: {e}")
+            self.logger.error(f"REGTECH 수집 트리거 실패: {e}")
             return {
                 "success": False,
                 "message": "REGTECH 수집 트리거 실패: {str(e)}",
@@ -364,7 +364,7 @@ class CollectionServiceMixin:
                 "triggered_at": datetime.now().isoformat(),
             }
         except Exception as e:
-            self.logger.error("SECUDIUM 수집 트리거 실패: {e}")
+            self.logger.error(f"SECUDIUM 수집 트리거 실패: {e}")
             return {
                 "success": False,
                 "message": "SECUDIUM 수집 트리거 실패: {str(e)}",
@@ -387,7 +387,7 @@ class CollectionServiceMixin:
 
             return missing_dates
         except Exception as e:
-            self.logger.error("누락 날짜 조회 실패: {e}")
+            self.logger.error(f"누락 날짜 조회 실패: {e}")
             return []
 
     def _has_data_for_date(self, source: str, date_str: str) -> bool:
@@ -399,5 +399,5 @@ class CollectionServiceMixin:
             # 간단한 데이터 존재 확인
             # 실제 구현에서는 데이터베이스 쿼리 필요
             return False  # 임시로 False 반환
-        except Exception:
+        except Exception as e:
             return False

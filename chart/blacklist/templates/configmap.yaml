@@ -6,11 +6,7 @@ metadata:
   labels:
     {{- include "blacklist.labels" . | nindent 4 }}
 data:
-  FLASK_ENV: {{ .Values.config.flask_env | quote }}
-  DATABASE_URL: {{ .Values.config.database_url | quote }}
-  REDIS_URL: {{ .Values.config.redis_url | quote }}
-  COLLECTION_ENABLED: {{ .Values.config.collection_enabled | quote }}
-  FORCE_DISABLE_COLLECTION: {{ .Values.config.force_disable_collection | quote }}
-  PORT: "2541"
-  HOST: "0.0.0.0"
-  PYTHONUNBUFFERED: "1"
+  FLASK_ENV: {{ index .Values.env 0 "value" | default "production" | quote }}
+  PORT: {{ index .Values.env 1 "value" | default "2541" | quote }}
+  DATABASE_URL: {{ index .Values.env 2 "value" | default "sqlite:////app/instance/blacklist.db" | quote }}
+  REDIS_URL: {{ index .Values.env 3 "value" | default "redis://blacklist-redis:6379/0" | quote }}

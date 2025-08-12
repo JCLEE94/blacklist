@@ -67,7 +67,7 @@ def unified_auth(
                 try:
                     user_context = registry.auth_manager.verify_token(token)
                 except Exception as e:
-                    logger.warning("Token verification failed: {e}")
+                    logger.warning(f"Token verification failed: {e}")
                     if required:
                         return jsonify({"error": "Invalid or expired token"}), 401
 
@@ -79,7 +79,7 @@ def unified_auth(
                     if client_name:
                         user_context = {"client_name": client_name, "api_key": True}
                 except Exception as e:
-                    logger.warning("API key verification failed: {e}")
+                    logger.warning(f"API key verification failed: {e}")
                     if required:
                         return jsonify({"error": "Invalid API key"}), 401
 
@@ -94,7 +94,7 @@ def unified_auth(
                             "api_key": True,
                         }
                 except Exception as e:
-                    logger.warning("API key verification failed: {e}")
+                    logger.warning(f"API key verification failed: {e}")
                     if required:
                         return jsonify({"error": "Invalid API key"}), 401
 

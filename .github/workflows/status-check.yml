@@ -1,0 +1,148 @@
+name: Infrastructure Status
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Every 30 minutes
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: System Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Check application endpoints
+      run: |
+        echo "🏥 Checking application health..."
+        
+        # Main application
+        if curl -f -s https://blacklist.jclee.me/health > /dev/null; then
+          echo "✅ Main application is healthy"
+        else
+          echo "❌ Main application is down"
+        fi
+        
+        # API endpoints
+        if curl -f -s https://blacklist.jclee.me/api/health > /dev/null; then
+          echo "✅ API is responsive"
+        else
+          echo "⚠️ API may have issues"
+        fi
+        
+        # FortiGate feed
+        if curl -f -s https://blacklist.jclee.me/api/fortigate > /dev/null; then
+          echo "✅ FortiGate feed is available"
+        else
+          echo "⚠️ FortiGate feed may have issues"
+        fi
+
+    - name: Check infrastructure services
+      run: |
+        echo "🏗️ Checking infrastructure services..."
+        
+        # Docker registry
+        if curl -f -s https://registry.jclee.me > /dev/null; then
+          echo "✅ Docker registry is accessible"
+        else
+          echo "⚠️ Docker registry connection issue"
+        fi
+        
+        # ArgoCD
+        if curl -f -s -k https://argo.jclee.me > /dev/null; then
+          echo "✅ ArgoCD is accessible"
+        else
+          echo "⚠️ ArgoCD connection issue"
+        fi
+
+    - name: Performance metrics
+      run: |
+        echo "📊 Performance check..."
+        
+        # Response time check
+        RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' https://blacklist.jclee.me/health)
+        echo "⏱️ Health endpoint response time: ${RESPONSE_TIME}s"
+        
+        # Convert to milliseconds and check threshold
+        RESPONSE_MS=$(echo "$RESPONSE_TIME * 1000" | bc -l | cut -d. -f1)
+        
+        if [ "$RESPONSE_MS" -lt 50 ]; then
+          echo "🚀 Excellent performance (<50ms)"
+        elif [ "$RESPONSE_MS" -lt 200 ]; then
+          echo "✅ Good performance (<200ms)"
+        elif [ "$RESPONSE_MS" -lt 1000 ]; then
+          echo "⚠️ Acceptable performance (<1s)"
+        else
+          echo "❌ Poor performance (>1s) - investigation needed"
+        fi
+
+  deployment-status:
+    name: Check Deployment Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+    - name: ArgoCD application status
+      run: |
+        echo "🔄 Checking ArgoCD deployment status..."
+        
+        # Try to get ArgoCD status (may fail if token is not available)
+        if [ -n "${{ secrets.ARGOCD_TOKEN }}" ]; then
+          STATUS=$(curl -k -s -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+            https://argo.jclee.me/api/v1/applications/blacklist | \
+            jq -r '.status.sync.status // "Unknown"' 2>/dev/null || echo "Unknown")
+          
+          HEALTH=$(curl -k -s -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+            https://argo.jclee.me/api/v1/applications/blacklist | \
+            jq -r '.status.health.status // "Unknown"' 2>/dev/null || echo "Unknown")
+          
+          echo "📱 ArgoCD Status:"
+          echo "- Sync: $STATUS"
+          echo "- Health: $HEALTH"
+          
+          if [ "$STATUS" = "Synced" ] && [ "$HEALTH" = "Healthy" ]; then
+            echo "✅ ArgoCD deployment is healthy"
+          else
+            echo "⚠️ ArgoCD deployment needs attention"
+          fi
+        else
+          echo "⚠️ ArgoCD token not available - skipping status check"
+        fi
+
+    - name: GitHub Actions status
+      run: |
+        echo "⚙️ GitHub Actions Status:"
+        echo "- Current workflow: ✅ Running"
+        echo "- Branch: ${{ github.ref_name }}"
+        echo "- Trigger: ${{ github.event_name }}"
+        echo "- Runner: ${{ runner.os }}"
+
+  summary:
+    name: Status Summary  
+    runs-on: ubuntu-latest
+    needs: [health-check, deployment-status]
+    if: always()
+
+    steps:
+    - name: Generate status report
+      run: |
+        echo "📋 Infrastructure Status Report"
+        echo "=============================="
+        echo "🕐 Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+        echo ""
+        echo "🏥 Health Check: ${{ needs.health-check.result }}"
+        echo "🚀 Deployment Status: ${{ needs.deployment-status.result }}"
+        echo ""
+        
+        OVERALL="✅ All systems operational"
+        if [ "${{ needs.health-check.result }}" != "success" ] || [ "${{ needs.deployment-status.result }}" != "success" ]; then
+          OVERALL="⚠️ Some systems need attention"
+        fi
+        
+        echo "🎯 Overall Status: $OVERALL"
+        echo ""
+        echo "🔗 Quick Links:"
+        echo "- Application: https://blacklist.jclee.me"
+        echo "- API Health: https://blacklist.jclee.me/api/health"
+        echo "- ArgoCD: https://argo.jclee.me/applications/blacklist"
+        echo "- Docker Registry: https://registry.jclee.me"

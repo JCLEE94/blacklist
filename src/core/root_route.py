@@ -68,7 +68,7 @@ def calculate_source_distribution(stats):
             },
         }
     except Exception as e:
-        logger.error("소스별 분포 계산 실패: {e}")
+        logger.error(f"소스별 분포 계산 실패: {e}")
         # 오류 시 기본값 반환
         return {
             "regtech": {"count": 0, "percentage": 0},

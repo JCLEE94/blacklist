@@ -44,7 +44,7 @@ def clear_database():
         try:
             result = service.clear_all_database_data()
         except Exception as e:
-            logger.error("Failed to clear database: {e}")
+            logger.error(f"Failed to clear database: {e}")
             result = {"success": False, "error": str(e)}
 
         if result.get("success"):
@@ -67,7 +67,7 @@ def clear_database():
             )
 
     except Exception as e:
-        logger.error("Database clear error: {e}")
+        logger.error(f"Database clear error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -90,7 +90,7 @@ def maintenance_cleanup():
         )
 
     except Exception as e:
-        logger.error("Maintenance cleanup error: {e}")
+        logger.error(f"Maintenance cleanup error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -105,7 +105,7 @@ def maintenance_clear_cache():
         return jsonify({"success": True, "message": "캐시가 초기화되었습니다."})
 
     except Exception as e:
-        logger.error("Clear cache error: {e}")
+        logger.error(f"Clear cache error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -217,7 +217,7 @@ def get_raw_data():
         )
 
     except Exception as e:
-        logger.error("Failed to get raw data: {e}")
+        logger.error(f"Failed to get raw data: {e}")
         return (
             jsonify(
                 {
@@ -252,7 +252,7 @@ def get_expiring_ips():
             }
         )
     except Exception as e:
-        logger.error("Get expiring IPs error: {e}")
+        logger.error(f"Get expiring IPs error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -276,7 +276,7 @@ def set_ip_expiration(ip):
         # 날짜 형식 파싱
         try:
             expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
-        except Exception:
+        except Exception as e:
             return (
                 jsonify(
                     {
@@ -307,7 +307,7 @@ def set_ip_expiration(ip):
     except ValidationError as e:
         return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
-        logger.error("Set IP expiration error: {e}")
+        logger.error(f"Set IP expiration error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -328,7 +328,7 @@ def update_expiration_status():
 
         return jsonify(result)
     except Exception as e:
-        logger.error("Update expiration status error: {e}")
+        logger.error(f"Update expiration status error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -348,7 +348,7 @@ def search_single_ip(ip: str):
 
         return jsonify({"success": True, "data": result})
     except Exception as e:
-        logger.error("Single IP search error: {e}")
+        logger.error(f"Single IP search error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -393,7 +393,7 @@ def search_batch_ips():
 
         return jsonify({"success": True, "results": results})
     except Exception as e:
-        logger.error("Batch IP search error: {e}")
+        logger.error(f"Batch IP search error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -428,7 +428,7 @@ def not_found_error(error):
 @admin_routes_bp.errorhandler(500)
 def internal_error(error):
     """500 에러 핸들러"""
-    logger.error("Internal server error: {error}")
+    logger.error(f"Internal server error: {error}")
     return (
         jsonify(
             {

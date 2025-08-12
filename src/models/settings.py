@@ -92,7 +92,7 @@ class SettingsManager:
                     return json.loads(value) if value else default
                 else:
                     return value
-        except Exception:
+        except Exception as e:
             return default
 
     def set_setting(
@@ -142,7 +142,7 @@ class SettingsManager:
 
                 for key, value, setting_type in rows:
                     settings[key] = self._convert_value(value, setting_type)
-        except Exception:
+        except Exception as e:
             pass
 
         return settings
@@ -161,7 +161,7 @@ class SettingsManager:
                     if category not in settings:
                         settings[category] = {}
                     settings[category][key] = self._convert_value(value, setting_type)
-        except Exception:
+        except Exception as e:
             pass
 
         return settings

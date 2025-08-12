@@ -18,9 +18,9 @@ LOCAL_URL = "http://localhost:8541"
 def print_test(test_name, passed, message=""):
     """Print test result with formatting"""
     status = "✅ PASS" if passed else "❌ FAIL"
-    print("{status} - {test_name}")
+    print(f"{status} - {test_name}")
     if message:
-        print("    {message}")
+        print(f"    {message}")
 
 
 def test_health_endpoint(base_url):
@@ -159,8 +159,8 @@ def test_cookie_configuration():
 
 def run_integration_tests(base_url=BASE_URL):
     """Run all integration tests"""
-    print("\n🧪 Running Integration Tests for {base_url}")
-    print("📅 Test Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n🧪 Running Integration Tests for {base_url}")
+    print(f"📅 Test Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
     tests = [
@@ -187,10 +187,10 @@ def run_integration_tests(base_url=BASE_URL):
     total = len(results)
     success_rate = (passed / total * 100) if total > 0 else 0
 
-    print("Total Tests: {total}")
-    print("Passed: {passed}")
-    print("Failed: {total - passed}")
-    print("Success Rate: {success_rate:.1f}%")
+    print(f"Total Tests: {total}")
+    print(f"Passed: {passed}")
+    print(f"Failed: {total - passed}")
+    print(f"Success Rate: {success_rate:.1f}%")
 
     if success_rate == 100:
         print("\n🎉 All tests passed!")

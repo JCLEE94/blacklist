@@ -43,14 +43,14 @@ def get_collection_status():
         try:
             stats = service.get_system_health()
         except Exception as e:
-            logger.warning("Failed to get system health: {e}")
+            logger.warning(f"Failed to get system health: {e}")
             stats = {"total_ips": 0, "active_ips": 0}
 
         # 최근 로그 가져오기
         try:
             recent_logs = service.get_collection_logs(limit=10)
         except Exception as e:
-            logger.warning("Failed to get collection logs: {e}")
+            logger.warning(f"Failed to get collection logs: {e}")
             recent_logs = []
 
         return jsonify(
@@ -78,7 +78,7 @@ def get_collection_status():
             }
         )
     except Exception as e:
-        logger.error("Collection status error: {e}")
+        logger.error(f"Collection status error: {e}")
         return (
             jsonify(
                 {
@@ -112,7 +112,7 @@ def enable_collection():
         # 요청에서 clear_data 파라미터 확인
         try:
             data = request.get_json() or {}
-        except Exception:
+        except Exception as e:
             data = {}
         clear_data = data.get("clear_data", False)
 
@@ -143,7 +143,7 @@ def enable_collection():
             }
         )
     except Exception as e:
-        logger.error("Enable collection error: {e}")
+        logger.error(f"Enable collection error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -185,7 +185,7 @@ def disable_collection():
             }
         )
     except Exception as e:
-        logger.error("Disable collection error: {e}")
+        logger.error(f"Disable collection error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -213,7 +213,7 @@ def collection_statistics():
             }
         )
     except Exception as e:
-        logger.error("Collection statistics error: {e}")
+        logger.error(f"Collection statistics error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -232,7 +232,7 @@ def get_collection_intervals():
             }
         )
     except Exception as e:
-        logger.error("Get collection intervals error: {e}")
+        logger.error(f"Get collection intervals error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -281,5 +281,5 @@ def update_collection_intervals():
             }
         )
     except Exception as e:
-        logger.error("Update collection intervals error: {e}")
+        logger.error(f"Update collection intervals error: {e}")
         return jsonify(create_error_response(e)), 500

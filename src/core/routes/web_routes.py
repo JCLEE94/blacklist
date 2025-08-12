@@ -25,7 +25,7 @@ def _get_dashboard_data():
         # 실제 통계 데이터 수집
         stats = service.get_system_health()
     except Exception as e:
-        logger.error("Dashboard data collection error: {e}")
+        logger.error(f"Dashboard data collection error: {e}")
         # 기본값 사용
         stats = {
             "total_ips": 0,
@@ -75,7 +75,7 @@ def dashboard():
     try:
         return render_template("dashboard.html", **_get_dashboard_data())
     except Exception as e:
-        logger.error("Dashboard template error: {e}")
+        logger.error(f"Dashboard template error: {e}")
         return (
             jsonify(
                 {
@@ -106,7 +106,7 @@ def blacklist_search():
     try:
         return render_template("blacklist_search.html")
     except Exception as e:
-        logger.error("Search page error: {e}")
+        logger.error(f"Search page error: {e}")
         return (
             jsonify(
                 {
@@ -131,7 +131,7 @@ def unified_control():
     try:
         return render_template("unified_control.html")
     except Exception as e:
-        logger.error("Unified control page error: {e}")
+        logger.error(f"Unified control page error: {e}")
         return (
             jsonify(
                 {
@@ -150,7 +150,7 @@ def connection_status():
     try:
         return render_template("connection_status.html")
     except Exception as e:
-        logger.error("Connection status page error: {e}")
+        logger.error(f"Connection status page error: {e}")
         return (
             jsonify(
                 {
@@ -175,7 +175,7 @@ def system_logs():
     try:
         return render_template("system_logs.html")
     except Exception as e:
-        logger.error("System logs page error: {e}")
+        logger.error(f"System logs page error: {e}")
         return redirect(url_for("web_routes.docker_logs_page"))
 
 
@@ -185,7 +185,7 @@ def statistics():
     try:
         return render_template("statistics.html")
     except Exception as e:
-        logger.error("Statistics page error: {e}")
+        logger.error(f"Statistics page error: {e}")
         return (
             jsonify(
                 {

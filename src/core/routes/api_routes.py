@@ -37,7 +37,7 @@ def health_check():
             }
         )
     except Exception as e:
-        logger.error("Health check failed: {e}")
+        logger.error(f"Health check failed: {e}")
         return (
             jsonify(
                 {
@@ -69,7 +69,7 @@ def service_status():
             }
         )
     except Exception as e:
-        logger.error("Service status error: {e}")
+        logger.error(f"Service status error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -108,7 +108,7 @@ def get_active_blacklist():
             }
         )
     except Exception as e:
-        logger.error("Active blacklist error: {e}")
+        logger.error(f"Active blacklist error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -131,7 +131,7 @@ def get_active_blacklist_txt():
         )
         return response
     except Exception as e:
-        logger.error("Active blacklist txt error: {e}")
+        logger.error(f"Active blacklist txt error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -147,7 +147,7 @@ def get_active_blacklist_simple():
         response = Response(ip_list, mimetype="text/plain")
         return response
     except Exception as e:
-        logger.error("Active blacklist simple error: {e}")
+        logger.error(f"Active blacklist simple error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -162,5 +162,5 @@ def get_fortigate_simple():
 
         return jsonify(data)
     except Exception as e:
-        logger.error("FortiGate simple error: {e}")
+        logger.error(f"FortiGate simple error: {e}")
         return jsonify(create_error_response(e)), 500

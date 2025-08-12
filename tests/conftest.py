@@ -10,7 +10,7 @@ import pytest
 from tests.test_collection_mocks import enable_collection_for_tests
 
 # Import modularized test components
-from tests.test_config import TestEnvironmentManager, create_test_app
+from tests.test_config import EnvironmentManagerHelper, create_test_app
 from tests.test_database import _create_additional_test_tables, init_test_database
 from tests.test_fixtures import (
     blacklist_manager,
@@ -36,7 +36,7 @@ sys.path.insert(0, str(project_root))
 @pytest.fixture(scope="session")
 def test_environment():
     """Create comprehensive test environment (session scope)"""
-    with TestEnvironmentManager() as env:
+    with EnvironmentManagerHelper() as env:
         yield env
 
 

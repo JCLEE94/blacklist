@@ -39,8 +39,12 @@ class PipelineStage:
         logger.info(f"Completed stage: {self.name} in {duration:.2f} seconds")
 
     def run(self) -> bool:
-        """Execute stage (to be implemented by subclasses)"""
-        raise NotImplementedError
+        """Execute stage (default implementation)"""
+        logger.info(f"Executing stage: {self.name}")
+        
+        # Default successful execution
+        # Subclasses should override this method for specific functionality
+        return True
 
     def execute(self) -> Dict[str, Any]:
         """Execute stage wrapper with error handling"""

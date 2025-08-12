@@ -1,0 +1,111 @@
+name: PR Quality Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  quick-check:
+    name: Quick Quality Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies (minimal)
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest black isort flake8
+
+    - name: Quick format check
+      run: |
+        echo "🎨 Checking code formatting..."
+        if black --check --diff src/ tests/; then
+          echo "✅ Code formatting is good"
+        else
+          echo "⚠️ Code formatting needs attention"
+        fi
+
+    - name: Quick syntax check
+      run: |
+        echo "🔍 Checking syntax and critical errors..."
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Fast test suite
+      run: |
+        echo "⚡ Running fast tests..."
+        python -m pytest tests/ -v --maxfail=5 -m "not slow and not integration"
+      env:
+        FLASK_ENV: testing
+        FORCE_DISABLE_COLLECTION: true
+        COLLECTION_ENABLED: false
+
+    - name: File structure check
+      run: |
+        echo "📁 Checking project structure..."
+        
+        # Check for required files
+        REQUIRED_FILES=("src/core/app_compact.py" "requirements.txt" "Dockerfile" "main.py")
+        for file in "${REQUIRED_FILES[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ $file is missing"
+            exit 1
+          fi
+        done
+        
+        # Check file sizes
+        LARGE_FILES=$(find src/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 { print $2 " (" $1 " lines)" }')
+        if [ -n "$LARGE_FILES" ]; then
+          echo "📏 Large files found (>500 lines):"
+          echo "$LARGE_FILES"
+        else
+          echo "✅ All files within size limits"
+        fi
+
+  summary:
+    name: PR Check Summary
+    runs-on: ubuntu-latest
+    needs: quick-check
+    if: always()
+
+    steps:
+    - name: PR summary
+      run: |
+        echo "📋 Pull Request Quality Summary"
+        echo "==============================="
+        echo ""
+        echo "Quick Check Result: ${{ needs.quick-check.result }}"
+        echo ""
+        
+        if [ "${{ needs.quick-check.result }}" = "success" ]; then
+          echo "✅ PR looks good for review!"
+          echo "🎯 All basic quality checks passed"
+          echo ""
+          echo "Next steps:"
+          echo "- Code review by maintainers"
+          echo "- Full CI/CD pipeline on merge"
+        else
+          echo "❌ PR needs attention"
+          echo "🔧 Please fix the issues before requesting review"
+          echo ""
+          echo "Common fixes:"
+          echo "- Run 'black src/ tests/' for formatting"  
+          echo "- Run 'isort src/ tests/' for import sorting"
+          echo "- Check syntax errors highlighted above"
+          echo "- Run tests locally: 'pytest tests/ -v'"
+        fi

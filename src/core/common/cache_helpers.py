@@ -104,7 +104,7 @@ class CacheHelper:
                 # 캐시 저장
                 if result is not None:  # None이 아닌 경우만 캐싱
                     cache_manager.set(cache_key, result, ttl=ttl)
-                    logger.debug("Cache set: {cache_key}")
+                    logger.debug(f"Cache set: {cache_key}")
 
                 return result
 
@@ -129,7 +129,7 @@ class CacheHelper:
         """
         pattern = CacheKeyBuilder.build(prefix, *identifiers, "*")
         count = cache_manager.clear_pattern(pattern)
-        logger.info("Invalidated {count} cache entries matching {pattern}")
+        logger.info(f"Invalidated {count} cache entries matching {pattern}")
         return count
 
     @staticmethod
@@ -188,7 +188,7 @@ class CacheWarmer:
 
         for task in self.warming_tasks:
             try:
-                logger.info("Warming cache for {task['name']}")
+                logger.info(f"Warming cache for {task['name']}")
                 value = task["func"]()
 
                 if value is not None:
@@ -200,7 +200,7 @@ class CacheWarmer:
                     results["tasks"].append({"name": task["name"], "status": "no_data"})
 
             except Exception as e:
-                logger.error("Cache warming failed for {task['name']}: {e}")
+                logger.error(f"Cache warming failed for {task['name']}: {e}")
                 results["failed"] += 1
                 results["tasks"].append(
                     {"name": task["name"], "status": "error", "error": str(e)}

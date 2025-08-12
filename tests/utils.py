@@ -28,7 +28,7 @@ def get_container():
     """테스트용 컨테이너 인스턴스 반환"""
     try:
         return _get_container()
-    except Exception:
+    except Exception as e:
         # Fallback to local container
         from .blacklist_container import BlacklistContainer
 

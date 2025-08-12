@@ -46,7 +46,7 @@ def create_minimal_app() -> Flask:
         register_collection_routes(app)
         logger.info("Collection routes registered")
     except Exception as e:
-        logger.error("Failed to register collection routes: {e}")
+        logger.error(f"Failed to register collection routes: {e}")
 
     # 웹 UI 라우트 등록
     try:
@@ -55,7 +55,7 @@ def create_minimal_app() -> Flask:
         app.register_blueprint(web_bp)
         logger.info("Web UI routes registered")
     except Exception as e:
-        logger.error("Failed to register web routes: {e}")
+        logger.error(f"Failed to register web routes: {e}")
 
     # Add global template context for build time
     @app.context_processor
@@ -71,7 +71,7 @@ def create_minimal_app() -> Flask:
                             build_time = line.split("=", 1)[1].strip("'\"")
                             return {"build_time": build_time}
             return {"build_time": "2025-06-18 18:55:33 KST"}
-        except Exception:
+        except Exception as e:
             return {"build_time": "2025-06-18 18:55:33 KST"}
 
     logger.info("Minimal app created successfully")

@@ -42,7 +42,7 @@ def create_api_key():
             expires_in_days=data.get("expires_in_days"),
         )
 
-        logger.info("새 API 키 생성: {api_key_obj.name} (ID: {api_key_obj.key_id})")
+        logger.info(f"새 API 키 생성: {api_key_obj.name} (ID: {api_key_obj.key_id})")
 
         return (
             jsonify(
@@ -58,7 +58,7 @@ def create_api_key():
         )
 
     except Exception as e:
-        logger.error("API 키 생성 실패: {e}")
+        logger.error(f"API 키 생성 실패: {e}")
         return jsonify({"success": False, "error": "API 키 생성에 실패했습니다"}), 500
 
 
@@ -83,7 +83,7 @@ def list_api_keys():
         )
 
     except Exception as e:
-        logger.error("API 키 목록 조회 실패: {e}")
+        logger.error(f"API 키 목록 조회 실패: {e}")
         return jsonify({"success": False, "error": "API 키 목록을 가져올 수 없습니다"}), 500
 
 
@@ -101,7 +101,7 @@ def get_api_key(key_id: str):
         return jsonify({"success": True, "api_key": api_key.to_dict()})
 
     except Exception as e:
-        logger.error("API 키 조회 실패: {e}")
+        logger.error(f"API 키 조회 실패: {e}")
         return jsonify({"success": False, "error": "API 키 정보를 가져올 수 없습니다"}), 500
 
 
@@ -121,13 +121,13 @@ def revoke_api_key(key_id: str):
         success = api_key_manager.revoke_api_key(key_id)
 
         if success:
-            logger.info("API 키 비활성화: {api_key.name} (ID: {key_id})")
+            logger.info(f"API 키 비활성화: {api_key.name} (ID: {key_id})")
             return jsonify({"success": True, "message": "API 키가 성공적으로 비활성화되었습니다"})
         else:
             return jsonify({"success": False, "error": "API 키 비활성화에 실패했습니다"}), 500
 
     except Exception as e:
-        logger.error("API 키 비활성화 실패: {e}")
+        logger.error(f"API 키 비활성화 실패: {e}")
         return jsonify({"success": False, "error": "API 키 비활성화 중 오류가 발생했습니다"}), 500
 
 
@@ -147,13 +147,13 @@ def delete_api_key(key_id: str):
         success = api_key_manager.delete_api_key(key_id)
 
         if success:
-            logger.info("API 키 삭제: {api_key.name} (ID: {key_id})")
+            logger.info(f"API 키 삭제: {api_key.name} (ID: {key_id})")
             return jsonify({"success": True, "message": "API 키가 성공적으로 삭제되었습니다"})
         else:
             return jsonify({"success": False, "error": "API 키 삭제에 실패했습니다"}), 500
 
     except Exception as e:
-        logger.error("API 키 삭제 실패: {e}")
+        logger.error(f"API 키 삭제 실패: {e}")
         return jsonify({"success": False, "error": "API 키 삭제 중 오류가 발생했습니다"}), 500
 
 
@@ -189,7 +189,7 @@ def validate_api_key():
             )
 
     except Exception as e:
-        logger.error("API 키 검증 실패: {e}")
+        logger.error(f"API 키 검증 실패: {e}")
         return jsonify({"success": False, "error": "API 키 검증 중 오류가 발생했습니다"}), 500
 
 
@@ -220,7 +220,7 @@ def get_api_key_stats():
         return jsonify({"success": True, "stats": stats})
 
     except Exception as e:
-        logger.error("API 키 통계 조회 실패: {e}")
+        logger.error(f"API 키 통계 조회 실패: {e}")
         return jsonify({"success": False, "error": "통계를 가져올 수 없습니다"}), 500
 
 

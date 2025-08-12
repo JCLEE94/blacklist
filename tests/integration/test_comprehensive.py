@@ -29,9 +29,9 @@ class IntegrationTester:
         self.test_results.append(result)
 
         status = "✅" if success else "❌"
-        print("{status} {test_name}: {message}")
+        print(f"{status} {test_name}: {message}")
         if details and not success:
-            print("   상세: {details}")
+            print(f"   상세: {details}")
 
     def test_system_health(self):
         """시스템 헬스체크 테스트"""
@@ -213,17 +213,17 @@ class IntegrationTester:
         passed_tests = sum(1 for result in self.test_results if result["success"])
         failed_tests = total_tests - passed_tests
 
-        print("총 테스트: {total_tests}")
-        print("성공: {passed_tests}")
-        print("실패: {failed_tests}")
-        print("성공률: {(passed_tests/total_tests)*100:.1f}%")
-        print("실행시간: {end_time - start_time:.1f}초")
+        print(f"총 테스트: {total_tests}")
+        print(f"성공: {passed_tests}")
+        print(f"실패: {failed_tests}")
+        print(f"성공률: {(passed_tests/total_tests)*100:.1f}%")
+        print(f"실행시간: {end_time - start_time:.1f}초")
 
         if failed_tests > 0:
             print("\n❌ 실패한 테스트:")
             for result in self.test_results:
                 if not result["success"]:
-                    print("  - {result['test']}: {result['message']}")
+                    print(f"  - {result['test']}: {result['message']}")
 
         print("\n🎯 권장사항:")
         if failed_tests == 0:

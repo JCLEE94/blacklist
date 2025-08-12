@@ -61,7 +61,7 @@ class RegTechSource(BaseIPSource):
     def collect_ips(self, **kwargs):
         """IP 수집 실행"""
         try:
-            logger.info("{self.name} 소스에서 IP 수집 시작...")
+            logger.info(f"{self.name} 소스에서 IP 수집 시작...")
 
             # 1. 엑셀 파일 기반 수집 (우선)
             excel_ips = self._collect_from_excel_files()
@@ -93,7 +93,7 @@ class RegTechSource(BaseIPSource):
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info("총 {len(final_ips)}개 IP 수집 완료")
+            logger.info(f"총 {len(final_ips)}개 IP 수집 완료")
             logger.debug(
                 "엑셀: {len(excel_ips)}개, 웹: {len(web_ips)}개, 캐시: {len(cached_ips)}개"
             )
@@ -101,7 +101,7 @@ class RegTechSource(BaseIPSource):
             return result
 
         except Exception as e:
-            print("   ❌ RegTech IP 수집 실패: {e}")
+            print(f"   ❌ RegTech IP 수집 실패: {e}")
             return {"ips": [], "total_count": 0, "error": str(e)}
 
     def _collect_from_excel_files(self):
@@ -123,7 +123,7 @@ class RegTechSource(BaseIPSource):
             if not found_files:
                 return excel_ips
 
-            print("   📊 {len(found_files)}개 엑셀 파일 처리 중...")
+            print(f"   📊 {len(found_files)}개 엑셀 파일 처리 중...")
 
             for file_path in found_files:
                 try:
@@ -147,13 +147,13 @@ class RegTechSource(BaseIPSource):
                                         excel_ips.add(ip)
 
                 except Exception as e:
-                    print("      ⚠️ 엑셀 파일 처리 실패 ({file_path}): {e}")
+                    print(f"      ⚠️ 엑셀 파일 처리 실패 ({file_path}): {e}")
                     continue
 
-            print("      ✅ 엑셀에서 {len(excel_ips)}개 IP 추출")
+            print(f"      ✅ 엑셀에서 {len(excel_ips)}개 IP 추출")
 
         except Exception as e:
-            print("      ❌ 엑셀 파일 수집 실패: {e}")
+            print(f"      ❌ 엑셀 파일 수집 실패: {e}")
 
         return excel_ips
 
@@ -190,15 +190,15 @@ class RegTechSource(BaseIPSource):
                             break
 
                     except Exception as e:
-                        print("         ⚠️ 페이지 {page} 처리 실패: {e}")
+                        print(f"         ⚠️ 페이지 {page} 처리 실패: {e}")
                         break
 
-                print("      ✅ 웹에서 {len(web_ips)}개 IP 수집")
+                print(f"      ✅ 웹에서 {len(web_ips)}개 IP 수집")
             else:
                 print("      ❌ 로그인 실패, 웹 수집 건너뜀")
 
         except Exception as e:
-            print("      ❌ 웹 스크래핑 실패: {e}")
+            print(f"      ❌ 웹 스크래핑 실패: {e}")
 
         return web_ips
 
@@ -239,14 +239,14 @@ class RegTechSource(BaseIPSource):
                                         ip = line.strip()
                                         if self._is_valid_public_ip(ip):
                                             cached_ips.add(ip)
-                            except Exception:
+                            except Exception as e:
                                 continue
 
             if cached_ips:
-                print("      ✅ 캐시에서 {len(cached_ips)}개 IP 로드")
+                print(f"      ✅ 캐시에서 {len(cached_ips)}개 IP 로드")
 
         except Exception as e:
-            print("      ❌ 캐시 데이터 로드 실패: {e}")
+            print(f"      ❌ 캐시 데이터 로드 실패: {e}")
 
         return cached_ips
 
@@ -279,7 +279,7 @@ class RegTechSource(BaseIPSource):
             return False
 
         except Exception as e:
-            print("         ❌ 로그인 오류: {e}")
+            print(f"         ❌ 로그인 오류: {e}")
             return False
 
     def _extract_ips_from_html(self, html_content):
@@ -296,7 +296,7 @@ class RegTechSource(BaseIPSource):
                     page_ips.add(ip)
 
         except Exception as e:
-            print("         ❌ HTML IP 추출 실패: {e}")
+            print(f"         ❌ HTML IP 추출 실패: {e}")
 
         return page_ips
 
@@ -322,7 +322,7 @@ class RegTechSource(BaseIPSource):
 
             return True
 
-        except Exception:
+        except Exception as e:
             return False
 
     def get_source_info(self):

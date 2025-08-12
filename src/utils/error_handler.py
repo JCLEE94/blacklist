@@ -92,7 +92,7 @@ except ImportError:
             self.code = code
             self.status_code = status_code
             self.details = details or {}
-            logger.error("{self.code}: {message}")
+            logger.error(f"{self.code}: {message}")
 
     # 기본 예외 클래스들 정의
     ValidationError = type("ValidationError", (BaseError,), {})
@@ -105,7 +105,7 @@ except ImportError:
             self.error_stats = {}
 
         def log_error(self, error, context=None):
-            logger.error("Error: {error}")
+            logger.error(f"Error: {error}")
 
         def format_error_response(self, error, request_id=None):
             return {"error": {"message": str(error), "code": "ERROR"}}, 500
@@ -121,8 +121,68 @@ except ImportError:
         try:
             return func()
         except Exception as e:
-            logger.error("Safe execute error: {e}")
+            logger.error(f"Safe execute error: {e}")
             return default
 
     def register_error_handlers(app):
-        pass
+        """Flask 애플리케이션에 에러 핸들러 등록"""
+        from flask import jsonify, request
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        @app.errorhandler(400)
+        def bad_request(error):
+            logger.warning(f"Bad Request: {request.url} - {error}")
+            return jsonify({
+                'error': 'Bad Request',
+                'message': str(error.description) if hasattr(error, 'description') else 'Invalid request',
+                'status_code': 400
+            }), 400
+        
+        @app.errorhandler(401)
+        def unauthorized(error):
+            logger.warning(f"Unauthorized access: {request.url}")
+            return jsonify({
+                'error': 'Unauthorized',
+                'message': 'Authentication required',
+                'status_code': 401
+            }), 401
+        
+        @app.errorhandler(403)
+        def forbidden(error):
+            logger.warning(f"Forbidden access: {request.url}")
+            return jsonify({
+                'error': 'Forbidden', 
+                'message': 'Access denied',
+                'status_code': 403
+            }), 403
+        
+        @app.errorhandler(404)
+        def not_found(error):
+            logger.info(f"Not Found: {request.url}")
+            return jsonify({
+                'error': 'Not Found',
+                'message': 'Resource not found',
+                'status_code': 404
+            }), 404
+        
+        @app.errorhandler(500)
+        def internal_error(error):
+            logger.error(f"Internal Server Error: {request.url} - {error}")
+            return jsonify({
+                'error': 'Internal Server Error',
+                'message': 'An unexpected error occurred',
+                'status_code': 500
+            }), 500
+        
+        @app.errorhandler(Exception)
+        def handle_exception(error):
+            logger.error(f"Unhandled Exception: {request.url} - {error}", exc_info=True)
+            return jsonify({
+                'error': 'Internal Server Error',
+                'message': 'An unexpected error occurred', 
+                'status_code': 500
+            }), 500
+        
+        logger.info("Error handlers registered successfully")

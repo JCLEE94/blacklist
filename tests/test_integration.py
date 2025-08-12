@@ -18,13 +18,13 @@ class IntegrationTest:
 
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print("[{timestamp}] [{level}] {message}")
+        print(f"[{timestamp}] [{level}] {message}")
 
     def test(self, name, func):
         """테스트 실행 및 결과 기록"""
-        print("\n{'='*60}")
-        print("테스트: {name}")
-        print("{'='*60}")
+        print(f"\n{'='*60}")
+        print(f"테스트: {name}")
+        print(f"{'='*60}")
 
         try:
             result = func()
@@ -178,8 +178,8 @@ class IntegrationTest:
         print("\n" + "=" * 80)
         print("🧪 블랙리스트 시스템 통합 테스트 시작")
         print("=" * 80)
-        print("Target: {self.base_url}")
-        print("Time: {datetime.now()}")
+        print(f"Target: {self.base_url}")
+        print(f"Time: {datetime.now()}")
 
         # 기본 기능 테스트
         self.test("1. Health Check", self.test_health_check)
@@ -214,11 +214,11 @@ class IntegrationTest:
         errors = sum(1 for _, status, _ in self.test_results if status == "ERROR")
         total = len(self.test_results)
 
-        print("총 테스트: {total}")
-        print("✅ 성공: {passed}")
-        print("❌ 실패: {failed}")
-        print("⚠️  에러: {errors}")
-        print("성공률: {(passed/total*100):.1f}%")
+        print(f"총 테스트: {total}")
+        print(f"✅ 성공: {passed}")
+        print(f"❌ 실패: {failed}")
+        print(f"⚠️  에러: {errors}")
+        print(f"성공률: {(passed/total*100):.1f}%")
 
         # 실패한 테스트 상세
         if failed + errors > 0:
@@ -227,9 +227,9 @@ class IntegrationTest:
             print("=" * 80)
             for name, status, error in self.test_results:
                 if status != "PASSED":
-                    print("- {name}: {status}")
+                    print(f"- {name}: {status}")
                     if error:
-                        print("  Error: {error}")
+                        print(f"  Error: {error}")
 
         return passed == total
 

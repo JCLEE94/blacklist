@@ -328,7 +328,7 @@ class MSAServiceTester:
                 )
 
                 if not success:
-                    print("      오류: {result['error']}")
+                    print(f"      오류: {result['error']}")
 
         except Exception as e:
             response_time = time.time() - start_time
@@ -344,8 +344,8 @@ class MSAServiceTester:
                 "data": None,
             }
             self.results.append(result)
-            print("   ❌ {test.name}: 연결 실패 ({response_time:.3f}s)")
-            print("      오류: {str(e)}")
+            print(f"   ❌ {test.name}: 연결 실패 ({response_time:.3f}s)")
+            print(f"      오류: {str(e)}")
 
     async def _test_performance(self, service_name: str, url: str, target_time: float):
         """성능 테스트"""
@@ -360,7 +360,7 @@ class MSAServiceTester:
 
                     if response.status_code == 200:
                         times.append(response_time)
-            except Exception:
+            except Exception as e:
                 pass
 
         if times:
@@ -410,7 +410,7 @@ class MSAServiceTester:
                 "data": None,
             }
             self.results.append(result)
-            print("   ❌ {service_name} Performance: 테스트 실패")
+            print(f"   ❌ {service_name} Performance: 테스트 실패")
 
     async def run_all_tests(self):
         """모든 테스트 실행"""
@@ -440,17 +440,17 @@ class MSAServiceTester:
         print("\n" + "=" * 80)
         print("📊 MSA 상세 테스트 결과 요약")
         print("=" * 80)
-        print("• 총 테스트: {total_tests}개")
-        print("• 성공: {passed_tests}개")
-        print("• 실패: {failed_tests}개")
-        print("• 성공률: {(passed_tests/total_tests*100):.1f}%")
-        print("• 총 실행 시간: {total_time:.2f}초")
+        print(f"• 총 테스트: {total_tests}개")
+        print(f"• 성공: {passed_tests}개")
+        print(f"• 실패: {failed_tests}개")
+        print(f"• 성공률: {(passed_tests/total_tests*100):.1f}%")
+        print(f"• 총 실행 시간: {total_time:.2f}초")
 
         if failed_tests > 0:
             print("\n❌ 실패한 테스트:")
             for result in self.results:
                 if not result["success"]:
-                    print("   • {result['name']}: {result['error']}")
+                    print(f"   • {result['name']}: {result['error']}")
 
         # 성능 분석
         performance_results = [
@@ -460,7 +460,7 @@ class MSAServiceTester:
             avg_response_time = sum(
                 r["response_time"] for r in performance_results
             ) / len(performance_results)
-            print("\n⚡ 평균 응답 시간: {avg_response_time:.3f}초")
+            print(f"\n⚡ 평균 응답 시간: {avg_response_time:.3f}초")
 
         print("\n" + "=" * 80)
 
@@ -468,7 +468,7 @@ class MSAServiceTester:
             print("🎉 모든 MSA 서비스가 정상적으로 작동합니다!")
             return True
         else:
-            print("⚠️  {failed_tests}개의 테스트가 실패했습니다. 시스템 점검이 필요합니다.")
+            print(f"⚠️  {failed_tests}개의 테스트가 실패했습니다. 시스템 점검이 필요합니다.")
             return False
 
 
@@ -484,7 +484,7 @@ async def main():
         print("\n⏹️  테스트가 사용자에 의해 중단되었습니다.")
         sys.exit(1)
     except Exception as e:
-        print("\n💥 테스트 실행 중 오류 발생: {e}")
+        print(f"\n💥 테스트 실행 중 오류 발생: {e}")
         sys.exit(1)
 
 

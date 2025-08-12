@@ -116,7 +116,7 @@ def update_settings_bulk():
                 updated_count += 1
 
             except Exception as e:
-                logger.warning("Failed to update setting {key}: {e}")
+                logger.warning(f"Failed to update setting {key}: {e}")
 
         return jsonify(
             {
@@ -125,7 +125,7 @@ def update_settings_bulk():
             }
         )
     except Exception as e:
-        logger.error("Failed to update settings: {e}")
+        logger.error(f"Failed to update settings: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -150,7 +150,7 @@ def update_individual_setting(key: str):
             {"success": True, "message": "Setting {key} updated successfully"}
         )
     except Exception as e:
-        logger.error("Failed to update setting {key}: {e}")
+        logger.error(f"Failed to update setting {key}: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -197,7 +197,7 @@ def save_settings():
                     )
 
                 except Exception as e:
-                    logger.warning("설정 저장 실패 {key}: {e}")
+                    logger.warning(f"설정 저장 실패 {key}: {e}")
 
         # 캐시 클리어 - 설정 변경 후 즉시 반영되도록
         try:
@@ -207,12 +207,12 @@ def save_settings():
                 cache_manager.clear()
                 logger.info("설정 변경 후 캐시가 클리어되었습니다")
         except Exception as cache_error:
-            logger.warning("캐시 클리어 실패: {cache_error}")
+            logger.warning(f"캐시 클리어 실패: {cache_error}")
 
         return jsonify({"success": True, "message": "설정이 성공적으로 저장되었습니다."})
 
     except Exception as e:
-        logger.error("설정 저장 오류: {e}")
+        logger.error(f"설정 저장 오류: {e}")
         return jsonify({"success": False, "message": "설정 저장 실패: {str(e)}"}), 500
 
 
@@ -241,5 +241,5 @@ def reset_all_settings():
             {"success": True, "message": "All settings reset to defaults successfully"}
         )
     except Exception as e:
-        logger.error("Failed to reset settings: {e}")
+        logger.error(f"Failed to reset settings: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

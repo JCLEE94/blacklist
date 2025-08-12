@@ -45,7 +45,7 @@ class SecurityManager:
             return password_hash.hex(), salt
 
         except Exception as e:
-            logger.error("Password hashing error: {e}")
+            logger.error(f"Password hashing error: {e}")
             raise
 
     def verify_password(self, password: str, password_hash: str, salt: str) -> bool:
@@ -55,7 +55,7 @@ class SecurityManager:
             return secrets.compare_digest(password_hash, computed_hash)
 
         except Exception as e:
-            logger.error("Password verification error: {e}")
+            logger.error(f"Password verification error: {e}")
             return False
 
     def generate_jwt_token(
@@ -74,7 +74,7 @@ class SecurityManager:
             return token
 
         except Exception as e:
-            logger.error("JWT generation error: {e}")
+            logger.error(f"JWT generation error: {e}")
             raise
 
     def verify_jwt_token(self, token: str) -> Dict[str, Any]:
@@ -87,10 +87,10 @@ class SecurityManager:
             logger.warning("JWT token expired")
             return None
         except jwt.InvalidTokenError as e:
-            logger.warning("Invalid JWT token: {e}")
+            logger.warning(f"Invalid JWT token: {e}")
             return None
         except Exception as e:
-            logger.error("JWT verification error: {e}")
+            logger.error(f"JWT verification error: {e}")
             return None
 
     def check_rate_limit(
@@ -114,7 +114,7 @@ class SecurityManager:
             return True
 
         except Exception as e:
-            logger.error("Rate limit check error: {e}")
+            logger.error(f"Rate limit check error: {e}")
             return True  # Allow on error
 
     def record_failed_attempt(
@@ -135,13 +135,13 @@ class SecurityManager:
             # Check if should be blocked
             if attempt_data["count"] >= max_attempts:
                 self.blocked_ips.add(identifier)
-                logger.warning("IP blocked due to failed attempts: {identifier}")
+                logger.warning(f"IP blocked due to failed attempts: {identifier}")
                 return False
 
             return True
 
         except Exception as e:
-            logger.error("Failed attempt recording error: {e}")
+            logger.error(f"Failed attempt recording error: {e}")
             return True
 
     def is_blocked(self, identifier: str) -> bool:
@@ -163,7 +163,7 @@ class SecurityManager:
         try:
             parts = api_key.split("_")
             return len(parts) == 2 and len(parts[1]) >= 32
-        except:
+        except Exception as e:
             return False
 
 
@@ -192,7 +192,7 @@ class SecurityHeaders:
                 response.headers[header] = value
             return response
         except Exception as e:
-            logger.error("Error applying security headers: {e}")
+            logger.error(f"Error applying security headers: {e}")
             return response
 
 
@@ -247,7 +247,7 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
                 return {"error": "Authentication required"}, 401
 
             except Exception as e:
-                logger.error("Authentication error: {e}")
+                logger.error(f"Authentication error: {e}")
                 return {"error": "Authentication failed"}, 401
 
         return decorated_function
@@ -284,7 +284,7 @@ def rate_limit(limit: int = 100, window_seconds: int = 3600):
                 return f(*args, **kwargs)
 
             except Exception as e:
-                logger.error("Rate limiting error: {e}")
+                logger.error(f"Rate limiting error: {e}")
                 return f(*args, **kwargs)  # Allow on error
 
         return decorated_function
@@ -327,7 +327,7 @@ def input_validation(schema: Dict[str, Any]):
                 return f(*args, **kwargs)
 
             except Exception as e:
-                logger.error("Input validation error: {e}")
+                logger.error(f"Input validation error: {e}")
                 return {"error": "Validation failed"}, 400
 
         return decorated_function
@@ -350,7 +350,7 @@ def setup_security(app, secret_key: str, jwt_secret: str = None):
         return True
 
     except Exception as e:
-        logger.error("Security setup failed: {e}")
+        logger.error(f"Security setup failed: {e}")
         return False
 
 
@@ -382,7 +382,7 @@ def validate_csrf_token(token: str, session_token: str) -> bool:
     """Validate CSRF token"""
     try:
         return secrets.compare_digest(token, session_token)
-    except:
+    except Exception as e:
         return False
 
 

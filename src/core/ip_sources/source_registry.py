@@ -36,11 +36,11 @@ class SourceRegistry:
             temp_instance = source_class(temp_config)
             source_name = temp_instance.source_name
         except Exception as e:
-            logger.error("Failed to get source name from {source_class.__name__}: {e}")
+            logger.error(f"Failed to get source name from {source_class.__name__}: {e}")
             source_name = source_class.__name__
 
         self._sources[source_name] = source_class
-        logger.info("Registered IP source: {source_name}")
+        logger.info(f"Registered IP source: {source_name}")
 
     def get_source_class(self, name: str) -> Type[BaseIPSource]:
         """
@@ -117,12 +117,12 @@ class SourceRegistry:
             # self.register(DatabaseSource)
 
             self._initialized = True
-            logger.info("Auto-discovered {len(self._sources)} IP sources")
+            logger.info(f"Auto-discovered {len(self._sources)} IP sources")
 
         except ImportError as e:
-            logger.warning("Some sources could not be imported: {e}")
+            logger.warning(f"Some sources could not be imported: {e}")
         except Exception as e:
-            logger.error("Error during auto-discovery: {e}")
+            logger.error(f"Error during auto-discovery: {e}")
 
 
 # 전역 레지스트리 인스턴스

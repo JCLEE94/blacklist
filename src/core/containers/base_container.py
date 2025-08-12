@@ -50,7 +50,7 @@ class ServiceContainer:
     ) -> None:
         """서비스 등록"""
         if name in self._services:
-            logger.warning("Service '{name}' is already registered. Overriding.")
+            logger.warning(f"Service '{name}' is already registered. Overriding.")
 
         self._services[name] = ServiceDefinition(
             service_type=service_type,
@@ -59,7 +59,7 @@ class ServiceContainer:
             dependencies=dependencies or {},
         )
 
-        logger.debug("Registered service: {name} -> {service_type.__name__}")
+        logger.debug(f"Registered service: {name} -> {service_type.__name__}")
 
     def get(self, name: str) -> Any:
         """서비스 인스턴스 반환"""
@@ -103,7 +103,7 @@ class ServiceContainer:
                 )
                 return service_def.service_type(**dependencies)
         except Exception as e:
-            logger.error("Failed to create service '{name}': {e}")
+            logger.error(f"Failed to create service '{name}': {e}")
             raise RuntimeError("Service creation failed: {name}") from e
 
     def _resolve_dependencies(self, dependencies: Dict[str, str]) -> Dict[str, Any]:
@@ -136,9 +136,9 @@ class ServiceContainer:
             if hasattr(instance, "shutdown"):
                 try:
                     instance.shutdown()
-                    logger.debug("Shutdown service: {name}")
+                    logger.debug(f"Shutdown service: {name}")
                 except Exception as e:
-                    logger.error("Failed to shutdown service {name}: {e}")
+                    logger.error(f"Failed to shutdown service {name}: {e}")
 
         self.clear_instances()
         logger.info("Service container shut down")
@@ -158,7 +158,7 @@ class ServiceContainer:
                 else:
                     healthy_services += 1  # 건강 검사가 없으면 정상으로 간주
             except Exception as e:
-                logger.warning("Health check failed for {name}: {e}")
+                logger.warning(f"Health check failed for {name}: {e}")
                 unhealthy_services.append(name)
 
         return {

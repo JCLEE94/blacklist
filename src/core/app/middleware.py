@@ -94,5 +94,5 @@ class MiddlewareMixin:
                                 build_time = line.split("=", 1)[1].strip("'\"")
                                 return {"build_time": build_time}
                 return {"build_time": "2025-06-18 18:48:33 KST"}
-            except Exception:
+            except Exception as e:
                 return {"build_time": "2025-06-18 18:48:33 KST"}

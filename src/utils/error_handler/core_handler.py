@@ -122,7 +122,7 @@ class ErrorHandler:
                     )
                     error_log["github_issue"] = issue_url
             except Exception as github_error:
-                logger.error("Failed to create GitHub issue: {github_error}")
+                logger.error(f"Failed to create GitHub issue: {github_error}")
 
         self._log_error_message(error, error_code, context)
 

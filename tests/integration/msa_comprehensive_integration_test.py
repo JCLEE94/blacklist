@@ -236,15 +236,15 @@ async def main():
         total_tests = results["test_summary"]["total_tests"]
         passed_tests = results["test_summary"]["passed_tests"]
 
-        print("📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)")
+        print(f"📊 테스트 완료: {passed_tests}/{total_tests} 성공 ({success_rate:.1f}%)")
 
         for rec in results["recommendations"]:
-            print("💡 {rec}")
+            print(f"💡 {rec}")
 
         sys.exit(0 if success_rate >= 80 else 1)
 
     except Exception as e:
-        print("💥 테스트 실행 중 오류 발생: {e}")
+        print(f"💥 테스트 실행 중 오류 발생: {e}")
         logger.exception("Test execution failed")
         sys.exit(1)
 

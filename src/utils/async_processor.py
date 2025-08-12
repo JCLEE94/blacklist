@@ -134,7 +134,7 @@ class AsyncProcessor:
             return task_id
 
         except Exception as e:
-            logger.error("Failed to submit task {task_id}: {e}")
+            logger.error(f"Failed to submit task {task_id}: {e}")
             return self._create_task_result(
                 task_id, False, error=str(e), started_at=started_at
             )
@@ -176,7 +176,7 @@ class AsyncProcessor:
 
             self.completed_tasks[task_id] = task_result
             self.task_stats["total_failed"] += 1
-            logger.error("Task {task_id} failed: {e}")
+            logger.error(f"Task {task_id} failed: {e}")
 
         finally:
             # 활성 작업에서 제거
@@ -256,7 +256,7 @@ class AsyncProcessor:
             for completed_id in completed_ids:
                 task_ids.remove(completed_id)
 
-        logger.info("Batch processing completed: {len(results)} batches processed")
+        logger.info(f"Batch processing completed: {len(results)} batches processed")
         return results
 
     def get_task_status(self, task_id: str) -> Dict[str, Any]:
@@ -412,7 +412,7 @@ if __name__ == "__main__":
 
             result = processor.completed_tasks[task_id]
             if not result.success or result.result != 10:
-                print("❌ 기본 비동기 작업 테스트 실패: {result}")
+                print(f"❌ 기본 비동기 작업 테스트 실패: {result}")
                 all_tests_passed = False
 
             # 테스트 2: 배치 처리
@@ -439,14 +439,14 @@ if __name__ == "__main__":
 
             if all_tests_passed:
                 print("✅ 비동기 처리 시스템 검증 완료 - 모든 테스트 통과")
-                print("📊 최종 통계: {stats}")
+                print(f"📊 최종 통계: {stats}")
                 return 0
             else:
                 print("❌ 일부 테스트 실패")
                 return 1
 
         except Exception as e:
-            print("❌ 테스트 중 오류 발생: {e}")
+            print(f"❌ 테스트 중 오류 발생: {e}")
             import traceback
 
             traceback.print_exc()

@@ -50,7 +50,7 @@ def api_ips_recent():
         )
 
     except Exception as e:
-        logger.error("Recent IPs error: {e}")
+        logger.error(f"Recent IPs error: {e}")
         return (
             jsonify(
                 {
@@ -103,7 +103,7 @@ def api_daily_stats():
         )
 
     except Exception as e:
-        logger.error("Daily stats error: {e}")
+        logger.error(f"Daily stats error: {e}")
         return (
             jsonify(
                 {
@@ -174,7 +174,7 @@ def api_ips_by_date(date):
         )
 
     except Exception as e:
-        logger.error("IPs by date error: {e}")
+        logger.error(f"IPs by date error: {e}")
         return (
             jsonify(
                 {
@@ -233,7 +233,7 @@ def realtime_status():
         )
 
     except Exception as e:
-        logger.error("Realtime status error: {e}")
+        logger.error(f"Realtime status error: {e}")
         return (
             jsonify(
                 {
@@ -297,7 +297,7 @@ def realtime_feed():
         )
 
     except Exception as e:
-        logger.error("Realtime feed error: {e}")
+        logger.error(f"Realtime feed error: {e}")
         return (
             jsonify(
                 {
@@ -322,7 +322,7 @@ def api_blacklist_active_simple():
         return "\n".join(active_ips), 200, {"Content-Type": "text/plain"}
 
     except Exception as e:
-        logger.error("Active blacklist simple error: {e}")
+        logger.error(f"Active blacklist simple error: {e}")
         return "Error: {str(e)}", 500
 
 
@@ -344,5 +344,5 @@ def api_fortigate_simple():
         return jsonify(fortigate_data)
 
     except Exception as e:
-        logger.error("FortiGate simple error: {e}")
+        logger.error(f"FortiGate simple error: {e}")
         return jsonify({"error": str(e)}), 500

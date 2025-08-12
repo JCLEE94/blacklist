@@ -60,7 +60,7 @@ class URLSource(BaseIPSource):
             }
             default_headers.update(headers)
 
-            self.logger.info("Downloading from URL: {url}")
+            self.logger.info(f"Downloading from URL: {url}")
             response = requests.get(url, headers=default_headers, timeout=timeout)
             response.raise_for_status()
 
@@ -82,7 +82,7 @@ class URLSource(BaseIPSource):
                 yield from self._parse_text(response.text, category, url)
 
         except Exception as e:
-            self.logger.error("Failed to fetch data from URL {url}: {e}")
+            self.logger.error(f"Failed to fetch data from URL {url}: {e}")
             raise
 
     def _detect_format(self, response: requests.Response) -> str:
@@ -182,7 +182,7 @@ class URLSource(BaseIPSource):
                 yield from self._extract_ips_from_json(data, category, url)
 
         except json.JSONDecodeError as e:
-            self.logger.error("Invalid JSON content from {url}: {e}")
+            self.logger.error(f"Invalid JSON content from {url}: {e}")
 
     def _parse_xml(self, content: str, category: str, url: str) -> Iterator[IPEntry]:
         """XML 형식 파싱"""
@@ -208,7 +208,7 @@ class URLSource(BaseIPSource):
                             )
 
         except Exception as e:
-            self.logger.error("Error parsing XML from {url}: {e}")
+            self.logger.error(f"Error parsing XML from {url}: {e}")
 
     def _extract_ips_from_json(
         self, data: dict, category: str, url: str

@@ -2,9 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "blacklist.fullname" . }}
-  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "blacklist.labels" . | nindent 4 }}
+  {{- with .Values.serviceAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -14,3 +17,23 @@ spec:
       name: http
   selector:
     {{- include "blacklist.selectorLabels" . | nindent 4 }}
+{{- if .Values.service.nodePort.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "blacklist.fullname" . }}-nodeport
+  labels:
+    {{- include "blacklist.labels" . | nindent 4 }}
+    service-type: nodeport
+spec:
+  type: NodePort
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      nodePort: {{ .Values.service.nodePort.port }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "blacklist.selectorLabels" . | nindent 4 }}
+{{- end }}

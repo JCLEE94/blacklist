@@ -44,7 +44,7 @@ class FixStrategyManager:
 
             return False
         except Exception as e:
-            print("❌ Docker 설정 수정 실패: {e}")
+            print(f"❌ Docker 설정 수정 실패: {e}")
             return False
 
     def fix_permission_issues(self, project_id: str, error_log: str, utils) -> bool:
@@ -70,7 +70,7 @@ class FixStrategyManager:
             return True
 
         except Exception as e:
-            print("❌ 권한 설정 수정 실패: {e}")
+            print(f"❌ 권한 설정 수정 실패: {e}")
             return False
 
     def fix_npm_errors(self, project_id: str, error_log: str, utils) -> bool:
@@ -97,7 +97,7 @@ class FixStrategyManager:
             return False
 
         except Exception as e:
-            print("❌ NPM 설정 수정 실패: {e}")
+            print(f"❌ NPM 설정 수정 실패: {e}")
             return False
 
     def fix_registry_auth(self, project_id: str, error_log: str, utils) -> bool:
@@ -128,7 +128,7 @@ class FixStrategyManager:
             return True
 
         except Exception as e:
-            print("❌ 레지스트리 인증 수정 실패: {e}")
+            print(f"❌ 레지스트리 인증 수정 실패: {e}")
             return False
 
     def fix_ssh_connection(self, project_id: str, error_log: str, utils) -> bool:
@@ -157,7 +157,7 @@ class FixStrategyManager:
             return False
 
         except Exception as e:
-            print("❌ SSH 연결 설정 수정 실패: {e}")
+            print(f"❌ SSH 연결 설정 수정 실패: {e}")
             return False
 
     def fix_disk_space(self, project_id: str, error_log: str, utils) -> bool:
@@ -183,7 +183,7 @@ class FixStrategyManager:
             return True
 
         except Exception as e:
-            print("❌ 디스크 공간 정리 실패: {e}")
+            print(f"❌ 디스크 공간 정리 실패: {e}")
             return False
 
     def fix_timeout_issues(self, project_id: str, error_log: str, utils) -> bool:
@@ -203,7 +203,7 @@ class FixStrategyManager:
             return False
 
         except Exception as e:
-            print("❌ 타임아웃 설정 수정 실패: {e}")
+            print(f"❌ 타임아웃 설정 수정 실패: {e}")
             return False
 
     def fix_network_issues(self, project_id: str, error_log: str, utils) -> bool:
@@ -227,7 +227,7 @@ class FixStrategyManager:
             return True
 
         except Exception as e:
-            print("❌ 네트워크 설정 수정 실패: {e}")
+            print(f"❌ 네트워크 설정 수정 실패: {e}")
             return False
 
     # Helper methods for CI configuration manipulation

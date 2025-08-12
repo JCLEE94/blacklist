@@ -46,7 +46,7 @@ def test_complete_data_flow():
                 assert response.status_code == 200
                 stats = response.get_json()
                 initial_count = stats.get("total_ips", 0)
-                print("✅ Initial IP count: {initial_count}")
+                print(f"✅ Initial IP count: {initial_count}")
 
                 # 4. 수집 활성화
                 print("\n4️⃣ Enabling collection...")
@@ -88,7 +88,7 @@ def test_complete_data_flow():
                             metadata={"threat_type": ip_data["threat_type"]},
                         )
 
-                    print("✅ Added {len(mock_ips)} test IPs")
+                    print(f"✅ Added {len(mock_ips)} test IPs")
 
                 # 6. 데이터 검증
                 print("\n6️⃣ Verifying data...")
@@ -98,7 +98,7 @@ def test_complete_data_flow():
                 assert response.status_code == 200
                 active_ips = response.data.decode("utf-8").strip().split("\n")
                 active_ips = [ip for ip in active_ips if ip]  # 빈 줄 제거
-                print("✅ Active IPs: {len(active_ips)}")
+                print(f"✅ Active IPs: {len(active_ips)}")
 
                 # FortiGate 형식 확인
                 response = client.get("/api/fortigate")
@@ -120,7 +120,7 @@ def test_complete_data_flow():
                     assert response.status_code == 200
                     search_result = response.get_json()
                     assert search_result["found"] == True
-                    print("✅ Search found IP: {test_ip}")
+                    print(f"✅ Search found IP: {test_ip}")
 
                 # 8. 통계 업데이트 확인
                 print("\n8️⃣ Checking statistics update...")
@@ -128,7 +128,7 @@ def test_complete_data_flow():
                 assert response.status_code == 200
                 final_stats = response.get_json()
                 final_count = final_stats.get("total_ips", 0)
-                print("✅ Final IP count: {final_count}")
+                print(f"✅ Final IP count: {final_count}")
 
                 # 9. 수집 비활성화
                 print("\n9️⃣ Disabling collection...")
@@ -201,7 +201,7 @@ def test_deployment_pipeline_simulation():
     for script in deploy_scripts:
         script_path = Path(script)
         if script_path.exists():
-            print("✅ {script} found")
+            print(f"✅ {script} found")
 
     print("\n✅ Deployment pipeline simulation passed!")
     return True
@@ -287,7 +287,7 @@ def test_performance_under_load():
 
                 assert response.status_code == 200
                 assert elapsed < 100, "Health check too slow: {elapsed:.2f}ms"
-                print("✅ Single request: {elapsed:.2f}ms")
+                print(f"✅ Single request: {elapsed:.2f}ms")
 
                 # 2. 동시 요청 테스트
                 print("\n2️⃣ Testing concurrent requests...")
@@ -313,7 +313,7 @@ def test_performance_under_load():
 
                 # 평균 응답 시간
                 avg_time = sum(r[1] for r in results) / len(results)
-                print("✅ Concurrent requests avg: {avg_time:.2f}ms")
+                print(f"✅ Concurrent requests avg: {avg_time:.2f}ms")
 
                 # 3. 지속적인 부하 테스트
                 print("\n3️⃣ Testing sustained load...")
@@ -394,7 +394,7 @@ def test_multi_source_integration():
                     assert response.status_code == 200
                     sources = response.get_json()
                     assert "sources" in sources
-                    print("✅ Sources configured: {list(sources['sources'].keys())}")
+                    print(f"✅ Sources configured: {list(sources['sources'].keys())}")
 
                     # 3. 통계 확인
                     print("\n3️⃣ Checking statistics by source...")
@@ -404,7 +404,7 @@ def test_multi_source_integration():
 
                     if "sources" in stats:
                         for source, count in stats["sources"].items():
-                            print("  {source}: {count} IPs")
+                            print(f"  {source}: {count} IPs")
 
                     print("\n✅ Multi-source integration test passed!")
 
@@ -439,16 +439,16 @@ def run_all_e2e_integration_tests():
                 passed += 1
             else:
                 failed += 1
-                print("❌ {test_name} test failed")
+                print(f"❌ {test_name} test failed")
         except Exception as e:
             failed += 1
-            print("❌ {test_name} test failed with error: {e}")
+            print(f"❌ {test_name} test failed with error: {e}")
             import traceback
 
             traceback.print_exc()
 
     print("\n" + "=" * 60)
-    print("📊 Test Results: {passed} passed, {failed} failed")
+    print(f"📊 Test Results: {passed} passed, {failed} failed")
     print("=" * 60)
 
     return failed == 0

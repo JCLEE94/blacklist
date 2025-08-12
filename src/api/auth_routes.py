@@ -4,6 +4,7 @@
 """
 
 import logging
+import os
 from datetime import datetime
 
 from flask import Blueprint, current_app, jsonify, request
@@ -33,8 +34,7 @@ def login():
 
         # 실제 구현에서는 데이터베이스에서 사용자 인증
         # 여기서는 환경 변수 기반 간단 인증
-        import os
-
+        # os imported at module level
         valid_users = {
             os.getenv("ADMIN_USERNAME", "admin"): os.getenv("ADMIN_PASSWORD", "admin"),
             os.getenv("REGTECH_USERNAME", ""): os.getenv("REGTECH_PASSWORD", ""),
@@ -45,7 +45,7 @@ def login():
         valid_users = {k: v for k, v in valid_users.items() if k and v}
 
         if username not in valid_users or valid_users[username] != password:
-            logger.warning("로그인 실패: {username}")
+            logger.warning(f"로그인 실패: {username}")
             return jsonify({"success": False, "error": "사용자명 또는 비밀번호가 올바르지 않습니다"}), 401
 
         # 사용자 역할 결정
@@ -73,7 +73,7 @@ def login():
             user_id=username, roles=["refresh"], expires_hours=24 * 7  # 갱신 전용 토큰  # 7일
         )
 
-        logger.info("로그인 성공: {username}")
+        logger.info(f"로그인 성공: {username}")
 
         return jsonify(
             {
@@ -87,7 +87,7 @@ def login():
         )
 
     except Exception as e:
-        logger.error("로그인 처리 실패: {e}")
+        logger.error(f"로그인 처리 실패: {e}")
         return jsonify({"success": False, "error": "로그인 처리 중 오류가 발생했습니다"}), 500
 
 
@@ -118,8 +118,7 @@ def refresh_token():
             return jsonify({"success": False, "error": "토큰에서 사용자 정보를 찾을 수 없습니다"}), 401
 
         # 사용자 역할 다시 가져오기 (실제로는 DB에서 조회)
-        import os
-
+        # os imported at module level
         roles = ["user"]
         if username == os.getenv("ADMIN_USERNAME", "admin"):
             roles = ["admin", "user"]
@@ -139,7 +138,7 @@ def refresh_token():
             user_id=username, roles=["refresh"], expires_hours=24 * 7  # 7일
         )
 
-        logger.info("토큰 갱신 성공: {username}")
+        logger.info(f"토큰 갱신 성공: {username}")
 
         return jsonify(
             {
@@ -152,7 +151,7 @@ def refresh_token():
         )
 
     except Exception as e:
-        logger.error("토큰 갱신 실패: {e}")
+        logger.error(f"토큰 갱신 실패: {e}")
         return jsonify({"success": False, "error": "토큰 갱신 중 오류가 발생했습니다"}), 500
 
 
@@ -170,7 +169,7 @@ def logout():
         )
 
     except Exception as e:
-        logger.error("로그아웃 처리 실패: {e}")
+        logger.error(f"로그아웃 처리 실패: {e}")
         return jsonify({"success": False, "error": "로그아웃 처리 중 오류가 발생했습니다"}), 500
 
 
@@ -208,7 +207,7 @@ def verify_token():
             )
 
     except Exception as e:
-        logger.error("토큰 검증 실패: {e}")
+        logger.error(f"토큰 검증 실패: {e}")
         return jsonify({"success": False, "error": "토큰 검증 중 오류가 발생했습니다"}), 500
 
 
@@ -228,7 +227,7 @@ def change_password():
         return jsonify({"success": False, "error": "현재 환경에서는 비밀번호 변경이 지원되지 않습니다"}), 501
 
     except Exception as e:
-        logger.error("비밀번호 변경 실패: {e}")
+        logger.error(f"비밀번호 변경 실패: {e}")
         return jsonify({"success": False, "error": "비밀번호 변경 중 오류가 발생했습니다"}), 500
 
 
@@ -269,7 +268,7 @@ def get_profile():
         )
 
     except Exception as e:
-        logger.error("프로필 조회 실패: {e}")
+        logger.error(f"프로필 조회 실패: {e}")
         return jsonify({"success": False, "error": "프로필 조회 중 오류가 발생했습니다"}), 500
 
 

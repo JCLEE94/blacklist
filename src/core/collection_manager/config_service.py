@@ -30,10 +30,10 @@ class CollectionConfigService:
             if self.config_path.exists():
                 with open(self.config_path, "r", encoding="utf-8") as f:
                     config = json.load(f)
-                    logger.debug("Config loaded from file: {self.config_path}")
+                    logger.debug(f"Config loaded from file: {self.config_path}")
                     return config
         except Exception as e:
-            logger.warning("Error loading config from file: {e}")
+            logger.warning(f"Error loading config from file: {e}")
 
         # 2. DB에서 로드 시도
         try:
@@ -48,7 +48,7 @@ class CollectionConfigService:
                     logger.debug("Config loaded from database")
                     return config
         except Exception as e:
-            logger.warning("Error loading config from database: {e}")
+            logger.warning(f"Error loading config from database: {e}")
 
         # 3. 기본 설정 반환
         logger.info("Using default collection config")
@@ -79,9 +79,9 @@ class CollectionConfigService:
         try:
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
-            logger.debug("Config saved to file: {self.config_path}")
+            logger.debug(f"Config saved to file: {self.config_path}")
         except Exception as e:
-            logger.error("Error saving config to file: {e}")
+            logger.error(f"Error saving config to file: {e}")
 
         # DB 저장
         try:
@@ -108,7 +108,7 @@ class CollectionConfigService:
                 conn.commit()
                 logger.debug("Config saved to database")
         except Exception as e:
-            logger.error("Error saving config to database: {e}")
+            logger.error(f"Error saving config to database: {e}")
 
     def create_initial_config_with_protection(self) -> Dict[str, Any]:
         """보호 기능이 적용된 초기 설정 생성"""
@@ -147,9 +147,9 @@ class CollectionConfigService:
                     return bool(row[0])
 
         except sqlite3.Error as e:
-            logger.warning("Database error loading collection status: {e}")
+            logger.warning(f"Database error loading collection status: {e}")
         except Exception as e:
-            logger.error("Unexpected error loading collection status: {e}")
+            logger.error(f"Unexpected error loading collection status: {e}")
 
         return None
 
@@ -176,10 +176,10 @@ class CollectionConfigService:
                 )
 
                 conn.commit()
-                logger.debug("Collection status saved to DB: {enabled}")
+                logger.debug(f"Collection status saved to DB: {enabled}")
 
         except Exception as e:
-            logger.error("Error saving collection status to DB: {e}")
+            logger.error(f"Error saving collection status to DB: {e}")
 
     def update_source_config(
         self, source: str, config_updates: Dict[str, Any]

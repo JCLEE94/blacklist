@@ -81,7 +81,7 @@ class V2APIService:
             }
 
         except Exception as e:
-            logger.error("Error getting blacklist with metadata: {e}")
+            logger.error(f"Error getting blacklist with metadata: {e}")
             return {
                 "error": str(e),
                 "data": [],
@@ -144,7 +144,7 @@ class V2APIService:
             }
 
         except Exception as e:
-            logger.error("Error in batch IP check: {e}")
+            logger.error(f"Error in batch IP check: {e}")
             return {
                 "error": str(e),
                 "results": [],
@@ -195,7 +195,7 @@ class V2APIService:
             }
 
         except Exception as e:
-            logger.error("Error getting analytics summary: {e}")
+            logger.error(f"Error getting analytics summary: {e}")
             return {
                 "error": str(e),
                 "summary": {"total_active_ips": 0, "unique_countries": 0},
@@ -279,7 +279,7 @@ class V2APIService:
             }
 
         except Exception as e:
-            logger.error("Error analyzing threat levels: {e}")
+            logger.error(f"Error analyzing threat levels: {e}")
             return {
                 "error": str(e),
                 "threat_levels": {
@@ -334,7 +334,7 @@ class V2APIService:
                 }
 
         except Exception as e:
-            logger.error("Error exporting data: {e}")
+            logger.error(f"Error exporting data: {e}")
             return {"error": str(e)}
 
     def _convert_to_csv(self, data: List[Dict[str, Any]]) -> str:
@@ -394,7 +394,7 @@ class V2APIService:
             }
 
         except Exception as e:
-            logger.error("Error getting performance metrics: {e}")
+            logger.error(f"Error getting performance metrics: {e}")
             return {"error": str(e)}
 
     def _is_valid_ip(self, ip: str) -> bool:

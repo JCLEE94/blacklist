@@ -72,7 +72,7 @@ class CollectionManager:
                 )
 
         except Exception as e:
-            logger.error("Error initializing protection system: {e}")
+            logger.error(f"Error initializing protection system: {e}")
 
     def enable_collection(
         self,
@@ -98,13 +98,13 @@ class CollectionManager:
                         "protection_active": True,
                     }
             else:
-                logger.warning("Protection bypass used for collection enable: {reason}")
+                logger.warning(f"Protection bypass used for collection enable: {reason}")
 
             # 2. 데이터 클리어 (요청 시)
             clear_result = None
             if clear_data_first:
                 clear_result = self.clear_all_data()
-                logger.info("Data cleared before enabling collection: {clear_result}")
+                logger.info(f"Data cleared before enabling collection: {clear_result}")
 
             # 3. 설정 업데이트
             config = self.config_service.load_collection_config()
@@ -150,11 +150,11 @@ class CollectionManager:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info("Collection enabled successfully: {result}")
+            logger.info(f"Collection enabled successfully: {result}")
             return result
 
         except Exception as e:
-            logger.error("Error enabling collection: {e}")
+            logger.error(f"Error enabling collection: {e}")
             return {
                 "success": False,
                 "error": "수집 활성화 중 오류: {e}",
@@ -187,11 +187,11 @@ class CollectionManager:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info("Collection disabled successfully: {result}")
+            logger.info(f"Collection disabled successfully: {result}")
             return result
 
         except Exception as e:
-            logger.error("Error disabling collection: {e}")
+            logger.error(f"Error disabling collection: {e}")
             return {
                 "success": False,
                 "error": "수집 비활성화 중 오류: {e}",
@@ -222,9 +222,9 @@ class CollectionManager:
                     try:
                         os.remove(file_path)
                         cleared_items["files_removed"] += 1
-                        logger.debug("Removed file: {file_path}")
+                        logger.debug(f"Removed file: {file_path}")
                     except Exception as e:
-                        logger.warning("Could not remove {file_path}: {e}")
+                        logger.warning(f"Could not remove {file_path}: {e}")
 
             # 2. 임시 디렉토리 정리
             temp_dirs = ["temp", "downloads", "cache"]
@@ -234,9 +234,9 @@ class CollectionManager:
                         shutil.rmtree(temp_dir)
                         os.makedirs(temp_dir, exist_ok=True)
                         cleared_items["directories_cleaned"] += 1
-                        logger.debug("Cleaned directory: {temp_dir}")
+                        logger.debug(f"Cleaned directory: {temp_dir}")
                     except Exception as e:
-                        logger.warning("Could not clean directory {temp_dir}: {e}")
+                        logger.warning(f"Could not clean directory {temp_dir}: {e}")
 
             # 3. 인증 실패 기록 정리
             auth_clear_result = self.auth_service.reset_auth_attempts()
@@ -251,11 +251,11 @@ class CollectionManager:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info("Data cleared successfully: {cleared_items}")
+            logger.info(f"Data cleared successfully: {cleared_items}")
             return result
 
         except Exception as e:
-            logger.error("Error clearing data: {e}")
+            logger.error(f"Error clearing data: {e}")
             return {
                 "success": False,
                 "error": "데이터 삭제 중 오류: {e}",
@@ -344,7 +344,7 @@ class CollectionManager:
 
             return False
         except Exception as e:
-            logger.warning("Error checking initial collection need: {e}")
+            logger.warning(f"Error checking initial collection need: {e}")
             return False
 
     def mark_initial_collection_done(self) -> Dict[str, Any]:
@@ -362,7 +362,7 @@ class CollectionManager:
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
-            logger.error("Error marking initial collection done: {e}")
+            logger.error(f"Error marking initial collection done: {e}")
             return {
                 "success": False,
                 "error": str(e),

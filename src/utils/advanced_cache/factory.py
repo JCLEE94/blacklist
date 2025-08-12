@@ -54,7 +54,7 @@ def cached(cache, ttl=300, key_prefix=""):
                     if cached_result is not None:
                         return cached_result
                 except Exception as e:
-                    logger.warning("Cache get failed: {e}")
+                    logger.warning(f"Cache get failed: {e}")
 
             # Execute function
             result = func(*args, **kwargs)
@@ -64,7 +64,7 @@ def cached(cache, ttl=300, key_prefix=""):
                 try:
                     cache.set(cache_key, result, ttl=ttl)
                 except Exception as e:
-                    logger.warning("Cache set failed: {e}")
+                    logger.warning(f"Cache set failed: {e}")
 
             return result
 

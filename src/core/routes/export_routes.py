@@ -42,7 +42,7 @@ def export_json():
         )
         return response
     except Exception as e:
-        logger.error("Export JSON error: {e}")
+        logger.error(f"Export JSON error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -70,7 +70,7 @@ def export_txt():
         )
         return response
     except Exception as e:
-        logger.error("Export TXT error: {e}")
+        logger.error(f"Export TXT error: {e}")
         return jsonify(create_error_response(e)), 500
 
 
@@ -106,5 +106,5 @@ def export_data(format):
                 400,
             )
     except Exception as e:
-        logger.error("Export data error: {e}")
+        logger.error(f"Export data error: {e}")
         return jsonify(create_error_response(e)), 500

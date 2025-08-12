@@ -68,7 +68,7 @@ async def main():
         print("\n⏹️  테스트가 사용자에 의해 중단되었습니다.")
         sys.exit(1)
     except Exception as e:
-        print("\n💥 리포트 생성 중 오류 발생: {e}")
+        print(f"\n💥 리포트 생성 중 오류 발생: {e}")
         logger.exception("Report generation failed")
         sys.exit(1)
 

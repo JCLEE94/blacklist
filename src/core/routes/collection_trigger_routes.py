@@ -46,7 +46,7 @@ def trigger_regtech_collection():
                 data = request.get_json() or {}
             else:
                 data = request.form.to_dict() or {}
-        except Exception:
+        except Exception as e:
             data = {}
 
         start_date = data.get("start_date")
@@ -57,7 +57,7 @@ def trigger_regtech_collection():
         result = service.trigger_regtech_collection(
             start_date=start_date, end_date=end_date
         )
-        logger.info("trigger_regtech_collection returned: {type(result)}")
+        logger.info(f"trigger_regtech_collection returned: {type(result)}")
 
         # 진행 상황 정보 추가
         progress_info = None
@@ -73,7 +73,7 @@ def trigger_regtech_collection():
                         "message": progress.get("message", ""),
                     }
             except Exception as pe:
-                logger.error("Progress info error: {pe}")
+                logger.error(f"Progress info error: {pe}")
                 progress_info = None
 
         if result.get("success"):
@@ -107,15 +107,15 @@ def trigger_regtech_collection():
         import traceback
 
         tb = traceback.format_exc()
-        logger.error("REGTECH trigger error: {e}")
-        logger.error("Traceback: {tb}")
+        logger.error(f"REGTECH trigger error: {e}")
+        logger.error(f"Traceback: {tb}")
 
         # 진행 상황 실패 처리
         if "progress_tracker" in locals() and progress_tracker:
             try:
                 progress_tracker.fail_collection("regtech", str(e))
             except Exception as fail_error:
-                logger.error("Error in fail_collection: {fail_error}")
+                logger.error(f"Error in fail_collection: {fail_error}")
 
         service.add_collection_log(
             "regtech", "collection_failed", {"error": str(e), "triggered_by": "manual"}
@@ -157,7 +157,7 @@ def trigger_secudium_collection():
             503,
         )  # Service Unavailable
     except Exception as e:
-        logger.error("SECUDIUM trigger error: {e}")
+        logger.error(f"SECUDIUM trigger error: {e}")
         return (
             jsonify(
                 {
@@ -212,5 +212,5 @@ def get_collection_progress(source):
                 }
             )
     except Exception as e:
-        logger.error("Progress check error: {e}")
+        logger.error(f"Progress check error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

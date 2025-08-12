@@ -29,5 +29,5 @@ def safe_dict_get(d: Dict[str, Any], key: str, default: Any = None) -> Any:
     """안전한 딕셔너리 값 가져오기"""
     try:
         return d.get(key, default)
-    except Exception:
+    except Exception as e:
         return default

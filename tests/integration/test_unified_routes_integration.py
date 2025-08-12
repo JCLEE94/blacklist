@@ -70,7 +70,7 @@ def test_blacklist_api_integration():
                     parts = ip.split(".")
                     assert len(parts) == 4, "Invalid IP format: {ip}"
 
-        print("✅ Active IPs test passed ({len(ips)} IPs)")
+        print(f"✅ Active IPs test passed ({len(ips)} IPs)")
 
         # 2. FortiGate JSON 포맷
         response = client.get("/api/fortigate")
@@ -157,9 +157,9 @@ def test_search_functionality_integration():
             data = response.get_json()
             assert "ip" in data
             assert "found" in data
-            print("✅ Single IP search test passed - {test_ip}")
+            print(f"✅ Single IP search test passed - {test_ip}")
         else:
-            print("✅ Single IP search test passed - {test_ip} not found")
+            print(f"✅ Single IP search test passed - {test_ip} not found")
 
         # 2. 배치 검색
         batch_data = {"ips": ["192.168.1.1", "10.0.0.1", "172.16.0.1"]}
@@ -269,7 +269,7 @@ def test_performance_integration():
         assert response.status_code == 200
         assert elapsed < 100, "Health endpoint too slow: {elapsed:.2f}ms"
 
-        print("✅ Health endpoint performance: {elapsed:.2f}ms")
+        print(f"✅ Health endpoint performance: {elapsed:.2f}ms")
 
         # 2. Blacklist API 응답 시간
         start = time.time()
@@ -279,7 +279,7 @@ def test_performance_integration():
         assert response.status_code == 200
         assert elapsed < 500, "Blacklist API too slow: {elapsed:.2f}ms"
 
-        print("✅ Blacklist API performance: {elapsed:.2f}ms")
+        print(f"✅ Blacklist API performance: {elapsed:.2f}ms")
 
         # 3. 동시 요청 테스트
         import concurrent.futures
@@ -324,16 +324,16 @@ def run_all_integration_tests():
                 passed += 1
             else:
                 failed += 1
-                print("❌ {test_name} test failed")
+                print(f"❌ {test_name} test failed")
         except Exception as e:
             failed += 1
-            print("❌ {test_name} test failed with error: {e}")
+            print(f"❌ {test_name} test failed with error: {e}")
             import traceback
 
             traceback.print_exc()
 
     print("\n" + "=" * 60)
-    print("📊 Test Results: {passed} passed, {failed} failed")
+    print(f"📊 Test Results: {passed} passed, {failed} failed")
     print("=" * 60)
 
     return failed == 0

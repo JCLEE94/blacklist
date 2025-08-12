@@ -49,11 +49,11 @@ class AuthService:
                 return True
 
         except sqlite3.Error as e:
-            logger.error("Database error checking auth limits: {e}")
+            logger.error(f"Database error checking auth limits: {e}")
             # 오류 시 보수적으로 차단
             return False
         except Exception as e:
-            logger.error("Unexpected error checking auth limits: {e}")
+            logger.error(f"Unexpected error checking auth limits: {e}")
             return False
 
     def record_auth_attempt(
@@ -86,10 +86,10 @@ class AuthService:
                 conn.commit()
 
                 status = "SUCCESS" if success else "FAILED"
-                logger.info("Auth attempt recorded: {source} - {status}")
+                logger.info(f"Auth attempt recorded: {source} - {status}")
 
         except Exception as e:
-            logger.error("Error recording auth attempt: {e}")
+            logger.error(f"Error recording auth attempt: {e}")
 
     def get_auth_statistics(self, source: str = None, hours: int = 24) -> Dict:
         """인증 통계 조회"""
@@ -169,7 +169,7 @@ class AuthService:
                     }
 
         except Exception as e:
-            logger.error("Error getting auth statistics: {e}")
+            logger.error(f"Error getting auth statistics: {e}")
             return {"error": str(e)}
 
     def reset_auth_attempts(self, source: str = None) -> Dict:
@@ -211,7 +211,7 @@ class AuthService:
                 conn.commit()
 
         except Exception as e:
-            logger.error("Error resetting auth attempts: {e}")
+            logger.error(f"Error resetting auth attempts: {e}")
             return {"success": False, "error": str(e)}
 
     def get_recent_auth_attempts(self, source: str = None, limit: int = 50) -> list:
@@ -257,7 +257,7 @@ class AuthService:
                 return attempts
 
         except Exception as e:
-            logger.error("Error getting recent auth attempts: {e}")
+            logger.error(f"Error getting recent auth attempts: {e}")
             return []
 
     def is_source_blocked(self, source: str) -> Tuple[bool, str]:
@@ -304,5 +304,5 @@ class AuthService:
                 }
 
         except Exception as e:
-            logger.error("Error cleaning up old auth records: {e}")
+            logger.error(f"Error cleaning up old auth records: {e}")
             return {"success": False, "error": str(e)}

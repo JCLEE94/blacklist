@@ -113,7 +113,7 @@ class CompactFlaskApp(
                 initialize_system_stability()
                 logger.info("System stability monitoring initialized")
             except Exception as e:
-                logger.warning("Failed to initialize system monitoring: {e}")
+                logger.warning(f"Failed to initialize system monitoring: {e}")
 
             logger.info(
                 "Blacklist API Server initialized successfully",

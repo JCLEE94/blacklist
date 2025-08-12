@@ -169,7 +169,7 @@ class MSALoadTester:
         ]
 
         for endpoint_name, url in core_endpoints:
-            print("\n🎯 {endpoint_name} 스트레스 테스트")
+            print(f"\n🎯 {endpoint_name} 스트레스 테스트")
 
             for concurrent_users, requests_per_user in stress_scenarios:
                 await self.concurrent_load_test(
@@ -192,7 +192,7 @@ class MSALoadTester:
         duration = 30  # 30초
         concurrent_users = 10
 
-        print("🏃 {endpoint_name} - {concurrent_users}명 동시 사용자, {duration}초간 지속")
+        print(f"🏃 {endpoint_name} - {concurrent_users}명 동시 사용자, {duration}초간 지속")
 
         results = []
         start_time = time.time()
@@ -277,7 +277,7 @@ class MSALoadTester:
         concurrent_users = 5
         requests_per_user = 5
 
-        print("🔀 모든 서비스 엔드포인트 동시 테스트 - {concurrent_users}명/{requests_per_user}회")
+        print(f"🔀 모든 서비스 엔드포인트 동시 테스트 - {concurrent_users}명/{requests_per_user}회")
 
         for endpoint_name, url in all_endpoints:
             await self.concurrent_load_test(
@@ -313,13 +313,13 @@ class MSALoadTester:
         avg_throughput = statistics.mean([r.requests_per_second for r in self.results])
 
         print("📈 전체 통계:")
-        print("   • 총 요청: {total_requests:,}개")
-        print("   • 성공: {total_successful:,}개")
-        print("   • 실패: {total_failed:,}개")
-        print("   • 전체 성공률: {overall_success_rate:.1f}%")
-        print("   • 평균 응답 시간: {overall_avg_response_time:.3f}초")
-        print("   • 최대 처리량: {max_throughput:.1f} req/s")
-        print("   • 평균 처리량: {avg_throughput:.1f} req/s")
+        print(f"   • 총 요청: {total_requests:,}개")
+        print(f"   • 성공: {total_successful:,}개")
+        print(f"   • 실패: {total_failed:,}개")
+        print(f"   • 전체 성공률: {overall_success_rate:.1f}%")
+        print(f"   • 평균 응답 시간: {overall_avg_response_time:.3f}초")
+        print(f"   • 최대 처리량: {max_throughput:.1f} req/s")
+        print(f"   • 평균 처리량: {avg_throughput:.1f} req/s")
 
         # 상세 결과
         print("\n📋 상세 테스트 결과:")
@@ -331,7 +331,7 @@ class MSALoadTester:
                 if result.error_rate < 15
                 else "❌"
             )
-            print("   {status_emoji} {result.endpoint}")
+            print(f"   {status_emoji} {result.endpoint}")
             print(
                 "      요청: {result.total_requests}, 성공: {result.successful_requests}, 실패: {result.failed_requests}"
             )
@@ -350,9 +350,9 @@ class MSALoadTester:
         medium_tests = [r for r in self.results if 0.1 <= r.avg_response_time < 0.5]
         slow_tests = [r for r in self.results if r.avg_response_time >= 0.5]
 
-        print("   • 빠른 응답 (<100ms): {len(fast_tests)}개 테스트")
-        print("   • 보통 응답 (100-500ms): {len(medium_tests)}개 테스트")
-        print("   • 느린 응답 (>500ms): {len(slow_tests)}개 테스트")
+        print(f"   • 빠른 응답 (<100ms): {len(fast_tests)}개 테스트")
+        print(f"   • 보통 응답 (100-500ms): {len(medium_tests)}개 테스트")
+        print(f"   • 느린 응답 (>500ms): {len(slow_tests)}개 테스트")
 
         # 처리량 분석
         high_throughput = [r for r in self.results if r.requests_per_second > 100]
@@ -361,29 +361,29 @@ class MSALoadTester:
         ]
         low_throughput = [r for r in self.results if r.requests_per_second < 50]
 
-        print("   • 높은 처리량 (>100 req/s): {len(high_throughput)}개 테스트")
-        print("   • 보통 처리량 (50-100 req/s): {len(medium_throughput)}개 테스트")
-        print("   • 낮은 처리량 (<50 req/s): {len(low_throughput)}개 테스트")
+        print(f"   • 높은 처리량 (>100 req/s): {len(high_throughput)}개 테스트")
+        print(f"   • 보통 처리량 (50-100 req/s): {len(medium_throughput)}개 테스트")
+        print(f"   • 낮은 처리량 (<50 req/s): {len(low_throughput)}개 테스트")
 
         # 권장사항
         print("\n💡 성능 개선 권장사항:")
 
         if slow_tests:
-            print("   • 응답 시간 개선 필요한 엔드포인트: {len(slow_tests)}개")
+            print(f"   • 응답 시간 개선 필요한 엔드포인트: {len(slow_tests)}개")
             for test in slow_tests[:3]:  # 상위 3개만 표시
-                print("     - {test.endpoint}: {test.avg_response_time:.3f}s")
+                print(f"     - {test.endpoint}: {test.avg_response_time:.3f}s")
 
         if total_failed > 0:
             error_rate = total_failed / total_requests * 100
-            print("   • 전체 오류율 {error_rate:.1f}% - 안정성 개선 필요")
+            print(f"   • 전체 오류율 {error_rate:.1f}% - 안정성 개선 필요")
 
         if avg_throughput < 50:
-            print("   • 평균 처리량 {avg_throughput:.1f} req/s - 확장성 개선 권장")
+            print(f"   • 평균 처리량 {avg_throughput:.1f} req/s - 확장성 개선 권장")
 
         if overall_success_rate < 95:
-            print("   • 전체 성공률 {overall_success_rate:.1f}% - 시스템 안정성 점검 필요")
+            print(f"   • 전체 성공률 {overall_success_rate:.1f}% - 시스템 안정성 점검 필요")
         else:
-            print("   • 전체 성공률 {overall_success_rate:.1f}% - 우수한 안정성")
+            print(f"   • 전체 성공률 {overall_success_rate:.1f}% - 우수한 안정성")
 
         print("\n" + "=" * 80)
 
@@ -426,7 +426,7 @@ async def main():
         print("\n⏹️  부하 테스트가 사용자에 의해 중단되었습니다.")
         sys.exit(1)
     except Exception as e:
-        print("\n💥 부하 테스트 실행 중 오류 발생: {e}")
+        print(f"\n💥 부하 테스트 실행 중 오류 발생: {e}")
         logger.exception("Load test execution failed")
         sys.exit(1)
 
