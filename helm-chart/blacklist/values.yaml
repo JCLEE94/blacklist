@@ -92,13 +92,13 @@ affinity: {}
 persistence:
   data:
     enabled: true
-    storageClass: "default"
+    storageClass: "local-path"
     size: 1Gi
     accessModes:
       - ReadWriteOnce
   logs:
     enabled: true
-    storageClass: "default"
+    storageClass: "local-path"
     size: 500Mi
     accessModes:
       - ReadWriteOnce
