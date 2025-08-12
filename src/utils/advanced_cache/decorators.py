@@ -26,7 +26,6 @@ def set_cache_instance(cache_instance):
 
 def get_cache_instance():
     """Get the global cache instance"""
-    global _cache_instance
     with _lock:
         return _cache_instance
 
