@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 
 from ...core.blacklist_unified import UnifiedBlacklistManager
 from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
-from ...utils.performance_optimizer import optimizer, validate_ips_batch
+# Performance optimizer removed for optimization
 from ...utils.security import SecurityManager
 from ...utils.unified_decorators import unified_cache
 
@@ -31,7 +31,7 @@ class V2APIService:
         )
         self.executor = ThreadPoolExecutor(max_workers=10)
 
-    @optimizer.measure_performance("v2_get_blacklist_with_metadata")
+    # Performance measurement removed
     def get_blacklist_with_metadata(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         """메타데이터 포함 블랙리스트 조회"""
         try:
@@ -87,14 +87,16 @@ class V2APIService:
                 "metadata": {"total_count": 0, "returned_count": 0},
             }
 
-    @optimizer.measure_performance("v2_batch_ip_check")
+    # Performance measurement removed
     def batch_ip_check(
         self, ips: List[str], include_metadata: bool = True
     ) -> Dict[str, Any]:
         """배치 IP 검사"""
         try:
             # IP 유효성 검사
-            valid_ips, invalid_ips = validate_ips_batch(ips)
+            # Simple IP validation instead of performance optimizer
+            valid_ips = [ip for ip in ips if self._is_valid_ip(ip)]
+            invalid_ips = [ip for ip in ips if not self._is_valid_ip(ip)]
 
             if not valid_ips:
                 return {
@@ -368,7 +370,7 @@ class V2APIService:
         """성능 메트릭 조회"""
         try:
             # 옵티마이저에서 성능 데이터 조회
-            metrics = optimizer.get_metrics()
+            metrics = {"performance_optimization": "disabled"}
 
             # 캐시 통계
             cache_stats = {
@@ -393,3 +395,9 @@ class V2APIService:
         except Exception as e:
             logger.error(f"Error getting performance metrics: {e}")
             return {"error": str(e)}
+
+    def _is_valid_ip(self, ip: str) -> bool:
+        """Simple IP address validation"""
+        import re
+        ipv4_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        return bool(re.match(ipv4_pattern, ip.strip()))

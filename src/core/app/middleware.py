@@ -67,49 +67,15 @@ class MiddlewareMixin:
             return response
 
     def _setup_performance_middleware(self, app, container):
-        """성능 모니터링 미들웨어"""
-
-        @app.before_request
-        def performance_before_request():
-            """Performance monitoring setup"""
-            g.start_time = time.time()
-            g.profiler = getattr(app, "profiler", None)
+        """기본 응답 시간 추적 (모니터링 최소화)"""
 
         @app.after_request
-        def performance_after_request(response):
-            """Performance metrics recording"""
-            duration = time.time() - g.get("start_time", time.time())
-
-            # Safely handle profiler metrics
-            try:
-                profiler = g.get("profiler")
-                if profiler and hasattr(profiler, "function_timings"):
-                    endpoint_key = f"endpoint_{request.endpoint or 'unknown'}"
-                    if not hasattr(profiler.function_timings, "__getitem__"):
-                        profiler.function_timings = {}
-                    if endpoint_key not in profiler.function_timings:
-                        profiler.function_timings[endpoint_key] = []
-                    profiler.function_timings[endpoint_key].append(duration)
-            except Exception:
-                # Silently ignore profiler errors to avoid breaking the application
-                pass
-
-            # Add performance headers
-            response.headers["X-Response-Time"] = f"{duration:.3f}s"
-            response.headers["X-Optimized"] = "true"
-            response.headers["X-Compression-Enabled"] = str(
-                response.headers.get("Content-Encoding") == "gzip"
-            )
-
-            # Check if orjson is available
-            try:
-                pass
-
-                json_engine = "orjson"
-            except ImportError:
-                json_engine = "stdlib"
-            response.headers["X-JSON-Engine"] = json_engine
-
+        def basic_performance_tracking(response):
+            """Basic performance tracking - response time only"""
+            if hasattr(g, "start_time"):
+                duration = time.time() - g.start_time
+                response.headers["X-Response-Time"] = f"{duration:.3f}s"
+            
             return response
 
     def _setup_build_info_context(self, app):

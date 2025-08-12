@@ -28,7 +28,7 @@ class BlacklistContainer(ServiceContainer):
         from src.config.factory import get_config
         from src.utils.advanced_cache import get_cache
         from src.utils.auth import AuthManager
-        from src.utils.monitoring import get_health_checker, get_metrics_collector
+        # Monitoring removed for performance optimization
 
         from ..blacklist_unified import UnifiedBlacklistManager
         from ..database import DatabaseManager
@@ -59,8 +59,7 @@ class BlacklistContainer(ServiceContainer):
         self.register("auth_manager", AuthManager)
 
         # Monitoring
-        self.register_factory("metrics_collector", lambda: get_metrics_collector())
-        self.register_factory("health_checker", lambda: get_health_checker())
+        # Monitoring services removed for performance optimization
 
         # Blacklist Manager - 설정에서 데이터베이스 URI 가져오기
         from ...config.settings import settings

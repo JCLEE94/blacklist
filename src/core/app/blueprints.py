@@ -72,3 +72,49 @@ class BlueprintRegistrationMixin:
             logger.error(
                 "Failed to register debug routes", exception=e, blueprint="debug_bp"
             )
+
+    def _register_security_blueprints(self, app, container):
+        """보안 관련 블루프린트 등록"""
+        # Register API key management routes
+        try:
+            from ...api.api_key_routes import api_key_bp
+            
+            app.register_blueprint(api_key_bp)
+            logger.info("API key management routes registered successfully")
+        except Exception as e:
+            logger.error(
+                "Failed to register API key routes", exception=e, blueprint="api_key_bp"
+            )
+
+        # Register authentication routes
+        try:
+            from ...api.auth_routes import auth_bp
+            
+            app.register_blueprint(auth_bp)
+            logger.info("Authentication routes registered successfully")
+        except Exception as e:
+            logger.error(
+                "Failed to register auth routes", exception=e, blueprint="auth_bp"
+            )
+
+        # Register collection management routes
+        try:
+            from ...api.collection_routes import collection_bp
+            
+            app.register_blueprint(collection_bp)
+            logger.info("Collection management routes registered successfully")
+        except Exception as e:
+            logger.error(
+                "Failed to register collection routes", exception=e, blueprint="collection_bp"
+            )
+
+        # Register system monitoring routes
+        try:
+            from ...api.monitoring_routes import monitoring_bp
+            
+            app.register_blueprint(monitoring_bp)
+            logger.info("System monitoring routes registered successfully")
+        except Exception as e:
+            logger.error(
+                "Failed to register monitoring routes", exception=e, blueprint="monitoring_bp"
+            )

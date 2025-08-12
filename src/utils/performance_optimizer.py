@@ -1,300 +1,362 @@
-#!/usr/bin/env python3
 """
-Performance Optimizer for Blacklist System
-고도화된 성능 최적화 모듈
+성능 최적화 유틸리티
+메모리 사용량 최적화, 쿼리 최적화, 캐시 전략 등
 """
 
-import asyncio
-import functools
-import gc
 import logging
 import time
-from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List
-
-import psutil
+from datetime import datetime, timedelta
+from functools import lru_cache, wraps
+from typing import Any, Dict, List, Optional, Callable
+import threading
+import weakref
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class PerformanceMetrics:
-    """성능 메트릭 데이터 클래스"""
-
-    operation: str
-    duration: float
-    memory_before: float
-    memory_after: float
-    cpu_percent: float
-    timestamp: float
-
-    @property
-    def memory_delta(self) -> float:
-        """메모리 사용량 변화"""
-        return self.memory_after - self.memory_before
-
-
-class PerformanceOptimizer:
-    """고도화된 성능 최적화 클래스"""
-
-    def __init__(self, max_workers: int = None):
-        self.max_workers = max_workers or min(32, (psutil.cpu_count() or 1) + 4)
-        self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
-        self.process_pool = ProcessPoolExecutor(max_workers=self.max_workers // 2)
-        self.metrics: Dict[str, List[PerformanceMetrics]] = defaultdict(list)
-        self._cache = {}
-
-    def measure_performance(self, operation_name: str = None):
-        """성능 측정 데코레이터"""
-
-        def decorator(func: Callable) -> Callable:
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                op_name = operation_name or func.__name__
-
-                # 시작 메트릭
-                gc.collect()
-                process = psutil.Process()
-                memory_before = process.memory_info().rss / 1024 / 1024  # MB
-                cpu_before = process.cpu_percent()
-                start_time = time.time()
-
-                try:
-                    # 함수 실행
-                    result = func(*args, **kwargs)
-
-                    # 종료 메트릭
-                    end_time = time.time()
-                    memory_after = process.memory_info().rss / 1024 / 1024  # MB
-                    cpu_after = process.cpu_percent()
-
-                    # 메트릭 저장
-                    metric = PerformanceMetrics(
-                        operation=op_name,
-                        duration=end_time - start_time,
-                        memory_before=memory_before,
-                        memory_after=memory_after,
-                        cpu_percent=(cpu_before + cpu_after) / 2,
-                        timestamp=end_time,
-                    )
-                    self.metrics[op_name].append(metric)
-
-                    # 로깅
-                    if metric.duration > 1.0:  # 1초 이상 걸린 작업
-                        logger.warning(
-                            f"Slow operation detected: {op_name} took {metric.duration:.2f}s, "
-                            f"memory delta: {metric.memory_delta:.2f}MB"
-                        )
-
-                    return result
-
-                except Exception as e:
-                    logger.error(f"Error in {op_name}: {str(e)}")
-                    raise
-
-            return wrapper
-
-        return decorator
-
-    def batch_process(
-        self,
-        items: List[Any],
-        processor: Callable,
-        batch_size: int = 100,
-        use_process_pool: bool = False,
-    ) -> List[Any]:
-        """배치 처리 최적화"""
-        results = []
-        pool = self.process_pool if use_process_pool else self.thread_pool
-
-        # 배치로 나누기
-        batches = [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
-
-        # 병렬 처리
-        with self.measure_performance(f"batch_process_{processor.__name__}")():
-            futures = [
-                pool.submit(self._process_batch, batch, processor) for batch in batches
-            ]
-            for future in futures:
-                results.extend(future.result())
-
-        return results
-
-    def _process_batch(self, batch: List[Any], processor: Callable) -> List[Any]:
-        """배치 처리 헬퍼"""
-        return [processor(item) for item in batch]
-
-    def cache_result(self, ttl: int = 300):
-        """결과 캐싱 데코레이터"""
-
-        def decorator(func: Callable) -> Callable:
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                # 캐시 키 생성
-                cache_key = f"{func.__name__}:{str(args)}:{str(kwargs)}"
-
-                # 캐시 확인
-                if cache_key in self._cache:
-                    cached_time, cached_result = self._cache[cache_key]
-                    if time.time() - cached_time < ttl:
-                        return cached_result
-
-                # 함수 실행 및 캐싱
-                result = func(*args, **kwargs)
-                self._cache[cache_key] = (time.time(), result)
-
-                # 오래된 캐시 정리
-                self._cleanup_cache(ttl)
-
-                return result
-
-            return wrapper
-
-        return decorator
-
-    def _cleanup_cache(self, ttl: int):
-        """오래된 캐시 항목 정리"""
-        current_time = time.time()
-        expired_keys = [
-            key
-            for key, (cached_time, _) in self._cache.items()
-            if current_time - cached_time > ttl
-        ]
-        for key in expired_keys:
-            del self._cache[key]
-
-    async def async_batch_process(
-        self, items: List[Any], processor: Callable, max_concurrent: int = 10
-    ) -> List[Any]:
-        """비동기 배치 처리"""
-        semaphore = asyncio.Semaphore(max_concurrent)
-
-        async def process_with_semaphore(item):
-            async with semaphore:
-                return await asyncio.get_event_loop().run_in_executor(
-                    self.thread_pool, processor, item
-                )
-
-        tasks = [process_with_semaphore(item) for item in items]
-        return await asyncio.gather(*tasks)
-
-    def optimize_memory(self):
-        """메모리 최적화"""
-        # 가비지 컬렉션 강제 실행
-        gc.collect()
-
-        # 캐시 정리
-        self._cache.clear()
-
-        # 메모리 사용량 로깅
-        process = psutil.Process()
-        memory_mb = process.memory_info().rss / 1024 / 1024
-        logger.info(f"Memory optimized. Current usage: {memory_mb:.2f}MB")
-
-    def get_performance_report(self) -> Dict[str, Dict[str, float]]:
-        """성능 리포트 생성"""
-        report = {}
-
-        for operation, metrics in self.metrics.items():
-            if not metrics:
-                continue
-
-            durations = [m.duration for m in metrics]
-            memory_deltas = [m.memory_delta for m in metrics]
-            cpu_percents = [m.cpu_percent for m in metrics]
-
-            report[operation] = {
-                "count": len(metrics),
-                "avg_duration": sum(durations) / len(durations),
-                "max_duration": max(durations),
-                "min_duration": min(durations),
-                "avg_memory_delta": sum(memory_deltas) / len(memory_deltas),
-                "avg_cpu_percent": sum(cpu_percents) / len(cpu_percents),
-            }
-
-        return report
-
-    def __del__(self):
-        """리소스 정리"""
-        self.thread_pool.shutdown(wait=False)
-        self.process_pool.shutdown(wait=False)
+    """성능 메트릭"""
+    total_requests: int = 0
+    avg_response_time: float = 0.0
+    cache_hit_rate: float = 0.0
+    memory_usage_mb: float = 0.0
+    database_query_time: float = 0.0
+    active_connections: int = 0
+    error_rate: float = 0.0
+    timestamp: datetime = None
+    
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
 
 
-# 전역 인스턴스
-optimizer = PerformanceOptimizer()
-
-
-# 유틸리티 함수들
-def optimize_database_query(query: str) -> str:
+class QueryOptimizer:
     """데이터베이스 쿼리 최적화"""
-    # 인덱스 힌트 추가
-    if "SELECT" in query.upper() and "WHERE" in query.upper():
-        if "ip" in query.lower():
-            query = query.replace("WHERE", "WHERE /*+ INDEX(blacklist_ip idx_ip) */")
-
-    # LIMIT 추가 (대량 결과 방지)
-    if "SELECT" in query.upper() and "LIMIT" not in query.upper():
-        query += " LIMIT 10000"
-
-    return query
-
-
-def chunked_insert(data: List[Dict], table_name: str, chunk_size: int = 1000):
-    """대량 INSERT 최적화"""
-    for i in range(0, len(data), chunk_size):
-        chunk = data[i : i + chunk_size]
-        yield chunk
-
-
-@optimizer.measure_performance("batch_ip_validation")
-def validate_ips_batch(ips: List[str]) -> List[bool]:
-    """IP 주소 배치 검증 최적화"""
-    import ipaddress
-
-    def validate_single(ip: str) -> bool:
+    
+    def __init__(self):
+        self.query_cache = {}
+        self.query_stats = {}
+        self.cache_lock = threading.Lock()
+    
+    @contextmanager
+    def measure_query_time(self, query_name: str):
+        """쿼리 실행 시간 측정"""
+        start_time = time.time()
         try:
-            ipaddress.ip_address(ip)
-            return True
-        except ValueError:
-            return False
+            yield
+        finally:
+            duration = time.time() - start_time
+            self._record_query_stats(query_name, duration)
+    
+    def _record_query_stats(self, query_name: str, duration: float):
+        """쿼리 통계 기록"""
+        with self.cache_lock:
+            if query_name not in self.query_stats:
+                self.query_stats[query_name] = {
+                    'count': 0,
+                    'total_time': 0.0,
+                    'avg_time': 0.0,
+                    'max_time': 0.0
+                }
+            
+            stats = self.query_stats[query_name]
+            stats['count'] += 1
+            stats['total_time'] += duration
+            stats['avg_time'] = stats['total_time'] / stats['count']
+            stats['max_time'] = max(stats['max_time'], duration)
+    
+    def get_slow_queries(self, threshold: float = 1.0) -> Dict[str, Dict]:
+        """느린 쿼리 목록 반환"""
+        with self.cache_lock:
+            return {
+                name: stats for name, stats in self.query_stats.items()
+                if stats['avg_time'] > threshold
+            }
+    
+    def clear_stats(self):
+        """통계 초기화"""
+        with self.cache_lock:
+            self.query_stats.clear()
 
-    return optimizer.batch_process(ips, validate_single, batch_size=500)
+
+class SmartCache:
+    """지능형 캐싱 시스템"""
+    
+    def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600):
+        self.max_size = max_size
+        self.ttl_seconds = ttl_seconds
+        self.cache = {}
+        self.access_times = {}
+        self.hit_count = 0
+        self.miss_count = 0
+        self.lock = threading.Lock()
+    
+    def get(self, key: str) -> Any:
+        """캐시에서 값 조회"""
+        with self.lock:
+            if key in self.cache:
+                # TTL 확인
+                if time.time() - self.cache[key]['timestamp'] < self.ttl_seconds:
+                    self.access_times[key] = time.time()
+                    self.hit_count += 1
+                    return self.cache[key]['value']
+                else:
+                    # 만료된 항목 제거
+                    del self.cache[key]
+                    del self.access_times[key]
+            
+            self.miss_count += 1
+            return None
+    
+    def set(self, key: str, value: Any):
+        """캐시에 값 저장"""
+        with self.lock:
+            current_time = time.time()
+            
+            # 캐시 크기 제한 확인
+            if len(self.cache) >= self.max_size and key not in self.cache:
+                self._evict_least_recently_used()
+            
+            self.cache[key] = {
+                'value': value,
+                'timestamp': current_time
+            }
+            self.access_times[key] = current_time
+    
+    def _evict_least_recently_used(self):
+        """LRU 기반 캐시 제거"""
+        if not self.access_times:
+            return
+        
+        oldest_key = min(self.access_times.keys(), 
+                        key=lambda k: self.access_times[k])
+        del self.cache[oldest_key]
+        del self.access_times[oldest_key]
+    
+    def clear_expired(self):
+        """만료된 캐시 항목 정리"""
+        with self.lock:
+            current_time = time.time()
+            expired_keys = []
+            
+            for key, data in self.cache.items():
+                if current_time - data['timestamp'] >= self.ttl_seconds:
+                    expired_keys.append(key)
+            
+            for key in expired_keys:
+                del self.cache[key]
+                del self.access_times[key]
+            
+            return len(expired_keys)
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """캐시 통계 반환"""
+        total_requests = self.hit_count + self.miss_count
+        hit_rate = (self.hit_count / total_requests * 100) if total_requests > 0 else 0
+        
+        return {
+            'size': len(self.cache),
+            'max_size': self.max_size,
+            'hit_count': self.hit_count,
+            'miss_count': self.miss_count,
+            'hit_rate': round(hit_rate, 2),
+            'ttl_seconds': self.ttl_seconds
+        }
 
 
-def optimize_api_response(data: Any) -> Any:
-    """API 응답 최적화"""
-    if isinstance(data, dict):
-        # 불필요한 필드 제거
-        optimized = {k: v for k, v in data.items() if v is not None}
-        return optimized
-    elif isinstance(data, list):
-        # 대량 데이터 청킹
-        if len(data) > 1000:
-            return data[:1000] + [
-                {"truncated": f"... and {len(data) - 1000} more items"}
-            ]
-        return data
-    return data
+class MemoryOptimizer:
+    """메모리 사용량 최적화"""
+    
+    def __init__(self):
+        self.weak_references = weakref.WeakSet()
+        self.object_pools = {}
+    
+    def create_object_pool(self, name: str, factory: Callable, max_size: int = 10):
+        """객체 풀 생성"""
+        self.object_pools[name] = {
+            'factory': factory,
+            'pool': [],
+            'max_size': max_size,
+            'lock': threading.Lock()
+        }
+    
+    def get_from_pool(self, pool_name: str):
+        """객체 풀에서 객체 획득"""
+        if pool_name not in self.object_pools:
+            raise ValueError(f"Unknown pool: {pool_name}")
+        
+        pool_info = self.object_pools[pool_name]
+        with pool_info['lock']:
+            if pool_info['pool']:
+                return pool_info['pool'].pop()
+            else:
+                return pool_info['factory']()
+    
+    def return_to_pool(self, pool_name: str, obj: Any):
+        """객체를 풀에 반환"""
+        if pool_name not in self.object_pools:
+            return
+        
+        pool_info = self.object_pools[pool_name]
+        with pool_info['lock']:
+            if len(pool_info['pool']) < pool_info['max_size']:
+                # 객체 초기화 (필요한 경우)
+                if hasattr(obj, 'reset'):
+                    obj.reset()
+                pool_info['pool'].append(obj)
+    
+    def optimize_large_list(self, data: List[Any], chunk_size: int = 1000) -> List[List[Any]]:
+        """큰 리스트를 청크로 분할하여 메모리 최적화"""
+        return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
+    
+    def memory_efficient_join(self, items: List[str], separator: str = "") -> str:
+        """메모리 효율적인 문자열 조인"""
+        if len(items) < 1000:
+            return separator.join(items)
+        
+        # 큰 리스트의 경우 청크 단위로 처리
+        chunks = self.optimize_large_list(items, 1000)
+        return separator.join(separator.join(chunk) for chunk in chunks)
 
 
-def monitor_performance(func: Callable) -> Callable:
+class PerformanceMonitor:
+    """성능 모니터링"""
+    
+    def __init__(self):
+        self.metrics_history = []
+        self.request_times = []
+        self.lock = threading.Lock()
+        self.query_optimizer = QueryOptimizer()
+        self.smart_cache = SmartCache()
+        self.memory_optimizer = MemoryOptimizer()
+    
+    def record_request_time(self, duration: float):
+        """요청 처리 시간 기록"""
+        with self.lock:
+            self.request_times.append(duration)
+            # 최근 1000개만 유지
+            if len(self.request_times) > 1000:
+                self.request_times = self.request_times[-1000:]
+    
+    def get_current_metrics(self) -> PerformanceMetrics:
+        """현재 성능 메트릭 반환"""
+        with self.lock:
+            if not self.request_times:
+                avg_response_time = 0.0
+            else:
+                avg_response_time = sum(self.request_times) / len(self.request_times)
+            
+            cache_stats = self.smart_cache.get_stats()
+            
+            return PerformanceMetrics(
+                total_requests=len(self.request_times),
+                avg_response_time=round(avg_response_time * 1000, 2),  # ms
+                cache_hit_rate=cache_stats['hit_rate'],
+                timestamp=datetime.now()
+            )
+    
+    def clear_metrics(self):
+        """메트릭 초기화"""
+        with self.lock:
+            self.request_times.clear()
+            self.metrics_history.clear()
+            self.query_optimizer.clear_stats()
+
+
+def performance_monitor(func: Callable) -> Callable:
     """성능 모니터링 데코레이터"""
-    if callable(func) and hasattr(func, "__name__"):
-        return optimizer.measure_performance(func.__name__)(func)
-    else:
-        # func가 callable이 아닌 경우 원본 반환
-        logger.warning(
-            f"monitor_performance called on non-callable object: {type(func)}"
-        )
-        return func
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+            return result
+        finally:
+            duration = time.time() - start_time
+            # 전역 성능 모니터에 기록
+            if hasattr(g_performance_monitor, 'record_request_time'):
+                g_performance_monitor.record_request_time(duration)
+    return wrapper
 
 
-def performance_headers(response_data: Any) -> Dict[str, str]:
-    """성능 관련 헤더 생성"""
-    return {
-        "X-Response-Time": f"{time.time():.3f}",
-        "X-Cache-Status": "optimized",
-        "X-Performance-Level": "enhanced",
-    }
+def cached_result(ttl: int = 3600, key_func: Callable = None):
+    """결과 캐싱 데코레이터"""
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 캐시 키 생성
+            if key_func:
+                cache_key = key_func(*args, **kwargs)
+            else:
+                cache_key = f"{func.__name__}:{hash(str(args) + str(kwargs))}"
+            
+            # 캐시에서 조회
+            cached_value = g_performance_monitor.smart_cache.get(cache_key)
+            if cached_value is not None:
+                return cached_value
+            
+            # 캐시 미스 시 실제 함수 실행
+            result = func(*args, **kwargs)
+            g_performance_monitor.smart_cache.set(cache_key, result)
+            return result
+        return wrapper
+    return decorator
+
+
+def batch_process(batch_size: int = 100):
+    """배치 처리 데코레이터"""
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(items: List[Any], *args, **kwargs):
+            if len(items) <= batch_size:
+                return func(items, *args, **kwargs)
+            
+            # 배치 단위로 처리
+            results = []
+            for i in range(0, len(items), batch_size):
+                batch = items[i:i + batch_size]
+                batch_result = func(batch, *args, **kwargs)
+                if isinstance(batch_result, list):
+                    results.extend(batch_result)
+                else:
+                    results.append(batch_result)
+            
+            return results
+        return wrapper
+    return decorator
+
+
+# 전역 성능 모니터 인스턴스
+g_performance_monitor = PerformanceMonitor()
+
+
+def get_performance_monitor() -> PerformanceMonitor:
+    """성능 모니터 인스턴스 반환"""
+    return g_performance_monitor
+
+
+def optimize_database_queries():
+    """데이터베이스 쿼리 최적화 권장사항 출력"""
+    slow_queries = g_performance_monitor.query_optimizer.get_slow_queries()
+    if slow_queries:
+        logger.warning("Slow queries detected:")
+        for query_name, stats in slow_queries.items():
+            logger.warning(f"  {query_name}: avg {stats['avg_time']:.3f}s, max {stats['max_time']:.3f}s")
+    
+    return slow_queries
+
+
+def cleanup_performance_data():
+    """성능 데이터 정리"""
+    expired_count = g_performance_monitor.smart_cache.clear_expired()
+    logger.info(f"Cleaned up {expired_count} expired cache entries")
+    
+    # 메트릭 히스토리 정리 (7일 이상 된 것)
+    cutoff_date = datetime.now() - timedelta(days=7)
+    g_performance_monitor.metrics_history = [
+        m for m in g_performance_monitor.metrics_history 
+        if m.timestamp > cutoff_date
+    ]

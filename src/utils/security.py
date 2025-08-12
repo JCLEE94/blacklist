@@ -230,9 +230,19 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
                 if api_key_allowed:
                     api_key = request.headers.get("X-API-Key")
                     if api_key and security_manager.validate_api_key_format(api_key):
-                        # In a real implementation, validate against stored API keys
-                        g.current_user = {"user_id": "api_user", "roles": ["api"]}
-                        return f(*args, **kwargs)
+                        # 실제 API 키 검증 구현
+                        from ..models.api_key import get_api_key_manager
+                        
+                        api_key_manager = get_api_key_manager()
+                        validated_key = api_key_manager.validate_api_key(api_key)
+                        
+                        if validated_key:
+                            g.current_user = {
+                                "user_id": f"api_user_{validated_key.key_id}",
+                                "roles": validated_key.permissions,
+                                "api_key_name": validated_key.name
+                            }
+                            return f(*args, **kwargs)
 
                 return {"error": "Authentication required"}, 401
 

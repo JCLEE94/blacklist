@@ -38,43 +38,23 @@ except ImportError:
         return decorator
 
 
-from .monitoring import (
-    HealthChecker,
-    MetricsCollector,
-    get_health_checker,
-    get_metrics_collector,
-    track_performance,
-)
+# Monitoring removed for performance optimization
 
-try:
-    from .performance_optimizer import measure_performance, profile_function
+# Fallback implementations for missing functions
+def get_connection_manager():
+    return None
 
-    # Fallback implementations for missing functions
-    def get_connection_manager():
-        return None
+def get_profiler():
+    return None
 
-    def get_profiler():
-        return None
+def get_response_optimizer():
+    return None
 
-    def get_response_optimizer():
-        return None
+def measure_performance(func):
+    return func
 
-except ImportError:
-    # Fallback implementations
-    def get_connection_manager():
-        return None
-
-    def get_profiler():
-        return None
-
-    def get_response_optimizer():
-        return None
-
-    def measure_performance(func):
-        return func
-
-    def profile_function(func):
-        return func
+def profile_function(func):
+    return func
 
 
 # Configuration utilities moved to core.constants
@@ -114,15 +94,9 @@ __all__ = [
     # Authentication utilities
     "AuthManager",
     "RateLimiter",
-    # Monitoring utilities
-    "get_metrics_collector",
-    "get_health_checker",
-    "track_performance",
-    "MetricsCollector",
-    "HealthChecker",
-    # Performance utilities
+    # Basic utilities (monitoring removed)
     "get_profiler",
-    "get_response_optimizer",
+    "get_response_optimizer", 
     "get_connection_manager",
     "profile_function",
     "measure_performance",

@@ -190,6 +190,12 @@ class BaseCollector(ABC):
                 break
 
             except asyncio.TimeoutError:
+                # 취소 요청 확인을 타임아웃보다 우선
+                if self._should_cancel():
+                    self._current_result.status = CollectionStatus.CANCELLED
+                    self._current_result.error_message = "사용자에 의해 취소됨"
+                    break
+                
                 error_msg = f"수집 타임아웃: {self.name} ({self.config.timeout}초)"
                 self.logger.error(error_msg)
                 self._current_result.error_message = error_msg

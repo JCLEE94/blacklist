@@ -7,7 +7,12 @@ Maintains backward compatibility with the original unified_decorators module
 from .auth import unified_auth
 from .cache import unified_cache
 from .convenience import admin_endpoint, api_endpoint, public_endpoint
-from .monitoring import unified_monitoring
+# Monitoring decorator removed for performance optimization
+def unified_monitoring(operation_name=None):
+    """Dummy monitoring decorator for backward compatibility"""
+    def decorator(func):
+        return func
+    return decorator
 from .rate_limit import unified_rate_limit
 from .registry import DecoratorRegistry, initialize_decorators
 from .validation import unified_validation
@@ -17,12 +22,12 @@ __all__ = [
     # Core decorators
     "unified_cache",
     "unified_auth",
-    "unified_monitoring",
+    "unified_monitoring",  # Dummy implementation
     "unified_validation",
     "unified_rate_limit",
     # Convenience decorators
     "api_endpoint",
-    "admin_endpoint",
+    "admin_endpoint", 
     "public_endpoint",
     # Registry
     "DecoratorRegistry",

@@ -36,13 +36,6 @@ def get_connection_manager():
     return DummyConnectionManager()
 
 
-def get_profiler():
-    """Placeholder for profiler"""
-
-    class DummyProfiler:
-        function_timings = {}
-
-    return DummyProfiler()
 
 
 class CompactFlaskApp(
@@ -109,14 +102,19 @@ class CompactFlaskApp(
             # Register blueprints (from BlueprintRegistrationMixin)
             self._register_core_blueprints(app, container)
             self._register_v2_blueprints(app, container)
+            self._register_security_blueprints(app, container)
             self._register_debug_blueprints(app, container)
 
             # Setup error handlers (from ErrorHandlerMixin)
             self._setup_error_handlers(app)
 
-            # Performance monitoring setup
-            profiler = get_profiler()
-            app.profiler = profiler
+            # Initialize system stability monitoring
+            try:
+                from ..utils.system_stability import initialize_system_stability
+                initialize_system_stability()
+                logger.info("System stability monitoring initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize system monitoring: {e}")
 
             logger.info(
                 "Blacklist API Server initialized successfully",
@@ -145,45 +143,11 @@ class CompactFlaskApp(
         try:
             # Initialize advanced features
             from ..utils.advanced_cache import get_smart_cache
-            from ..utils.real_time_monitoring import setup_monitoring
             from ..utils.security import get_security_manager
 
             # Setup advanced caching
             smart_cache = get_smart_cache()
             app.smart_cache = smart_cache
-
-            # Setup real-time monitoring
-            def app_metrics_callback():
-                """애플리케이션 메트릭 수집 콜백"""
-                try:
-                    blacklist_manager = container.get("blacklist_manager")
-                    cache = container.get("cache")
-
-                    active_ips = blacklist_manager.get_active_ips()
-                    active_count = (
-                        len(active_ips[0])
-                        if isinstance(active_ips, tuple)
-                        else len(active_ips)
-                    )
-
-                    cache_stats = (
-                        cache.get_stats() if hasattr(cache, "get_stats") else {}
-                    )
-
-                    return {
-                        "total_requests": getattr(app, "request_count", 0),
-                        "error_count": getattr(app, "error_count", 0),
-                        "avg_response_time": getattr(app, "avg_response_time", 0.0),
-                        "cache_hit_rate": cache_stats.get("hit_rate", 0.0),
-                        "active_ips_count": active_count,
-                        "database_queries": getattr(app, "db_query_count", 0),
-                    }
-                except Exception as e:
-                    logger.error("메트릭 수집 실패", exception=e, component="metrics")
-                    return {}
-
-            monitor = setup_monitoring(app_metrics_callback)
-            app.monitor = monitor
 
             # Setup enhanced security
             security_manager = get_security_manager()
@@ -197,7 +161,7 @@ class CompactFlaskApp(
                 cache=container.get("cache"),
                 auth_manager=container.get("auth_manager"),
                 rate_limiter=None,  # Rate limiting completely disabled
-                metrics=container.get("metrics_collector"),
+                metrics=None,  # Monitoring disabled
             )
         except Exception as e:
             logger.warning("Some advanced features failed to initialize", exception=e)

@@ -37,8 +37,8 @@ class StructuredLogger:
             # Docker 환경에서 권한 문제 발생 시 로그 디렉토리 생성 건너뛰기
             pass
 
-        # 로그 버퍼 (메모리)
-        self.log_buffer = deque(maxlen=10000)
+        # 로그 버퍼 (최소화)
+        self.log_buffer = deque(maxlen=1000)
         self.buffer_lock = threading.Lock()
 
         # 로거 설정
@@ -53,8 +53,7 @@ class StructuredLogger:
             "critical": 0,
         }
 
-        # 로그 DB 설정
-        self._setup_log_db()
+        # 로그 DB 설정 비활성화 (성능 최적화)
 
     def _setup_logger(self) -> logging.Logger:
         """로거 설정"""
@@ -157,33 +156,8 @@ class StructuredLogger:
         conn.close()
 
     def _save_to_db(self, record: Dict[str, Any]):
-        """로그를 DB에 저장"""
-        try:
-            db_path = self.log_dir / "logs.db"
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            cursor.execute(
-                """
-                INSERT INTO structured_logs
-                (timestamp, level, logger_name, message, context, traceback)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    record.get("timestamp", datetime.utcnow().isoformat()),
-                    record.get("level", "INFO"),
-                    record.get("logger_name", self.name),
-                    record.get("message", ""),
-                    json.dumps(record.get("context", {})),
-                    record.get("traceback", ""),
-                ),
-            )
-
-            conn.commit()
-            conn.close()
-        except Exception:
-            # DB 저장 실패는 무시 (로깅 시스템이 앱 동작을 방해하면 안됨)
-            pass
+        """DB 저장 비활성화 (성능 최적화)"""
+        pass
 
     def _add_to_buffer(self, record: Dict[str, Any]):
         """로그를 버퍼에 추가"""
@@ -303,40 +277,8 @@ class StructuredLogger:
         }
 
     def search_logs(self, query: str, limit: int = 100) -> list:
-        """로그 검색"""
-        try:
-            db_path = self.log_dir / "logs.db"
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            cursor.execute(
-                """
-                SELECT timestamp, level, logger_name, message, context, traceback
-                FROM structured_logs
-                WHERE message LIKE ? OR context LIKE ?
-                ORDER BY timestamp DESC
-                LIMIT ?
-            """,
-                (f"%{query}%", f"%{query}%", limit),
-            )
-
-            results = []
-            for row in cursor.fetchall():
-                results.append(
-                    {
-                        "timestamp": row[0],
-                        "level": row[1],
-                        "logger_name": row[2],
-                        "message": row[3],
-                        "context": json.loads(row[4]) if row[4] else {},
-                        "traceback": row[5],
-                    }
-                )
-
-            conn.close()
-            return results
-        except Exception:
-            return []
+        """로그 검색 비활성화 (성능 최적화)"""
+        return []
 
 
 class BufferHandler(logging.Handler):
