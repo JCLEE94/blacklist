@@ -12,7 +12,7 @@ from typing import Dict
 from unittest.mock import patch
 
 
-class TestConfig:
+class TestConfigManager:
     """Centralized test configuration management"""
 
     def __init__(self):
@@ -157,7 +157,7 @@ class TestEnvironmentManager:
     """Manages test environment context"""
 
     def __init__(self):
-        self.config = TestConfig()
+        self.config = TestConfigManager()
         self.original_env = {}
         self.patches = []
 

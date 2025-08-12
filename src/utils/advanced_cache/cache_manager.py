@@ -6,9 +6,13 @@ Main Cache Manager - Enhanced Smart Cache Implementation
 import logging
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from .memory_backend import MemoryBackend
+
 # Performance tracking disabled
 from .redis_backend import RedisBackend
 from .serialization import SerializationManager
@@ -66,27 +70,32 @@ class EnhancedSmartCache:
             if raw_data is None:
                 # Performance tracking disabled
                 if self.performance:
-                    if self.performance: self.performance.record_cache_result(hit=False)
-                    if self.performance: self.performance.record_operation(
-                    "get", time.time() - start_time, success=True
-                )
+                    if self.performance:
+                        self.performance.record_cache_result(hit=False)
+                    if self.performance:
+                        self.performance.record_operation(
+                            "get", time.time() - start_time, success=True
+                        )
                 return None
 
             # Deserialize the data
             value = self.serialization.deserialize(raw_data)
 
-            if self.performance: self.performance.record_cache_result(hit=True)
-            if self.performance: self.performance.record_operation(
-                "get", time.time() - start_time, success=True
-            )
+            if self.performance:
+                self.performance.record_cache_result(hit=True)
+            if self.performance:
+                self.performance.record_operation(
+                    "get", time.time() - start_time, success=True
+                )
 
             return value
 
         except Exception as e:
             logger.error(f"Cache GET error for key '{key}': {e}")
-            if self.performance: self.performance.record_operation(
-                "get", time.time() - start_time, success=False
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "get", time.time() - start_time, success=False
+                )
             return None
 
     def set(
@@ -119,16 +128,18 @@ class EnhancedSmartCache:
             ):
                 self._handle_tags(key, tags)
 
-            if self.performance: self.performance.record_operation(
-                "set", time.time() - start_time, success=success
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "set", time.time() - start_time, success=success
+                )
             return success
 
         except Exception as e:
             logger.error(f"Cache SET error for key '{key}': {e}")
-            if self.performance: self.performance.record_operation(
-                "set", time.time() - start_time, success=False
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "set", time.time() - start_time, success=False
+                )
             return False
 
     def delete(self, key: str) -> bool:
@@ -137,16 +148,18 @@ class EnhancedSmartCache:
 
         try:
             success = self.primary_backend.delete(key)
-            if self.performance: self.performance.record_operation(
-                "delete", time.time() - start_time, success=success
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "delete", time.time() - start_time, success=success
+                )
             return success
 
         except Exception as e:
             logger.error(f"Cache DELETE error for key '{key}': {e}")
-            if self.performance: self.performance.record_operation(
-                "delete", time.time() - start_time, success=False
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "delete", time.time() - start_time, success=False
+                )
             return False
 
     def delete_pattern(self, pattern: str) -> int:
@@ -155,16 +168,18 @@ class EnhancedSmartCache:
 
         try:
             deleted_count = self.primary_backend.delete_pattern(pattern)
-            if self.performance: self.performance.record_operation(
-                "delete_pattern", time.time() - start_time, success=True
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "delete_pattern", time.time() - start_time, success=True
+                )
             return deleted_count
 
         except Exception as e:
             logger.error(f"Cache DELETE PATTERN error for pattern '{pattern}': {e}")
-            if self.performance: self.performance.record_operation(
-                "delete_pattern", time.time() - start_time, success=False
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "delete_pattern", time.time() - start_time, success=False
+                )
             return 0
 
     def clear(self) -> bool:
@@ -173,16 +188,18 @@ class EnhancedSmartCache:
 
         try:
             success = self.primary_backend.clear_all()
-            if self.performance: self.performance.record_operation(
-                "clear", time.time() - start_time, success=success
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "clear", time.time() - start_time, success=success
+                )
             return success
 
         except Exception as e:
             logger.error(f"Cache CLEAR error: {e}")
-            if self.performance: self.performance.record_operation(
-                "clear", time.time() - start_time, success=False
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "clear", time.time() - start_time, success=False
+                )
             return False
 
     def exists(self, key: str) -> bool:
@@ -191,22 +208,26 @@ class EnhancedSmartCache:
 
         try:
             exists = self.primary_backend.exists(key)
-            if self.performance: self.performance.record_operation(
-                "exists", time.time() - start_time, success=True
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "exists", time.time() - start_time, success=True
+                )
             return exists
 
         except Exception as e:
             logger.error(f"Cache EXISTS error for key '{key}': {e}")
-            if self.performance: self.performance.record_operation(
-                "exists", time.time() - start_time, success=False
-            )
+            if self.performance:
+                self.performance.record_operation(
+                    "exists", time.time() - start_time, success=False
+                )
             return False
 
     def get_stats(self) -> Dict[str, Any]:
         """Get comprehensive cache statistics"""
         backend_stats = self.primary_backend.get_stats()
-        performance_stats = self.performance.get_performance_summary() if self.performance else {}
+        performance_stats = (
+            self.performance.get_performance_summary() if self.performance else {}
+        )
         serialization_stats = self.serialization.get_stats()
 
         return {
@@ -223,8 +244,12 @@ class EnhancedSmartCache:
     def get_performance_metrics(self) -> Dict[str, Any]:
         """Get detailed performance metrics"""
         return {
-            "performance_summary": self.performance.get_performance_summary() if self.performance else {},
-            "trend_analysis": self.performance.get_trend_analysis() if self.performance else {},
+            "performance_summary": self.performance.get_performance_summary()
+            if self.performance
+            else {},
+            "trend_analysis": self.performance.get_trend_analysis()
+            if self.performance
+            else {},
             "backend_health": self.primary_backend.health_check(),
         }
 
@@ -237,9 +262,10 @@ class EnhancedSmartCache:
             if self.set(key, value, ttl):
                 success_count += 1
 
-        if self.performance: self.performance.record_operation(
-            "warm_cache", time.time() - start_time, success=success_count > 0
-        )
+        if self.performance:
+            self.performance.record_operation(
+                "warm_cache", time.time() - start_time, success=success_count > 0
+            )
 
         logger.info(f"Cache warmed with {success_count}/{len(data)} entries")
 
@@ -291,7 +317,9 @@ class EnhancedSmartCache:
     def health_check(self) -> Dict[str, Any]:
         """Comprehensive health check"""
         backend_health = self.primary_backend.health_check()
-        performance_summary = self.performance.get_performance_summary() if self.performance else {}
+        performance_summary = (
+            self.performance.get_performance_summary() if self.performance else {}
+        )
 
         # Determine overall health
         is_healthy = (

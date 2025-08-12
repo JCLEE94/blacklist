@@ -8,7 +8,8 @@ Flask 미들웨어 및 요청/응답 처리
 import os
 import time
 
-from flask import g, request
+from flask import g
+from flask import request
 
 from src.core.constants import SECURITY_HEADERS
 from src.utils.structured_logging import get_logger
@@ -75,7 +76,7 @@ class MiddlewareMixin:
             if hasattr(g, "start_time"):
                 duration = time.time() - g.start_time
                 response.headers["X-Response-Time"] = f"{duration:.3f}s"
-            
+
             return response
 
     def _setup_build_info_context(self, app):

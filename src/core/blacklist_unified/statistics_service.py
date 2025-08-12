@@ -5,7 +5,9 @@ blacklist_unified 모듈용 통계 서비스 클래스
 """
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 
 class StatisticsService:

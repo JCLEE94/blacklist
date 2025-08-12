@@ -4,7 +4,8 @@ CI/CD 유틸리티 모듈
 Claude Code v8.4.0 - 파일 및 API 유틸리티
 """
 
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 
 import requests
 

@@ -42,9 +42,9 @@ class BlueprintRegistrationMixin:
             from ..v2_routes_wrapper import init_v2_services
 
             # Initialize V2 services with dependencies from container
-            blacklist_manager = container.get('blacklist_manager')
-            cache_manager = container.get('cache_manager')
-            
+            blacklist_manager = container.get("blacklist_manager")
+            cache_manager = container.get("cache_manager")
+
             if blacklist_manager and cache_manager:
                 # Initialize V2 services for all route modules
                 v2_service = init_v2_services(blacklist_manager, cache_manager)
@@ -78,7 +78,7 @@ class BlueprintRegistrationMixin:
         # Register API key management routes
         try:
             from ...api.api_key_routes import api_key_bp
-            
+
             app.register_blueprint(api_key_bp)
             logger.info("API key management routes registered successfully")
         except Exception as e:
@@ -89,7 +89,7 @@ class BlueprintRegistrationMixin:
         # Register authentication routes
         try:
             from ...api.auth_routes import auth_bp
-            
+
             app.register_blueprint(auth_bp)
             logger.info("Authentication routes registered successfully")
         except Exception as e:
@@ -100,21 +100,25 @@ class BlueprintRegistrationMixin:
         # Register collection management routes
         try:
             from ...api.collection_routes import collection_bp
-            
+
             app.register_blueprint(collection_bp)
             logger.info("Collection management routes registered successfully")
         except Exception as e:
             logger.error(
-                "Failed to register collection routes", exception=e, blueprint="collection_bp"
+                "Failed to register collection routes",
+                exception=e,
+                blueprint="collection_bp",
             )
 
         # Register system monitoring routes
         try:
             from ...api.monitoring_routes import monitoring_bp
-            
+
             app.register_blueprint(monitoring_bp)
             logger.info("System monitoring routes registered successfully")
         except Exception as e:
             logger.error(
-                "Failed to register monitoring routes", exception=e, blueprint="monitoring_bp"
+                "Failed to register monitoring routes",
+                exception=e,
+                blueprint="monitoring_bp",
             )

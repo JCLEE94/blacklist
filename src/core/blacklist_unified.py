@@ -7,12 +7,10 @@ has been modularized into the blacklist_unified/ package.
 """
 
 # Import everything from the modular package
-from .blacklist_unified import (
-    DataProcessingError,
-    SearchResult,
-    UnifiedBlacklistManager,
-    ValidationError,
-)
+from .blacklist_unified import DataProcessingError
+from .blacklist_unified import SearchResult
+from .blacklist_unified import UnifiedBlacklistManager
+from .blacklist_unified import ValidationError
 
 # Re-export for backward compatibility
 __all__ = [

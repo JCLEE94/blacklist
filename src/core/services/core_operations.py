@@ -8,8 +8,10 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Dict
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
 
 from ..regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
 
@@ -203,13 +205,13 @@ class CoreOperationsMixin:
 
             # 블랙리스트 매니저에서 활성 IP 목록 조회
             result = self.blacklist_manager.get_active_ips()
-            
+
             # 결과가 튜플인 경우와 리스트인 경우 모두 처리
             if isinstance(result, tuple):
                 ips = result[0] if result else []
             else:
                 ips = result if result else []
-            
+
             return ips
 
         except Exception as e:

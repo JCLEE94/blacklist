@@ -4,7 +4,9 @@
 메모리 사용 패턴 분석, 최적화 성과 보고, 및 바이온 세그맨테이션을 제공합니다.
 """
 
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 
 class ReportingMixin:

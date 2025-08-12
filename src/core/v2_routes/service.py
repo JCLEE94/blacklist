@@ -6,11 +6,15 @@ V2 API Service - Core service class for V2 API endpoints
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
 
 from ...core.blacklist_unified import UnifiedBlacklistManager
 from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
+
 # Performance optimizer removed for optimization
 from ...utils.security import SecurityManager
 from ...utils.unified_decorators import unified_cache
@@ -399,5 +403,6 @@ class V2APIService:
     def _is_valid_ip(self, ip: str) -> bool:
         """Simple IP address validation"""
         import re
-        ipv4_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+
+        ipv4_pattern = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
         return bool(re.match(ipv4_pattern, ip.strip()))

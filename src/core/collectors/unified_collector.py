@@ -8,12 +8,17 @@ import asyncio
 import json
 import logging
 import traceback
-from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass
+from abc import ABC
+from abc import abstractmethod
+from dataclasses import asdict
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +200,7 @@ class BaseCollector(ABC):
                     self._current_result.status = CollectionStatus.CANCELLED
                     self._current_result.error_message = "사용자에 의해 취소됨"
                     break
-                
+
                 error_msg = f"수집 타임아웃: {self.name} ({self.config.timeout}초)"
                 self.logger.error(error_msg)
                 self._current_result.error_message = error_msg

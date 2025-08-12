@@ -28,8 +28,8 @@ class BlacklistContainer(ServiceContainer):
         from src.config.factory import get_config
         from src.utils.advanced_cache import get_cache
         from src.utils.auth import AuthManager
-        # Monitoring removed for performance optimization
 
+        # Monitoring removed for performance optimization
         from ..blacklist_unified import UnifiedBlacklistManager
         from ..database import DatabaseManager
 

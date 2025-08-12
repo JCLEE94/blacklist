@@ -1,6 +1,7 @@
 """Custom error classes"""
 
-from typing import Dict, Optional
+from typing import Dict
+from typing import Optional
 
 
 class BaseError(Exception):
