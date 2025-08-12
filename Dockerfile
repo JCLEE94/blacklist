@@ -40,7 +40,7 @@ COPY --chown=app:app . .
 
 # Set PATH to include user packages
 ENV PATH=/home/app/.local/bin:$PATH
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/home/app/.local/lib/python3.11/site-packages
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_ENV=production
 
