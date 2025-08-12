@@ -105,10 +105,10 @@ persistence:
 
 # Application configuration
 security:
-  forceDisableCollection: "true"
+  forceDisableCollection: "false"
   
 collection:
-  enabled: "false"
+  enabled: "true"
 
 # Redis dependency
 redis:
@@ -123,7 +123,7 @@ env:
   - name: PORT
     value: "2541"
   - name: DATABASE_URL
-    value: "sqlite:////tmp/blacklist.db"
+    value: "sqlite:////app/instance/blacklist.db"
   - name: REDIS_URL
     value: "redis://blacklist-redis:6379/0"
 
