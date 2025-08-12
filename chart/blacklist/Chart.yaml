@@ -2,8 +2,8 @@ apiVersion: v2
 name: blacklist
 description: Enterprise Threat Intelligence Platform - Blacklist Management System
 type: application
-version: 3.2.11
-appVersion: "20250812-014310-dc8c478"
+version: 3.2.12
+appVersion: "20250812-120322-0daa083"
 home: https://github.com/JCLEE94/blacklist
 sources:
   - https://github.com/JCLEE94/blacklist
