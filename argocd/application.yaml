@@ -18,6 +18,9 @@ spec:
     helm:
       valueFiles:
         - values.yaml
+      parameters:
+        - name: image.tag
+          value: "latest"
       values: |
         image:
           repository: registry.jclee.me/jclee94/blacklist
