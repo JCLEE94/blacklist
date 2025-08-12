@@ -1,0 +1,109 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist-helm
+  namespace: argocd
+  labels:
+    app: blacklist
+    type: helm-repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jclee.me
+    chart: blacklist
+    targetRevision: "3.2.15"
+    helm:
+      values: |
+        image:
+          repository: jclee94/blacklist
+          tag: "latest"
+          pullPolicy: Always
+        
+        global:
+          registry: registry.jclee.me
+        
+        replicaCount: 1
+        
+        service:
+          type: ClusterIP
+          port: 2541
+          targetPort: 2541
+        
+        ingress:
+          enabled: true
+          className: "nginx"
+          annotations:
+            nginx.ingress.kubernetes.io/rewrite-target: /
+            nginx.ingress.kubernetes.io/ssl-redirect: "false"
+          hosts:
+            - host: blacklist.jclee.me
+              paths:
+                - path: /
+                  pathType: Prefix
+        
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        
+        env:
+          - name: FLASK_ENV
+            value: "production"
+          - name: PORT
+            value: "2541"
+          - name: COLLECTION_ENABLED
+            value: "true"
+          - name: FORCE_DISABLE_COLLECTION
+            value: "false"
+        
+        healthCheck:
+          enabled: true
+          path: /health
+          port: 2541
+        
+        redis:
+          enabled: false
+        
+        # Bitnami Redis dependency
+        # (separate chart will be used)
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  revisionHistoryLimit: 10
+---
+# Helm Repository Secret for charts.jclee.me
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jclee-charts-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+type: Opaque
+stringData:
+  type: helm
+  name: jclee-charts
+  url: https://charts.jclee.me
+  username: admin
+  password: bingogo1
