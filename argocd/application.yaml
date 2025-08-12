@@ -67,13 +67,13 @@ spec:
         
         persistence:
           data:
-            enabled: true
+            enabled: false
             size: 1Gi
-            storageClass: "default"
+            storageClass: "local-path"
           logs:
-            enabled: true
+            enabled: false
             size: 500Mi
-            storageClass: "default"
+            storageClass: "local-path"
         
         security:
           forceDisableCollection: "false"
