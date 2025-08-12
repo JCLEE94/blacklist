@@ -97,11 +97,17 @@ def ensure_database_schema():
     """데이터베이스 스키마 확인 및 수정"""
     import sqlite3
 
-    from src.config.settings import settings
-
-    # 설정에서 경로 가져오기 (환경에 따라 자동 결정)
-    instance_dir = str(settings.instance_dir)
-    db_path = str(settings.instance_dir / "blacklist.db")
+    # DATABASE_URL 환경변수에서 경로 추출 (컨테이너 환경 우선)
+    database_url = os.getenv("DATABASE_URL", "sqlite:////app/instance/blacklist.db")
+    if database_url.startswith("sqlite:///"):
+        db_path = database_url.replace("sqlite:///", "")
+    else:
+        # fallback to settings
+        from src.config.settings import settings
+        db_path = str(settings.instance_dir / "blacklist.db")
+    
+    # instance 디렉토리는 db_path에서 추출
+    instance_dir = os.path.dirname(db_path)
 
     # instance 디렉토리 생성
     try:
