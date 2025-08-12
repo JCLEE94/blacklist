@@ -7,10 +7,13 @@ import logging
 import os
 import sys
 
-from dotenv import load_dotenv
-
-# .env 파일 로드
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    # .env 파일 로드
+    load_dotenv()
+except ImportError:
+    # dotenv가 없는 환경에서는 환경 변수만 사용
+    print("Warning: python-dotenv not available, using environment variables only")
 
 # Add project root to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
