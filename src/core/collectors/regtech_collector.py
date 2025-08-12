@@ -7,13 +7,17 @@ import asyncio
 import logging
 import os
 import re
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
 
 import requests
 from bs4 import BeautifulSoup
 
-from .unified_collector import BaseCollector, CollectionConfig
+from .unified_collector import BaseCollector
+from .unified_collector import CollectionConfig
 
 logger = logging.getLogger(__name__)
 

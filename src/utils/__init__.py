@@ -22,10 +22,12 @@ Utility functions module for Blacklist Manager
 #     initialize_decorators
 # )
 from .advanced_cache import EnhancedSmartCache as CacheManager
-from .auth import AuthManager, RateLimiter
+from .auth import AuthManager
+from .auth import RateLimiter
 
 try:
-    from .advanced_cache import cached, get_cache
+    from .advanced_cache import cached
+    from .advanced_cache import get_cache
 except ImportError:
     # Fallback implementations
     def get_cache():
@@ -68,13 +70,11 @@ def profile_function(func):
 try:
     from .cicd_error_patterns import ErrorPatternManager
     from .cicd_fix_strategies import FixStrategyManager
-    from .cicd_troubleshooter import (
-        CICDTroubleshooter,
-        analyze_pipeline_errors,
-        create_error_manager,
-        create_fix_manager,
-        create_troubleshooter,
-    )
+    from .cicd_troubleshooter import CICDTroubleshooter
+    from .cicd_troubleshooter import analyze_pipeline_errors
+    from .cicd_troubleshooter import create_error_manager
+    from .cicd_troubleshooter import create_fix_manager
+    from .cicd_troubleshooter import create_troubleshooter
     from .cicd_utils import CICDUtils
 except ImportError:
     # Fallback for missing CICD modules

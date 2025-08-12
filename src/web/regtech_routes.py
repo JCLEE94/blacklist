@@ -8,7 +8,10 @@ import os
 import sqlite3
 from collections import defaultdict
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint
+from flask import jsonify
+from flask import render_template
+from flask import request
 
 # pandas는 선택적으로 import (호환성 문제시 None으로 설정)
 try:

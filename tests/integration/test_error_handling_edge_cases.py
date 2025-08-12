@@ -11,18 +11,14 @@ Extensive test cases have been moved to specialized modules:
 
 import pytest
 
-from .edge_case_tests import (
-    TestDataEdgeCases,
-    TestDateEdgeCases,
-    TestResourceExhaustionCases,
-    TestSpecialInputCases,
-)
-from .error_scenarios import (
-    TestAuthenticationErrors,
-    TestConcurrencyErrors,
-    TestDatabaseErrors,
-    TestNetworkErrors,
-)
+from .edge_case_tests import TestDataEdgeCases
+from .edge_case_tests import TestDateEdgeCases
+from .edge_case_tests import TestResourceExhaustionCases
+from .edge_case_tests import TestSpecialInputCases
+from .error_scenarios import TestAuthenticationErrors
+from .error_scenarios import TestConcurrencyErrors
+from .error_scenarios import TestDatabaseErrors
+from .error_scenarios import TestNetworkErrors
 from .test_helpers import BaseIntegrationTest
 
 
@@ -35,7 +31,8 @@ class TestErrorHandlingIntegration(BaseIntegrationTest):
 
     def test_basic_error_response_format(self, client):
         """Test that error responses follow consistent format"""
-        from unittest.mock import Mock, patch
+        from unittest.mock import Mock
+        from unittest.mock import patch
 
         mock_service = Mock()
         mock_service.get_collection_status.side_effect = Exception("Test error")

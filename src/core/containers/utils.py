@@ -6,7 +6,8 @@
 
 import functools
 import logging
-from typing import Any, TypeVar
+from typing import Any
+from typing import TypeVar
 
 from .blacklist_container import BlacklistContainer
 

@@ -5,13 +5,16 @@
 
 import os
 import tempfile
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from datetime import datetime
+from datetime import timedelta
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
 # API 키 관리 테스트
-from src.models.api_key import ApiKey, ApiKeyManager
+from src.models.api_key import ApiKey
+from src.models.api_key import ApiKeyManager
 
 
 class TestApiKeyManagement:
@@ -139,10 +142,8 @@ class TestCollectorSystem:
     @pytest.mark.asyncio
     async def test_collection_cancellation(self):
         """수집 취소 기능 테스트"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-        )
+        from src.core.collectors.unified_collector import BaseCollector
+        from src.core.collectors.unified_collector import CollectionConfig
 
         class TestCollector(BaseCollector):
             @property

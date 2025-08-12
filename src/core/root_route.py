@@ -2,7 +2,8 @@
 
 import logging
 
-from flask import Blueprint, jsonify
+from flask import Blueprint
+from flask import jsonify
 
 root_bp = Blueprint("root", __name__)
 logger = logging.getLogger(__name__)

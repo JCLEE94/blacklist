@@ -14,7 +14,8 @@ from typing import Optional
 
 from flask import Flask
 
-from ..utils.structured_logging import get_logger, setup_request_logging
+from ..utils.structured_logging import get_logger
+from ..utils.structured_logging import setup_request_logging
 from .app.blueprints import BlueprintRegistrationMixin
 from .app.config import AppConfigurationMixin
 from .app.error_handlers import ErrorHandlerMixin

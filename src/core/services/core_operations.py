@@ -8,8 +8,10 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Dict
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
 
 from ..regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
 

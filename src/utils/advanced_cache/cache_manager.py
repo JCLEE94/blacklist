@@ -6,7 +6,10 @@ Main Cache Manager - Enhanced Smart Cache Implementation
 import logging
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from .memory_backend import MemoryBackend
 
