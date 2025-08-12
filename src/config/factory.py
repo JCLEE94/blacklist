@@ -5,9 +5,7 @@ Configuration factory
 import os
 from typing import Type
 
-from src.core.constants import ENV_DEVELOPMENT
-from src.core.constants import ENV_PRODUCTION
-from src.core.constants import ENV_TESTING
+from src.core.constants import ENV_DEVELOPMENT, ENV_PRODUCTION, ENV_TESTING
 
 from .base import BaseConfig
 from .development import DevelopmentConfig

@@ -4,9 +4,7 @@ CI/CD 트러블슈터 코어 모듈
 Claude Code v8.4.0 - 메인 오케스트레이션 로직
 """
 
-from typing import Any
-from typing import Dict
-from typing import List
+from typing import Any, Dict, List
 
 import requests
 

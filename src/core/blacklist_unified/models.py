@@ -3,13 +3,9 @@
 Data models and exceptions for Unified Blacklist Manager
 """
 
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 
 class DataProcessingError(Exception):

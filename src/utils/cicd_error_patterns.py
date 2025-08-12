@@ -4,8 +4,7 @@ CI/CD 에러 패턴 정의 및 관리
 Claude Code v8.4.0 - 에러 패턴 매칭 시스템
 """
 
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 
 class ErrorPatternManager:

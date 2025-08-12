@@ -5,10 +5,7 @@ Redis Backend for Advanced Cache
 
 import logging
 import time
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 try:
     import redis

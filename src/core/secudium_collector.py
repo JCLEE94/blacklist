@@ -5,14 +5,11 @@ SECUDIUM 수집기 더미 구현
 
 import logging
 import os
-from typing import Any
-from typing import Dict
-from typing import List
+from typing import Any, Dict, List
 
 import requests
 
-from .collectors.unified_collector import BaseCollector
-from .collectors.unified_collector import CollectionConfig
+from .collectors.unified_collector import BaseCollector, CollectionConfig
 
 logger = logging.getLogger(__name__)
 

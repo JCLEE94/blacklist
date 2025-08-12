@@ -6,9 +6,7 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint
-from flask import Response
-from flask import jsonify
+from flask import Blueprint, Response, jsonify
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
@@ -166,11 +164,3 @@ def get_fortigate_simple():
     except Exception as e:
         logger.error(f"FortiGate simple error: {e}")
         return jsonify(create_error_response(e)), 500
-
-
-
-
-
-
-
-

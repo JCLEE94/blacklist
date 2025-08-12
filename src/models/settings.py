@@ -5,11 +5,9 @@
 """
 import json
 import sqlite3
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
-from .setting_types import SettingCategory
-from .setting_types import SettingType
+from .setting_types import SettingCategory, SettingType
 
 
 class SettingsManager:

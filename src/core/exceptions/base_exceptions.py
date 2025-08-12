@@ -1,9 +1,7 @@
 """Base exception classes"""
 
 import logging
-from typing import Any
-from typing import Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

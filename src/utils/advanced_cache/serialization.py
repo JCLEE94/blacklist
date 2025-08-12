@@ -7,8 +7,7 @@ import gzip
 import json
 import logging
 import pickle
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 try:
     import orjson
