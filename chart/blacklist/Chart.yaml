@@ -4,7 +4,6 @@ description: Enterprise threat intelligence blacklist management system with For
 type: application
 version: 4.0.0
 appVersion: "all-fixes-implemented"
-
 home: https://github.com/JCLEE94/blacklist
 sources:
   - https://github.com/JCLEE94/blacklist
