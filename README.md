@@ -12,21 +12,16 @@ Enterprise threat intelligence platform for IP blacklist management and FortiGat
 
 ## Quick Start
 
-### Docker
 ```bash
-docker run -d -p 32542:2541 registry.jclee.me/jclee94/blacklist:latest
-```
+# Setup
+cp .env.example .env
+nano .env  # Edit configuration
 
-### Kubernetes
-```bash
-kubectl apply -f https://raw.githubusercontent.com/JCLEE94/blacklist/main/chart/blacklist/values.yaml
-```
+# Run
+python main.py
 
-### Offline Installation
-```bash
-tar -xzf blacklist-offline-package-v2.0.tar.gz
-cd blacklist-offline-package-v2.0
-sudo ./scripts/install.sh
+# Or with Docker
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ## API Endpoints
@@ -49,17 +44,20 @@ REGTECH_USERNAME=your-username
 REGTECH_PASSWORD=your-password
 ```
 
-## Development
+## Project Structure
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run tests
-pytest
-
-# Start development server
-python main.py --debug
+```
+blacklist/
+├── main.py             # Entry point
+├── init_database.py    # DB initialization
+├── start.sh           # Service management
+├── src/               # Application code
+├── templates/         # HTML templates
+├── static/           # CSS/JS files
+├── config/           # Configuration files
+├── docker/           # Docker files
+├── scripts/          # Utility scripts
+└── tests/            # Test suite
 ```
 
 ## Documentation

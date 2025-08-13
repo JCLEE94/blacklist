@@ -1,183 +1,59 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+*.py[cod]
+*$py.class
 *.so
-.coverage
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+.Python
 venv/
 env/
-.venv/
+ENV/
+.venv
 
-# Project specific
-instance/
-logs/
-data/temp/
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+test-reports/
+*.log
+
+# Database
 *.db
 *.sqlite
 *.sqlite3
+instance/
 
-# Development
-.env
-.env.cloudflare
+# IDE
 .vscode/
 .idea/
-*.log
+*.swp
+*.swo
 
-# System
+# Environment
+.env
+.env.*
+\!.env.example
+
+# Data
+data/
+logs/
+*.json
+\!package.json
+
+# Build
+dist/
+build/
+*.egg-info/
+*.tar.gz
+*.tgz
+
+# Temporary
+*.tmp
+*.bak
 .DS_Store
 Thumbs.db
 
-# Docker
-.dockerignore
-
-# Backup files
-backup/
-backup-*/
-backups/
-.backup/
-*-backup-*/
-*.backup
-*.bak
-*-backup
-*-original
-*-old
-*_backup*
-*_original*
-*_old*
-
-# Archive files
-*.tar.gz
-*.zip
-*.tar
-
-# Database backups
-instance/backups/
-data/db_backups/
-*.db.backup
-
-# Data source logs
-data/sources/*/logs/
-data/regtech/logs/
-data/secudium/logs/
-
-# Temporary data
-data/temp/
-data/analysis/temp/
-
-# Old/duplicate scripts
-scripts/**/*.bak
-scripts/**/*.old
-old_*
-*_old.py
-*_backup.py
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Cache files
-.cache/
-node_modules/.cache/
-
-
-# Cleaned up directories
-document/har_backup/
-scripts/archive/
-instance/backups/*.db
-
-# Temporary and duplicate files
-*_old.*
-*_v2.*
-*.tmp
-*.tmpdocument/
-document/
-.ci-test
-.build_info
-.rebuild_trigger
-.env.regtech
-.gitlab-runner-config.toml
-
-# Chart archives and temporary files  
-charts/**/*.tgz
-!charts/blacklist/blacklist-*.tgz
-chart/**/*.tgz
-*.tgz.backup
-
-# AI helper files
-.ai-*
-ai-*
-
-# Integration test reports
-*_INTEGRATION_TEST_*_REPORT.md
-*_integration_report_*.md
-
-# Legacy script directories (now organized)
-scripts/manual/
-scripts/deployment/
-
-# Watchtower config
-watchtower-config.json
-config/watchtower-config.json
-
-# Test archives
-tests_archive/
-
-# Reports (optional - remove if you want to track reports)
-docs/reports/
-
-# Shrimp task manager data
-$SHRIMP_DATA_DIR/
-
-# Test data files
-data/regtech/regtech_simple_*.json
-blacklist_report.json
-quick_test_app.py
-
-# HAR files and analysis data (archived)
-*.har
-har_analysis/
-archives/
-archive/
-
-# Deprecated files
-archive/deprecated_files/
-archive/deprecated_templates/
-.serena/cache/
-
-# Documentation restrictions (only README.md and CLAUDE.md allowed)
-*.md
-!README.md
-!CLAUDE.md
-!docs/**/*.md
-!charts/**/README.md
-!README_EN.md
-!PROJECT_STRUCTURE.md
-
-# Coverage reports
-htmlcov/
-test-reports/
-coverage.xml
-.coverage
-
-# Temporary reports and analysis files
-.*-report.json
-.*-report.md
-.project-profile.json
-.infrastructure-report.json
-.code-quality-report.json
-.test-execution-report.json
-.argocd-auth-status.json
-.nodeport-current.json
-.build_trigger
-
-# Temporary scripts
-# *_git_*.sh  # Temporarily allow git_commit.sh
-*_git_*.py
-# commit_message.txt  # Temporarily allow commit message
-data/
+# Project specific
+.serena/
+.gitops_sync
+server.log
+blacklist.pid

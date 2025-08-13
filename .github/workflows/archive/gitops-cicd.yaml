@@ -1,0 +1,312 @@
+name: GitOps CI/CD Pipeline
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: jclee94/blacklist
+  ARGOCD_SERVER: argo.jclee.me
+  K8S_CLUSTER: k8s.jclee.me
+
+jobs:
+  # Security and Quality Checks
+  security-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Unit Tests
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        
+    - name: Run tests with coverage
+      run: |
+        pytest --cov=src --cov-report=xml --cov-report=html -v
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+
+  # Build and push container image
+  build:
+    runs-on: self-hosted
+    needs: [test]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      packages: write
+      
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      image-digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        config-inline: |
+          [registry."registry.jclee.me"]
+            http = true
+            insecure = true
+            
+    - name: Log in to Docker Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_REGISTRY_USER }}
+        password: ${{ secrets.DOCKER_REGISTRY_PASS }}
+        
+    - name: Generate metadata
+      id: meta
+      run: |
+        # Generate version info
+        SHA_SHORT=$(git rev-parse --short HEAD)
+        BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        
+        # Auto-increment version
+        if [ -f VERSION ]; then
+          CURRENT_VERSION=$(cat VERSION)
+        else
+          CURRENT_VERSION="1.0.0"
+        fi
+        
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+        PATCH=$((PATCH + 1))
+        
+        if [ $PATCH -ge 100 ]; then
+          PATCH=0
+          MINOR=$((MINOR + 1))
+        fi
+        
+        if [ $MINOR -ge 100 ]; then
+          MINOR=0
+          MAJOR=$((MAJOR + 1))
+        fi
+        
+        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+        echo "$NEW_VERSION" > VERSION
+        
+        echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
+        echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+        
+        echo "🔄 Version: $CURRENT_VERSION → $NEW_VERSION"
+        
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./deployment/Dockerfile
+        push: true
+        platforms: linux/amd64,linux/arm64
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
+        build-args: |
+          VERSION=${{ steps.meta.outputs.version }}
+          BUILD_DATE=${{ steps.meta.outputs.build_date }}
+          VCS_REF=${{ steps.meta.outputs.sha_short }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Sign container image
+      uses: sigstore/cosign-installer@v3
+      
+    - name: Sign the published Docker image
+      env:
+        COSIGN_EXPERIMENTAL: 1
+      run: |
+        cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+        
+    - name: Commit version update
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        git add VERSION
+        
+        if ! git diff --staged --quiet; then
+          git commit -m "chore: bump version to ${{ steps.meta.outputs.version }} [skip ci]"
+          git push origin main
+        fi
+
+  # Deploy using ArgoCD
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup ArgoCD CLI
+      run: |
+        curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+        
+    - name: Login to ArgoCD
+      env:
+        ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+      run: |
+        argocd login ${{ env.ARGOCD_SERVER }} --auth-token $ARGOCD_AUTH_TOKEN --insecure
+        
+    - name: Update image tag in Kustomization
+      run: |
+        cd k8s/overlays/production
+        
+        # Update image tag in kustomization.yaml
+        sed -i "s/newTag: .*/newTag: ${{ needs.build.outputs.image-tag }}/" kustomization.yaml
+        
+        echo "📝 Updated image tag to: ${{ needs.build.outputs.image-tag }}"
+        
+    - name: Commit Kustomization updates
+      run: |
+        git config --local user.email "argocd-bot@jclee.me"
+        git config --local user.name "ArgoCD Bot"
+        
+        git add k8s/overlays/production/kustomization.yaml
+        
+        if ! git diff --staged --quiet; then
+          git commit -m "deploy: update blacklist image to ${{ needs.build.outputs.image-tag }}
+          
+          Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
+          Digest: ${{ needs.build.outputs.image-digest }}
+          Commit: ${{ github.sha }}
+          
+          🤖 Generated with [ArgoCD GitOps](https://argo.jclee.me)
+          
+          Co-Authored-By: ArgoCD <noreply@jclee.me>"
+          git push origin main
+        fi
+        
+    - name: Sync ArgoCD Application
+      run: |
+        argocd app sync blacklist-app --force --timeout 300
+        argocd app wait blacklist-app --timeout 600
+        
+    - name: Get Application Status
+      id: app-status
+      run: |
+        STATUS=$(argocd app get blacklist-app -o json | jq -r '.status.health.status')
+        SYNC_STATUS=$(argocd app get blacklist-app -o json | jq -r '.status.sync.status')
+        
+        echo "health_status=$STATUS" >> $GITHUB_OUTPUT
+        echo "sync_status=$SYNC_STATUS" >> $GITHUB_OUTPUT
+        
+        echo "📊 Application Status:"
+        echo "  Health: $STATUS"
+        echo "  Sync: $SYNC_STATUS"
+        
+    - name: Deployment Summary
+      run: |
+        echo "🚀 GitOps Deployment Complete!"
+        echo "================================"
+        echo ""
+        echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}"
+        echo "🏷️  Version: ${{ needs.build.outputs.image-tag }}"
+        echo "🔄 Commit: ${{ github.sha }}"
+        echo "📊 Health: ${{ steps.app-status.outputs.health_status }}"
+        echo "🔄 Sync: ${{ steps.app-status.outputs.sync_status }}"
+        echo ""
+        echo "🌐 Application URL: https://blacklist.jclee.me"
+        echo "📊 ArgoCD Dashboard: https://argo.jclee.me/applications/blacklist-app"
+        echo ""
+        echo "✅ Deployment successful via ArgoCD GitOps!"
+        
+  # Post-deployment verification
+  verify:
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Health Check
+      run: |
+        echo "🔍 Verifying deployment health..."
+        
+        # Wait for application to be ready
+        sleep 30
+        
+        # Health check
+        HEALTH_URL="https://blacklist.jclee.me/health"
+        
+        for i in {1..10}; do
+          echo "Attempt $i/10: Checking $HEALTH_URL"
+          
+          if curl -f -s "$HEALTH_URL" > /dev/null; then
+            echo "✅ Health check passed!"
+            break
+          else
+            echo "❌ Health check failed, retrying in 10s..."
+            sleep 10
+          fi
+          
+          if [ $i -eq 10 ]; then
+            echo "🚨 Health check failed after 10 attempts!"
+            exit 1
+          fi
+        done
+        
+    - name: Smoke Tests
+      run: |
+        echo "🧪 Running smoke tests..."
+        
+        # Test main endpoints
+        curl -f "https://blacklist.jclee.me/api/health" || exit 1
+        curl -f "https://blacklist.jclee.me/api/blacklist/active" || exit 1
+        
+        echo "✅ All smoke tests passed!"
