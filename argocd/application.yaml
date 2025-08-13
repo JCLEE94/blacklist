@@ -152,7 +152,6 @@ spec:
         - /spec/ports
     - group: v1
       kind: Namespace
-      name: default
       jsonPointers:
         - /metadata
 
