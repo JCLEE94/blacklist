@@ -14,11 +14,11 @@ Enterprise threat intelligence platform for IP blacklist management and FortiGat
 
 ```bash
 # Setup
-cp .env.example .env
+cp config/.env.example .env
 nano .env  # Edit configuration
 
 # Run
-python main.py
+python app/main.py
 
 # Or with Docker
 docker-compose -f docker/docker-compose.yml up -d
@@ -48,16 +48,18 @@ REGTECH_PASSWORD=your-password
 
 ```
 blacklist/
-├── main.py             # Entry point
-├── init_database.py    # DB initialization
-├── start.sh           # Service management
-├── src/               # Application code
-├── templates/         # HTML templates
-├── static/           # CSS/JS files
-├── config/           # Configuration files
-├── docker/           # Docker files
-├── scripts/          # Utility scripts
-└── tests/            # Test suite
+├── README.md          # Documentation
+├── CLAUDE.md          # Development guide
+├── VERSION            # Version info
+├── app/               # Application files
+│   ├── main.py
+│   ├── init_database.py
+│   └── start.sh
+├── src/               # Source code
+├── config/            # Configuration
+├── docker/            # Docker files
+├── scripts/           # Scripts
+└── tests/             # Tests
 ```
 
 ## Documentation
