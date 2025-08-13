@@ -1,0 +1,53 @@
+# Core requirements only
+Flask==2.3.3
+Flask-CORS==6.0.1
+Flask-Compress==1.13
+
+# Database
+SQLAlchemy==2.0.41
+
+# Caching
+redis==4.6.0
+flask-caching==2.1.0
+
+# Production server
+gunicorn==23.0.0
+
+# HTTP client
+requests==2.32.4
+
+# HTML parsing
+beautifulsoup4==4.12.2
+lxml==5.4.0
+
+# Data processing
+pandas==2.0.3
+openpyxl==3.1.2
+xlrd==2.0.1
+numpy>=1.21.0,<1.25.0
+
+# Scheduling
+APScheduler==3.10.4
+
+# JSON processing
+orjson==3.9.7
+
+# Security
+PyJWT==2.8.0
+defusedxml==0.7.1
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+psutil==5.9.8
+
+# Logging
+python-json-logger==2.0.7
+
+# Environment
+python-dotenv==1.1.1
+
+# YAML support
+PyYAML==6.0.2
+
+# NOTE: Flask-Limiter completely removed - rebuild required
