@@ -38,6 +38,9 @@ class DatabaseSchema:
         """모든 테이블 생성"""
         try:
             with self.get_connection() as conn:
+                # 메타데이터 테이블을 먼저 생성 (다른 테이블들이 의존할 수 있음)
+                self._create_metadata_table(conn)
+                
                 # 블랙리스트 항목 테이블
                 self._create_blacklist_entries_table(conn)
                 
@@ -53,14 +56,14 @@ class DatabaseSchema:
                 # 캐시 테이블
                 self._create_cache_table(conn)
                 
-                # 메타데이터 테이블
-                self._create_metadata_table(conn)
-                
-                # 인덱스 생성
-                self._create_indexes(conn)
-                
                 # 스키마 버전 기록
                 self._record_schema_version(conn)
+                
+                # 중간 커밋
+                conn.commit()
+                
+                # 인덱스 생성 (테이블 생성 후)
+                self._create_indexes(conn)
                 
                 conn.commit()
                 logger.info("모든 데이터베이스 테이블이 성공적으로 생성되었습니다.")
@@ -292,6 +295,11 @@ class DatabaseSchema:
             
         try:
             with self.get_connection() as conn:
+                # 메타데이터 테이블이 없으면 새로 생성
+                if not current_version:
+                    logger.info("메타데이터 테이블이 없습니다. 새로 생성합니다.")
+                    self._create_metadata_table(conn)
+                
                 # 1.x에서 2.0으로 마이그레이션
                 if not current_version or current_version.startswith("1."):
                     self._migrate_to_v2(conn)
