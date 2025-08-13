@@ -55,20 +55,20 @@ service:
     port: 32542
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  className: "traefik"
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
   hosts:
-    - host: chart-example.local
+    - host: blacklist.jclee.me
       paths:
         - path: /
           pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+  tls:
+    - secretName: blacklist-tls
+      hosts:
+        - blacklist.jclee.me
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
