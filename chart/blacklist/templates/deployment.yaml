@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "blacklist.fullname" . }}
-  namespace: {{ .Values.namespace | default .Release.Namespace }}
+  namespace: {{ .Values.namespace | default "blacklist" }}
   labels:
     {{- include "blacklist.labels" . | nindent 4 }}
 spec:
