@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blacklist.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "blacklist.labels" . | nindent 4 }}
+data:
+  FLASK_ENV: {{ index .Values.env 0 "value" | default "production" | quote }}
+  PORT: {{ index .Values.env 1 "value" | default "2541" | quote }}
+  DATABASE_URL: {{ index .Values.env 2 "value" | default "sqlite:////app/instance/blacklist.db" | quote }}
+  REDIS_URL: {{ index .Values.env 3 "value" | default "redis://blacklist-redis:6379/0" | quote }}

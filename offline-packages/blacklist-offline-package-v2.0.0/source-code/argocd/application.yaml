@@ -1,0 +1,207 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+  labels:
+    app: blacklist
+    environment: production
+    gitops.jclee.me/managed: "true"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/manifest-generate-paths: "chart/blacklist"
+spec:
+  project: blacklist-project
+  
+  source:
+    repoURL: https://github.com/JCLEE94/blacklist.git
+    targetRevision: HEAD
+    path: chart/blacklist
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: "latest"
+        - name: image.pullPolicy
+          value: "Always"
+        - name: replicaCount
+          value: "1"
+        - name: service.nodePort.enabled
+          value: "true"
+        - name: service.nodePort.port
+          value: "32542"
+      values: |
+        image:
+          repository: registry.jclee.me/jclee94/blacklist
+          tag: latest
+          pullPolicy: Always
+        
+        replicaCount: 1
+        
+        service:
+          type: ClusterIP
+          port: 80
+          targetPort: 2541
+          nodePort:
+            enabled: true
+            port: 32542
+        
+        ingress:
+          enabled: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: "letsencrypt-prod"
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+          hosts:
+            - host: blacklist.jclee.me
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: blacklist-tls
+              hosts:
+                - blacklist.jclee.me
+        
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        
+        autoscaling:
+          enabled: false
+          minReplicas: 1
+          maxReplicas: 3
+          targetCPUUtilizationPercentage: 70
+        
+        persistence:
+          data:
+            enabled: true
+            size: 1Gi
+            storageClass: "local-path"
+            mountPath: "/app/instance"
+        
+        env:
+          - name: FLASK_ENV
+            value: "production"
+          - name: PORT
+            value: "2541"
+          - name: DATABASE_URL
+            value: "sqlite:////app/instance/blacklist.db"
+          - name: COLLECTION_ENABLED
+            value: "true"
+          - name: FORCE_DISABLE_COLLECTION
+            value: "false"
+          - name: REDIS_URL
+            value: "redis://redis:6379/0"
+        
+        redis:
+          enabled: true
+          auth:
+            enabled: false
+          master:
+            persistence:
+              enabled: true
+              size: 256Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  revisionHistoryLimit: 3
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: v1
+      kind: Service
+      name: blacklist-nodeport
+      jsonPointers:
+        - /spec/ports
+    - group: v1
+      kind: Namespace
+      name: default
+      jsonPointers:
+        - /metadata
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: blacklist-project
+  namespace: argocd
+spec:
+  description: Blacklist Management System Project
+  
+  sourceRepos:
+    - 'https://github.com/JCLEE94/blacklist.git'
+    - 'registry.jclee.me/helm/*'
+  
+  destinations:
+    - namespace: blacklist
+      server: https://kubernetes.default.svc
+    - namespace: blacklist-*
+      server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: '*'
+    - group: 'apps'
+      kind: '*'
+    - group: 'networking.k8s.io'
+      kind: '*'
+    - group: 'extensions'
+      kind: '*'
+    - group: 'policy'
+      kind: '*'
+    - group: 'autoscaling'
+      kind: '*'
+  
+  roles:
+    - name: admin
+      description: Admin role for blacklist project
+      policies:
+        - p, proj:blacklist-project:admin, applications, *, blacklist-project/*, allow
+        - p, proj:blacklist-project:admin, repositories, *, *, allow
+      groups:
+        - blacklist-admins
+    
+    - name: developer
+      description: Developer role for blacklist project  
+      policies:
+        - p, proj:blacklist-project:developer, applications, get, blacklist-project/*, allow
+        - p, proj:blacklist-project:developer, applications, sync, blacklist-project/*, allow
+      groups:
+        - blacklist-developers

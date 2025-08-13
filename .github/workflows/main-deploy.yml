@@ -63,8 +63,12 @@ jobs:
         run: |
           # Update chart version
           cd chart/blacklist
-          VERSION=$(date +%Y%m%d.%H%M%S)
-          sed -i "s/^version:.*/version: 4.0.$VERSION/" Chart.yaml
+          # Get current version and increment patch
+          CURRENT_VERSION=$(grep '^version:' Chart.yaml | cut -d' ' -f2)
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+          NEW_PATCH=$((patch + 1))
+          NEW_VERSION="${major}.${minor}.${NEW_PATCH}"
+          sed -i "s/^version:.*/version: $NEW_VERSION/" Chart.yaml
           sed -i "s/^appVersion:.*/appVersion: \"${{ github.sha }}\"/" Chart.yaml
           
           # Package chart
