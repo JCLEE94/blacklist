@@ -6,7 +6,7 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
@@ -49,7 +49,6 @@ def health_check():
         # Add detailed metrics if requested
         from flask import request
         if request.args.get("detailed") == "true":
-            import time
             import psutil
             response_data["response_time_ms"] = 1.0  # Placeholder
             response_data["memory_usage_mb"] = psutil.Process().memory_info().rss / 1024 / 1024
@@ -118,19 +117,33 @@ def api_docs():
 
 @api_routes_bp.route("/api/blacklist/active", methods=["GET"])
 def get_active_blacklist():
-    """활성 블랙리스트 조회 (JSON 형식)"""
+    """활성 블랙리스트 조회 (플레인 텍스트)"""
     try:
         ips = service.get_active_blacklist_ips()
 
-        # JSON 형식으로 반환
-        return jsonify(
-            {
-                "success": True,
-                "count": len(ips),
-                "ips": ips,
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
+        # Accept 헤더를 확인하여 응답 형식 결정
+        accept_header = request.headers.get('Accept', 'text/plain')
+        
+        if 'application/json' in accept_header:
+            # JSON 형식으로 반환
+            return jsonify(
+                {
+                    "success": True,
+                    "count": len(ips),
+                    "ips": ips,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+        else:
+            # 기본값: 플레인 텍스트 형식으로 반환
+            ip_list = "\n".join(ips) if ips else ""
+            return Response(
+                ip_list,
+                mimetype="text/plain; charset=utf-8",
+                headers={
+                    "X-Total-Count": str(len(ips)),
+                }
+            )
     except Exception as e:
         logger.error(f"Active blacklist error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -175,6 +188,7 @@ def get_active_blacklist_simple():
         return jsonify(create_error_response(e)), 500
 
 
+@api_routes_bp.route("/api/fortigate", methods=["GET"])
 @api_routes_bp.route("/api/fortigate-simple", methods=["GET"])
 def get_fortigate_simple():
     """FortiGate External Connector 형식 (심플 버전)"""
@@ -182,7 +196,13 @@ def get_fortigate_simple():
         ips = service.get_active_blacklist_ips()
 
         # FortiGate External Connector 형식
-        data = {"type": "IP", "version": 1, "data": ips}
+        data = {
+            "status": "success",
+            "type": "IP", 
+            "version": 1, 
+            "blacklist": ips,
+            "data": ips
+        }
 
         return jsonify(data)
     except Exception as e:

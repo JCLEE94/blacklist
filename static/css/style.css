@@ -66,6 +66,24 @@ body {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
+/* Responsive table container fix */
+.table-responsive {
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    min-height: .01%; /* Workaround for IE11 and Edge */
+}
+
+/* Prevent table content from overflowing */
+.table td, .table th {
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 300px; /* Adjust as needed */
+}
+
+.table td.ip-address {
+    font-family: monospace;
+    white-space: nowrap;
+}
+
 /* Badges */
 .badge {
     font-weight: 500;

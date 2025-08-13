@@ -6,8 +6,7 @@
 
 import sqlite3
 import logging
-from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from pathlib import Path
 
 logger = logging.getLogger(__name__)

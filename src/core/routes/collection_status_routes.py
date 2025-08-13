@@ -56,6 +56,7 @@ def get_collection_status():
         return jsonify(
             {
                 "enabled": service.collection_enabled,
+                "collection_enabled": service.collection_enabled,
                 "status": "active" if service.collection_enabled else "inactive",
                 "stats": {
                     "total_ips": stats.get("total_ips", 0),

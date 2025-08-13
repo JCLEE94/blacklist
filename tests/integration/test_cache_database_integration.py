@@ -158,7 +158,7 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
             {"ip": "192.168.1.2", "source": "regtech", "detection_date": "2024-01-01"},
         ]
         
-        service.regtech_collector.collect_from_web.return_value = {
+        service._components["regtech"].collect_from_web.return_value = {
             "success": True,
             "data": mock_data,
             "message": "Mock collection successful"
