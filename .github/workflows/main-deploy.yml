@@ -16,7 +16,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
 
   update-helm-chart:
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
 
   trigger-argocd-sync:
     needs: update-helm-chart
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Trigger ArgoCD Sync
         run: |
@@ -96,7 +96,7 @@ jobs:
 
   verify-deployment:
     needs: trigger-argocd-sync
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Wait for deployment
         run: sleep 30
