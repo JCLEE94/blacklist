@@ -14,7 +14,7 @@ WORKDIR /build
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Production stage
 FROM python:3.11-slim
@@ -33,14 +33,14 @@ RUN useradd --create-home --shell /bin/bash --user-group app \
 WORKDIR /app
 
 # Copy Python packages from builder stage
-COPY --from=builder /root/.local /home/app/.local
+COPY --from=builder /install /usr/local
 
 # Copy application code
 COPY --chown=app:app . .
 
 # Set PATH to include user packages
-ENV PATH=/home/app/.local/bin:$PATH
-ENV PYTHONPATH=/app:/home/app/.local/lib/python3.11/site-packages
+ENV PATH=/usr/local/bin:$PATH
+ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_ENV=production
 
