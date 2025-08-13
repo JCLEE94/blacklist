@@ -154,10 +154,10 @@ SECURITY_HEADERS = {
     "X-XSS-Protection": "1; mode=block",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Content-Security-Policy": (
-        "default-src 'sel' https://cdn.jsdelivr.net; "
-        "script-src 'sel' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'sel' https://cdn.jsdelivr.net 'unsafe-inline'; "
-        "font-src 'sel' https://cdn.jsdelivr.net data:; "
+        "default-src 'self' https://cdn.jsdelivr.net; "
+        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "font-src 'self' https://cdn.jsdelivr.net data:; "
         "img-src 'self' data: https:;"
     ),
     "Referrer-Policy": "strict-origin-when-cross-origin",
