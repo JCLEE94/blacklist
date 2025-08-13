@@ -31,7 +31,7 @@ def health_check():
             {
                 "status": "healthy",
                 "timestamp": datetime.utcnow().isoformat(),
-                "service": "blacklist-unified",
+                "service": "blacklist",
                 "version": "2.0.1",
                 "details": health_info,
             }

@@ -51,7 +51,7 @@ class UnifiedBlacklistService(
             "regtech_enabled": os.getenv("REGTECH_ENABLED", "true").lower() == "true",
             "auto_collection": os.getenv("AUTO_COLLECTION", "true").lower() == "true",
             "collection_interval": int(os.getenv("COLLECTION_INTERVAL", 3600)),
-            "service_name": "blacklist-unified",
+            "service_name": "blacklist",
             "version": "3.0.3-cicd-test",
         }
 
