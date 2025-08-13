@@ -180,6 +180,7 @@ def mock_file_system():
         (tmpdir_path / '.github' / 'workflows').mkdir(parents=True)
         (tmpdir_path / 'k8s').mkdir()
         (tmpdir_path / 'scripts').mkdir()
+        (tmpdir_path / 'deployment').mkdir()
         
         # 기본 파일들 생성
         (tmpdir_path / 'requirements.txt').write_text('flask==2.3.3\nrequests==2.31.0\n')

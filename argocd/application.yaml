@@ -92,12 +92,14 @@ spec:
             value: "2541"
           - name: DATABASE_URL
             value: "sqlite:////app/instance/blacklist.db"
-          - name: COLLECTION_ENABLED
-            value: "true"
-          - name: FORCE_DISABLE_COLLECTION
-            value: "false"
           - name: REDIS_URL
             value: "redis://redis:6379/0"
+        
+        security:
+          forceDisableCollection: false
+        
+        collection:
+          enabled: true
         
         redis:
           enabled: true

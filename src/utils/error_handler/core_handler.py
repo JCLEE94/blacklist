@@ -125,6 +125,9 @@ class ErrorHandler:
                 logger.error(f"Failed to create GitHub issue: {github_error}")
 
         self._log_error_message(error, error_code, context)
+        
+        # Return the error log entry for testing and further processing
+        return error_log
 
     def _should_create_github_issue(self, error: Exception) -> bool:
         """GitHub 이슈 생성 여부 결정"""

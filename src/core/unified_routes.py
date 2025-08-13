@@ -28,16 +28,8 @@ unified_bp.register_blueprint(analytics_routes_bp)
 unified_bp.register_blueprint(collection_routes_bp)
 unified_bp.register_blueprint(admin_routes_bp)
 
-# Import test utilities for backwards compatibility
-from .routes.test_utils import (
-    _test_collection_data_flow,
-    _test_collection_endpoints,
-    _test_collection_state_consistency,
-    _test_concurrent_requests,
-    _test_database_api_consistency,
-    _test_statistics_integration,
-    run_all_tests,
-)
+# Test utilities moved to tests/utils/test_utils.py
+# Import them directly from the test package when needed
 
 
 # Main configuration function for backward compatibility
@@ -47,17 +39,10 @@ def configure_routes(app):
     return app
 
 
-# Export the main blueprint and test functions
+# Export the main blueprint only
 __all__ = [
     "unified_bp",
     "configure_routes",
-    "_test_collection_endpoints",
-    "_test_collection_state_consistency",
-    "_test_concurrent_requests",
-    "_test_statistics_integration",
-    "_test_database_api_consistency",
-    "_test_collection_data_flow",
-    "run_all_tests",
 ]
 
 logger.info("Unified routes initialized with modular structure")

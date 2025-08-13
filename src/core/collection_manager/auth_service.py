@@ -31,9 +31,9 @@ class AuthService:
                 cursor.execute(
                     """
                     SELECT COUNT(*) FROM auth_attempts
-                    WHERE source = ?
+                    WHERE service = ?
                       AND success = 0
-                      AND created_at > ?
+                      AND timestamp > ?
                     """,
                     (source, one_hour_ago.isoformat()),
                 )
@@ -64,23 +64,13 @@ class AuthService:
             with sqlite3.connect(self.db_path, timeout=5) as conn:
                 cursor = conn.cursor()
 
-                # 테이블 생성
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS auth_attempts (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        source TEXT NOT NULL,
-                        success BOOLEAN NOT NULL,
-                        details TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    )
-                    """
-                )
+                # Use existing auth_attempts table from schema
+                # No need to create table - it should exist from database initialization
 
-                # 시도 기록
+                # 시도 기록 (use schema column names)
                 cursor.execute(
-                    "INSERT INTO auth_attempts (source, success, details) VALUES (?, ?, ?)",
-                    (source, success, details),
+                    "INSERT INTO auth_attempts (service, success, ip_address) VALUES (?, ?, ?)",
+                    (source, success, "127.0.0.1"),
                 )
 
                 conn.commit()
@@ -108,7 +98,7 @@ class AuthService:
                             SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_attempts,
                             SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_attempts
                         FROM auth_attempts
-                        WHERE source = ? AND created_at > ?
+                        WHERE service = ? AND timestamp > ?
                         """,
                         (source, cutoff_time.isoformat()),
                     )
@@ -130,13 +120,13 @@ class AuthService:
                     cursor.execute(
                         """
                         SELECT
-                            source,
+                            service,
                             COUNT(*) as total_attempts,
                             SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_attempts,
                             SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_attempts
                         FROM auth_attempts
-                        WHERE created_at > ?
-                        GROUP BY source
+                        WHERE timestamp > ?
+                        GROUP BY service
                         ORDER BY total_attempts DESC
                         """,
                         (cutoff_time.isoformat(),),
@@ -144,8 +134,8 @@ class AuthService:
 
                     stats_by_source = {}
                     for row in cursor.fetchall():
-                        source, total, success, failed = row
-                        stats_by_source[source] = {
+                        service, total, success, failed = row
+                        stats_by_source[service] = {
                             "total_attempts": total or 0,
                             "successful_attempts": success or 0,
                             "failed_attempts": failed or 0,
@@ -181,7 +171,7 @@ class AuthService:
                 if source:
                     # 특정 소스의 실패 리셋
                     cursor.execute(
-                        "DELETE FROM auth_attempts WHERE source = ? AND success = 0",
+                        "DELETE FROM auth_attempts WHERE service = ? AND success = 0",
                         (source,),
                     )
                     cleared = cursor.rowcount
@@ -224,10 +214,10 @@ class AuthService:
                 if source:
                     cursor.execute(
                         """
-                        SELECT source, success, details, created_at
+                        SELECT service, success, ip_address, timestamp
                         FROM auth_attempts
-                        WHERE source = ?
-                        ORDER BY created_at DESC
+                        WHERE service = ?
+                        ORDER BY timestamp DESC
                         LIMIT ?
                         """,
                         (source, limit),
@@ -235,9 +225,9 @@ class AuthService:
                 else:
                     cursor.execute(
                         """
-                        SELECT source, success, details, created_at
+                        SELECT service, success, ip_address, timestamp
                         FROM auth_attempts
-                        ORDER BY created_at DESC
+                        ORDER BY timestamp DESC
                         LIMIT ?
                         """,
                         (limit,),

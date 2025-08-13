@@ -25,7 +25,7 @@ def raw_source_check():
         cursor.execute(
             """
             SELECT source, COUNT(*) as count
-            FROM blacklist_ip
+            FROM blacklist_entries
             WHERE is_active = 1
             GROUP BY source
         """
@@ -35,8 +35,8 @@ def raw_source_check():
         # 최근 5개 레코드 조회
         cursor.execute(
             """
-            SELECT ip, source, detection_date, created_at, attack_type, country
-            FROM blacklist_ip
+            SELECT ip_address as ip, source, last_seen as detection_date, created_at, reason as attack_type, country
+            FROM blacklist_entries
             WHERE is_active = 1
             ORDER BY created_at DESC
             LIMIT 5
@@ -58,8 +58,8 @@ def raw_source_check():
         # REGTECH 데이터 샘플
         cursor.execute(
             """
-            SELECT ip, source, detection_date
-            FROM blacklist_ip
+            SELECT ip_address as ip, source, last_seen as detection_date
+            FROM blacklist_entries
             WHERE source = 'REGTECH' AND is_active = 1
             LIMIT 3
         """
@@ -77,8 +77,8 @@ def raw_source_check():
         # SECUDIUM 데이터 샘플
         cursor.execute(
             """
-            SELECT ip, source, detection_date
-            FROM blacklist_ip
+            SELECT ip_address as ip, source, last_seen as detection_date
+            FROM blacklist_entries
             WHERE source = 'SECUDIUM' AND is_active = 1
             LIMIT 3
         """

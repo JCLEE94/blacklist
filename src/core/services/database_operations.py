@@ -30,19 +30,33 @@ class DatabaseOperationsMixin:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
-            # Create blacklist_ip table if not exists
+            # Create blacklist_entries table (aligned with main schema)
             cursor.execute(
                 """
-                CREATE TABLE IF NOT EXISTS blacklist_ip (
+                CREATE TABLE IF NOT EXISTS blacklist_entries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip TEXT NOT NULL UNIQUE,
-                    created_at TEXT NOT NULL,
-                    detection_date TEXT,
-                    attack_type TEXT,
+                    ip_address TEXT NOT NULL UNIQUE,
+                    first_seen TEXT,
+                    last_seen TEXT,
+                    detection_months TEXT,
+                    is_active BOOLEAN DEFAULT 1,
+                    days_until_expiry INTEGER DEFAULT 90,
+                    threat_level TEXT DEFAULT 'medium',
+                    source TEXT NOT NULL DEFAULT 'unknown',
+                    source_details TEXT,
                     country TEXT,
-                    source TEXT,
-                    is_active INTEGER DEFAULT 1,
-                    updated_at TEXT
+                    reason TEXT,
+                    reg_date TEXT,
+                    exp_date TEXT,
+                    view_count INTEGER DEFAULT 0,
+                    uuid TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    severity_score REAL DEFAULT 0.0,
+                    confidence_level REAL DEFAULT 1.0,
+                    tags TEXT,
+                    last_verified TIMESTAMP,
+                    verification_status TEXT DEFAULT 'unverified'
                 )
                 """
             )

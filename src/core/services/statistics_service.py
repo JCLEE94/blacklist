@@ -100,7 +100,7 @@ class StatisticsServiceMixin:
 
             # 소스별 아이피 수 조회
             cursor.execute(
-                "SELECT source, COUNT(*) as count FROM blacklist_ip WHERE is_active = 1 GROUP BY source"
+                "SELECT source, COUNT(*) as count FROM blacklist_entries WHERE is_active = 1 GROUP BY source"
             )
             results = cursor.fetchall()
             conn.close()
@@ -144,7 +144,7 @@ class StatisticsServiceMixin:
                 SELECT DATE(created_at) as date,
                        COUNT(*) as new_ips,
                        source
-                FROM blacklist_ip
+                FROM blacklist_entries
                 WHERE created_at >= ?
                 GROUP BY DATE(created_at), source
                 ORDER BY date DESC
@@ -186,7 +186,7 @@ class StatisticsServiceMixin:
                 SELECT strftime('%Y-%m', created_at) as month,
                        COUNT(*) as total_ips,
                        source
-                FROM blacklist_ip
+                FROM blacklist_entries
                 WHERE created_at BETWEEN ? AND ?
                 GROUP BY month, source
                 ORDER BY month DESC
@@ -235,7 +235,7 @@ class StatisticsServiceMixin:
                        COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_count,
                        MIN(created_at) as first_seen,
                        MAX(created_at) as last_seen
-                FROM blacklist_ip
+                FROM blacklist_entries
                 GROUP BY source
                 ORDER BY total_count DESC
                 """
@@ -323,9 +323,9 @@ class StatisticsServiceMixin:
 
             # 기본 쿼리
             query = """
-                SELECT ip, created_at, detection_date, attack_type,
+                SELECT ip_address as ip, created_at, last_seen as detection_date, reason as attack_type,
                        country, source, is_active, updated_at
-                FROM blacklist_ip
+                FROM blacklist_entries
                 WHERE is_active = 1
             """
 
@@ -344,7 +344,7 @@ class StatisticsServiceMixin:
             results = cursor.fetchall()
 
             # 전체 갯수 계산
-            count_query = "SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1"
+            count_query = "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 1"
             count_params = []
             if source_filter:
                 count_query += " AND source = ?"
