@@ -63,22 +63,15 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
             end_date="2024-01-02"
         )
 
-        # Verify collection was triggered
-        assert result is not None
+        # Verify collection was triggered - the method should convert dates to format YYYYMMDD
+        service.regtech_collector.collect_from_web.assert_called_once_with(
+            start_date="20240101",  # dates with dashes removed
+            end_date="20240102"
+        )
         
-        # Check if the mock was called or the result indicates proper handling
-        if result.get("success") is True:
-            # If successful, the mock should have been called
-            service.regtech_collector.collect_from_web.assert_called_once()
-        elif service.regtech_collector.collect_from_web.called:
-            # If called but not necessarily successful, that's still valid
-            service.regtech_collector.collect_from_web.assert_called()
-        else:
-            # If not called, just verify the service handled the request properly
-            # This can happen if collection is disabled or component unavailable
-            assert isinstance(result, dict)
-            assert "success" in result or "message" in result
-            assert hasattr(service.regtech_collector, "collect_from_web")
+        # Verify result is properly formatted
+        assert result is not None
+        assert isinstance(result, dict)
 
     def test_cache_fallback_behavior(self, service):
         """Test service behavior when cache is unavailable"""

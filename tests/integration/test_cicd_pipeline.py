@@ -27,7 +27,7 @@ class TestCICDPipelineTriggers:
         }
 
         # 워크플로우 파일 검증 - use existing workflow file
-        workflow_path = Path(".github/workflows/ci-cd.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         assert workflow_path.exists(), f"CI/CD workflow file not found at {workflow_path}"
 
         with open(workflow_path) as f:
@@ -47,7 +47,7 @@ class TestCICDPipelineTriggers:
 
     def test_develop_branch_push_triggers_appropriate_workflow(self):
         """develop 브랜치 푸시가 적절한 워크플로우를 트리거하는지 테스트"""
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)
 
@@ -56,7 +56,7 @@ class TestCICDPipelineTriggers:
     def test_pr_creation_triggers_quality_checks_only(self):
         """PR 생성이 품질 검사만 트리거하는지 테스트"""
         # PR 이벤트가 main 브랜치에 대해서만 트리거되는지 확인
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)
 
@@ -65,7 +65,7 @@ class TestCICDPipelineTriggers:
 
     def test_path_ignoring_for_docs(self):
         """문서 파일이 파이프라인을 트리거하지 않는지 테스트"""
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)
 
@@ -76,7 +76,7 @@ class TestCICDPipelineTriggers:
 
     def test_concurrency_cancellation(self):
         """동시 실행 취소가 작동하는지 테스트"""
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)
 
@@ -110,7 +110,7 @@ def poorly_formatted_function( x,y ):
 
         # flake8 실행 시뮬레이션
         result = subprocess.run(
-            ["python", "-m", "flake8", "--extend-ignore=E501", str(test_file)],
+            ["python3", "-m", "flake8", "--extend-ignore=E501", str(test_file)],
             capture_output=True,
             text=True,
         )
@@ -185,7 +185,7 @@ class TestBuildStage:
     def test_build_cache_utilization(self):
         """빌드 캐시 활용 테스트"""
         # GitHub Actions 워크플로우에서 캐시 사용 확인
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow_content = f.read()
 
@@ -193,7 +193,7 @@ class TestBuildStage:
 
     def test_image_tagging_strategy(self):
         """이미지 태깅 전략 테스트"""
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow_content = f.read()
 
@@ -362,7 +362,7 @@ class TestEndToEndFlow:
     def test_failure_recovery_at_each_stage(self):
         """각 단계에서의 실패 복구 테스트"""
         # 워크플로우 재시도 설정 확인
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow_content = f.read()
 
@@ -389,7 +389,7 @@ class TestPipelineRefactoring:
     def test_configuration_extraction(self):
         """설정 추출 테스트"""
         # 환경 변수 사용 확인
-        workflow_path = Path(".github/workflows/complete-cicd-pipeline.yml")
+        workflow_path = Path(".github/workflows/main-deploy.yml")
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)
 

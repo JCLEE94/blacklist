@@ -116,7 +116,7 @@ def poorly_formatted_function( x,y ):
         mock_subprocess.return_value.stdout = "E201 whitespace after '('"
 
         result = subprocess.run(
-            ["python", "-m", "flake8", "--extend-ignore=E501", str(test_file)],
+            ["python3", "-m", "flake8", "--extend-ignore=E501", str(test_file)],
             capture_output=True,
             text=True,
         )
