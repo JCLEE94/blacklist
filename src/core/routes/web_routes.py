@@ -101,6 +101,7 @@ def docker_logs_page():
 
 
 @web_routes_bp.route("/search", methods=["GET"])
+@web_routes_bp.route("/blacklist-search", methods=["GET"])
 def blacklist_search():
     """IP 검색 페이지"""
     try:
@@ -122,7 +123,7 @@ def blacklist_search():
 @web_routes_bp.route("/collection-control", methods=["GET"])
 def collection_control():
     """수집 제어 패널 페이지 - 통합 관리로 리디렉션"""
-    return redirect(url_for("web_routes.unified_control"))
+    return redirect(url_for("unified.web_routes.unified_control"))
 
 
 @web_routes_bp.route("/unified-control", methods=["GET"])
@@ -166,7 +167,7 @@ def connection_status():
 @web_routes_bp.route("/data-management", methods=["GET"])
 def data_management():
     """데이터 관리 페이지 - 통합 관리로 리디렉션"""
-    return redirect(url_for("web_routes.unified_control"))
+    return redirect(url_for("unified.web_routes.unified_control"))
 
 
 @web_routes_bp.route("/system-logs", methods=["GET"])
