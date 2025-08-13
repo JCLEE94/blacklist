@@ -2,8 +2,8 @@ apiVersion: v2
 name: blacklist
 description: Enterprise threat intelligence blacklist management system with FortiGate integration
 type: application
-version: 4.0.6
-appVersion: "20250813-211801-eee6979"
+version: 4.0.7
+appVersion: "20250813-212246-9ca64d5"
 home: https://github.com/JCLEE94/blacklist
 sources:
   - https://github.com/JCLEE94/blacklist
