@@ -38,7 +38,7 @@ COPY --from=builder /install /usr/local
 # Copy application code
 COPY --chown=app:app . .
 
-# Create additional directories that might be needed at runtime
+# Create additional directories that might be needed at runtime  
 RUN mkdir -p /app/data/by_detection_month /app/data/by_source /app/temp \
     && chown -R app:app /app
 
