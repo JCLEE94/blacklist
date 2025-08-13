@@ -81,23 +81,23 @@ spec:
             - name: REGTECH_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: api-credentials
-                  key: REGTECH_USERNAME
+                  name: blacklist-credentials
+                  key: regtech-username
             - name: REGTECH_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: api-credentials
-                  key: REGTECH_PASSWORD
+                  name: blacklist-credentials
+                  key: regtech-password
             - name: SECUDIUM_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: api-credentials
-                  key: SECUDIUM_USERNAME
+                  name: blacklist-credentials
+                  key: secudium-username
             - name: SECUDIUM_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: api-credentials
-                  key: SECUDIUM_PASSWORD
+                  name: blacklist-credentials
+                  key: secudium-password
           volumeMounts:
             {{- if .Values.persistence.data.enabled }}
             - name: data
