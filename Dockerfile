@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash --user-group app \
-    && mkdir -p /app/instance /app/data /app/logs \
+    && mkdir -p /app/instance /app/data /app/logs /app/backups \
     && chown -R app:app /app
 
 WORKDIR /app
@@ -37,6 +37,10 @@ COPY --from=builder /install /usr/local
 
 # Copy application code
 COPY --chown=app:app . .
+
+# Create additional directories that might be needed at runtime
+RUN mkdir -p /app/data/by_detection_month /app/data/by_source /app/temp \
+    && chown -R app:app /app
 
 # Set PATH to include user packages
 ENV PATH=/usr/local/bin:$PATH
