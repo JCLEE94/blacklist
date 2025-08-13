@@ -46,6 +46,8 @@ jobs:
   update-helm-chart:
     needs: build-and-push
     runs-on: self-hosted
+    outputs:
+      chart-version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,6 +62,7 @@ jobs:
           helm plugin install https://github.com/chartmuseum/helm-push || true
 
       - name: Update Chart version and push
+        id: version
         run: |
           # Update chart version
           cd chart/blacklist
@@ -70,6 +73,7 @@ jobs:
           NEW_VERSION="${major}.${minor}.${NEW_PATCH}"
           sed -i "s/^version:.*/version: $NEW_VERSION/" Chart.yaml
           sed -i "s/^appVersion:.*/appVersion: \"${{ github.sha }}\"/" Chart.yaml
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           
           # Package chart
           cd ..
