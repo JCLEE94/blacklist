@@ -193,7 +193,7 @@ class RegtechSimpleCollector:
                         if tbody:
                             rows = tbody.find_all("tr")
                             logger.info(
-                                "페이지 {page + 1} 테이블 행 수: {len(rows)} (페이지당 최대 9999개)"
+                                f"페이지 {page + 1} 테이블 행 수: {len(rows)} (페이지당 최대 9999개)"
                             )
 
                             for row in rows:
@@ -225,7 +225,7 @@ class RegtechSimpleCollector:
 
                 all_ips.extend(page_ips)
                 logger.info(
-                    "페이지 {page + 1}에서 {len(page_ips)}개 IP 수집됨 (누적: {len(all_ips)}개)"
+                    f"페이지 {page + 1}에서 {len(page_ips)}개 IP 수집됨 (누적: {len(all_ips)}개)"
                 )
 
                 page += 1
@@ -239,7 +239,7 @@ class RegtechSimpleCollector:
                     seen.add(ip_data["ip"])
 
             logger.info(
-                "총 수집된 IP: {len(unique_ips)}개 (중복 제거 후, 페이지당 최대 9999개, 최대 {max_pages}페이지 탐색)"
+                f"총 수집된 IP: {len(unique_ips)}개 (중복 제거 후, 페이지당 최대 9999개, 최대 {max_pages}페이지 탐색)"
             )
             return unique_ips
 
@@ -277,7 +277,7 @@ class RegtechSimpleCollector:
         """결과 저장"""
         try:
             # JSON 파일로 저장
-            filename = "regtech_simple_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            filename = f"regtech_simple_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             filepath = os.path.join(self.regtech_dir, filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
@@ -308,7 +308,7 @@ class RegtechSimpleCollector:
             from .container import get_container
 
             container = get_container()
-            blacklist_manager = container.resolve("blacklist_manager")
+            blacklist_manager = container.get("blacklist_manager")
 
             if blacklist_manager:
                 # 형식 변환
@@ -330,10 +330,12 @@ class RegtechSimpleCollector:
                 result = blacklist_manager.bulk_import_ips(
                     formatted_data, source="REGTECH"
                 )
-                if result.get("success"):
-                    logger.info(f"데이터베이스 저장 성공: {result.get('imported_count', 0)}개")
+                if result and result.get("success", True):
+                    imported_count = result.get('imported_count', len(formatted_data))
+                    logger.info(f"데이터베이스 저장 성공: {imported_count}개")
                 else:
-                    logger.error(f"데이터베이스 저장 실패: {result.get('error')}")
+                    error_msg = result.get('error', 'Unknown error') if result else 'No result returned'
+                    logger.error(f"데이터베이스 저장 실패: {error_msg}")
             else:
                 logger.warning("blacklist_manager를 찾을 수 없음")
 
