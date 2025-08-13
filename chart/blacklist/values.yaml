@@ -8,7 +8,7 @@ image:
   repository: registry.jclee.me/jclee94/blacklist
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "all-fixes-implemented"
+  tag: latest
 
 imagePullSecrets:
   - name: registry-credentials
