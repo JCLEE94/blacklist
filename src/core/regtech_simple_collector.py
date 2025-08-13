@@ -96,7 +96,7 @@ class RegtechSimpleCollector:
             logger.info("단순 로그인 시도")
 
             # 로그인 페이지 접근
-            login_page = session.get("{self.base_url}/login/loginForm")
+            login_page = session.get(f"{self.base_url}/login/loginForm")
             if login_page.status_code != 200:
                 logger.error(f"로그인 페이지 접근 실패: {login_page.status_code}")
                 return False
@@ -113,7 +113,7 @@ class RegtechSimpleCollector:
             }
 
             login_resp = session.post(
-                "{self.base_url}/login/addLogin",
+                f"{self.base_url}/login/addLogin",
                 data=login_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 allow_redirects=True,
@@ -163,7 +163,7 @@ class RegtechSimpleCollector:
 
                 # 요청 보내기
                 response = session.post(
-                    "{self.base_url}/fcti/securityAdvisory/advisoryList",
+                    f"{self.base_url}/fcti/securityAdvisory/advisoryList",
                     data=data,
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                 )
