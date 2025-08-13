@@ -122,7 +122,7 @@ spec:
 
   syncPolicy:
     automated:
-      prune: true
+      prune: false
       selfHeal: true
       allowEmpty: false
     syncOptions:
@@ -131,6 +131,7 @@ spec:
       - PruneLast=true
       - ServerSideApply=true
       - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true
     retry:
       limit: 5
       backoff:
@@ -152,8 +153,7 @@ spec:
         - /spec/ports
     - group: v1
       kind: Namespace
-      jsonPointers:
-        - /metadata
+      name: default
 
 ---
 apiVersion: argoproj.io/v1alpha1
