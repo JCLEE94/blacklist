@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  blacklist:
+    image: registry.jclee.me/jclee94/blacklist:latest
+    container_name: blacklist
+    restart: unless-stopped
+    ports:
+      - "32542:2541"
+    volumes:
+      - ./data:/app/instance
+      - ./logs:/app/logs
+    environment:
+      - FLASK_ENV=production
+      - PORT=2541
+      - DATABASE_URL=sqlite:////app/instance/blacklist.db
+      - REDIS_URL=redis://redis:6379/0
+      - COLLECTION_ENABLED=true
+      - FORCE_DISABLE_COLLECTION=false
+      - MAX_AUTH_ATTEMPTS=5
+      - BLOCK_DURATION_HOURS=1
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - blacklist-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - blacklist-net
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_MONITOR_ONLY=false
+      - WATCHTOWER_LOG_LEVEL=info
+      - WATCHTOWER_NOTIFICATIONS_LEVEL=info
+    command: --interval 300 blacklist
+    networks:
+      - blacklist-net
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  blacklist-net:
+    driver: bridge
+    name: blacklist-network
