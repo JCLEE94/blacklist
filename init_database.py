@@ -79,8 +79,7 @@ def init_database_enhanced(force_recreate=False, migrate=True):
             
             # 테이블 통계 출력
             stats = schema.get_table_stats()
-            print("
-📊 테이블 통계:")
+            print("📊 테이블 통계:")
             for table, stat in stats.items():
                 if "error" in stat:
                     print(f"  ❌ {table}: {stat['error']}")
@@ -89,8 +88,7 @@ def init_database_enhanced(force_recreate=False, migrate=True):
             
             # 마이그레이션 실행
             if migrate and not force_recreate:
-                print("
-🔄 스키마 마이그레이션 확인 중...")
+                print("🔄 스키마 마이그레이션 확인 중...")
                 migration_success = schema.migrate_schema()
                 if migration_success:
                     print("✅ 마이그레이션 완료")
@@ -99,8 +97,7 @@ def init_database_enhanced(force_recreate=False, migrate=True):
             
             # 최종 버전 확인
             final_version = schema.get_current_schema_version()
-            print(f"
-🎯 최종 스키마 버전: {final_version}")
+            print(f"🎯 최종 스키마 버전: {final_version}")
             
             return True
         else:
@@ -264,11 +261,9 @@ def main():
         )
     
     if success:
-        print("
-🎉 데이터베이스 초기화가 완료되었습니다!")
+        print("🎉 데이터베이스 초기화가 완료되었습니다!")
     else:
-        print("
-💥 데이터베이스 초기화에 실패했습니다.")
+        print("💥 데이터베이스 초기화에 실패했습니다.")
     
     sys.exit(0 if success else 1)
 

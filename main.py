@@ -121,9 +121,9 @@ def ensure_database_schema():
         try:
             # 보안상 os.system() 대신 직접 import해서 호출
             sys.path.append(current_dir)
-            from init_database import init_database
+            from init_database import init_database_enhanced
 
-            if init_database():
+            if init_database_enhanced():
                 logger.info("✅ 데이터베이스 초기화 성공")
             else:
                 logger.error("❌ 데이터베이스 초기화 실패")
