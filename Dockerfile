@@ -39,7 +39,7 @@ COPY --from=builder /install /usr/local
 COPY --chown=app:app . .
 
 # Create additional directories that might be needed at runtime  
-RUN mkdir -p /app/data/by_detection_month /app/data/by_source /app/data/blacklist_ips /app/data/exports /app/temp \
+RUN mkdir -p /app/data/by_detection_month /app/data/by_source /app/data/blacklist_ips /app/data/exports /app/data/logs /app/temp \
     && chown -R app:app /app
 
 # Set PATH to include user packages
