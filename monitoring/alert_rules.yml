@@ -1,0 +1,332 @@
+# Prometheus 알림 규칙 설정
+# 블랙리스트 시스템 모니터링용 알림 규칙
+
+groups:
+  - name: blacklist_system_health
+    interval: 30s
+    rules:
+      # 시스템 가동 상태
+      - alert: BlacklistSystemDown
+        expr: blacklist_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "블랙리스트 시스템이 다운되었습니다"
+          description: "블랙리스트 시스템이 1분 이상 응답하지 않습니다."
+          runbook_url: "https://docs.blacklist.jclee.me/troubleshooting/system-down"
+
+      # 높은 오류율
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(blacklist_http_requests_total{status_code=~"5.."}[5m]) /
+            rate(blacklist_http_requests_total[5m])
+          ) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: web
+        annotations:
+          summary: "높은 HTTP 오류율 감지"
+          description: "지난 5분간 HTTP 5xx 오류율이 10%를 초과했습니다. 현재: {{ $value | humanizePercentage }}"
+
+      # 응답 시간 지연
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            rate(blacklist_http_request_duration_seconds_bucket[5m])
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: web
+        annotations:
+          summary: "높은 응답 시간 감지"
+          description: "95 퍼센타일 응답 시간이 1초를 초과했습니다. 현재: {{ $value }}초"
+
+      # 메모리 사용량 높음
+      - alert: HighMemoryUsage
+        expr: |
+          blacklist_memory_usage_bytes{type="rss"} / (1024*1024*1024) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "높은 메모리 사용량"
+          description: "RSS 메모리 사용량이 2GB를 초과했습니다. 현재: {{ $value | humanize1024 }}B"
+
+      # CPU 사용률 높음
+      - alert: HighCpuUsage
+        expr: blacklist_cpu_usage_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "높은 CPU 사용률"
+          description: "CPU 사용률이 10분간 80%를 초과했습니다. 현재: {{ $value }}%"
+
+  - name: blacklist_data_collection
+    interval: 1m
+    rules:
+      # 데이터 수집 실패
+      - alert: DataCollectionFailure
+        expr: |
+          increase(blacklist_collections_total{status="failure"}[1h]) > 3
+        for: 0s
+        labels:
+          severity: critical
+          component: collection
+        annotations:
+          summary: "데이터 수집 실패"
+          description: "{{ $labels.source }}에서 지난 1시간 동안 3회 이상 수집 실패가 발생했습니다."
+
+      # 데이터 수집 지연
+      - alert: DataCollectionDelay
+        expr: |
+          blacklist_data_freshness_seconds > 3600
+        for: 0s
+        labels:
+          severity: warning
+          component: collection
+        annotations:
+          summary: "데이터 수집 지연"
+          description: "{{ $labels.source }}의 마지막 데이터 수집이 1시간 이상 지연되었습니다."
+
+      # 수집 소요 시간 증가
+      - alert: SlowDataCollection
+        expr: |
+          histogram_quantile(0.95,
+            rate(blacklist_collection_duration_seconds_bucket[30m])
+          ) > 300
+        for: 0s
+        labels:
+          severity: warning
+          component: collection
+        annotations:
+          summary: "데이터 수집 속도 저하"
+          description: "{{ $labels.source }}의 데이터 수집이 평소보다 느립니다. 95 퍼센타일: {{ $value }}초"
+
+  - name: blacklist_authentication
+    interval: 1m
+    rules:
+      # 인증 실패율 높음
+      - alert: HighAuthenticationFailureRate
+        expr: |
+          (
+            rate(blacklist_authentication_attempts_total{result="failure"}[10m]) /
+            rate(blacklist_authentication_attempts_total[10m])
+          ) > 0.3
+        for: 2m
+        labels:
+          severity: warning
+          component: authentication
+        annotations:
+          summary: "높은 인증 실패율"
+          description: "{{ $labels.service }}에서 인증 실패율이 30%를 초과했습니다."
+
+      # 인증 시도 급증
+      - alert: AuthenticationFlood
+        expr: |
+          rate(blacklist_authentication_attempts_total[1m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "인증 시도 급증 감지"
+          description: "{{ $labels.service }}에서 분당 10회 이상의 인증 시도가 감지되었습니다. 보안 공격 가능성."
+
+  - name: blacklist_database
+    interval: 30s
+    rules:
+      # 데이터베이스 연결 실패
+      - alert: DatabaseConnectionFailure
+        expr: |
+          blacklist_database_connections{state="active"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "데이터베이스 연결 실패"
+          description: "활성 데이터베이스 연결이 없습니다. 데이터베이스 서비스 상태를 확인하세요."
+
+      # 데이터베이스 오류 증가
+      - alert: DatabaseErrors
+        expr: |
+          increase(blacklist_errors_total{component="database"}[5m]) > 5
+        for: 0s
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "데이터베이스 오류 증가"
+          description: "지난 5분간 데이터베이스 오류가 5회 이상 발생했습니다."
+
+  - name: blacklist_cache
+    interval: 1m
+    rules:
+      # 캐시 적중률 저하
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            rate(blacklist_cache_operations_total{operation="get",result="hit"}[10m]) /
+            rate(blacklist_cache_operations_total{operation="get"}[10m])
+          ) < 0.7
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "낮은 캐시 적중률"
+          description: "캐시 적중률이 70% 미만입니다. 현재: {{ $value | humanizePercentage }}"
+
+      # 캐시 크기 급증
+      - alert: CacheSizeGrowth
+        expr: |
+          blacklist_cache_size_bytes > 512*1024*1024  # 512MB
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "캐시 크기 급증"
+          description: "캐시 크기가 512MB를 초과했습니다. 현재: {{ $value | humanize1024 }}B"
+
+  - name: blacklist_business_logic
+    interval: 1m
+    rules:
+      # 블랙리스트 IP 수 급감
+      - alert: BlacklistIpCountDrop
+        expr: |
+          (
+            blacklist_ips_total{status="active"} - 
+            blacklist_ips_total{status="active"} offset 1h
+          ) / blacklist_ips_total{status="active"} offset 1h < -0.2
+        for: 0s
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "활성 블랙리스트 IP 수 급감"
+          description: "{{ $labels.source }}의 활성 IP 수가 지난 1시간 대비 20% 이상 감소했습니다."
+
+      # 새로운 위협 급증
+      - alert: ThreatSurge
+        expr: |
+          rate(blacklist_threats_detected_total{threat_level="high"}[10m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "고위험 위협 급증"
+          description: "{{ $labels.source }}에서 분당 5회 이상의 고위험 위협이 탐지되었습니다."
+
+      # API 쿼리 실패율 증가
+      - alert: ApiQueryFailures
+        expr: |
+          (
+            rate(blacklist_api_queries_total{result="error"}[5m]) /
+            rate(blacklist_api_queries_total[5m])
+          ) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API 쿼리 실패율 증가"
+          description: "{{ $labels.endpoint }}에서 API 쿼리 실패율이 10%를 초과했습니다."
+
+  - name: blacklist_disk_space
+    interval: 5m
+    rules:
+      # 디스크 공간 부족
+      - alert: LowDiskSpace
+        expr: |
+          (
+            blacklist_disk_usage_bytes{type="free"} /
+            blacklist_disk_usage_bytes{type="total"}
+          ) < 0.1
+        for: 0s
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "디스크 공간 부족"
+          description: "{{ $labels.path }}의 여유 디스크 공간이 10% 미만입니다."
+
+      # 디스크 사용량 급증
+      - alert: DiskUsageGrowth
+        expr: |
+          (
+            (blacklist_disk_usage_bytes{type="used"} - blacklist_disk_usage_bytes{type="used"} offset 1h) /
+            blacklist_disk_usage_bytes{type="used"} offset 1h
+          ) > 0.2
+        for: 0s
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "디스크 사용량 급증"
+          description: "{{ $labels.path }}의 디스크 사용량이 지난 1시간 대비 20% 이상 증가했습니다."
+
+  - name: blacklist_connectivity
+    interval: 30s
+    rules:
+      # 외부 서비스 연결 실패
+      - alert: ExternalServiceUnavailable
+        expr: |
+          increase(blacklist_errors_total{error_type="connection_error"}[5m]) > 3
+        for: 0s
+        labels:
+          severity: warning
+          component: external_service
+        annotations:
+          summary: "외부 서비스 연결 실패"
+          description: "{{ $labels.component }}에서 지난 5분간 연결 오류가 3회 이상 발생했습니다."
+
+      # 네트워크 지연 증가
+      - alert: NetworkLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            rate(blacklist_http_request_duration_seconds_bucket{endpoint=~"/api/.*"}[5m])
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "네트워크 지연 증가"
+          description: "API 엔드포인트의 95 퍼센타일 응답 시간이 2초를 초과했습니다."
+
+  - name: blacklist_security
+    interval: 1m
+    rules:
+      # 의심스러운 활동 감지
+      - alert: SuspiciousActivity
+        expr: |
+          rate(blacklist_http_requests_total{status_code="403"}[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "의심스러운 활동 감지"
+          description: "분당 1회 이상의 403 Forbidden 응답이 감지되었습니다. 잠재적 공격 시도."
+
+      # 오류 패턴 이상
+      - alert: ErrorPatternAnomaly
+        expr: |
+          rate(blacklist_errors_total[1m]) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "오류 패턴 이상"
+          description: "분당 0.5회 이상의 오류가 지속적으로 발생하고 있습니다."

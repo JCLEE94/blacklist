@@ -1,16 +1,37 @@
 #!/usr/bin/env python3
 """
-데이터베이스 초기화 스크립트
+데이터베이스 초기화 스크립트 - 향상된 스키마 관리
 운영/개발 환경 모두에서 사용 가능
 """
 import os
-import sqlite3
 import sys
+import logging
+from pathlib import Path
+
+# 프로젝트 루트를 Python 경로에 추가
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
+try:
+    from src.core.database_schema import initialize_database, get_database_schema
+except ImportError as e:
+    print(f"❌ 모듈 임포트 실패: {e}")
+    print("src/core/database_schema.py 파일이 존재하는지 확인하세요.")
+    sys.exit(1)
+
+# 로깅 설정
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
-def init_database(force_recreate=False):
+def get_database_path() -> str:
+    """데이터베이스 경로 결정"""
     # DATABASE_URL 환경변수에서 경로 추출 (컨테이너 환경 우선)
     database_url = os.getenv("DATABASE_URL", "sqlite:////app/instance/blacklist.db")
+    
     if database_url.startswith("sqlite:///"):
         db_path = database_url.replace("sqlite:///", "")
     else:
@@ -20,7 +41,92 @@ def init_database(force_recreate=False):
         else:
             db_path = "instance/blacklist.db"
     
-    # 데이터베이스 디렉토리 생성
+    return db_path
+
+
+def init_database_enhanced(force_recreate=False, migrate=True):
+    """향상된 데이터베이스 초기화"""
+    db_path = get_database_path()
+    
+    print(f"🔧 데이터베이스 초기화 중: {db_path}")
+    print(f"📋 스키마 버전: 2.0.0")
+    print(f"🔄 강제 재생성: {'예' if force_recreate else '아니오'}")
+    print(f"🔄 자동 마이그레이션: {'예' if migrate else '아니오'}")
+    
+    try:
+        # 스키마 인스턴스 생성
+        schema = get_database_schema(db_path)
+        
+        # 현재 스키마 버전 확인
+        current_version = schema.get_current_schema_version()
+        if current_version:
+            print(f"📊 현재 스키마 버전: {current_version}")
+        else:
+            print("📊 새로운 데이터베이스 설치")
+        
+        # 강제 재생성 처리
+        if force_recreate:
+            db_file = Path(db_path)
+            if db_file.exists():
+                db_file.unlink()
+                print("🗑️ 기존 데이터베이스 파일 삭제됨")
+        
+        # 데이터베이스 초기화
+        success = initialize_database(db_path, force_recreate)
+        
+        if success:
+            print("✅ 데이터베이스 초기화 성공!")
+            
+            # 테이블 통계 출력
+            stats = schema.get_table_stats()
+            print("
+📊 테이블 통계:")
+            for table, stat in stats.items():
+                if "error" in stat:
+                    print(f"  ❌ {table}: {stat['error']}")
+                else:
+                    print(f"  ✅ {table}: {stat['count']}개 레코드")
+            
+            # 마이그레이션 실행
+            if migrate and not force_recreate:
+                print("
+🔄 스키마 마이그레이션 확인 중...")
+                migration_success = schema.migrate_schema()
+                if migration_success:
+                    print("✅ 마이그레이션 완료")
+                else:
+                    print("⚠️ 마이그레이션 실패 또는 불필요")
+            
+            # 최종 버전 확인
+            final_version = schema.get_current_schema_version()
+            print(f"
+🎯 최종 스키마 버전: {final_version}")
+            
+            return True
+        else:
+            print("❌ 데이터베이스 초기화 실패!")
+            return False
+            
+    except Exception as e:
+        print(f"❌ 데이터베이스 초기화 중 오류: {e}")
+        logger.exception("데이터베이스 초기화 실패")
+        return False
+
+
+def legacy_init_database(force_recreate=False):
+    """레거시 데이터베이스 초기화 (호환성 유지)"""
+    print("⚠️ 레거시 모드로 데이터베이스 초기화 중...")
+    
+    # 기존 코드 유지 (원래 init_database 함수 내용)
+    database_url = os.getenv("DATABASE_URL", "sqlite:////app/instance/blacklist.db")
+    if database_url.startswith("sqlite:///"):
+        db_path = database_url.replace("sqlite:///", "")
+    else:
+        if os.path.exists("/app"):
+            db_path = "/app/instance/blacklist.db"
+        else:
+            db_path = "instance/blacklist.db"
+    
     db_dir = os.path.dirname(db_path)
     if db_dir:
         try:
@@ -31,6 +137,7 @@ def init_database(force_recreate=False):
     print(f"Initializing database at: {db_path}")
 
     try:
+        import sqlite3
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
@@ -44,7 +151,6 @@ def init_database(force_recreate=False):
         table_exists = cursor.fetchone() is not None
 
         if table_exists:
-            # 테이블이 있으면 컬럼 체크
             cursor.execute("PRAGMA table_info(blacklist_ip)")
             columns = [col[1] for col in cursor.fetchall()]
 
@@ -52,9 +158,7 @@ def init_database(force_recreate=False):
                 if force_recreate:
                     print("🔄 Force recreating table...")
                 else:
-                    print(
-                        "❌ 'ip' column missing in blacklist_ip table. Recreating table..."
-                    )
+                    print("❌ 'ip' column missing in blacklist_ip table. Recreating table...")
                 cursor.execute("DROP TABLE IF EXISTS blacklist_ip")
                 table_exists = False
 
@@ -65,19 +169,19 @@ def init_database(force_recreate=False):
             CREATE TABLE blacklist_ip (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ip VARCHAR(45) UNIQUE NOT NULL,
-                ip_address VARCHAR(45),      -- REGTECH 원본 필드
+                ip_address VARCHAR(45),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 detection_date TIMESTAMP,
-                reg_date TIMESTAMP,          -- REGTECH 등록일
+                reg_date TIMESTAMP,
                 attack_type VARCHAR(50),
-                reason VARCHAR(200),         -- REGTECH 사유
+                reason VARCHAR(200),
                 country VARCHAR(100),
-                threat_level VARCHAR(50),    -- REGTECH 위협 수준
-                as_name VARCHAR(200),        -- AS 이름
-                city VARCHAR(100),           -- 도시
+                threat_level VARCHAR(50),
+                as_name VARCHAR(200),
+                city VARCHAR(100),
                 source VARCHAR(100),
-                is_active BOOLEAN DEFAULT 1, -- IP 활성 상태
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 업데이트 시간
+                is_active BOOLEAN DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 extra_data TEXT
             )
             """
@@ -101,12 +205,11 @@ def init_database(force_recreate=False):
         """
         )
 
-        # expires_at 컬럼 추가 (이미 있으면 무시)
+        # expires_at 컬럼 추가
         try:
             cursor.execute("ALTER TABLE blacklist_ip ADD COLUMN expires_at TIMESTAMP")
             print("✅ Added expires_at column to blacklist_ip table")
         except sqlite3.OperationalError:
-            # 컬럼이 이미 존재하면 무시
             pass
 
         # daily_stats 테이블
@@ -135,8 +238,40 @@ def init_database(force_recreate=False):
         return False
 
 
-if __name__ == "__main__":
-    # 명령줄 인자로 --force-recreate 옵션 지원
-    force_recreate = "--force-recreate" in sys.argv
-    success = init_database(force_recreate=force_recreate)
+def main():
+    """메인 함수"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='데이터베이스 초기화 도구')
+    parser.add_argument('--force', '--force-recreate', action='store_true',
+                      help='기존 데이터베이스를 강제로 재생성')
+    parser.add_argument('--legacy', action='store_true',
+                      help='레거시 모드로 초기화 (호환성)')
+    parser.add_argument('--no-migrate', action='store_true',
+                      help='자동 마이그레이션 비활성화')
+    
+    args = parser.parse_args()
+    
+    print("🚀 블랙리스트 데이터베이스 초기화 도구 v2.0")
+    print("=" * 50)
+    
+    if args.legacy:
+        success = legacy_init_database(force_recreate=args.force)
+    else:
+        success = init_database_enhanced(
+            force_recreate=args.force,
+            migrate=not args.no_migrate
+        )
+    
+    if success:
+        print("
+🎉 데이터베이스 초기화가 완료되었습니다!")
+    else:
+        print("
+💥 데이터베이스 초기화에 실패했습니다.")
+    
     sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()

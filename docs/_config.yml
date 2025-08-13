@@ -1,0 +1,75 @@
+# GitHub Pages Configuration for Blacklist Management System
+title: "Blacklist Management System"
+description: "Enterprise Threat Intelligence Platform with Offline Deployment"
+url: "https://jclee94.github.io"
+baseurl: "/blacklist"
+
+# Theme
+theme: minima
+remote_theme: pages-themes/cayman@v0.2.0
+
+# Navigation
+navbar:
+  - title: "Home"
+    url: "/"
+  - title: "Installation"
+    url: "/installation/"
+  - title: "API Reference"
+    url: "/api/"
+  - title: "Deployment"
+    url: "/deployment/"
+  - title: "Troubleshooting"
+    url: "/troubleshooting/"
+
+# SEO and Social
+author: "Lee Jae Cheol"
+twitter:
+  username: JCLEE94
+  card: summary
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - "*.pyc"
+  - __pycache__/
+  - .pytest_cache/
+  - .coverage
+  - htmlcov/
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "default"
