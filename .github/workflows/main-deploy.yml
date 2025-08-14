@@ -10,13 +10,16 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: registry.jclee.me
-  IMAGE_NAME: jclee94/blacklist
-  HELM_REPO: https://charts.jclee.me
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,12 +27,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: admin
-          password: bingogo1
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -37,90 +50,35 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=registry
-          cache-to: type=inline
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-  update-helm-chart:
+  deploy-local:
     needs: build-and-push
     runs-on: ubuntu-latest
-    outputs:
-      chart-version: ${{ steps.version.outputs.version }}
+    if: github.ref == 'refs/heads/main'
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: '3.13.0'
-
-      - name: Install helm-cm-push plugin
+      - name: Deploy notification
         run: |
-          helm plugin install https://github.com/chartmuseum/helm-push || true
-
-      - name: Update Chart version and push
-        id: version
+          echo "🚀 Deployment successful!"
+          echo "Docker image pushed to: ghcr.io/${{ github.repository }}"
+          echo ""
+          echo "To deploy locally, run:"
+          echo "docker pull ghcr.io/${{ github.repository }}:latest"
+          echo "docker-compose down && docker-compose up -d"
+          
+      - name: Create deployment summary
         run: |
-          # Update chart version
-          cd chart/blacklist
-          # Get current version and increment patch
-          CURRENT_VERSION=$(grep '^version:' Chart.yaml | cut -d' ' -f2)
-          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
-          NEW_PATCH=$((patch + 1))
-          NEW_VERSION="${major}.${minor}.${NEW_PATCH}"
-          sed -i "s/^version:.*/version: $NEW_VERSION/" Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: \"${{ github.sha }}\"/" Chart.yaml
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
-          # Package chart
-          cd ..
-          helm package blacklist
-          
-          # Push to ChartMuseum
-          helm repo add chartmuseum ${{ env.HELM_REPO }} --username admin --password bingogo1
-          helm cm-push blacklist-*.tgz chartmuseum
-
-  trigger-argocd-sync:
-    needs: update-helm-chart
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger ArgoCD Sync
-        run: |
-          # ArgoCD sync via API
-          ARGOCD_SERVER="argo.jclee.me"
-          ARGOCD_TOKEN="${{ secrets.ARGOCD_TOKEN }}"
-          
-          curl -k -X POST https://${ARGOCD_SERVER}/api/v1/applications/blacklist/sync \
-            -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '{"revision":"HEAD","prune":false,"dryRun":false}'
-
-  verify-deployment:
-    needs: trigger-argocd-sync
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for deployment
-        run: sleep 30
-
-      - name: Check health
-        run: |
-          # Check if service is healthy
-          MAX_RETRIES=10
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if curl -f http://blacklist.jclee.me/health; then
-              echo "Deployment successful!"
-              exit 0
-            fi
-            
-            echo "Waiting for deployment... ($RETRY_COUNT/$MAX_RETRIES)"
-            sleep 10
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-          done
-          
-          echo "Deployment health check failed"
-          exit 1
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Build Status**: Success" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Image**: \`ghcr.io/${{ github.repository }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "🔖 **Version**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Pull the latest image on your server" >> $GITHUB_STEP_SUMMARY
+          echo "2. Restart docker-compose services" >> $GITHUB_STEP_SUMMARY
+          echo "3. Verify health at \`http://your-server:32542/health\`" >> $GITHUB_STEP_SUMMARY
