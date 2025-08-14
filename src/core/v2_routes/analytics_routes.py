@@ -34,6 +34,36 @@ def get_analytics_summary():
         return jsonify({"error": str(e)}), 500
 
 
+@analytics_v2_bp.route("/analytics/trends", methods=["GET"])
+def get_analytics_trends():
+    """트렌드 분석 데이터 (V2)"""
+    try:
+        # Default to 30 days of trend data
+        period_days = request.args.get("period", 30, type=int)
+        
+        # Get trend data from service
+        if service:
+            result = service.get_analytics_summary(period_days)
+            # Add trend-specific data
+            result["trend_type"] = "time_series"
+            result["trend_period"] = period_days
+            return jsonify(result)
+        else:
+            # Return minimal response if service not initialized
+            return jsonify({
+                "status": "success",
+                "trend_type": "time_series",
+                "trend_period": period_days,
+                "data": {
+                    "total_ips": 0,
+                    "active_ips": 0,
+                    "sources": {}
+                }
+            })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @analytics_v2_bp.route("/analytics/<period>", methods=["GET"])
 @unified_cache(ttl=3600, key_prefix="v2:analytics")
 def get_analytics(period):

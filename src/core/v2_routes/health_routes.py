@@ -22,6 +22,66 @@ def init_service(api_service: V2APIService):
     service = api_service
 
 
+@health_v2_bp.route("/sources/status", methods=["GET"])
+def get_sources_status():
+    """데이터 소스별 상태 확인 (V2)"""
+    try:
+        # Get source-specific status
+        if service and service.blacklist_manager:
+            health = service.blacklist_manager.get_system_health()
+            database_info = health.get("database", {})
+            
+            sources_status = {
+                "status": "success",
+                "timestamp": datetime.now().isoformat(),
+                "sources": {
+                    "regtech": {
+                        "name": "REGTECH",
+                        "enabled": True,
+                        "ip_count": database_info.get("regtech_count", 0),
+                        "last_update": database_info.get("last_regtech_update"),
+                        "status": "active" if database_info.get("regtech_count", 0) > 0 else "inactive"
+                    },
+                    "secudium": {
+                        "name": "SECUDIUM",
+                        "enabled": True,
+                        "ip_count": database_info.get("secudium_count", 0),
+                        "last_update": database_info.get("last_secudium_update"),
+                        "status": "active" if database_info.get("secudium_count", 0) > 0 else "inactive"
+                    },
+                    "public": {
+                        "name": "Public Sources",
+                        "enabled": True,
+                        "ip_count": database_info.get("public_count", 0),
+                        "last_update": database_info.get("last_public_update"),
+                        "status": "active" if database_info.get("public_count", 0) > 0 else "inactive"
+                    }
+                },
+                "total_sources": 3,
+                "active_sources": sum(
+                    1 for s in ["regtech_count", "secudium_count", "public_count"]
+                    if database_info.get(s, 0) > 0
+                )
+            }
+            
+            return jsonify(sources_status)
+        else:
+            # Return minimal response if service not initialized
+            return jsonify({
+                "status": "success",
+                "timestamp": datetime.now().isoformat(),
+                "sources": {
+                    "regtech": {"name": "REGTECH", "enabled": False, "ip_count": 0, "status": "unavailable"},
+                    "secudium": {"name": "SECUDIUM", "enabled": False, "ip_count": 0, "status": "unavailable"},
+                    "public": {"name": "Public Sources", "enabled": False, "ip_count": 0, "status": "unavailable"}
+                },
+                "total_sources": 3,
+                "active_sources": 0
+            })
+    except Exception as e:
+        return jsonify({"error": str(e), "status": "error"}), 500
+
+
 @health_v2_bp.route("/health", methods=["GET"])
 def health_check():
     """시스템 건강 상태 확인 (V2)"""
