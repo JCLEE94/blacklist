@@ -18,17 +18,37 @@ class DatabaseSchema:
     def __init__(self, db_path: str = "instance/blacklist.db"):
         self.db_path = db_path
         self.schema_version = "2.0.0"
+        self._memory_connection = None  # Persistent connection for in-memory DBs
+        
+        # Handle DATABASE_URL environment variable
+        import os
+        if os.getenv('DATABASE_URL'):
+            database_url = os.getenv('DATABASE_URL')
+            if database_url.startswith("sqlite:///"):
+                self.db_path = database_url.replace("sqlite:///", "")
+            elif database_url == "sqlite:///:memory:":
+                self.db_path = ":memory:"
         
     def get_connection(self) -> sqlite3.Connection:
         """데이터베이스 연결 반환"""
-        # 디렉토리 생성
+        
+        # For in-memory databases, use persistent connection to avoid losing data
+        if self.db_path == ":memory:":
+            if self._memory_connection is None:
+                self._memory_connection = sqlite3.connect(self.db_path)
+                self._memory_connection.row_factory = sqlite3.Row
+                self._memory_connection.execute("PRAGMA synchronous=OFF")  # Fast for memory
+                self._memory_connection.execute("PRAGMA cache_size=10000")
+                self._memory_connection.execute("PRAGMA temp_store=MEMORY")
+            return self._memory_connection
+        
+        # For file-based databases, create new connections as before
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
-        # WAL 모드와 동시성 설정
         conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL") 
+        conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA cache_size=10000")
         conn.execute("PRAGMA temp_store=MEMORY")
         return conn
@@ -133,6 +153,7 @@ class DatabaseSchema:
             CREATE TABLE IF NOT EXISTS auth_attempts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Add created_at for compatibility
                 ip_address TEXT NOT NULL,
                 user_agent TEXT,
                 endpoint TEXT,

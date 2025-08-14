@@ -92,10 +92,10 @@ def get_threat_levels():
         return jsonify({"error": str(e)}), 500
 
 
-@analytics_v2_bp.route("/analytics/trends", methods=["GET"])
-@unified_cache(ttl=1800, key_prefix="v2:analytics:trends")
+@analytics_v2_bp.route("/analytics/trends/detailed", methods=["GET"])
+@unified_cache(ttl=1800, key_prefix="v2:analytics:trends:detailed")
 def get_trend_analysis():
-    """트렌드 분석 (V2)"""
+    """상세 트렌드 분석 (V2)"""
     try:
         days = request.args.get("days", 30, type=int)
 
