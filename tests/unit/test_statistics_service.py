@@ -14,33 +14,38 @@ from datetime import datetime, timedelta
 from src.core.services.statistics_service import StatisticsServiceMixin
 
 
-# Create a test class that uses the mixin
-class TestStatisticsService(StatisticsServiceMixin):
-    """Test implementation of StatisticsServiceMixin"""
+# Create a test service factory function
+def create_test_statistics_service():
+    """Factory function to create test service with proper initialization"""
     
-    def __init__(self):
-        self.logger = mock.Mock()
-        self.blacklist_manager = mock.Mock()
-        self.collection_enabled = True
-        self._running = True
-        self._components = {'regtech': mock.Mock(), 'secudium': mock.Mock()}
-        self.config = {
-            'service_name': 'blacklist',
-            'version': '1.0.0',
-            'auto_collection': True,
-            'collection_interval': 3600
-        }
+    class TestStatisticsService(StatisticsServiceMixin):
+        """Test implementation of StatisticsServiceMixin"""
         
-    def get_collection_logs(self, limit=10):
-        """Mock get_collection_logs method"""
-        return [
-            {
-                'timestamp': datetime.now().isoformat(),
-                'source': 'regtech',
-                'action': 'collection',
-                'success': True
-            }
-        ]
+        def get_collection_logs(self, limit=10):
+            """Mock get_collection_logs method"""
+            return [
+                {
+                    'timestamp': datetime.now().isoformat(),
+                    'source': 'regtech',
+                    'action': 'collection',
+                    'success': True
+                }
+            ]
+    
+    service = TestStatisticsService()
+    service.logger = mock.Mock()
+    service.blacklist_manager = mock.Mock()
+    service.collection_enabled = True
+    service._running = True
+    service._components = {'regtech': mock.Mock(), 'secudium': mock.Mock()}
+    service.config = {
+        'service_name': 'blacklist',
+        'version': '1.0.0',
+        'auto_collection': True,
+        'collection_interval': 3600
+    }
+    
+    return service
 
 
 class TestStatisticsServiceMixin:
@@ -49,7 +54,7 @@ class TestStatisticsServiceMixin:
     @pytest.fixture
     def service(self):
         """Create test service instance"""
-        return TestStatisticsService()
+        return create_test_statistics_service()
 
     @pytest.fixture
     def temp_db_path(self):
