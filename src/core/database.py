@@ -70,11 +70,11 @@ class DatabaseManager:
     def _create_tables(self):
         """필요한 테이블 생성"""
         with self.engine.connect() as conn:
-            # blacklist_ip 테이블 (실제 DB 스키마와 일치)
+            # blacklist_ips 테이블 (실제 DB 스키마와 일치)
             conn.execute(
                 text(
                     """
-                CREATE TABLE IF NOT EXISTS blacklist_ip (
+                CREATE TABLE IF NOT EXISTS blacklist_ips (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     ip VARCHAR(45) UNIQUE NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -98,8 +98,8 @@ class DatabaseManager:
                     source VARCHAR(50),
                     attack_type VARCHAR(50),
                     confidence_score REAL DEFAULT 1.0,
-                    blacklist_ip_id INTEGER,
-                    FOREIGN KEY (blacklist_ip_id) REFERENCES blacklist_ip(id)
+                    blacklist_ips_id INTEGER,
+                    FOREIGN KEY (blacklist_ips_id) REFERENCES blacklist_ips(id)
                 )
             """
                 )
@@ -135,17 +135,17 @@ class DatabaseManager:
         with self.engine.connect() as conn:
             # 기본 인덱스
             indexes = [
-                # blacklist_ip 테이블 인덱스 (실제 DB 스키마와 일치)
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_ip ON blacklist_ip(ip)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_attack_type ON blacklist_ip(attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_country ON blacklist_ip(country)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_source ON blacklist_ip(source)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_created_at ON blacklist_ip(created_at)",
+                # blacklist_ips 테이블 인덱스 (실제 DB 스키마와 일치)
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_ips ON blacklist_ips(ip)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_attack_type ON blacklist_ips(attack_type)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_country ON blacklist_ips(country)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_source ON blacklist_ips(source)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_created_at ON blacklist_ips(created_at)",
                 # 복합 인덱스 (쿼리 패턴 기반)
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_ip_attack_type ON blacklist_ip(ip, attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_source_attack_type ON blacklist_ip(source, attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_country_attack_type ON blacklist_ip(country, attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_created_at_source ON blacklist_ip(created_at, source)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_ips_attack_type ON blacklist_ips(ip, attack_type)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_source_attack_type ON blacklist_ips(source, attack_type)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_country_attack_type ON blacklist_ips(country, attack_type)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_created_at_source ON blacklist_ips(created_at, source)",
                 # ip_detection 테이블 인덱스 (실제 DB 스키마와 일치)
                 "CREATE INDEX IF NOT EXISTS idx_detection_ip ON ip_detection(ip)",
                 "CREATE INDEX IF NOT EXISTS idx_detection_created_at ON ip_detection(created_at)",
@@ -161,10 +161,10 @@ class DatabaseManager:
                 "CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_stats(date DESC)",
                 "CREATE INDEX IF NOT EXISTS idx_daily_stats_created ON daily_stats(created_at)",
                 # 외래키 인덱스
-                "CREATE INDEX IF NOT EXISTS idx_detection_blacklist_fk ON ip_detection(blacklist_ip_id)",
+                "CREATE INDEX IF NOT EXISTS idx_detection_blacklist_fk ON ip_detection(blacklist_ips_id)",
                 # 전문 검색용 인덱스 (SQLite FTS)
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_as_name ON blacklist_ip(as_name)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_city ON blacklist_ip(city)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_as_name ON blacklist_ips(as_name)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_city ON blacklist_ips(city)",
             ]
 
             for index_sql in indexes:
@@ -225,7 +225,7 @@ class DatabaseManager:
         with self.Session() as session:
             # 전체 IP 수
             stats["total_ips"] = session.execute(
-                text("SELECT COUNT(DISTINCT ip) FROM blacklist_ip")
+                text("SELECT COUNT(DISTINCT ip) FROM blacklist_ips")
             ).scalar()
 
             # 카테고리별 통계
@@ -233,7 +233,7 @@ class DatabaseManager:
                 text(
                     """
                     SELECT attack_type, COUNT(*) as count
-                    FROM blacklist_ip
+                    FROM blacklist_ips
                     GROUP BY attack_type
                 """
                 )
@@ -247,7 +247,7 @@ class DatabaseManager:
                     SELECT strftime('%Y-%m', created_at) as month,
                            COUNT(DISTINCT ip) as unique_ips,
                            COUNT(*) as total_detections
-                    FROM blacklist_ip
+                    FROM blacklist_ips
                     GROUP BY month
                     ORDER BY month DESC
                     LIMIT 12
@@ -284,9 +284,9 @@ class DatabaseManager:
             result = session.execute(
                 text(
                     """
-                    DELETE FROM blacklist_ip
+                    DELETE FROM blacklist_ips
                     WHERE id NOT IN (
-                        SELECT DISTINCT blacklist_ip_id FROM ip_detection
+                        SELECT DISTINCT blacklist_ips_id FROM ip_detection
                     )
                 """
                 )

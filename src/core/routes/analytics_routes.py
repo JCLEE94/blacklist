@@ -45,21 +45,21 @@ def get_blacklist_with_metadata():
         cursor = conn.cursor()
 
         # 총 IP 수
-        cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
+        cursor.execute("SELECT COUNT(*) FROM blacklist_ips")
         total_ips = cursor.fetchone()[0]
 
         # 활성 IP 수 (is_active = 1)
-        cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1")
+        cursor.execute("SELECT COUNT(*) FROM blacklist_ips WHERE is_active = 1")
         active_ips = cursor.fetchone()[0]
 
         # 만료된 IP 수 (is_active = 0)
-        cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 0")
+        cursor.execute("SELECT COUNT(*) FROM blacklist_ips WHERE is_active = 0")
         expired_ips = cursor.fetchone()[0]
 
         # 30일 내 만료 예정 IP 수 (활성이면서 expires_at이 30일 이내)
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip
+            SELECT COUNT(*) FROM blacklist_ips
             WHERE is_active = 1
             AND expires_at IS NOT NULL
             AND expires_at <= datetime('now', '+30 days')
@@ -70,7 +70,7 @@ def get_blacklist_with_metadata():
         # 7일 내 만료 예정 IP 수 (경고)
         cursor.execute(
             """
-            SELECT COUNT(*) FROM blacklist_ip
+            SELECT COUNT(*) FROM blacklist_ips
             WHERE is_active = 1
             AND expires_at IS NOT NULL
             AND expires_at <= datetime('now', '+7 days')

@@ -44,13 +44,13 @@ class RegtechAnalyzer:
             cursor = conn.cursor()
 
             # 기본 통계
-            cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE source = 'REGTECH'")
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ips WHERE source = 'REGTECH'")
             total_ips = cursor.fetchone()[0]
 
             # 최근 업데이트 시간
             cursor.execute(
                 """
-                SELECT MAX(created_at) FROM blacklist_ip
+                SELECT MAX(created_at) FROM blacklist_ips
                 WHERE source = 'REGTECH'
             """
             )
@@ -59,7 +59,7 @@ class RegtechAnalyzer:
             # 위험도별 분포 (메타데이터에서 추출)
             cursor.execute(
                 """
-                SELECT metadata FROM blacklist_ip
+                SELECT metadata FROM blacklist_ips
                 WHERE source = 'REGTECH' AND metadata IS NOT NULL
                 LIMIT 1000
             """
@@ -101,7 +101,7 @@ class RegtechAnalyzer:
             # 날짜별 데이터 (created_at 기준)
             query = """
                 SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM blacklist_ip
+                FROM blacklist_ips
                 WHERE source = 'REGTECH'
                 AND created_at >= datetime('now', '-{} days')
                 GROUP BY DATE(created_at)
@@ -141,7 +141,7 @@ class RegtechAnalyzer:
                 SELECT
                     SUBSTR(ip, 1, INSTR(ip, '.') - 1) as first_octet,
                     COUNT(*) as count
-                FROM blacklist_ip
+                FROM blacklist_ips
                 WHERE source = 'REGTECH'
                 GROUP BY first_octet
                 ORDER BY count DESC
@@ -170,7 +170,7 @@ class RegtechAnalyzer:
             if search_term:
                 query = """
                     SELECT ip, attack_type, detection_date, metadata
-                    FROM blacklist_ip
+                    FROM blacklist_ips
                     WHERE source = 'REGTECH' AND ip LIKE ?
                     ORDER BY ip ASC
                     LIMIT ?
@@ -179,7 +179,7 @@ class RegtechAnalyzer:
             else:
                 query = """
                     SELECT ip, attack_type, detection_date, metadata
-                    FROM blacklist_ip
+                    FROM blacklist_ips
                     WHERE source = 'REGTECH'
                     ORDER BY ip ASC
                     LIMIT ?

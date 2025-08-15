@@ -26,7 +26,7 @@ class DataService:
         self, data_dir: str, db_manager: DatabaseManager, cache: EnhancedSmartCache
     ):
         self.data_dir = data_dir
-        self.blacklist_dir = os.path.join(data_dir, "blacklist_ips")
+        self.blacklist_dir = os.path.join(data_dir, "blacklist_ipss")
         self.detection_dir = os.path.join(data_dir, "by_detection_month")
         self.db_manager = db_manager
         self.cache = cache
@@ -97,7 +97,7 @@ class DataService:
                 # Ensure table exists
                 cursor.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS blacklist_ip (
+                    CREATE TABLE IF NOT EXISTS blacklist_ips (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         ip TEXT NOT NULL,
                         ip_address TEXT,
@@ -145,7 +145,7 @@ class DataService:
                         # Batch insert with upsert logic
                         cursor.executemany(
                             """
-                            INSERT OR REPLACE INTO blacklist_ip (
+                            INSERT OR REPLACE INTO blacklist_ips (
                                 ip, source, detection_date, country,
                                 attack_type, threat_level, is_active,
                                 expires_at, created_at, updated_at
@@ -249,7 +249,7 @@ class DataService:
                 cursor.execute(
                     """
                     SELECT DISTINCT ip
-                    FROM blacklist_ip
+                    FROM blacklist_ips
                     WHERE is_active = 1
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
                     ORDER BY ip
