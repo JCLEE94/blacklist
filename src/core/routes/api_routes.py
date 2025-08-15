@@ -41,7 +41,7 @@ def health_check():
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "service": "blacklist",
-            "version": "2.0.1",
+            "version": "1.0.35",
             "components": components,
             "details": health_info,
         }

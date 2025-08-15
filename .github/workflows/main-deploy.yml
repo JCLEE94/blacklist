@@ -10,8 +10,10 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  REGISTRY_USERNAME: admin
+  REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
 
 jobs:
   build-and-push:
@@ -27,12 +29,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Private Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
 
       - name: Extract metadata
         id: meta
@@ -64,10 +66,10 @@ jobs:
       - name: Deploy notification
         run: |
           echo "🚀 Deployment successful!"
-          echo "Docker image pushed to: ghcr.io/${{ github.repository }}"
+          echo "Docker image pushed to: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           echo ""
           echo "To deploy locally, run:"
-          echo "docker pull ghcr.io/${{ github.repository }}:latest"
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           echo "docker-compose down && docker-compose up -d"
           
       - name: Create deployment summary
@@ -75,7 +77,7 @@ jobs:
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Build Status**: Success" >> $GITHUB_STEP_SUMMARY
-          echo "📦 **Image**: \`ghcr.io/${{ github.repository }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
           echo "🔖 **Version**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
