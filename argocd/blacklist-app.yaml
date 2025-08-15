@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist
+  namespace: argocd
+  # ArgoCD 자동 동기화 활성화
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/JCLEE94/blacklist
+    targetRevision: main
+    path: chart/blacklist
+    helm:
+      valueFiles:
+      - values.yaml
+      parameters:
+      - name: image.repository
+        value: registry.jclee.me/blacklist
+      - name: image.tag
+        value: latest
+      - name: image.pullPolicy
+        value: Always  # 항상 최신 이미지 풀
+        
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blacklist
+    
+  syncPolicy:
+    # 자동 동기화 활성화
+    automated:
+      prune: true      # 불필요한 리소스 자동 정리
+      selfHeal: true   # 드리프트 자동 복구
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    - RespectIgnoreDifferences=true
+    
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m0s
+        
+  # 헬스체크 설정
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    managedFieldsManagers:
+    - kube-controller-manager
+    
+  revisionHistoryLimit: 3

@@ -89,6 +89,7 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
         service.get_active_ips_text = Mock(return_value="192.168.1.1\n10.0.0.1")
         service.get_active_ips = Mock(return_value=["192.168.1.1", "10.0.0.1"])
         service.get_system_health = Mock(return_value={"status": "healthy"})
+        service.get_collection_status = Mock(return_value={"enabled": True, "status": "active"})
 
         return service
 
@@ -183,8 +184,8 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
 
     def test_bulk_operation_performance(self, service):
         """Test performance of bulk IP operations"""
-        # Mock a realistic bulk collection result
-        service.regtech_collector.collect_from_web.return_value = {
+        # Mock a realistic bulk collection result using the correct path
+        service._components["regtech"].collect_from_web.return_value = {
             "success": True,
             "count": 2,
             "data": ["192.168.1.1", "192.168.1.2"],

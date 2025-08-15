@@ -8,8 +8,8 @@ import sys
 import logging
 from pathlib import Path
 
-# 프로젝트 루트를 Python 경로에 추가
-project_root = Path(__file__).parent
+# 프로젝트 루트를 Python 경로에 추가 (현재 위치에서 상위 디렉토리가 프로젝트 루트)
+project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 try:

@@ -19,7 +19,7 @@ from .constants import (
 # Import managers directly when needed to avoid circular imports
 # from .blacklist_unified import UnifiedBlacklistManager
 # from .routes_unified import UnifiedAPIRoutes
-from .database import DatabaseManager
+from .database import DatabaseSchema as DatabaseManager  # Backward compatibility alias
 from .exceptions import BlacklistError, CacheError, DatabaseError, ValidationError
 from .models import BlacklistEntry, MonthData, SystemHealth
 from .validators import (

@@ -1,0 +1,87 @@
+name: Main Deploy Pipeline (Self-hosted)
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  REGISTRY_USERNAME: admin
+  REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+
+jobs:
+  build-and-push:
+    runs-on: self-hosted  # Self-hosted runner 사용
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Private Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Self-hosted runner에서 직접 배포 실행
+      - name: Deploy to Kubernetes
+        run: |
+          echo "🚀 Deploying to Kubernetes cluster..."
+          kubectl set image deployment/blacklist blacklist=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -n blacklist
+          kubectl rollout status deployment/blacklist -n blacklist --timeout=300s
+          
+      - name: Verify deployment
+        run: |
+          sleep 10
+          kubectl get pods -n blacklist
+          kubectl logs -n blacklist deployment/blacklist --tail=10
+          
+      - name: Health check
+        run: |
+          echo "🏥 Performing health check..."
+          timeout 30 bash -c 'until curl -f http://localhost:32542/health; do sleep 2; done'
+          echo "✅ Health check passed!"
+
+      - name: Create deployment summary
+        run: |
+          echo "## Self-hosted Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Build & Deploy**: Success" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "🔖 **Version**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **Target**: Kubernetes cluster (direct deployment)" >> $GITHUB_STEP_SUMMARY
+          echo "🏥 **Health**: Verified" >> $GITHUB_STEP_SUMMARY
