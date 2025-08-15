@@ -49,7 +49,7 @@ containerSecurityContext:
 service:
   type: ClusterIP
   port: 80
-  targetPort: 2541
+  targetPort: 2542
   nodePort:
     enabled: true
     port: 32542
@@ -126,7 +126,7 @@ env:
   - name: FLASK_ENV
     value: "production"
   - name: PORT
-    value: "2541"
+    value: "2542"
   - name: DATABASE_URL
     value: "sqlite:////app/instance/blacklist.db"
   - name: REDIS_URL

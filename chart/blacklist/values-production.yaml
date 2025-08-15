@@ -15,7 +15,7 @@ fullnameOverride: ""
 service:
   type: ClusterIP
   port: 80
-  targetPort: 2541
+  targetPort: 2542
 
 ingress:
   enabled: true
@@ -195,7 +195,7 @@ env:
   - name: FLASK_ENV
     value: "production"
   - name: PORT
-    value: "2541"
+    value: "2542"
   - name: DATABASE_URL
     value: "sqlite:////app/instance/blacklist.db"
   - name: REDIS_URL
@@ -243,7 +243,7 @@ affinity:
 # Pod annotations
 podAnnotations:
   prometheus.io/scrape: "true"
-  prometheus.io/port: "2541"
+  prometheus.io/port: "2542"
   prometheus.io/path: "/metrics"
 
 # Service annotations

@@ -12,7 +12,7 @@ imagePullSecrets:
 service:
   type: ClusterIP
   port: 80
-  targetPort: 2541
+  targetPort: 2542
 
 ingress:
   enabled: true
@@ -61,7 +61,7 @@ env:
   - name: FLASK_ENV
     value: "development"
   - name: PORT
-    value: "2541"
+    value: "2542"
   - name: FORCE_DISABLE_COLLECTION
     value: "true"
   - name: COLLECTION_ENABLED
