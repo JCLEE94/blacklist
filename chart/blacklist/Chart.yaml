@@ -3,7 +3,7 @@ name: blacklist
 description: Enterprise threat intelligence blacklist management system with FortiGate integration
 type: application
 version: 4.0.8
-appVersion: "20250813-213211-2a99495"
+appVersion: "1.0.35"
 home: https://github.com/JCLEE94/blacklist
 sources:
   - https://github.com/JCLEE94/blacklist
