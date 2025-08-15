@@ -227,7 +227,7 @@ class CollectionServiceMixin:
             asyncio.create_task(self._collect_secudium_data(force=True))
             return "SECUDIUM 수집이 시작되었습니다."
         else:
-            return "알 수 없는 소스: {source}"
+            return f"알 수 없는 소스: {source}"
 
     def trigger_regtech_collection(
         self,
@@ -274,12 +274,12 @@ class CollectionServiceMixin:
                     if not result.get("success"):
                         return {
                             "success": False,
-                            "message": "REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
+                            "message": f"REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
                         }
                 except Exception as collect_e:
                     return {
                         "success": False,
-                        "message": "REGTECH 수집 중 오류: {str(collect_e)}",
+                        "message": f"REGTECH 수집 중 오류: {str(collect_e)}",
                     }
 
                 # 로그 남기기
@@ -295,7 +295,7 @@ class CollectionServiceMixin:
 
                 return {
                     "success": True,
-                    "message": "REGTECH 수집이 시작되었습니다 ({start_date} ~ {end_date})",
+                    "message": f"REGTECH 수집이 시작되었습니다 ({start_date} ~ {end_date})",
                     "start_date": start_date,
                     "end_date": end_date,
                     "triggered_at": datetime.now().isoformat(),
@@ -307,12 +307,12 @@ class CollectionServiceMixin:
                     if not result.get("success"):
                         return {
                             "success": False,
-                            "message": "REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
+                            "message": f"REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
                         }
                 except Exception as collect_e:
                     return {
                         "success": False,
-                        "message": "REGTECH 수집 중 오류: {str(collect_e)}",
+                        "message": f"REGTECH 수집 중 오류: {str(collect_e)}",
                     }
 
                 # 로그 남기기
@@ -329,7 +329,7 @@ class CollectionServiceMixin:
             self.logger.error(f"REGTECH 수집 트리거 실패: {e}")
             return {
                 "success": False,
-                "message": "REGTECH 수집 트리거 실패: {str(e)}",
+                "message": f"REGTECH 수집 트리거 실패: {str(e)}",
                 "error": str(e),
             }
 
@@ -367,7 +367,7 @@ class CollectionServiceMixin:
             self.logger.error(f"SECUDIUM 수집 트리거 실패: {e}")
             return {
                 "success": False,
-                "message": "SECUDIUM 수집 트리거 실패: {str(e)}",
+                "message": f"SECUDIUM 수집 트리거 실패: {str(e)}",
                 "error": str(e),
             }
 

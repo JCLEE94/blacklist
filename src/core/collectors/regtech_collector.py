@@ -83,7 +83,7 @@ class RegtechCollector(BaseCollector):
             except requests.exceptions.ConnectionError as e:
                 session_retry_count += 1
                 self.logger.warning(
-                    "연결 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
+                    f"연결 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
                 )
                 if session_retry_count < self.session_retry_limit:
                     await asyncio.sleep(5 * session_retry_count)  # 지수적 백오프
@@ -91,7 +91,7 @@ class RegtechCollector(BaseCollector):
             except requests.exceptions.Timeout as e:
                 session_retry_count += 1
                 self.logger.warning(
-                    "타임아웃 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
+                    f"타임아웃 오류 (재시도 {session_retry_count}/{self.session_retry_limit}): {e}"
                 )
                 if session_retry_count < self.session_retry_limit:
                     await asyncio.sleep(3 * session_retry_count)
@@ -108,7 +108,7 @@ class RegtechCollector(BaseCollector):
                     self.current_session = None
 
         if session_retry_count >= self.session_retry_limit:
-            raise Exception("최대 재시도 횟수 ({self.session_retry_limit}) 초과")
+            raise Exception(f"최대 재시도 횟수 ({self.session_retry_limit}) 초과")
 
         return collected_ips
 
@@ -149,11 +149,11 @@ class RegtechCollector(BaseCollector):
                 )
 
                 # 로그인 페이지 접근
-                login_page_url = "{self.base_url}/login/loginForm"
+                login_page_url = f"{self.base_url}/login/loginForm"
                 response = session.get(login_page_url)
 
                 if response.status_code != 200:
-                    raise Exception("로그인 페이지 접근 실패: {response.status_code}")
+                    raise Exception(f"로그인 페이지 접근 실패: {response.status_code}")
 
                 # CSRF 토큰이나 숨겨진 필드 추출 시도
                 soup = BeautifulSoup(response.text, "html.parser")
@@ -176,7 +176,7 @@ class RegtechCollector(BaseCollector):
                         login_data[name] = value
 
                 # 로그인 요청
-                login_url = "{self.base_url}/login/addLogin"
+                login_url = f"{self.base_url}/login/addLogin"
                 login_response = session.post(
                     login_url,
                     data=login_data,
@@ -275,7 +275,7 @@ class RegtechCollector(BaseCollector):
                 consecutive_errors = 0  # 성공 시 에러 카운트 리셋
 
                 self.logger.info(
-                    "페이지 {page + 1}: {len(page_ips)}개 수집 (총 {len(all_ips)}개)"
+                    f"페이지 {page + 1}: {len(page_ips)}개 수집 (총 {len(all_ips)}개)"
                 )
                 page += 1
 
@@ -326,7 +326,7 @@ class RegtechCollector(BaseCollector):
             }
 
             # 요청 전송
-            url = "{self.base_url}/fcti/securityAdvisory/advisoryList"
+            url = f"{self.base_url}/fcti/securityAdvisory/advisoryList"
             response = session.post(
                 url,
                 data=data,
@@ -336,7 +336,7 @@ class RegtechCollector(BaseCollector):
 
             if response.status_code != 200:
                 raise requests.exceptions.RequestException(
-                    "HTTP {response.status_code}"
+                    f"HTTP {response.status_code}"
                 )
 
             # HTML 파싱
@@ -350,9 +350,9 @@ class RegtechCollector(BaseCollector):
             return self._extract_ips_from_soup(soup, page)
 
         except asyncio.TimeoutError:
-            raise requests.exceptions.Timeout("페이지 {page + 1} 요청 타임아웃")
+            raise requests.exceptions.Timeout(f"페이지 {page + 1} 요청 타임아웃")
         except Exception as e:
-            raise Exception("페이지 {page + 1} 처리 실패: {e}")
+            raise Exception(f"페이지 {page + 1} 처리 실패: {e}")
 
     def _extract_ips_from_soup(
         self, soup: BeautifulSoup, page: int
