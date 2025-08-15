@@ -98,7 +98,9 @@ class CollectionManager:
                         "protection_active": True,
                     }
             else:
-                logger.warning(f"Protection bypass used for collection enable: {reason}")
+                logger.warning(
+                    f"Protection bypass used for collection enable: {reason}"
+                )
 
             # 2. 데이터 클리어 (요청 시)
             clear_result = None

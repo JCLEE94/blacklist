@@ -7,15 +7,10 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
-from ..utils.error_recovery import (
-    get_error_collector,
-    get_health_checker,
-    get_resource_monitor,
-)
-from ..utils.performance_optimizer import (
-    get_performance_monitor,
-    optimize_database_queries,
-)
+from ..utils.error_recovery import (get_error_collector, get_health_checker,
+                                    get_resource_monitor)
+from ..utils.performance_optimizer import (get_performance_monitor,
+                                           optimize_database_queries)
 from ..utils.security import rate_limit, require_auth
 from ..utils.system_stability import get_system_monitor
 
@@ -126,7 +121,10 @@ def get_performance_metrics():
 
     except Exception as e:
         logger.error(f"성능 메트릭 조회 실패: {e}")
-        return jsonify({"success": False, "error": "성능 메트릭을 조회할 수 없습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "성능 메트릭을 조회할 수 없습니다"}),
+            500,
+        )
 
 
 @monitoring_bp.route("/performance/cleanup", methods=["POST"])
@@ -142,7 +140,10 @@ def cleanup_performance_data():
 
     except Exception as e:
         logger.error(f"성능 데이터 정리 실패: {e}")
-        return jsonify({"success": False, "error": "성능 데이터를 정리할 수 없습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "성능 데이터를 정리할 수 없습니다"}),
+            500,
+        )
 
 
 @monitoring_bp.route("/health/<check_name>", methods=["GET"])
@@ -162,7 +163,12 @@ def get_specific_health_check(check_name: str):
     except Exception as e:
         logger.error(f"개별 헬스 체크 실행 실패 ({check_name}): {e}")
         return (
-            jsonify({"success": False, "error": "헬스 체크 {check_name}을 실행할 수 없습니다"}),
+            jsonify(
+                {
+                    "success": False,
+                    "error": "헬스 체크 {check_name}을 실행할 수 없습니다",
+                }
+            ),
             500,
         )
 
@@ -187,7 +193,10 @@ def get_system_metrics():
 
     except Exception as e:
         logger.error(f"시스템 메트릭 조회 실패: {e}")
-        return jsonify({"success": False, "error": "시스템 메트릭을 가져올 수 없습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "시스템 메트릭을 가져올 수 없습니다"}),
+            500,
+        )
 
 
 @monitoring_bp.route("/errors", methods=["GET"])
@@ -202,7 +211,10 @@ def get_error_summary():
 
     except Exception as e:
         logger.error(f"에러 요약 조회 실패: {e}")
-        return jsonify({"success": False, "error": "에러 요약을 가져올 수 없습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "에러 요약을 가져올 수 없습니다"}),
+            500,
+        )
 
 
 @monitoring_bp.route("/errors/clear", methods=["POST"])
@@ -215,11 +227,19 @@ def clear_old_errors():
         error_collector = get_error_collector()
         error_collector.clear_old_errors(hours)
 
-        return jsonify({"success": True, "message": "{hours}시간 이전의 오래된 에러가 정리되었습니다"})
+        return jsonify(
+            {
+                "success": True,
+                "message": "{hours}시간 이전의 오래된 에러가 정리되었습니다",
+            }
+        )
 
     except Exception as e:
         logger.error(f"에러 정리 실패: {e}")
-        return jsonify({"success": False, "error": "에러 정리 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "에러 정리 중 오류가 발생했습니다"}),
+            500,
+        )
 
 
 @monitoring_bp.route("/status", methods=["GET"])
@@ -306,7 +326,8 @@ def _register_default_health_checks(health_checker):
     def collection_check():
         """수집 시스템 체크"""
         try:
-            from ..core.collectors.collector_factory import get_collector_factory
+            from ..core.collectors.collector_factory import \
+                get_collector_factory
 
             factory = get_collector_factory()
             status = factory.get_collector_status()

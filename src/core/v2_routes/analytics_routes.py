@@ -40,31 +40,33 @@ def get_analytics_trends():
     try:
         # Default to 30 days of trend data
         period_days = request.args.get("period", 30, type=int)
-        
+
         # Return trend analysis data
-        return jsonify({
-            "status": "success",
-            "trend_type": "time_series",
-            "trend_period": period_days,
-            "data": {
-                "total_ips": 0,
-                "active_ips": 0,
-                "new_ips_daily": [],
-                "removed_ips_daily": [],
-                "sources": {
-                    "regtech": {"total": 0, "trend": "stable"},
-                    "secudium": {"total": 0, "trend": "stable"},
-                    "public": {"total": 0, "trend": "stable"}
-                }
-            },
-            "analysis": {
-                "growth_rate": 0.0,
-                "peak_day": None,
-                "lowest_day": None,
-                "average_daily": 0
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        })
+        return jsonify(
+            {
+                "status": "success",
+                "trend_type": "time_series",
+                "trend_period": period_days,
+                "data": {
+                    "total_ips": 0,
+                    "active_ips": 0,
+                    "new_ips_daily": [],
+                    "removed_ips_daily": [],
+                    "sources": {
+                        "regtech": {"total": 0, "trend": "stable"},
+                        "secudium": {"total": 0, "trend": "stable"},
+                        "public": {"total": 0, "trend": "stable"},
+                    },
+                },
+                "analysis": {
+                    "growth_rate": 0.0,
+                    "peak_day": None,
+                    "lowest_day": None,
+                    "average_daily": 0,
+                },
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -109,7 +111,9 @@ def get_trend_analysis():
 
         # 트렌드 분석
         if len(daily_data) > 1:
-            recent_avg = sum(d["unique_ips"] for d in daily_data[-7:]) / 7  # 최근 7일 평균
+            recent_avg = (
+                sum(d["unique_ips"] for d in daily_data[-7:]) / 7
+            )  # 최근 7일 평균
             previous_avg = (
                 sum(d["unique_ips"] for d in daily_data[-14:-7]) / 7
                 if len(daily_data) >= 14
@@ -119,9 +123,7 @@ def get_trend_analysis():
             trend_direction = (
                 "increasing"
                 if recent_avg > previous_avg
-                else "decreasing"
-                if recent_avg < previous_avg
-                else "stable"
+                else "decreasing" if recent_avg < previous_avg else "stable"
             )
             change_percent = (
                 ((recent_avg - previous_avg) / previous_avg * 100)

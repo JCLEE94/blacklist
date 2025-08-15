@@ -9,7 +9,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime, timedelta
 
-from src.core.regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
+from src.core.regtech_simple_collector import \
+    RegtechSimpleCollector as RegtechCollector
 
 
 def test_excel_download():
@@ -17,9 +18,9 @@ def test_excel_download():
     print("🧪 REGTECH Excel 다운로드 테스트\n")
 
     # Bearer Token 설정
-    os.environ[
-        "REGTECH_BEARER_TOKEN"
-    ] = "BearereyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuZXh0cmFkZSIsIm9yZ2FubmFtZSI6IuuEpeyKpO2KuOugiIzdtOuTnCIsImlkIjoibmV4dHJhZGUiLCJleHAiOjE3NTExMTkyNzYsInVzZXJuYW1lIjoi7J6l7ZmN7KSAIn0.YwZHoHZCVqDnaryluB0h5_ituxYcaRz4voT7GRfgrNrP86W8TfvBuJbHMON4tJa4AQmNP-XhC_PuAVPQTjJADA"
+    os.environ["REGTECH_BEARER_TOKEN"] = (
+        "BearereyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuZXh0cmFkZSIsIm9yZ2FubmFtZSI6IuuEpeyKpO2KuOugiIzdtOuTnCIsImlkIjoibmV4dHJhZGUiLCJleHAiOjE3NTExMTkyNzYsInVzZXJuYW1lIjoi7J6l7ZmN7KSAIn0.YwZHoHZCVqDnaryluB0h5_ituxYcaRz4voT7GRfgrNrP86W8TfvBuJbHMON4tJa4AQmNP-XhC_PuAVPQTjJADA"
+    )
 
     # 수집기 생성
     collector = RegtechCollector(data_dir="./data")
@@ -28,7 +29,9 @@ def test_excel_download():
     end_date = datetime.now()
     start_date = end_date - timedelta(days=30)
 
-    print(f"날짜 범위: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}")
+    print(
+        f"날짜 범위: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}"
+    )
 
     # 수집 실행
     ips = collector.collect_from_web(
@@ -75,6 +78,8 @@ if __name__ == "__main__":
     success = test_excel_download()
     if success:
         print("\n🎉 Excel 다운로드 방식이 정상 작동합니다!")
-        print("이제 Docker 컨테이너에서 실행하면 5,000개 이상의 IP를 수집할 수 있습니다.")
+        print(
+            "이제 Docker 컨테이너에서 실행하면 5,000개 이상의 IP를 수집할 수 있습니다."
+        )
     else:
         print("\n💥 Bearer Token이 만료되었거나 네트워크 문제가 있습니다.")

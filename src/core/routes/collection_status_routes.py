@@ -61,9 +61,9 @@ def get_collection_status():
                 "stats": {
                     "total_ips": stats.get("total_ips", 0),
                     "active_ips": stats.get("active_ips", 0),
-                    "today_collected": today_stats.get("count", 0)
-                    if today_stats
-                    else 0,
+                    "today_collected": (
+                        today_stats.get("count", 0) if today_stats else 0
+                    ),
                     "today_sources": (
                         today_stats.get("sources", {}) if today_stats else {}
                     ),

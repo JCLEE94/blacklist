@@ -139,10 +139,8 @@ class TestCollectorSystem:
     @pytest.mark.asyncio
     async def test_collection_cancellation(self):
         """수집 취소 기능 테스트"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig)
 
         class TestCollector(BaseCollector):
             @property

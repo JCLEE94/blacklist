@@ -109,9 +109,8 @@ class UnifiedBlacklistService(
     def _sync_component_init(self):
         """동기적 컴포넌트 초기화"""
         try:
-            from ..regtech_simple_collector import (
-                RegtechSimpleCollector as RegtechCollector,
-            )
+            from ..regtech_simple_collector import \
+                RegtechSimpleCollector as RegtechCollector
 
             # REGTECH 수집기 초기화
             if self.config["regtech_enabled"]:

@@ -76,7 +76,7 @@ def _test_collection_endpoints():
     # Import and patch the unified_bp
     from src.core.unified_routes import unified_bp
 
-    # Patch the service in the module  
+    # Patch the service in the module
     with patch("src.core.unified_routes.service", mock_service):
         # Register blueprint
         test_app.register_blueprint(unified_bp)

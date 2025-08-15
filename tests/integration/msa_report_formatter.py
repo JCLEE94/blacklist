@@ -138,7 +138,9 @@ class MSAReportFormatter:
         elif overall_score >= 70:
             grade = "C (보통)"
             grade_emoji = "⚠️"
-            status_message = "MSA 아키텍처가 기본적으로 작동하지만, 몇 가지 개선사항이 필요합니다."
+            status_message = (
+                "MSA 아키텍처가 기본적으로 작동하지만, 몇 가지 개선사항이 필요합니다."
+            )
         else:
             grade = "D (개선 필요)"
             grade_emoji = "❌"
@@ -207,7 +209,9 @@ class MSAReportFormatter:
         )
 
         print("\n" + "=" * 100)
-        print(f"✨ MSA 통합 테스트 완료 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(
+            f"✨ MSA 통합 테스트 완료 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         print(f"   테스트된 서비스: {total_count}개")
         print(f"   전체 가용성: {system_health_rate:.1f}%")
         print(f"   종합 점수: {overall_score:.1f}/100 ({grade})")

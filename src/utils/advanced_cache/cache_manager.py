@@ -9,7 +9,6 @@ import time
 from typing import Any, Dict, List, Optional
 
 from .memory_backend import MemoryBackend
-
 # Performance tracking disabled
 from .redis_backend import RedisBackend
 from .serialization import SerializationManager
@@ -241,12 +240,12 @@ class EnhancedSmartCache:
     def get_performance_metrics(self) -> Dict[str, Any]:
         """Get detailed performance metrics"""
         return {
-            "performance_summary": self.performance.get_performance_summary()
-            if self.performance
-            else {},
-            "trend_analysis": self.performance.get_trend_analysis()
-            if self.performance
-            else {},
+            "performance_summary": (
+                self.performance.get_performance_summary() if self.performance else {}
+            ),
+            "trend_analysis": (
+                self.performance.get_trend_analysis() if self.performance else {}
+            ),
             "backend_health": self.primary_backend.health_check(),
         }
 

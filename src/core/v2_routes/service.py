@@ -11,7 +11,6 @@ from typing import Any, Dict, List
 
 from ...core.blacklist_unified import UnifiedBlacklistManager
 from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
-
 # Performance optimizer removed for optimization
 from ...utils.security import SecurityManager
 from ...utils.unified_decorators import unified_cache

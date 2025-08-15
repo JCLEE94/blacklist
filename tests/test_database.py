@@ -135,14 +135,14 @@ def init_test_database():
         # Initialize database for each test
         import sys
         from pathlib import Path
-        
+
         # Add app directory to path for import
         project_root = Path(__file__).parent.parent
-        app_path = project_root / 'app'
+        app_path = project_root / "app"
         sys.path.insert(0, str(app_path))
-        
+
         from init_database import init_database_enhanced
-        
+
         # Use enhanced initialization with fallback
         init_database_enhanced(force_recreate=True, migrate=False)
 

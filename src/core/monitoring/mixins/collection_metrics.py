@@ -5,7 +5,7 @@
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -22,64 +22,65 @@ class CollectionMetricsMixin:
                 name="blacklist_ips_total",
                 help_text="블랙리스트 IP 총 수",
                 metric_type="gauge",
-                labels=["source", "status"]  # regtech/secudium, active/inactive
+                labels=["source", "status"],  # regtech/secudium, active/inactive
             ),
             MetricDefinition(
                 name="blacklist_collections_total",
                 help_text="데이터 수집 작업 총 수",
                 metric_type="counter",
-                labels=["source", "status"]  # regtech/secudium, success/failure
+                labels=["source", "status"],  # regtech/secudium, success/failure
             ),
             MetricDefinition(
                 name="blacklist_collection_duration_seconds",
                 help_text="데이터 수집 소요 시간",
                 metric_type="histogram",
                 labels=["source"],
-                buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+                buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0],
             ),
             MetricDefinition(
                 name="blacklist_collection_items_total",
                 help_text="수집된 아이템 수",
                 metric_type="counter",
-                labels=["source", "type"]  # regtech/secudium, new/updated/dup
+                labels=["source", "type"],  # regtech/secudium, new/updated/dup
             ),
             MetricDefinition(
                 name="blacklist_api_queries_total",
                 help_text="API 쿼리 총 수",
                 metric_type="counter",
-                labels=["endpoint", "result"]  # /api/blacklist/active, success/error
+                labels=["endpoint", "result"],  # /api/blacklist/active, success/error
             ),
             MetricDefinition(
                 name="blacklist_threats_detected_total",
                 help_text="탐지된 위협 총 수",
                 metric_type="counter",
-                labels=["threat_level", "source"]  # high/medium/low, regtech/secudium
+                labels=["threat_level", "source"],  # high/medium/low, regtech/secudium
             ),
             MetricDefinition(
                 name="blacklist_authentication_attempts_total",
                 help_text="인증 시도 총 수",
                 metric_type="counter",
-                labels=["service", "result"]  # regtech/secudium/api, success/failure
+                labels=["service", "result"],  # regtech/secudium/api, success/failure
             ),
             MetricDefinition(
                 name="blacklist_data_freshness_seconds",
                 help_text="데이터 신선도 (마지막 업데이트 이후 시간)",
                 metric_type="gauge",
-                labels=["source"]
-            )
+                labels=["source"],
+            ),
         ]
 
         for metric in business_metrics:
             self.metrics[metric.name] = metric
 
-    def record_collection_event(self, source: str, success: bool, duration: float, items_count: Dict[str, int]):
+    def record_collection_event(
+        self, source: str, success: bool, duration: float, items_count: Dict[str, int]
+    ):
         """데이터 수집 이벤트 메트릭 기록"""
         try:
             # 수집 작업 수 증가
             status = "success" if success else "failure"
             self.metrics["blacklist_collections_total"].labels(
-                source=source,
-                status=status
+                source=source, status=status
             ).inc()
 
             # 수집 소요 시간 기록
@@ -91,8 +92,7 @@ class CollectionMetricsMixin:
                 # 수집된 아이템 수 기록
                 for item_type, count in items_count.items():
                     self.metrics["blacklist_collection_items_total"].labels(
-                        source=source,
-                        type=item_type
+                        source=source, type=item_type
                     ).inc(count)
 
         except Exception as e:
@@ -103,8 +103,7 @@ class CollectionMetricsMixin:
         try:
             result = "success" if success else "failure"
             self.metrics["blacklist_authentication_attempts_total"].labels(
-                service=service,
-                result=result
+                service=service, result=result
             ).inc()
 
         except Exception as e:
@@ -114,8 +113,7 @@ class CollectionMetricsMixin:
         """위협 탐지 메트릭 기록"""
         try:
             self.metrics["blacklist_threats_detected_total"].labels(
-                threat_level=threat_level,
-                source=source
+                threat_level=threat_level, source=source
             ).inc()
 
         except Exception as e:
@@ -126,8 +124,7 @@ class CollectionMetricsMixin:
         try:
             result = "success" if success else "error"
             self.metrics["blacklist_api_queries_total"].labels(
-                endpoint=endpoint,
-                result=result
+                endpoint=endpoint, result=result
             ).inc()
 
         except Exception as e:
@@ -143,8 +140,7 @@ class CollectionMetricsMixin:
                     for status, count in source_data.items():
                         if isinstance(count, (int, float)):
                             self.metrics["blacklist_ips_total"].labels(
-                                source=source,
-                                status=status
+                                source=source, status=status
                             ).set(count)
 
             # 데이터 신선도

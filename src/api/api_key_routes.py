@@ -84,7 +84,10 @@ def list_api_keys():
 
     except Exception as e:
         logger.error(f"API 키 목록 조회 실패: {e}")
-        return jsonify({"success": False, "error": "API 키 목록을 가져올 수 없습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "API 키 목록을 가져올 수 없습니다"}),
+            500,
+        )
 
 
 @api_key_bp.route("/<key_id>", methods=["GET"])
@@ -96,13 +99,19 @@ def get_api_key(key_id: str):
         api_key = api_key_manager.get_api_key(key_id)
 
         if not api_key:
-            return jsonify({"success": False, "error": "API 키를 찾을 수 없습니다"}), 404
+            return (
+                jsonify({"success": False, "error": "API 키를 찾을 수 없습니다"}),
+                404,
+            )
 
         return jsonify({"success": True, "api_key": api_key.to_dict()})
 
     except Exception as e:
         logger.error(f"API 키 조회 실패: {e}")
-        return jsonify({"success": False, "error": "API 키 정보를 가져올 수 없습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "API 키 정보를 가져올 수 없습니다"}),
+            500,
+        )
 
 
 @api_key_bp.route("/<key_id>/revoke", methods=["POST"])
@@ -115,20 +124,33 @@ def revoke_api_key(key_id: str):
         # 키 존재 확인
         api_key = api_key_manager.get_api_key(key_id)
         if not api_key:
-            return jsonify({"success": False, "error": "API 키를 찾을 수 없습니다"}), 404
+            return (
+                jsonify({"success": False, "error": "API 키를 찾을 수 없습니다"}),
+                404,
+            )
 
         # 비활성화
         success = api_key_manager.revoke_api_key(key_id)
 
         if success:
             logger.info(f"API 키 비활성화: {api_key.name} (ID: {key_id})")
-            return jsonify({"success": True, "message": "API 키가 성공적으로 비활성화되었습니다"})
+            return jsonify(
+                {"success": True, "message": "API 키가 성공적으로 비활성화되었습니다"}
+            )
         else:
-            return jsonify({"success": False, "error": "API 키 비활성화에 실패했습니다"}), 500
+            return (
+                jsonify({"success": False, "error": "API 키 비활성화에 실패했습니다"}),
+                500,
+            )
 
     except Exception as e:
         logger.error(f"API 키 비활성화 실패: {e}")
-        return jsonify({"success": False, "error": "API 키 비활성화 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify(
+                {"success": False, "error": "API 키 비활성화 중 오류가 발생했습니다"}
+            ),
+            500,
+        )
 
 
 @api_key_bp.route("/<key_id>", methods=["DELETE"])
@@ -141,20 +163,31 @@ def delete_api_key(key_id: str):
         # 키 존재 확인
         api_key = api_key_manager.get_api_key(key_id)
         if not api_key:
-            return jsonify({"success": False, "error": "API 키를 찾을 수 없습니다"}), 404
+            return (
+                jsonify({"success": False, "error": "API 키를 찾을 수 없습니다"}),
+                404,
+            )
 
         # 삭제
         success = api_key_manager.delete_api_key(key_id)
 
         if success:
             logger.info(f"API 키 삭제: {api_key.name} (ID: {key_id})")
-            return jsonify({"success": True, "message": "API 키가 성공적으로 삭제되었습니다"})
+            return jsonify(
+                {"success": True, "message": "API 키가 성공적으로 삭제되었습니다"}
+            )
         else:
-            return jsonify({"success": False, "error": "API 키 삭제에 실패했습니다"}), 500
+            return (
+                jsonify({"success": False, "error": "API 키 삭제에 실패했습니다"}),
+                500,
+            )
 
     except Exception as e:
         logger.error(f"API 키 삭제 실패: {e}")
-        return jsonify({"success": False, "error": "API 키 삭제 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "API 키 삭제 중 오류가 발생했습니다"}),
+            500,
+        )
 
 
 @api_key_bp.route("/validate", methods=["POST"])
@@ -176,21 +209,30 @@ def validate_api_key():
                     "key_info": {
                         "name": validated_key.name,
                         "permissions": validated_key.permissions,
-                        "expires_at": validated_key.expires_at.isoformat()
-                        if validated_key.expires_at
-                        else None,
+                        "expires_at": (
+                            validated_key.expires_at.isoformat()
+                            if validated_key.expires_at
+                            else None
+                        ),
                         "usage_count": validated_key.usage_count,
                     },
                 }
             )
         else:
             return jsonify(
-                {"success": True, "valid": False, "message": "API 키가 유효하지 않거나 만료되었습니다"}
+                {
+                    "success": True,
+                    "valid": False,
+                    "message": "API 키가 유효하지 않거나 만료되었습니다",
+                }
             )
 
     except Exception as e:
         logger.error(f"API 키 검증 실패: {e}")
-        return jsonify({"success": False, "error": "API 키 검증 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "API 키 검증 중 오류가 발생했습니다"}),
+            500,
+        )
 
 
 @api_key_bp.route("/stats", methods=["GET"])

@@ -192,7 +192,9 @@ class DataService:
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(f"Bulk import completed: {processed}/{len(valid_ips)} IPs processed")
+        logger.info(
+            f"Bulk import completed: {processed}/{len(valid_ips)} IPs processed"
+        )
         return result
 
     def _update_file_storage(self, ips_data: List[Dict[str, Any]], source: str):

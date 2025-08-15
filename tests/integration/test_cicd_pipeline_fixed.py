@@ -14,7 +14,7 @@ import pytest
 import yaml
 
 # conftest_enhanced에서 픽스처 임포트
-pytest_plugins = ['tests.conftest_enhanced']
+pytest_plugins = ["tests.conftest_enhanced"]
 
 
 class TestCICDPipelineTriggers:
@@ -23,7 +23,9 @@ class TestCICDPipelineTriggers:
     def test_main_branch_push_triggers_full_pipeline(self, mock_file_system):
         """main 브랜치 푸시가 전체 파이프라인을 트리거하는지 테스트"""
         workflow_path = Path(".github/workflows/ci-cd.yml")
-        assert workflow_path.exists(), f"CI/CD workflow file not found at {workflow_path}"
+        assert (
+            workflow_path.exists()
+        ), f"CI/CD workflow file not found at {workflow_path}"
 
         with open(workflow_path) as f:
             workflow_text = f.read()
@@ -35,7 +37,7 @@ class TestCICDPipelineTriggers:
         with open(workflow_path) as f:
             content = f.read()
             # 'on:' 키워드를 임시로 다른 이름으로 변경
-            content = content.replace('on:', 'trigger:')
+            content = content.replace("on:", "trigger:")
             workflow = yaml.safe_load(content)
 
         # 필수 작업들이 정의되어 있는지 확인
@@ -46,7 +48,7 @@ class TestCICDPipelineTriggers:
     def test_develop_branch_push_triggers_appropriate_workflow(self, mock_file_system):
         """develop 브랜치 푸시가 적절한 워크플로우를 트리거하는지 테스트"""
         workflow_path = Path(".github/workflows/ci-cd.yml")
-        
+
         with open(workflow_path) as f:
             workflow_text = f.read()
 
@@ -56,7 +58,7 @@ class TestCICDPipelineTriggers:
     def test_pr_creation_triggers_quality_checks_only(self, mock_file_system):
         """PR 생성이 품질 검사만 트리거하는지 테스트"""
         workflow_path = Path(".github/workflows/ci-cd.yml")
-        
+
         with open(workflow_path) as f:
             workflow_text = f.read()
 
@@ -67,7 +69,7 @@ class TestCICDPipelineTriggers:
     def test_path_ignoring_for_docs(self, mock_file_system):
         """문서 파일이 파이프라인을 트리거하지 않는지 테스트"""
         workflow_path = Path(".github/workflows/ci-cd.yml")
-        
+
         with open(workflow_path) as f:
             workflow_text = f.read()
 
@@ -79,7 +81,7 @@ class TestCICDPipelineTriggers:
     def test_concurrency_cancellation(self, mock_file_system):
         """동시 실행 취소가 작동하는지 테스트"""
         workflow_path = Path(".github/workflows/ci-cd.yml")
-        
+
         with open(workflow_path) as f:
             workflow_text = f.read()
 
@@ -96,18 +98,20 @@ class TestCodeQualityStage:
         """테스트 환경 설정"""
         test_file = tmp_path / "test_file.py"
         test_file.write_text(
-            '''
+            """
 import os
 password = "hardcoded_password"  # 보안 위반
 
 def poorly_formatted_function( x,y ):
     return x+y
 
-'''
+"""
         )
         return test_file
 
-    def test_python_linting_catches_style_violations(self, setup_test_env, mock_subprocess):
+    def test_python_linting_catches_style_violations(
+        self, setup_test_env, mock_subprocess
+    ):
         """Python 린팅이 스타일 위반을 감지하는지 테스트"""
         test_file = setup_test_env
 
@@ -160,7 +164,7 @@ def poorly_formatted_function( x,y ):
         """코드 커버리지 임계값 적용 테스트"""
         pytest_ini = Path("pytest.ini")
         assert pytest_ini.exists()
-        
+
         with open(pytest_ini) as f:
             content = f.read()
             assert "--cov" in content or "coverage" in content.lower()
@@ -360,8 +364,10 @@ class TestEndToEndFlow:
 
         # 재시도나 오류 처리 로직 확인
         recovery_indicators = ["retry", "continue-on-error", "if: failure()"]
-        has_recovery = any(indicator in workflow_content for indicator in recovery_indicators)
-        
+        has_recovery = any(
+            indicator in workflow_content for indicator in recovery_indicators
+        )
+
         # 복구 메커니즘이 있거나 워크플로우가 견고하게 설계되어야 함
         assert has_recovery or "steps:" in workflow_content
 
@@ -374,14 +380,24 @@ class TestEndToEndFlow:
 
         # 알림 관련 설정이나 액션 확인
         notification_indicators = [
-            "slack", "email", "webhook", "notification", 
-            "issue", "discord", "teams"
+            "slack",
+            "email",
+            "webhook",
+            "notification",
+            "issue",
+            "discord",
+            "teams",
         ]
-        
+
         # 최소한 실패 처리 로직이 있어야 함
-        assert any(indicator in workflow_content.lower() for indicator in notification_indicators) or \
-               "if: failure()" in workflow_content or \
-               "needs:" in workflow_content
+        assert (
+            any(
+                indicator in workflow_content.lower()
+                for indicator in notification_indicators
+            )
+            or "if: failure()" in workflow_content
+            or "needs:" in workflow_content
+        )
 
 
 class TestPipelineRefactoring:
@@ -402,7 +418,7 @@ class TestPipelineRefactoring:
         """파이프라인 훅 가용성 테스트"""
         k8s_mgmt_script = Path("scripts/k8s-management.sh")
         assert k8s_mgmt_script.exists()
-        
+
         with open(k8s_mgmt_script) as f:
             script_content = f.read()
 
@@ -441,7 +457,9 @@ class TestPipelineRefactoring:
 def run_command_safe(cmd, check=False):
     """안전한 명령 실행 헬퍼"""
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, timeout=30
+        )
         if check and result.returncode != 0:
             raise RuntimeError(f"Command failed: {cmd}\n{result.stderr}")
         return result

@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
-from ..regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
+from ..regtech_simple_collector import \
+    RegtechSimpleCollector as RegtechCollector
 
 logger = logging.getLogger(__name__)
 
@@ -328,7 +329,9 @@ class CoreOperationsMixin:
             )
 
             # 수집은 활성화하지 않음 - 수동 제어
-            self.logger.info("⚠️ 자동 수집이 비활성화되었습니다. 수동으로 수집을 시작하세요.")
+            self.logger.info(
+                "⚠️ 자동 수집이 비활성화되었습니다. 수동으로 수집을 시작하세요."
+            )
 
             # 완료 표시 (자동 수집 시도 방지)
             self.collection_manager.mark_initial_collection_done()

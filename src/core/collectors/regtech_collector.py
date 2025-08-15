@@ -144,7 +144,9 @@ class RegtechCollector(BaseCollector):
 
         while login_attempts < max_login_attempts:
             try:
-                self.logger.info(f"로그인 시도 {login_attempts + 1}/{max_login_attempts}")
+                self.logger.info(
+                    f"로그인 시도 {login_attempts + 1}/{max_login_attempts}"
+                )
 
                 # 로그인 페이지 접근
                 login_page_url = "{self.base_url}/login/loginForm"
@@ -264,7 +266,9 @@ class RegtechCollector(BaseCollector):
                 )
 
                 if not page_ips:
-                    self.logger.info(f"페이지 {page + 1}에서 더 이상 데이터 없음, 수집 종료")
+                    self.logger.info(
+                        f"페이지 {page + 1}에서 더 이상 데이터 없음, 수집 종료"
+                    )
                     break
 
                 all_ips.extend(page_ips)

@@ -105,9 +105,11 @@ def handle_regtech_settings():
                 "has_password": bool(
                     settings_manager.get_setting("regtech_password", "")
                 ),
-                "status": "configured"
-                if settings_manager.get_setting("regtech_username", "")
-                else "not_configured",
+                "status": (
+                    "configured"
+                    if settings_manager.get_setting("regtech_username", "")
+                    else "not_configured"
+                ),
             }
 
             return jsonify(regtech_settings)

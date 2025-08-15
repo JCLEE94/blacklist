@@ -46,7 +46,15 @@ def login():
 
         if username not in valid_users or valid_users[username] != password:
             logger.warning(f"로그인 실패: {username}")
-            return jsonify({"success": False, "error": "사용자명 또는 비밀번호가 올바르지 않습니다"}), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "사용자명 또는 비밀번호가 올바르지 않습니다",
+                    }
+                ),
+                401,
+            )
 
         # 사용자 역할 결정
         roles = ["user"]
@@ -61,7 +69,12 @@ def login():
         # JWT 토큰 생성
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
-            return jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}), 500
+            return (
+                jsonify(
+                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
+                ),
+                500,
+            )
 
         # Access Token (짧은 만료시간)
         access_token = security_manager.generate_jwt_token(
@@ -70,7 +83,9 @@ def login():
 
         # Refresh Token (긴 만료시간)
         refresh_token = security_manager.generate_jwt_token(
-            user_id=username, roles=["refresh"], expires_hours=24 * 7  # 갱신 전용 토큰  # 7일
+            user_id=username,
+            roles=["refresh"],
+            expires_hours=24 * 7,  # 갱신 전용 토큰  # 7일
         )
 
         logger.info(f"로그인 성공: {username}")
@@ -88,7 +103,10 @@ def login():
 
     except Exception as e:
         logger.error(f"로그인 처리 실패: {e}")
-        return jsonify({"success": False, "error": "로그인 처리 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "로그인 처리 중 오류가 발생했습니다"}),
+            500,
+        )
 
 
 @auth_bp.route("/refresh", methods=["POST"])
@@ -102,20 +120,46 @@ def refresh_token():
 
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
-            return jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}), 500
+            return (
+                jsonify(
+                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
+                ),
+                500,
+            )
 
         # Refresh Token 검증
         payload = security_manager.verify_jwt_token(refresh_token)
         if not payload:
-            return jsonify({"success": False, "error": "유효하지 않거나 만료된 리프레시 토큰입니다"}), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "유효하지 않거나 만료된 리프레시 토큰입니다",
+                    }
+                ),
+                401,
+            )
 
         # 리프레시 토큰인지 확인
         if "refresh" not in payload.get("roles", []):
-            return jsonify({"success": False, "error": "유효하지 않은 리프레시 토큰입니다"}), 401
+            return (
+                jsonify(
+                    {"success": False, "error": "유효하지 않은 리프레시 토큰입니다"}
+                ),
+                401,
+            )
 
         username = payload.get("user_id")
         if not username:
-            return jsonify({"success": False, "error": "토큰에서 사용자 정보를 찾을 수 없습니다"}), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "토큰에서 사용자 정보를 찾을 수 없습니다",
+                    }
+                ),
+                401,
+            )
 
         # 사용자 역할 다시 가져오기 (실제로는 DB에서 조회)
         # os imported at module level
@@ -152,7 +196,10 @@ def refresh_token():
 
     except Exception as e:
         logger.error(f"토큰 갱신 실패: {e}")
-        return jsonify({"success": False, "error": "토큰 갱신 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "토큰 갱신 중 오류가 발생했습니다"}),
+            500,
+        )
 
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -165,12 +212,20 @@ def logout():
         logger.info("로그아웃 요청")
 
         return jsonify(
-            {"success": True, "message": "성공적으로 로그아웃되었습니다. 클라이언트에서 토큰을 삭제하세요."}
+            {
+                "success": True,
+                "message": "성공적으로 로그아웃되었습니다. 클라이언트에서 토큰을 삭제하세요.",
+            }
         )
 
     except Exception as e:
         logger.error(f"로그아웃 처리 실패: {e}")
-        return jsonify({"success": False, "error": "로그아웃 처리 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify(
+                {"success": False, "error": "로그아웃 처리 중 오류가 발생했습니다"}
+            ),
+            500,
+        )
 
 
 @auth_bp.route("/verify", methods=["POST"])
@@ -183,7 +238,12 @@ def verify_token():
 
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
-            return jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}), 500
+            return (
+                jsonify(
+                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
+                ),
+                500,
+            )
 
         # 토큰 검증
         payload = security_manager.verify_jwt_token(token)
@@ -203,12 +263,19 @@ def verify_token():
             )
         else:
             return jsonify(
-                {"success": True, "valid": False, "message": "토큰이 유효하지 않거나 만료되었습니다"}
+                {
+                    "success": True,
+                    "valid": False,
+                    "message": "토큰이 유효하지 않거나 만료되었습니다",
+                }
             )
 
     except Exception as e:
         logger.error(f"토큰 검증 실패: {e}")
-        return jsonify({"success": False, "error": "토큰 검증 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "토큰 검증 중 오류가 발생했습니다"}),
+            500,
+        )
 
 
 @auth_bp.route("/change-password", methods=["POST"])
@@ -224,11 +291,24 @@ def change_password():
         # 현재는 환경 변수 기반이므로 구현하지 않음
         # 실제 데이터베이스 구현 시 활성화
 
-        return jsonify({"success": False, "error": "현재 환경에서는 비밀번호 변경이 지원되지 않습니다"}), 501
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "현재 환경에서는 비밀번호 변경이 지원되지 않습니다",
+                }
+            ),
+            501,
+        )
 
     except Exception as e:
         logger.error(f"비밀번호 변경 실패: {e}")
-        return jsonify({"success": False, "error": "비밀번호 변경 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify(
+                {"success": False, "error": "비밀번호 변경 중 오류가 발생했습니다"}
+            ),
+            500,
+        )
 
 
 @auth_bp.route("/profile", methods=["GET"])
@@ -244,7 +324,12 @@ def get_profile():
 
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
-            return jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}), 500
+            return (
+                jsonify(
+                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
+                ),
+                500,
+            )
 
         # 토큰 검증
         payload = security_manager.verify_jwt_token(token)
@@ -269,7 +354,10 @@ def get_profile():
 
     except Exception as e:
         logger.error(f"프로필 조회 실패: {e}")
-        return jsonify({"success": False, "error": "프로필 조회 중 오류가 발생했습니다"}), 500
+        return (
+            jsonify({"success": False, "error": "프로필 조회 중 오류가 발생했습니다"}),
+            500,
+        )
 
 
 # 에러 핸들러

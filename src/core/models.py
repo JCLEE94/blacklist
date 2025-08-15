@@ -219,10 +219,7 @@ class SystemHealth:
         additional_info: Optional[Dict] = None,
     ):
         """서비스 상태 추가"""
-        service_info = {
-            "status": status,
-            "last_check": datetime.now().isoformat()
-        }
+        service_info = {"status": status, "last_check": datetime.now().isoformat()}
 
         if response_time is not None:
             service_info["response_time_ms"] = response_time
@@ -379,24 +376,17 @@ class APIResponse:
 
     @classmethod
     def success_response(
-        cls,
-        data: Any = None,
-        message: str = None,
-        metadata: Dict[str, Any] = None
+        cls, data: Any = None, message: str = None, metadata: Dict[str, Any] = None
     ) -> "APIResponse":
         """성공 응답 생성"""
-        return cls(
-            success=True, data=data, message=message, metadata=metadata or {}
-        )
+        return cls(success=True, data=data, message=message, metadata=metadata or {})
 
     @classmethod
     def error_response(
         cls, error: str, data: Any = None, metadata: Dict[str, Any] = None
     ) -> "APIResponse":
         """에러 응답 생성"""
-        return cls(
-            success=False, error=error, data=data, metadata=metadata or {}
-        )
+        return cls(success=False, error=error, data=data, metadata=metadata or {})
 
 
 @dataclass

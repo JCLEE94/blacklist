@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 from src.utils.unified_decorators import unified_monitoring
+
 from ..database import DatabaseManager
 from .data_service import DataService
 from .expiration_service import ExpirationService
@@ -50,7 +51,8 @@ class UnifiedBlacklistManager:
         if cache_backend:
             self.cache = cache_backend
         else:
-            from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
+            from ...utils.advanced_cache import \
+                EnhancedSmartCache as CacheManager
 
             self.cache = CacheManager()
 

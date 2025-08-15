@@ -68,7 +68,9 @@ class CircuitBreaker:
 
         if self.failure_count >= self.failure_threshold:
             self.state = "OPEN"
-            logger.warning(f"Circuit breaker opened after {self.failure_count} failures")
+            logger.warning(
+                f"Circuit breaker opened after {self.failure_count} failures"
+            )
 
 
 def retry_with_backoff(
@@ -172,9 +174,11 @@ class ErrorCollector:
             "recent_errors_count": len(recent_errors),
             "error_types": dict(self.error_counts),
             "recent_errors": recent_errors[-10:],  # 최근 10개
-            "most_common_error": max(self.error_counts.items(), key=lambda x: x[1])[0]
-            if self.error_counts
-            else None,
+            "most_common_error": (
+                max(self.error_counts.items(), key=lambda x: x[1])[0]
+                if self.error_counts
+                else None
+            ),
         }
 
     def clear_old_errors(self, hours: int = 24):
@@ -328,12 +332,14 @@ class ResourceMonitor:
         return {
             "period_hours": hours,
             "sample_count": len(recent_metrics),
-            "avg_cpu_percent": round(sum(cpu_values) / len(cpu_values), 2)
-            if cpu_values
-            else 0,
-            "avg_memory_percent": round(sum(memory_values) / len(memory_values), 2)
-            if memory_values
-            else 0,
+            "avg_cpu_percent": (
+                round(sum(cpu_values) / len(cpu_values), 2) if cpu_values else 0
+            ),
+            "avg_memory_percent": (
+                round(sum(memory_values) / len(memory_values), 2)
+                if memory_values
+                else 0
+            ),
             "max_cpu_percent": max(cpu_values) if cpu_values else 0,
             "max_memory_percent": max(memory_values) if memory_values else 0,
             "latest_metrics": recent_metrics[-1] if recent_metrics else None,

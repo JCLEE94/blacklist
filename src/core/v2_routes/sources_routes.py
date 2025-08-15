@@ -5,7 +5,9 @@ V2 Sources API Routes
 """
 
 from datetime import datetime, timedelta
+
 from flask import Blueprint, jsonify, request
+
 from ...utils.unified_decorators import unified_cache
 
 sources_v2_bp = Blueprint("sources_v2", __name__)
@@ -35,7 +37,7 @@ def get_sources_status():
                 "active_ips": 0,
                 "error_count": 0,
                 "enabled": True,
-                "health": "healthy"
+                "health": "healthy",
             },
             "secudium": {
                 "name": "SECUDIUM",
@@ -45,7 +47,7 @@ def get_sources_status():
                 "active_ips": 0,
                 "error_count": 0,
                 "enabled": False,
-                "health": "unknown"
+                "health": "unknown",
             },
             "public": {
                 "name": "Public Sources",
@@ -55,10 +57,10 @@ def get_sources_status():
                 "active_ips": 0,
                 "error_count": 0,
                 "enabled": True,
-                "health": "healthy"
-            }
+                "health": "healthy",
+            },
         }
-        
+
         # Get actual data from service if available
         if service:
             try:
@@ -68,22 +70,32 @@ def get_sources_status():
                     for source_key in sources_info:
                         count_key = f"{source_key}_count"
                         if count_key in health_info:
-                            sources_info[source_key]["total_ips"] = health_info[count_key]
-                            sources_info[source_key]["active_ips"] = health_info[count_key]
+                            sources_info[source_key]["total_ips"] = health_info[
+                                count_key
+                            ]
+                            sources_info[source_key]["active_ips"] = health_info[
+                                count_key
+                            ]
             except Exception:
                 pass  # Use default values if service fails
-        
-        return jsonify({
-            "status": "success",
-            "timestamp": datetime.utcnow().isoformat(),
-            "sources": sources_info,
-            "summary": {
-                "total_sources": len(sources_info),
-                "active_sources": sum(1 for s in sources_info.values() if s["status"] == "active"),
-                "total_ips": sum(s["total_ips"] for s in sources_info.values()),
-                "total_active_ips": sum(s["active_ips"] for s in sources_info.values())
+
+        return jsonify(
+            {
+                "status": "success",
+                "timestamp": datetime.utcnow().isoformat(),
+                "sources": sources_info,
+                "summary": {
+                    "total_sources": len(sources_info),
+                    "active_sources": sum(
+                        1 for s in sources_info.values() if s["status"] == "active"
+                    ),
+                    "total_ips": sum(s["total_ips"] for s in sources_info.values()),
+                    "total_active_ips": sum(
+                        s["active_ips"] for s in sources_info.values()
+                    ),
+                },
             }
-        })
+        )
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500
 
@@ -95,11 +107,16 @@ def get_source_status(source_id):
     try:
         valid_sources = ["regtech", "secudium", "public"]
         if source_id not in valid_sources:
-            return jsonify({
-                "error": f"Invalid source: {source_id}",
-                "valid_sources": valid_sources
-            }), 400
-        
+            return (
+                jsonify(
+                    {
+                        "error": f"Invalid source: {source_id}",
+                        "valid_sources": valid_sources,
+                    }
+                ),
+                400,
+            )
+
         # Get source-specific information
         source_info = {
             "source_id": source_id,
@@ -112,21 +129,21 @@ def get_source_status(source_id):
                 "active_ips": 0,
                 "expired_ips": 0,
                 "new_today": 0,
-                "removed_today": 0
+                "removed_today": 0,
             },
             "last_collection": {
                 "timestamp": None,
                 "duration_ms": 0,
                 "items_collected": 0,
-                "errors": 0
+                "errors": 0,
             },
             "configuration": {
                 "auto_collect": False,
                 "collection_interval": "daily",
-                "retention_days": 90
-            }
+                "retention_days": 90,
+            },
         }
-        
+
         # Get actual data from service if available
         if service:
             try:
@@ -135,12 +152,14 @@ def get_source_status(source_id):
                     source_info["statistics"].update(stats)
             except Exception:
                 pass
-        
-        return jsonify({
-            "status": "success",
-            "timestamp": datetime.utcnow().isoformat(),
-            "source": source_info
-        })
+
+        return jsonify(
+            {
+                "status": "success",
+                "timestamp": datetime.utcnow().isoformat(),
+                "source": source_info,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500
 
@@ -151,27 +170,40 @@ def trigger_source_collection(source_id):
     try:
         valid_sources = ["regtech", "secudium", "public"]
         if source_id not in valid_sources:
-            return jsonify({
-                "error": f"Invalid source: {source_id}",
-                "valid_sources": valid_sources
-            }), 400
-        
+            return (
+                jsonify(
+                    {
+                        "error": f"Invalid source: {source_id}",
+                        "valid_sources": valid_sources,
+                    }
+                ),
+                400,
+            )
+
         # Check if collection is enabled
         import os
+
         if os.getenv("COLLECTION_ENABLED", "false").lower() != "true":
-            return jsonify({
-                "error": "Collection is disabled",
-                "message": "Set COLLECTION_ENABLED=true to enable collection"
-            }), 403
-        
+            return (
+                jsonify(
+                    {
+                        "error": "Collection is disabled",
+                        "message": "Set COLLECTION_ENABLED=true to enable collection",
+                    }
+                ),
+                403,
+            )
+
         # Trigger collection (placeholder - actual implementation would call collector)
-        return jsonify({
-            "status": "triggered",
-            "source": source_id,
-            "message": f"Collection triggered for {source_id}",
-            "job_id": f"{source_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-            "estimated_duration": "30-60 seconds"
-        })
+        return jsonify(
+            {
+                "status": "triggered",
+                "source": source_id,
+                "message": f"Collection triggered for {source_id}",
+                "job_id": f"{source_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                "estimated_duration": "30-60 seconds",
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500
 
@@ -190,39 +222,36 @@ def compare_sources():
                     "unique_ips": 0,
                     "overlap_with_others": 0,
                     "exclusive_ips": 0,
-                    "reliability_score": 0.95
+                    "reliability_score": 0.95,
                 },
                 "secudium": {
                     "total_ips": 0,
                     "unique_ips": 0,
                     "overlap_with_others": 0,
                     "exclusive_ips": 0,
-                    "reliability_score": 0.90
+                    "reliability_score": 0.90,
                 },
                 "public": {
                     "total_ips": 0,
                     "unique_ips": 0,
                     "overlap_with_others": 0,
                     "exclusive_ips": 0,
-                    "reliability_score": 0.85
-                }
+                    "reliability_score": 0.85,
+                },
             },
             "overlaps": {
                 "regtech_secudium": 0,
                 "regtech_public": 0,
                 "secudium_public": 0,
-                "all_three": 0
+                "all_three": 0,
             },
             "recommendations": [
                 "REGTECH shows highest reliability",
                 "Consider enabling SECUDIUM for better coverage",
-                "Public sources provide supplementary data"
-            ]
+                "Public sources provide supplementary data",
+            ],
         }
-        
-        return jsonify({
-            "status": "success",
-            "comparison": comparison
-        })
+
+        return jsonify({"status": "success", "comparison": comparison})
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500

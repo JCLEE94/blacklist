@@ -5,24 +5,18 @@ Prometheus 메트릭 수집 및 노출
 믹스인 패턴을 사용하여 모듈화된 메트릭 관리를 제공합니다.
 """
 
-import time
 import logging
+import time
 from typing import Optional
-from prometheus_client import (
-    Counter as PrometheusCounter,
-    Histogram,
-    Gauge,
-    Info,
-    generate_latest,
-    CONTENT_TYPE_LATEST,
-    CollectorRegistry,
-    REGISTRY
-)
-from flask import Response
 
+from flask import Response
+from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, CollectorRegistry
+from prometheus_client import Counter as PrometheusCounter
+from prometheus_client import Gauge, Histogram, Info, generate_latest
+
+from .mixins.collection_metrics import CollectionMetricsMixin
 # 믹스인 모듈 import
 from .mixins.system_metrics import SystemMetricsMixin
-from .mixins.collection_metrics import CollectionMetricsMixin
 
 logger = logging.getLogger(__name__)
 
@@ -55,28 +49,32 @@ class PrometheusMetrics(SystemMetricsMixin, CollectionMetricsMixin):
             try:
                 if definition.metric_type == "counter":
                     self.metrics[name] = PrometheusCounter(
-                        name, definition.help_text,
+                        name,
+                        definition.help_text,
                         labelnames=definition.labels,
-                        registry=self.registry
+                        registry=self.registry,
                     )
                 elif definition.metric_type == "gauge":
                     self.metrics[name] = Gauge(
-                        name, definition.help_text,
+                        name,
+                        definition.help_text,
                         labelnames=definition.labels,
-                        registry=self.registry
+                        registry=self.registry,
                     )
                 elif definition.metric_type == "histogram":
                     self.metrics[name] = Histogram(
-                        name, definition.help_text,
+                        name,
+                        definition.help_text,
                         labelnames=definition.labels,
                         buckets=definition.buckets,
-                        registry=self.registry
+                        registry=self.registry,
                     )
                 elif definition.metric_type == "info":
                     self.metrics[name] = Info(
-                        name, definition.help_text,
+                        name,
+                        definition.help_text,
                         labelnames=definition.labels,
-                        registry=self.registry
+                        registry=self.registry,
                     )
 
             except Exception as e:
@@ -85,7 +83,7 @@ class PrometheusMetrics(SystemMetricsMixin, CollectionMetricsMixin):
     def get_metrics_output(self) -> str:
         """Prometheus 형식 메트릭 출력"""
         try:
-            return generate_latest(self.registry).decode('utf-8')
+            return generate_latest(self.registry).decode("utf-8")
         except Exception as e:
             logger.error(f"메트릭 출력 생성 실패: {e}")
             return ""
@@ -98,17 +96,15 @@ class PrometheusMetrics(SystemMetricsMixin, CollectionMetricsMixin):
                 metrics_output,
                 content_type=CONTENT_TYPE_LATEST,
                 headers={
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
-                }
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                },
             )
         except Exception as e:
             logger.error(f"메트릭 응답 생성 실패: {e}")
             return Response(
-                "# 메트릭 생성 실패\n",
-                status=500,
-                content_type=CONTENT_TYPE_LATEST
+                "# 메트릭 생성 실패\n", status=500, content_type=CONTENT_TYPE_LATEST
             )
 
     def reset_metrics(self):
@@ -151,9 +147,13 @@ def init_metrics(version: str = None, build_date: str = None, git_commit: str = 
 def track_http_requests(func):
     """HTTP 요청 추적 데코레이터"""
     from .mixins.decorators import track_http_requests as _track_http_requests
+
     return _track_http_requests(func)
+
 
 def track_collection_operation(source: str):
     """데이터 수집 작업 추적 데코레이터"""
-    from .mixins.decorators import track_collection_operation as _track_collection_operation
+    from .mixins.decorators import \
+        track_collection_operation as _track_collection_operation
+
     return _track_collection_operation(source)

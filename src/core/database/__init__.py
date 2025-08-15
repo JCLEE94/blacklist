@@ -4,10 +4,10 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from .schema_manager import DatabaseSchema
-from .migration_service import MigrationService
-from .table_definitions import TableDefinitions
 from .connection_manager import ConnectionManager
+from .migration_service import MigrationService
+from .schema_manager import DatabaseSchema
+from .table_definitions import TableDefinitions
 
 # Backward compatibility
 DatabaseManager = DatabaseSchema  # Alias for backward compatibility
@@ -16,17 +16,17 @@ initialize_database = DatabaseSchema.initialize
 migrate_database = DatabaseSchema.migrate
 
 __all__ = [
-    'DatabaseSchema',
-    'DatabaseManager',  # Backward compatibility alias
-    'MigrationService', 
-    'TableDefinitions',
-    'ConnectionManager',
-    'get_database_schema',
-    'initialize_database',
-    'migrate_database',
+    "DatabaseSchema",
+    "DatabaseManager",  # Backward compatibility alias
+    "MigrationService",
+    "TableDefinitions",
+    "ConnectionManager",
+    "get_database_schema",
+    "initialize_database",
+    "migrate_database",
     # SQLAlchemy components for test patching
-    'create_engine',
-    'text',
-    'scoped_session',
-    'sessionmaker'
+    "create_engine",
+    "text",
+    "scoped_session",
+    "sessionmaker",
 ]

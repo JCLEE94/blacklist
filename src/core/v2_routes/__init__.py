@@ -7,8 +7,8 @@ from .analytics_routes import analytics_v2_bp
 from .blacklist_routes import blacklist_v2_bp
 from .export_routes import export_v2_bp
 from .health_routes import health_v2_bp
-from .sources_routes import sources_v2_bp
 from .service import V2APIService
+from .sources_routes import sources_v2_bp
 
 v2_bp = Blueprint("v2_api", __name__, url_prefix="/api/v2")
 

@@ -91,7 +91,10 @@ def save_auth_config():
 
         # 요청 데이터 검증
         if not data:
-            return jsonify({"success": False, "error": "데이터가 제공되지 않았습니다."}), 400
+            return (
+                jsonify({"success": False, "error": "데이터가 제공되지 않았습니다."}),
+                400,
+            )
 
         results = {"regtech": None, "secudium": None}
 
@@ -199,9 +202,11 @@ def save_auth_config():
         return jsonify(
             {
                 "success": overall_success,
-                "message": "인증 설정이 저장되었습니다."
-                if overall_success
-                else "인증 설정 저장에 실패했습니다.",
+                "message": (
+                    "인증 설정이 저장되었습니다."
+                    if overall_success
+                    else "인증 설정 저장에 실패했습니다."
+                ),
                 "results": results,
             }
         )
@@ -221,7 +226,9 @@ def update_regtech_auth():
 
         if not username or not password:
             return (
-                jsonify({"success": False, "error": "사용자명과 비밀번호가 필요합니다."}),
+                jsonify(
+                    {"success": False, "error": "사용자명과 비밀번호가 필요합니다."}
+                ),
                 400,
             )
 
@@ -313,7 +320,9 @@ def refresh_regtech_token():
                 }
             )
         else:
-            return jsonify({"success": False, "error": "토큰 갱신 실패. 인증 정보를 확인하세요."})
+            return jsonify(
+                {"success": False, "error": "토큰 갱신 실패. 인증 정보를 확인하세요."}
+            )
 
     except Exception as e:
         logger.error(f"토큰 갱신 오류: {e}")
@@ -416,7 +425,9 @@ def update_secudium_auth():
 
         if not username or not password:
             return (
-                jsonify({"success": False, "error": "사용자명과 비밀번호가 필요합니다."}),
+                jsonify(
+                    {"success": False, "error": "사용자명과 비밀번호가 필요합니다."}
+                ),
                 400,
             )
 

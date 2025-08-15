@@ -44,10 +44,14 @@ def test_container_service_registration():
         total_count = len(services_to_test)
 
         if successful_count >= total_count * 0.7:  # 70% 이상 성공
-            print(f"✅ 컨테이너 서비스 등록/해결 테스트 통과 ({successful_count}/{total_count})")
+            print(
+                f"✅ 컨테이너 서비스 등록/해결 테스트 통과 ({successful_count}/{total_count})"
+            )
             return True
         else:
-            print(f"❌ 컨테이너 서비스 등록/해결 테스트 실패 ({successful_count}/{total_count})")
+            print(
+                f"❌ 컨테이너 서비스 등록/해결 테스트 실패 ({successful_count}/{total_count})"
+            )
             return False
 
     except Exception as e:
