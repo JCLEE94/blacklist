@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: registry.jclee.me/jclee94/blacklist
+  repository: registry.jclee.me/blacklist
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: latest
