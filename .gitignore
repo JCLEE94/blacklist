@@ -57,3 +57,4 @@ Thumbs.db
 .gitops_sync
 server.log
 blacklist.pid
+{test_db}

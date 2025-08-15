@@ -6,7 +6,7 @@ description: Complete API documentation for Blacklist Management System
 
 # API Reference
 
-Complete API documentation for Blacklist Management System v1.0.34.
+Complete API documentation for Blacklist Management System v1.0.35 with V2 API, JWT Security, and GitHub Container Registry integration.
 
 ## 🚀 Overview
 
@@ -20,28 +20,80 @@ The Blacklist Management System provides a comprehensive REST API for threat int
 - **Current Version**: v2
 - **Legacy Support**: v1 (deprecated)
 
-## 🔐 Authentication
+## 🔐 Authentication (v1.0.35 Enhanced)
 
-### JWT Token Authentication
-Most endpoints require JWT authentication.
+### 🆕 API Key Authentication
+Fast authentication for automated systems.
 
 ```bash
-# Login to get JWT token
+# Initialize security system (generates default API key)
+python3 scripts/init_security.py
+
+# Use API key in requests
+curl -H "X-API-Key: blk_your-generated-key" \
+  http://localhost:32542/api/keys/verify
+
+# Response
+{
+  "valid": true,
+  "key_name": "Default API Key",
+  "permissions": ["read", "write", "admin"]
+}
+```
+
+### 🔒 JWT Token Authentication (Dual Token System)
+Secure authentication with access + refresh tokens.
+
+```bash
+# Login to get JWT tokens
 curl -X POST http://localhost:32542/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "admin", "password": "your-password"}'
 
 # Response
 {
+  "success": true,
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "expires_in": 900
+  "expires_in": 3600,
+  "user": {
+    "username": "admin",
+    "roles": ["admin", "user"]
+  }
 }
 
-# Use token in subsequent requests
+# Use access token in requests
 curl -H "Authorization: Bearer <access_token>" \
   http://localhost:32542/api/blacklist/active
+
+# Refresh expired access token
+curl -X POST http://localhost:32542/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token": "your-refresh-token"}'
 ```
+
+### 🛡️ Security Endpoints
+
+#### POST /api/auth/login
+Authenticate and receive JWT tokens.
+
+#### POST /api/auth/refresh  
+Renew access token using refresh token.
+
+#### POST /api/auth/logout
+Invalidate current session tokens.
+
+#### GET /api/auth/profile
+Get current user profile and token info.
+
+#### GET /api/keys/verify
+Verify API key validity.
+
+#### GET /api/keys/list (Admin)
+List all API keys.
+
+#### POST /api/keys/create (Admin)
+Generate new API key.
 
 ## 📋 Health & Status Endpoints
 
@@ -271,44 +323,106 @@ curl -X POST http://localhost:32542/api/collection/secudium/trigger \
   -H "Authorization: Bearer <token>"
 ```
 
-## 📊 Analytics & Monitoring
+## 📊 Analytics & Monitoring (V2 API Complete)
 
-### GET /api/v2/analytics/trends
-Get threat trend analysis.
+### 🆕 GET /api/v2/analytics/trends
+Comprehensive trend analysis with time series data.
 
 ```bash
-curl http://localhost:32542/api/v2/analytics/trends?days=7
+curl http://localhost:32542/api/v2/analytics/trends?period=30
 ```
 
 **Response:**
 ```json
 {
-  "trends": {
-    "daily_counts": [
-      {"date": "2025-08-07", "count": 1234, "new_ips": 123},
-      {"date": "2025-08-08", "count": 1456, "new_ips": 234}
+  "status": "success",
+  "trend_type": "time_series",
+  "trend_period": 30,
+  "data": {
+    "total_ips": 45678,
+    "active_ips": 43210,
+    "new_ips_daily": [
+      {"date": "2025-08-13", "count": 234, "growth": 2.1},
+      {"date": "2025-08-12", "count": 178, "growth": 1.8}
     ],
-    "source_breakdown": {
-      "regtech": 23456,
-      "secudium": 22222
-    },
-    "threat_types": {
-      "malware": 15678,
-      "phishing": 12345,
-      "botnet": 8901,
-      "scanner": 8754
+    "sources": {
+      "regtech": {"total": 23456, "trend": "increasing"},
+      "secudium": {"total": 22222, "trend": "stable"}
     }
   },
-  "summary": {
-    "total_ips": 45678,
+  "analysis": {
     "growth_rate": 2.3,
-    "avg_daily_new": 178
+    "peak_day": "2025-08-13",
+    "average_daily": 178
   }
 }
 ```
 
-### GET /api/v2/sources/status
-Get source-specific status.
+### 🆕 GET /api/v2/analytics/summary
+Analysis summary with period filtering.
+
+```bash
+curl http://localhost:32542/api/v2/analytics/summary?period=7
+```
+
+**Response:**
+```json
+{
+  "period_days": 7,
+  "summary": {
+    "total_ips": 45678,
+    "new_ips": 1234,
+    "growth_rate": 2.8,
+    "avg_confidence": 8.7
+  },
+  "sources": [
+    {"source": "regtech", "count": 23456, "percentage": 51.4},
+    {"source": "secudium", "count": 22222, "percentage": 48.6}
+  ]
+}
+```
+
+### 🆕 GET /api/v2/analytics/threat-levels
+Threat level analysis.
+
+```bash
+curl http://localhost:32542/api/v2/analytics/threat-levels
+```
+
+### 🆕 GET /api/v2/analytics/sources
+Source-specific analysis.
+
+```bash
+curl http://localhost:32542/api/v2/analytics/sources?days=30
+```
+
+### 🆕 GET /api/v2/analytics/geo
+Geographic analysis.
+
+```bash
+curl http://localhost:32542/api/v2/analytics/geo?limit=20
+```
+
+**Response:**
+```json
+{
+  "geographic_analysis": {
+    "total_countries": 45,
+    "total_ips": 45678,
+    "top_countries": [
+      {"country": "US", "ip_count": 12345, "percentage": 27.0},
+      {"country": "CN", "ip_count": 9876, "percentage": 21.6}
+    ]
+  },
+  "continental_distribution": {
+    "Asia": {"ip_count": 23456, "countries": 12},
+    "North America": {"ip_count": 15678, "countries": 3}
+  }
+}
+```
+
+### 🆕 GET /api/v2/sources/status
+Real-time source status monitoring.
 
 ```bash
 curl http://localhost:32542/api/v2/sources/status
@@ -317,24 +431,28 @@ curl http://localhost:32542/api/v2/sources/status
 **Response:**
 ```json
 {
+  "status": "success",
   "sources": {
     "regtech": {
       "status": "active",
       "last_collection": "2025-08-13T11:30:00Z",
       "success_rate": 99.2,
       "total_ips": 23456,
-      "avg_response_time": 1250
+      "avg_response_time": 1250,
+      "health": "excellent"
     },
     "secudium": {
       "status": "active", 
       "last_collection": "2025-08-13T11:25:00Z",
       "success_rate": 97.8,
       "total_ips": 22222,
-      "avg_response_time": 1890
+      "avg_response_time": 1890,
+      "health": "good"
     }
-  }
+  },
+  "overall_health": "excellent",
+  "timestamp": "2025-08-14T12:00:00Z"
 }
-```
 
 ### GET /monitoring/dashboard
 Real-time health dashboard (HTML).
@@ -423,7 +541,27 @@ X-RateLimit-Reset: 1692345600
 
 ## 📝 API Changelog
 
-### v1.0.34 (Current)
+### v1.0.35 (Current) - 2025-08-14
+- **🆕 Complete V2 API Implementation**
+  - 6 new analytics endpoints with comprehensive data
+  - Real-time sources status monitoring
+  - Geographic and threat level analysis
+- **🔐 Dual Authentication System**
+  - JWT dual-token authentication (access + refresh)
+  - API key authentication for automated systems
+  - Complete security endpoint suite
+- **🚀 GitHub Container Registry Integration**
+  - Migration from registry.jclee.me to ghcr.io
+  - Enhanced CI/CD pipeline with ubuntu-latest
+- **🎨 GitHub Pages Portfolio**
+  - Live portfolio site: https://jclee94.github.io/blacklist/
+  - Modern design with performance metrics
+- **⚡ Performance Enhancements**
+  - Unified caching decorators
+  - Enhanced error handling
+  - Improved response times
+
+### v1.0.34
 - Added enhanced blacklist endpoint with metadata
 - New Prometheus metrics integration
 - Improved error handling and validation
@@ -442,6 +580,8 @@ X-RateLimit-Reset: 1692345600
 
 ---
 
-**API Documentation Version**: v1.0.34  
-**Last Updated**: 2025-08-13  
+**API Documentation Version**: v1.0.35  
+**Last Updated**: 2025-08-14  
+**Portfolio Site**: https://jclee94.github.io/blacklist/  
+**Container Registry**: ghcr.io/jclee94/blacklist  
 **OpenAPI Specification**: Available at `/api/docs` (when enabled)
