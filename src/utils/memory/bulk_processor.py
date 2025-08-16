@@ -43,12 +43,16 @@ class BulkProcessorMixin:
             # 집합을 사용한 중복 제거 (메모리 효율적)
             unique_ips = set()
 
-            # 청크 단위로 처리
-            with self.chunked_processing(ip_list, chunk_size=5000) as chunks:
-                for chunk_num, chunk, total_chunks in chunks:
-                    unique_ips.update(chunk)
+            # 청크 단위로 처리 - simple chunking implementation
+            chunk_size = 5000
+            total_chunks = (len(ip_list) + chunk_size - 1) // chunk_size
+            
+            for i in range(0, len(ip_list), chunk_size):
+                chunk = ip_list[i:i + chunk_size]
+                chunk_num = i // chunk_size + 1
+                unique_ips.update(chunk)
 
-                    if chunk_num % 5 == 0:
-                        logger.debug(f"Processed chunk {chunk_num}/{total_chunks}")
+                if chunk_num % 5 == 0:
+                    logger.debug(f"Processed chunk {chunk_num}/{total_chunks}")
 
             return list(unique_ips)

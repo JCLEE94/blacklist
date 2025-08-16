@@ -312,5 +312,11 @@ class TestCollectionIntegration:
             assert status_code in [200, 201, 400, 401, 404, 409, 500]
 
 
+# Main test class for import compatibility (not a pytest test class)
+class TestWebCollectionRoutes:
+    """Consolidated test class for web collection routes - import compatibility only"""
+    pass
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

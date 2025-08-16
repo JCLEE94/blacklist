@@ -293,5 +293,11 @@ class TestApiUtilityFunctions:
                 mock_logger.error.assert_called()
 
 
+# Main test class for import compatibility (not a pytest test class)
+class TestWebApiRoutes:
+    """Consolidated test class for web API routes - import compatibility only"""
+    pass
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
