@@ -220,3 +220,134 @@ def get_fortigate_simple():
     except Exception as e:
         logger.error(f"FortiGate simple error: {e}")
         return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/api/stats", methods=["GET"])
+def get_stats():
+    """시스템 통계 조회"""
+    try:
+        stats = service.get_system_stats()
+        return jsonify({
+            "success": True,
+            "data": stats
+        })
+    except Exception as e:
+        logger.error(f"Stats error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/api/sources/status", methods=["GET"])
+def get_sources_status():
+    """데이터 소스 상태 조회"""
+    try:
+        # Mock data for now - replace with actual service call
+        sources_status = {
+            "REGTECH": {
+                "status": "active",
+                "last_updated": datetime.utcnow().isoformat(),
+                "total_ips": 0
+            },
+            "SECUDIUM": {
+                "status": "active", 
+                "last_updated": datetime.utcnow().isoformat(),
+                "total_ips": 0
+            }
+        }
+        
+        return jsonify({
+            "success": True,
+            "data": sources_status
+        })
+    except Exception as e:
+        logger.error(f"Sources status error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/api/v2/analytics/summary", methods=["GET"])
+def get_analytics_summary():
+    """분석 요약 데이터 조회"""
+    try:
+        # Mock analytics data for now
+        summary = {
+            "total_ips": 0,
+            "active_ips": 0,
+            "blocked_today": 0,
+            "threat_levels": {
+                "high": 0,
+                "medium": 0,
+                "low": 0
+            }
+        }
+        
+        return jsonify({
+            "success": True,
+            "data": summary
+        })
+    except Exception as e:
+        logger.error(f"Analytics summary error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/api/v2/analytics/trends", methods=["GET"])
+def get_analytics_trends():
+    """트렌드 분석 데이터 조회"""
+    try:
+        # Mock trends data for now
+        trends = {
+            "daily_trends": [],
+            "source_distribution": {},
+            "geo_distribution": {}
+        }
+        
+        return jsonify({
+            "success": True,
+            "data": trends
+        })
+    except Exception as e:
+        logger.error(f"Analytics trends error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/monitoring/dashboard", methods=["GET"])
+def monitoring_dashboard():
+    """모니터링 대시보드 데이터"""
+    try:
+        dashboard_data = {
+            "system_health": service.get_system_health(),
+            "stats": service.get_system_stats(),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        return jsonify({
+            "success": True,
+            "data": dashboard_data
+        })
+    except Exception as e:
+        logger.error(f"Monitoring dashboard error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/metrics", methods=["GET"])
+def prometheus_metrics():
+    """Prometheus 메트릭 엔드포인트"""
+    try:
+        stats = service.get_system_stats()
+        
+        # Prometheus 형식의 메트릭 생성
+        metrics = f"""# HELP blacklist_total_ips Total number of IPs
+# TYPE blacklist_total_ips gauge
+blacklist_total_ips {stats.get('total_ips', 0)}
+
+# HELP blacklist_active_ips Number of active IPs
+# TYPE blacklist_active_ips gauge
+blacklist_active_ips {stats.get('active_ips', 0)}
+
+# HELP blacklist_up Service health status
+# TYPE blacklist_up gauge
+blacklist_up 1
+"""
+        
+        return Response(metrics, mimetype="text/plain")
+    except Exception as e:
+        logger.error(f"Metrics error: {e}")
+        return Response("# Metrics unavailable\nblacklist_up 0\n", mimetype="text/plain")

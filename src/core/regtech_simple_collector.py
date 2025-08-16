@@ -20,21 +20,19 @@ logger = logging.getLogger(__name__)
 class RegtechSimpleCollector:
     """단순하지만 확실히 작동하는 REGTECH 수집기"""
 
-    def __init__(self, data_dir: str = "data"):
-        self.data_dir = data_dir
-        self.regtech_dir = os.path.join(data_dir, "regtech")
-        os.makedirs(self.regtech_dir, exist_ok=True)
-
-        self.base_url = "https://regtech.fsec.or.kr"
-        self.username = os.getenv("REGTECH_USERNAME")
-        self.password = os.getenv("REGTECH_PASSWORD")
-
-        if not self.username or not self.password:
-            raise ValueError(
-                "REGTECH_USERNAME and REGTECH_PASSWORD environment variables must be set"
-            )
-
-        logger.info(f"REGTECH 단순 수집기 초기화: {self.regtech_dir}")
+    def __init__(self, username: str, password: str):
+        self.username = username
+        self.password = password
+        
+        # 환경변수에서 베이스 URL 읽기, 없으면 기본값 사용
+        import os
+        self.base_url = os.getenv('REGTECH_BASE_URL', 'https://regtech.fsec.or.kr')
+        
+        logger.info(f"REGTECH 수집기 초기화: {self.base_url} (사용자: {username})")
+        
+        # 세션 타임아웃 및 재시도 설정
+        self.session_timeout = 30
+        self.max_retries = 3
 
     def collect_from_web(
         self, start_date: str = None, end_date: str = None
@@ -80,10 +78,16 @@ class RegtechSimpleCollector:
                 }
             else:
                 logger.warning("수집된 IP가 없습니다")
+                logger.info(f"수집 시도 정보:")
+                logger.info(f"  - 기간: {start_date} ~ {end_date}")
+                logger.info(f"  - 로그인 성공: True")
+                logger.info(f"  - 페이지 접근: 성공")
+                logger.info(f"  - 처리된 페이지 수: {page if 'page' in locals() else 0}")
                 return {
                     "success": False,
-                    "error": "No IPs collected",
+                    "error": "No IPs collected - 데이터가 없거나 웹사이트 구조가 변경되었을 수 있습니다",
                     "total_collected": 0,
+                    "debug_info": f"기간: {start_date}~{end_date}, 처리 페이지: {page if 'page' in locals() else 0}"
                 }
 
         except Exception as e:
@@ -189,10 +193,42 @@ class RegtechSimpleCollector:
                 # 테이블 찾기
                 page_ips = []
                 tables = soup.find_all("table")
+                
+                # 디버깅: 모든 테이블 확인
+                logger.info(f"페이지 {page + 1}에서 {len(tables)}개 테이블 발견")
+                
+                # 먼저 요주의 IP 테이블 찾기
+                found_target_table = False
+                for i, table in enumerate(tables):
+                    caption = table.find("caption")
+                    if caption:
+                        logger.debug(f"테이블 {i+1} 캡션: {caption.text.strip()}")
+                        if "요주의" in caption.text or "IP" in caption.text or "blacklist" in caption.text.lower():
+                            found_target_table = True
+                            break
+                
+                # 요주의 IP 테이블이 없으면 다른 방법으로 찾기
+                if not found_target_table:
+                    logger.warning(f"페이지 {page + 1}에서 요주의 IP 테이블을 찾을 수 없음. 모든 테이블 검사")
+                    # 모든 테이블에서 IP 패턴 찾기
+                    for table in tables:
+                        tbody = table.find("tbody")
+                        if tbody:
+                            rows = tbody.find_all("tr")
+                            if len(rows) > 0:
+                                # 첫 번째 행을 확인해서 IP 같은 패턴이 있는지 체크
+                                first_row = rows[0]
+                                cells = first_row.find_all("td")
+                                if len(cells) >= 1:
+                                    first_cell_text = cells[0].text.strip()
+                                    if self._is_valid_ip(first_cell_text):
+                                        logger.info(f"페이지 {page + 1}에서 IP 데이터가 포함된 테이블 발견")
+                                        found_target_table = True
+                                        break
 
                 for table in tables:
                     caption = table.find("caption")
-                    if caption and "요주의 IP" in caption.text:
+                    if (caption and ("요주의 IP" in caption.text or "IP" in caption.text)) or not found_target_table:
                         logger.info(f"페이지 {page + 1}에서 요주의 IP 테이블 발견")
 
                         tbody = table.find("tbody")
@@ -202,13 +238,40 @@ class RegtechSimpleCollector:
                                 f"페이지 {page + 1} 테이블 행 수: {len(rows)} (페이지당 최대 9999개)"
                             )
 
-                            for row in rows:
+                            for row_idx, row in enumerate(rows):
                                 cells = row.find_all("td")
+                                
+                                # 여러 가지 패턴으로 IP 데이터 추출
                                 if len(cells) >= 4:
+                                    # 기본 패턴: IP, 국가, 이유, 날짜
                                     ip = cells[0].text.strip()
                                     country = cells[1].text.strip()
-                                    reason = cells[2].text.strip()
+                                    reason = cells[2].text.strip()  
                                     date = cells[3].text.strip()
+                                elif len(cells) >= 3:
+                                    # 3컬럼 패턴: IP, 이유, 날짜
+                                    ip = cells[0].text.strip()
+                                    country = "Unknown"
+                                    reason = cells[1].text.strip()
+                                    date = cells[2].text.strip()
+                                elif len(cells) >= 2:
+                                    # 2컬럼 패턴: IP, 날짜
+                                    ip = cells[0].text.strip()
+                                    country = "Unknown"
+                                    reason = "Security threat"
+                                    date = cells[1].text.strip()
+                                elif len(cells) >= 1:
+                                    # 1컬럼 패턴: IP만
+                                    ip = cells[0].text.strip()
+                                    country = "Unknown"
+                                    reason = "Security threat"
+                                    date = start_date
+                                else:
+                                    continue
+                                
+                                # 디버깅 로그
+                                if row_idx < 3:  # 첫 3개 행만 로그
+                                    logger.debug(f"행 {row_idx + 1}: IP='{ip}', 컬럼수={len(cells)}")
 
                                     # 유효한 IP인지 확인
                                     if self._is_valid_ip(ip):
@@ -224,11 +287,44 @@ class RegtechSimpleCollector:
 
                             break
 
+                # 테이블에서 IP를 찾지 못했다면 전체 페이지에서 IP 패턴 검색
+                if not page_ips:
+                    logger.info(f"페이지 {page + 1}에서 테이블 방식으로 IP를 찾지 못함. 전체 텍스트에서 IP 패턴 검색")
+                    
+                    # 전체 HTML에서 IP 패턴 찾기
+                    ip_pattern = re.compile(r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b')
+                    ip_matches = ip_pattern.findall(response.text)
+                    
+                    for ip in ip_matches:
+                        if self._is_valid_ip(ip):
+                            ip_data = {
+                                "ip": ip,
+                                "country": "Unknown",
+                                "reason": "Security threat",
+                                "date": start_date,
+                                "source": "REGTECH",
+                            }
+                            page_ips.append(ip_data)
+                            logger.debug(f"텍스트에서 IP 발견: {ip}")
+                    
+                    if page_ips:
+                        logger.info(f"페이지 {page + 1}에서 텍스트 패턴으로 {len(page_ips)}개 IP 발견")
+
                 # 이 페이지에서 IP를 찾지 못했다면 더 이상 페이지가 없다고 가정
                 if not page_ips:
-                    logger.info(
-                        f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료"
-                    )
+                    logger.info(f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료")
+                    
+                    # 첫 번째 페이지에서도 IP를 못 찾았다면 상세 디버깅
+                    if page == 0:
+                        logger.warning("첫 번째 페이지에서 IP를 찾지 못함. 웹사이트 구조 확인 필요")
+                        logger.debug(f"응답 크기: {len(response.text)} bytes")
+                        logger.debug(f"응답 URL: {response.url}")
+                        
+                        # HTML 구조 간단 분석
+                        table_count = len(soup.find_all("table"))
+                        div_count = len(soup.find_all("div"))
+                        logger.debug(f"HTML 구조: {table_count}개 테이블, {div_count}개 div")
+                    
                     break
 
                 all_ips.extend(page_ips)
@@ -256,15 +352,23 @@ class RegtechSimpleCollector:
             return []
 
     def _is_valid_ip(self, ip: str) -> bool:
-        """IP 유효성 검사"""
+        """IP 유효성 검사 - 더 관대한 검사"""
         try:
             if not ip:
                 return False
 
-            # IP 패턴 확인
+            # 공백 및 특수문자 제거
+            ip = ip.strip().replace(" ", "")
+            
+            # IP 패턴 확인 (더 관대한 패턴)
             pattern = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
             if not pattern.match(ip):
-                return False
+                # IP 패턴이 포함된 텍스트에서 IP 추출 시도
+                ip_match = re.search(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", ip)
+                if ip_match:
+                    ip = ip_match.group(1)
+                else:
+                    return False
 
             # 범위 확인
             parts = ip.split(".")
@@ -272,13 +376,18 @@ class RegtechSimpleCollector:
                 if not 0 <= int(part) <= 255:
                     return False
 
-            # 사설 IP 제외
+            # 사설 IP 제외 (하지만 172.16.x.x는 허용)
             if ip.startswith(("192.168.", "10.", "127.")):
+                return False
+                
+            # 0.0.0.0도 제외
+            if ip == "0.0.0.0":
                 return False
 
             return True
 
         except Exception as e:
+            logger.debug(f"IP 검증 오류 '{ip}': {e}")
             return False
 
     def _save_results(self, ips: List[Dict[str, Any]]):

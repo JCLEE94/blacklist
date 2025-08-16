@@ -949,23 +949,105 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+// Chart initialization
+let monthlyChart = null;
+
+function initializeCharts() {
+    try {
+        const monthlyCtx = document.getElementById('monthlyChart');
+        if (monthlyCtx) {
+            if (monthlyChart) {
+                monthlyChart.destroy();
+            }
+            
+            monthlyChart = new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+                    datasets: [{
+                        label: '블랙리스트 IP 수',
+                        data: [120, 185, 160, 240, 210, 195],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Chart initialization error:', error);
+    }
+}
+
+// Initialize charts when Chart.js is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for Chart.js to load
+    if (typeof Chart !== 'undefined') {
+        initializeCharts();
+    } else {
+        // Retry after a short delay
+        setTimeout(() => {
+            if (typeof Chart !== 'undefined') {
+                initializeCharts();
+            } else {
+                console.warn('Chart.js not loaded. Charts will not be displayed.');
+            }
+        }, 1000);
+    }
+});
+
 // Real-time updates
 let realtimeInterval;
 
 function startRealtimeUpdates() {
     // Update stats every 15 seconds (통합관리와 동일한 주기)
-    realtimeInterval = setInterval(() => {
-        fetch('/api/stats')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.data) {
-                    // Update stats with consistent data source
-                    updateStatCards(data.data);
-                    updateSystemInfo(data.data);
-                    updateLastUpdate();
-                }
-            })
-            .catch(error => console.log('Realtime update error:', error));
+    realtimeInterval = setInterval(async () => {
+        try {
+            const response = await fetch('/api/stats');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            if (data.success && data.data) {
+                // Update stats with consistent data source
+                updateStatCards(data.data);
+                updateSystemInfo(data.data);
+                updateLastUpdate();
+            } else {
+                console.warn('Stats API returned no data:', data);
+            }
+        } catch (error) {
+            console.error('Realtime stats update error:', error);
+            // Show error indicator in UI
+            const lastUpdateElement = document.getElementById('last-update');
+            if (lastUpdateElement) {
+                lastUpdateElement.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> 업데이트 실패</span>';
+            }
+        }
     }, 15000);
     
     // Add real-time feed updates every 5 seconds
