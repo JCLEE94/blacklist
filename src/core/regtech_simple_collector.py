@@ -426,44 +426,51 @@ class RegtechSimpleCollector:
     def _save_to_database(self, ips: List[Dict[str, Any]]):
         """데이터베이스 저장"""
         try:
-            from .container import get_container
-
-            container = get_container()
-            blacklist_manager = container.get("blacklist_manager")
-
-            if blacklist_manager:
-                # 형식 변환
-                formatted_data = []
-                for ip_data in ips:
-                    entry = {
-                        "ip": ip_data["ip"],
-                        "source": "REGTECH",
-                        "detection_date": ip_data.get(
-                            "date", datetime.now().strftime("%Y-%m-%d")
-                        ),
-                        "threat_type": "blacklist",
-                        "country": ip_data.get("country", ""),
-                        "confidence": 1.0,
-                    }
-                    formatted_data.append(entry)
-
-                # 저장
-                result = blacklist_manager.bulk_import_ips(
-                    formatted_data, source="REGTECH"
-                )
-                if result and result.get("success", True):
-                    imported_count = result.get("imported_count", len(formatted_data))
-                    logger.info(f"데이터베이스 저장 성공: {imported_count}개")
-                else:
-                    error_msg = (
-                        result.get("error", "Unknown error")
-                        if result
-                        else "No result returned"
-                    )
-                    logger.error(f"데이터베이스 저장 실패: {error_msg}")
-            else:
-                logger.warning("blacklist_manager를 찾을 수 없음")
-
+            import sqlite3
+            conn = sqlite3.connect('/app/instance/blacklist.db')
+            cursor = conn.cursor()
+            
+            saved_count = 0
+            for ip_data in ips:
+                try:
+                    # blacklist_ips 테이블에 직접 저장
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO blacklist_ips 
+                        (ip, source, detection_date, threat_type, country, confidence, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        ip_data["ip"],
+                        "REGTECH",
+                        ip_data.get("date", datetime.now().strftime("%Y-%m-%d")),
+                        "blacklist",
+                        ip_data.get("country", ""),
+                        1.0,
+                        1
+                    ))
+                    
+                    # ip_detections 테이블에도 저장
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO ip_detections
+                        (ip, source, detection_date, threat_type, country, confidence, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        ip_data["ip"],
+                        "REGTECH",
+                        ip_data.get("date", datetime.now().strftime("%Y-%m-%d")),
+                        "blacklist",
+                        ip_data.get("country", ""),
+                        1.0,
+                        1
+                    ))
+                    
+                    saved_count += 1
+                except Exception as e:
+                    logger.warning(f"IP 저장 실패 {ip_data['ip']}: {e}")
+            
+            conn.commit()
+            conn.close()
+            logger.info(f"데이터베이스 저장 성공: {saved_count}개")
+            
         except Exception as e:
             logger.error(f"데이터베이스 저장 중 오류: {e}")
 
