@@ -98,6 +98,12 @@ spec:
                 secretKeyRef:
                   name: blacklist-credentials
                   key: secudium-password
+            - name: REGTECH_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: blacklist-credentials
+                  key: regtech-base-url
+                  optional: true
           volumeMounts:
             {{- if .Values.persistence.data.enabled }}
             - name: data
