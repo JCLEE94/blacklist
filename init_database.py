@@ -8,16 +8,20 @@ import sys
 import logging
 from pathlib import Path
 
-# 프로젝트 루트를 Python 경로에 추가 (현재 위치에서 상위 디렉토리가 프로젝트 루트)
-project_root = Path(__file__).parent.parent
+# 프로젝트 루트를 Python 경로에 추가 (현재 위치가 프로젝트 루트)
+project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from src.core.database_schema import initialize_database, get_database_schema
+    from src.core.database import initialize_database, get_database_schema
 except ImportError as e:
     print(f"❌ 모듈 임포트 실패: {e}")
-    print("src/core/database_schema.py 파일이 존재하는지 확인하세요.")
-    sys.exit(1)
+    print("대안 임포트 시도 중...")
+    try:
+        from src.core.database_schema import initialize_database, get_database_schema
+    except ImportError:
+        print("❌ 대안 임포트도 실패했습니다. database 모듈을 확인하세요.")
+        sys.exit(1)
 
 # 로깅 설정
 logging.basicConfig(

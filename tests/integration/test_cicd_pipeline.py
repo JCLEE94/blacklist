@@ -242,7 +242,7 @@ class TestBuildStage:
             return result.returncode == 0
 
         # 테스트 실행
-        success = docker_login("test_user", "test_pass", "registry.jclee.me")
+        success = docker_login("test_user", "test_pass", "ghcr.io")
         assert success
         mock_run.assert_called_once()
 
@@ -273,7 +273,7 @@ class TestDeploymentStage:
         annotations = argocd_app["metadata"]["annotations"]
         assert "argocd-image-updater.argoproj.io/image-list" in annotations
         assert (
-            "registry.jclee.me/blacklist:latest"
+            "ghcr.io/blacklist:latest"
             in annotations["argocd-image-updater.argoproj.io/image-list"]
         )
 
@@ -377,7 +377,7 @@ class TestEndToEndFlow:
         # Docker 빌드 시뮬레이션
         return {
             "success": True,
-            "image": "registry.jclee.me/blacklist:sha-{event['head_commit']['id'][:7]}",
+            "image": "ghcr.io/blacklist:sha-{event['head_commit']['id'][:7]}",
             "duration": 180,
         }
 
