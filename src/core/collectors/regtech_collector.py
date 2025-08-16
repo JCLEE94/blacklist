@@ -410,6 +410,49 @@ class RegtechCollector(BaseCollector):
             self.logger.error(f"IP 추출 중 오류 (페이지 {page + 1}): {e}")
             return []
 
+    def _transform_data(self, raw_data: dict) -> dict:
+        """
+        원시 데이터를 표준 형식으로 변환
+        
+        Args:
+            raw_data: 원시 수집 데이터
+            
+        Returns:
+            변환된 데이터 딕셔너리
+        """
+        try:
+            # 기본 변환
+            transformed = {
+                'ip': raw_data.get('ip', ''),
+                'country': raw_data.get('country', 'Unknown'),
+                'reason': raw_data.get('reason', 'Unknown threat'),
+                'source': 'REGTECH',
+                'detection_date': raw_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+                'threat_level': raw_data.get('threat_level', 'medium'),
+                'category': raw_data.get('category', 'malware'),
+                'confidence': raw_data.get('confidence', 0.8)
+            }
+            
+            # 추가 필드 처리
+            if 'additional_info' in raw_data:
+                transformed['additional_info'] = raw_data['additional_info']
+                
+            # IP 유효성 검증
+            if not self._is_valid_ip(transformed['ip']):
+                self.logger.warning(f"Invalid IP in transformed data: {transformed['ip']}")
+                
+            return transformed
+            
+        except Exception as e:
+            self.logger.error(f"Data transformation error: {e}")
+            # 최소한의 데이터 반환
+            return {
+                'ip': raw_data.get('ip', '0.0.0.0'),
+                'source': 'REGTECH',
+                'country': 'Unknown',
+                'reason': 'Transform error'
+            }
+
     def _is_valid_ip(self, ip: str) -> bool:
         """IP 유효성 검사 (향상된 버전)"""
         try:
