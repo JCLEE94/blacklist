@@ -341,19 +341,19 @@ class DataService:
                 cursor.execute(
                     """
                     SELECT
-                        ip_address,
+                        ip,
                         source,
                         detection_date,
                         country,
-                        threat_type,
-                        confidence_score,
+                        attack_type as threat_type,
+                        threat_level as confidence_score,
                         created_at,
                         updated_at,
                         expires_at
-                    FROM ip_detections
+                    FROM blacklist_ips
                     WHERE is_active = 1
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
-                    ORDER BY updated_at DESC, ip_address
+                    ORDER BY updated_at DESC, ip
                     """
                 )
 
@@ -361,12 +361,12 @@ class DataService:
                 for row in cursor.fetchall():
                     results.append(
                         {
-                            "ip": row["ip_address"],
-                            "source": row["source"],
+                            "ip": row["ip"],
+                            "source": row["source"] or "REGTECH",
                             "detection_date": row["detection_date"],
                             "country": row["country"],
-                            "threat_type": row["threat_type"],
-                            "confidence_score": row["confidence_score"],
+                            "threat_type": row["threat_type"] or "blacklist",
+                            "confidence_score": row["confidence_score"] or 1.0,
                             "created_at": row["created_at"],
                             "updated_at": row["updated_at"],
                             "expires_at": row["expires_at"],
