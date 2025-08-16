@@ -13,9 +13,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set environment variables
 os.environ['REGTECH_USERNAME'] = 'nextrade'
-os.environ['REGTECH_PASSWORD'] = 'Sprtmxm1@3'
+os.environ['REGTECH_PASSWORD'] = 'test_password'
 os.environ['SECUDIUM_USERNAME'] = 'nextrade'
-os.environ['SECUDIUM_PASSWORD'] = 'Sprtmxm1@3'
+os.environ['SECUDIUM_PASSWORD'] = 'test_password'
 os.environ['REGTECH_BASE_URL'] = 'https://regtech.fsec.or.kr'
 os.environ['SECUDIUM_BASE_URL'] = 'https://www.secudium.com'
 
@@ -33,7 +33,7 @@ def test_regtech_direct():
             enabled=True,
             settings={
                 'username': 'nextrade',
-                'password': 'Sprtmxm1@3',
+                'password': 'test_password',
                 'base_url': 'https://regtech.fsec.or.kr'
             }
         )

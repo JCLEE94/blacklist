@@ -7,10 +7,15 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
-from ..utils.error_recovery import (get_error_collector, get_health_checker,
-                                    get_resource_monitor)
-from ..utils.performance_optimizer import (get_performance_monitor,
-                                           optimize_database_queries)
+from ..utils.error_recovery import (
+    get_error_collector,
+    get_health_checker,
+    get_resource_monitor,
+)
+from ..utils.performance_optimizer import (
+    get_performance_monitor,
+    optimize_database_queries,
+)
 from ..utils.security import rate_limit, require_auth
 from ..utils.system_stability import get_system_monitor
 
@@ -297,7 +302,7 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "not_available", "type": "database"}
         except Exception as e:
-            raise Exception("Database connection failed: {e}")
+            raise Exception(f"Database connection failed: {e}")
 
     def cache_check():
         """캐시 연결 체크"""
@@ -321,13 +326,12 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "not_available", "type": "cache"}
         except Exception as e:
-            raise Exception("Cache connection failed: {e}")
+            raise Exception(f"Cache connection failed: {e}")
 
     def collection_check():
         """수집 시스템 체크"""
         try:
-            from ..core.collectors.collector_factory import \
-                get_collector_factory
+            from ..core.collectors.collector_factory import get_collector_factory
 
             factory = get_collector_factory()
             status = factory.get_collector_status()
@@ -341,7 +345,7 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "no_collectors", "type": "collection"}
         except Exception as e:
-            raise Exception("Collection system check failed: {e}")
+            raise Exception(f"Collection system check failed: {e}")
 
     def disk_space_check():
         """디스크 공간 체크"""
@@ -363,7 +367,7 @@ def _register_default_health_checks(health_checker):
             else:
                 return {"status": "ok", "free_percent": round(free_percent, 1)}
         except Exception as e:
-            raise Exception("Disk space check failed: {e}")
+            raise Exception(f"Disk space check failed: {e}")
 
     # 헬스 체크들 등록
     health_checker.register_check("database", database_check)
@@ -484,7 +488,7 @@ def _generate_performance_recommendations(metrics, slow_queries):
                     "suggestion": "비동기 처리, 배치 처리, 워커 프로세스 추가를 검토하세요",
                 }
             )
-    except Exception as e:
+    except Exception:
         pass  # 시스템 모니터링 실패 시 권장사항 제외
 
     return recommendations

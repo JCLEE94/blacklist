@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set environment variables
 os.environ['REGTECH_USERNAME'] = 'nextrade'
-os.environ['REGTECH_PASSWORD'] = 'Sprtmxm1@3'
+os.environ['REGTECH_PASSWORD'] = 'test_password'
 os.environ['COLLECTION_ENABLED'] = 'true'
 os.environ['FORCE_DISABLE_COLLECTION'] = 'false'
 

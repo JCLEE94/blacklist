@@ -24,29 +24,32 @@ def _get_dashboard_data():
     try:
         # 실제 블랙리스트 데이터 가져오기
         from src.core.container import get_container
+
         container = get_container()
-        blacklist_mgr = container.get('blacklist_manager')
-        
+        blacklist_mgr = container.get("blacklist_manager")
+
         # 실제 IP 개수 조회 (문자열 리스트 반환)
         active_ips_list = blacklist_mgr.get_active_ips()
         total_ips = len(active_ips_list) if active_ips_list else 0
-        
+
         # 소스별 통계는 데이터베이스에서 직접 조회
         regtech_count = 0
         secudium_count = 0
         public_count = 0
-        
+
         try:
             # 데이터베이스에서 소스별 통계 직접 조회 (올바른 테이블명 사용)
             import sqlite3
+
             from src.config.settings import settings
-            
-            db_path = settings.database_uri.replace('sqlite:///', '')
+
+            db_path = settings.database_uri.replace("sqlite:///", "")
             with sqlite3.connect(db_path, timeout=10) as conn:
                 cursor = conn.cursor()
-                
+
                 # 소스별 카운트 조회 (blacklist_ips 테이블 사용)
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT 
                         LOWER(source) as source_name,
                         COUNT(*) as count
@@ -54,22 +57,23 @@ def _get_dashboard_data():
                     WHERE is_active = 1 
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
                     GROUP BY LOWER(source)
-                """)
-                
+                """
+                )
+
                 source_results = cursor.fetchall()
                 for source_name, count in source_results:
-                    if 'regtech' in source_name:
+                    if "regtech" in source_name:
                         regtech_count += count
-                    elif 'secudium' in source_name:
+                    elif "secudium" in source_name:
                         secudium_count += count
                     else:
                         public_count += count
-                        
+
         except Exception as db_error:
             logger.error(f"Database source query error: {db_error}")
             # 기본값으로 전체를 public으로 처리
             public_count = total_ips
-        
+
         stats = {
             "total_ips": total_ips,
             "active_ips": total_ips,  # 활성 IP는 전체와 동일
@@ -77,9 +81,11 @@ def _get_dashboard_data():
             "secudium_count": secudium_count,
             "public_count": public_count,
         }
-        
-        logger.info(f"Dashboard stats: total={total_ips}, regtech={regtech_count}, secudium={secudium_count}, public={public_count}")
-        
+
+        logger.info(
+            f"Dashboard stats: total={total_ips}, regtech={regtech_count}, secudium={secudium_count}, public={public_count}"
+        )
+
     except Exception as e:
         logger.error(f"Dashboard data collection error: {e}")
         # 기본값 사용

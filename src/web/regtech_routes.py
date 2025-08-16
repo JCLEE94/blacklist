@@ -44,7 +44,9 @@ class RegtechAnalyzer:
             cursor = conn.cursor()
 
             # 기본 통계
-            cursor.execute("SELECT COUNT(*) FROM blacklist_ips WHERE source = 'REGTECH'")
+            cursor.execute(
+                "SELECT COUNT(*) FROM blacklist_ips WHERE source = 'REGTECH'"
+            )
             total_ips = cursor.fetchone()[0]
 
             # 최근 업데이트 시간

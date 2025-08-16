@@ -160,7 +160,7 @@ class DataService:
                         )
 
                     except Exception as e:
-                        error_msg = "Error processing batch {i//batch_size + 1}: {e}"
+                        error_msg = f"Error processing batch {i//batch_size + 1}: {e}"
                         logger.error(error_msg)
                         errors.append(error_msg)
 
@@ -170,7 +170,7 @@ class DataService:
                 self._update_file_storage(valid_ips, source)
 
         except Exception as e:
-            error_msg = "Database error during bulk import: {e}"
+            error_msg = f"Database error during bulk import: {e}"
             logger.error(error_msg)
             raise DataProcessingError(error_msg, operation="bulk_import")
 
@@ -325,7 +325,7 @@ class DataService:
 
                 except Exception as e:
                     logger.warning(
-                        "Error processing REGTECH Excel file {excel_file}: {e}"
+                        f"Error processing REGTECH Excel file {excel_file}: {e}"
                     )
 
         return regtech_ips

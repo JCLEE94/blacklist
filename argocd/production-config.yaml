@@ -32,6 +32,6 @@ kubernetes:
 ## Application Secrets
 app:
   regtech_username: nextrade
-  regtech_password: Sprtmxm1@3
+  regtech_password: your-regtech-password
   secudium_username: nextrade
-  secudium_password: Sprtmxm1@3
+  secudium_password: your-secudium-password

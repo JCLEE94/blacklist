@@ -89,5 +89,5 @@ class AppConfigurationMixin:
             import time
 
             time.tzset()
-        except Exception as e:
+        except Exception:
             pass  # Windows에서는 tzset이 없음

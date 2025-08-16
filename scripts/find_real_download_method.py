@@ -29,7 +29,7 @@ def find_download_method():
         "https://regtech.fsec.or.kr/login/addLogin",
         data={
             "username": "nextrade",
-            "password": "Sprtmxm1@3",
+            "password": "test_password",
             "login_error": "",
             "txId": "",
             "token": "",

@@ -29,13 +29,22 @@ class DatabaseSchema:
             self.database_url = database_url
             if database_url.startswith("sqlite:///"):
                 self.db_path = database_url[10:]  # Remove 'sqlite:///' prefix
+                # If the path starts with ./, make it relative to current dir
+                if self.db_path.startswith("./"):
+                    self.db_path = self.db_path[2:]
             else:
                 self.db_path = "instance/blacklist.db"  # Default for non-sqlite
         else:
             self.database_url = os.environ.get(
                 "DATABASE_URL", "sqlite:///instance/blacklist.db"
             )
-            self.db_path = "instance/blacklist.db"
+            # Handle local instance path
+            if self.database_url.startswith("sqlite:///./"):
+                self.db_path = self.database_url[12:]  # Remove 'sqlite:///./' prefix
+            elif self.database_url.startswith("sqlite:///"):
+                self.db_path = self.database_url[10:]  # Remove 'sqlite:///' prefix
+            else:
+                self.db_path = "instance/blacklist.db"
 
         self.schema_version = "2.0.0"
 
@@ -214,7 +223,15 @@ class DatabaseSchema:
         if not hasattr(cls, "_instance") or (
             db_path and cls._instance.db_path != db_path
         ):
-            cls._instance = cls(db_path or "instance/blacklist.db")
+            # Convert db_path to database_url format if needed
+            if db_path:
+                if db_path.startswith("sqlite:///"):
+                    database_url = db_path
+                else:
+                    database_url = f"sqlite:///{db_path}"
+            else:
+                database_url = None
+            cls._instance = cls(database_url)
 
         return cls._instance
 

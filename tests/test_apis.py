@@ -150,8 +150,8 @@ def test_regtech_login():
     """
     print("\n🔐 REGTECH 로그인 테스트")
 
-    username = settings.regtech_username or "nextrade"
-    password = settings.regtech_password or "Sprtmxm1@3"
+    username = settings.regtech_username or "test_username"
+    password = settings.regtech_password or "test_password"
 
     print(f"   Username: {username}")
     print(f"   Password: {'*' * len(password)}")

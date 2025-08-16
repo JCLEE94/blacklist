@@ -14,9 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set environment variables for testing
 os.environ['REGTECH_USERNAME'] = 'nextrade'
-os.environ['REGTECH_PASSWORD'] = 'Sprtmxm1@3'
+os.environ['REGTECH_PASSWORD'] = 'test_password'
 os.environ['SECUDIUM_USERNAME'] = 'nextrade'
-os.environ['SECUDIUM_PASSWORD'] = 'Sprtmxm1@3'
+os.environ['SECUDIUM_PASSWORD'] = 'test_password'
 
 
 def test_regtech_collection():
@@ -31,7 +31,7 @@ def test_regtech_collection():
         config = CollectionConfig(
             enabled=True,
             username='nextrade',
-            password='Sprtmxm1@3',
+            password='test_password',
             base_url='https://regtech.fsec.or.kr'
         )
         
@@ -75,7 +75,7 @@ def test_secudium_collection():
         config = CollectionConfig(
             enabled=True,
             username='nextrade',
-            password='Sprtmxm1@3',
+            password='test_password',
             base_url='https://www.secudium.com'
         )
         

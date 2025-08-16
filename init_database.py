@@ -30,16 +30,17 @@ logger = logging.getLogger(__name__)
 def get_database_path() -> str:
     """데이터베이스 경로 결정"""
     # DATABASE_URL 환경변수에서 경로 추출 (컨테이너 환경 우선)
-    database_url = os.getenv("DATABASE_URL", "sqlite:////app/instance/blacklist.db")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///instance/blacklist.db")
     
     if database_url.startswith("sqlite:///"):
-        db_path = database_url.replace("sqlite:///", "")
-    else:
-        # Docker 환경과 로컬 환경 모두 지원
-        if os.path.exists("/app"):
-            db_path = "/app/instance/blacklist.db"
+        # Handle local relative paths
+        if database_url.startswith("sqlite:///./"):
+            db_path = database_url[12:]  # Remove 'sqlite:///./'
         else:
-            db_path = "instance/blacklist.db"
+            db_path = database_url[10:]  # Remove 'sqlite:///'
+    else:
+        # Default fallback
+        db_path = "instance/blacklist.db"
     
     return db_path
 
@@ -47,6 +48,7 @@ def get_database_path() -> str:
 def init_database_enhanced(force_recreate=False, migrate=True):
     """향상된 데이터베이스 초기화"""
     db_path = get_database_path()
+    database_url = os.getenv("DATABASE_URL", "sqlite:///instance/blacklist.db")
     
     print(f"🔧 데이터베이스 초기화 중: {db_path}")
     print(f"📋 스키마 버전: 2.0.0")
@@ -54,8 +56,8 @@ def init_database_enhanced(force_recreate=False, migrate=True):
     print(f"🔄 자동 마이그레이션: {'예' if migrate else '아니오'}")
     
     try:
-        # 스키마 인스턴스 생성
-        schema = get_database_schema(db_path)
+        # 스키마 인스턴스 생성 (database_url 사용)
+        schema = get_database_schema(database_url)
         
         # 현재 스키마 버전 확인
         current_version = schema.get_current_schema_version()

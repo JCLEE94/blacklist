@@ -108,8 +108,7 @@ class CompactFlaskApp(
 
             # Initialize system stability monitoring
             try:
-                from ..utils.system_stability import \
-                    initialize_system_stability
+                from ..utils.system_stability import initialize_system_stability
 
                 initialize_system_stability()
                 logger.info("System stability monitoring initialized")
@@ -133,7 +132,7 @@ class CompactFlaskApp(
             def health_error():
                 return {
                     "status": "error",
-                    "message": "Application initialization failed: {error_message}",
+                    "message": f"Application initialization failed: {error_message}",
                 }, 503
 
             return error_app
