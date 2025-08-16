@@ -115,8 +115,15 @@ class UnifiedBlacklistService(
 
             # REGTECH 수집기 초기화
             if self.config["regtech_enabled"]:
-                self._components["regtech"] = RegtechCollector("data")
-                self.logger.info("✅ REGTECH 수집기 동기 초기화 완료")
+                import os
+                username = os.getenv("REGTECH_USERNAME", "")
+                password = os.getenv("REGTECH_PASSWORD", "")
+                
+                if username and password:
+                    self._components["regtech"] = RegtechCollector(username, password)
+                    self.logger.info("✅ REGTECH 수집기 동기 초기화 완료")
+                else:
+                    self.logger.warning("REGTECH 자격증명이 설정되지 않았습니다")
         except Exception as e:
             self.logger.error(f"동기 컴포넌트 초기화 실패: {e}")
 

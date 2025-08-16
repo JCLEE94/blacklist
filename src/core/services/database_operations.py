@@ -141,12 +141,14 @@ class DatabaseOperationsMixin:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
+            # Use 'status' field instead of 'action' (which doesn't exist)
+            status = log_entry.get("status") or log_entry.get("action", "unknown")
             cursor.execute(
-                "INSERT INTO collection_logs (timestamp, source, action, details) VALUES (?, ?, ?, ?)",
+                "INSERT INTO collection_logs (timestamp, source, status, details) VALUES (?, ?, ?, ?)",
                 (
                     log_entry["timestamp"],
                     log_entry["source"],
-                    log_entry["action"],
+                    status,
                     json.dumps(log_entry["details"]),
                 ),
             )
@@ -170,7 +172,7 @@ class DatabaseOperationsMixin:
             cursor = conn.cursor()
 
             cursor.execute(
-                "SELECT timestamp, source, action, details FROM collection_logs ORDER BY id DESC LIMIT ?",
+                "SELECT timestamp, source, status, details FROM collection_logs ORDER BY id DESC LIMIT ?",
                 (limit,),
             )
 
@@ -179,9 +181,10 @@ class DatabaseOperationsMixin:
                 log_entry = {
                     "timestamp": row[0],
                     "source": row[1],
-                    "action": row[2],
+                    "action": row[2],  # status as action for compatibility
+                    "status": row[2],
                     "details": json.loads(row[3]) if row[3] else {},
-                    "message": "[{row[1]}] {row[2]}",
+                    "message": f"[{row[1]}] {row[2]}",
                 }
                 logs.append(log_entry)
 
