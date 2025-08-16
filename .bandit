@@ -1,0 +1,40 @@
+[bandit]
+# Bandit configuration file for blacklist project
+# Exclude false positives for Docker/Flask bind addresses
+
+# Skip specific security issues
+skips: B104,B605,B607
+
+# Exclude test files and specific patterns
+exclude_dirs:
+  - /tests/
+  - /test/
+  - .venv
+  - venv
+  - .git
+  - __pycache__
+  - .pytest_cache
+  - .tox
+  - build
+  - dist
+
+# Specific rule configurations
+[bandit.blacklists]
+bad_import_sets:
+  - telnetlib
+  - ftplib
+  - pickle
+  - subprocess.call
+  - subprocess.check_call
+  - subprocess.check_output
+  - subprocess.Popen
+
+[bandit.plugins]
+# B104: Binding to all interfaces (0.0.0.0) - Required for Docker containers
+B104: false
+
+# B605: Shell injection via os.system - We don't use this
+B605: false
+
+# B607: Starting process with partial path - Docker entrypoints
+B607: false

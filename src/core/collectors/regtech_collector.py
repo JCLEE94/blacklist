@@ -14,6 +14,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .unified_collector import BaseCollector, CollectionConfig
+from ..common.ip_utils import IPUtils
 
 logger = logging.getLogger(__name__)
 
@@ -454,59 +455,8 @@ class RegtechCollector(BaseCollector):
             }
 
     def _is_valid_ip(self, ip: str) -> bool:
-        """IP 유효성 검사 (향상된 버전)"""
-        try:
-            if not ip or not isinstance(ip, str):
-                return False
-
-            # 기본 IP 패턴 확인
-            pattern = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
-            if not pattern.match(ip.strip()):
-                return False
-
-            # 각 옥텟 범위 확인
-            parts = ip.strip().split(".")
-            for part in parts:
-                try:
-                    num = int(part)
-                    if not 0 <= num <= 255:
-                        return False
-                except ValueError:
-                    return False
-
-            # 사설 IP 및 특수 IP 제외
-            excluded_prefixes = [
-                "192.168.",
-                "10.",
-                "127.",
-                "172.16.",
-                "172.17.",
-                "172.18.",
-                "172.19.",
-                "172.20.",
-                "172.21.",
-                "172.22.",
-                "172.23.",
-                "172.24.",
-                "172.25.",
-                "172.26.",
-                "172.27.",
-                "172.28.",
-                "172.29.",
-                "172.30.",
-                "172.31.",
-                "169.254.",
-                "224.",
-                "0.",
-            ]
-
-            if any(ip.startswith(prefix) for prefix in excluded_prefixes):
-                return False
-
-            return True
-
-        except Exception as e:
-            return False
+        """IP 유효성 검사 (통합 유틸리티 사용)"""
+        return IPUtils.validate_ip(ip) and not IPUtils.is_private_ip(ip)
 
     def _get_date_range(self) -> tuple[str, str]:
         """수집 날짜 범위 계산"""

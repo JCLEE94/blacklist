@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 from ...core.blacklist_unified import UnifiedBlacklistManager
+from ...core.common.ip_utils import IPUtils
 from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
 
 # Performance optimizer removed for optimization
@@ -398,8 +399,5 @@ class V2APIService:
             return {"error": str(e)}
 
     def _is_valid_ip(self, ip: str) -> bool:
-        """Simple IP address validation"""
-        import re
-
-        ipv4_pattern = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-        return bool(re.match(ipv4_pattern, ip.strip()))
+        """IP address validation using centralized utility"""
+        return IPUtils.validate_ip(ip)

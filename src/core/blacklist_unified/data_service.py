@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Set
 
 from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_cache
+from ..common.ip_utils import IPUtils
 from ..database import DatabaseManager
 from .models import DataProcessingError
 
@@ -47,12 +48,8 @@ class DataService:
                 self.db_path = os.path.join(self.data_dir, "database.db")
 
     def _is_valid_ip(self, ip_str: str) -> bool:
-        """Validate IP address format"""
-        try:
-            ipaddress.ip_address(ip_str.strip())
-            return True
-        except ValueError:
-            return False
+        """Validate IP address format using centralized utility"""
+        return IPUtils.validate_ip(ip_str)
 
     def bulk_import_ips(
         self,

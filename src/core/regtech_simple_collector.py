@@ -7,12 +7,13 @@ REGTECH 단순 수집기 - 최소한의 기능으로 작동하는 버전
 import json
 import logging
 import os
-import re
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 import requests
 from bs4 import BeautifulSoup
+
+from .common.ip_utils import IPUtils
 
 logger = logging.getLogger(__name__)
 
@@ -296,11 +297,9 @@ class RegtechSimpleCollector:
                     logger.info(f"페이지 {page + 1}에서 테이블 방식으로 IP를 찾지 못함. 전체 텍스트에서 IP 패턴 검색")
                     
                     # 전체 HTML에서 IP 패턴 찾기
-                    ip_pattern = re.compile(r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b')
-                    ip_matches = ip_pattern.findall(response.text)
+                    ip_matches = IPUtils.extract_ips_from_text(response.text, exclude_private=True)
                     
                     for ip in ip_matches:
-                        if self._is_valid_ip(ip):
                             ip_data = {
                                 "ip": ip,
                                 "country": "Unknown",
@@ -356,43 +355,16 @@ class RegtechSimpleCollector:
             return []
 
     def _is_valid_ip(self, ip: str) -> bool:
-        """IP 유효성 검사 - 더 관대한 검사"""
-        try:
-            if not ip:
-                return False
-
-            # 공백 및 특수문자 제거
-            ip = ip.strip().replace(" ", "")
-            
-            # IP 패턴 확인 (더 관대한 패턴)
-            pattern = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
-            if not pattern.match(ip):
-                # IP 패턴이 포함된 텍스트에서 IP 추출 시도
-                ip_match = re.search(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", ip)
-                if ip_match:
-                    ip = ip_match.group(1)
-                else:
-                    return False
-
-            # 범위 확인
-            parts = ip.split(".")
-            for part in parts:
-                if not 0 <= int(part) <= 255:
-                    return False
-
-            # 사설 IP 제외 (하지만 172.16.x.x는 허용)
-            if ip.startswith(("192.168.", "10.", "127.")):
-                return False
-                
-            # 0.0.0.0도 제외
-            if ip == "0.0.0.0":
-                return False
-
-            return True
-
-        except Exception as e:
-            logger.debug(f"IP 검증 오류 '{ip}': {e}")
+        """IP 유효성 검사 - 통합 유틸리티 사용"""
+        if not ip:
             return False
+            
+        # 공백 및 특수문자 제거
+        cleaned_ip = ip.strip().replace(" ", "")
+        
+        # IP 패턴이 포함된 텍스트에서 IP 추출 시도
+        extracted_ips = IPUtils.extract_ips_from_text(cleaned_ip, exclude_private=True)
+        return len(extracted_ips) > 0
 
     def _save_results(self, ips: List[Dict[str, Any]]):
         """결과 저장"""
