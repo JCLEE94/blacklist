@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   blacklist:
-    image: ghcr.io/jclee94/blacklist:latest
+    image: registry.jclee.me/jclee94/blacklist:latest
     container_name: blacklist
     restart: unless-stopped
     ports:

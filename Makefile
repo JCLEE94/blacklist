@@ -19,6 +19,12 @@ help:
 	@echo "  make status       Check status"
 	@echo "  make clean        Clean up resources"
 	@echo ""
+	@echo "Registry operations:"
+	@echo "  make registry-test      Test registry connectivity"
+	@echo "  make registry-deploy    Build and deploy to registry"
+	@echo "  make docker-build       Build Docker image"
+	@echo "  make docker-push        Push Docker image"
+	@echo ""
 	@echo "Quick start:"
 	@echo "  make init         # Setup environment"
 	@echo "  make start        # Start services"
@@ -75,7 +81,7 @@ clean:
 	@echo "Cleanup completed!"
 
 # Development shortcuts
-.PHONY: run dev install docker-build docker-push k8s-deploy k8s-status argocd-sync
+.PHONY: run dev install docker-build docker-push k8s-deploy k8s-status argocd-sync registry-test registry-deploy
 
 # Run development server (local)
 run:
@@ -106,6 +112,15 @@ docker-run:
 		-p 2541:2541 \
 		-e FLASK_ENV=production \
 		registry.jclee.me/jclee94/blacklist:latest
+
+# Registry operations
+registry-test:
+	@echo "Testing registry connectivity..."
+	@scripts/test-registry-connection.sh
+
+registry-deploy:
+	@echo "Building and deploying to registry..."
+	@scripts/registry-deploy.sh
 
 # Kubernetes operations
 k8s-deploy:
