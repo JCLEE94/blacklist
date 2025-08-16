@@ -86,12 +86,12 @@ class RegtechSimpleCollector:
                 logger.info(f"  - 기간: {start_date} ~ {end_date}")
                 logger.info(f"  - 로그인 성공: True")
                 logger.info(f"  - 페이지 접근: 성공")
-                logger.info(f"  - 처리된 페이지 수: {page if 'page' in locals() else 0}")
+                logger.info(f"  - 처리된 페이지 수: {locals().get('page', 0)}")
                 return {
                     "success": False,
                     "error": "No IPs collected - 데이터가 없거나 웹사이트 구조가 변경되었을 수 있습니다",
                     "total_collected": 0,
-                    "debug_info": f"기간: {start_date}~{end_date}, 처리 페이지: {page if 'page' in locals() else 0}"
+                    "debug_info": f"기간: {start_date}~{end_date}, 처리 페이지: {locals().get('page', 0)}"
                 }
 
         except Exception as e:
