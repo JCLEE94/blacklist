@@ -351,3 +351,90 @@ blacklist_up 1
     except Exception as e:
         logger.error(f"Metrics error: {e}")
         return Response("# Metrics unavailable\nblacklist_up 0\n", mimetype="text/plain")
+
+@api_routes_bp.route("/api/realtime/stats", methods=["GET"])
+def realtime_stats():
+    """실시간 통계 조회"""
+    try:
+        stats = service.get_system_stats()
+        return jsonify({
+            "success": True,
+            "data": stats,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Realtime stats error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/api/realtime/collection-status", methods=["GET"])
+def realtime_collection_status():
+    """실시간 수집 상태 조회"""
+    try:
+        from ..collection_manager import get_collection_manager
+        manager = get_collection_manager()
+        status = manager.get_collection_status()
+        
+        return jsonify({
+            "success": True,
+            "data": status,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Realtime collection status error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/api/monitoring/system", methods=["GET"])
+def monitoring_system():
+    """시스템 모니터링 데이터"""
+    try:
+        import psutil
+        
+        system_info = {
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "memory": {
+                "percent": psutil.virtual_memory().percent,
+                "used": psutil.virtual_memory().used,
+                "total": psutil.virtual_memory().total
+            },
+            "disk": {
+                "percent": psutil.disk_usage('/').percent,
+                "used": psutil.disk_usage('/').used,
+                "total": psutil.disk_usage('/').total
+            },
+            "uptime": datetime.utcnow().isoformat()
+        }
+        
+        return jsonify({
+            "success": True,
+            "data": system_info
+        })
+    except Exception as e:
+        logger.error(f"System monitoring error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
+@api_routes_bp.route("/api/realtime/feed", methods=["GET"])
+def realtime_feed():
+    """실시간 피드 데이터"""
+    try:
+        import random
+        
+        # 시뮬레이션된 실시간 이벤트
+        events = [
+            {"type": "info", "message": "시스템 정상 작동 중", "icon": "bi-info-circle"},
+            {"type": "success", "message": "헬스체크 통과", "icon": "bi-check-circle"},
+            {"type": "warning", "message": "메모리 사용률 증가", "icon": "bi-exclamation-triangle"}
+        ]
+        
+        event = random.choice(events)
+        event["timestamp"] = datetime.utcnow().strftime("%H:%M:%S")
+        
+        return jsonify({
+            "success": True,
+            "event": event
+        })
+    except Exception as e:
+        logger.error(f"Realtime feed error: {e}")
+        return jsonify(create_error_response(e)), 500
