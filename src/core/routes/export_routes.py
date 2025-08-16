@@ -25,12 +25,12 @@ service = get_unified_service()
 def export_json():
     """JSON 형식으로 내보내기"""
     try:
-        detailed_ips = service.get_active_blacklist_ips()
+        detailed_ips = service.get_active_blacklist_entries()
 
         export_data = {
             "export_time": datetime.now().isoformat(),
             "total_count": len(detailed_ips),
-            "blacklist_ips": detailed_ips,
+            "blacklist_entries": detailed_ips,
         }
 
         response = Response(
@@ -50,7 +50,7 @@ def export_json():
 def export_txt():
     """텍스트 형식으로 내보내기"""
     try:
-        ips = service.get_active_blacklist_ips()
+        ips = service.get_active_blacklist_entries()
 
         # 헤더 정보 포함한 텍스트 파일
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -79,7 +79,7 @@ def export_data(format):
     """데이터 내보내기"""
     try:
         if format == "json":
-            ips = service.get_active_blacklist_ips()
+            ips = service.get_active_blacklist_entries()
             return jsonify(
                 {
                     "success": True,
@@ -90,7 +90,7 @@ def export_data(format):
             )
         elif format == "csv":
             # CSV 형식으로 내보내기
-            ips = service.get_active_blacklist_ips()
+            ips = service.get_active_blacklist_entries()
             csv_content = "IP Address\n" + "\n".join(ips)
             response = Response(
                 csv_content,

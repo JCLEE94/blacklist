@@ -61,16 +61,26 @@ class DatabaseOperationsMixin:
                 """
             )
 
-            # Create collection_logs table if not exists
+            # Create collection_logs table if not exists (with correct schema)
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS collection_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TEXT NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     source TEXT NOT NULL,
-                    action TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    items_collected INTEGER DEFAULT 0,
+                    items_new INTEGER DEFAULT 0,
+                    items_updated INTEGER DEFAULT 0,
+                    items_failed INTEGER DEFAULT 0,
+                    execution_time_ms REAL DEFAULT 0.0,
+                    error_message TEXT,
                     details TEXT,
-                    created_at TEXT NOT NULL
+                    collection_type TEXT DEFAULT 'scheduled',
+                    user_id TEXT,
+                    session_id TEXT,
+                    data_size_bytes INTEGER DEFAULT 0,
+                    memory_usage_mb REAL DEFAULT 0.0
                 )
                 """
             )
@@ -117,11 +127,21 @@ class DatabaseOperationsMixin:
                 """
                 CREATE TABLE IF NOT EXISTS collection_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TEXT NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     source TEXT NOT NULL,
-                    action TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    items_collected INTEGER DEFAULT 0,
+                    items_new INTEGER DEFAULT 0,
+                    items_updated INTEGER DEFAULT 0,
+                    items_failed INTEGER DEFAULT 0,
+                    execution_time_ms REAL DEFAULT 0.0,
+                    error_message TEXT,
                     details TEXT,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    collection_type TEXT DEFAULT 'scheduled',
+                    user_id TEXT,
+                    session_id TEXT,
+                    data_size_bytes INTEGER DEFAULT 0,
+                    memory_usage_mb REAL DEFAULT 0.0
                 )
             """
             )

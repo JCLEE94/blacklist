@@ -45,7 +45,7 @@ class RegtechAnalyzer:
 
             # 기본 통계
             cursor.execute(
-                "SELECT COUNT(*) FROM blacklist_ips WHERE source = 'REGTECH'"
+                "SELECT COUNT(*) FROM blacklist_entries WHERE source = 'REGTECH'"
             )
             total_ips = cursor.fetchone()[0]
 

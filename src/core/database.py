@@ -70,36 +70,60 @@ class DatabaseManager:
     def _create_tables(self):
         """필요한 테이블 생성"""
         with self.engine.connect() as conn:
-            # blacklist_ips 테이블 (실제 DB 스키마와 일치)
+            # blacklist_entries 테이블 (실제 DB 스키마와 일치)
             conn.execute(
                 text(
                     """
-                CREATE TABLE IF NOT EXISTS blacklist_ips (
+                CREATE TABLE IF NOT EXISTS blacklist_entries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip VARCHAR(45) UNIQUE NOT NULL,
+                    ip_address TEXT NOT NULL UNIQUE,
+                    first_seen TEXT,
+                    last_seen TEXT,
+                    detection_months TEXT,
+                    is_active BOOLEAN DEFAULT 1,
+                    days_until_expiry INTEGER DEFAULT 90,
+                    threat_level TEXT DEFAULT 'medium',
+                    source TEXT NOT NULL DEFAULT 'unknown',
+                    source_details TEXT,
+                    country TEXT,
+                    reason TEXT,
+                    reg_date TEXT,
+                    exp_date TEXT,
+                    view_count INTEGER DEFAULT 0,
+                    uuid TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    attack_type VARCHAR(50),
-                    country VARCHAR(100),
-                    source VARCHAR(100),
-                    extra_data TEXT
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    severity_score REAL DEFAULT 0.0,
+                    confidence_level REAL DEFAULT 1.0,
+                    tags TEXT,
+                    last_verified TIMESTAMP,
+                    verification_status TEXT DEFAULT 'unverified'
                 )
             """
                 )
             )
 
-            # ip_detection 테이블 (실제 DB 스키마와 일치)
+            # collection_logs 테이블 (완전한 스키마)
             conn.execute(
                 text(
                     """
-                CREATE TABLE IF NOT EXISTS ip_detection (
+                CREATE TABLE IF NOT EXISTS collection_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip VARCHAR(45) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    source VARCHAR(50),
-                    attack_type VARCHAR(50),
-                    confidence_score REAL DEFAULT 1.0,
-                    blacklist_ips_id INTEGER,
-                    FOREIGN KEY (blacklist_ips_id) REFERENCES blacklist_ips(id)
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    source TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    items_collected INTEGER DEFAULT 0,
+                    items_new INTEGER DEFAULT 0,
+                    items_updated INTEGER DEFAULT 0,
+                    items_failed INTEGER DEFAULT 0,
+                    execution_time_ms REAL DEFAULT 0.0,
+                    error_message TEXT,
+                    details TEXT,
+                    collection_type TEXT DEFAULT 'scheduled',
+                    user_id TEXT,
+                    session_id TEXT,
+                    data_size_bytes INTEGER DEFAULT 0,
+                    memory_usage_mb REAL DEFAULT 0.0
                 )
             """
                 )
@@ -135,36 +159,26 @@ class DatabaseManager:
         with self.engine.connect() as conn:
             # 기본 인덱스
             indexes = [
-                # blacklist_ips 테이블 인덱스 (실제 DB 스키마와 일치)
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_ips ON blacklist_ips(ip)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_attack_type ON blacklist_ips(attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_country ON blacklist_ips(country)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_source ON blacklist_ips(source)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_created_at ON blacklist_ips(created_at)",
+                # blacklist_entries 테이블 인덱스 (실제 DB 스키마와 일치)
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_ip ON blacklist_entries(ip_address)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_source ON blacklist_entries(source)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_country ON blacklist_entries(country)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_created_at ON blacklist_entries(created_at)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_active ON blacklist_entries(is_active)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_threat_level ON blacklist_entries(threat_level)",
                 # 복합 인덱스 (쿼리 패턴 기반)
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_ips_attack_type ON blacklist_ips(ip, attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_source_attack_type ON blacklist_ips(source, attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_country_attack_type ON blacklist_ips(country, attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_created_at_source ON blacklist_ips(created_at, source)",
-                # ip_detection 테이블 인덱스 (실제 DB 스키마와 일치)
-                "CREATE INDEX IF NOT EXISTS idx_detection_ip ON ip_detection(ip)",
-                "CREATE INDEX IF NOT EXISTS idx_detection_created_at ON ip_detection(created_at)",
-                "CREATE INDEX IF NOT EXISTS idx_detection_source ON ip_detection(source)",
-                "CREATE INDEX IF NOT EXISTS idx_detection_attack_type ON ip_detection(attack_type)",
-                "CREATE INDEX IF NOT EXISTS idx_detection_confidence ON ip_detection(confidence_score)",
-                # 복합 인덱스 (시간 범위 쿼리 최적화)
-                "CREATE INDEX IF NOT EXISTS idx_detection_ip_created_at ON ip_detection(ip, created_at)",
-                "CREATE INDEX IF NOT EXISTS idx_detection_created_at_source ON ip_detection(created_at, source)",
-                "CREATE INDEX IF NOT EXISTS idx_detection_month ON ip_detection(strftime('%Y-%m', created_at))",
-                "CREATE INDEX IF NOT EXISTS idx_detection_month_ip ON ip_detection(strftime('%Y-%m', created_at), ip)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_ip_source ON blacklist_entries(ip_address, source)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_source_active ON blacklist_entries(source, is_active)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_country_threat ON blacklist_entries(country, threat_level)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_created_source ON blacklist_entries(created_at, source)",
+                # collection_logs 테이블 인덱스
+                "CREATE INDEX IF NOT EXISTS idx_collection_logs_timestamp ON collection_logs(timestamp DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_collection_logs_source ON collection_logs(source)",
+                "CREATE INDEX IF NOT EXISTS idx_collection_logs_status ON collection_logs(status)",
+                "CREATE INDEX IF NOT EXISTS idx_collection_logs_source_status ON collection_logs(source, status)",
                 # daily_stats 테이블 인덱스
                 "CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_stats(date DESC)",
                 "CREATE INDEX IF NOT EXISTS idx_daily_stats_created ON daily_stats(created_at)",
-                # 외래키 인덱스
-                "CREATE INDEX IF NOT EXISTS idx_detection_blacklist_fk ON ip_detection(blacklist_ips_id)",
-                # 전문 검색용 인덱스 (SQLite FTS)
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_as_name ON blacklist_ips(as_name)",
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_city ON blacklist_ips(city)",
             ]
 
             for index_sql in indexes:
@@ -225,29 +239,31 @@ class DatabaseManager:
         with self.Session() as session:
             # 전체 IP 수
             stats["total_ips"] = session.execute(
-                text("SELECT COUNT(DISTINCT ip) FROM blacklist_ips")
+                text("SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries WHERE is_active = 1")
             ).scalar()
 
-            # 카테고리별 통계
-            category_stats = session.execute(
+            # 소스별 통계
+            source_stats = session.execute(
                 text(
                     """
-                    SELECT attack_type, COUNT(*) as count
-                    FROM blacklist_ips
-                    GROUP BY attack_type
+                    SELECT source, COUNT(*) as count
+                    FROM blacklist_entries
+                    WHERE is_active = 1
+                    GROUP BY source
                 """
                 )
             ).fetchall()
-            stats["categories"] = {row[0]: row[1] for row in category_stats}
+            stats["sources"] = {row[0]: row[1] for row in source_stats}
 
             # 월별 탐지 통계
             monthly_stats = session.execute(
                 text(
                     """
                     SELECT strftime('%Y-%m', created_at) as month,
-                           COUNT(DISTINCT ip) as unique_ips,
+                           COUNT(DISTINCT ip_address) as unique_ips,
                            COUNT(*) as total_detections
-                    FROM blacklist_ips
+                    FROM blacklist_entries
+                    WHERE is_active = 1
                     GROUP BY month
                     ORDER BY month DESC
                     LIMIT 12
@@ -280,16 +296,15 @@ class DatabaseManager:
             )
             deleted_count += result.rowcount
 
-            # 연결된 IP가 없는 블랙리스트 항목 삭제
+            # 비활성화된 오래된 블랙리스트 항목 삭제
             result = session.execute(
                 text(
                     """
-                    DELETE FROM blacklist_ips
-                    WHERE id NOT IN (
-                        SELECT DISTINCT blacklist_ips_id FROM ip_detection
-                    )
+                    DELETE FROM blacklist_entries
+                    WHERE is_active = 0 AND updated_at < :cutoff
                 """
-                )
+                ),
+                {"cutoff": cutoff_date}
             )
             deleted_count += result.rowcount
 

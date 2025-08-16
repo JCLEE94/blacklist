@@ -144,76 +144,101 @@ def legacy_init_database(force_recreate=False):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
-        # 기존 테이블 체크
+        # 기존 테이블 체크 (올바른 테이블명 사용)
         cursor.execute(
             """
             SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='blacklist_ip'
+            WHERE type='table' AND name='blacklist_entries'
         """
         )
         table_exists = cursor.fetchone() is not None
 
         if table_exists:
-            cursor.execute("PRAGMA table_info(blacklist_ip)")
+            cursor.execute("PRAGMA table_info(blacklist_entries)")
             columns = [col[1] for col in cursor.fetchall()]
 
-            if "ip" not in columns or force_recreate:
+            if "ip_address" not in columns or force_recreate:
                 if force_recreate:
                     print("🔄 Force recreating table...")
                 else:
-                    print("❌ 'ip' column missing in blacklist_ip table. Recreating table...")
-                cursor.execute("DROP TABLE IF EXISTS blacklist_ip")
+                    print("❌ 'ip_address' column missing in blacklist_entries table. Recreating table...")
+                cursor.execute("DROP TABLE IF EXISTS blacklist_entries")
                 table_exists = False
 
         if not table_exists:
-            print("Creating blacklist_ip table...")
+            print("Creating blacklist_entries table...")
             cursor.execute(
                 """
-            CREATE TABLE blacklist_ip (
+            CREATE TABLE blacklist_entries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ip VARCHAR(45) UNIQUE NOT NULL,
-                ip_address VARCHAR(45),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                detection_date TIMESTAMP,
-                reg_date TIMESTAMP,
-                attack_type VARCHAR(50),
-                reason VARCHAR(200),
-                country VARCHAR(100),
-                threat_level VARCHAR(50),
-                as_name VARCHAR(200),
-                city VARCHAR(100),
-                source VARCHAR(100),
+                ip_address TEXT NOT NULL UNIQUE,
+                first_seen TEXT,
+                last_seen TEXT,
+                detection_months TEXT,
                 is_active BOOLEAN DEFAULT 1,
+                days_until_expiry INTEGER DEFAULT 90,
+                threat_level TEXT DEFAULT 'medium',
+                source TEXT NOT NULL DEFAULT 'unknown',
+                source_details TEXT,
+                country TEXT,
+                reason TEXT,
+                reg_date TEXT,
+                exp_date TEXT,
+                view_count INTEGER DEFAULT 0,
+                uuid TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                extra_data TEXT
+                severity_score REAL DEFAULT 0.0,
+                confidence_level REAL DEFAULT 1.0,
+                tags TEXT,
+                last_verified TIMESTAMP,
+                verification_status TEXT DEFAULT 'unverified'
             )
             """
             )
-            cursor.execute("CREATE INDEX idx_blacklist_ip ON blacklist_ip(ip)")
-            cursor.execute("CREATE INDEX idx_blacklist_source ON blacklist_ip(source)")
+            cursor.execute("CREATE INDEX idx_blacklist_entries_ip ON blacklist_entries(ip_address)")
+            cursor.execute("CREATE INDEX idx_blacklist_entries_source ON blacklist_entries(source)")
 
-        # ip_detection 테이블
+        # collection_logs 테이블 (완전한 스키마)
         cursor.execute(
             """
-        CREATE TABLE IF NOT EXISTS ip_detection (
+        CREATE TABLE IF NOT EXISTS collection_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ip VARCHAR(45) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            source VARCHAR(50),
-            attack_type VARCHAR(50),
-            confidence_score REAL DEFAULT 1.0,
-            blacklist_ip_id INTEGER,
-            FOREIGN KEY (blacklist_ip_id) REFERENCES blacklist_ip(id)
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            source TEXT NOT NULL,
+            status TEXT NOT NULL,
+            items_collected INTEGER DEFAULT 0,
+            items_new INTEGER DEFAULT 0,
+            items_updated INTEGER DEFAULT 0,
+            items_failed INTEGER DEFAULT 0,
+            execution_time_ms REAL DEFAULT 0.0,
+            error_message TEXT,
+            details TEXT,
+            collection_type TEXT DEFAULT 'scheduled',
+            user_id TEXT,
+            session_id TEXT,
+            data_size_bytes INTEGER DEFAULT 0,
+            memory_usage_mb REAL DEFAULT 0.0
         )
         """
         )
 
-        # expires_at 컬럼 추가
-        try:
-            cursor.execute("ALTER TABLE blacklist_ip ADD COLUMN expires_at TIMESTAMP")
-            print("✅ Added expires_at column to blacklist_ip table")
-        except sqlite3.OperationalError:
-            pass
+        # 추가 테이블들
+        cursor.execute(
+            """
+        CREATE TABLE IF NOT EXISTS metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            value_type TEXT DEFAULT 'string',
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            category TEXT DEFAULT 'general',
+            is_sensitive BOOLEAN DEFAULT 0,
+            requires_restart BOOLEAN DEFAULT 0
+        )
+        """
+        )
 
         # daily_stats 테이블
         cursor.execute(

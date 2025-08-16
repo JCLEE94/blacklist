@@ -433,34 +433,31 @@ class RegtechSimpleCollector:
             saved_count = 0
             for ip_data in ips:
                 try:
-                    # blacklist_ips 테이블에 직접 저장
+                    # blacklist_entries 테이블에 직접 저장
                     cursor.execute('''
-                        INSERT OR REPLACE INTO blacklist_ips 
-                        (ip, source, detection_date, threat_type, country, confidence, is_active)
+                        INSERT OR REPLACE INTO blacklist_entries 
+                        (ip_address, source, first_seen, threat_level, country, confidence_level, is_active)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         ip_data["ip"],
                         "REGTECH",
                         ip_data.get("date", datetime.now().strftime("%Y-%m-%d")),
-                        "blacklist",
+                        "high",
                         ip_data.get("country", ""),
                         1.0,
                         1
                     ))
                     
-                    # ip_detections 테이블에도 저장
+                    # collection_logs 테이블에 로그 기록
                     cursor.execute('''
-                        INSERT OR REPLACE INTO ip_detections
-                        (ip, source, detection_date, threat_type, country, confidence, is_active)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO collection_logs
+                        (source, status, items_collected, details)
+                        VALUES (?, ?, ?, ?)
                     ''', (
-                        ip_data["ip"],
                         "REGTECH",
-                        ip_data.get("date", datetime.now().strftime("%Y-%m-%d")),
-                        "blacklist",
-                        ip_data.get("country", ""),
-                        1.0,
-                        1
+                        "success",
+                        1,
+                        json.dumps({"ip": ip_data["ip"], "country": ip_data.get("country", "")})
                     ))
                     
                     saved_count += 1

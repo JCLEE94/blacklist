@@ -131,7 +131,7 @@ def api_docs():
 def get_active_blacklist():
     """활성 블랙리스트 조회 (플레인 텍스트)"""
     try:
-        ips = service.get_active_blacklist_ips()
+        ips = service.get_active_blacklist_entries()
 
         # Accept 헤더를 확인하여 응답 형식 결정
         accept_header = request.headers.get("Accept", "text/plain")
@@ -165,7 +165,7 @@ def get_active_blacklist():
 def get_active_blacklist_txt():
     """활성 블랙리스트 조회 (플레인 텍스트)"""
     try:
-        ips = service.get_active_blacklist_ips()
+        ips = service.get_active_blacklist_entries()
 
         # 플레인 텍스트 형식으로 반환
         ip_list = "\n".join(ips) if ips else ""
@@ -188,7 +188,7 @@ def get_active_blacklist_txt():
 def get_active_blacklist_simple():
     """활성 블랙리스트 조회 (심플 텍스트 - FortiGate용)"""
     try:
-        ips = service.get_active_blacklist_ips()
+        ips = service.get_active_blacklist_entries()
 
         # 심플 텍스트 형식으로 반환 (한 줄에 하나씩)
         ip_list = "\n".join(ips) if ips else ""
@@ -205,7 +205,7 @@ def get_active_blacklist_simple():
 def get_fortigate_simple():
     """FortiGate External Connector 형식 (심플 버전)"""
     try:
-        ips = service.get_active_blacklist_ips()
+        ips = service.get_active_blacklist_entries()
 
         # FortiGate External Connector 형식
         data = {

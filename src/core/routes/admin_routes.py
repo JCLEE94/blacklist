@@ -163,7 +163,7 @@ def get_raw_data():
         )
 
         # Get total count
-        count_query = "SELECT COUNT(*) FROM blacklist_ips{where_clause}"
+        count_query = "SELECT COUNT(*) FROM blacklist_entries{where_clause}"
         cursor.execute(count_query, params)
         total_count = cursor.fetchone()[0]
 
@@ -178,7 +178,7 @@ def get_raw_data():
             detection_date,
             created_at,
             extra_data
-        FROM blacklist_ips
+        FROM blacklist_entries
         {where_clause}
         ORDER BY id DESC
         LIMIT ? OFFSET ?

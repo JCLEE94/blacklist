@@ -32,7 +32,7 @@ class UnifiedBlacklistManager:
     ):
         """Initialize enhanced blacklist manager"""
         self.data_dir = data_dir
-        self.blacklist_dir = os.path.join(data_dir, "blacklist_ips")
+        self.blacklist_dir = os.path.join(data_dir, "blacklist_entries")
         self.detection_dir = os.path.join(data_dir, "by_detection_month")
 
         # Ensure directory structure
@@ -192,7 +192,7 @@ class UnifiedBlacklistManager:
         return self.statistics_service.get_expiring_ips(days)
 
     # Legacy methods for backward compatibility
-    def get_active_blacklist_ips(self) -> List[str]:
+    def get_active_blacklist_entries(self) -> List[str]:
         """Legacy method - redirects to get_active_ips"""
         return self.get_active_ips()
 

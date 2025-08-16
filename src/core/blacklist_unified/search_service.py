@@ -25,7 +25,7 @@ class SearchService:
         self, data_dir: str, db_manager: DatabaseManager, cache: EnhancedSmartCache
     ):
         self.data_dir = data_dir
-        self.blacklist_dir = os.path.join(data_dir, "blacklist_ips")
+        self.blacklist_dir = os.path.join(data_dir, "blacklist_entries")
         self.detection_dir = os.path.join(data_dir, "by_detection_month")
         self.db_manager = db_manager
         self.cache = cache

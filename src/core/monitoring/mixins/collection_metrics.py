@@ -19,7 +19,7 @@ class CollectionMetricsMixin:
 
         business_metrics = [
             MetricDefinition(
-                name="blacklist_ips_total",
+                name="blacklist_entries_total",
                 help_text="블랙리스트 IP 총 수",
                 metric_type="gauge",
                 labels=["source", "status"],  # regtech/secudium, active/inactive
@@ -139,7 +139,7 @@ class CollectionMetricsMixin:
                 if isinstance(source_data, dict):
                     for status, count in source_data.items():
                         if isinstance(count, (int, float)):
-                            self.metrics["blacklist_ips_total"].labels(
+                            self.metrics["blacklist_entries_total"].labels(
                                 source=source, status=status
                             ).set(count)
 

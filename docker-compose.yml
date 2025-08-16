@@ -6,13 +6,13 @@ services:
     container_name: blacklist
     restart: unless-stopped
     ports:
-      - "32542:2542"
+      - "32542:2541"
     volumes:
       - ./data:/app/instance
       - ./logs:/app/logs
     environment:
       - FLASK_ENV=production
-      - PORT=2542
+      - PORT=2541
       - DATABASE_URL=sqlite:////app/instance/blacklist.db
       - REDIS_URL=redis://redis:6379/0
       - COLLECTION_ENABLED=true
@@ -24,13 +24,11 @@ services:
     depends_on:
       - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2542/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:2541/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - blacklist-net
 
@@ -49,22 +47,6 @@ services:
     networks:
       - blacklist-net
 
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_POLL_INTERVAL=300
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_INCLUDE_STOPPED=false
-      - WATCHTOWER_MONITOR_ONLY=false
-      - WATCHTOWER_LOG_LEVEL=info
-      - WATCHTOWER_NOTIFICATIONS_LEVEL=info
-    command: --interval 300 blacklist
-    networks:
-      - blacklist-net
 
 volumes:
   redis_data:

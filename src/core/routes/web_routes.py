@@ -47,15 +47,15 @@ def _get_dashboard_data():
             with sqlite3.connect(db_path, timeout=10) as conn:
                 cursor = conn.cursor()
 
-                # 소스별 카운트 조회 (blacklist_ips 테이블 사용)
+                # 소스별 카운트 조회 (blacklist_entries 테이블 사용)
                 cursor.execute(
                     """
                     SELECT 
                         LOWER(source) as source_name,
                         COUNT(*) as count
-                    FROM blacklist_ips 
+                    FROM blacklist_entries 
                     WHERE is_active = 1 
-                      AND (expires_at IS NULL OR expires_at > datetime('now'))
+                      AND (exp_date IS NULL OR exp_date > datetime('now'))
                     GROUP BY LOWER(source)
                 """
                 )
