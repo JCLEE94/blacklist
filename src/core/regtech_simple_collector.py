@@ -28,6 +28,10 @@ class RegtechSimpleCollector:
         import os
         self.base_url = os.getenv('REGTECH_BASE_URL', 'https://regtech.fsec.or.kr')
         
+        # 데이터 저장 디렉토리
+        self.regtech_dir = "/app/data/regtech"
+        os.makedirs(self.regtech_dir, exist_ok=True)
+        
         logger.info(f"REGTECH 수집기 초기화: {self.base_url} (사용자: {username})")
         
         # 세션 타임아웃 및 재시도 설정
