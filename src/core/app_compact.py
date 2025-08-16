@@ -64,8 +64,12 @@ class CompactFlaskApp(
             # Initialize dependency injection container
             container = get_container()
 
-            # Load configuration through container
-            config = container.get("config")
+            # Load configuration through container with explicit config_name
+            if config_name:
+                from src.config.factory import get_config
+                config = get_config(config_name)
+            else:
+                config = container.get("config")
             app.config.from_object(config)
 
             # Setup basic configuration (from AppConfigurationMixin)
