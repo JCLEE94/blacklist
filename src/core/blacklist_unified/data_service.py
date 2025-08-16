@@ -345,8 +345,8 @@ class DataService:
                         source,
                         detection_date,
                         country,
-                        attack_type as threat_type,
-                        threat_level as confidence_score,
+                        threat_type,
+                        confidence as confidence_score,
                         created_at,
                         updated_at,
                         expires_at
