@@ -264,7 +264,7 @@ def mock_external_services():
     secudium_mock = MockSECUDIUMCollector()
     patches.append(
         patch(
-            "src.core.collectors.secudium_collector.SECUDIUMCollector",
+            "src.core.secudium_collector.SecudiumCollector",
             return_value=secudium_mock,
         )
     )

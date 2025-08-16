@@ -120,7 +120,7 @@ class TestCollectors:
     def test_secudium_collector_import(self):
         """Test SECUDIUM collector import"""
         try:
-            from src.core.collectors import secudium_collector
+            from src.core import secudium_collector
             assert secudium_collector is not None
         except ImportError:
             pytest.skip("SECUDIUM collector not available")

@@ -156,7 +156,7 @@ class SecurityManager:
     def generate_api_key(self, prefix: str = "ak") -> str:
         """Generate secure API key"""
         random_part = secrets.token_urlsafe(32)
-        return "{prefix}_{random_part}"
+        return f"{prefix}_{random_part}"
 
     def validate_api_key_format(self, api_key: str) -> bool:
         """Validate API key format"""
@@ -307,7 +307,7 @@ def input_validation(schema: Dict[str, Any]):
                     # Basic validation
                     for field, rules in schema.items():
                         if rules.get("required", False) and field not in data:
-                            return {"error": "Missing required field: {field}"}, 400
+                            return {"error": f"Missing required field: {field}"}, 400
 
                         if field in data:
                             value = data[field]
@@ -315,14 +315,14 @@ def input_validation(schema: Dict[str, Any]):
                             # Type validation
                             expected_type = rules.get("type")
                             if expected_type and not isinstance(value, expected_type):
-                                return {"error": "Invalid type for {field}"}, 400
+                                return {"error": f"Invalid type for {field}"}, 400
 
                             # Length validation for strings
                             if isinstance(value, str):
                                 min_len = rules.get("min_length", 0)
-                                max_len = rules.get("max_length", float("in"))
+                                max_len = rules.get("max_length", float("inf"))
                                 if not (min_len <= len(value) <= max_len):
-                                    return {"error": "Invalid length for {field}"}, 400
+                                    return {"error": f"Invalid length for {field}"}, 400
 
                 return f(*args, **kwargs)
 

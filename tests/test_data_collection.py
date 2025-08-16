@@ -68,7 +68,7 @@ def test_secudium_collection():
     print("\n🔍 Testing SECUDIUM Collection...")
     
     try:
-        from src.core.collectors.secudium_collector import SecudiumCollector
+        from src.core.secudium_collector import SecudiumCollector
         from src.core.collectors.unified_collector import CollectionConfig
         
         # Create configuration
