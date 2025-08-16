@@ -57,10 +57,10 @@ RUN mkdir -p instance data logs \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:2541/health || exit 1
+    CMD curl -f http://localhost:2542/health || exit 1
 
 # Expose port
-EXPOSE 2541
+EXPOSE 2542
 
 # Default command
-CMD ["python3", "app/main.py", "--host", "0.0.0.0", "--port", "2541"]
+CMD ["python3", "main.py", "--host", "0.0.0.0", "--port", "2542"]
