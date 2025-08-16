@@ -69,7 +69,7 @@ def api_collection_logs():
                     "timestamp": log_entry.get("timestamp"),
                     "source": log_entry.get("source", "unknown"),
                     "action": log_entry.get("action", ""),
-                    "message": "[{log_entry.get('source')}] {log_entry.get('action')}",
+                    "message": f"[{log_entry.get('source')}] {log_entry.get('action')}",
                 }
 
                 # 상세 정보 추가
@@ -80,11 +80,11 @@ def api_collection_logs():
                     if details.get("ips_collected") is not None:
                         formatted_log[
                             "message"
-                        ] += " - {details['ips_collected']}개 IP 수집"
+                        ] += f" - {details['ips_collected']}개 IP 수집"
                     if details.get("start_date"):
                         formatted_log[
                             "message"
-                        ] += " - 기간: {details['start_date']}~{details.get('end_date', details['start_date'])}"
+                        ] += f" - 기간: {details['start_date']}~{details.get('end_date', details['start_date'])}"
 
                 logs.append(formatted_log)
         except Exception as e:
