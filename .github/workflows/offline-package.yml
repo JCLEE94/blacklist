@@ -11,9 +11,17 @@ on:
         required: true
         default: 'v2.0.1'
 
+# Prevent concurrent offline package builds
+concurrency:
+  group: offline-package-build
+  cancel-in-progress: false
+
 jobs:
   build-offline-package:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     
     steps:
     - name: Checkout code

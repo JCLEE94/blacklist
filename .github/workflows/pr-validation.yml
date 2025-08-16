@@ -1,0 +1,288 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # Code quality and security analysis
+  quality-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install quality tools
+        run: |
+          pip install --upgrade pip
+          pip install black isort flake8 bandit[toml] safety
+          pip install -r requirements.txt
+
+      - name: Check code formatting (Black)
+        run: |
+          black --check --diff src/ tests/
+          echo "✅ Code formatting check passed"
+
+      - name: Check import sorting (isort)
+        run: |
+          isort --check-only --diff src/ tests/
+          echo "✅ Import sorting check passed"
+
+      - name: Lint with flake8
+        run: |
+          flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src/ tests/ --count --max-line-length=88 --extend-ignore=E203,W503 --statistics
+
+      - name: Security analysis with Bandit
+        run: |
+          bandit -r src/ -f json -o bandit-report.json || true
+          bandit -r src/ -ll
+
+      - name: Check for known vulnerabilities
+        run: |
+          safety check --json --output safety-report.json || true
+          safety check
+
+      - name: File size compliance check
+        run: |
+          echo "Checking for files exceeding 500 lines..."
+          large_files=$(find src/ tests/ -name "*.py" -exec wc -l {} + | awk '$1 > 500 {print $2 " (" $1 " lines)"}')
+          if [ -n "$large_files" ]; then
+            echo "❌ Files exceeding 500 lines found:"
+            echo "$large_files"
+            exit 1
+          else
+            echo "✅ All files comply with 500-line limit"
+          fi
+
+      - name: Upload quality reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  # Comprehensive testing across Python versions
+  test-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+        test-group: ["unit", "integration", "api"]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-html pytest-json-report pytest-xdist
+
+      - name: Run ${{ matrix.test-group }} tests
+        run: |
+          pytest -m "${{ matrix.test-group }}" \
+            -v \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=html \
+            --html=test-report-${{ matrix.test-group }}.html \
+            --json-report \
+            --json-report-file=test-report-${{ matrix.test-group }}.json \
+            -n auto
+        env:
+          FORCE_DISABLE_COLLECTION: true
+          COLLECTION_ENABLED: false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}-${{ matrix.test-group }}
+          path: |
+            htmlcov/
+            test-report-*.html
+            test-report-*.json
+            coverage.xml
+
+  # Performance regression testing
+  performance-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run performance benchmarks
+        run: |
+          if [ -f "tests/integration/performance_benchmark.py" ]; then
+            python3 tests/integration/performance_benchmark.py
+          else
+            echo "Performance benchmark file not found, skipping..."
+          fi
+        env:
+          FORCE_DISABLE_COLLECTION: true
+
+  # Docker build test
+  docker-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (test only)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: blacklist:pr-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Test Docker image
+        run: |
+          docker run --rm -d --name blacklist-test \
+            -p 2542:2542 \
+            -e FORCE_DISABLE_COLLECTION=true \
+            blacklist:pr-test
+          
+          # Wait for container to start
+          sleep 10
+          
+          # Health check
+          if curl -f http://localhost:2542/health; then
+            echo "✅ Docker container health check passed"
+          else
+            echo "❌ Docker container health check failed"
+            docker logs blacklist-test
+            exit 1
+          fi
+          
+          # Stop container
+          docker stop blacklist-test
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: blacklist:pr-test
+          format: 'table'
+          exit-code: '1'
+
+  # Summary and reporting
+  pr-summary:
+    runs-on: ubuntu-latest
+    needs: [quality-check, test-matrix, performance-test, docker-test]
+    if: always()
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Generate PR summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            const jobs = [
+              { name: 'Quality Check', status: '${{ needs.quality-check.result }}' },
+              { name: 'Test Matrix', status: '${{ needs.test-matrix.result }}' },
+              { name: 'Performance Test', status: '${{ needs.performance-test.result }}' },
+              { name: 'Docker Test', status: '${{ needs.docker-test.result }}' }
+            ];
+            
+            const statusEmoji = {
+              'success': '✅',
+              'failure': '❌',
+              'cancelled': '⏸️',
+              'skipped': '⏭️'
+            };
+            
+            let summary = `## 🔍 Pull Request Validation Summary\n\n`;
+            summary += `**PR**: ${pr.title}\n`;
+            summary += `**Branch**: ${pr.head.ref} → ${pr.base.ref}\n\n`;
+            summary += `### Results:\n`;
+            
+            jobs.forEach(job => {
+              const emoji = statusEmoji[job.status] || '❓';
+              summary += `${emoji} **${job.name}**: ${job.status}\n`;
+            });
+            
+            const allPassed = jobs.every(job => job.status === 'success');
+            
+            if (allPassed) {
+              summary += `\n🎉 **All checks passed!** This PR is ready for review.`;
+            } else {
+              summary += `\n⚠️ **Some checks failed.** Please review the failed jobs and fix issues.`;
+            }
+            
+            summary += `\n\n### What was tested:`;
+            summary += `\n- 🔒 Security scanning (Bandit + Safety + Trivy)`;
+            summary += `\n- 🧪 Tests across Python 3.9-3.11`;
+            summary += `\n- 📊 Performance benchmarks`;
+            summary += `\n- 🐳 Docker build and security scan`;
+            summary += `\n- 📝 Code quality (Black, isort, flake8)`;
+            summary += `\n- 📏 File size compliance (500-line limit)`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

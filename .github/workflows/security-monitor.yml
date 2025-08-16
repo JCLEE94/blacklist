@@ -1,0 +1,324 @@
+name: Security Monitoring
+
+on:
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - '.github/workflows/security-monitor.yml'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: jclee94/blacklist
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # Dependency vulnerability scanning
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install safety pip-audit
+          pip install -r requirements.txt
+
+      - name: Run Safety check
+        continue-on-error: true
+        run: |
+          safety check --json --output safety-report.json
+          safety check --short-report
+
+      - name: Run pip-audit
+        continue-on-error: true
+        run: |
+          pip-audit --format=json --output=pip-audit-report.json
+          pip-audit --format=cyclonedx-json --output=sbom.json
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-scan-results
+          path: |
+            safety-report.json
+            pip-audit-report.json
+            sbom.json
+
+  # Code security analysis
+  code-security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          pip install bandit[toml] semgrep
+
+      - name: Run Bandit security analysis
+        continue-on-error: true
+        run: |
+          bandit -r src/ -f json -o bandit-report.json
+          bandit -r src/ -f sarif -o bandit-results.sarif
+
+      - name: Run Semgrep analysis
+        continue-on-error: true
+        run: |
+          semgrep --config=auto --json --output=semgrep-report.json src/
+          semgrep --config=auto --sarif --output=semgrep-results.sarif src/
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: |
+            bandit-results.sarif
+            semgrep-results.sarif
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-security-results
+          path: |
+            bandit-report.json
+            bandit-results.sarif
+            semgrep-report.json
+            semgrep-results.sarif
+
+  # Container image security scanning
+  container-security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy vulnerability scanner (latest image)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Run Trivy vulnerability scanner (table format)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'table'
+          output: 'trivy-results.txt'
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Upload container scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-security-results
+          path: |
+            trivy-results.sarif
+            trivy-results.txt
+
+  # License compliance check
+  license-compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pip-licenses
+          pip install -r requirements.txt
+
+      - name: Generate license report
+        run: |
+          pip-licenses --format=json --output-file=licenses.json
+          pip-licenses --format=csv --output-file=licenses.csv
+          pip-licenses --format=html --output-file=licenses.html
+
+      - name: Check for problematic licenses
+        run: |
+          # Check for licenses that might be problematic
+          problematic_licenses=("GPL" "AGPL" "LGPL" "SSPL")
+          
+          echo "Checking for problematic licenses..."
+          for license in "${problematic_licenses[@]}"; do
+            if grep -i "$license" licenses.csv; then
+              echo "⚠️ Found potentially problematic license: $license"
+            fi
+          done
+          
+          echo "✅ License compliance check completed"
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-compliance-report
+          path: |
+            licenses.json
+            licenses.csv
+            licenses.html
+
+  # Generate security summary
+  security-summary:
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, code-security-scan, container-security-scan, license-compliance]
+    if: always()
+    steps:
+      - name: Download all scan results
+        uses: actions/download-artifact@v4
+
+      - name: Generate security dashboard
+        run: |
+          cat << 'EOF' > security-dashboard.md
+          # 🔐 Security Monitoring Dashboard
+          
+          **Scan Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          **Repository:** ${{ github.repository }}
+          **Workflow:** ${{ github.workflow }}
+          
+          ## 📊 Scan Results Summary
+          
+          | Security Check | Status | Details |
+          |----------------|--------|---------|
+          | Dependency Scan | ${{ needs.dependency-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} | Safety + pip-audit |
+          | Code Security | ${{ needs.code-security-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} | Bandit + Semgrep |
+          | Container Security | ${{ needs.container-security-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} | Trivy scanning |
+          | License Compliance | ${{ needs.license-compliance.result == 'success' && '✅ Passed' || '❌ Failed' }} | License review |
+          
+          ## 🛡️ Security Recommendations
+          
+          ### Daily Actions:
+          - Monitor dependency vulnerabilities
+          - Review security alerts in GitHub Security tab
+          - Check for outdated packages
+          
+          ### Weekly Actions:
+          - Review SARIF results uploaded to GitHub Security
+          - Update dependencies with security patches
+          - Review license compliance report
+          
+          ### Monthly Actions:
+          - Full security audit
+          - Penetration testing (if applicable)
+          - Security training for development team
+          
+          ## 🔗 Quick Links
+          
+          - [GitHub Security Alerts](https://github.com/${{ github.repository }}/security)
+          - [Dependency Graph](https://github.com/${{ github.repository }}/network/dependencies)
+          - [Security Policy](https://github.com/${{ github.repository }}/security/policy)
+          
+          ---
+          *Generated by Security Monitoring Workflow*
+          EOF
+          
+          echo "Security dashboard generated:"
+          cat security-dashboard.md
+
+      - name: Upload security dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-dashboard
+          path: security-dashboard.md
+
+      - name: Create issue on security failures
+        if: |
+          needs.dependency-scan.result == 'failure' ||
+          needs.code-security-scan.result == 'failure' ||
+          needs.container-security-scan.result == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Security Scan Alert - ${new Date().toISOString().split('T')[0]}`;
+            const body = `
+            ## Security Scan Alert
+            
+            One or more security scans have failed during the scheduled security monitoring.
+            
+            ### Failed Scans:
+            ${needs.dependency-scan.result === 'failure' ? '- ❌ Dependency Scan\n' : ''}
+            ${needs.code-security-scan.result === 'failure' ? '- ❌ Code Security Scan\n' : ''}
+            ${needs.container-security-scan.result === 'failure' ? '- ❌ Container Security Scan\n' : ''}
+            
+            ### Action Required:
+            1. Review the workflow logs: ${context.payload.repository.html_url}/actions/runs/${context.runId}
+            2. Check the Security tab for detailed vulnerability information
+            3. Address any high/critical severity issues immediately
+            4. Update dependencies and rebuild containers as needed
+            
+            ### Workflow Details:
+            - **Workflow:** ${context.workflow}
+            - **Run ID:** ${context.runId}
+            - **Triggered by:** ${context.eventName}
+            - **Branch:** ${context.ref}
+            
+            This issue was automatically created by the Security Monitoring workflow.
+            `;
+            
+            // Check if similar issue already exists
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['security', 'automated'],
+              state: 'open'
+            });
+            
+            const similarIssue = existingIssues.data.find(issue => 
+              issue.title.includes('Security Scan Alert')
+            );
+            
+            if (!similarIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['security', 'automated', 'priority-high']
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: similarIssue.number,
+                body: `🔄 Security scan failed again on ${new Date().toISOString().split('T')[0]}\n\nWorkflow run: ${context.payload.repository.html_url}/actions/runs/${context.runId}`
+              });
+            }
