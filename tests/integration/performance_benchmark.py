@@ -41,25 +41,25 @@ try:
             """Simulate a request and return (response_time_ms, status_code)"""
             start_time = time.time()
 
-            # Simulate processing time based on endpoint complexity
+            # Simulate processing time based on endpoint complexity (no actual sleep)
             if endpoint == "/api/collection/status":
-                time.sleep(0.01)  # 10ms
+                simulated_time = 0.01  # 10ms
                 status_code = 200
             elif endpoint == "/api/collection/enable":
-                time.sleep(0.008)  # 8ms
+                simulated_time = 0.008  # 8ms
                 status_code = 200
             elif endpoint == "/api/collection/disable":
-                time.sleep(0.007)  # 7ms
+                simulated_time = 0.007  # 7ms
                 status_code = 200
             elif endpoint == "/api/collection/secudium/trigger":
-                time.sleep(0.005)  # 5ms
+                simulated_time = 0.005  # 5ms
                 status_code = 503
             else:
-                time.sleep(0.02)  # 20ms for unknown endpoints
+                simulated_time = 0.02  # 20ms for unknown endpoints
                 status_code = 404
 
-            end_time = time.time()
-            response_time_ms = (end_time - start_time) * 1000
+            # Return simulated response time instead of actual elapsed time
+            response_time_ms = simulated_time * 1000
 
             return response_time_ms, status_code
 

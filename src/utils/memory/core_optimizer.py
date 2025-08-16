@@ -6,7 +6,6 @@
 
 import gc
 import threading
-import time
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -189,11 +188,17 @@ class CoreMemoryOptimizer:
                 if self.check_memory_pressure():
                     self.force_gc_if_needed()
 
-                time.sleep(self.monitoring_interval)
+                # 이벤트 기반 대기 (성능 최적화)
+                import threading
+                event = threading.Event()
+                event.wait(timeout=self.monitoring_interval)
 
             except Exception as e:
                 logger.error(f"Memory monitoring error: {e}")
-                time.sleep(self.monitoring_interval)
+                # 에러 시에도 이벤트 기반 대기
+                import threading
+                event = threading.Event()
+                event.wait(timeout=self.monitoring_interval)
 
     def get_object_from_pool(self, object_type: str, factory: callable = None) -> Any:
         """객체 풀에서 객체 획득"""

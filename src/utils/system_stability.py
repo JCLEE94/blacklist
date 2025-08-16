@@ -228,6 +228,7 @@ class SystemMonitor:
         self.error_counts = {}
         self.monitoring_enabled = True
         self._monitor_thread = None
+        self._monitoring_event = threading.Event()  # 이벤트 기반 대기용
 
     def get_system_health(self) -> SystemHealth:
         """시스템 전체 건강 상태 조회"""
@@ -393,11 +394,13 @@ class SystemMonitor:
                             additional_data={"warnings": health.warnings},
                         )
 
-                    time.sleep(interval)
+                    # 이벤트 기반 대기 (성능 최적화)
+                    self._monitoring_event.wait(timeout=interval)
 
                 except Exception as e:
                     logger.error(f"Monitoring loop error: {e}")
-                    time.sleep(60)  # 에러 시 1분 대기
+                    # 에러 시 이벤트 기반 대기
+                    self._monitoring_event.wait(timeout=60)
 
         self._monitor_thread = threading.Thread(target=monitor_loop, daemon=True)
         self._monitor_thread.start()

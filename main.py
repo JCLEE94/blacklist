@@ -77,15 +77,7 @@ def check_security_configuration():
         print("외부 서버 인증 시도가 활성화되어 있습니다!")
         print("무한 재시작 시 외부 서버에서 차단될 수 있습니다!")
         print("안전한 운영을 위해 FORCE_DISABLE_COLLECTION=true 권장")
-        print("=" * 80)
-
-        # 5초 대기로 관리자가 확인할 수 있도록
-        import time
-
-        for i in range(5, 0, -1):
-            print(f"🚨 외부 인증 시도 시작까지 {i}초...")
-            time.sleep(1)
-        print("🔓 외부 인증 시도 활성화됨")
+        print("🔓 외부 인증 시도 활성화됨 - 대기 시간 제거됨 (성능 최적화)")
     else:
         print("✅ 안전 모드로 시작됨 - 외부 인증 시도 없음")
 

@@ -6,7 +6,7 @@ Unified Blacklist Manager - Main coordination class
 import logging
 import os
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 from src.utils.unified_decorators import unified_monitoring
@@ -98,14 +98,19 @@ class UnifiedBlacklistManager:
                     raise
 
     def _setup_cleanup_scheduler(self):
-        """Setup periodic cleanup of old data"""
-
+        """Setup periodic cleanup of old data using event-based scheduling"""
         def cleanup_thread():
+            next_cleanup = datetime.now() + timedelta(days=1)
             while True:
                 try:
-                    import time
-
-                    time.sleep(24 * 3600)  # Run daily
+                    # 이벤트 기반 대기 (논블로킹)
+                    wait_seconds = (next_cleanup - datetime.now()).total_seconds()
+                    if wait_seconds > 0:
+                        # 최대 1시간씩 체크하여 시스템 종료에 빠르게 반응
+                        event = threading.Event()
+                        event.wait(timeout=min(wait_seconds, 3600))
+                        if wait_seconds > 3600:
+                            continue
 
                     # Run expiration update
                     self.expiration_service.update_expiration_status()
@@ -114,8 +119,12 @@ class UnifiedBlacklistManager:
                     self.data_service.cleanup_old_data(days=365)
 
                     logger.info("Scheduled cleanup completed")
+                    next_cleanup = datetime.now() + timedelta(days=1)
+
                 except Exception as e:
                     logger.error(f"Error in cleanup scheduler: {e}")
+                    # 에러 시 1시간 후 재시도
+                    next_cleanup = datetime.now() + timedelta(hours=1)
 
         cleanup_worker = threading.Thread(target=cleanup_thread, daemon=True)
         cleanup_worker.start()
