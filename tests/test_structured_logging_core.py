@@ -17,10 +17,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from flask import Flask, g
 
-from src.utils.structured_logging import (
-    StructuredLogger,
-    get_logger,
-)
+from src.utils.structured_logging import StructuredLogger, get_logger
 
 
 class TestStructuredLogger(unittest.TestCase):
@@ -36,7 +33,7 @@ class TestStructuredLogger(unittest.TestCase):
     def tearDown(self):
         """테스트 정리"""
         # 핸들러 정리
-        if hasattr(self.structured_logger, 'logger'):
+        if hasattr(self.structured_logger, "logger"):
             for handler in self.structured_logger.logger.handlers[:]:
                 handler.close()
                 self.structured_logger.logger.removeHandler(handler)
@@ -61,7 +58,9 @@ class TestStructuredLogger(unittest.TestCase):
 
     def test_initialization_permission_error(self):
         """StructuredLogger 초기화 권한 에러 처리 테스트"""
-        with patch('pathlib.Path.mkdir', side_effect=PermissionError("Permission denied")):
+        with patch(
+            "pathlib.Path.mkdir", side_effect=PermissionError("Permission denied")
+        ):
             # 권한 에러가 발생해도 정상적으로 초기화되어야 함
             logger = StructuredLogger("test_permission", "/restricted/path")
             self.assertEqual(logger.name, "test_permission")
@@ -76,25 +75,28 @@ class TestStructuredLogger(unittest.TestCase):
 
     def test_setup_logger_with_json_logger(self):
         """JSON 로거가 있는 경우 테스트"""
-        with patch('src.utils.structured_logging.HAS_JSON_LOGGER', True):
-            with patch('src.utils.structured_logging.jsonlogger') as mock_jsonlogger:
+        with patch("src.utils.structured_logging.HAS_JSON_LOGGER", True):
+            with patch("src.utils.structured_logging.jsonlogger") as mock_jsonlogger:
                 mock_formatter = MagicMock()
                 mock_jsonlogger.JsonFormatter.return_value = mock_formatter
 
                 logger = StructuredLogger("test_json", self.temp_dir)
-                
+
                 # JsonFormatter가 호출되었는지 확인
                 mock_jsonlogger.JsonFormatter.assert_called_once()
 
     def test_setup_logger_without_json_logger(self):
         """JSON 로거가 없는 경우 테스트"""
-        with patch('src.utils.structured_logging.HAS_JSON_LOGGER', False):
+        with patch("src.utils.structured_logging.HAS_JSON_LOGGER", False):
             logger = StructuredLogger("test_no_json", self.temp_dir)
             self.assertIsNotNone(logger.logger)
 
     def test_setup_logger_file_handler_permission_error(self):
         """파일 핸들러 권한 에러 처리 테스트"""
-        with patch('logging.handlers.RotatingFileHandler', side_effect=PermissionError("File permission denied")):
+        with patch(
+            "logging.handlers.RotatingFileHandler",
+            side_effect=PermissionError("File permission denied"),
+        ):
             logger = StructuredLogger("test_file_error", self.temp_dir)
             # 에러가 발생해도 로거는 정상적으로 설정되어야 함
             self.assertIsNotNone(logger.logger)
@@ -119,25 +121,27 @@ class TestStructuredLogger(unittest.TestCase):
         """DB 저장 활성화 성공 테스트"""
         # 임시 DB 파일 생성
         temp_db = os.path.join(self.temp_dir, "test.db")
-        
-        with patch('src.utils.structured_logging.StructuredLogger._save_to_db') as mock_save:
+
+        with patch(
+            "src.utils.structured_logging.StructuredLogger._save_to_db"
+        ) as mock_save:
             self.structured_logger.enable_db_logging(True)
             record = {
                 "timestamp": datetime.now().isoformat(),
                 "level": "INFO",
                 "name": "test",
                 "message": "test message",
-                "context": {"key": "value"}
+                "context": {"key": "value"},
             }
-            
+
             self.structured_logger._save_to_db(record)
             mock_save.assert_called_once_with(record)
 
     def test_save_to_db_error_handling(self):
         """DB 저장 에러 처리 테스트"""
         self.structured_logger.enable_db_logging(True)
-        
-        with patch('sqlite3.connect', side_effect=Exception("DB connection error")):
+
+        with patch("sqlite3.connect", side_effect=Exception("DB connection error")):
             record = {"level": "INFO", "message": "test"}
             # 에러가 발생해도 예외가 발생하지 않아야 함
             self.structured_logger._save_to_db(record)
@@ -151,13 +155,18 @@ class TestStructuredLogger(unittest.TestCase):
         self.structured_logger._add_to_buffer(record)
 
         # 버퍼 크기 증가 확인
-        self.assertEqual(len(self.structured_logger.log_buffer), initial_buffer_size + 1)
-        
+        self.assertEqual(
+            len(self.structured_logger.log_buffer), initial_buffer_size + 1
+        )
+
         # 통계 업데이트 확인
-        self.assertEqual(self.structured_logger.log_stats["info"], initial_info_count + 1)
+        self.assertEqual(
+            self.structured_logger.log_stats["info"], initial_info_count + 1
+        )
 
     def test_add_to_buffer_thread_safety(self):
         """로그 버퍼 추가 스레드 안전성 테스트"""
+
         def add_records():
             for i in range(10):
                 record = {"level": "INFO", "message": f"message_{i}"}
@@ -202,13 +211,17 @@ class TestStructuredLogger(unittest.TestCase):
     def test_create_log_record_with_flask_context(self):
         """Flask 컨텍스트 포함 로그 레코드 생성 테스트"""
         app = Flask(__name__)
-        
-        with app.test_request_context('/test', method='POST', headers={'User-Agent': 'test-agent'}):
+
+        with app.test_request_context(
+            "/test", method="POST", headers={"User-Agent": "test-agent"}
+        ):
             with app.app_context():
                 g.request_id = "test-request-123"
-                
-                record = self.structured_logger._create_log_record("INFO", "test with context")
-                
+
+                record = self.structured_logger._create_log_record(
+                    "INFO", "test with context"
+                )
+
                 self.assertIn("request", record["context"])
                 request_context = record["context"]["request"]
                 self.assertEqual(request_context["method"], "POST")
@@ -255,7 +268,9 @@ class TestStructuredLogger(unittest.TestCase):
         self.structured_logger.error("Error with exception", exception=test_exception)
         self.assertEqual(self.structured_logger.log_stats["error"], 1)
 
-        self.structured_logger.critical("Critical with exception", exception=test_exception)
+        self.structured_logger.critical(
+            "Critical with exception", exception=test_exception
+        )
         self.assertEqual(self.structured_logger.log_stats["critical"], 1)
 
     def test_get_recent_logs_all(self):

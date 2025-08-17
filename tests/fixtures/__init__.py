@@ -6,9 +6,13 @@
 
 from .app_fixtures import mock_container_system, mock_flask_app
 from .database_fixtures import mock_database_connection, test_database
-from .external_fixtures import (MockResponse, does_not_raise,
-                                mock_external_services, mock_file_system,
-                                mock_subprocess)
+from .external_fixtures import (
+    MockResponse,
+    does_not_raise,
+    mock_external_services,
+    mock_file_system,
+    mock_subprocess,
+)
 
 __all__ = [
     "test_database",

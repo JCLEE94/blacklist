@@ -71,16 +71,16 @@ class SecudiumCollector(BaseCollector):
     def _validate_data(self, data: List[Any]) -> List[Dict[str, Any]]:
         """
         SECUDIUM 데이터 유효성 검사
-        
+
         Args:
             data: 검증할 데이터 리스트
-            
+
         Returns:
             검증된 데이터 리스트
         """
         if not data:
             return []
-        
+
         validated_data = []
         for item in data:
             if isinstance(item, dict) and "ip" in item:
@@ -98,7 +98,7 @@ class SecudiumCollector(BaseCollector):
                     self.logger.warning(f"Invalid IP format: {ip}")
             else:
                 self.logger.warning(f"Invalid data format: {item}")
-        
+
         return validated_data
 
     def _log_info(self, message: str):

@@ -3,11 +3,12 @@
 Functional tests for Service classes
 Tests unified service factory, statistics service, and collection service
 """
-import pytest
-import tempfile
 import os
-from unittest.mock import Mock, patch, MagicMock
+import tempfile
 from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestUnifiedServiceFactory:
@@ -17,6 +18,7 @@ class TestUnifiedServiceFactory:
         """Test get_unified_service function"""
         try:
             from src.core.services.unified_service_factory import get_unified_service
+
             service = get_unified_service()
             assert service is not None
         except ImportError:
@@ -29,6 +31,7 @@ class TestUnifiedServiceFactory:
         """Test reset_unified_service function"""
         try:
             from src.core.services.unified_service_factory import reset_unified_service
+
             reset_unified_service()
             assert True  # Function should complete without error
         except ImportError:
@@ -38,6 +41,7 @@ class TestUnifiedServiceFactory:
         """Test is_service_initialized function"""
         try:
             from src.core.services.unified_service_factory import is_service_initialized
+
             result = is_service_initialized()
             assert isinstance(result, bool)
         except ImportError:
@@ -46,15 +50,18 @@ class TestUnifiedServiceFactory:
     def test_service_singleton_behavior(self):
         """Test singleton behavior of service factory"""
         try:
-            from src.core.services.unified_service_factory import get_unified_service, reset_unified_service
-            
+            from src.core.services.unified_service_factory import (
+                get_unified_service,
+                reset_unified_service,
+            )
+
             # Reset first
             reset_unified_service()
-            
+
             # Get two instances
             service1 = get_unified_service()
             service2 = get_unified_service()
-            
+
             # Should be the same instance (singleton)
             assert service1 is service2
         except ImportError:
@@ -71,6 +78,7 @@ class TestUnifiedServiceCore:
         """Test UnifiedServiceCore import"""
         try:
             from src.core.services.unified_service_core import UnifiedServiceCore
+
             assert UnifiedServiceCore is not None
         except ImportError:
             pytest.skip("UnifiedServiceCore not available")
@@ -79,14 +87,14 @@ class TestUnifiedServiceCore:
         """Test unified service core methods"""
         try:
             from src.core.services.unified_service_core import UnifiedServiceCore
-            
+
             # Check for expected methods
-            expected_methods = ['start', 'stop', 'is_running', 'get_status']
-            
+            expected_methods = ["start", "stop", "is_running", "get_status"]
+
             for method in expected_methods:
                 if hasattr(UnifiedServiceCore, method):
                     assert callable(getattr(UnifiedServiceCore, method))
-                    
+
         except ImportError:
             pytest.skip("UnifiedServiceCore methods not available")
 
@@ -94,6 +102,7 @@ class TestUnifiedServiceCore:
         """Test unified service can be instantiated"""
         try:
             from src.core.services.unified_service_core import UnifiedServiceCore
+
             service = UnifiedServiceCore()
             assert service is not None
         except ImportError:
@@ -110,6 +119,7 @@ class TestCollectionServiceMixin:
         """Test CollectionServiceMixin import"""
         try:
             from src.core.services.collection_service import CollectionServiceMixin
+
             assert CollectionServiceMixin is not None
         except ImportError:
             pytest.skip("CollectionServiceMixin not available")
@@ -118,17 +128,20 @@ class TestCollectionServiceMixin:
         """Test collection mixin methods"""
         try:
             from src.core.services.collection_service import CollectionServiceMixin
-            
+
             # Check for expected methods
             expected_methods = [
-                'enable_collection', 'disable_collection', 'get_collection_status',
-                'trigger_collection', 'get_collection_logs'
+                "enable_collection",
+                "disable_collection",
+                "get_collection_status",
+                "trigger_collection",
+                "get_collection_logs",
             ]
-            
+
             for method in expected_methods:
                 if hasattr(CollectionServiceMixin, method):
                     assert callable(getattr(CollectionServiceMixin, method))
-                    
+
         except ImportError:
             pytest.skip("Collection mixin methods not available")
 
@@ -136,6 +149,7 @@ class TestCollectionServiceMixin:
         """Test collection mixin can be instantiated"""
         try:
             from src.core.services.collection_service import CollectionServiceMixin
+
             mixin = CollectionServiceMixin()
             assert mixin is not None
         except ImportError:
@@ -151,6 +165,7 @@ class TestStatisticsServiceMixin:
         """Test StatisticsServiceMixin import"""
         try:
             from src.core.services.statistics_service import StatisticsServiceMixin
+
             assert StatisticsServiceMixin is not None
         except ImportError:
             pytest.skip("StatisticsServiceMixin not available")
@@ -159,17 +174,20 @@ class TestStatisticsServiceMixin:
         """Test statistics mixin methods"""
         try:
             from src.core.services.statistics_service import StatisticsServiceMixin
-            
+
             # Check for expected methods
             expected_methods = [
-                'get_statistics', 'calculate_trends', 'get_source_statistics',
-                'get_time_series_data', 'get_threat_analysis'
+                "get_statistics",
+                "calculate_trends",
+                "get_source_statistics",
+                "get_time_series_data",
+                "get_threat_analysis",
             ]
-            
+
             for method in expected_methods:
                 if hasattr(StatisticsServiceMixin, method):
                     assert callable(getattr(StatisticsServiceMixin, method))
-                    
+
         except ImportError:
             pytest.skip("Statistics mixin methods not available")
 
@@ -177,6 +195,7 @@ class TestStatisticsServiceMixin:
         """Test statistics mixin can be instantiated"""
         try:
             from src.core.services.statistics_service import StatisticsServiceMixin
+
             mixin = StatisticsServiceMixin()
             assert mixin is not None
         except ImportError:

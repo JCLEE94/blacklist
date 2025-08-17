@@ -90,7 +90,9 @@ class TestUIEndpoints:
         response = await page.goto(f"{self.API_BASE}/v2/blacklist/enhanced")
         if response.status == 200:
             enhanced_data = await response.json()
-            print(f"✅ Enhanced blacklist data: {len(enhanced_data.get('data', []))} entries")
+            print(
+                f"✅ Enhanced blacklist data: {len(enhanced_data.get('data', []))} entries"
+            )
 
     async def test_analytics_endpoints(self, browser_context):
         """Test analytics and statistics endpoints"""
@@ -125,7 +127,7 @@ class TestUIEndpoints:
 
         # Check for key UI elements
         await page.wait_for_selector("body", timeout=5000)
-        
+
         # Test if dashboard contains expected elements
         has_content = await page.evaluate(
             """() => {
@@ -180,12 +182,12 @@ class TestUIEndpoints:
 
 async def run_ui_tests():
     """Run all UI endpoint tests"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🧪 Starting Comprehensive UI Endpoint Tests")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
     test_suite = TestUIEndpoints()
-    
+
     # Create browser context
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -196,28 +198,28 @@ async def run_ui_tests():
             # Run all test methods
             print("1️⃣ Testing Health Endpoints...")
             await test_suite.test_health_endpoints(page)
-            
+
             print("\n2️⃣ Testing Collection Endpoints...")
             await test_suite.test_collection_endpoints(page)
-            
+
             print("\n3️⃣ Testing Blacklist Data Endpoints...")
             await test_suite.test_blacklist_data_endpoints(page)
-            
+
             print("\n4️⃣ Testing Analytics Endpoints...")
             await test_suite.test_analytics_endpoints(page)
-            
+
             print("\n5️⃣ Testing UI Pages...")
             await test_suite.test_ui_pages(page)
-            
+
             print("\n6️⃣ Testing Collection Triggers...")
             await test_suite.test_collection_trigger_endpoints(page)
-            
+
             print("\n7️⃣ Testing Monitoring Endpoints...")
             await test_suite.test_monitoring_endpoints(page)
 
-            print("\n" + "="*60)
+            print("\n" + "=" * 60)
             print("✅ All UI Endpoint Tests Completed Successfully!")
-            print("="*60)
+            print("=" * 60)
 
         except Exception as e:
             print(f"\n❌ Test failed: {e}")

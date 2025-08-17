@@ -67,6 +67,7 @@ class CompactFlaskApp(
             # Load configuration through container with explicit config_name
             if config_name:
                 from src.config.factory import get_config
+
                 config = get_config(config_name)
             else:
                 config = container.get("config")
@@ -122,12 +123,10 @@ class CompactFlaskApp(
             # Initialize Prometheus metrics system
             try:
                 from .monitoring.prometheus_metrics import init_metrics
-                
+
                 # 메트릭 시스템 초기화 (버전 정보와 함께)
                 init_metrics(
-                    version="1.0.35",
-                    build_date="2025-08-17",
-                    git_commit="latest"
+                    version="1.0.35", build_date="2025-08-17", git_commit="latest"
                 )
                 logger.info("Prometheus metrics system initialized successfully")
             except Exception as e:

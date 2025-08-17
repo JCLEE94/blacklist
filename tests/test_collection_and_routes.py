@@ -37,8 +37,7 @@ def test_collection_manager_initialization():
 def test_collection_status_service():
     """Test collection status service functionality"""
     try:
-        from src.core.collection_manager.status_service import \
-            CollectionStatusService
+        from src.core.collection_manager.status_service import CollectionStatusService
 
         service = CollectionStatusService()
         assert service is not None
@@ -58,8 +57,7 @@ def test_collection_status_service():
 def test_collection_protection():
     """Test collection protection mechanisms"""
     try:
-        from src.core.collection_manager.protection_service import \
-            ProtectionService
+        from src.core.collection_manager.protection_service import ProtectionService
         from src.core.container import get_container
 
         # Get container and required dependencies
@@ -109,8 +107,7 @@ def test_collection_protection():
 def test_collection_triggers():
     """Test collection trigger functionality"""
     try:
-        from src.core.routes.collection_trigger_routes import \
-            collection_trigger_bp
+        from src.core.routes.collection_trigger_routes import collection_trigger_bp
 
         assert collection_trigger_bp is not None
         assert hasattr(collection_trigger_bp, "url_prefix")
@@ -297,8 +294,7 @@ def test_database_models():
 def test_statistics_service():
     """Test statistics service functionality"""
     try:
-        from src.core.blacklist_unified.statistics_service import \
-            StatisticsService
+        from src.core.blacklist_unified.statistics_service import StatisticsService
 
         service = StatisticsService()
         assert service is not None

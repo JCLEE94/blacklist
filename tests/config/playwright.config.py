@@ -9,9 +9,7 @@ import os
 PLAYWRIGHT_CONFIG = {
     "testDir": "tests",
     "timeout": 30000,  # 30초 타임아웃
-    "expect": {
-        "timeout": 5000  # 5초 expect 타임아웃
-    },
+    "expect": {"timeout": 5000},  # 5초 expect 타임아웃
     "fullyParallel": False,  # UI 테스트는 순차 실행
     "forbidOnly": True,
     "retries": 1,  # 실패시 1회 재시도
@@ -19,22 +17,15 @@ PLAYWRIGHT_CONFIG = {
     "reporter": [
         ["list"],
         ["json", {"outputFile": "test-results/results.json"}],
-        ["html", {"open": "never"}]
+        ["html", {"open": "never"}],
     ],
     "use": {
         "baseURL": "http://localhost:32542",
         "trace": "on-first-retry",
         "screenshot": "only-on-failure",
-        "video": "retain-on-failure"
+        "video": "retain-on-failure",
     },
-    "projects": [
-        {
-            "name": "chromium",
-            "use": {
-                "channel": "chromium"
-            }
-        }
-    ]
+    "projects": [{"name": "chromium", "use": {"channel": "chromium"}}],
 }
 
 # 환경 변수 설정

@@ -116,9 +116,10 @@ class UnifiedBlacklistService(
             # REGTECH 수집기 초기화
             if self.config["regtech_enabled"]:
                 import os
+
                 username = os.getenv("REGTECH_USERNAME", "")
                 password = os.getenv("REGTECH_PASSWORD", "")
-                
+
                 if username and password:
                     self._components["regtech"] = RegtechCollector(username, password)
                     self.logger.info("✅ REGTECH 수집기 동기 초기화 완료")

@@ -190,6 +190,7 @@ class CoreMemoryOptimizer:
 
                 # 이벤트 기반 대기 (성능 최적화)
                 import threading
+
                 event = threading.Event()
                 event.wait(timeout=self.monitoring_interval)
 
@@ -197,6 +198,7 @@ class CoreMemoryOptimizer:
                 logger.error(f"Memory monitoring error: {e}")
                 # 에러 시에도 이벤트 기반 대기
                 import threading
+
                 event = threading.Event()
                 event.wait(timeout=self.monitoring_interval)
 

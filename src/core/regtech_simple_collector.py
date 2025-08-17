@@ -24,17 +24,18 @@ class RegtechSimpleCollector:
     def __init__(self, username: str, password: str):
         self.username = username
         self.password = password
-        
+
         # 환경변수에서 베이스 URL 읽기, 없으면 기본값 사용
         import os
-        self.base_url = os.getenv('REGTECH_BASE_URL', 'https://regtech.fsec.or.kr')
-        
+
+        self.base_url = os.getenv("REGTECH_BASE_URL", "https://regtech.fsec.or.kr")
+
         # 데이터 저장 디렉토리 - /tmp 사용 (권한 문제 해결)
         self.regtech_dir = "/tmp/regtech_data"
         os.makedirs(self.regtech_dir, exist_ok=True)
-        
+
         logger.info(f"REGTECH 수집기 초기화: {self.base_url} (사용자: {username})")
-        
+
         # 세션 타임아웃 및 재시도 설정
         self.session_timeout = 30
         self.max_retries = 3
@@ -92,7 +93,7 @@ class RegtechSimpleCollector:
                     "success": False,
                     "error": "No IPs collected - 데이터가 없거나 웹사이트 구조가 변경되었을 수 있습니다",
                     "total_collected": 0,
-                    "debug_info": f"기간: {start_date}~{end_date}, 처리 페이지: {locals().get('page', 0)}"
+                    "debug_info": f"기간: {start_date}~{end_date}, 처리 페이지: {locals().get('page', 0)}",
                 }
 
         except Exception as e:
@@ -198,23 +199,29 @@ class RegtechSimpleCollector:
                 # 테이블 찾기
                 page_ips = []
                 tables = soup.find_all("table")
-                
+
                 # 디버깅: 모든 테이블 확인
                 logger.info(f"페이지 {page + 1}에서 {len(tables)}개 테이블 발견")
-                
+
                 # 먼저 요주의 IP 테이블 찾기
                 found_target_table = False
                 for i, table in enumerate(tables):
                     caption = table.find("caption")
                     if caption:
                         logger.debug(f"테이블 {i+1} 캡션: {caption.text.strip()}")
-                        if "요주의" in caption.text or "IP" in caption.text or "blacklist" in caption.text.lower():
+                        if (
+                            "요주의" in caption.text
+                            or "IP" in caption.text
+                            or "blacklist" in caption.text.lower()
+                        ):
                             found_target_table = True
                             break
-                
+
                 # 요주의 IP 테이블이 없으면 다른 방법으로 찾기
                 if not found_target_table:
-                    logger.warning(f"페이지 {page + 1}에서 요주의 IP 테이블을 찾을 수 없음. 모든 테이블 검사")
+                    logger.warning(
+                        f"페이지 {page + 1}에서 요주의 IP 테이블을 찾을 수 없음. 모든 테이블 검사"
+                    )
                     # 모든 테이블에서 IP 패턴 찾기
                     for table in tables:
                         tbody = table.find("tbody")
@@ -227,13 +234,18 @@ class RegtechSimpleCollector:
                                 if len(cells) >= 1:
                                     first_cell_text = cells[0].text.strip()
                                     if self._is_valid_ip(first_cell_text):
-                                        logger.info(f"페이지 {page + 1}에서 IP 데이터가 포함된 테이블 발견")
+                                        logger.info(
+                                            f"페이지 {page + 1}에서 IP 데이터가 포함된 테이블 발견"
+                                        )
                                         found_target_table = True
                                         break
 
                 for table in tables:
                     caption = table.find("caption")
-                    if (caption and ("요주의 IP" in caption.text or "IP" in caption.text)) or not found_target_table:
+                    if (
+                        caption
+                        and ("요주의 IP" in caption.text or "IP" in caption.text)
+                    ) or not found_target_table:
                         logger.info(f"페이지 {page + 1}에서 요주의 IP 테이블 발견")
 
                         tbody = table.find("tbody")
@@ -245,13 +257,13 @@ class RegtechSimpleCollector:
 
                             for row_idx, row in enumerate(rows):
                                 cells = row.find_all("td")
-                                
+
                                 # 여러 가지 패턴으로 IP 데이터 추출
                                 if len(cells) >= 4:
                                     # 기본 패턴: IP, 국가, 이유, 날짜
                                     ip = cells[0].text.strip()
                                     country = cells[1].text.strip()
-                                    reason = cells[2].text.strip()  
+                                    reason = cells[2].text.strip()
                                     date = cells[3].text.strip()
                                 elif len(cells) >= 3:
                                     # 3컬럼 패턴: IP, 이유, 날짜
@@ -273,10 +285,12 @@ class RegtechSimpleCollector:
                                     date = start_date
                                 else:
                                     continue
-                                
+
                                 # 디버깅 로그
                                 if row_idx < 3:  # 첫 3개 행만 로그
-                                    logger.debug(f"행 {row_idx + 1}: IP='{ip}', 컬럼수={len(cells)}")
+                                    logger.debug(
+                                        f"행 {row_idx + 1}: IP='{ip}', 컬럼수={len(cells)}"
+                                    )
 
                                     # 유효한 IP인지 확인
                                     if self._is_valid_ip(ip):
@@ -294,40 +308,52 @@ class RegtechSimpleCollector:
 
                 # 테이블에서 IP를 찾지 못했다면 전체 페이지에서 IP 패턴 검색
                 if not page_ips:
-                    logger.info(f"페이지 {page + 1}에서 테이블 방식으로 IP를 찾지 못함. 전체 텍스트에서 IP 패턴 검색")
-                    
+                    logger.info(
+                        f"페이지 {page + 1}에서 테이블 방식으로 IP를 찾지 못함. 전체 텍스트에서 IP 패턴 검색"
+                    )
+
                     # 전체 HTML에서 IP 패턴 찾기
-                    ip_matches = IPUtils.extract_ips_from_text(response.text, exclude_private=True)
-                    
+                    ip_matches = IPUtils.extract_ips_from_text(
+                        response.text, exclude_private=True
+                    )
+
                     for ip in ip_matches:
-                            ip_data = {
-                                "ip": ip,
-                                "country": "Unknown",
-                                "reason": "Security threat",
-                                "date": start_date,
-                                "source": "REGTECH",
-                            }
-                            page_ips.append(ip_data)
-                            logger.debug(f"텍스트에서 IP 발견: {ip}")
-                    
+                        ip_data = {
+                            "ip": ip,
+                            "country": "Unknown",
+                            "reason": "Security threat",
+                            "date": start_date,
+                            "source": "REGTECH",
+                        }
+                        page_ips.append(ip_data)
+                        logger.debug(f"텍스트에서 IP 발견: {ip}")
+
                     if page_ips:
-                        logger.info(f"페이지 {page + 1}에서 텍스트 패턴으로 {len(page_ips)}개 IP 발견")
+                        logger.info(
+                            f"페이지 {page + 1}에서 텍스트 패턴으로 {len(page_ips)}개 IP 발견"
+                        )
 
                 # 이 페이지에서 IP를 찾지 못했다면 더 이상 페이지가 없다고 가정
                 if not page_ips:
-                    logger.info(f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료")
-                    
+                    logger.info(
+                        f"페이지 {page + 1}에서 더 이상 IP를 찾을 수 없음. 수집 종료"
+                    )
+
                     # 첫 번째 페이지에서도 IP를 못 찾았다면 상세 디버깅
                     if page == 0:
-                        logger.warning("첫 번째 페이지에서 IP를 찾지 못함. 웹사이트 구조 확인 필요")
+                        logger.warning(
+                            "첫 번째 페이지에서 IP를 찾지 못함. 웹사이트 구조 확인 필요"
+                        )
                         logger.debug(f"응답 크기: {len(response.text)} bytes")
                         logger.debug(f"응답 URL: {response.url}")
-                        
+
                         # HTML 구조 간단 분석
                         table_count = len(soup.find_all("table"))
                         div_count = len(soup.find_all("div"))
-                        logger.debug(f"HTML 구조: {table_count}개 테이블, {div_count}개 div")
-                    
+                        logger.debug(
+                            f"HTML 구조: {table_count}개 테이블, {div_count}개 div"
+                        )
+
                     break
 
                 all_ips.extend(page_ips)
@@ -358,10 +384,10 @@ class RegtechSimpleCollector:
         """IP 유효성 검사 - 통합 유틸리티 사용"""
         if not ip:
             return False
-            
+
         # 공백 및 특수문자 제거
         cleaned_ip = ip.strip().replace(" ", "")
-        
+
         # IP 패턴이 포함된 텍스트에서 IP 추출 시도
         extracted_ips = IPUtils.extract_ips_from_text(cleaned_ip, exclude_private=True)
         return len(extracted_ips) > 0
@@ -399,47 +425,59 @@ class RegtechSimpleCollector:
         """데이터베이스 저장"""
         try:
             import sqlite3
-            conn = sqlite3.connect('/app/instance/blacklist.db')
+
+            conn = sqlite3.connect("/app/instance/blacklist.db")
             cursor = conn.cursor()
-            
+
             saved_count = 0
             for ip_data in ips:
                 try:
                     # blacklist_entries 테이블에 직접 저장
-                    cursor.execute('''
+                    cursor.execute(
+                        """
                         INSERT OR REPLACE INTO blacklist_entries 
                         (ip_address, source, first_seen, threat_level, country, confidence_level, is_active)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        ip_data["ip"],
-                        "REGTECH",
-                        ip_data.get("date", datetime.now().strftime("%Y-%m-%d")),
-                        "high",
-                        ip_data.get("country", ""),
-                        1.0,
-                        1
-                    ))
-                    
+                    """,
+                        (
+                            ip_data["ip"],
+                            "REGTECH",
+                            ip_data.get("date", datetime.now().strftime("%Y-%m-%d")),
+                            "high",
+                            ip_data.get("country", ""),
+                            1.0,
+                            1,
+                        ),
+                    )
+
                     # collection_logs 테이블에 로그 기록
-                    cursor.execute('''
+                    cursor.execute(
+                        """
                         INSERT INTO collection_logs
                         (source, status, items_collected, details)
                         VALUES (?, ?, ?, ?)
-                    ''', (
-                        "REGTECH",
-                        "success",
-                        1,
-                        json.dumps({"ip": ip_data["ip"], "country": ip_data.get("country", "")})
-                    ))
-                    
+                    """,
+                        (
+                            "REGTECH",
+                            "success",
+                            1,
+                            json.dumps(
+                                {
+                                    "ip": ip_data["ip"],
+                                    "country": ip_data.get("country", ""),
+                                }
+                            ),
+                        ),
+                    )
+
                     saved_count += 1
                 except Exception as e:
                     logger.warning(f"IP 저장 실패 {ip_data['ip']}: {e}")
-            
+
             conn.commit()
             conn.close()
             logger.info(f"데이터베이스 저장 성공: {saved_count}개")
-            
+
         except Exception as e:
             logger.error(f"데이터베이스 저장 중 오류: {e}")
 

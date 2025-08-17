@@ -4,10 +4,11 @@
 모든 서비스 클래스와 믹스인의 기능을 테스트합니다.
 """
 
-import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
 
 from src.core.services.statistics_service import StatisticsServiceMixin
 from src.core.services.unified_service_core import UnifiedBlacklistService
@@ -25,7 +26,7 @@ class TestStatisticsServiceMixin:
             "service_name": "test-service",
             "version": "1.0.0",
             "auto_collection": True,
-            "collection_interval": 300
+            "collection_interval": 300,
         }
         self.mixin._running = True
         self.mixin._components = {"component1": Mock(), "component2": Mock()}
@@ -37,10 +38,13 @@ class TestStatisticsServiceMixin:
         mock_health = {
             "sources": {"regtech": 100, "secudium": 50},
             "status": "healthy",
-            "last_update": "2023-12-01T10:00:00"
+            "last_update": "2023-12-01T10:00:00",
         }
         self.mixin.blacklist_manager.get_system_health.return_value = mock_health
-        self.mixin.blacklist_manager.get_active_ips.return_value = ["1.2.3.4", "5.6.7.8"]
+        self.mixin.blacklist_manager.get_active_ips.return_value = [
+            "1.2.3.4",
+            "5.6.7.8",
+        ]
 
         result = await self.mixin.get_statistics()
 
@@ -65,7 +69,9 @@ class TestStatisticsServiceMixin:
     @pytest.mark.asyncio
     async def test_get_statistics_exception(self):
         """통계 조회 중 예외 발생 테스트"""
-        self.mixin.blacklist_manager.get_system_health.side_effect = Exception("Test error")
+        self.mixin.blacklist_manager.get_system_health.side_effect = Exception(
+            "Test error"
+        )
 
         result = await self.mixin.get_statistics()
 
@@ -76,38 +82,40 @@ class TestStatisticsServiceMixin:
     async def test_get_monthly_stats(self):
         """월별 통계 조회 테스트"""
         # 만약 이 메서드가 존재한다면
-        if hasattr(self.mixin, 'get_monthly_stats'):
+        if hasattr(self.mixin, "get_monthly_stats"):
             mock_data = {
                 "2023-12": {"total": 100, "active": 95},
-                "2023-11": {"total": 85, "active": 80}
+                "2023-11": {"total": 85, "active": 80},
             }
             self.mixin.blacklist_manager.get_monthly_data.return_value = mock_data
 
             result = await self.mixin.get_monthly_stats()
-            
+
             assert isinstance(result, dict)
 
     @pytest.mark.asyncio
     async def test_get_source_analytics(self):
         """소스별 분석 테스트"""
         # 만약 이 메서드가 존재한다면
-        if hasattr(self.mixin, 'get_source_analytics'):
+        if hasattr(self.mixin, "get_source_analytics"):
             mock_analytics = {
                 "regtech": {
                     "total_ips": 150,
                     "active_ips": 140,
-                    "threat_levels": {"high": 30, "medium": 80, "low": 30}
+                    "threat_levels": {"high": 30, "medium": 80, "low": 30},
                 },
                 "secudium": {
                     "total_ips": 75,
                     "active_ips": 70,
-                    "threat_levels": {"high": 15, "medium": 40, "low": 15}
-                }
+                    "threat_levels": {"high": 15, "medium": 40, "low": 15},
+                },
             }
-            self.mixin.blacklist_manager.get_source_analytics.return_value = mock_analytics
+            self.mixin.blacklist_manager.get_source_analytics.return_value = (
+                mock_analytics
+            )
 
             result = await self.mixin.get_source_analytics()
-            
+
             assert "regtech" in result
             assert "secudium" in result
             assert result["regtech"]["total_ips"] == 150
@@ -115,7 +123,7 @@ class TestStatisticsServiceMixin:
 
 class MockUnifiedBlacklistService(UnifiedBlacklistService):
     """테스트용 UnifiedBlacklistService 모의 구현"""
-    
+
     def __init__(self):
         # 기본 설정으로 초기화
         self.config = {
@@ -124,7 +132,7 @@ class MockUnifiedBlacklistService(UnifiedBlacklistService):
             "auto_collection": False,
             "collection_interval": 600,
             "max_retries": 3,
-            "timeout": 30
+            "timeout": 30,
         }
         self._running = False
         self._components = {}
@@ -151,7 +159,7 @@ class TestUnifiedBlacklistService:
     @pytest.mark.asyncio
     async def test_start_service(self):
         """서비스 시작 테스트"""
-        if hasattr(self.service, 'start'):
+        if hasattr(self.service, "start"):
             self.service._running = False
             await self.service.start()
             assert self.service._running is True
@@ -159,7 +167,7 @@ class TestUnifiedBlacklistService:
     @pytest.mark.asyncio
     async def test_stop_service(self):
         """서비스 중지 테스트"""
-        if hasattr(self.service, 'stop'):
+        if hasattr(self.service, "stop"):
             self.service._running = True
             await self.service.stop()
             assert self.service._running is False
@@ -167,16 +175,16 @@ class TestUnifiedBlacklistService:
     @pytest.mark.asyncio
     async def test_health_check(self):
         """헬스체크 테스트"""
-        if hasattr(self.service, 'health_check'):
+        if hasattr(self.service, "health_check"):
             mock_health = {
                 "status": "healthy",
                 "timestamp": datetime.now().isoformat(),
-                "components": []
+                "components": [],
             }
             self.service.blacklist_manager.get_system_health.return_value = mock_health
 
             result = await self.service.health_check()
-            
+
             assert "status" in result
             assert "timestamp" in result
 
@@ -187,10 +195,10 @@ class TestUnifiedBlacklistService:
         mock_health = {
             "sources": {"regtech": 200, "secudium": 100},
             "status": "healthy",
-            "last_update": datetime.now().isoformat()
+            "last_update": datetime.now().isoformat(),
         }
         mock_ips = [f"192.168.1.{i}" for i in range(1, 301)]  # 300개 IP
-        
+
         self.service.blacklist_manager.get_system_health.return_value = mock_health
         self.service.blacklist_manager.get_active_ips.return_value = mock_ips
 
@@ -204,12 +212,12 @@ class TestUnifiedBlacklistService:
     @pytest.mark.asyncio
     async def test_component_management(self):
         """컴포넌트 관리 테스트"""
-        if hasattr(self.service, 'register_component'):
+        if hasattr(self.service, "register_component"):
             mock_component = Mock()
             mock_component.name = "test_component"
-            
+
             self.service.register_component("test_component", mock_component)
-            
+
             assert "test_component" in self.service._components
             assert self.service._components["test_component"] == mock_component
 
@@ -218,18 +226,18 @@ class TestUnifiedBlacklistService:
         """서비스 생명주기 테스트"""
         # 초기 상태
         assert self.service._running is False
-        
+
         # 시작
-        if hasattr(self.service, 'start'):
+        if hasattr(self.service, "start"):
             await self.service.start()
             assert self.service._running is True
-        
+
         # 실행 중 상태 확인
-        if hasattr(self.service, 'is_running'):
+        if hasattr(self.service, "is_running"):
             assert self.service.is_running() is True
-        
+
         # 중지
-        if hasattr(self.service, 'stop'):
+        if hasattr(self.service, "stop"):
             await self.service.stop()
             assert self.service._running is False
 
@@ -237,11 +245,13 @@ class TestUnifiedBlacklistService:
     async def test_error_handling(self):
         """에러 처리 테스트"""
         # blacklist_manager가 예외를 던지도록 설정
-        self.service.blacklist_manager.get_system_health.side_effect = Exception("Connection error")
-        
+        self.service.blacklist_manager.get_system_health.side_effect = Exception(
+            "Connection error"
+        )
+
         # 통계 조회 시 예외가 안전하게 처리되는지 확인
         result = await self.service.get_statistics()
-        
+
         # 구현에 따라 다르지만, 일반적으로 에러 상태를 반환하거나 기본값을 제공
         assert isinstance(result, dict)
 
@@ -249,12 +259,9 @@ class TestUnifiedBlacklistService:
     async def test_configuration_management(self):
         """설정 관리 테스트"""
         # 설정 업데이트
-        new_config = {
-            "auto_collection": True,
-            "collection_interval": 300
-        }
-        
-        if hasattr(self.service, 'update_config'):
+        new_config = {"auto_collection": True, "collection_interval": 300}
+
+        if hasattr(self.service, "update_config"):
             self.service.update_config(new_config)
             assert self.service.config["auto_collection"] is True
             assert self.service.config["collection_interval"] == 300
@@ -271,9 +278,9 @@ class TestUnifiedBlacklistService:
         for i in range(5):
             task = asyncio.create_task(self.service.get_statistics())
             tasks.append(task)
-        
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # 모든 요청이 성공적으로 처리되는지 확인
         for result in results:
             assert not isinstance(result, Exception)
@@ -294,10 +301,10 @@ class TestServiceMixinIntegration:
         mock_health = {
             "sources": {"regtech": 50, "secudium": 25},
             "status": "healthy",
-            "last_update": datetime.now().isoformat()
+            "last_update": datetime.now().isoformat(),
         }
         mock_ips = ["1.1.1.1", "2.2.2.2", "3.3.3.3"]
-        
+
         self.service.blacklist_manager.get_system_health.return_value = mock_health
         self.service.blacklist_manager.get_active_ips.return_value = mock_ips
 
@@ -330,16 +337,16 @@ class TestServicePerformance:
         mock_health = {
             "sources": {"regtech": 5000, "secudium": 5000},
             "status": "healthy",
-            "last_update": datetime.now().isoformat()
+            "last_update": datetime.now().isoformat(),
         }
-        
+
         self.service.blacklist_manager.get_system_health.return_value = mock_health
         self.service.blacklist_manager.get_active_ips.return_value = large_ip_list
 
         start_time = datetime.now()
         result = await self.service.get_statistics()
         end_time = datetime.now()
-        
+
         # 성능 검증 (예: 1초 이내 완료)
         duration = (end_time - start_time).total_seconds()
         assert duration < 1.0  # 1초 이내 완료
@@ -352,10 +359,10 @@ class TestServicePerformance:
         mock_health = {
             "sources": {"regtech": 100},
             "status": "healthy",
-            "last_update": datetime.now().isoformat()
+            "last_update": datetime.now().isoformat(),
         }
         mock_ips = ["1.2.3.4"] * 100
-        
+
         self.service.blacklist_manager.get_system_health.return_value = mock_health
         self.service.blacklist_manager.get_active_ips.return_value = mock_ips
 
@@ -364,12 +371,12 @@ class TestServicePerformance:
         tasks = [self.service.get_statistics() for _ in range(10)]
         results = await asyncio.gather(*tasks)
         end_time = datetime.now()
-        
+
         # 모든 요청이 성공했는지 확인
         assert len(results) == 10
         for result in results:
             assert result["total_ips"] == 100
-        
+
         # 전체 시간이 합리적인지 확인 (예: 3초 이내)
         duration = (end_time - start_time).total_seconds()
         assert duration < 3.0
@@ -386,11 +393,7 @@ class TestServiceEdgeCases:
     async def test_empty_data_handling(self):
         """빈 데이터 처리 테스트"""
         # 빈 데이터 설정
-        mock_health = {
-            "sources": {},
-            "status": "unknown",
-            "last_update": None
-        }
+        mock_health = {"sources": {}, "status": "unknown", "last_update": None}
         self.service.blacklist_manager.get_system_health.return_value = mock_health
         self.service.blacklist_manager.get_active_ips.return_value = []
 
@@ -414,13 +417,14 @@ class TestServiceEdgeCases:
     @pytest.mark.asyncio
     async def test_timeout_handling(self):
         """타임아웃 처리 테스트"""
+
         # 오래 걸리는 작업 시뮬레이션
         async def slow_operation():
             await asyncio.sleep(2)
             return {"status": "slow"}
-        
+
         self.service.blacklist_manager.get_system_health = slow_operation
-        
+
         # 타임아웃이 적절히 처리되는지 확인
         # (실제 구현에서는 타임아웃 로직이 있을 수 있음)
 
@@ -432,16 +436,16 @@ class TestServiceEdgeCases:
         mock_health = {
             "sources": {"regtech": 100000},
             "status": "healthy",
-            "last_update": datetime.now().isoformat()
+            "last_update": datetime.now().isoformat(),
         }
-        
+
         self.service.blacklist_manager.get_system_health.return_value = mock_health
         self.service.blacklist_manager.get_active_ips.return_value = huge_ip_list
 
         # 메모리 사용량이 과도하지 않은지 확인 (기본적인 확인)
         result = await self.service.get_statistics()
         assert result["total_ips"] == 100000
-        
+
         # 결과가 예상된 구조를 가지는지 확인
         assert "service" in result
         assert "sources" in result

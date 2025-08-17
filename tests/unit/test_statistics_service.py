@@ -215,7 +215,6 @@ class TestStatisticsServiceMixin:
 
         assert result == {}
 
-
     def test_get_daily_stats_success(self, service, populated_db):
         """Test successful daily statistics retrieval"""
         service.blacklist_manager.db_path = populated_db
@@ -275,4 +274,3 @@ class TestStatisticsServiceMixin:
 
 if __name__ == "__main__":
     pytest.main([__file__])
-

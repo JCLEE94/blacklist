@@ -9,6 +9,7 @@ The main functionality tests have been modularized into:
 
 import pytest
 
+
 class TestModelsImports:
     """데이터 모델 임포트 테스트"""
 
@@ -16,6 +17,7 @@ class TestModelsImports:
         """HealthStatus 임포트 테스트"""
         try:
             from src.core.models import HealthStatus
+
             assert HealthStatus is not None
         except ImportError:
             pytest.skip("HealthStatus not available")
@@ -24,6 +26,7 @@ class TestModelsImports:
         """BlacklistEntry 임포트 테스트"""
         try:
             from src.core.models import BlacklistEntry
+
             assert BlacklistEntry is not None
         except ImportError:
             pytest.skip("BlacklistEntry not available")
@@ -32,6 +35,7 @@ class TestModelsImports:
         """APIResponse 임포트 테스트"""
         try:
             from src.core.models import APIResponse
+
             assert APIResponse is not None
         except ImportError:
             pytest.skip("APIResponse not available")
@@ -44,6 +48,7 @@ class TestBasicModelAvailability:
         """모델 모듈 사용 가능성 테스트"""
         try:
             import src.core.models
+
             assert src.core.models is not None
         except ImportError:
             pytest.skip("Models module not available")

@@ -4,18 +4,19 @@ Base model tests for src/core/models.py
 Core enums and basic model tests
 """
 
-import pytest
 from datetime import datetime, timedelta
 
+import pytest
+
 from src.core.models import (
+    APIResponse,
+    BlacklistEntry,
+    CacheEntry,
     HealthStatus,
     IPAddressType,
-    BlacklistEntry,
     MonthData,
     SystemHealth,
-    APIResponse,
     ValidationResult,
-    CacheEntry
 )
 
 
@@ -75,9 +76,9 @@ class TestBlacklistEntry:
             reg_date="2023-01-01",
             exp_date="2024-01-01",
             view_count=5,
-            uuid="test-uuid"
+            uuid="test-uuid",
         )
-        
+
         assert entry.ip_address == "10.0.0.1"
         assert entry.is_active is True
         assert entry.threat_level == "high"
@@ -87,13 +88,9 @@ class TestBlacklistEntry:
 
     def test_to_dict(self):
         """딕셔너리 변환 테스트"""
-        entry = BlacklistEntry(
-            ip_address="1.2.3.4",
-            threat_level="low",
-            source="test"
-        )
+        entry = BlacklistEntry(ip_address="1.2.3.4", threat_level="low", source="test")
         result = entry.to_dict()
-        
+
         assert isinstance(result, dict)
         assert result["ip"] == "1.2.3.4"
         assert result["threat_level"] == "low"
@@ -103,13 +100,9 @@ class TestBlacklistEntry:
 
     def test_from_dict_basic(self):
         """딕셔너리에서 기본 생성 테스트"""
-        data = {
-            "ip": "5.6.7.8",
-            "threat_level": "critical",
-            "source": "manual"
-        }
+        data = {"ip": "5.6.7.8", "threat_level": "critical", "source": "manual"}
         entry = BlacklistEntry.from_dict(data)
-        
+
         assert entry.ip_address == "5.6.7.8"
         assert entry.threat_level == "critical"
         assert entry.source == "manual"
@@ -131,10 +124,10 @@ class TestBlacklistEntry:
             "reg_date": "2023-01-01",
             "exp_date": "2024-01-01",
             "view_count": 10,
-            "uuid": "test-uuid-123"
+            "uuid": "test-uuid-123",
         }
         entry = BlacklistEntry.from_dict(data)
-        
+
         assert entry.ip_address == "192.168.1.100"
         assert entry.detection_months == ["2023-01", "2023-02"]
         assert entry.is_active is True
@@ -156,11 +149,9 @@ class TestAPIResponse:
     def test_success_response(self):
         """성공 응답 테스트"""
         response = APIResponse(
-            success=True,
-            data={"key": "value"},
-            message="Operation successful"
+            success=True, data={"key": "value"}, message="Operation successful"
         )
-        
+
         assert response.success is True
         assert response.data == {"key": "value"}
         assert response.message == "Operation successful"
@@ -169,11 +160,9 @@ class TestAPIResponse:
     def test_error_response(self):
         """에러 응답 테스트"""
         response = APIResponse(
-            success=False,
-            message="Operation failed",
-            error_code="ERR001"
+            success=False, message="Operation failed", error_code="ERR001"
         )
-        
+
         assert response.success is False
         assert response.message == "Operation failed"
         assert response.error_code == "ERR001"
@@ -183,7 +172,7 @@ class TestAPIResponse:
         """딕셔너리 변환 테스트"""
         response = APIResponse(success=True, data={"test": 123})
         result = response.to_dict()
-        
+
         assert isinstance(result, dict)
         assert result["success"] is True
         assert result["data"] == {"test": 123}

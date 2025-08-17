@@ -34,8 +34,7 @@ def health_check():
             "database": "healthy" if db_status == "healthy" else "unhealthy",
             "cache": "healthy",  # Assume cache is healthy for now
             "blacklist": (
-                "healthy" if health_info.get("total_ips", 0) >= 0
-                else "unhealthy"
+                "healthy" if health_info.get("total_ips", 0) >= 0 else "unhealthy"
             ),
         }
 
@@ -73,36 +72,31 @@ def detailed_health_check():
     try:
         # 기본 헬스 정보 수집
         health_info = service.get_system_health()
-        
+
         # 상세 컴포넌트 체크
         db_status = health_info.get("status")
         collection_enabled = health_info.get("collection_enabled")
-        
+
         detailed_components = {
             "database": {
                 "status": "healthy" if db_status == "healthy" else "unhealthy",
                 "total_entries": health_info.get("total_ips", 0),
-                "last_updated": health_info.get("last_updated", "unknown")
+                "last_updated": health_info.get("last_updated", "unknown"),
             },
-            "cache": {
-                "status": "healthy",
-                "type": "redis",
-                "fallback": "memory"
-            },
+            "cache": {"status": "healthy", "type": "redis", "fallback": "memory"},
             "collection": {
                 "status": "enabled" if collection_enabled else "disabled",
-                "last_collection": health_info.get("last_collection", "never")
+                "last_collection": health_info.get("last_collection", "never"),
             },
-            "sources": {
-                "regtech": "available",
-                "secudium": "available"
-            }
+            "sources": {"regtech": "available", "secudium": "available"},
         }
 
         overall_status = "healthy"
         for component, details in detailed_components.items():
-            if (isinstance(details, dict) and
-                    details.get("status") in ["unhealthy", "error"]):
+            if isinstance(details, dict) and details.get("status") in [
+                "unhealthy",
+                "error",
+            ]:
                 overall_status = "degraded"
                 break
 
@@ -116,8 +110,8 @@ def detailed_health_check():
             "metrics": {
                 "total_ips": health_info.get("total_ips", 0),
                 "active_ips": health_info.get("active_ips", 0),
-                "expired_ips": health_info.get("expired_ips", 0)
-            }
+                "expired_ips": health_info.get("expired_ips", 0),
+            },
         }
 
         status_code = 200 if overall_status == "healthy" else 503
@@ -126,7 +120,5 @@ def detailed_health_check():
     except Exception as e:
         logger.error(f"Detailed health check failed: {e}")
         return create_error_response(
-            "health_check_failed",
-            f"Health check failed: {str(e)}",
-            500
+            "health_check_failed", f"Health check failed: {str(e)}", 500
         )

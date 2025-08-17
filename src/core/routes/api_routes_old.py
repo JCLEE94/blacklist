@@ -5,34 +5,62 @@
 """
 
 import logging
-from flask import Blueprint, jsonify
+from datetime import datetime
+
+from flask import Blueprint, Response, jsonify, request
+
+from src.core.container import get_container
+
+from .blacklist_routes import blacklist_routes_bp
 
 # 분할된 라우트 모듈들 임포트
 from .health_routes import health_routes_bp
-from .blacklist_routes import blacklist_routes_bp
 
 logger = logging.getLogger(__name__)
 
 # 메인 API 라우트 블루프린트
 api_routes_bp = Blueprint("api_routes", __name__)
 
+# 서비스 인스턴스 가져오기
+try:
+    container = get_container()
+    service = container.get("unified_service")
+except Exception as e:
+    logger.error(f"Failed to get service instance: {e}")
+    service = None
+
+
+def create_error_response(error):
+    """에러 응답 생성 헬퍼 함수"""
+    return {
+        "success": False,
+        "error": str(error),
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
 # 분할된 라우트들을 메인 블루프린트에 등록
 def register_sub_routes(app):
     """
     분할된 라우트 블루프린트들을 앱에 등록
-    
+
     Args:
         app: Flask 애플리케이션 인스턴스
     """
     app.register_blueprint(health_routes_bp)
     app.register_blueprint(blacklist_routes_bp)
-    
+
     logger.info("Registered all sub-route blueprints")
 
 
+from .blacklist_routes import (
+    get_active_blacklist,
+    get_enhanced_blacklist,
+    get_fortigate_format,
+)
+
 # 레거시 호환성을 위한 임포트 (기존 코드와의 호환성 유지)
 from .health_routes import health_check
-from .blacklist_routes import get_active_blacklist, get_fortigate_format, get_enhanced_blacklist
 
 
 # API 문서 엔드포인트 (간단한 유틸리티 함수)
@@ -181,10 +209,7 @@ def get_stats():
     """시스템 통계 조회"""
     try:
         stats = service.get_system_stats()
-        return jsonify({
-            "success": True,
-            "data": stats
-        })
+        return jsonify({"success": True, "data": stats})
     except Exception as e:
         logger.error(f"Stats error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -199,19 +224,16 @@ def get_sources_status():
             "REGTECH": {
                 "status": "active",
                 "last_updated": datetime.utcnow().isoformat(),
-                "total_ips": 0
+                "total_ips": 0,
             },
             "SECUDIUM": {
-                "status": "active", 
+                "status": "active",
                 "last_updated": datetime.utcnow().isoformat(),
-                "total_ips": 0
-            }
+                "total_ips": 0,
+            },
         }
-        
-        return jsonify({
-            "success": True,
-            "data": sources_status
-        })
+
+        return jsonify({"success": True, "data": sources_status})
     except Exception as e:
         logger.error(f"Sources status error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -226,17 +248,10 @@ def get_analytics_summary():
             "total_ips": 0,
             "active_ips": 0,
             "blocked_today": 0,
-            "threat_levels": {
-                "high": 0,
-                "medium": 0,
-                "low": 0
-            }
+            "threat_levels": {"high": 0, "medium": 0, "low": 0},
         }
-        
-        return jsonify({
-            "success": True,
-            "data": summary
-        })
+
+        return jsonify({"success": True, "data": summary})
     except Exception as e:
         logger.error(f"Analytics summary error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -247,16 +262,9 @@ def get_analytics_trends():
     """트렌드 분석 데이터 조회"""
     try:
         # Mock trends data for now
-        trends = {
-            "daily_trends": [],
-            "source_distribution": {},
-            "geo_distribution": {}
-        }
-        
-        return jsonify({
-            "success": True,
-            "data": trends
-        })
+        trends = {"daily_trends": [], "source_distribution": {}, "geo_distribution": {}}
+
+        return jsonify({"success": True, "data": trends})
     except Exception as e:
         logger.error(f"Analytics trends error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -269,13 +277,10 @@ def monitoring_dashboard():
         dashboard_data = {
             "system_health": service.get_system_health(),
             "stats": service.get_system_stats(),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
-        
-        return jsonify({
-            "success": True,
-            "data": dashboard_data
-        })
+
+        return jsonify({"success": True, "data": dashboard_data})
     except Exception as e:
         logger.error(f"Monitoring dashboard error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -287,72 +292,75 @@ def prometheus_metrics():
     try:
         # 고급 메트릭 시스템 사용
         from ..monitoring.prometheus_metrics import get_metrics
-        
+
         metrics_instance = get_metrics()
-        
+
         # 실시간 데이터 수집
         stats = service.get_system_stats()
         health = service.get_system_health()
-        
+
         # 시스템 정보 수집
-        import psutil
         import time
         from datetime import datetime
-        
+
+        import psutil
+
         system_info = {
             "active_connections": 1,  # Flask connection
             "memory": {
                 "rss": psutil.Process().memory_info().rss,
                 "vms": psutil.Process().memory_info().vms,
-                "shared": getattr(psutil.Process().memory_info(), 'shared', 0)
+                "shared": getattr(psutil.Process().memory_info(), "shared", 0),
             },
             "cpu_percent": psutil.cpu_percent(interval=0.1),
             "disk": {
                 "/app": {
-                    "used": psutil.disk_usage('/').used,
-                    "free": psutil.disk_usage('/').free,
-                    "total": psutil.disk_usage('/').total
+                    "used": psutil.disk_usage("/").used,
+                    "free": psutil.disk_usage("/").free,
+                    "total": psutil.disk_usage("/").total,
                 }
-            }
+            },
         }
-        
+
         # 비즈니스 정보 수집
         business_data = {
             "ip_stats": {
-                "regtech": {"active": stats.get('regtech_active', 0), "inactive": stats.get('regtech_inactive', 0)},
-                "secudium": {"active": stats.get('secudium_active', 0), "inactive": stats.get('secudium_inactive', 0)}
+                "regtech": {
+                    "active": stats.get("regtech_active", 0),
+                    "inactive": stats.get("regtech_inactive", 0),
+                },
+                "secudium": {
+                    "active": stats.get("secudium_active", 0),
+                    "inactive": stats.get("secudium_inactive", 0),
+                },
             },
             "data_freshness": {
-                "regtech": stats.get('regtech_last_update_seconds', 0),
-                "secudium": stats.get('secudium_last_update_seconds', 0)
+                "regtech": stats.get("regtech_last_update_seconds", 0),
+                "secudium": stats.get("secudium_last_update_seconds", 0),
             },
-            "cache": {
-                "size_bytes": stats.get('cache_size', 0)
-            },
-            "database": {
-                "active": 1,
-                "idle": 0,
-                "total": 1
-            }
+            "cache": {"size_bytes": stats.get("cache_size", 0)},
+            "database": {"active": 1, "idle": 0, "total": 1},
         }
-        
+
         # 메트릭 업데이트
         metrics_instance.update_system_metrics(system_info)
         metrics_instance.update_business_metrics(business_data)
-        
+
         # 버전 정보 설정
-        metrics_instance.set_version_info("1.0.35", datetime.now().strftime("%Y-%m-%d"), "latest")
-        
+        metrics_instance.set_version_info(
+            "1.0.35", datetime.now().strftime("%Y-%m-%d"), "latest"
+        )
+
         # Prometheus 형식 응답 생성
         return metrics_instance.get_metrics_response()
-        
+
     except Exception as e:
         logger.error(f"Advanced metrics error: {e}")
-        
+
         # 기본 메트릭 fallback
         try:
             stats = service.get_system_stats()
-            
+
             fallback_metrics = f"""# HELP blacklist_up Service health status
 # TYPE blacklist_up gauge
 blacklist_up 1
@@ -369,34 +377,33 @@ blacklist_active_ips {stats.get('active_ips', 0)}
 # TYPE blacklist_errors_total counter
 blacklist_errors_total{{error_type="metric_generation",component="prometheus"}} 1
 """
-            
+
             return Response(
-                fallback_metrics, 
+                fallback_metrics,
                 mimetype="text/plain; version=0.0.4",
                 headers={
                     "Cache-Control": "no-cache, no-store, must-revalidate",
                     "Pragma": "no-cache",
-                    "Expires": "0"
-                }
+                    "Expires": "0",
+                },
             )
         except Exception as fallback_error:
             logger.error(f"Fallback metrics error: {fallback_error}")
             return Response(
-                "# Metrics system unavailable\nblacklist_up 0\n", 
+                "# Metrics system unavailable\nblacklist_up 0\n",
                 mimetype="text/plain",
-                status=500
+                status=500,
             )
+
 
 @api_routes_bp.route("/api/realtime/stats", methods=["GET"])
 def realtime_stats():
     """실시간 통계 조회"""
     try:
         stats = service.get_system_stats()
-        return jsonify({
-            "success": True,
-            "data": stats,
-            "timestamp": datetime.utcnow().isoformat()
-        })
+        return jsonify(
+            {"success": True, "data": stats, "timestamp": datetime.utcnow().isoformat()}
+        )
     except Exception as e:
         logger.error(f"Realtime stats error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -407,14 +414,17 @@ def realtime_collection_status():
     """실시간 수집 상태 조회"""
     try:
         from ..collection_manager import get_collection_manager
+
         manager = get_collection_manager()
         status = manager.get_collection_status()
-        
-        return jsonify({
-            "success": True,
-            "data": status,
-            "timestamp": datetime.utcnow().isoformat()
-        })
+
+        return jsonify(
+            {
+                "success": True,
+                "data": status,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Realtime collection status error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -425,26 +435,23 @@ def monitoring_system():
     """시스템 모니터링 데이터"""
     try:
         import psutil
-        
+
         system_info = {
             "cpu_percent": psutil.cpu_percent(interval=1),
             "memory": {
                 "percent": psutil.virtual_memory().percent,
                 "used": psutil.virtual_memory().used,
-                "total": psutil.virtual_memory().total
+                "total": psutil.virtual_memory().total,
             },
             "disk": {
-                "percent": psutil.disk_usage('/').percent,
-                "used": psutil.disk_usage('/').used,
-                "total": psutil.disk_usage('/').total
+                "percent": psutil.disk_usage("/").percent,
+                "used": psutil.disk_usage("/").used,
+                "total": psutil.disk_usage("/").total,
             },
-            "uptime": datetime.utcnow().isoformat()
+            "uptime": datetime.utcnow().isoformat(),
         }
-        
-        return jsonify({
-            "success": True,
-            "data": system_info
-        })
+
+        return jsonify({"success": True, "data": system_info})
     except Exception as e:
         logger.error(f"System monitoring error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -455,21 +462,26 @@ def realtime_feed():
     """실시간 피드 데이터"""
     try:
         import random
-        
+
         # 시뮬레이션된 실시간 이벤트
         events = [
-            {"type": "info", "message": "시스템 정상 작동 중", "icon": "bi-info-circle"},
+            {
+                "type": "info",
+                "message": "시스템 정상 작동 중",
+                "icon": "bi-info-circle",
+            },
             {"type": "success", "message": "헬스체크 통과", "icon": "bi-check-circle"},
-            {"type": "warning", "message": "메모리 사용률 증가", "icon": "bi-exclamation-triangle"}
+            {
+                "type": "warning",
+                "message": "메모리 사용률 증가",
+                "icon": "bi-exclamation-triangle",
+            },
         ]
-        
+
         event = random.choice(events)
         event["timestamp"] = datetime.utcnow().strftime("%H:%M:%S")
-        
-        return jsonify({
-            "success": True,
-            "event": event
-        })
+
+        return jsonify({"success": True, "event": event})
     except Exception as e:
         logger.error(f"Realtime feed error: {e}")
         return jsonify(create_error_response(e)), 500

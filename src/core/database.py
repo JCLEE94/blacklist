@@ -239,7 +239,9 @@ class DatabaseManager:
         with self.Session() as session:
             # 전체 IP 수
             stats["total_ips"] = session.execute(
-                text("SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries WHERE is_active = 1")
+                text(
+                    "SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries WHERE is_active = 1"
+                )
             ).scalar()
 
             # 소스별 통계
@@ -304,7 +306,7 @@ class DatabaseManager:
                     WHERE is_active = 0 AND updated_at < :cutoff
                 """
                 ),
-                {"cutoff": cutoff_date}
+                {"cutoff": cutoff_date},
             )
             deleted_count += result.rowcount
 

@@ -9,7 +9,4 @@ from .test_collection_regtech import TestRegtechCollector
 from .test_collection_secudium import TestSecudiumCollector
 
 # Re-export test classes for backward compatibility
-__all__ = [
-    'TestRegtechCollector',
-    'TestSecudiumCollector'
-]
+__all__ = ["TestRegtechCollector", "TestSecudiumCollector"]

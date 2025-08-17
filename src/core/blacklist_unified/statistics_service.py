@@ -4,8 +4,8 @@
 blacklist_unified 모듈용 통계 서비스 클래스
 """
 
-import sqlite3
 import logging
+import sqlite3
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -27,39 +27,48 @@ class StatisticsService:
             with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                
+
                 # 전체 IP 수
-                cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 1")
+                cursor.execute(
+                    "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 1"
+                )
                 total_ips = cursor.fetchone()[0]
-                
+
                 # 기간별 새로운 IP
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT COUNT(*) FROM blacklist_entries 
                     WHERE is_active = 1 
                     AND created_at BETWEEN ? AND ?
-                """, (start_date, end_date))
+                """,
+                    (start_date, end_date),
+                )
                 new_ips = cursor.fetchone()[0]
-                
+
                 # 소스별 통계
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT source, COUNT(*) as count 
                     FROM blacklist_entries 
                     WHERE is_active = 1 
                     GROUP BY source
-                """)
+                """
+                )
                 sources = {row[0]: row[1] for row in cursor.fetchall()}
-                
+
                 # 국가별 통계
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT country, COUNT(*) as count 
                     FROM blacklist_entries 
                     WHERE is_active = 1 AND country IS NOT NULL 
                     GROUP BY country 
                     ORDER BY count DESC 
                     LIMIT 10
-                """)
+                """
+                )
                 countries = {row[0]: row[1] for row in cursor.fetchall()}
-                
+
                 return {
                     "period": {"start": start_date, "end": end_date},
                     "total_ips": total_ips,
@@ -83,8 +92,9 @@ class StatisticsService:
             with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                
-                cursor.execute("""
+
+                cursor.execute(
+                    """
                     SELECT 
                         country,
                         COUNT(*) as ip_count,
@@ -94,14 +104,16 @@ class StatisticsService:
                     GROUP BY country 
                     ORDER BY ip_count DESC 
                     LIMIT ?
-                """, (limit,))
-                
+                """,
+                    (limit,),
+                )
+
                 return [
                     {
                         "country": row["country"],
                         "ip_count": row["ip_count"],
                         "source_count": row["source_count"],
-                        "percentage": 0  # 계산 후 설정
+                        "percentage": 0,  # 계산 후 설정
                     }
                     for row in cursor.fetchall()
                 ]
@@ -115,9 +127,10 @@ class StatisticsService:
             with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                
+
                 # 최근 N일간 일별 IP 추가 수
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT 
                         DATE(created_at) as date,
                         COUNT(*) as count
@@ -125,19 +138,21 @@ class StatisticsService:
                     WHERE created_at >= date('now', '-' || ? || ' days')
                     GROUP BY DATE(created_at)
                     ORDER BY date DESC
-                """, (days,))
-                
+                """,
+                    (days,),
+                )
+
                 trend_data = [
                     {"date": row["date"], "count": row["count"]}
                     for row in cursor.fetchall()
                 ]
-                
+
                 total_changes = sum(item["count"] for item in trend_data)
-                
+
                 return {
                     "days": days,
                     "trend_data": trend_data,
-                    "total_changes": total_changes
+                    "total_changes": total_changes,
                 }
         except Exception as e:
             logger.error(f"Error getting trend data: {e}")

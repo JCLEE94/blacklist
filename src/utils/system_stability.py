@@ -302,15 +302,15 @@ class SystemMonitor:
         except Exception as e:
             return 0
 
-
     def _check_cache_status(self) -> Dict[str, Any]:
         """캐시 상태 확인"""
         try:
             # Redis 캐시 상태 확인
             from src.core.cache_manager import get_cache_manager
+
             cache_manager = get_cache_manager()
-            
-            if hasattr(cache_manager, 'redis_client') and cache_manager.redis_client:
+
+            if hasattr(cache_manager, "redis_client") and cache_manager.redis_client:
                 try:
                     # Redis ping 테스트
                     cache_manager.redis_client.ping()
@@ -318,30 +318,26 @@ class SystemMonitor:
                     return {
                         "status": "healthy",
                         "type": "redis",
-                        "memory_used": info.get('used_memory_human', 'unknown'),
-                        "connected_clients": info.get('connected_clients', 0)
+                        "memory_used": info.get("used_memory_human", "unknown"),
+                        "connected_clients": info.get("connected_clients", 0),
                     }
                 except Exception as e:
                     logger.warning(f"Redis health check failed: {e}")
-                    return {
-                        "status": "degraded",
-                        "type": "memory",
-                        "error": str(e)
-                    }
+                    return {"status": "degraded", "type": "memory", "error": str(e)}
             else:
                 # 메모리 캐시 폴백
                 return {
                     "status": "healthy",
                     "type": "memory",
-                    "note": "Using memory cache fallback"
+                    "note": "Using memory cache fallback",
                 }
         except Exception as e:
             logger.error(f"Cache status check failed: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
-    def log_system_event(self, level: str, message: str, component: str = None, **kwargs):
+            return {"status": "error", "error": str(e)}
+
+    def log_system_event(
+        self, level: str, message: str, component: str = None, **kwargs
+    ):
         """시스템 이벤트 로깅"""
         try:
             with self.db_manager.get_connection() as conn:

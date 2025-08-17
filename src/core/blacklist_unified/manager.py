@@ -99,6 +99,7 @@ class UnifiedBlacklistManager:
 
     def _setup_cleanup_scheduler(self):
         """Setup periodic cleanup of old data using event-based scheduling"""
+
         def cleanup_thread():
             next_cleanup = datetime.now() + timedelta(days=1)
             while True:

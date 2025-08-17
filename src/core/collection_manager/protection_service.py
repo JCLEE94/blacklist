@@ -75,7 +75,7 @@ class ProtectionService:
 
             if len(recent_restarts) >= 3:  # 10분 내 3회 이상 재시작
                 logger.warning(
-                    "Rapid restart detected: {len(recent_restarts)} restarts in 10 minutes"
+                    f"Rapid restart detected: {len(recent_restarts)} restarts in 10 min"
                 )
                 self._record_restart_protection_event()
                 return True
@@ -244,7 +244,7 @@ class ProtectionService:
                 json.dump(bypass_data, f, ensure_ascii=False, indent=2)
 
             logger.warning(
-                "Protection bypass created: {reason} (expires in {duration_minutes} minutes)"
+                f"Protection bypass created: {reason} (expires in {duration_minutes} min)"
             )
             return {"success": True, "bypass_data": bypass_data}
 

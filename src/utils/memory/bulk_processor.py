@@ -46,9 +46,9 @@ class BulkProcessorMixin:
             # 청크 단위로 처리 - simple chunking implementation
             chunk_size = 5000
             total_chunks = (len(ip_list) + chunk_size - 1) // chunk_size
-            
+
             for i in range(0, len(ip_list), chunk_size):
-                chunk = ip_list[i:i + chunk_size]
+                chunk = ip_list[i : i + chunk_size]
                 chunk_num = i // chunk_size + 1
                 unique_ips.update(chunk)
 

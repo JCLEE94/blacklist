@@ -3,12 +3,13 @@
 Core modules coverage improvement tests
 Focus on most important business logic modules
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-import tempfile
-import os
 import asyncio
+import os
+import tempfile
 from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestAppCompactCoverage:
@@ -18,6 +19,7 @@ class TestAppCompactCoverage:
         """Test importing app_compact module"""
         try:
             from src.core import app_compact
+
             assert app_compact is not None
         except ImportError:
             pytest.skip("app_compact module not available")
@@ -26,11 +28,11 @@ class TestAppCompactCoverage:
         """Test app factory creation"""
         try:
             from src.core.app_compact import create_app
-            
+
             app = create_app()
             assert app is not None
-            assert hasattr(app, 'config')
-            
+            assert hasattr(app, "config")
+
         except ImportError:
             pytest.skip("create_app function not available")
         except Exception:
@@ -41,11 +43,11 @@ class TestAppCompactCoverage:
         """Test CompactFlaskApp class"""
         try:
             from src.core.app_compact import CompactFlaskApp
-            
-            app = CompactFlaskApp(__name__)
-            assert app is not None
-            assert hasattr(app, 'config')
-            
+
+            app_factory = CompactFlaskApp()
+            assert app_factory is not None
+            assert hasattr(app_factory, "create_app")
+
         except ImportError:
             pytest.skip("CompactFlaskApp class not available")
         except Exception:
@@ -59,6 +61,7 @@ class TestBlacklistUnifiedCoverage:
         """Test blacklist manager import"""
         try:
             from src.core.blacklist_unified.manager import BlacklistManager
+
             assert BlacklistManager is not None
         except ImportError:
             pytest.skip("BlacklistManager not available")
@@ -67,10 +70,10 @@ class TestBlacklistUnifiedCoverage:
         """Test blacklist manager creation"""
         try:
             from src.core.blacklist_unified.manager import BlacklistManager
-            
+
             manager = BlacklistManager()
             assert manager is not None
-            
+
         except ImportError:
             pytest.skip("BlacklistManager creation not available")
         except Exception:
@@ -80,6 +83,7 @@ class TestBlacklistUnifiedCoverage:
         """Test data service import"""
         try:
             from src.core.blacklist_unified.data_service import BlacklistDataService
+
             assert BlacklistDataService is not None
         except ImportError:
             pytest.skip("BlacklistDataService not available")
@@ -88,6 +92,7 @@ class TestBlacklistUnifiedCoverage:
         """Test models import"""
         try:
             from src.core.blacklist_unified.models import BlacklistEntry
+
             assert BlacklistEntry is not None
         except ImportError:
             pytest.skip("BlacklistEntry not available")
@@ -96,6 +101,7 @@ class TestBlacklistUnifiedCoverage:
         """Test statistics service import"""
         try:
             from src.core.blacklist_unified.statistics_service import StatisticsService
+
             assert StatisticsService is not None
         except ImportError:
             pytest.skip("StatisticsService not available")
@@ -104,36 +110,39 @@ class TestBlacklistUnifiedCoverage:
 class TestCollectionManagerCoverage:
     """Test collection_manager modules for better coverage"""
 
-    @patch('pathlib.Path.mkdir')
+    @patch("pathlib.Path.mkdir")
     def test_collection_manager_import(self, mock_mkdir):
         """Test collection manager import"""
         try:
             from src.core.collection_manager.manager import CollectionManager
+
             assert CollectionManager is not None
         except ImportError:
             pytest.skip("CollectionManager not available")
 
-    @patch('pathlib.Path.mkdir')
-    @patch('src.core.collection_manager.manager.CollectionConfigService')
-    @patch('src.core.collection_manager.manager.ProtectionService')
-    @patch('src.core.collection_manager.manager.AuthService')
-    @patch('src.core.collection_manager.manager.StatusService')
-    def test_collection_manager_basic_methods(self, mock_status, mock_auth, mock_protection, mock_config, mock_mkdir):
+    @patch("pathlib.Path.mkdir")
+    @patch("src.core.collection_manager.manager.CollectionConfigService")
+    @patch("src.core.collection_manager.manager.ProtectionService")
+    @patch("src.core.collection_manager.manager.AuthService")
+    @patch("src.core.collection_manager.manager.StatusService")
+    def test_collection_manager_basic_methods(
+        self, mock_status, mock_auth, mock_protection, mock_config, mock_mkdir
+    ):
         """Test collection manager basic methods"""
         try:
             from src.core.collection_manager.manager import CollectionManager
-            
+
             manager = CollectionManager()
-            
+
             # Test basic method access
-            if hasattr(manager, 'get_status'):
+            if hasattr(manager, "get_status"):
                 status = manager.get_status()
                 assert status is not None or status is None
-                
-            if hasattr(manager, 'is_enabled'):
+
+            if hasattr(manager, "is_enabled"):
                 enabled = manager.is_enabled()
                 assert isinstance(enabled, bool) or enabled is None
-                
+
         except ImportError:
             pytest.skip("CollectionManager methods not available")
         except Exception:
@@ -143,6 +152,7 @@ class TestCollectionManagerCoverage:
         """Test auth service import"""
         try:
             from src.core.collection_manager.auth_service import AuthService
+
             assert AuthService is not None
         except ImportError:
             pytest.skip("AuthService not available")
@@ -150,7 +160,10 @@ class TestCollectionManagerCoverage:
     def test_config_service_import(self):
         """Test config service import"""
         try:
-            from src.core.collection_manager.config_service import CollectionConfigService
+            from src.core.collection_manager.config_service import (
+                CollectionConfigService,
+            )
+
             assert CollectionConfigService is not None
         except ImportError:
             pytest.skip("CollectionConfigService not available")
@@ -163,6 +176,7 @@ class TestUtilModulesCoverage:
         """Test unified decorators import"""
         try:
             from src.utils import unified_decorators
+
             assert unified_decorators is not None
         except ImportError:
             pytest.skip("unified_decorators not available")
@@ -171,6 +185,7 @@ class TestUtilModulesCoverage:
         """Test system stability import"""
         try:
             from src.utils import system_stability
+
             assert system_stability is not None
         except ImportError:
             pytest.skip("system_stability not available")
@@ -179,6 +194,7 @@ class TestUtilModulesCoverage:
         """Test error handler import"""
         try:
             from src.utils.error_handler import core_handler
+
             assert core_handler is not None
         except ImportError:
             pytest.skip("core_handler not available")
@@ -187,6 +203,7 @@ class TestUtilModulesCoverage:
         """Test structured logging import"""
         try:
             from src.utils import structured_logging
+
             assert structured_logging is not None
         except ImportError:
             pytest.skip("structured_logging not available")
@@ -199,6 +216,7 @@ class TestWebModulesCoverage:
         """Test routes import"""
         try:
             from src.web import routes
+
             assert routes is not None
         except ImportError:
             pytest.skip("routes module not available")
@@ -207,6 +225,7 @@ class TestWebModulesCoverage:
         """Test API routes import"""
         try:
             from src.web import api_routes
+
             assert api_routes is not None
         except ImportError:
             pytest.skip("api_routes module not available")
@@ -215,6 +234,7 @@ class TestWebModulesCoverage:
         """Test collection routes import"""
         try:
             from src.web import collection_routes
+
             assert collection_routes is not None
         except ImportError:
             pytest.skip("collection_routes module not available")
@@ -227,6 +247,7 @@ class TestAPIModulesCoverage:
         """Test auth routes import"""
         try:
             from src.api import auth_routes
+
             assert auth_routes is not None
         except ImportError:
             pytest.skip("auth_routes module not available")
@@ -235,6 +256,7 @@ class TestAPIModulesCoverage:
         """Test API key routes import"""
         try:
             from src.api import api_key_routes
+
             assert api_key_routes is not None
         except ImportError:
             pytest.skip("api_key_routes module not available")
@@ -243,6 +265,7 @@ class TestAPIModulesCoverage:
         """Test collection routes API import"""
         try:
             from src.api import collection_routes
+
             assert collection_routes is not None
         except ImportError:
             pytest.skip("collection_routes API module not available")
@@ -251,6 +274,7 @@ class TestAPIModulesCoverage:
         """Test monitoring routes import"""
         try:
             from src.api import monitoring_routes
+
             assert monitoring_routes is not None
         except ImportError:
             pytest.skip("monitoring_routes module not available")
@@ -263,6 +287,7 @@ class TestCollectorsCoverage:
         """Test REGTECH collector import"""
         try:
             from src.core.collectors import regtech_collector
+
             assert regtech_collector is not None
         except ImportError:
             pytest.skip("regtech_collector not available")
@@ -271,6 +296,7 @@ class TestCollectorsCoverage:
         """Test SECUDIUM collector import"""
         try:
             from src.core import secudium_collector
+
             assert secudium_collector is not None
         except ImportError:
             pytest.skip("secudium_collector not available")
@@ -279,6 +305,7 @@ class TestCollectorsCoverage:
         """Test REGTECH simple collector import"""
         try:
             from src.core import regtech_simple_collector
+
             assert regtech_simple_collector is not None
         except ImportError:
             pytest.skip("regtech_simple_collector not available")

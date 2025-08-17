@@ -21,6 +21,7 @@ class TestPerformanceOptimizerImports(unittest.TestCase):
         """PerformanceMetrics 임포트 테스트"""
         try:
             from src.utils.performance_optimizer import PerformanceMetrics
+
             self.assertIsNotNone(PerformanceMetrics)
         except ImportError:
             pytest.skip("PerformanceMetrics not available")
@@ -29,6 +30,7 @@ class TestPerformanceOptimizerImports(unittest.TestCase):
         """QueryOptimizer 임포트 테스트"""
         try:
             from src.utils.performance_optimizer import QueryOptimizer
+
             self.assertIsNotNone(QueryOptimizer)
         except ImportError:
             pytest.skip("QueryOptimizer not available")
@@ -37,15 +39,16 @@ class TestPerformanceOptimizerImports(unittest.TestCase):
         """SmartCache 임포트 테스트"""
         try:
             from src.utils.performance_optimizer import SmartCache
+
             self.assertIsNotNone(SmartCache)
         except ImportError:
             pytest.skip("SmartCache not available")
-
 
     def test_import_memory_optimizer(self):
         """MemoryOptimizer 임포트 테스트"""
         try:
             from src.utils.performance_optimizer import MemoryOptimizer
+
             self.assertIsNotNone(MemoryOptimizer)
         except ImportError:
             pytest.skip("MemoryOptimizer not available")
@@ -54,6 +57,7 @@ class TestPerformanceOptimizerImports(unittest.TestCase):
         """PerformanceMonitor 임포트 테스트"""
         try:
             from src.utils.performance_optimizer import PerformanceMonitor
+
             self.assertIsNotNone(PerformanceMonitor)
         except ImportError:
             pytest.skip("PerformanceMonitor not available")
@@ -62,36 +66,31 @@ class TestPerformanceOptimizerImports(unittest.TestCase):
         """데코레이터 임포트 테스트"""
         try:
             from src.utils.performance_optimizer import (
-                performance_monitor,
+                batch_process,
                 cached_result,
-                batch_process
+                performance_monitor,
             )
+
             self.assertIsNotNone(performance_monitor)
             self.assertIsNotNone(cached_result)
             self.assertIsNotNone(batch_process)
         except ImportError:
             pytest.skip("Performance decorators not available")
 
-
     def test_import_utility_functions(self):
         """유틸리티 함수 임포트 테스트"""
         try:
             from src.utils.performance_optimizer import (
+                cleanup_performance_data,
                 get_performance_monitor,
                 optimize_database_queries,
-                cleanup_performance_data
             )
+
             self.assertIsNotNone(get_performance_monitor)
             self.assertIsNotNone(optimize_database_queries)
             self.assertIsNotNone(cleanup_performance_data)
         except ImportError:
             pytest.skip("Performance utility functions not available")
-
-
-
-
-
-
 
 
 class TestBasicAvailability(unittest.TestCase):
@@ -101,6 +100,7 @@ class TestBasicAvailability(unittest.TestCase):
         """모듈 사용 가능성 테스트"""
         try:
             import src.utils.performance_optimizer
+
             self.assertIsNotNone(src.utils.performance_optimizer)
         except ImportError:
             pytest.skip("Performance optimizer module not available")
@@ -109,6 +109,7 @@ class TestBasicAvailability(unittest.TestCase):
         """전역 모니터 사용 가능성 테스트"""
         try:
             from src.utils.performance_optimizer import g_performance_monitor
+
             self.assertIsNotNone(g_performance_monitor)
         except ImportError:
             pytest.skip("Global performance monitor not available")

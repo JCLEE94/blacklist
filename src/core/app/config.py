@@ -63,6 +63,7 @@ class AppConfigurationMixin:
         """JSON 직렬화 최적화"""
         try:
             import orjson
+
             HAS_ORJSON = True
         except ImportError:
             HAS_ORJSON = False

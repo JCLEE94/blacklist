@@ -7,11 +7,12 @@ import tempfile
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
 from .test_core_services_mocks import (
-    MockUnifiedService,
     MockBlacklistManager,
     MockCacheManager,
     MockCollectionManager,
+    MockUnifiedService,
 )
 
 
@@ -390,11 +391,11 @@ class TestCoreServices:
 
         # 2. Trigger REGTECH collection
         regtech_result = mock_collection_manager.collect_from_regtech()
-        assert regtech_result["success"] is True
+        assert regtech_result["status"] == "success"
 
         # 3. Trigger SECUDIUM collection
         secudium_result = mock_collection_manager.collect_from_secudium()
-        assert secudium_result["success"] is True
+        assert secudium_result["status"] == "success"
 
         # 4. Get collection status
         status = mock_unified_service.get_collection_status()

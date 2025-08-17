@@ -13,8 +13,8 @@ from typing import Any, Dict, List
 import requests
 from bs4 import BeautifulSoup
 
-from .unified_collector import BaseCollector, CollectionConfig
 from ..common.ip_utils import IPUtils
+from .unified_collector import BaseCollector, CollectionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -414,73 +414,83 @@ class RegtechCollector(BaseCollector):
     def _transform_data(self, raw_data: dict) -> dict:
         """
         원시 데이터를 표준 형식으로 변환 (탐지일 기준 3개월 만료)
-        
+
         Args:
             raw_data: 원시 수집 데이터
-            
+
         Returns:
             변환된 데이터 딕셔너리 (expires_at 포함)
         """
         try:
             # 탐지일 파싱
-            detection_date_str = raw_data.get('date', datetime.now().strftime('%Y-%m-%d'))
-            
+            detection_date_str = raw_data.get(
+                "date", datetime.now().strftime("%Y-%m-%d")
+            )
+
             # 다양한 날짜 형식 처리
             detection_date = None
             try:
-                if len(detection_date_str.replace('-', '').replace('.', '')) == 8:
+                if len(detection_date_str.replace("-", "").replace(".", "")) == 8:
                     # YYYYMMDD, YYYY-MM-DD, YYYY.MM.DD 형식
-                    clean_date = detection_date_str.replace('-', '').replace('.', '')
-                    detection_date = datetime.strptime(clean_date, '%Y%m%d')
+                    clean_date = detection_date_str.replace("-", "").replace(".", "")
+                    detection_date = datetime.strptime(clean_date, "%Y%m%d")
                 else:
                     # 기본적으로 ISO 형식 시도
                     detection_date = datetime.fromisoformat(detection_date_str)
             except:
                 # 파싱 실패 시 현재 날짜 사용
                 detection_date = datetime.now()
-                self.logger.warning(f"날짜 파싱 실패, 현재 날짜 사용: {detection_date_str}")
-            
+                self.logger.warning(
+                    f"날짜 파싱 실패, 현재 날짜 사용: {detection_date_str}"
+                )
+
             # 수집일 기준 3개월 후 만료 설정 (탐지일 아님)
             collection_date = datetime.now()  # 실제 수집한 날짜
             expires_at = collection_date + timedelta(days=90)  # 수집일 + 3개월 = 90일
-            
+
             # 기본 변환
             transformed = {
-                'ip': raw_data.get('ip', ''),
-                'country': raw_data.get('country', 'Unknown'),
-                'reason': raw_data.get('reason', 'Unknown threat'),
-                'source': 'REGTECH',
-                'detection_date': detection_date.strftime('%Y-%m-%d'),  # 실제 탐지일 유지
-                'collection_date': collection_date.strftime('%Y-%m-%d'),  # 수집일 추가
-                'expires_at': expires_at.isoformat(),  # 수집일 기준 만료
-                'threat_level': raw_data.get('threat_level', 'medium'),
-                'category': raw_data.get('category', 'malware'),
-                'confidence': raw_data.get('confidence', 0.8)
+                "ip": raw_data.get("ip", ""),
+                "country": raw_data.get("country", "Unknown"),
+                "reason": raw_data.get("reason", "Unknown threat"),
+                "source": "REGTECH",
+                "detection_date": detection_date.strftime(
+                    "%Y-%m-%d"
+                ),  # 실제 탐지일 유지
+                "collection_date": collection_date.strftime("%Y-%m-%d"),  # 수집일 추가
+                "expires_at": expires_at.isoformat(),  # 수집일 기준 만료
+                "threat_level": raw_data.get("threat_level", "medium"),
+                "category": raw_data.get("category", "malware"),
+                "confidence": raw_data.get("confidence", 0.8),
             }
-            
+
             # 추가 필드 처리
-            if 'additional_info' in raw_data:
-                transformed['additional_info'] = raw_data['additional_info']
-                
+            if "additional_info" in raw_data:
+                transformed["additional_info"] = raw_data["additional_info"]
+
             # IP 유효성 검증
-            if not self._is_valid_ip(transformed['ip']):
-                self.logger.warning(f"Invalid IP in transformed data: {transformed['ip']}")
-                
+            if not self._is_valid_ip(transformed["ip"]):
+                self.logger.warning(
+                    f"Invalid IP in transformed data: {transformed['ip']}"
+                )
+
             return transformed
-            
+
         except Exception as e:
             self.logger.error(f"Data transformation error: {e}")
             # 최소한의 데이터 반환 (수집일 기준 3개월 만료)
             fallback_collection = datetime.now()
             fallback_expires = fallback_collection + timedelta(days=90)
             return {
-                'ip': raw_data.get('ip', '0.0.0.0'),
-                'source': 'REGTECH',
-                'country': 'Unknown',
-                'reason': 'Transform error',
-                'detection_date': fallback_collection.strftime('%Y-%m-%d'),  # 에러 시 수집일로 설정
-                'collection_date': fallback_collection.strftime('%Y-%m-%d'),  # 수집일
-                'expires_at': fallback_expires.isoformat()  # 수집일 기준 만료
+                "ip": raw_data.get("ip", "0.0.0.0"),
+                "source": "REGTECH",
+                "country": "Unknown",
+                "reason": "Transform error",
+                "detection_date": fallback_collection.strftime(
+                    "%Y-%m-%d"
+                ),  # 에러 시 수집일로 설정
+                "collection_date": fallback_collection.strftime("%Y-%m-%d"),  # 수집일
+                "expires_at": fallback_expires.isoformat(),  # 수집일 기준 만료
             }
 
     def _is_valid_ip(self, ip: str) -> bool:

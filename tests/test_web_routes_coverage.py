@@ -140,7 +140,7 @@ def test_flask_app_with_routes():
         app_factory = CompactFlaskApp()
         # CompactFlaskApp is a factory, not a Flask app directly
         assert hasattr(app_factory, "create_app")
-        
+
         # Create the actual Flask app
         flask_app = app_factory.create_app("testing")
         flask_app.config["TESTING"] = True
@@ -159,6 +159,7 @@ def test_flask_app_with_routes():
     except Exception as e:
         # If there are other issues (missing config, dependencies), just verify factory exists
         from src.core.app_compact import CompactFlaskApp
+
         app_factory = CompactFlaskApp()
         assert hasattr(app_factory, "create_app")
 

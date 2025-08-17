@@ -3,11 +3,12 @@
 Functional tests for Manager and Collector classes
 Tests unified collector, blacklist manager, and data service
 """
-import pytest
-import tempfile
 import os
-from unittest.mock import Mock, patch, MagicMock
+import tempfile
 from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestUnifiedCollector:
@@ -17,6 +18,7 @@ class TestUnifiedCollector:
         """Test UnifiedCollector import"""
         try:
             from src.core.collectors.unified_collector import UnifiedCollector
+
             assert UnifiedCollector is not None
         except ImportError:
             pytest.skip("UnifiedCollector not available")
@@ -25,14 +27,14 @@ class TestUnifiedCollector:
         """Test unified collector methods"""
         try:
             from src.core.collectors.unified_collector import UnifiedCollector
-            
+
             # Check for expected methods
-            expected_methods = ['collect', 'run', 'get_status', '__init__']
-            
+            expected_methods = ["collect", "run", "get_status", "__init__"]
+
             for method in expected_methods:
                 if hasattr(UnifiedCollector, method):
                     assert callable(getattr(UnifiedCollector, method))
-                    
+
         except ImportError:
             pytest.skip("UnifiedCollector methods not available")
 
@@ -40,6 +42,7 @@ class TestUnifiedCollector:
         """Test unified collector instantiation"""
         try:
             from src.core.collectors.unified_collector import UnifiedCollector
+
             collector = UnifiedCollector()
             assert collector is not None
         except ImportError:
@@ -56,6 +59,7 @@ class TestBlacklistManager:
         """Test BlacklistManager import"""
         try:
             from src.core.blacklist_unified.manager import BlacklistManager
+
             assert BlacklistManager is not None
         except ImportError:
             pytest.skip("BlacklistManager not available")
@@ -64,17 +68,21 @@ class TestBlacklistManager:
         """Test blacklist manager methods"""
         try:
             from src.core.blacklist_unified.manager import BlacklistManager
-            
+
             # Check for expected methods
             expected_methods = [
-                'add_ip', 'remove_ip', 'get_active_ips', 'get_statistics',
-                'initialize_database', 'close_connection'
+                "add_ip",
+                "remove_ip",
+                "get_active_ips",
+                "get_statistics",
+                "initialize_database",
+                "close_connection",
             ]
-            
+
             for method in expected_methods:
                 if hasattr(BlacklistManager, method):
                     assert callable(getattr(BlacklistManager, method))
-                    
+
         except ImportError:
             pytest.skip("BlacklistManager methods not available")
 
@@ -82,6 +90,7 @@ class TestBlacklistManager:
         """Test blacklist manager instantiation"""
         try:
             from src.core.blacklist_unified.manager import BlacklistManager
+
             manager = BlacklistManager()
             assert manager is not None
         except ImportError:
@@ -98,6 +107,7 @@ class TestDataService:
         """Test DataService import"""
         try:
             from src.core.blacklist_unified.data_service import DataService
+
             assert DataService is not None
         except ImportError:
             pytest.skip("DataService not available")
@@ -106,17 +116,21 @@ class TestDataService:
         """Test data service methods"""
         try:
             from src.core.blacklist_unified.data_service import DataService
-            
+
             # Check for expected methods
             expected_methods = [
-                'get_data', 'save_data', 'update_data', 'delete_data',
-                'search_data', 'get_metadata'
+                "get_data",
+                "save_data",
+                "update_data",
+                "delete_data",
+                "search_data",
+                "get_metadata",
             ]
-            
+
             for method in expected_methods:
                 if hasattr(DataService, method):
                     assert callable(getattr(DataService, method))
-                    
+
         except ImportError:
             pytest.skip("DataService methods not available")
 
@@ -124,6 +138,7 @@ class TestDataService:
         """Test data service instantiation"""
         try:
             from src.core.blacklist_unified.data_service import DataService
+
             service = DataService()
             assert service is not None
         except ImportError:
@@ -140,6 +155,7 @@ class TestAdvancedCache:
         """Test CacheManager import"""
         try:
             from src.core.cache.manager import CacheManager
+
             assert CacheManager is not None
         except ImportError:
             pytest.skip("CacheManager not available")
@@ -148,17 +164,22 @@ class TestAdvancedCache:
         """Test cache manager methods"""
         try:
             from src.core.cache.manager import CacheManager
-            
+
             # Check for expected methods
             expected_methods = [
-                'get', 'set', 'delete', 'clear', 'exists',
-                'get_stats', 'cleanup'
+                "get",
+                "set",
+                "delete",
+                "clear",
+                "exists",
+                "get_stats",
+                "cleanup",
             ]
-            
+
             for method in expected_methods:
                 if hasattr(CacheManager, method):
                     assert callable(getattr(CacheManager, method))
-                    
+
         except ImportError:
             pytest.skip("CacheManager methods not available")
 
@@ -166,16 +187,16 @@ class TestAdvancedCache:
         """Test cache manager Redis fallback behavior"""
         try:
             from src.core.cache.manager import CacheManager
-            
+
             # Test instantiation with potential Redis fallback
             cache = CacheManager()
             assert cache is not None
-            
+
             # Test basic operations
-            cache.set('test_key', 'test_value')
-            value = cache.get('test_key')
-            assert value == 'test_value' or value is None  # May fail due to Redis
-            
+            cache.set("test_key", "test_value")
+            value = cache.get("test_key")
+            assert value == "test_value" or value is None  # May fail due to Redis
+
         except ImportError:
             pytest.skip("CacheManager not available")
         except Exception:
@@ -190,6 +211,7 @@ class TestErrorHandler:
         """Test ErrorHandler import"""
         try:
             from src.core.error_handler import ErrorHandler
+
             assert ErrorHandler is not None
         except ImportError:
             pytest.skip("ErrorHandler not available")
@@ -198,17 +220,20 @@ class TestErrorHandler:
         """Test error handler methods"""
         try:
             from src.core.error_handler import ErrorHandler
-            
+
             # Check for expected methods
             expected_methods = [
-                'handle_error', 'log_error', 'format_error',
-                'get_error_context', 'is_critical_error'
+                "handle_error",
+                "log_error",
+                "format_error",
+                "get_error_context",
+                "is_critical_error",
             ]
-            
+
             for method in expected_methods:
                 if hasattr(ErrorHandler, method):
                     assert callable(getattr(ErrorHandler, method))
-                    
+
         except ImportError:
             pytest.skip("ErrorHandler methods not available")
 
@@ -216,6 +241,7 @@ class TestErrorHandler:
         """Test error handler instantiation"""
         try:
             from src.core.error_handler import ErrorHandler
+
             handler = ErrorHandler()
             assert handler is not None
         except ImportError:

@@ -29,10 +29,13 @@ class TestBuildInfo:
             from src.utils.build_info import get_build_info
 
             # Mock file system calls
-            with patch("os.path.exists", return_value=True), patch(
-                "builtins.open",
-                mock_open(
-                    read_data='{"version": "1.0.0", "build_time": "2024-01-01T00:00:00Z"}'
+            with (
+                patch("os.path.exists", return_value=True),
+                patch(
+                    "builtins.open",
+                    mock_open(
+                        read_data='{"version": "1.0.0", "build_time": "2024-01-01T00:00:00Z"}'
+                    ),
                 ),
             ):
 

@@ -3,11 +3,12 @@
 Functional tests to improve coverage on actual code implementations
 Focus on real functions and classes that exist in the codebase
 """
-import pytest
-import tempfile
 import os
-from unittest.mock import Mock, patch, MagicMock
+import tempfile
 from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestUnifiedServiceFactory:
@@ -17,6 +18,7 @@ class TestUnifiedServiceFactory:
         """Test get_unified_service function"""
         try:
             from src.core.services.unified_service_factory import get_unified_service
+
             service = get_unified_service()
             assert service is not None
         except ImportError:
@@ -29,6 +31,7 @@ class TestUnifiedServiceFactory:
         """Test reset_unified_service function"""
         try:
             from src.core.services.unified_service_factory import reset_unified_service
+
             reset_unified_service()
             assert True  # Function should complete without error
         except ImportError:
@@ -38,6 +41,7 @@ class TestUnifiedServiceFactory:
         """Test is_service_initialized function"""
         try:
             from src.core.services.unified_service_factory import is_service_initialized
+
             result = is_service_initialized()
             assert isinstance(result, bool)
         except ImportError:
@@ -46,18 +50,21 @@ class TestUnifiedServiceFactory:
     def test_service_singleton_behavior(self):
         """Test singleton behavior of service factory"""
         try:
-            from src.core.services.unified_service_factory import get_unified_service, reset_unified_service
-            
+            from src.core.services.unified_service_factory import (
+                get_unified_service,
+                reset_unified_service,
+            )
+
             # Reset first
             reset_unified_service()
-            
+
             # Get two instances
             service1 = get_unified_service()
             service2 = get_unified_service()
-            
+
             # Should be the same instance (singleton)
             assert service1 is service2
-            
+
         except ImportError:
             pytest.skip("Service singleton test not available")
         except Exception:
@@ -72,6 +79,7 @@ class TestUnifiedServiceCore:
         """Test UnifiedBlacklistService import"""
         try:
             from src.core.services.unified_service_core import UnifiedBlacklistService
+
             assert UnifiedBlacklistService is not None
         except ImportError:
             pytest.skip("UnifiedBlacklistService not available")
@@ -80,6 +88,7 @@ class TestUnifiedServiceCore:
         """Test UnifiedBlacklistService initialization"""
         try:
             from src.core.services.unified_service_core import UnifiedBlacklistService
+
             service = UnifiedBlacklistService()
             assert service is not None
         except ImportError:
@@ -92,17 +101,20 @@ class TestUnifiedServiceCore:
         """Test that expected service methods exist"""
         try:
             from src.core.services.unified_service_core import UnifiedBlacklistService
-            
+
             # Check for common methods
             methods_to_check = [
-                '__init__', 'get_status', 'get_statistics', 
-                'get_blacklist', 'get_collection_status'
+                "__init__",
+                "get_status",
+                "get_statistics",
+                "get_blacklist",
+                "get_collection_status",
             ]
-            
+
             for method in methods_to_check:
                 if hasattr(UnifiedBlacklistService, method):
                     assert callable(getattr(UnifiedBlacklistService, method))
-                    
+
         except ImportError:
             pytest.skip("Service methods check not available")
 
@@ -114,6 +126,7 @@ class TestCollectionServiceMixin:
         """Test CollectionServiceMixin import"""
         try:
             from src.core.services.collection_service import CollectionServiceMixin
+
             assert CollectionServiceMixin is not None
         except ImportError:
             pytest.skip("CollectionServiceMixin not available")
@@ -122,17 +135,20 @@ class TestCollectionServiceMixin:
         """Test collection mixin methods"""
         try:
             from src.core.services.collection_service import CollectionServiceMixin
-            
+
             # Check for expected methods
             expected_methods = [
-                'get_collection_status', 'enable_collection', 'disable_collection',
-                'trigger_regtech_collection', 'trigger_secudium_collection'
+                "get_collection_status",
+                "enable_collection",
+                "disable_collection",
+                "trigger_regtech_collection",
+                "trigger_secudium_collection",
             ]
-            
+
             for method in expected_methods:
                 if hasattr(CollectionServiceMixin, method):
                     assert callable(getattr(CollectionServiceMixin, method))
-                    
+
         except ImportError:
             pytest.skip("Collection mixin methods not available")
 
@@ -140,6 +156,7 @@ class TestCollectionServiceMixin:
         """Test collection mixin can be instantiated"""
         try:
             from src.core.services.collection_service import CollectionServiceMixin
+
             mixin = CollectionServiceMixin()
             assert mixin is not None
         except ImportError:
@@ -148,21 +165,23 @@ class TestCollectionServiceMixin:
             # May require specific setup
             assert True
 
-
     def test_service_factory_integration(self):
         """Test service factory integration"""
         try:
-            from src.core.services.unified_service_factory import get_unified_service, reset_unified_service
-            
+            from src.core.services.unified_service_factory import (
+                get_unified_service,
+                reset_unified_service,
+            )
+
             # Reset and create service
             reset_unified_service()
             service = get_unified_service()
-            
+
             # Test service functionality
-            if hasattr(service, 'get_status'):
+            if hasattr(service, "get_status"):
                 status = service.get_status()
                 assert status is not None or status is None
-                
+
         except ImportError:
             pytest.skip("Service factory integration not available")
         except Exception:
@@ -172,18 +191,18 @@ class TestCollectionServiceMixin:
         """Test cache integration"""
         try:
             from src.utils.advanced_cache.memory_backend import MemoryBackend
-            
+
             cache = MemoryBackend()
-            
+
             # Test cache operations
             test_key = "integration_test_key"
             test_value = {"data": "integration_test_value"}
-            
-            if hasattr(cache, 'set') and hasattr(cache, 'get'):
+
+            if hasattr(cache, "set") and hasattr(cache, "get"):
                 cache.set(test_key, test_value)
                 retrieved_value = cache.get(test_key)
                 assert retrieved_value == test_value or retrieved_value is None
-                
+
         except ImportError:
             pytest.skip("Cache integration not available")
         except Exception:
@@ -193,16 +212,16 @@ class TestCollectionServiceMixin:
         """Test logging integration"""
         try:
             from src.utils.structured_logging import get_logger
-            
+
             logger = get_logger("integration_test")
-            
+
             # Test logging operations
             logger.info("Integration test info message")
             logger.warning("Integration test warning message")
             logger.error("Integration test error message")
-            
+
             assert True  # If no exception, integration works
-            
+
         except ImportError:
             pytest.skip("Logging integration not available")
         except Exception:
@@ -216,12 +235,12 @@ class TestUtilityFunctions:
     def test_utility_imports(self):
         """Test various utility imports"""
         utility_modules = [
-            'src.utils.auth',
-            'src.utils.cicd_utils',
-            'src.utils.github_issue_reporter',
-            'src.utils.build_info'
+            "src.utils.auth",
+            "src.utils.cicd_utils",
+            "src.utils.github_issue_reporter",
+            "src.utils.build_info",
         ]
-        
+
         for module_name in utility_modules:
             try:
                 __import__(module_name)
@@ -237,6 +256,7 @@ class TestUtilityFunctions:
         """Test decorator functionality"""
         try:
             from src.utils.decorators.registry import DecoratorRegistry
+
             registry = DecoratorRegistry()
             assert registry is not None
         except ImportError:
@@ -248,14 +268,14 @@ class TestUtilityFunctions:
         """Test validation functions"""
         try:
             from src.utils.decorators.validation import validate_input
-            
+
             @validate_input
             def test_function(data):
                 return data
-                
+
             result = test_function("test_data")
             assert result == "test_data" or result is None
-            
+
         except ImportError:
             pytest.skip("Validation functions not available")
         except Exception:

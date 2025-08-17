@@ -292,8 +292,9 @@ class TestDatabaseManager:
         mock_engine_instance = Mock()
         mock_engine.return_value = mock_engine_instance
 
-        with patch("os.path.exists", return_value=True), patch(
-            "os.path.getsize", return_value=1024
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.getsize", return_value=1024),
         ):
 
             db = DatabaseManager("sqlite:///test.db")
@@ -332,5 +333,3 @@ class TestDatabaseManager:
         assert deleted_count == 15  # 10 + 5
         assert mock_session.execute.call_count == 2
         mock_session.commit.assert_called_once()
-
-

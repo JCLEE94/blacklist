@@ -20,24 +20,25 @@ import pytest
 # Import modular UI test components
 try:
     from .ui import UITestConfig, UITestReporter
-    from .ui.comprehensive_ui_test import ComprehensiveUITestOrchestrator
-    from .ui.dashboard_tests import DashboardTestSuite
     from .ui.api_tests import APITestSuite
     from .ui.collection_tests import CollectionTestSuite
+    from .ui.comprehensive_ui_test import ComprehensiveUITestOrchestrator
+    from .ui.dashboard_tests import DashboardTestSuite
     from .ui.responsive_tests import ResponsiveTestSuite
 except ImportError:
     # Fallback for direct execution
-    import sys
     import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), 'ui'))
-    
-    from test_config import UITestConfig
-    from test_reporter import UITestReporter
-    from comprehensive_ui_test import ComprehensiveUITestOrchestrator
-    from dashboard_tests import DashboardTestSuite
+    import sys
+
+    sys.path.append(os.path.join(os.path.dirname(__file__), "ui"))
+
     from api_tests import APITestSuite
     from collection_tests import CollectionTestSuite
+    from comprehensive_ui_test import ComprehensiveUITestOrchestrator
+    from dashboard_tests import DashboardTestSuite
     from responsive_tests import ResponsiveTestSuite
+    from test_config import UITestConfig
+    from test_reporter import UITestReporter
 
 
 @pytest.fixture
@@ -56,31 +57,31 @@ def ui_reporter():
 @pytest.mark.slow
 class TestComprehensiveUI:
     """Comprehensive UI test orchestration"""
-    
+
     def test_full_ui_suite(self, ui_config, ui_reporter):
         """Run complete UI test suite"""
         orchestrator = ComprehensiveUITestOrchestrator(ui_config, ui_reporter)
         result = orchestrator.run_all_tests()
         assert result.success, f"UI tests failed: {result.errors}"
-    
+
     def test_dashboard_functionality(self, ui_config, ui_reporter):
         """Test dashboard functionality"""
         suite = DashboardTestSuite(ui_config, ui_reporter)
         result = suite.run_tests()
         assert result.success, f"Dashboard tests failed: {result.errors}"
-    
+
     def test_api_endpoints(self, ui_config, ui_reporter):
         """Test API endpoint responses"""
         suite = APITestSuite(ui_config, ui_reporter)
         result = suite.run_tests()
         assert result.success, f"API tests failed: {result.errors}"
-    
+
     def test_collection_interface(self, ui_config, ui_reporter):
         """Test collection management interface"""
         suite = CollectionTestSuite(ui_config, ui_reporter)
         result = suite.run_tests()
         assert result.success, f"Collection tests failed: {result.errors}"
-    
+
     def test_responsive_design(self, ui_config, ui_reporter):
         """Test responsive design across viewports"""
         suite = ResponsiveTestSuite(ui_config, ui_reporter)
@@ -95,10 +96,10 @@ def test_ui_suite_integration(ui_config, ui_reporter):
     # Test that all components can be imported and initialized
     orchestrator = ComprehensiveUITestOrchestrator(ui_config, ui_reporter)
     assert orchestrator is not None
-    
+
     dashboard_suite = DashboardTestSuite(ui_config, ui_reporter)
     assert dashboard_suite is not None
-    
+
     api_suite = APITestSuite(ui_config, ui_reporter)
     assert api_suite is not None
 

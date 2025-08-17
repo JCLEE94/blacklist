@@ -13,7 +13,22 @@ class MockUnifiedService:
     def __init__(self):
         self.enabled = True
         self.last_collection = None
-        self.blacklist_data = []
+        self.blacklist_data = [
+            {
+                "ip_address": "192.168.1.1",
+                "source": "REGTECH",
+                "threat_level": "high",
+                "is_active": True,
+                "first_seen": "2025-08-01",
+            },
+            {
+                "ip_address": "192.168.1.2",
+                "source": "SECUDIUM",
+                "threat_level": "medium",
+                "is_active": True,
+                "first_seen": "2025-08-02",
+            },
+        ]
 
     def get_active_ips(self):
         return ["192.168.1.1", "192.168.1.2", "10.0.0.1"]
@@ -58,7 +73,7 @@ class MockUnifiedService:
     def trigger_collection(self, source=None):
         if not self.enabled:
             return {"status": "error", "message": "Collection is disabled"}
-        
+
         self.last_collection = "2025-08-15T12:00:00Z"
         return {
             "status": "success",
@@ -121,6 +136,47 @@ class MockUnifiedService:
                 ]
             )
         return data
+
+    def get_analytics_summary(self, period="30d"):
+        """Get analytics summary for the specified period"""
+        return {
+            "total_entries": len(self.blacklist_data),
+            "active_entries": len(
+                [e for e in self.blacklist_data if e.get("is_active", True)]
+            ),
+            "sources": {
+                "REGTECH": 800,
+                "SECUDIUM": 700,
+            },
+            "threat_levels": {
+                "high": 500,
+                "medium": 700,
+                "low": 300,
+            },
+            "period": period,
+            "last_updated": "2025-08-15T12:00:00Z",
+        }
+
+    def get_trends_analysis(self, period="7d"):
+        """Get trends analysis for the specified period"""
+        return {
+            "trend_direction": "increasing",
+            "change_percentage": 15.5,
+            "period": period,
+            "daily_trends": [
+                {"date": "2025-08-09", "count": 1450},
+                {"date": "2025-08-10", "count": 1470},
+                {"date": "2025-08-11", "count": 1490},
+                {"date": "2025-08-12", "count": 1500},
+                {"date": "2025-08-13", "count": 1520},
+                {"date": "2025-08-14", "count": 1540},
+                {"date": "2025-08-15", "count": 1500},
+            ],
+            "sources_trend": {
+                "REGTECH": {"change": 10.2, "direction": "increasing"},
+                "SECUDIUM": {"change": 8.7, "direction": "increasing"},
+            },
+        }
 
 
 class MockBlacklistManager:
@@ -319,7 +375,11 @@ class MockCollectionManager:
 
     def reset_source_status(self, source):
         if source in self.sources:
-            self.sources[source] = {"active": True, "last_sync": None, "status": "ready"}
+            self.sources[source] = {
+                "active": True,
+                "last_sync": None,
+                "status": "ready",
+            }
             return True
         return False
 
@@ -374,3 +434,47 @@ class MockCollectionManager:
             logs = [log for log in logs if log["source"] == source]
 
         return logs[-limit:]
+
+    def collect_from_regtech(self):
+        """Mock REGTECH collection method"""
+        if not self.enabled:
+            return {"status": "error", "message": "Collection is disabled"}
+
+        timestamp = "2025-08-15T12:00:00Z"
+        self.sources["REGTECH"]["last_sync"] = timestamp
+        self.sources["REGTECH"]["status"] = "completed"
+
+        result = {
+            "status": "success",
+            "source": "REGTECH",
+            "timestamp": timestamp,
+            "collected_count": 50,
+            "new_ips": 25,
+            "updated_ips": 15,
+            "errors": 0,
+        }
+
+        self.collection_history.append(result)
+        return result
+
+    def collect_from_secudium(self):
+        """Mock SECUDIUM collection method"""
+        if not self.enabled:
+            return {"status": "error", "message": "Collection is disabled"}
+
+        timestamp = "2025-08-15T12:00:00Z"
+        self.sources["SECUDIUM"]["last_sync"] = timestamp
+        self.sources["SECUDIUM"]["status"] = "completed"
+
+        result = {
+            "status": "success",
+            "source": "SECUDIUM",
+            "timestamp": timestamp,
+            "collected_count": 50,
+            "new_ips": 30,
+            "updated_ips": 10,
+            "errors": 0,
+        }
+
+        self.collection_history.append(result)
+        return result

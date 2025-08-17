@@ -64,7 +64,7 @@ class RedisBackend:
 
         except Exception as e:
             logger.warning(
-                "Redis connection failed: {e}. Falling back to memory cache."
+                f"Redis connection failed: {e}. Falling back to memory cache."
             )
             self.redis = None
             self.is_available = False
@@ -294,5 +294,5 @@ class RedisBackend:
         if self.connection_pool:
             try:
                 self.connection_pool.disconnect()
-            except Exception as e:
+            except Exception:
                 pass  # Ignore cleanup errors

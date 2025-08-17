@@ -26,16 +26,16 @@ def get_active_blacklist():
     try:
         # 활성 IP 목록 가져오기
         active_ips = service.get_active_ips()
-        
+
         if not active_ips:
             logger.warning("No active IPs found")
             return Response("", mimetype="text/plain", status=200)
-        
+
         # IP 목록을 텍스트로 변환 (각 IP를 줄바꿈으로 구분)
         ip_list_text = "\n".join(active_ips)
-        
+
         logger.info(f"Returned {len(active_ips)} active IPs")
-        
+
         return Response(
             ip_list_text,
             mimetype="text/plain",
@@ -44,16 +44,14 @@ def get_active_blacklist():
                 "Pragma": "no-cache",
                 "Expires": "0",
                 "X-Total-IPs": str(len(active_ips)),
-                "X-Generated-At": datetime.utcnow().isoformat()
-            }
+                "X-Generated-At": datetime.utcnow().isoformat(),
+            },
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to get active blacklist: {e}")
         return create_error_response(
-            "blacklist_fetch_failed",
-            f"Failed to fetch active blacklist: {str(e)}",
-            500
+            "blacklist_fetch_failed", f"Failed to fetch active blacklist: {str(e)}", 500
         )
 
 
@@ -63,20 +61,20 @@ def get_fortigate_format():
     try:
         # 활성 IP 목록 가져오기
         active_ips = service.get_active_ips()
-        
+
         if not active_ips:
             logger.warning("No active IPs for FortiGate format")
             return Response("", mimetype="text/plain", status=200)
-        
+
         # FortiGate 형식으로 변환
         fortigate_entries = []
         for ip in active_ips:
             fortigate_entries.append(f"set src {ip}")
-        
+
         fortigate_text = "\n".join(fortigate_entries)
-        
+
         logger.info(f"Generated FortiGate format for {len(active_ips)} IPs")
-        
+
         return Response(
             fortigate_text,
             mimetype="text/plain",
@@ -86,16 +84,16 @@ def get_fortigate_format():
                 "Expires": "0",
                 "X-Total-IPs": str(len(active_ips)),
                 "X-Format": "fortigate-external-connector",
-                "X-Generated-At": datetime.utcnow().isoformat()
-            }
+                "X-Generated-At": datetime.utcnow().isoformat(),
+            },
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to generate FortiGate format: {e}")
         return create_error_response(
             "fortigate_format_failed",
             f"Failed to generate FortiGate format: {str(e)}",
-            500
+            500,
         )
 
 
@@ -105,16 +103,18 @@ def get_enhanced_blacklist():
     try:
         # 활성 IP와 메타데이터 가져오기
         enhanced_data = service.get_enhanced_blacklist()
-        
+
         if not enhanced_data:
             logger.warning("No enhanced blacklist data found")
-            return jsonify({
-                "ips": [],
-                "total_count": 0,
-                "generated_at": datetime.utcnow().isoformat(),
-                "version": "v2"
-            })
-        
+            return jsonify(
+                {
+                    "ips": [],
+                    "total_count": 0,
+                    "generated_at": datetime.utcnow().isoformat(),
+                    "version": "v2",
+                }
+            )
+
         # 응답 데이터 구성
         response_data = {
             "ips": enhanced_data.get("ips", []),
@@ -123,21 +123,21 @@ def get_enhanced_blacklist():
                 "sources": enhanced_data.get("sources", {}),
                 "threat_levels": enhanced_data.get("threat_levels", {}),
                 "last_updated": enhanced_data.get("last_updated"),
-                "expiry_info": enhanced_data.get("expiry_info", {})
+                "expiry_info": enhanced_data.get("expiry_info", {}),
             },
             "generated_at": datetime.utcnow().isoformat(),
-            "version": "v2"
+            "version": "v2",
         }
-        
-        total_count = response_data['total_count']
+
+        total_count = response_data["total_count"]
         logger.info(f"Generated enhanced blacklist with {total_count} IPs")
-        
+
         return jsonify(response_data), 200
-        
+
     except Exception as e:
         logger.error(f"Failed to get enhanced blacklist: {e}")
         return create_error_response(
             "enhanced_blacklist_failed",
             f"Failed to get enhanced blacklist: {str(e)}",
-            500
+            500,
         )

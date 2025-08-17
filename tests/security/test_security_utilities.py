@@ -50,17 +50,17 @@ class TestSecurityUtilities:
         """Test input sanitization with non-string input"""
         result = sanitize_input(123)
         assert result == ""
-        
+
         result = sanitize_input(None)
         assert result == ""
 
     def test_generate_csrf_token(self):
         """Test CSRF token generation"""
         token = generate_csrf_token()
-        
+
         assert isinstance(token, str)
         assert len(token) > 30  # URL-safe base64 token should be reasonably long
-        
+
         # Should be different each time
         token2 = generate_csrf_token()
         assert token != token2
@@ -75,7 +75,7 @@ class TestSecurityUtilities:
         """Test CSRF token validation with invalid tokens"""
         token1 = generate_csrf_token()
         token2 = generate_csrf_token()
-        
+
         result = validate_csrf_token(token1, token2)
         assert result is False
 
@@ -89,7 +89,7 @@ class TestSecurityUtilities:
         """Test security manager singleton pattern"""
         manager1 = get_security_manager("secret1", "jwt_secret1")
         manager2 = get_security_manager("secret2", "jwt_secret2")
-        
+
         # Should return the same instance
         assert manager1 is manager2
         assert manager1.secret_key == "secret1"  # First call's values
@@ -99,7 +99,7 @@ class TestSecurityUtilities:
         global _security_manager
         original = _security_manager
         _security_manager = None
-        
+
         try:
             manager = get_security_manager()
             assert manager is None
@@ -110,21 +110,21 @@ class TestSecurityUtilities:
         """Test security setup for Flask application"""
         mock_app = Mock()
         mock_app.after_request = Mock()
-        
+
         result = setup_security(mock_app, "secret_key", "jwt_secret")
-        
+
         assert result is True
-        assert hasattr(mock_app, 'security_manager')
+        assert hasattr(mock_app, "security_manager")
         assert isinstance(mock_app.security_manager, SecurityManager)
         mock_app.after_request.assert_called_once()
 
-    @patch('src.utils.security.logger')
+    @patch("src.utils.security.logger")
     def test_setup_security_failure(self, mock_logger):
         """Test security setup failure"""
         mock_app = Mock()
         mock_app.after_request = Mock(side_effect=Exception("Setup error"))
-        
+
         result = setup_security(mock_app, "secret_key", "jwt_secret")
-        
+
         assert result is False
         mock_logger.error.assert_called_once()

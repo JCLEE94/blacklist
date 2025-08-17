@@ -28,39 +28,57 @@ def get_analytics_summary():
     """분석 요약 정보 (V2) - 실제 데이터 반환"""
     try:
         period_days = request.args.get("period", 30, type=int)
-        
+
         # 실제 통계 데이터 조회
         analytics_data = service.get_analytics_summary(period_days)
-        
+
         # 기본 통계 직접 조회
         # 서비스를 통해 실제 데이터 조회
         all_ips_data = service.blacklist_manager.get_all_active_ips()
         active_ips = len(all_ips_data)
-        
+
         # 국가별 통계
         country_stats = {}
         for ip_data in all_ips_data:
-            country = ip_data.get('country', 'Unknown')
+            country = ip_data.get("country", "Unknown")
             country_stats[country] = country_stats.get(country, 0) + 1
-        
+
         # 응답 구조 수정
         result = {
             "data": {
                 "total_ips": active_ips,
                 "active_ips": active_ips,
-                "blocked_today": len([ip for ip in all_ips_data if ip.get('created_at', '').startswith(datetime.now().strftime('%Y-%m-%d'))]),
+                "blocked_today": len(
+                    [
+                        ip
+                        for ip in all_ips_data
+                        if ip.get("created_at", "").startswith(
+                            datetime.now().strftime("%Y-%m-%d")
+                        )
+                    ]
+                ),
                 "threat_levels": {
-                    "high": len([ip for ip in all_ips_data if ip.get('threat_type') == 'high']),
-                    "medium": len([ip for ip in all_ips_data if ip.get('threat_type', 'medium') == 'medium']),
-                    "low": len([ip for ip in all_ips_data if ip.get('threat_type') == 'low'])
+                    "high": len(
+                        [ip for ip in all_ips_data if ip.get("threat_type") == "high"]
+                    ),
+                    "medium": len(
+                        [
+                            ip
+                            for ip in all_ips_data
+                            if ip.get("threat_type", "medium") == "medium"
+                        ]
+                    ),
+                    "low": len(
+                        [ip for ip in all_ips_data if ip.get("threat_type") == "low"]
+                    ),
                 },
                 "countries": country_stats,
-                "sources": {ip.get('source', 'unknown'): 1 for ip in all_ips_data}
+                "sources": {ip.get("source", "unknown"): 1 for ip in all_ips_data},
             },
             "success": True,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -59,11 +59,12 @@ def mock_subprocess():
 @pytest.fixture
 def mock_file_system():
     """파일 시스템 모킹"""
-    with patch("pathlib.Path.exists", return_value=True), patch(
-        "pathlib.Path.is_file", return_value=True
-    ), patch("pathlib.Path.is_dir", return_value=True), patch(
-        "builtins.open", create=True
-    ) as mock_open:
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch("pathlib.Path.is_dir", return_value=True),
+        patch("builtins.open", create=True) as mock_open,
+    ):
 
         # 파일 내용 모킹
         mock_open.return_value.__enter__.return_value.read.return_value = "test content"

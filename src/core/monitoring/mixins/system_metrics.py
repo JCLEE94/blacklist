@@ -202,14 +202,25 @@ class SystemMetricsMixin:
         """버전 정보 설정"""
         try:
             version_metric = self.metrics.get("blacklist_version_info")
-            if hasattr(version_metric, "info"):
-                version_metric.info(
-                    {
-                        "version": version or "unknown",
-                        "build_date": build_date or "unknown",
-                        "git_commit": git_commit or "unknown",
-                    }
-                )
+            if version_metric and hasattr(version_metric, "info"):
+                # Info 메트릭은 레이블이 있는 경우 labels()를 먼저 호출해야 함
+                if (
+                    hasattr(version_metric, "_labelnames")
+                    and version_metric._labelnames
+                ):
+                    version_metric.labels(
+                        version=version or "unknown",
+                        build_date=build_date or "unknown",
+                        git_commit=git_commit or "unknown",
+                    ).info({})
+                else:
+                    version_metric.info(
+                        {
+                            "version": version or "unknown",
+                            "build_date": build_date or "unknown",
+                            "git_commit": git_commit or "unknown",
+                        }
+                    )
 
         except Exception as e:
             logger.error(f"버전 정보 설정 실패: {e}")

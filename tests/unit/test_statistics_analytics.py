@@ -202,14 +202,14 @@ class TestStatisticsAnalytics:
             "threat_levels": {"high": 100, "medium": 500, "low": 350},
             "sources": {"regtech": 600, "secudium": 400},
         }
-        
+
         with mock.patch.object(
             service,
             "_get_detailed_analytics",
             return_value=mock_data,
         ):
             result = service.get_analytics_summary(period="7d")
-            
+
             assert result["success"] is True
             assert result["analytics"]["total_entries"] == 1000
             assert result["analytics"]["active_entries"] == 950
@@ -224,7 +224,7 @@ class TestStatisticsAnalytics:
             side_effect=Exception("Analytics error"),
         ):
             result = service.get_analytics_summary()
-            
+
             assert result["success"] is False
             assert "Analytics error" in result["error"]
 
@@ -260,9 +260,9 @@ class TestStatisticsAnalytics:
     def test_get_trends_analysis(self, service, populated_db):
         """Test trends analysis functionality"""
         service.blacklist_manager.db_path = populated_db
-        
+
         result = service.get_trends_analysis(days=7)
-        
+
         assert result["success"] is True
         assert "trends" in result
         assert "daily_counts" in result["trends"]
@@ -272,8 +272,8 @@ class TestStatisticsAnalytics:
     def test_get_trends_analysis_exception(self, service):
         """Test trends analysis with exception"""
         service.blacklist_manager = None
-        
+
         result = service.get_trends_analysis()
-        
+
         assert result["success"] is False
         assert "error" in result

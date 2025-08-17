@@ -9,6 +9,7 @@ The main functionality tests have been modularized into:
 """
 
 import unittest
+
 import pytest
 
 
@@ -19,6 +20,7 @@ class TestStructuredLoggingImports(unittest.TestCase):
         """StructuredLogger 임포트 테스트"""
         try:
             from src.utils.structured_logging import StructuredLogger
+
             self.assertIsNotNone(StructuredLogger)
         except ImportError:
             pytest.skip("StructuredLogger not available")
@@ -27,6 +29,7 @@ class TestStructuredLoggingImports(unittest.TestCase):
         """BufferHandler 임포트 테스트"""
         try:
             from src.utils.structured_logging import BufferHandler
+
             self.assertIsNotNone(BufferHandler)
         except ImportError:
             pytest.skip("BufferHandler not available")
@@ -35,6 +38,7 @@ class TestStructuredLoggingImports(unittest.TestCase):
         """LogManager 임포트 테스트"""
         try:
             from src.utils.structured_logging import LogManager
+
             self.assertIsNotNone(LogManager)
         except ImportError:
             pytest.skip("LogManager not available")
@@ -43,6 +47,7 @@ class TestStructuredLoggingImports(unittest.TestCase):
         """get_logger 함수 임포트 테스트"""
         try:
             from src.utils.structured_logging import get_logger
+
             self.assertIsNotNone(get_logger)
         except ImportError:
             pytest.skip("get_logger not available")
@@ -51,6 +56,7 @@ class TestStructuredLoggingImports(unittest.TestCase):
         """setup_request_logging 함수 임포트 테스트"""
         try:
             from src.utils.structured_logging import setup_request_logging
+
             self.assertIsNotNone(setup_request_logging)
         except ImportError:
             pytest.skip("setup_request_logging not available")
@@ -63,6 +69,7 @@ class TestBasicLoggingAvailability(unittest.TestCase):
         """로깅 모듈 사용 가능성 테스트"""
         try:
             import src.utils.structured_logging
+
             self.assertIsNotNone(src.utils.structured_logging)
         except ImportError:
             pytest.skip("Structured logging module not available")

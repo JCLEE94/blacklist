@@ -88,7 +88,7 @@ class CollectionRoutesTestBase:
             "collection_manager": collection_manager,
             "progress_tracker": mock.Mock(),
         }.get(key, mock.Mock())
-        
+
         return container
 
     def assert_json_response(self, response, expected_status=200):

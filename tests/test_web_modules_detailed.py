@@ -9,8 +9,5 @@ Actual test implementations have been split into specialized modules for better 
 from .test_web_api_routes_detailed import TestWebApiRoutes
 from .test_web_collection_routes_detailed import TestWebCollectionRoutes
 
-# Re-export test classes for backward compatibility  
-__all__ = [
-    'TestWebApiRoutes',
-    'TestWebCollectionRoutes'
-]
+# Re-export test classes for backward compatibility
+__all__ = ["TestWebApiRoutes", "TestWebCollectionRoutes"]

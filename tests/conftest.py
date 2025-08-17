@@ -8,12 +8,21 @@ from pathlib import Path
 import pytest
 
 from tests.test_collection_mocks import enable_collection_for_tests
+
 # Import modularized test components
 from tests.test_config import EnvironmentManagerHelper, create_test_app
+
 # Database test imports removed - files deleted
-from tests.test_fixtures import (blacklist_manager, enhanced_mock_container,
-                                 mock_cache, mock_redis, reset_environment,
-                                 sample_ips, sample_test_data, temp_data_dir)
+from tests.test_fixtures import (
+    blacklist_manager,
+    enhanced_mock_container,
+    mock_cache,
+    mock_redis,
+    reset_environment,
+    sample_ips,
+    sample_test_data,
+    temp_data_dir,
+)
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
@@ -23,6 +32,60 @@ sys.path.insert(0, str(project_root))
 
 
 # Core test fixtures are imported from modularized modules
+
+
+def _create_additional_test_tables(conn):
+    """Create additional tables for testing"""
+    try:
+        cursor = conn.cursor()
+
+        # Create blacklist_ips table
+        cursor.execute(
+            """
+        CREATE TABLE IF NOT EXISTS blacklist_ips (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip_address TEXT UNIQUE NOT NULL,
+            source TEXT NOT NULL,
+            threat_level TEXT DEFAULT 'medium',
+            first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT 1,
+            metadata TEXT
+        )
+        """
+        )
+
+        # Create collection_logs table
+        cursor.execute(
+            """
+        CREATE TABLE IF NOT EXISTS collection_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source TEXT NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            status TEXT NOT NULL,
+            ip_count INTEGER DEFAULT 0,
+            message TEXT,
+            metadata TEXT
+        )
+        """
+        )
+
+        # Create cache_entries table
+        cursor.execute(
+            """
+        CREATE TABLE IF NOT EXISTS cache_entries (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            expiry TIMESTAMP,
+            created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+        )
+
+        conn.commit()
+    except Exception as e:
+        # Ignore errors if tables already exist
+        pass
 
 
 @pytest.fixture(scope="session")
