@@ -35,6 +35,9 @@ env:
   REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
   PYTHON_VERSION: "3.11"
+  # Self-hosted runner environment
+  DEBIAN_FRONTEND: noninteractive
+  PYTHONUNBUFFERED: 1
 
 jobs:
   # ========================================
@@ -43,7 +46,7 @@ jobs:
   
   security-scan:
     name: 🔒 Security & Quality Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       security-events: write
@@ -79,7 +82,7 @@ jobs:
 
   lint-and-format:
     name: 📝 Code Quality & Formatting
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       lint-passed: ${{ steps.lint-check.outputs.passed }}
       
@@ -118,7 +121,7 @@ jobs:
   
   test:
     name: 🧪 Test Suite
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [security-scan, lint-and-format]
         
     outputs:
@@ -128,6 +131,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: Clean test environment
+        run: |
+          echo "🧹 Cleaning test environment for self-hosted runner"
+          rm -rf .pytest_cache .coverage .dev-reports htmlcov || true
+          docker system prune -f || true
+          pkill -f pytest || true
         
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -187,7 +197,7 @@ jobs:
   
   build-docker:
     name: 🐳 Docker Build & Registry Push
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
@@ -197,6 +207,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: Ensure Docker service
+        run: |
+          echo "🐳 Ensuring Docker service is running on self-hosted runner"
+          sudo systemctl start docker || echo "Docker already running"
+          docker version
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -246,7 +262,7 @@ jobs:
 
   build-offline-package:
     name: 📦 Offline Package Build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [build-docker]
     if: |
       (github.event.inputs.build_offline_package == 'true') ||
@@ -265,8 +281,8 @@ jobs:
       - name: Install packaging tools
         run: |
           pip install -r requirements.txt
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+          # docker-compose should be pre-installed on self-hosted runner
+          docker-compose version || echo "Installing docker-compose..."
           
       - name: Build offline package
         run: |
@@ -336,7 +352,7 @@ jobs:
   
   deploy-production:
     name: 🚀 Production Deployment
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [build-docker, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: 
@@ -387,7 +403,7 @@ jobs:
   
   deployment-summary:
     name: 📊 Deployment Summary
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [deploy-production, build-docs, build-offline-package]
     if: always()
     

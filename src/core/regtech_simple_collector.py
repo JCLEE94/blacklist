@@ -112,17 +112,14 @@ class RegtechSimpleCollector:
                 return False
 
             # 2. 먼저 사용자 검증 (/member/findOneMember)
-            verify_data = {
-                "memberId": self.username,
-                "memberPw": self.password
-            }
-            
+            verify_data = {"memberId": self.username, "memberPw": self.password}
+
             verify_resp = session.post(
                 f"{self.base_url}/member/findOneMember",
                 data=verify_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            
+
             if verify_resp.status_code != 200:
                 logger.error(f"사용자 검증 실패: {verify_resp.status_code}")
                 return False

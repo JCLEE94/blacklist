@@ -5,7 +5,7 @@ IP 유효성 및 로그인 검증 기능을 제공
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 import requests
 
@@ -23,21 +23,22 @@ class RegtechValidationUtils:
 
     def set_ip_utils(self, ip_utils):
         """
-IP 유틸리티 설정"""
+        IP 유틸리티 설정"""
         self.ip_utils = ip_utils
 
     def is_valid_ip(self, ip: str) -> bool:
         """
-IP 유효성 검사 (통합 유틸리티 사용)"""
+        IP 유효성 검사 (통합 유틸리티 사용)"""
         if not self.ip_utils:
             # Fallback: 기본 유효성 검사
             import ipaddress
+
             try:
                 ipaddress.ip_address(ip)
                 return True
             except ValueError:
                 return False
-        
+
         return self.ip_utils.validate_ip(ip) and not self.ip_utils.is_private_ip(ip)
 
     def verify_login_success(self, response: requests.Response) -> bool:
@@ -77,6 +78,6 @@ IP 유효성 검사 (통합 유틸리티 사용)"""
 
     def should_cancel(self, cancel_event=None) -> bool:
         """취소 요청 확인"""
-        if cancel_event and hasattr(cancel_event, 'is_set'):
+        if cancel_event and hasattr(cancel_event, "is_set"):
             return cancel_event.is_set()
         return False

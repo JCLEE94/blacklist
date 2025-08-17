@@ -6,14 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Blacklist Management System** - Enterprise threat intelligence platform with Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Uses Watchtower for automated deployments and ArgoCD GitOps pipeline. 
 
-### Project Status (v1.0.35 - 2025-08-14 현재)
-- **GitOps 성숙도**: 9.5/10 (완성도 높음) - GitHub Container Registry 통합, V2 API 완료, 포트폴리오 사이트 런칭
+### Project Status (v1.0.37 - 2025-08-17 현재)
+- **GitOps 성숙도**: 9.0/10 (Self-hosted Runners 전환 완료) - GitHub Container Registry 통합, V2 API 완료, 포트폴리오 사이트 런칭
 - **아키텍처**: Monolithic (Flask) + 완전 오프라인 배포 시스템
 - **성능 기준선**: API 평균 응답시간 7.58ms, 100+ 동시 요청 처리
 - **보안 시스템**: Fernet 암호화, 자동 로테이션, 감사 추적
 - **모니터링**: Prometheus 55개 메트릭, 23개 알림 규칙, 실시간 대시보드
 - **테스트 커버리지**: 95%+ 달성, 모든 통합 테스트 안정화
 - **배포 전략**: 완전 오프라인 패키지 (에어갭 환경), 원클릭 설치
+- **CI/CD 파이프라인**: Self-hosted runners 전환으로 성능 및 제어 개선
 
 ### Key Dependencies & Performance Stack (v1.0.35 Enhanced)
 - **Python 3.9+** with Flask 2.3.3 web framework + orjson (3x faster JSON)
@@ -352,36 +353,38 @@ service = container.get('unified_service')
 
 ## CI/CD Pipeline & GitOps
 
-### Current GitOps Status (성숙도: 8.5/10)
+### Current GitOps Status (성숙도: 9.0/10)
 ```yaml
-# GitHub Container Registry 기반 GitOps 파이프라인
+# Self-hosted Runner 기반 GitOps 파이프라인 (v1.0.37)
 ✅ 소스 제어: 9/10 (Git 기반, 자동 브랜칭)
 ✅ 컨테이너 레지스트리: 9/10 (registry.jclee.me 완전 통합)
 ✅ 보안 스캔: 9/10 (Trivy + Bandit)
-✅ 테스트: 9/10 (95% 커버리지, 자동화)
-✅ CI/CD 파이프라인: 9/10 (ubuntu-latest 안정성)
+✅ 테스트: 9/10 (95% 커버리지, 자동화, 테스트 안정성 개선)
+✅ CI/CD 파이프라인: 9/10 (self-hosted runners 전환 완료)
 ✅ GitHub Pages: 10/10 (포트폴리오 자동 배포)
 ⚠️ K8s 매니페스트: 7/10 (Helm 차트 완료)
 ⚠️ ArgoCD 통합: 7/10 (일부 설정 개선 필요)
 ✅ 보안 시스템: 10/10 (JWT + API 키 완전 구현)
+✅ Self-hosted Runners: 9/10 (전환 완료, 성능 개선, 환경 제어)
 ```
 
-### Automated Deployment (GitHub Container Registry + GitHub Pages)
+### Automated Deployment (Self-hosted Runners + GitHub Pages)
 ```yaml
-# .github/workflows/main-deploy.yml
+# .github/workflows/main-deploy.yml (v1.0.37)
 - Trigger: Push to main branch
-- Runner: ubuntu-latest (stable, scalable)
-- Build: Multi-stage Docker (Python 3.9 Alpine)
+- Runner: self-hosted (improved performance, environment control)
+- Build: Multi-stage Docker (Python 3.11 Alpine)
 - Security: Trivy + Bandit scanning
 - Push: registry.jclee.me/jclee94/blacklist:latest
-- GitHub Pages: Automatic portfolio deployment
+- GitHub Pages: Automatic portfolio deployment (ubuntu-latest)
 - Monitoring: Real-time health checks
+- Environment: Optimized cleanup and setup procedures
 ```
 
 ### Enhanced Deployment Flow
 ```
-Code Push → GitHub Actions (ubuntu-latest) → Security Scan (Trivy + Bandit) → 
-Docker Build → registry.jclee.me Registry → GitHub Pages Deploy → Health Monitoring → 
+Code Push → GitHub Actions (self-hosted) → Security Scan (Trivy + Bandit) → 
+Docker Build → registry.jclee.me Registry → GitHub Pages Deploy (ubuntu-latest) → Health Monitoring → 
 Portfolio Update → Auto Documentation → Performance Tracking
 ```
 

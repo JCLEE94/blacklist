@@ -102,8 +102,9 @@ class RegtechRequestUtils:
         self, soup: BeautifulSoup, page: int
     ) -> List[Dict[str, Any]]:
         """
-BeautifulSoup 객체에서 IP 데이터 추출"""
+        BeautifulSoup 객체에서 IP 데이터 추출"""
         from datetime import datetime
+
         page_ips = []
 
         try:

@@ -13,10 +13,10 @@ import requests
 from bs4 import BeautifulSoup
 
 from ..common.ip_utils import IPUtils
-from .unified_collector import BaseCollector, CollectionConfig
-from .helpers.request_utils import RegtechRequestUtils
 from .helpers.data_transform import RegtechDataTransform
+from .helpers.request_utils import RegtechRequestUtils
 from .helpers.validation_utils import RegtechValidationUtils
+from .unified_collector import BaseCollector, CollectionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,6 @@ class RegtechCollector(BaseCollector):
 
         return collected_ips
 
-
     async def _robust_login(self, session: requests.Session) -> bool:
         """강화된 로그인 로직"""
         login_attempts = 0
@@ -188,7 +187,6 @@ class RegtechCollector(BaseCollector):
         self.logger.error("로그인 최대 시도 횟수 초과")
         return False
 
-
     async def _robust_collect_ips(
         self, session: requests.Session, start_date: str, end_date: str
     ) -> List[Dict[str, Any]]:
@@ -203,7 +201,9 @@ class RegtechCollector(BaseCollector):
         while page < max_pages and consecutive_errors < self.max_page_errors:
             try:
                 # 취소 요청 확인
-                if self.validation_utils.should_cancel(getattr(self, '_cancel_event', None)):
+                if self.validation_utils.should_cancel(
+                    getattr(self, "_cancel_event", None)
+                ):
                     self.logger.info("사용자 취소 요청으로 수집 중단")
                     break
 
@@ -219,7 +219,7 @@ class RegtechCollector(BaseCollector):
                 # IP 유효성 검사 적용
                 valid_page_ips = []
                 for ip_data in page_ips:
-                    if self.validation_utils.is_valid_ip(ip_data.get('ip', '')):
+                    if self.validation_utils.is_valid_ip(ip_data.get("ip", "")):
                         valid_page_ips.append(ip_data)
                 page_ips = valid_page_ips
 
@@ -262,9 +262,6 @@ class RegtechCollector(BaseCollector):
 
         return unique_ips
 
-
-
     def _transform_data(self, raw_data: dict) -> dict:
         """데이터 변환 - 헬퍼 모듈 위임"""
         return self.data_transform.transform_data(raw_data)
-
