@@ -18,5 +18,5 @@ commonLabels:
   app.kubernetes.io/managed-by: argocd
 
 images:
-  - name: ghcr.io/jclee94/blacklist
+  - name: registry.jclee.me/blacklist
     newTag: latest

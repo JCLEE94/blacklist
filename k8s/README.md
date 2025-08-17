@@ -82,7 +82,7 @@ Create GitHub Container Registry credentials:
 
 ```bash
 kubectl create secret docker-registry ghcr-credentials \
-  --docker-server=ghcr.io \
+  --docker-server=registry.jclee.me \
   --docker-username=jclee94 \
   --docker-password=<YOUR_GITHUB_TOKEN> \
   --namespace=blacklist

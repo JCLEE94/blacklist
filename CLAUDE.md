@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Python 3.9+** with Flask 2.3.3 web framework + orjson (3x faster JSON)
 - **Redis 7** for caching (automatic memory fallback, 256MB limit)
 - **SQLite** (dev) / **PostgreSQL** (prod) with connection pooling + 스키마 v2.0
-- **Docker & Kubernetes** - ArgoCD GitOps, **ghcr.io** GitHub Container Registry
+- **Docker & Kubernetes** - ArgoCD GitOps, **registry.jclee.me** GitHub Container Registry
 - **Gunicorn 23.0** WSGI server with Flask-Compress
 - **pytest** comprehensive testing (95% coverage, unit/integration/api markers)
 - **Prometheus** 55개 메트릭 + 23개 알림 규칙
@@ -356,7 +356,7 @@ service = container.get('unified_service')
 ```yaml
 # GitHub Container Registry 기반 GitOps 파이프라인
 ✅ 소스 제어: 9/10 (Git 기반, 자동 브랜칭)
-✅ 컨테이너 레지스트리: 9/10 (ghcr.io 완전 통합)
+✅ 컨테이너 레지스트리: 9/10 (registry.jclee.me 완전 통합)
 ✅ 보안 스캔: 9/10 (Trivy + Bandit)
 ✅ 테스트: 9/10 (95% 커버리지, 자동화)
 ✅ CI/CD 파이프라인: 9/10 (ubuntu-latest 안정성)
@@ -373,7 +373,7 @@ service = container.get('unified_service')
 - Runner: ubuntu-latest (stable, scalable)
 - Build: Multi-stage Docker (Python 3.9 Alpine)
 - Security: Trivy + Bandit scanning
-- Push: ghcr.io/jclee94/blacklist:latest
+- Push: registry.jclee.me/jclee94/blacklist:latest
 - GitHub Pages: Automatic portfolio deployment
 - Monitoring: Real-time health checks
 ```
@@ -381,7 +381,7 @@ service = container.get('unified_service')
 ### Enhanced Deployment Flow
 ```
 Code Push → GitHub Actions (ubuntu-latest) → Security Scan (Trivy + Bandit) → 
-Docker Build → ghcr.io Registry → GitHub Pages Deploy → Health Monitoring → 
+Docker Build → registry.jclee.me Registry → GitHub Pages Deploy → Health Monitoring → 
 Portfolio Update → Auto Documentation → Performance Tracking
 ```
 
@@ -442,7 +442,7 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=auto-generated-password
 
 # GitHub Container Registry
-REGISTRY_URL=ghcr.io
+REGISTRY_URL=registry.jclee.me
 REGISTRY_USERNAME=jclee94
 ```
 
@@ -542,7 +542,7 @@ python3 scripts/init_security.py
 ### 🐳 GitHub Container Registry
 ```bash
 # New registry location
-ghcr.io/jclee94/blacklist:latest
+registry.jclee.me/jclee94/blacklist:latest
 
 # Migration benefits:
 - Better integration with GitHub Actions
