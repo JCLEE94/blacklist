@@ -165,7 +165,7 @@ containerSecurityContext:
 # Probes configuration
 livenessProbe:
   enabled: true
-  path: /health
+  path: /
   initialDelaySeconds: 60
   periodSeconds: 30
   timeoutSeconds: 10
@@ -174,8 +174,8 @@ livenessProbe:
 
 readinessProbe:
   enabled: true
-  path: /ready
-  initialDelaySeconds: 10
+  path: /
+  initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 3
@@ -183,8 +183,8 @@ readinessProbe:
 
 startupProbe:
   enabled: true
-  path: /health
-  initialDelaySeconds: 10
+  path: /
+  initialDelaySeconds: 20
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 30
