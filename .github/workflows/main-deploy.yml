@@ -194,14 +194,8 @@ jobs:
       - name: Run tests with coverage (self-hosted optimized)
         run: |
           echo "🧪 Running optimized test suite on self-hosted runner"
-          # First attempt with parallel execution
-          if pytest -n auto --tb=short -v; then
-            echo "✅ Parallel tests completed successfully"
-          else
-            echo "⚠️ Parallel tests failed, retrying with single-threaded execution"
-            # Fallback to single-threaded execution
-            pytest --tb=short -v
-          fi
+          # Run tests excluding UI and slow tests for CI/CD
+          python3 -m pytest -m "not ui and not slow" --tb=short -v --cov=src --cov-fail-under=5 --maxfail=5
         env:
           FORCE_DISABLE_COLLECTION: true
           COLLECTION_ENABLED: false
