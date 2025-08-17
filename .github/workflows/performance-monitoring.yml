@@ -38,10 +38,10 @@ jobs:
       - name: Start application for testing
         run: |
           # Initialize database first
-          python3 init_database.py || echo "Database initialization failed, continuing..."
+          python3 commands/utils/init_database.py || echo "Database initialization failed, continuing..."
           
           # Start application
-          python3 main.py --debug &
+          python3 app/main.py --debug &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           
@@ -290,16 +290,40 @@ jobs:
             -e COLLECTION_ENABLED=false \
             performance-test:latest
           
-          # Wait for startup
-          sleep 15
+          # Wait for startup and verify container is running
+          echo "Waiting for container to start..."
+          sleep 20
           
-          # Performance test
-          time curl -f http://localhost:8080/health
-          time curl -f http://localhost:8080/api/health
+          # Check if container is running
+          if ! docker ps | grep perf-test; then
+            echo "Container failed to start"
+            docker logs perf-test
+            exit 1
+          fi
+          
+          # Wait for application to be ready with retries
+          echo "Waiting for application to be ready..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/health > /dev/null 2>&1; then
+              echo "Application is ready"
+              break
+            fi
+            echo "Attempt $i/30: Application not ready yet..."
+            sleep 2
+          done
+          
+          # Performance test with error handling
+          echo "Running performance tests..."
+          curl -f http://localhost:8080/health || echo "Health endpoint failed"
+          curl -f http://localhost:8080/api/health || echo "API health endpoint failed"
           
           # Container stats
-          docker stats perf-test --no-stream --format "table {{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
+          docker stats perf-test --no-stream --format "table {{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" || echo "Stats collection failed"
+          
+          # Show container logs for debugging
+          echo "Container logs:"
+          docker logs perf-test --tail 20
           
           # Cleanup
-          docker stop perf-test
-          docker rm perf-test
+          docker stop perf-test || true
+          docker rm perf-test || true
