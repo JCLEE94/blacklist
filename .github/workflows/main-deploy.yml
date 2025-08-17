@@ -34,7 +34,7 @@ concurrency:
 env:
   REGISTRY: registry.jclee.me
   IMAGE_NAME: blacklist
-  PYTHON_VERSION: "3.11"
+  PYTHON_VERSION: "3.10"
   # Self-hosted runner environment
   DEBIAN_FRONTEND: noninteractive
   PYTHONUNBUFFERED: 1
@@ -147,7 +147,10 @@ jobs:
           
       - name: Install dependencies
         run: |
+          echo "🔧 Installing Python dependencies for self-hosted runner"
+          pip install --upgrade pip
           pip install -r requirements.txt
+          pip list
           
       - name: Run tests with coverage (with retry)
         uses: nick-fields/retry@v2
@@ -156,8 +159,7 @@ jobs:
           max_attempts: 2
           retry_wait_seconds: 30
           command: |
-            pytest -n auto || \
-            pytest
+            pytest -v --tb=short
           polling_interval_seconds: 1
           warning_on_retry: true
           continue_on_error: false
