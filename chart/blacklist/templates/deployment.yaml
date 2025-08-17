@@ -29,6 +29,20 @@ spec:
       serviceAccountName: {{ include "blacklist.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
+      initContainers:
+        - name: db-init
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ["python3", "/app/app/init_database.py", "--force"]
+          env:
+            - name: DATABASE_URL
+              value: "sqlite:////app/instance/blacklist.db"
+          volumeMounts:
+            {{- if .Values.persistence.data.enabled }}
+            - name: data
+              mountPath: /app/instance
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

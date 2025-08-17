@@ -1,5 +1,5 @@
 # Production values for blacklist chart
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: registry.jclee.me/jclee94/blacklist
@@ -40,16 +40,16 @@ ingress:
 
 resources:
   limits:
-    cpu: 1000m
-    memory: 1Gi
-  requests:
     cpu: 500m
     memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
 
 autoscaling:
   enabled: true
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 80
 
@@ -116,7 +116,7 @@ podMonitor:
 # Pod Disruption Budget
 podDisruptionBudget:
   enabled: true
-  minAvailable: 2
+  minAvailable: 1
 
 # Network Policy
 networkPolicy:
@@ -165,7 +165,7 @@ containerSecurityContext:
 # Probes configuration
 livenessProbe:
   enabled: true
-  path: /
+  path: /health
   initialDelaySeconds: 60
   periodSeconds: 30
   timeoutSeconds: 10
@@ -174,7 +174,7 @@ livenessProbe:
 
 readinessProbe:
   enabled: true
-  path: /
+  path: /health
   initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 5
@@ -183,7 +183,7 @@ readinessProbe:
 
 startupProbe:
   enabled: true
-  path: /
+  path: /health
   initialDelaySeconds: 20
   periodSeconds: 10
   timeoutSeconds: 5
