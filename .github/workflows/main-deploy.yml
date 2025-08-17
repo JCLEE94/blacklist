@@ -65,12 +65,13 @@ jobs:
       - name: Setup self-hosted environment
         run: |
           echo "🔧 Setting up self-hosted runner environment for security scan"
-          # Ensure Python is available
-          python3 --version || sudo apt-get update && sudo apt-get install -y python3 python3-pip
-          pip3 --version || sudo apt-get install -y python3-pip
+          # Check Python availability (assume pre-installed on self-hosted)
+          python3 --version
+          pip3 --version || python3 -m pip --version
           
       - name: Set up Python
         uses: actions/setup-python@v5
+        continue-on-error: true
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -78,7 +79,7 @@ jobs:
           
       - name: Install security tools
         run: |
-          pip install bandit safety
+          python3 -m pip install bandit safety --user || pip install bandit safety
           
       - name: Run Bandit security scan
         run: |
@@ -86,7 +87,7 @@ jobs:
           
       - name: Run Safety check
         run: |
-          pip install -r requirements.txt
+          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
           safety check || true
           
       - name: Set security status
@@ -106,12 +107,13 @@ jobs:
       - name: Setup self-hosted environment
         run: |
           echo "🔧 Setting up self-hosted runner environment for linting"
-          # Ensure Python is available
-          python3 --version || sudo apt-get update && sudo apt-get install -y python3 python3-pip
-          pip3 --version || sudo apt-get install -y python3-pip
+          # Check Python availability (assume pre-installed on self-hosted)
+          python3 --version
+          pip3 --version || python3 -m pip --version
           
       - name: Set up Python
         uses: actions/setup-python@v5
+        continue-on-error: true
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -119,8 +121,8 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install black isort flake8
+          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
+          python3 -m pip install black isort flake8 --user || pip install black isort flake8
           
       - name: Run linting
         run: |
@@ -161,14 +163,15 @@ jobs:
       - name: Setup self-hosted environment
         run: |
           echo "🔧 Setting up self-hosted runner environment for testing"
-          # Ensure Python is available
-          python3 --version || sudo apt-get update && sudo apt-get install -y python3 python3-pip
-          pip3 --version || sudo apt-get install -y python3-pip
-          # Install pytest-xdist for parallel testing
-          pip3 install pytest-xdist || true
+          # Check Python availability (assume pre-installed on self-hosted)
+          python3 --version
+          pip3 --version || python3 -m pip --version
+          # Install pytest-xdist for parallel testing if not available
+          python3 -m pip install pytest-xdist --user || echo "pytest-xdist installation failed, continuing..."
         
       - name: Set up Python
         uses: actions/setup-python@v5
+        continue-on-error: true
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -176,7 +179,7 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
           
       - name: Run tests with coverage (self-hosted optimized)
         run: |
@@ -302,6 +305,7 @@ jobs:
         
       - name: Set up Python
         uses: actions/setup-python@v5
+        continue-on-error: true
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -309,9 +313,9 @@ jobs:
           
       - name: Install packaging tools
         run: |
-          pip install -r requirements.txt
+          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
           # docker-compose should be pre-installed on self-hosted runner
-          docker-compose version || echo "Installing docker-compose..."
+          docker-compose version || echo "docker-compose should be pre-installed on self-hosted runner"
           
       - name: Build offline package
         run: |
@@ -354,8 +358,8 @@ jobs:
       - name: Setup self-hosted environment
         run: |
           echo "🔧 Setting up self-hosted runner environment for documentation"
-          # Ensure basic tools are available
-          which git || sudo apt-get update && sudo apt-get install -y git
+          # Check basic tools availability (assume pre-installed on self-hosted)
+          which git && echo "Git is available" || echo "Git not found but assuming available"
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
