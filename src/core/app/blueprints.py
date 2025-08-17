@@ -21,6 +21,15 @@ class BlueprintRegistrationMixin:
         app.register_blueprint(unified_bp)
         logger.info("Unified routes registered successfully")
 
+        # Register collection dashboard routes
+        try:
+            from ..routes.collection_dashboard_routes import collection_dashboard_bp
+            
+            app.register_blueprint(collection_dashboard_bp)
+            logger.info("Collection dashboard routes registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register collection dashboard routes: {e}")
+        
         # Register settings routes (non-conflicting admin functions)
         try:
             from ..settings_routes import settings_bp

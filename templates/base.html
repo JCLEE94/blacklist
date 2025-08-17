@@ -60,6 +60,16 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">
+                            <i class="bi bi-speedometer2"></i> 수집 대시보드
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/analytics">
+                            <i class="bi bi-graph-up-arrow"></i> 고급 분석
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('unified.web_routes.unified_control') }}">
                             <i class="bi bi-gear-wide-connected"></i> 통합 관리
                         </a>
@@ -106,9 +116,6 @@
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('unified.web_routes.system_logs') }}">
                                 <i class="bi bi-journal-text"></i> 시스템 로그
-                            </a></li>
-                            <li><a class="dropdown-item" href="/docker/logs">
-                                <i class="bi bi-terminal"></i> Docker 컨테이너 로그
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/api/stats-simple" target="_blank">

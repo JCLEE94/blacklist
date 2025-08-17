@@ -60,7 +60,7 @@ class RegtechAuth:
             self.session = self.create_session()
 
             # 로그인 페이지 접근
-            login_url = f"{self.base_url}/login"
+            login_url = f"{self.base_url}/login/loginForm"
             logger.info(f"Accessing login page: {login_url}")
 
             response = self.session.get(login_url, timeout=self.timeout)

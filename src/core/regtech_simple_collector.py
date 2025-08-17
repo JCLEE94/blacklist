@@ -101,17 +101,33 @@ class RegtechSimpleCollector:
             return {"success": False, "error": str(e), "total_collected": 0}
 
     def _simple_login(self, session: requests.Session) -> bool:
-        """가장 단순한 로그인 방식"""
+        """실제 REGTECH 로그인 프로세스를 따르는 방식"""
         try:
             logger.info("단순 로그인 시도")
 
-            # 로그인 페이지 접근
+            # 1. 로그인 페이지 접근
             login_page = session.get(f"{self.base_url}/login/loginForm")
             if login_page.status_code != 200:
                 logger.error(f"로그인 페이지 접근 실패: {login_page.status_code}")
                 return False
 
-            # 로그인 요청
+            # 2. 먼저 사용자 검증 (/member/findOneMember)
+            verify_data = {
+                "memberId": self.username,
+                "memberPw": self.password
+            }
+            
+            verify_resp = session.post(
+                f"{self.base_url}/member/findOneMember",
+                data=verify_data,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            
+            if verify_resp.status_code != 200:
+                logger.error(f"사용자 검증 실패: {verify_resp.status_code}")
+                return False
+
+            # 3. 검증 성공 시 실제 로그인 (/login/addLogin)
             login_data = {
                 "username": self.username,
                 "password": self.password,
@@ -129,7 +145,7 @@ class RegtechSimpleCollector:
                 allow_redirects=True,
             )
 
-            # 로그인 성공 확인 (간단한 방법)
+            # 로그인 성공 확인
             if login_resp.status_code == 200 and "error" not in login_resp.url:
                 logger.info("단순 로그인 성공")
                 return True
@@ -286,22 +302,23 @@ class RegtechSimpleCollector:
                                 else:
                                     continue
 
-                                # 디버깅 로그
-                                if row_idx < 3:  # 첫 3개 행만 로그
+                                # 디버깅 로그 (처음 3개만)
+                                if row_idx < 3:
                                     logger.debug(
                                         f"행 {row_idx + 1}: IP='{ip}', 컬럼수={len(cells)}"
                                     )
 
-                                    # 유효한 IP인지 확인
-                                    if self._is_valid_ip(ip):
-                                        ip_data = {
-                                            "ip": ip,
-                                            "country": country,
-                                            "reason": reason,
-                                            "date": date,
-                                            "source": "REGTECH",
-                                        }
-                                        page_ips.append(ip_data)
+                                # 유효한 IP인지 확인 (모든 행 처리)
+                                if self._is_valid_ip(ip):
+                                    ip_data = {
+                                        "ip": ip,
+                                        "country": country,
+                                        "reason": reason,
+                                        "date": date,
+                                        "source": "REGTECH",
+                                    }
+                                    page_ips.append(ip_data)
+                                    if row_idx < 10:  # 처음 10개만 로그
                                         logger.debug(f"IP 추가: {ip} ({country})")
 
                             break
