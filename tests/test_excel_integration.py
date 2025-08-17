@@ -22,8 +22,8 @@ def test_excel_download():
         "BearereyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuZXh0cmFkZSIsIm9yZ2FubmFtZSI6IuuEpeyKpO2KuOugiIzdtOuTnCIsImlkIjoibmV4dHJhZGUiLCJleHAiOjE3NTExMTkyNzYsInVzZXJuYW1lIjoi7J6l7ZmN7KSAIn0.YwZHoHZCVqDnaryluB0h5_ituxYcaRz4voT7GRfgrNrP86W8TfvBuJbHMON4tJa4AQmNP-XhC_PuAVPQTjJADA"
     )
 
-    # 수집기 생성
-    collector = RegtechCollector(data_dir="./data")
+    # 수집기 생성 (테스트용 더미 자격증명)
+    collector = RegtechCollector(username="test_user", password="test_pass")
 
     # 날짜 범위
     end_date = datetime.now()

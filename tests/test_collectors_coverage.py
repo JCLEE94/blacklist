@@ -60,15 +60,25 @@ class TestUnifiedCollector:
         except Exception:
             assert True
 
-    @patch('src.core.collectors.unified_collector.get_container')
-    def test_unified_collector_initialization(self, mock_container):
+    def test_unified_collector_initialization(self):
         """Test unified collector initialization"""
-        mock_container.return_value = Mock()
-        
         try:
-            from src.core.collectors.unified_collector import UnifiedCollector
-            collector = UnifiedCollector()
+            from src.core.collectors.unified_collector import BaseCollector, CollectionConfig
+            
+            # BaseCollector is abstract, so we create a minimal test implementation
+            class TestCollector(BaseCollector):
+                @property
+                def source_type(self):
+                    return "TEST"
+                
+                async def _collect_data(self):
+                    return []
+            
+            config = CollectionConfig()
+            collector = TestCollector("test", config)
             assert collector is not None
+            assert collector.name == "test"
+            assert collector.config == config
         except ImportError:
             pytest.skip("UnifiedCollector initialization not available")
         except Exception:
@@ -77,26 +87,34 @@ class TestUnifiedCollector:
     def test_unified_collector_methods(self):
         """Test unified collector methods"""
         try:
-            from src.core.collectors.unified_collector import UnifiedCollector
+            from src.core.collectors.unified_collector import BaseCollector
             
             # Check for common collector methods
-            assert hasattr(UnifiedCollector, 'collect') or hasattr(UnifiedCollector, 'run_collection')
-            assert hasattr(UnifiedCollector, 'get_status') or hasattr(UnifiedCollector, 'status')
+            assert hasattr(BaseCollector, 'collect')
+            assert hasattr(BaseCollector, 'health_check')
+            assert hasattr(BaseCollector, 'cancel')
             
         except ImportError:
-            pytest.skip("UnifiedCollector methods not available")
+            pytest.skip("BaseCollector methods not available")
         except Exception:
             assert True
 
-    @patch('src.core.collectors.unified_collector.requests')
-    def test_unified_collector_collection(self, mock_requests):
+    def test_unified_collector_collection(self):
         """Test unified collector collection process"""
-        mock_requests.get.return_value.status_code = 200
-        mock_requests.get.return_value.content = b"test data"
-        
         try:
-            from src.core.collectors.unified_collector import UnifiedCollector
-            collector = UnifiedCollector()
+            from src.core.collectors.unified_collector import BaseCollector, CollectionConfig
+            
+            # Create a test collector implementation
+            class TestCollector(BaseCollector):
+                @property
+                def source_type(self):
+                    return "TEST"
+                
+                async def _collect_data(self):
+                    return ["test_data"]
+            
+            config = CollectionConfig()
+            collector = TestCollector("test", config)
             
             if hasattr(collector, 'collect'):
                 result = collector.collect()
@@ -352,22 +370,22 @@ class TestCollectorUtilities:
 class TestCollectorIntegration:
     """Integration tests for collectors"""
 
-    @patch('src.core.collectors.unified_collector.get_container')
-    def test_unified_collector_integration(self, mock_container):
+    def test_unified_collector_integration(self):
         """Test unified collector integration"""
-        mock_container.return_value = Mock()
-        
         try:
-            from src.core.collectors.unified_collector import UnifiedCollector
-            collector = UnifiedCollector()
+            from src.core.collectors.unified_collector import UnifiedCollectionManager, CollectionConfig
             
-            # Test collector initialization and basic operations
-            if hasattr(collector, 'initialize'):
-                collector.initialize()
+            # Test UnifiedCollectionManager instead of UnifiedCollector
+            manager = UnifiedCollectionManager()
+            
+            # Test manager basic operations
+            if hasattr(manager, 'add_collector'):
+                # Test adding a collector
+                pass
                 
-            if hasattr(collector, 'get_all_sources'):
-                sources = collector.get_all_sources()
-                assert sources is not None or sources is None
+            if hasattr(manager, 'get_all_collectors'):
+                collectors = manager.get_all_collectors()
+                assert collectors is not None
                 
         except ImportError:
             pytest.skip("Unified collector integration not available")

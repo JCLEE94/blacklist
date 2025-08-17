@@ -22,7 +22,7 @@ permissions:
   security-events: write
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: registry.jclee.me
   IMAGE_NAME: jclee94/blacklist
   PYTHON_VERSION: "3.11"
 
@@ -256,8 +256,8 @@ jobs:
           $NOTES
           
           ### 📦 Container Images
-          - \`ghcr.io/jclee94/blacklist:${{ needs.prepare-release.outputs.version }}\`
-          - \`ghcr.io/jclee94/blacklist:latest\`
+          - \`registry.jclee.me/jclee94/blacklist:${{ needs.prepare-release.outputs.version }}\`
+          - \`registry.jclee.me/jclee94/blacklist:latest\`
           
           ### 🐳 Multi-Architecture Support
           - linux/amd64

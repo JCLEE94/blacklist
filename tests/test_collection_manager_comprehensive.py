@@ -30,7 +30,8 @@ class TestCollectionManagerInit:
             assert manager.db_path == "instance/blacklist.db"
             assert str(manager.config_path) == "instance/collection_config.json"
 
-    def test_init_with_custom_paths(self):
+    @patch('pathlib.Path.mkdir')
+    def test_init_with_custom_paths(self, mock_mkdir):
         """Test initialization with custom paths"""
         with patch('src.core.collection_manager.manager.CollectionConfigService'), \
              patch('src.core.collection_manager.manager.ProtectionService'), \
@@ -44,6 +45,8 @@ class TestCollectionManagerInit:
             
             assert manager.db_path == custom_db
             assert str(manager.config_path) == custom_config
+            # Verify mkdir was called for the config directory
+            mock_mkdir.assert_called_once_with(exist_ok=True)
 
     @patch('pathlib.Path.mkdir')
     def test_config_directory_creation(self, mock_mkdir):
@@ -82,7 +85,8 @@ class TestCollectionManagerInit:
             assert manager.auth_service == mock_auth.return_value
             assert manager.status_service == mock_status.return_value
 
-    def test_pathlib_path_conversion(self):
+    @patch('pathlib.Path.mkdir')
+    def test_pathlib_path_conversion(self, mock_mkdir):
         """Test that config_path is converted to Path object"""
         with patch('src.core.collection_manager.manager.CollectionConfigService'), \
              patch('src.core.collection_manager.manager.ProtectionService'), \
@@ -93,6 +97,8 @@ class TestCollectionManagerInit:
             
             assert isinstance(manager.config_path, Path)
             assert str(manager.config_path) == "string/path/config.json"
+            # Verify mkdir was called
+            mock_mkdir.assert_called_once_with(exist_ok=True)
 
 
 class TestCollectionManagerServices:

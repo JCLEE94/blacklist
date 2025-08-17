@@ -68,6 +68,52 @@ class SecudiumCollector(BaseCollector):
 
         return []
 
+    def _validate_data(self, data: List[Any]) -> List[Dict[str, Any]]:
+        """
+        SECUDIUM 데이터 유효성 검사
+        
+        Args:
+            data: 검증할 데이터 리스트
+            
+        Returns:
+            검증된 데이터 리스트
+        """
+        if not data:
+            return []
+        
+        validated_data = []
+        for item in data:
+            if isinstance(item, dict) and "ip" in item:
+                # IP 주소 형식 검증 (간단한 검증)
+                ip = item.get("ip", "").strip()
+                if ip and "." in ip:
+                    validated_item = {
+                        "ip": ip,
+                        "source": item.get("source", "SECUDIUM"),
+                        "detection_date": item.get("detection_date", ""),
+                        "threat_type": item.get("threat_type", ""),
+                    }
+                    validated_data.append(validated_item)
+                else:
+                    self.logger.warning(f"Invalid IP format: {ip}")
+            else:
+                self.logger.warning(f"Invalid data format: {item}")
+        
+        return validated_data
+
+    def _log_info(self, message: str):
+        """정보 로그 출력"""
+        self.logger.info(message)
+
+    def _cleanup_session(self, session: requests.Session):
+        """세션 정리"""
+        if session:
+            try:
+                session.close()
+                self.logger.debug("Session cleaned up successfully")
+            except Exception as e:
+                self.logger.warning(f"Session cleanup failed: {e}")
+
     def _create_session(self) -> requests.Session:
         """SECUDIUM용 세션 생성"""
         session = requests.Session()
