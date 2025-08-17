@@ -9,7 +9,7 @@ spec:
   project: default
   
   source:
-    repoURL: https://github.com/JCLEE94/blacklist
+    repoURL: https://github.com/JCLEE94/blacklist.git
     targetRevision: main
     path: k8s/manifests
     
