@@ -12,7 +12,7 @@ argocd:
   
 ## Registry Configuration  
 registry:
-  url: registry.jclee.me
+  url: ghcr.io
   username: admin
   password: bingogo1
   

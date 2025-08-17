@@ -119,6 +119,20 @@ class CompactFlaskApp(
             except Exception as e:
                 logger.warning(f"Failed to initialize system monitoring: {e}")
 
+            # Initialize Prometheus metrics system
+            try:
+                from .monitoring.prometheus_metrics import init_metrics
+                
+                # 메트릭 시스템 초기화 (버전 정보와 함께)
+                init_metrics(
+                    version="1.0.35",
+                    build_date="2025-08-17",
+                    git_commit="latest"
+                )
+                logger.info("Prometheus metrics system initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Prometheus metrics: {e}")
+
             logger.info(
                 "Blacklist API Server initialized successfully",
                 environment=config_name or "default",

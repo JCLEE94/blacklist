@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+  namespace: blacklist
+  labels:
+    app: blacklist
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: blacklist
+  template:
+    metadata:
+      labels:
+        app: blacklist
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "32542"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/blacklist:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 32542
+          name: http
+          protocol: TCP
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        - name: PORT
+          value: "32542"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: database-url
+        - name: REDIS_URL
+          value: "redis://redis-service:6379/0"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: secret-key
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: jwt-secret-key
+        - name: REGTECH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: regtech-username
+        - name: REGTECH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: regtech-password
+        - name: SECUDIUM_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: secudium-username
+        - name: SECUDIUM_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: secudium-password
+        - name: FORCE_DISABLE_COLLECTION
+          value: "false"
+        - name: COLLECTION_ENABLED
+          value: "true"
+        - name: API_KEY_ENABLED
+          value: "true"
+        - name: JWT_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 32542
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 32542
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data
+          mountPath: /app/instance
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: blacklist-pvc
+      imagePullSecrets:
+      - name: registry-credentials

@@ -84,6 +84,8 @@ class MigrationService:
             ("collection_logs", "session_id", "TEXT"),
             ("collection_logs", "data_size_bytes", "INTEGER DEFAULT 0"),
             ("collection_logs", "memory_usage_mb", "REAL DEFAULT 0.0"),
+            # system_logs 테이블
+            ("system_logs", "additional_data", "TEXT"),
         ]
 
         for table, column, definition in new_columns:

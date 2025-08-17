@@ -341,20 +341,20 @@ class SystemMonitor:
                 "status": "error",
                 "error": str(e)
             }
-    def log_system_event(self, level: str, message: str, module: str = None, **kwargs):
+    def log_system_event(self, level: str, message: str, component: str = None, **kwargs):
         """시스템 이벤트 로깅"""
         try:
             with self.db_manager.get_connection() as conn:
                 conn.execute(
                     """
                     INSERT INTO system_logs
-                    (level, message, module, additional_data)
+                    (level, message, component, additional_data)
                     VALUES (?, ?, ?, ?)
                 """,
                     (
                         level,
                         message,
-                        module or "system_monitor",
+                        component or "system_monitor",
                         str(kwargs) if kwargs else None,
                     ),
                 )

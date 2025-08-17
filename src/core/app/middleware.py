@@ -67,14 +67,42 @@ class MiddlewareMixin:
             return response
 
     def _setup_performance_middleware(self, app, container):
-        """기본 응답 시간 추적 (모니터링 최소화)"""
+        """고급 성능 추적 및 Prometheus 메트릭 수집"""
 
         @app.after_request
-        def basic_performance_tracking(response):
-            """Basic performance tracking - response time only"""
+        def enhanced_performance_tracking(response):
+            """Enhanced performance tracking with Prometheus metrics"""
             if hasattr(g, "start_time"):
                 duration = time.time() - g.start_time
                 response.headers["X-Response-Time"] = f"{duration:.3f}s"
+                
+                # Prometheus 메트릭 기록
+                try:
+                    from ..monitoring.prometheus_metrics import get_metrics
+                    
+                    metrics = get_metrics()
+                    
+                    # HTTP 요청 메트릭 기록
+                    method = request.method
+                    endpoint = request.endpoint or "unknown"
+                    status_code = response.status_code
+                    
+                    metrics.record_http_request(method, endpoint, status_code, duration)
+                    
+                    # API 쿼리 메트릭 기록 (API 엔드포인트인 경우)
+                    if request.path.startswith('/api/'):
+                        success = status_code < 400
+                        metrics.record_api_query(request.path, success)
+                    
+                    # 인증 시도 추적 (로그인 엔드포인트인 경우)
+                    if request.path.startswith('/api/auth/'):
+                        service = "api"
+                        success = status_code == 200
+                        metrics.record_authentication_attempt(service, success)
+                        
+                except Exception as e:
+                    # 메트릭 수집 실패는 로그만 남기고 요청 처리에는 영향주지 않음
+                    logger.debug(f"Metrics collection failed: {e}")
 
             return response
 

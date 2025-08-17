@@ -324,7 +324,7 @@ class TestMainFunction:
             with patch.object(mock_app, 'run') as mock_run:
                 main()
                 
-                mock_run.assert_called_once_with(host="0.0.0.0", port=2541, debug=True)
+                mock_run.assert_called_once_with(host="0.0.0.0", port=8541, debug=True)
 
 
 class TestModuleLevel:

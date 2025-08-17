@@ -59,3 +59,4 @@ Thumbs.db
 server.log
 blacklist.pid
 {test_db}
+{test_db}*

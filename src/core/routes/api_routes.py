@@ -329,12 +329,81 @@ def monitoring_dashboard():
 
 @api_routes_bp.route("/metrics", methods=["GET"])
 def prometheus_metrics():
-    """Prometheus 메트릭 엔드포인트"""
+    """Prometheus 메트릭 엔드포인트 - 55개 메트릭 제공"""
     try:
-        stats = service.get_system_stats()
+        # 고급 메트릭 시스템 사용
+        from ..monitoring.prometheus_metrics import get_metrics
         
-        # Prometheus 형식의 메트릭 생성
-        metrics = f"""# HELP blacklist_total_ips Total number of IPs
+        metrics_instance = get_metrics()
+        
+        # 실시간 데이터 수집
+        stats = service.get_system_stats()
+        health = service.get_system_health()
+        
+        # 시스템 정보 수집
+        import psutil
+        import time
+        from datetime import datetime
+        
+        system_info = {
+            "active_connections": 1,  # Flask connection
+            "memory": {
+                "rss": psutil.Process().memory_info().rss,
+                "vms": psutil.Process().memory_info().vms,
+                "shared": getattr(psutil.Process().memory_info(), 'shared', 0)
+            },
+            "cpu_percent": psutil.cpu_percent(interval=0.1),
+            "disk": {
+                "/app": {
+                    "used": psutil.disk_usage('/').used,
+                    "free": psutil.disk_usage('/').free,
+                    "total": psutil.disk_usage('/').total
+                }
+            }
+        }
+        
+        # 비즈니스 정보 수집
+        business_data = {
+            "ip_stats": {
+                "regtech": {"active": stats.get('regtech_active', 0), "inactive": stats.get('regtech_inactive', 0)},
+                "secudium": {"active": stats.get('secudium_active', 0), "inactive": stats.get('secudium_inactive', 0)}
+            },
+            "data_freshness": {
+                "regtech": stats.get('regtech_last_update_seconds', 0),
+                "secudium": stats.get('secudium_last_update_seconds', 0)
+            },
+            "cache": {
+                "size_bytes": stats.get('cache_size', 0)
+            },
+            "database": {
+                "active": 1,
+                "idle": 0,
+                "total": 1
+            }
+        }
+        
+        # 메트릭 업데이트
+        metrics_instance.update_system_metrics(system_info)
+        metrics_instance.update_business_metrics(business_data)
+        
+        # 버전 정보 설정
+        metrics_instance.set_version_info("1.0.35", datetime.now().strftime("%Y-%m-%d"), "latest")
+        
+        # Prometheus 형식 응답 생성
+        return metrics_instance.get_metrics_response()
+        
+    except Exception as e:
+        logger.error(f"Advanced metrics error: {e}")
+        
+        # 기본 메트릭 fallback
+        try:
+            stats = service.get_system_stats()
+            
+            fallback_metrics = f"""# HELP blacklist_up Service health status
+# TYPE blacklist_up gauge
+blacklist_up 1
+
+# HELP blacklist_total_ips Total number of IPs
 # TYPE blacklist_total_ips gauge
 blacklist_total_ips {stats.get('total_ips', 0)}
 
@@ -342,15 +411,27 @@ blacklist_total_ips {stats.get('total_ips', 0)}
 # TYPE blacklist_active_ips gauge
 blacklist_active_ips {stats.get('active_ips', 0)}
 
-# HELP blacklist_up Service health status
-# TYPE blacklist_up gauge
-blacklist_up 1
+# HELP blacklist_errors_total Total errors
+# TYPE blacklist_errors_total counter
+blacklist_errors_total{{error_type="metric_generation",component="prometheus"}} 1
 """
-        
-        return Response(metrics, mimetype="text/plain")
-    except Exception as e:
-        logger.error(f"Metrics error: {e}")
-        return Response("# Metrics unavailable\nblacklist_up 0\n", mimetype="text/plain")
+            
+            return Response(
+                fallback_metrics, 
+                mimetype="text/plain; version=0.0.4",
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0"
+                }
+            )
+        except Exception as fallback_error:
+            logger.error(f"Fallback metrics error: {fallback_error}")
+            return Response(
+                "# Metrics system unavailable\nblacklist_up 0\n", 
+                mimetype="text/plain",
+                status=500
+            )
 
 @api_routes_bp.route("/api/realtime/stats", methods=["GET"])
 def realtime_stats():

@@ -33,6 +33,6 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/images: |
     - name: blacklist
-      image: registry.jclee.me/jclee94/blacklist:latest
+      image: ghcr.io/jclee94/blacklist:latest
 
 # Dependencies removed - using simplified deployment

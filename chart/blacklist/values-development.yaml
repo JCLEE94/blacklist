@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: registry.jclee.me/jclee94/blacklist
+  repository: ghcr.io/jclee94/blacklist
   pullPolicy: Always
   tag: "latest"
 

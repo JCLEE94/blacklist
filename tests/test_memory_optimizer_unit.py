@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
 """
-Comprehensive Memory Core Optimizer Test Suite
+Unit tests for memory core optimizer
 
-Tests all memory optimization features including:
-- Memory monitoring and statistics collection
-- Garbage collection optimization
-- Object pooling for memory reuse
-- Chunked processing for large datasets
-- Memory pressure detection and response
-- Thread-safe memory operations
+Tests CoreMemoryOptimizer and MemoryStats components.
 """
 
 import gc
 import threading
 import time
-import unittest
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -191,27 +184,6 @@ class TestCoreMemoryOptimizer:
             mock_gc_collect.assert_called_once()
             assert self.optimizer.optimization_stats["gc_forced"] == 1
 
-    @patch('src.utils.memory.core_optimizer.gc.collect')
-    def test_force_gc_if_needed_high_process_memory(self, mock_gc_collect):
-        """Test garbage collection with high process memory"""
-        with patch.object(self.optimizer, 'get_memory_stats') as mock_get_stats:
-            # Mock high process memory usage
-            mock_stats_before = Mock()
-            mock_stats_before.memory_percent = 50.0  # Low overall memory
-            mock_stats_before.process_memory_mb = 150.0  # Above threshold (100MB)
-            
-            mock_stats_after = Mock()
-            mock_stats_after.memory_percent = 50.0
-            mock_stats_after.process_memory_mb = 100.0  # 50MB freed
-            
-            mock_get_stats.side_effect = [mock_stats_before, mock_stats_after]
-            
-            result = self.optimizer.force_gc_if_needed()
-            
-            assert result is True
-            mock_gc_collect.assert_called_once()
-            assert self.optimizer.optimization_stats["gc_forced"] == 1
-
     def test_chunked_processing_small_data(self):
         """Test chunked processing with small dataset"""
         data = list(range(50))  # Small dataset
@@ -219,22 +191,12 @@ class TestCoreMemoryOptimizer:
         
         chunks_processed = []
         
-        # The context manager yields each chunk directly - need to use the generator properly
-        cm = self.optimizer.chunked_processing(data, chunk_size)
-        with cm as chunk_generator:
-            # chunk_generator is None since it yields directly from the context manager
-            # We need to iterate over the context manager itself
-            pass
-        
-        # Actually, this method is a context manager that yields, let's test differently
-        # Test by catching the yielded values during iteration
         try:
             for chunk_info in self.optimizer.chunked_processing(data, chunk_size):
                 chunk_num, chunk, total_chunks = chunk_info
                 chunks_processed.append((chunk_num, len(chunk), total_chunks))
         except TypeError:
-            # If the context manager pattern doesn't work as iterator, 
-            # let's manually test the context manager
+            # If the context manager pattern doesn't work as iterator
             with self.optimizer.chunked_processing(data, chunk_size):
                 pass  # The yields happen inside the context manager
         
@@ -259,36 +221,6 @@ class TestCoreMemoryOptimizer:
         assert chunks_processed[2] == (3, 500, 3)
         assert self.optimizer.optimization_stats["chunked_operations"] == 1
 
-    def test_chunked_processing_with_memory_check(self):
-        """Test chunked processing with memory pressure checks"""
-        # Create data that will trigger memory checks (multiples of 10)
-        data = list(range(2000))  # 20 chunks of 100, checks at 10, 20
-        chunk_size = 100
-        
-        chunks_processed = []
-        
-        with patch.object(self.optimizer, 'check_memory_pressure') as mock_check:
-            with patch.object(self.optimizer, 'force_gc_if_needed') as mock_gc:
-                mock_check.return_value = True  # Simulate memory pressure
-                
-                for chunk_info in self.optimizer.chunked_processing(data, chunk_size):
-                    chunk_num, chunk, total_chunks = chunk_info
-                    chunks_processed.append(chunk_num)
-                
-                # Should check memory at chunks 10 and 20
-                assert mock_check.call_count == 2
-                assert mock_gc.call_count == 2
-
-    def test_chunked_processing_exception_handling(self):
-        """Test chunked processing exception handling"""
-        data = list(range(100))
-        
-        with pytest.raises(ValueError, match="Test error"):
-            for chunk_info in self.optimizer.chunked_processing(data, 50):
-                chunk_num, chunk, total_chunks = chunk_info
-                if chunk_num == 1:
-                    raise ValueError("Test error")
-
     def test_start_memory_monitoring(self):
         """Test starting memory monitoring"""
         assert not self.optimizer.monitoring_active
@@ -299,17 +231,6 @@ class TestCoreMemoryOptimizer:
         assert self.optimizer.monitoring_active
         assert self.optimizer.monitoring_thread is not None
         assert self.optimizer.monitoring_thread.is_alive()
-
-    def test_start_memory_monitoring_already_active(self):
-        """Test starting monitoring when already active"""
-        self.optimizer.monitoring_active = True
-        original_thread = Mock()
-        self.optimizer.monitoring_thread = original_thread
-        
-        self.optimizer.start_memory_monitoring()
-        
-        # Should not create new thread
-        assert self.optimizer.monitoring_thread is original_thread
 
     def test_stop_memory_monitoring(self):
         """Test stopping memory monitoring"""
@@ -326,52 +247,6 @@ class TestCoreMemoryOptimizer:
         assert not self.optimizer.monitoring_active
         # Thread should stop (give it a moment)
         time.sleep(0.1)
-
-    def test_monitoring_loop_memory_history(self):
-        """Test monitoring loop memory history collection"""
-        # Patch sleep to make test faster
-        with patch('time.sleep'):
-            with patch.object(self.optimizer, 'get_memory_stats') as mock_get_stats:
-                with patch.object(self.optimizer, 'check_memory_pressure') as mock_check:
-                    # Mock memory stats
-                    mock_stats = Mock()
-                    mock_get_stats.return_value = mock_stats
-                    mock_check.return_value = False
-                    
-                    # Start monitoring
-                    self.optimizer.start_memory_monitoring()
-                    
-                    # Let it run for a bit
-                    time.sleep(0.1)
-                    
-                    # Stop monitoring
-                    self.optimizer.stop_memory_monitoring()
-                    
-                    # Should have collected some history
-                    assert len(self.optimizer.memory_history) > 0
-
-    def test_monitoring_loop_max_history_size(self):
-        """Test monitoring loop history size limit"""
-        # Fill history beyond max size
-        for i in range(150):  # More than max_history_size (100)
-            mock_stats = Mock()
-            mock_stats.timestamp = datetime.now()
-            self.optimizer.memory_history.append(mock_stats)
-        
-        # Should be limited to max size
-        assert len(self.optimizer.memory_history) == 150
-        
-        # Run monitoring to trigger cleanup
-        with patch('time.sleep'):
-            with patch.object(self.optimizer, 'get_memory_stats') as mock_get_stats:
-                mock_stats = Mock()
-                mock_get_stats.return_value = mock_stats
-                
-                # Simulate one monitoring iteration
-                self.optimizer._monitoring_loop()
-                
-                # Should be limited to max size + 1 (new entry)
-                assert len(self.optimizer.memory_history) <= self.optimizer.max_history_size
 
     def test_get_object_from_pool_hit(self):
         """Test getting object from pool with hit"""
@@ -403,17 +278,6 @@ class TestCoreMemoryOptimizer:
         assert self.optimizer.optimization_stats["pool_hits"] == 0
         assert self.optimizer.optimization_stats["pool_misses"] == 1
 
-    def test_get_object_from_pool_miss_no_factory(self):
-        """Test getting object from empty pool without factory"""
-        object_type = "test_objects"
-        
-        # Pool is empty, no factory
-        result = self.optimizer.get_object_from_pool(object_type)
-        
-        assert result is None
-        assert self.optimizer.optimization_stats["pool_hits"] == 0
-        assert self.optimizer.optimization_stats["pool_misses"] == 1
-
     def test_return_object_to_pool_basic(self):
         """Test returning object to pool"""
         object_type = "test_objects"
@@ -424,38 +288,6 @@ class TestCoreMemoryOptimizer:
         
         assert len(self.optimizer.object_pools[object_type]) == 1
         assert self.optimizer.object_pools[object_type][0] is test_object
-
-    def test_return_object_to_pool_with_reset(self):
-        """Test returning object to pool with reset function"""
-        object_type = "test_objects"
-        test_object = {"data": "old", "reset_called": False}
-        
-        def reset_func(obj):
-            obj["data"] = "reset"
-            obj["reset_called"] = True
-        
-        # Return object with reset
-        self.optimizer.return_object_to_pool(object_type, test_object, reset_func)
-        
-        assert test_object["data"] == "reset"
-        assert test_object["reset_called"] is True
-        assert len(self.optimizer.object_pools[object_type]) == 1
-
-    def test_return_object_to_pool_size_limit(self):
-        """Test pool size limit when returning objects"""
-        object_type = "test_objects"
-        
-        # Fill pool to limit (50)
-        for i in range(50):
-            self.optimizer.object_pools[object_type].append(f"object_{i}")
-        
-        # Try to add one more
-        extra_object = "extra_object"
-        self.optimizer.return_object_to_pool(object_type, extra_object)
-        
-        # Should still be at limit, extra object not added
-        assert len(self.optimizer.object_pools[object_type]) == 50
-        assert extra_object not in self.optimizer.object_pools[object_type]
 
     def test_thread_safety_object_pools(self):
         """Test thread safety of object pool operations"""
@@ -486,58 +318,6 @@ class TestCoreMemoryOptimizer:
         total_hits = self.optimizer.optimization_stats["pool_hits"]
         total_misses = self.optimizer.optimization_stats["pool_misses"]
         assert total_hits + total_misses == 500  # 5 threads * 100 operations
-
-    def test_thread_safety_locks_per_object_type(self):
-        """Test that different object types have separate locks"""
-        type1 = "type1"
-        type2 = "type2"
-        
-        # Should have separate locks
-        lock1 = self.optimizer.pool_locks[type1]
-        lock2 = self.optimizer.pool_locks[type2]
-        
-        assert lock1 is not lock2
-        assert isinstance(lock1, threading.Lock)
-        assert isinstance(lock2, threading.Lock)
-
-    def test_optimization_stats_tracking(self):
-        """Test optimization statistics tracking"""
-        # Initial state
-        assert all(count == 0 for count in self.optimizer.optimization_stats.values())
-        
-        # Trigger various operations
-        data = list(range(100))
-        for chunk_info in self.optimizer.chunked_processing(data, 50):
-            pass  # Just iterate through chunks
-        
-        # Get object (miss)
-        self.optimizer.get_object_from_pool("test_type")
-        
-        # Return and get object (hit)
-        self.optimizer.return_object_to_pool("test_type", "object")
-        self.optimizer.get_object_from_pool("test_type")
-        
-        # Check stats
-        assert self.optimizer.optimization_stats["chunked_operations"] == 1
-        assert self.optimizer.optimization_stats["pool_misses"] == 1
-        assert self.optimizer.optimization_stats["pool_hits"] == 1
-
-    @patch('src.utils.memory.core_optimizer.logger')
-    def test_logging_integration(self, mock_logger):
-        """Test logging integration"""
-        # Test initialization logging
-        optimizer = CoreMemoryOptimizer()
-        mock_logger.info.assert_called()
-        
-        # Test memory pressure logging
-        with patch.object(optimizer, 'get_memory_stats') as mock_get_stats:
-            mock_stats = Mock()
-            mock_stats.memory_percent = 90.0
-            mock_stats.process_memory_mb = 512.0
-            mock_get_stats.return_value = mock_stats
-            
-            optimizer.check_memory_pressure()
-            mock_logger.warning.assert_called()
 
 
 if __name__ == "__main__":

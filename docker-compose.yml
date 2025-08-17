@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   blacklist:
-    image: registry.jclee.me/jclee94/blacklist:latest
+    image: registry.jclee.me/blacklist:latest
     container_name: blacklist
     restart: unless-stopped
     ports:
@@ -16,7 +16,7 @@ services:
       - DATABASE_URL=sqlite:////app/instance/blacklist.db
       - REDIS_URL=redis://redis:6379/0
       - COLLECTION_ENABLED=true
-      - FORCE_DISABLE_COLLECTION=false
+      - FORCE_DISABLE_COLLECTION=true
       - MAX_AUTH_ATTEMPTS=5
       - BLOCK_DURATION_HOURS=1
     env_file:

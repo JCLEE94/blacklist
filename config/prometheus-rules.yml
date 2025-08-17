@@ -1,0 +1,249 @@
+---
+# Blacklist Management System - Prometheus Alerting Rules
+# 23개 알림 규칙 정의
+
+groups:
+  - name: blacklist.system
+    rules:
+      # 시스템 가용성 알림 (1-5)
+      - alert: BlacklistServiceDown
+        expr: blacklist_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Blacklist 서비스가 중단되었습니다"
+          description: "Blacklist 서비스가 {{ $value }}초 동안 응답하지 않습니다."
+
+      - alert: BlacklistHighResponseTime
+        expr: histogram_quantile(0.95, blacklist_http_request_duration_seconds_bucket) > 5.0
+        for: 2m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "HTTP 응답 시간이 높습니다"
+          description: "95% 응답 시간이 {{ $value }}초로 임계값 5초를 초과했습니다."
+
+      - alert: BlacklistHighMemoryUsage
+        expr: blacklist_memory_usage_bytes{type="rss"} / (1024*1024*1024) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "메모리 사용량이 높습니다"
+          description: "메모리 사용량이 {{ $value }}GB로 2GB 임계값을 초과했습니다."
+
+      - alert: BlacklistHighCPUUsage
+        expr: blacklist_cpu_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "CPU 사용률이 높습니다"
+          description: "CPU 사용률이 {{ $value }}%로 80% 임계값을 초과했습니다."
+
+      - alert: BlacklistDiskSpaceLow
+        expr: (blacklist_disk_usage_bytes{type="free"} / blacklist_disk_usage_bytes{type="total"}) * 100 < 10
+        for: 10m
+        labels:
+          severity: critical
+          component: storage
+        annotations:
+          summary: "디스크 공간이 부족합니다"
+          description: "사용 가능한 디스크 공간이 {{ $value }}%로 10% 임계값 이하입니다."
+
+  - name: blacklist.application
+    rules:
+      # 애플리케이션 성능 알림 (6-10)
+      - alert: BlacklistHighErrorRate
+        expr: rate(blacklist_errors_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "오류 발생률이 높습니다"
+          description: "오류 발생률이 분당 {{ $value }}회로 임계값 1회를 초과했습니다."
+
+      - alert: BlacklistCacheHitRateLow
+        expr: rate(blacklist_cache_operations_total{result="hit"}[5m]) / rate(blacklist_cache_operations_total[5m]) < 0.8
+        for: 5m
+        labels:
+          severity: info
+          component: cache
+        annotations:
+          summary: "캐시 적중률이 낮습니다"
+          description: "캐시 적중률이 {{ $value | humanizePercentage }}로 80% 임계값 이하입니다."
+
+      - alert: BlacklistDatabaseConnectionsHigh
+        expr: blacklist_database_connections{state="active"} > 10
+        for: 3m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "데이터베이스 연결 수가 많습니다"
+          description: "활성 DB 연결이 {{ $value }}개로 10개 임계값을 초과했습니다."
+
+      - alert: BlacklistRequestRateHigh
+        expr: rate(blacklist_http_requests_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: info
+          component: performance
+        annotations:
+          summary: "요청 처리율이 높습니다"
+          description: "요청 처리율이 분당 {{ $value }}회로 100회 임계값을 초과했습니다."
+
+      - alert: BlacklistUptime
+        expr: blacklist_uptime_seconds < 300
+        for: 0s
+        labels:
+          severity: info
+          component: system
+        annotations:
+          summary: "시스템이 최근에 재시작되었습니다"
+          description: "시스템 가동 시간이 {{ $value }}초입니다."
+
+  - name: blacklist.business
+    rules:
+      # 비즈니스 로직 알림 (11-15)
+      - alert: BlacklistIPCountZero
+        expr: blacklist_entries_total == 0
+        for: 10m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "블랙리스트 IP가 없습니다"
+          description: "블랙리스트에 등록된 IP가 {{ $value }}개입니다."
+
+      - alert: BlacklistDataStale
+        expr: blacklist_data_freshness_seconds > 86400
+        for: 0s
+        labels:
+          severity: warning
+          component: data
+        annotations:
+          summary: "데이터가 오래되었습니다"
+          description: "{{ $labels.source }} 데이터가 {{ $value | humanizeDuration }} 동안 업데이트되지 않았습니다."
+
+      - alert: BlacklistCollectionFailure
+        expr: rate(blacklist_collections_total{status="failure"}[1h]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          component: collection
+        annotations:
+          summary: "데이터 수집이 실패했습니다"
+          description: "{{ $labels.source }}에서 데이터 수집이 실패했습니다."
+
+      - alert: BlacklistAuthenticationFailure
+        expr: rate(blacklist_authentication_attempts_total{result="failure"}[5m]) > 3
+        for: 0s
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "인증 실패가 빈발하고 있습니다"
+          description: "{{ $labels.service }}에서 5분간 {{ $value }}회의 인증 실패가 발생했습니다."
+
+      - alert: BlacklistHighThreatLevel
+        expr: rate(blacklist_threats_detected_total{threat_level="high"}[1h]) > 10
+        for: 0s
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "높은 위험도 위협이 탐지되었습니다"
+          description: "지난 1시간 동안 {{ $value }}개의 높은 위험도 위협이 탐지되었습니다."
+
+  - name: blacklist.api
+    rules:
+      # API 관련 알림 (16-20)
+      - alert: BlacklistAPIErrorRate
+        expr: rate(blacklist_api_queries_total{result="error"}[5m]) / rate(blacklist_api_queries_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API 오류율이 높습니다"
+          description: "{{ $labels.endpoint }} API 오류율이 {{ $value | humanizePercentage }}로 10% 임계값을 초과했습니다."
+
+      - alert: BlacklistAPIResponseSlow
+        expr: histogram_quantile(0.95, rate(blacklist_http_request_duration_seconds_bucket{endpoint=~"/api/.*"}[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API 응답이 느립니다"
+          description: "API 95% 응답 시간이 {{ $value }}초로 1초 임계값을 초과했습니다."
+
+      - alert: BlacklistFortiGateAPIDown
+        expr: rate(blacklist_api_queries_total{endpoint="/api/fortigate",result="error"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: integration
+        annotations:
+          summary: "FortiGate API가 실패하고 있습니다"
+          description: "FortiGate 연동 API에서 오류가 발생하고 있습니다."
+
+      - alert: BlacklistHealthCheckFailing
+        expr: rate(blacklist_api_queries_total{endpoint="/health",result="error"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: monitoring
+        annotations:
+          summary: "헬스체크가 실패하고 있습니다"
+          description: "헬스체크 엔드포인트에서 오류가 발생하고 있습니다."
+
+      - alert: BlacklistMetricsEndpointDown
+        expr: up{job="blacklist"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "메트릭 수집이 실패했습니다"
+          description: "Prometheus가 메트릭을 수집할 수 없습니다."
+
+  - name: blacklist.collection
+    rules:
+      # 데이터 수집 알림 (21-23)
+      - alert: BlacklistCollectionSlow
+        expr: histogram_quantile(0.95, rate(blacklist_collection_duration_seconds_bucket[1h])) > 300
+        for: 0s
+        labels:
+          severity: warning
+          component: collection
+        annotations:
+          summary: "데이터 수집이 느립니다"
+          description: "{{ $labels.source }} 데이터 수집이 {{ $value }}초가 걸렸습니다 (임계값: 300초)."
+
+      - alert: BlacklistNoRecentCollection
+        expr: time() - max(blacklist_collections_total) > 3600
+        for: 0s
+        labels:
+          severity: warning
+          component: collection
+        annotations:
+          summary: "최근 데이터 수집이 없습니다"
+          description: "지난 1시간 동안 데이터 수집이 수행되지 않았습니다."
+
+      - alert: BlacklistCollectionItemsLow
+        expr: rate(blacklist_collection_items_total[1h]) < 1
+        for: 2h
+        labels:
+          severity: info
+          component: collection
+        annotations:
+          summary: "수집된 아이템이 적습니다"
+          description: "지난 2시간 동안 {{ $labels.source }}에서 수집된 아이템이 시간당 {{ $value }}개로 적습니다."

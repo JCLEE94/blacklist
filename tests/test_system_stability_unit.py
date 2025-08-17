@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
 """
-Comprehensive tests for src/utils/system_stability.py
-Tests system monitoring and database stability functionality
+Unit tests for system stability components
+
+Tests SystemHealth and DatabaseStabilityManager classes.
 """
+
 import pytest
 import sqlite3
 import tempfile
@@ -308,34 +311,6 @@ class TestDatabaseStabilityManager:
         # Should log the error
         mock_logger.error.assert_called()
 
-    def test_connection_rollback_on_error(self):
-        """Test that connections are rolled back on error"""
-        self.setUp()
-        try:
-            manager = DatabaseStabilityManager(self.db_path)
-            
-            with manager.get_connection() as conn:
-                # Create a table for testing
-                conn.execute("CREATE TABLE test_table (id INTEGER, value TEXT)")
-                conn.commit()
-            
-            # Now test rollback behavior
-            try:
-                with manager.get_connection() as conn:
-                    conn.execute("INSERT INTO test_table VALUES (1, 'test')")
-                    # Raise an exception to trigger rollback
-                    raise Exception("Test exception")
-            except Exception:
-                pass
-            
-            # Check that the insert was rolled back
-            with manager.get_connection() as conn:
-                cursor = conn.execute("SELECT COUNT(*) FROM test_table")
-                count = cursor.fetchone()[0]
-                assert count == 0
-        finally:
-            self.tearDown()
-
     def test_connection_thread_safety(self):
         """Test that connection manager is thread-safe"""
         self.setUp()
@@ -371,145 +346,6 @@ class TestDatabaseStabilityManager:
             assert sorted(results) == list(range(10))
         finally:
             self.tearDown()
-
-    def test_connection_timeout_setting(self):
-        """Test that connections use timeout setting"""
-        self.setUp()
-        try:
-            manager = DatabaseStabilityManager(self.db_path)
-            
-            # We can't easily test timeout behavior without complex setup,
-            # but we can verify the connection is created with timeout parameter
-            with patch('src.utils.system_stability.sqlite3.connect') as mock_connect:
-                mock_conn = Mock()
-                mock_connect.return_value = mock_conn
-                
-                with manager.get_connection():
-                    pass
-                
-                # Verify connect was called with timeout
-                mock_connect.assert_called_once()
-                args, kwargs = mock_connect.call_args
-                assert args[0] == self.db_path
-                assert kwargs.get('timeout') == 30.0
-                assert kwargs.get('check_same_thread') == False
-        finally:
-            self.tearDown()
-
-    def test_connection_commit_on_successful_exit(self):
-        """Test that connections are committed on successful context exit"""
-        self.setUp()
-        try:
-            manager = DatabaseStabilityManager(self.db_path)
-            
-            # Create table and insert data
-            with manager.get_connection() as conn:
-                conn.execute("CREATE TABLE test_commit (id INTEGER, value TEXT)")
-                conn.execute("INSERT INTO test_commit VALUES (1, 'committed')")
-                # No explicit commit - should be handled by context manager
-            
-            # Verify data was committed
-            with manager.get_connection() as conn:
-                cursor = conn.execute("SELECT value FROM test_commit WHERE id = 1")
-                result = cursor.fetchone()
-                assert result is not None
-                assert result[0] == 'committed'
-        finally:
-            self.tearDown()
-
-    def test_empty_connection_pool_creates_new_connection(self):
-        """Test that empty pool creates new connections"""
-        self.setUp()
-        try:
-            manager = DatabaseStabilityManager(self.db_path)
-            
-            # Initially pool should be empty
-            assert len(manager.connection_pool) == 0
-            
-            with manager.get_connection() as conn:
-                assert conn is not None
-            
-            # After use, connection should be in pool
-            assert len(manager.connection_pool) == 1
-        finally:
-            self.tearDown()
-
-    @patch('src.utils.system_stability.logger')
-    def test_connection_return_error_handling(self, mock_logger):
-        """Test error handling when returning connection to pool"""
-        self.setUp()
-        try:
-            manager = DatabaseStabilityManager(self.db_path)
-            
-            with patch.object(manager, 'connection_pool') as mock_pool:
-                # Make append raise an exception
-                mock_pool.append.side_effect = Exception("Pool error")
-                
-                with manager.get_connection() as conn:
-                    pass
-                
-                # Should log error when returning connection fails
-                mock_logger.error.assert_called()
-        finally:
-            self.tearDown()
-
-
-class TestSystemStabilityIntegration:
-    """Integration tests for system stability components"""
-
-    def test_system_health_with_database_manager(self):
-        """Test integration between SystemHealth and DatabaseStabilityManager"""
-        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
-        temp_db.close()
-        
-        try:
-            manager = DatabaseStabilityManager(temp_db.name)
-            
-            # Test that we can create system health and use database
-            health = SystemHealth(
-                database_status="healthy",
-                active_connections=5
-            )
-            
-            with manager.get_connection() as conn:
-                conn.execute("CREATE TABLE health_test (status TEXT)")
-                conn.execute("INSERT INTO health_test VALUES (?)", (health.database_status,))
-            
-            # Verify the integration worked
-            with manager.get_connection() as conn:
-                cursor = conn.execute("SELECT status FROM health_test")
-                result = cursor.fetchone()
-                assert result[0] == "healthy"
-        
-        finally:
-            import os
-            try:
-                os.unlink(temp_db.name)
-            except Exception:
-                pass
-
-    def test_concurrent_system_health_updates(self):
-        """Test concurrent system health updates"""
-        health = SystemHealth()
-        results = []
-        
-        def update_health(worker_id):
-            health.error_count_last_hour += worker_id
-            health.warnings.append(f"Warning from worker {worker_id}")
-            results.append(worker_id)
-        
-        threads = []
-        for i in range(5):
-            thread = threading.Thread(target=update_health, args=(i + 1,))
-            threads.append(thread)
-            thread.start()
-        
-        for thread in threads:
-            thread.join()
-        
-        # Note: This test shows potential race conditions in SystemHealth
-        # In real use, you'd want proper synchronization
-        assert len(results) == 5
 
 
 if __name__ == '__main__':

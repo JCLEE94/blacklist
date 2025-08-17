@@ -1,0 +1,154 @@
+# Default values for blacklist.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+
+image:
+  repository: registry.jclee.me/blacklist
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets:
+  - name: registry-credentials
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "32542"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 32542
+  nodePort:
+    enabled: true
+    port: 32542
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  hosts:
+    - host: blacklist.jclee.me
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: blacklist-tls
+      hosts:
+        - blacklist.jclee.me
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+persistence:
+  enabled: true
+  storageClass: "standard"
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  mountPath: /app/instance
+
+env:
+  FLASK_ENV: "production"
+  PORT: "32542"
+  REDIS_URL: "redis://blacklist-redis-master:6379/0"
+  FORCE_DISABLE_COLLECTION: "false"
+  COLLECTION_ENABLED: "true"
+  API_KEY_ENABLED: "true"
+  JWT_ENABLED: "true"
+  MAX_AUTH_ATTEMPTS: "5"
+  BLOCK_DURATION_HOURS: "1"
+  RESTART_PROTECTION: "false"
+
+secrets:
+  database_url: "postgresql://blacklist:changeme@postgres-service:5432/blacklist_db"
+  secret_key: "change-this-secret-key-in-production"
+  jwt_secret_key: "change-this-jwt-secret-key-in-production"
+  regtech_username: "your-regtech-username"
+  regtech_password: "your-regtech-password"
+  secudium_username: "your-secudium-username"
+  secudium_password: "your-secudium-password"
+  default_api_key: "blk_generated-key-here"
+  admin_username: "admin"
+  admin_password: "auto-generated-password"
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+  replica:
+    replicaCount: 0
+
+postgresql:
+  enabled: false  # Using external PostgreSQL
+  # If enabling internal PostgreSQL:
+  # auth:
+  #   database: blacklist_db
+  #   username: blacklist
+  #   password: changeme
+  # persistence:
+  #   enabled: true
+  #   size: 10Gi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3

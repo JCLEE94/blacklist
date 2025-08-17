@@ -180,6 +180,7 @@ class TableDefinitions:
                 message TEXT NOT NULL,
                 component TEXT,
                 details TEXT,  -- JSON 객체
+                additional_data TEXT,  -- JSON 객체 (추가 데이터)
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """
