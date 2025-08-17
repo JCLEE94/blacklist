@@ -10,8 +10,7 @@ import pytest
 from tests.test_collection_mocks import enable_collection_for_tests
 # Import modularized test components
 from tests.test_config import EnvironmentManagerHelper, create_test_app
-from tests.test_database import (_create_additional_test_tables,
-                                 init_test_database)
+# Database test imports removed - files deleted
 from tests.test_fixtures import (blacklist_manager, enhanced_mock_container,
                                  mock_cache, mock_redis, reset_environment,
                                  sample_ips, sample_test_data, temp_data_dir)
@@ -59,8 +58,6 @@ __all__ = [
     "app",
     "client",
     # Database fixtures
-    "init_test_database",
-    "_create_additional_test_tables",
     # Mock fixtures
     "mock_redis",
     "mock_cache",
