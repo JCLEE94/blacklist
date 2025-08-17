@@ -21,7 +21,7 @@ commonLabels:
   app.kubernetes.io/part-of: blacklist-system
 
 images:
-  - name: registry.jclee.me/jclee94/blacklist
+  - name: registry.jclee.me/blacklist
     newTag: latest
 
 replicas:
