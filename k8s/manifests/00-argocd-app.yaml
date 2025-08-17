@@ -5,9 +5,6 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: blacklist=registry.jclee.me/blacklist:latest
-    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   
@@ -15,9 +12,6 @@ spec:
     repoURL: https://github.com/JCLEE94/blacklist
     targetRevision: main
     path: k8s/manifests
-    kustomize:
-      images:
-        - registry.jclee.me/blacklist:latest
     
   destination:
     server: https://kubernetes.default.svc
