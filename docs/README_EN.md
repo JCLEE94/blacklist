@@ -278,7 +278,7 @@ kubectl get pods -n blacklist
 kubectl get deployment blacklist -n blacklist
 
 # Service status
-curl http://localhost:8541/health
+curl http://localhost:2542/health
 
 # CI/CD pipeline status
 gh run list --workflow=cicd.yml --limit=5

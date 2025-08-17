@@ -53,8 +53,8 @@ make status                        # Check status
 make logs                          # View logs
 make stop                          # Stop services
 
-# Local development (without Docker) - PORT 8541
-python3 app/main.py                    # Dev server (port 8541)
+# Local development (without Docker) - PORT 2542
+python3 app/main.py                    # Dev server (port 2542)
 python3 app/main.py --debug           # Debug mode with verbose logging
 make dev                           # Auto-reload development mode (FLASK_ENV=development)
 make run                           # Same as python3 app/main.py --debug
@@ -160,7 +160,7 @@ make clean                         # Remove __pycache__, *.pyc, coverage files
 
 ### Entry Points & Fallback Chain
 ```
-main.py                             # Main entry point (port 8541)
+main.py                             # Main entry point (port 2542)
   └─> src/core/app_compact.py       # Primary app factory with mixins
       └─> src/core/minimal_app.py   # Fallback minimal implementation
           └─> legacy routes          # Ultimate fallback
@@ -413,7 +413,7 @@ make argocd-status                 # Check ArgoCD app status
 
 ### Essential Variables (.env)
 ```bash
-# Application (NOTE: Docker uses port 32542, local dev uses 8541)
+# Application (NOTE: Docker uses port 32542, local dev uses 2542)
 PORT=32542                        # Docker port (docker-compose.yml)
 FLASK_ENV=production
 DATABASE_URL=sqlite:////app/instance/blacklist.db
@@ -475,9 +475,9 @@ REGISTRY_USERNAME=jclee94
 2. **Auth failures**: Check `.env` credentials and `FORCE_DISABLE_COLLECTION` setting
 3. **Redis connection**: Falls back to memory cache automatically
 4. **Database locked**: `python3 init_database.py --force`
-5. **Port conflicts**: Docker uses 32542, local dev uses 8541
+5. **Port conflicts**: Docker uses 32542, local dev uses 2542
    - Docker: `lsof -i :32542` or `netstat -tunlp | grep 32542`
-   - Local: `lsof -i :8541` or `netstat -tunlp | grep 8541`
+   - Local: `lsof -i :2542` or `netstat -tunlp | grep 2542`
 
 ### Debug Commands
 ```bash
@@ -488,12 +488,12 @@ docker-compose logs -f --tail=100 blacklist  # Last 100 lines with follow
 
 # Health check (adjust port based on environment)
 curl http://localhost:32542/health | jq      # Docker
-curl http://localhost:8541/health | jq       # Local dev
+curl http://localhost:2542/health | jq       # Local dev
 curl http://localhost:32542/api/health | jq  # Detailed health (Docker)
 
 # Collection status
 curl http://localhost:32542/api/collection/status | jq  # Docker
-curl http://localhost:8541/api/collection/status | jq   # Local
+curl http://localhost:2542/api/collection/status | jq   # Local
 
 # Test specific collector (standalone)
 python3 -m src.core.collectors.unified_collector  # Unified collector test

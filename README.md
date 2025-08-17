@@ -141,7 +141,7 @@ black src/ tests/                  # 포맷팅
 bandit -r src/                     # 보안 스캔
 
 # 로컬 실행
-python3 app/main.py --debug       # 개발 서버 (포트 8541)
+python3 app/main.py --debug       # 개발 서버 (포트 2542)
 docker-compose up -d               # Docker 환경 (포트 32542)
 ```
 

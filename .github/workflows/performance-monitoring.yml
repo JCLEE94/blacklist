@@ -45,7 +45,7 @@ jobs:
           sleep 10
           
           # Verify app is running
-          curl -f http://localhost:8541/health || exit 1
+          curl -f http://localhost:2542/health || exit 1
         env:
           FORCE_DISABLE_COLLECTION: true
           COLLECTION_ENABLED: false
@@ -59,7 +59,7 @@ jobs:
           import statistics
           import json
           
-          BASE_URL = "http://localhost:8541"
+          BASE_URL = "http://localhost:2542"
           
           def test_endpoint(endpoint, num_requests=100):
               times = []
@@ -124,7 +124,7 @@ jobs:
               except Exception as e:
                   return {"status": 0, "time_ms": 5000, "success": False, "error": str(e)}
           
-          url = "http://localhost:8541/health"
+          url = "http://localhost:2542/health"
           concurrent_users = 20
           requests_per_user = 10
           

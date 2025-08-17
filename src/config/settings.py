@@ -52,11 +52,11 @@ class Settings:
 
     @property
     def port(self) -> int:
-        return int(os.getenv("PORT", "8541"))
+        return int(os.getenv("PORT", "2542"))
 
     @property
     def dev_port(self) -> int:
-        return int(os.getenv("DEV_PORT", "8541"))
+        return int(os.getenv("DEV_PORT", "2542"))
 
     @property
     def prod_port(self) -> int:

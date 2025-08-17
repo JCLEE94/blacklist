@@ -81,7 +81,7 @@ make init
 python3 scripts/init_security.py
 
 # Start development server
-python3 app/main.py --debug  # Port 8541
+python3 app/main.py --debug  # Port 2542
 ```
 
 ---
@@ -327,7 +327,7 @@ docker pull ghcr.io/jclee94/blacklist:latest
 ```bash
 # Check port usage
 lsof -i :32542  # Docker port
-lsof -i :8541   # Local dev port
+lsof -i :2542   # Local dev port
 
 # Kill conflicting processes
 sudo kill -9 <PID>

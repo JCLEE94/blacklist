@@ -16,7 +16,7 @@ current_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(current_dir))
 
 
-def test_metrics_endpoint(base_url="http://localhost:8541"):
+def test_metrics_endpoint(base_url="http://localhost:2542"):
     """메트릭 엔드포인트 테스트"""
     print("🔍 Prometheus 메트릭 시스템 테스트 시작")
     print("=" * 60)
@@ -91,7 +91,7 @@ def test_metrics_endpoint(base_url="http://localhost:8541"):
         return False
 
 
-def test_api_endpoints(base_url="http://localhost:8541"):
+def test_api_endpoints(base_url="http://localhost:2542"):
     """API 엔드포인트들을 호출하여 메트릭 생성 유도"""
     print("\n4. API 엔드포인트 테스트 (메트릭 생성 유도)...")
     print("-" * 40)
@@ -117,7 +117,7 @@ def test_api_endpoints(base_url="http://localhost:8541"):
     time.sleep(2)
 
 
-def analyze_metrics_after_requests(base_url="http://localhost:8541"):
+def analyze_metrics_after_requests(base_url="http://localhost:2542"):
     """요청 후 메트릭 변화 분석"""
     print("\n5. 요청 후 메트릭 분석...")
     print("-" * 40)
@@ -204,7 +204,7 @@ def main():
     print("=" * 60)
     
     # 기본 설정
-    base_url = "http://localhost:8541"  # 로컬 개발 서버
+    base_url = "http://localhost:2542"  # 로컬 개발 서버
     
     # 도커 서버도 테스트해보기
     if len(sys.argv) > 1 and sys.argv[1] == "--docker":

@@ -321,7 +321,7 @@ class CoreOperationsMixin:
         try:
             self.logger.info("🔥 최초 실행 감지 - 수집은 수동으로 활성화해주세요")
             self.logger.info(
-                "📋 웹 UI (http://localhost:8541)에서 수집 활성화 후 데이터 수집을 시작할 수 있습니다"
+                "📋 웹 UI (http://localhost:2542)에서 수집 활성화 후 데이터 수집을 시작할 수 있습니다"
             )
             self.logger.info(
                 "🔧 환경 변수 REGTECH_USERNAME, REGTECH_PASSWORD, SECUDIUM_USERNAME, SECUDIUM_PASSWORD를 설정하세요"

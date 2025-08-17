@@ -14,7 +14,7 @@ The Blacklist Management System provides a comprehensive REST API for threat int
 
 ### Base URL
 - **Docker**: `http://localhost:32542`
-- **Local Development**: `http://localhost:8541`
+- **Local Development**: `http://localhost:2542`
 
 ### API Version
 - **Current Version**: v2
