@@ -5,7 +5,7 @@ kind: Kustomization
 namespace: blacklist
 
 resources:
-  # Note: 00-argocd-app.yaml is applied separately
+  # IMPORTANT: 00-argocd-app.yaml is NOT included here (applied separately)
   - 01-namespace.yaml
   - 02-configmap.yaml
   - 03-secret.yaml
