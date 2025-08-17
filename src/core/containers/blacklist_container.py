@@ -105,33 +105,45 @@ class BlacklistContainer(ServiceContainer):
         except Exception as e:
             logger.warning(f"Collection Manager registration failed: {e}")
 
-        # REGTECH Collector - Only use the working Simple collector
+        # Database-driven Collector (통합 수집 시스템)
         try:
-            from ..regtech_simple_collector import RegtechSimpleCollector
+            from ..collection_db_collector import DatabaseCollectionSystem
+
+            self.register(
+                "db_collector",
+                DatabaseCollectionSystem,
+                factory=lambda: DatabaseCollectionSystem(),
+                dependencies={},
+            )
+            logger.info("Database-driven Collector registered in container")
+        except Exception as e:
+            logger.error(f"Database Collector registration failed: {e}")
+
+        # REGTECH Collector (existing integration)
+        try:
+            from ..collectors.regtech_collector import RegtechCollector
 
             self.register(
                 "regtech_collector",
-                RegtechSimpleCollector,
-                factory=lambda: RegtechSimpleCollector("data"),
+                RegtechCollector,
+                factory=lambda: RegtechCollector(None),  # Uses DB config
                 dependencies={},
             )
-            logger.info(
-                "Simple REGTECH Collector registered in container (working version)"
-            )
+            logger.info("REGTECH Collector registered in container (DB integrated)")
         except Exception as e:
-            logger.error(f"Simple REGTECH Collector registration failed: {e}")
+            logger.warning(f"REGTECH Collector registration failed: {e}")
 
-        # SECUDIUM Collector
+        # SECUDIUM Collector (existing integration)
         try:
-            from ..secudium_collector import SecudiumCollector
+            from ..collectors.secudium_collector import SecudiumCollector
 
             self.register(
                 "secudium_collector",
                 SecudiumCollector,
-                factory=lambda: SecudiumCollector("data"),
+                factory=lambda: SecudiumCollector(None),  # Uses DB config
                 dependencies={},
             )
-            logger.info("SECUDIUM Collector registered in container")
+            logger.info("SECUDIUM Collector registered in container (DB integrated)")
         except Exception as e:
             logger.warning(f"SECUDIUM Collector registration failed: {e}")
 

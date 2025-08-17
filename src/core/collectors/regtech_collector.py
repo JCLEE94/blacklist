@@ -30,10 +30,37 @@ class RegtechCollector(BaseCollector):
     def __init__(self, config: CollectionConfig):
         super().__init__("REGTECH", config)
 
-        # REGTECH 특화 설정
-        self.base_url = "https://regtech.fsec.or.kr"
-        self.username = os.getenv("REGTECH_USERNAME")
-        self.password = os.getenv("REGTECH_PASSWORD")
+        # DB에서 설정 로드
+        try:
+            from ..database.collection_settings import CollectionSettingsDB
+            self.db = CollectionSettingsDB()
+            
+            # DB에서 REGTECH 설정 가져오기
+            source_config = self.db.get_source_config("regtech")
+            credentials = self.db.get_credentials("regtech")
+            
+            if source_config:
+                self.base_url = source_config["base_url"]
+                self.config_data = source_config["config"]
+            else:
+                # 기본값 사용
+                self.base_url = "https://regtech.fsec.or.kr"
+                self.config_data = {}
+            
+            if credentials:
+                self.username = credentials["username"]
+                self.password = credentials["password"]
+            else:
+                # 환경변수 fallback
+                self.username = os.getenv("REGTECH_USERNAME")
+                self.password = os.getenv("REGTECH_PASSWORD")
+                
+        except ImportError:
+            # DB 없으면 기본값/환경변수 사용
+            self.base_url = "https://regtech.fsec.or.kr"
+            self.username = os.getenv("REGTECH_USERNAME")
+            self.password = os.getenv("REGTECH_PASSWORD")
+            self.config_data = {}
 
         # 에러 핸들링 설정
         self.max_page_errors = 5  # 연속 페이지 에러 허용 횟수

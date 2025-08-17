@@ -11,7 +11,13 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
-from ..regtech_simple_collector import RegtechSimpleCollector as RegtechCollector
+# Database-driven collection system (통합 수집 시스템)
+try:
+    from ..collection_db_collector import DatabaseCollectionSystem
+    from ..collectors.regtech_collector import RegtechCollector
+except ImportError:
+    DatabaseCollectionSystem = None
+    RegtechCollector = None
 
 logger = logging.getLogger(__name__)
 
@@ -83,10 +89,18 @@ class CoreOperationsMixin:
         """핵심 컴포넌트 초기화"""
         self.logger.info("⚙️ 핵심 컴포넌트 초기화 중...")
 
-        # REGTECH 수집기 초기화
-        if self.config["regtech_enabled"]:
-            self._components["regtech"] = RegtechCollector("data")
-            self.logger.info("✅ REGTECH 수집기 초기화 완료")
+        # Database-driven collection system 초기화
+        if DatabaseCollectionSystem:
+            self._components["db_collector"] = DatabaseCollectionSystem()
+            self.logger.info("✅ 통합 수집 시스템 초기화 완료")
+        
+        # REGTECH 수집기 초기화 (호환성)
+        if self.config.get("regtech_enabled") and RegtechCollector:
+            try:
+                self._components["regtech"] = RegtechCollector(None)  # DB config 사용
+                self.logger.info("✅ REGTECH 수집기 초기화 완료 (DB 통합)")
+            except Exception as e:
+                self.logger.warning(f"REGTECH 수집기 초기화 실패: {e}")
 
         self.logger.info("✅ 모든 컴포넌트 초기화 완료")
 

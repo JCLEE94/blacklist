@@ -14,7 +14,12 @@ from flask import Blueprint, current_app, jsonify, render_template, request
 from ..advanced_analytics import AdvancedAnalytics
 from ..collection_dashboard import CollectionDashboard
 from ..data_processor import DataProcessor
-from ..regtech_simple_collector import RegtechSimpleCollector
+try:
+    from ..collectors.regtech_collector import RegtechCollector
+    from ..collection_db_collector import DatabaseCollectionSystem
+except ImportError:
+    RegtechCollector = None
+    DatabaseCollectionSystem = None
 
 logger = logging.getLogger(__name__)
 

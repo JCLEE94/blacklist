@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """
-통합 블랙리스트 서비스 - 수집 관련 기능
+통합 블랙리스트 서비스 - 수집 관련 기능 (DB 기반)
 데이터 수집, 트리거, 활성화/비활성화 등의 수집 전용 기능
+UI에서 저장된 DB 설정을 활용
 """
 
 import asyncio
+import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
+
+# DB 설정 클래스 임포트
+try:
+    from ..database.collection_settings import CollectionSettingsDB
+    DB_AVAILABLE = True
+except ImportError:
+    DB_AVAILABLE = False
 
 
 # Collection service mixin for UnifiedBlacklistService

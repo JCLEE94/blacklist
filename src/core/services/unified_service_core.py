@@ -107,24 +107,24 @@ class UnifiedBlacklistService(
             self._perform_initial_collection_now()
 
     def _sync_component_init(self):
-        """동기적 컴포넌트 초기화"""
+        """동기적 컴포넌트 초기화 - DB 기반 수집 시스템 사용"""
         try:
-            from ..regtech_simple_collector import (
-                RegtechSimpleCollector as RegtechCollector,
-            )
+            # Database-driven collection system 초기화
+            from ..collection_db_collector import DatabaseCollectionSystem
 
-            # REGTECH 수집기 초기화
-            if self.config["regtech_enabled"]:
-                import os
+            self._components["db_collector"] = DatabaseCollectionSystem()
+            self.logger.info("✅ 통합 수집 시스템 동기 초기화 완료")
 
-                username = os.getenv("REGTECH_USERNAME", "")
-                password = os.getenv("REGTECH_PASSWORD", "")
-
-                if username and password:
-                    self._components["regtech"] = RegtechCollector(username, password)
-                    self.logger.info("✅ REGTECH 수집기 동기 초기화 완료")
-                else:
-                    self.logger.warning("REGTECH 자격증명이 설정되지 않았습니다")
+            # REGTECH 수집기 호환성 (DB 설정 사용)
+            try:
+                from ..collectors.regtech_collector import RegtechCollector
+                
+                if self.config.get("regtech_enabled"):
+                    self._components["regtech"] = RegtechCollector(None)  # DB config 사용
+                    self.logger.info("✅ REGTECH 수집기 동기 초기화 완료 (DB 통합)")
+            except Exception as e:
+                self.logger.warning(f"REGTECH 수집기 초기화 실패: {e}")
+                
         except Exception as e:
             self.logger.error(f"동기 컴포넌트 초기화 실패: {e}")
 

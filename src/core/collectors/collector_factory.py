@@ -8,7 +8,7 @@ import os
 from typing import TYPE_CHECKING, Dict, Optional
 
 if TYPE_CHECKING:
-    from ..secudium_collector import SecudiumCollector
+    from ..collectors.secudium_collector import SecudiumCollector
 
 from .regtech_collector import RegtechCollector
 from .unified_collector import CollectionConfig, UnifiedCollectionManager
@@ -87,7 +87,7 @@ class CollectorFactory:
     def _create_secudium_collector(self) -> Optional["SecudiumCollector"]:
         """SECUDIUM 수집기 생성"""
         try:
-            from ..secudium_collector import SecudiumCollector
+            from ..collectors.secudium_collector import SecudiumCollector
 
             # 설정 생성 (비활성화 상태)
             config = CollectionConfig(
