@@ -98,12 +98,22 @@ spec:
                 secretKeyRef:
                   name: blacklist-credentials
                   key: secudium-password
-            - name: REGTECH_BASE_URL
+            - name: SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: blacklist-credentials
-                  key: regtech-base-url
+                  key: secret-key
                   optional: true
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: blacklist-credentials
+                  key: jwt-secret-key
+                  optional: true
+            - name: API_KEY_ENABLED
+              value: "true"
+            - name: JWT_ENABLED
+              value: "true"
           volumeMounts:
             {{- if .Values.persistence.data.enabled }}
             - name: data

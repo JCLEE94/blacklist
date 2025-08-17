@@ -1,8 +1,8 @@
 # Production values for blacklist chart
-replicaCount: 3
+replicaCount: 2
 
 image:
-  repository: registry.jclee.me/blacklist
+  repository: registry.jclee.me/jclee94/blacklist
   pullPolicy: Always
   tag: "latest"
 
@@ -48,22 +48,22 @@ resources:
 
 autoscaling:
   enabled: true
-  minReplicas: 3
-  maxReplicas: 15
+  minReplicas: 2
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 80
 
 persistence:
   data:
     enabled: true
-    storageClass: "fast-ssd"
-    size: 5Gi
+    storageClass: "local-path"
+    size: 2Gi
     accessModes:
       - ReadWriteOnce
   logs:
     enabled: true
-    storageClass: "fast-ssd"
-    size: 2Gi
+    storageClass: "local-path"
+    size: 1Gi
     accessModes:
       - ReadWriteOnce
 
@@ -91,7 +91,7 @@ redis:
     persistence:
       enabled: true
       size: 1Gi
-      storageClass: "fast-ssd"
+      storageClass: "local-path"
     resources:
       limits:
         cpu: 500m

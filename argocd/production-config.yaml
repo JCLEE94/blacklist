@@ -1,6 +1,6 @@
 # Blacklist Production Configuration
 
-## External URLs
+## Service Endpoints
 service:
   external_url: https://blacklist.jclee.me
   internal_endpoint: http://192.168.50.110:32542
@@ -9,29 +9,25 @@ service:
 argocd:
   server: https://argo.jclee.me
   namespace: argocd
+  application: blacklist
   
 ## Registry Configuration  
 registry:
   url: registry.jclee.me
-  username: admin
-  password: bingogo1
-  
-## ChartMuseum Configuration
-chartmuseum:
-  url: https://charts.jclee.me
-  username: admin
-  password: bingogo1
+  namespace: jclee94
+  repository: blacklist
   
 ## Kubernetes Configuration
 kubernetes:
   namespace: blacklist
-  deployment_name: blacklist
-  service_port: 32542
-  production_server: 192.168.50.110
+  cluster_server: https://kubernetes.default.svc
+  production_node: 192.168.50.110
   
-## Application Secrets
-app:
-  regtech_username: nextrade
-  regtech_password: your-regtech-password
-  secudium_username: nextrade
-  secudium_password: your-secudium-password
+## Deployment Settings
+deployment:
+  name: blacklist
+  service_port: 32542
+  replicas: 2
+  autoscaling:
+    min: 2
+    max: 10

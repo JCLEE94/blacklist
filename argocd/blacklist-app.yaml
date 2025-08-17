@@ -3,7 +3,8 @@ kind: Application
 metadata:
   name: blacklist
   namespace: argocd
-  # ArgoCD 자동 동기화 활성화
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
@@ -16,13 +17,14 @@ spec:
     helm:
       valueFiles:
       - values.yaml
+      - values-production.yaml
       parameters:
       - name: image.repository
-        value: registry.jclee.me/blacklist
+        value: registry.jclee.me/jclee94/blacklist
       - name: image.tag
         value: latest
       - name: image.pullPolicy
-        value: Always  # 항상 최신 이미지 풀
+        value: Always
         
   destination:
     server: https://kubernetes.default.svc
