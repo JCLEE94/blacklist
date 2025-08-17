@@ -146,12 +146,8 @@ jobs:
           max_attempts: 2
           retry_wait_seconds: 30
           command: |
-            pytest -v -n auto --cov=src --cov-report=xml --cov-report=html \
-              --html=test-report.html --json-report --json-report-file=test-report.json \
-              --tb=short || \
-            pytest -v --cov=src --cov-report=xml --cov-report=html \
-              --html=test-report.html --json-report --json-report-file=test-report.json \
-              --tb=short
+            pytest -n auto || \
+            pytest
           polling_interval_seconds: 1
           warning_on_retry: true
           continue_on_error: false
@@ -165,17 +161,17 @@ jobs:
         with:
           name: test-reports
           path: |
-            test-report.html
-            test-report.json
-            htmlcov/
-            coverage.xml
+            .dev-reports/test-reports/report.html
+            .dev-reports/test-reports/report.json
+            .dev-reports/htmlcov/
+            .dev-reports/test-reports/coverage.xml
           retention-days: 30
           
       - name: Extract coverage
         id: coverage
         run: |
-          if [ -f coverage.xml ]; then
-            COVERAGE=$(python -c "import xml.etree.ElementTree as ET; print(ET.parse('coverage.xml').getroot().get('line-rate', '0'))")
+          if [ -f .dev-reports/test-reports/coverage.xml ]; then
+            COVERAGE=$(python -c "import xml.etree.ElementTree as ET; print(f\"{float(ET.parse('.dev-reports/test-reports/coverage.xml').getroot().get('line-rate', '0')) * 100:.1f}\")")
             echo "percentage=${COVERAGE}" >> $GITHUB_OUTPUT
           else
             echo "percentage=0" >> $GITHUB_OUTPUT
