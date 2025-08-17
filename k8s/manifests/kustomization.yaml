@@ -16,9 +16,10 @@ resources:
   - 08-ingress.yaml
   - 09-redis.yaml
 
-commonLabels:
-  app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: blacklist-system
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/part-of: blacklist-system
 
 images:
   - name: registry.jclee.me/blacklist
@@ -27,9 +28,3 @@ images:
 replicas:
   - name: blacklist
     count: 1
-
-configMapGenerator:
-  - name: blacklist-config
-    behavior: merge
-    envs:
-      - config.env
