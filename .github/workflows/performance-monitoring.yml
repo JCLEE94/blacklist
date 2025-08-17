@@ -37,15 +37,27 @@ jobs:
 
       - name: Start application for testing
         run: |
-          python3 app/main.py --debug &
+          # Initialize database first
+          python3 init_database.py || echo "Database initialization failed, continuing..."
+          
+          # Start application
+          python3 main.py --debug &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           
-          # Wait for app to start
-          sleep 10
+          # Wait for app to start with better timeout
+          echo "Waiting for application to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:2542/health > /dev/null 2>&1; then
+              echo "Application started successfully"
+              break
+            fi
+            echo "Attempt $i/30: Application not ready yet..."
+            sleep 2
+          done
           
           # Verify app is running
-          curl -f http://localhost:2542/health || exit 1
+          curl -f http://localhost:2542/health || (echo "Application failed to start"; ps aux | grep python; exit 1)
         env:
           FORCE_DISABLE_COLLECTION: true
           COLLECTION_ENABLED: false
@@ -273,7 +285,7 @@ jobs:
         run: |
           # Start container
           docker run -d --name perf-test \
-            -p 8080:2541 \
+            -p 8080:2542 \
             -e FORCE_DISABLE_COLLECTION=true \
             -e COLLECTION_ENABLED=false \
             performance-test:latest

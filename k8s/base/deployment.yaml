@@ -23,22 +23,22 @@ spec:
         version: v1
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "32542"
+        prometheus.io/port: "2542"
         prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:latest
+        image: ghcr.io/jclee94/blacklist:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 32542
+        - containerPort: 2542
           name: http
           protocol: TCP
         env:
         - name: FLASK_ENV
           value: "production"
         - name: PORT
-          value: "32542"
+          value: "2542"
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
@@ -94,7 +94,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 32542
+            port: 2542
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -102,7 +102,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /ready
-            port: 32542
+            port: 2542
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3

@@ -11,7 +11,7 @@ spec:
     app: blacklist
   ports:
   - port: 80
-    targetPort: 32542
+    targetPort: 2542
     protocol: TCP
     name: http
 ---
@@ -27,8 +27,8 @@ spec:
   selector:
     app: blacklist
   ports:
-  - port: 32542
-    targetPort: 32542
+  - port: 2542
+    targetPort: 2542
     nodePort: 32542
     protocol: TCP
     name: http
