@@ -1,0 +1,31 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blacklist-config
+  namespace: blacklist
+  labels:
+    app.kubernetes.io/name: blacklist
+    app.kubernetes.io/component: configuration
+data:
+  # Application Configuration
+  FLASK_ENV: "production"
+  PORT: "2542"
+  DATABASE_URL: "sqlite:////app/data/blacklist.db"
+  REDIS_URL: "redis://blacklist-redis:6379/0"
+  
+  # Collection Settings
+  COLLECTION_ENABLED: "true"
+  FORCE_DISABLE_COLLECTION: "false"
+  
+  # Security Settings
+  MAX_AUTH_ATTEMPTS: "5"
+  BLOCK_DURATION_HOURS: "1"
+  
+  # Monitoring
+  PROMETHEUS_ENABLED: "true"
+  METRICS_PATH: "/metrics"
+  
+  # Logging
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"

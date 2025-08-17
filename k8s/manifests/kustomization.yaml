@@ -1,0 +1,34 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: blacklist
+
+resources:
+  - 01-namespace.yaml
+  - 02-configmap.yaml
+  - 03-secret.yaml
+  - 04-pvc.yaml
+  - 05-serviceaccount.yaml
+  - 06-deployment.yaml
+  - 07-service.yaml
+  - 08-ingress.yaml
+  - 09-redis.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: blacklist-system
+
+images:
+  - name: registry.jclee.me/jclee94/blacklist
+    newTag: latest
+
+replicas:
+  - name: blacklist
+    count: 1
+
+configMapGenerator:
+  - name: blacklist-config
+    behavior: merge
+    envs:
+      - config.env

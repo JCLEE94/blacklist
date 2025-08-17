@@ -5,55 +5,45 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
   
   source:
     repoURL: https://github.com/JCLEE94/blacklist
     targetRevision: main
-    path: chart/blacklist
-    helm:
-      valueFiles:
-      - values.yaml
-      - values-production.yaml
-      parameters:
-      - name: image.repository
-        value: registry.jclee.me/jclee94/blacklist
-      - name: image.tag
-        value: 62bfd33
-      - name: image.pullPolicy
-        value: Always
-        
+    path: k8s/manifests
+    
   destination:
     server: https://kubernetes.default.svc
     namespace: blacklist
     
   syncPolicy:
-    # 자동 동기화 활성화
     automated:
-      prune: true      # 불필요한 리소스 자동 정리
-      selfHeal: true   # 드리프트 자동 복구
+      prune: true
+      selfHeal: true
       allowEmpty: false
     syncOptions:
-    - CreateNamespace=true
-    - PrunePropagationPolicy=foreground
-    - PruneLast=true
-    - RespectIgnoreDifferences=true
-    
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true
     retry:
       limit: 5
       backoff:
         duration: 5s
         factor: 2
-        maxDuration: 3m0s
+        maxDuration: 3m
         
-  # 헬스체크 설정
   ignoreDifferences:
-  - group: apps
-    kind: Deployment
-    managedFieldsManagers:
-    - kube-controller-manager
-    
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Service
+      jsonPointers:
+        - /spec/clusterIP
+        - /spec/clusterIPs
+        
   revisionHistoryLimit: 3
