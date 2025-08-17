@@ -6,7 +6,7 @@ services:
     container_name: blacklist
     restart: unless-stopped
     ports:
-      - "32542:2541"
+      - "2542:2541"
     volumes:
       - ./data:/app/instance
       - ./logs:/app/logs
