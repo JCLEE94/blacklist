@@ -18,7 +18,7 @@ spec:
       - values.yaml
       parameters:
       - name: image.repository
-        value: ghcr.io/jclee94/blacklist
+        value: registry.jclee.me/blacklist
       - name: image.tag
         value: latest
       - name: image.pullPolicy

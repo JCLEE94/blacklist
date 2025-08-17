@@ -5,7 +5,7 @@
 차세대 위협 인텔리전스 플랫폼 - JWT 보안, V2 API, GitHub Pages 포트폴리오 완비
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-jclee94.github.io-blue?style=for-the-badge&logo=github-pages)](https://jclee94.github.io/blacklist/)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io-2496ED?style=for-the-badge&logo=docker)](https://ghcr.io/jclee94/blacklist)
+[![Docker](https://img.shields.io/badge/Docker-registry.jclee.me-2496ED?style=for-the-badge&logo=docker)](https://registry.jclee.me)
 [![GitOps](https://img.shields.io/badge/GitOps-9.5%2F10-success?style=for-the-badge)](https://github.com/JCLEE94/blacklist/actions)
 
 ---
@@ -13,8 +13,8 @@
 ## 🚀 Quick Start
 
 ```bash
-# GitHub Container Registry (New!)
-docker run -p 32542:2541 ghcr.io/jclee94/blacklist:latest
+# Private Registry
+docker run -p 32542:2541 registry.jclee.me/blacklist:latest
 
 # 포트폴리오 사이트 확인
 open https://jclee94.github.io/blacklist/
@@ -30,7 +30,7 @@ python3 scripts/init_security.py
 ## 📊 시스템 현황
 
 - **포트폴리오**: [`jclee94.github.io/blacklist`](https://jclee94.github.io/blacklist/) (GitHub Pages)
-- **컨테이너**: `ghcr.io/jclee94/blacklist` (GitHub Container Registry)  
+- **컨테이너**: `registry.jclee.me/blacklist` (Private Registry)  
 - **아키텍처**: Flask + SQLite + Redis + JWT 보안 시스템
 - **수집**: REGTECH/SECUDIUM 자동화 + V2 API 완료
 - **배포**: GitOps (Push → GitHub Actions → 자동 배포)
@@ -60,7 +60,7 @@ python3 scripts/init_security.py
 # 코드 수정 → 자동 배포
 git commit -m "feat: 새 기능 추가"
 git push origin main
-# → GitHub Actions → Docker Build → ghcr.io → GitHub Pages
+# → GitHub Actions → Docker Build → registry.jclee.me → GitHub Pages
 ```
 
 ## 🏗️ 기술 스택
@@ -77,7 +77,7 @@ git push origin main
 - 실시간 성능 메트릭 차트
 
 **DevOps**
-- GitHub Container Registry (ghcr.io)
+- Private Registry (registry.jclee.me)
 - GitHub Actions CI/CD (ubuntu-latest)
 - Docker Multi-stage builds
 - Automated security scanning (Trivy + Bandit)
@@ -160,4 +160,4 @@ python3 scripts/create-offline-package.py
 
 ---
 
-**Made with ❤️ by JCLEE** | [Portfolio Demo](https://jclee94.github.io/blacklist/) | [Docker Image](https://ghcr.io/jclee94/blacklist)
+**Made with ❤️ by JCLEE** | [Portfolio Demo](https://jclee94.github.io/blacklist/) | [Docker Image](https://registry.jclee.me/blacklist)

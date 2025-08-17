@@ -11,7 +11,7 @@ import datetime
 class PipelineConfig:
     def __init__(
         self,
-        registry="ghcr.io",
+        registry="registry.jclee.me",
         image_name="blacklist",
         namespace="blacklist",
         dry_run=False,

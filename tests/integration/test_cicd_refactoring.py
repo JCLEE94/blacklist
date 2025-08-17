@@ -51,7 +51,7 @@ class TestPipelineConfig:
         """기본 설정값 테스트"""
         config = PipelineConfig()
 
-        assert config.registry == "ghcr.io"
+        assert config.registry == "registry.jclee.me"
         assert config.image_name == "blacklist"
         assert config.namespace == "blacklist"
         assert config.dry_run is False

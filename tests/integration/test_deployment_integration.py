@@ -253,12 +253,12 @@ def test_registry_configuration():
 
     assert len(registry_configs) > 0, "No registry configuration found"
 
-    # ghcr.io GitHub Container Registry 사용 확인
-    using_github_registry = any(
-        "ghcr.io" in config for config in registry_configs
+    # registry.jclee.me Private Registry 사용 확인
+    using_private_registry = any(
+        "registry.jclee.me" in config for config in registry_configs
     )
-    if using_github_registry:
-        print("✅ GitHub Container Registry (ghcr.io) configured")
+    if using_private_registry:
+        print("✅ Private Registry (registry.jclee.me) configured")
 
     return True
 

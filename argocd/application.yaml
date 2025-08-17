@@ -42,4 +42,4 @@ spec:
     - name: "Owner"
       value: "jclee94"
     - name: "Registry"
-      value: "ghcr.io"
+      value: "registry.jclee.me"

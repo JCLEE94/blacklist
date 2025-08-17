@@ -8,10 +8,10 @@ Complete deployment guide for Blacklist Management System with modern GitOps pip
 
 ## 🌟 What's New in v1.0.35
 
-### 🐳 GitHub Container Registry Migration
-- **New Registry**: `ghcr.io/jclee94/blacklist` 
+### 🐳 Private Registry Configuration
+- **Registry**: `registry.jclee.me/blacklist` 
 - **Enhanced Security**: Automatic vulnerability scanning
-- **Better Integration**: Native GitHub Actions support
+- **Private Access**: Secure private registry integration
 
 ### 🎨 GitHub Pages Portfolio
 - **Live Site**: https://jclee94.github.io/blacklist/
@@ -54,10 +54,10 @@ helm version            # Helm 3.0+
 
 ## 🚀 Quick Deployment
 
-### 1. GitHub Container Registry (Recommended)
+### 1. Private Registry (Recommended)
 ```bash
 # Pull latest version
-docker pull ghcr.io/jclee94/blacklist:latest
+docker pull registry.jclee.me/jclee94/blacklist:latest
 
 # Run with Docker Compose
 git clone https://github.com/JCLEE94/blacklist
@@ -91,14 +91,14 @@ python3 app/main.py --debug  # Port 2542
 ### Automated Deployment Flow
 ```
 Code Push → GitHub Actions (ubuntu-latest) → Security Scan → 
-Docker Build → ghcr.io Push → GitHub Pages Deploy → Health Check
+Docker Build → registry.jclee.me Push → GitHub Pages Deploy → Health Check
 ```
 
 ### GitHub Actions Configuration
 The `.github/workflows/main-deploy.yml` handles:
 - **Security Scanning**: Trivy + Bandit
 - **Docker Building**: Multi-stage builds
-- **Registry Push**: GitHub Container Registry
+- **Registry Push**: Private Registry
 - **Portfolio Deploy**: Automatic GitHub Pages update
 
 ### Triggering Deployments
@@ -122,7 +122,7 @@ gh workflow run "Main Deploy" --ref main
 version: '3.8'
 services:
   blacklist:
-    image: ghcr.io/jclee94/blacklist:latest
+    image: registry.jclee.me/jclee94/blacklist:latest
     ports:
       - "32542:2541"
     environment:
@@ -176,7 +176,7 @@ SECUDIUM_USERNAME=your-username
 SECUDIUM_PASSWORD=your-password
 
 # Container Registry
-REGISTRY_URL=ghcr.io
+REGISTRY_URL=registry.jclee.me
 REGISTRY_USERNAME=jclee94
 ```
 
@@ -316,11 +316,11 @@ git push origin main
 
 #### 1. Container Registry Authentication
 ```bash
-# Login to GitHub Container Registry
-echo $GITHUB_TOKEN | docker login ghcr.io -u jclee94 --password-stdin
+# Login to Private Registry
+echo $REGISTRY_PASSWORD | docker login registry.jclee.me -u $REGISTRY_USERNAME --password-stdin
 
 # Pull image with authentication
-docker pull ghcr.io/jclee94/blacklist:latest
+docker pull registry.jclee.me/jclee94/blacklist:latest
 ```
 
 #### 2. Port Conflicts
@@ -425,7 +425,7 @@ tar -czf backups/config-$(date +%Y%m%d).tar.gz .env config/ instance/
 ### Documentation Links
 - **Portfolio Site**: https://jclee94.github.io/blacklist/
 - **API Documentation**: [docs/api-reference.md](api-reference.md)
-- **Container Registry**: https://ghcr.io/jclee94/blacklist
+- **Container Registry**: https://registry.jclee.me/jclee94/blacklist
 - **Source Code**: https://github.com/JCLEE94/blacklist
 
 ### Support Commands
