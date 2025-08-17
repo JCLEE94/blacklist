@@ -26,22 +26,22 @@ class TestRegtechCollector:
     def setup_method(self):
         """각 테스트 전 설정"""
         # 테스트용 환경 변수 설정
-        os.environ['REGTECH_USERNAME'] = 'test_user'
-        os.environ['REGTECH_PASSWORD'] = 'test_pass'
-        
+        os.environ["REGTECH_USERNAME"] = "test_user"
+        os.environ["REGTECH_PASSWORD"] = "test_pass"
+
         config = CollectionConfig()
         config.enabled = True
         config.max_retries = 3
         config.timeout = 300
         self.collector = RegtechCollector(config)
-    
+
     def teardown_method(self):
         """각 테스트 후 정리"""
         # 테스트용 환경 변수 정리
-        if 'REGTECH_USERNAME' in os.environ:
-            del os.environ['REGTECH_USERNAME']
-        if 'REGTECH_PASSWORD' in os.environ:
-            del os.environ['REGTECH_PASSWORD']
+        if "REGTECH_USERNAME" in os.environ:
+            del os.environ["REGTECH_USERNAME"]
+        if "REGTECH_PASSWORD" in os.environ:
+            del os.environ["REGTECH_PASSWORD"]
 
     @patch("src.core.collectors.regtech_collector.RegtechCollector._robust_login")
     @patch("requests.Session")

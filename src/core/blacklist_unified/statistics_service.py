@@ -163,29 +163,31 @@ class StatisticsService:
         try:
             with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
                 cursor = conn.cursor()
-                
+
                 # Get active IPs count
                 cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1")
                 active_ips = cursor.fetchone()[0]
-                
-                # Get total IPs count  
+
+                # Get total IPs count
                 cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
                 total_ips = cursor.fetchone()[0]
-                
+
                 # Get source counts
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT source, COUNT(*) as count 
                     FROM blacklist_ip 
                     WHERE is_active = 1 
                     GROUP BY source
-                """)
+                """
+                )
                 source_counts = dict(cursor.fetchall())
-                
+
                 return {
                     "status": "healthy",
                     "timestamp": datetime.now().isoformat(),
                     "uptime": "0d 0h 0m",
-                    "memory_usage": "0MB", 
+                    "memory_usage": "0MB",
                     "db_status": "connected",
                     "database": {
                         "active_ips": active_ips,
@@ -193,7 +195,7 @@ class StatisticsService:
                         "regtech_count": source_counts.get("REGTECH", 0),
                         "secudium_count": source_counts.get("SECUDIUM", 0),
                         "public_count": source_counts.get("PUBLIC", 0),
-                    }
+                    },
                 }
         except Exception as e:
             logger.error(f"Error getting system health: {e}")
@@ -209,7 +211,7 @@ class StatisticsService:
                     "regtech_count": 0,
                     "secudium_count": 0,
                     "public_count": 0,
-                }
+                },
             }
 
     def get_expiration_stats(self) -> Dict[str, Any]:
