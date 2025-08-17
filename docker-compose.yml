@@ -16,9 +16,11 @@ services:
       - DATABASE_URL=sqlite:////app/instance/blacklist.db
       - REDIS_URL=redis://redis:6379/0
       - COLLECTION_ENABLED=true
-      - FORCE_DISABLE_COLLECTION=true
+      - FORCE_DISABLE_COLLECTION=false
       - MAX_AUTH_ATTEMPTS=5
       - BLOCK_DURATION_HOURS=1
+      - REGTECH_USERNAME=nextrade
+      - REGTECH_PASSWORD=Sprtmxm1@3
     env_file:
       - .env
     depends_on:
