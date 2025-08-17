@@ -241,7 +241,7 @@ class TestLargeModules:
         try:
             from src.utils.structured_logging import StructuredLogger
 
-            logger = StructuredLogger()
+            logger = StructuredLogger("test_logger")
             assert logger is not None
 
             # Test logging methods
