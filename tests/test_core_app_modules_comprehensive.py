@@ -135,8 +135,16 @@ class TestAppConfigurationMixin:
         mixin = AppConfigurationMixin()
         app = Flask(__name__)
         
-        # Mock ImportError for orjson
-        with patch('src.core.app.config.orjson', side_effect=ImportError):
+        # Mock the import to raise ImportError
+        import builtins
+        original_import = builtins.__import__
+        
+        def mock_import(name, *args, **kwargs):
+            if name == 'orjson':
+                raise ImportError("Mock orjson not available")
+            return original_import(name, *args, **kwargs)
+        
+        with patch('builtins.__import__', side_effect=mock_import):
             result = mixin._setup_json_optimization(app)
             # Should return False when orjson is not available
             assert result == False
