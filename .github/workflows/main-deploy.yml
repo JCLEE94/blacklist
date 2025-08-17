@@ -38,6 +38,11 @@ env:
   # Self-hosted runner environment
   DEBIAN_FRONTEND: noninteractive
   PYTHONUNBUFFERED: 1
+  # Performance optimizations for self-hosted
+  PIP_CACHE_DIR: ~/.cache/pip
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
+  # Multi-core testing
+  PYTEST_XDIST_WORKER_COUNT: auto
 
 jobs:
   # ========================================
@@ -46,7 +51,7 @@ jobs:
   
   security-scan:
     name: 🔒 Security & Quality Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       security-events: write
@@ -57,11 +62,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
+      - name: Setup self-hosted environment
+        run: |
+          echo "🔧 Setting up self-hosted runner environment for security scan"
+          # Ensure Python is available
+          python3 --version || sudo apt-get update && sudo apt-get install -y python3 python3-pip
+          pip3 --version || sudo apt-get install -y python3-pip
+          
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
           
       - name: Install security tools
         run: |
@@ -82,7 +95,7 @@ jobs:
 
   lint-and-format:
     name: 📝 Code Quality & Formatting
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       lint-passed: ${{ steps.lint-check.outputs.passed }}
       
@@ -90,11 +103,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
+      - name: Setup self-hosted environment
+        run: |
+          echo "🔧 Setting up self-hosted runner environment for linting"
+          # Ensure Python is available
+          python3 --version || sudo apt-get update && sudo apt-get install -y python3 python3-pip
+          pip3 --version || sudo apt-get install -y python3-pip
+          
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
           
       - name: Install dependencies
         run: |
@@ -121,7 +142,7 @@ jobs:
   
   test:
     name: 🧪 Test Suite
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [security-scan, lint-and-format]
         
     outputs:
@@ -137,28 +158,37 @@ jobs:
           echo "🧹 Cleaning test environment"
           rm -rf .pytest_cache .coverage .dev-reports htmlcov || true
         
+      - name: Setup self-hosted environment
+        run: |
+          echo "🔧 Setting up self-hosted runner environment for testing"
+          # Ensure Python is available
+          python3 --version || sudo apt-get update && sudo apt-get install -y python3 python3-pip
+          pip3 --version || sudo apt-get install -y python3-pip
+          # Install pytest-xdist for parallel testing
+          pip3 install pytest-xdist || true
+        
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
           
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           
-      - name: Run tests with coverage (with retry)
-        uses: nick-fields/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 2
-          retry_wait_seconds: 30
-          command: |
-            pytest -n auto || \
-            pytest
-          polling_interval_seconds: 1
-          warning_on_retry: true
-          continue_on_error: false
+      - name: Run tests with coverage (self-hosted optimized)
+        run: |
+          echo "🧪 Running optimized test suite on self-hosted runner"
+          # First attempt with parallel execution
+          if pytest -n auto --tb=short -v; then
+            echo "✅ Parallel tests completed successfully"
+          else
+            echo "⚠️ Parallel tests failed, retrying with single-threaded execution"
+            # Fallback to single-threaded execution
+            pytest --tb=short -v
+          fi
         env:
           FORCE_DISABLE_COLLECTION: true
           COLLECTION_ENABLED: false
@@ -275,6 +305,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
           
       - name: Install packaging tools
         run: |
@@ -300,7 +331,7 @@ jobs:
   
   build-docs:
     name: 📚 Documentation & GitHub Pages
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [security-scan, lint-and-format]
     if: |
       (github.event.inputs.force_pages_deploy == 'true') ||
@@ -320,6 +351,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
+      - name: Setup self-hosted environment
+        run: |
+          echo "🔧 Setting up self-hosted runner environment for documentation"
+          # Ensure basic tools are available
+          which git || sudo apt-get update && sudo apt-get install -y git
+          
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
