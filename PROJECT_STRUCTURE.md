@@ -22,11 +22,10 @@ blacklist/
 │   ├── core/         # Core application modules
 │   └── utils/        # Utility functions
 ├── tests/            # Test suites
-├── k8s/              # Kubernetes manifests
+├── k8s/              # Kubernetes & GitOps
 │   ├── manifests/    # K8s resource definitions
+│   ├── argocd-app.yaml # ArgoCD application
 │   └── apply.sh      # Deployment script
-├── argocd/           # GitOps configuration
-│   └── blacklist-app.yaml
 ├── docs/             # Documentation
 │   └── reports/      # Analysis reports
 ├── scripts/          # Automation scripts

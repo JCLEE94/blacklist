@@ -9,16 +9,15 @@ MANIFESTS_DIR="manifests"
 
 echo "🚀 Applying Kubernetes manifests..."
 
-# Apply in order
-kubectl apply -f $MANIFESTS_DIR/01-namespace.yaml
-kubectl apply -f $MANIFESTS_DIR/02-configmap.yaml
-kubectl apply -f $MANIFESTS_DIR/03-secret.yaml
-kubectl apply -f $MANIFESTS_DIR/04-pvc.yaml
-kubectl apply -f $MANIFESTS_DIR/05-serviceaccount.yaml
-kubectl apply -f $MANIFESTS_DIR/09-redis.yaml
-kubectl apply -f $MANIFESTS_DIR/06-deployment.yaml
-kubectl apply -f $MANIFESTS_DIR/07-service.yaml
-kubectl apply -f $MANIFESTS_DIR/08-ingress.yaml
+# Apply using Kustomize
+echo "📦 Applying with Kustomize..."
+kubectl apply -k $MANIFESTS_DIR/
+
+# Apply ArgoCD app separately (if using GitOps)
+if [ "$1" == "--with-argocd" ]; then
+    echo "🔄 Applying ArgoCD application..."
+    kubectl apply -f $MANIFESTS_DIR/00-argocd-app.yaml
+fi
 
 echo "✅ All manifests applied successfully!"
 
