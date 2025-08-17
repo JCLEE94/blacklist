@@ -19,8 +19,6 @@ services:
       - FORCE_DISABLE_COLLECTION=false
       - MAX_AUTH_ATTEMPTS=5
       - BLOCK_DURATION_HOURS=1
-      - REGTECH_USERNAME=nextrade
-      - REGTECH_PASSWORD=Sprtmxm1@3
     env_file:
       - .env
     depends_on:
