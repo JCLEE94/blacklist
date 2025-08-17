@@ -15,10 +15,13 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: blacklist
+      app.kubernetes.io/name: blacklist
+      app.kubernetes.io/instance: blacklist
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: blacklist
+        app.kubernetes.io/instance: blacklist
         app: blacklist
         version: v1
       annotations:
@@ -28,7 +31,7 @@ spec:
     spec:
       containers:
       - name: blacklist
-        image: registry.jclee.me/blacklist:latest
+        image: registry.jclee.me/jclee94/blacklist:2f47ccd
         imagePullPolicy: Always
         ports:
         - containerPort: 2542
