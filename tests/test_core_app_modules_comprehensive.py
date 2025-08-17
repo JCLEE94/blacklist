@@ -37,15 +37,19 @@ class TestAppConfigurationMixin:
         """Test basic configuration setup"""
         mixin = AppConfigurationMixin()
         app = Flask(__name__)
+        original_wsgi_app = app.wsgi_app
         
-        mock_proxy_fix.return_value = Mock()
+        mock_proxy_instance = Mock()
+        mock_proxy_fix.return_value = mock_proxy_instance
         
         mixin._setup_basic_config(app)
         
-        # Should setup proxy fix
+        # Should setup proxy fix with the original wsgi_app
         mock_proxy_fix.assert_called_once_with(
-            app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+            original_wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
         )
+        # Should assign the proxied app
+        assert app.wsgi_app == mock_proxy_instance
 
     @patch('werkzeug.middleware.profiler.ProfilerMiddleware')
     @patch('werkzeug.middleware.proxy_fix.ProxyFix')
@@ -54,17 +58,25 @@ class TestAppConfigurationMixin:
         mixin = AppConfigurationMixin()
         app = Flask(__name__)
         app.config['ENABLE_PROFILER'] = True
+        original_wsgi_app = app.wsgi_app
         
-        mock_proxy_fix.return_value = Mock()
-        mock_profiler.return_value = Mock()
+        mock_proxy_instance = Mock()
+        mock_proxy_fix.return_value = mock_proxy_instance
+        mock_profiler_instance = Mock()
+        mock_profiler.return_value = mock_profiler_instance
         
         mixin._setup_basic_config(app)
         
-        # Should setup both proxy fix and profiler
-        mock_proxy_fix.assert_called_once()
-        mock_profiler.assert_called_once_with(
-            app.wsgi_app, profile_dir="./profiler_logs"
+        # Should setup proxy fix first
+        mock_proxy_fix.assert_called_once_with(
+            original_wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
         )
+        # Then setup profiler with the proxied app
+        mock_profiler.assert_called_once_with(
+            mock_proxy_instance, profile_dir="./profiler_logs"
+        )
+        # Final wsgi_app should be the profiler instance
+        assert app.wsgi_app == mock_profiler_instance
 
     @patch('flask_cors.CORS')
     def test_setup_cors_default(self, mock_cors):
