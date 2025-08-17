@@ -29,10 +29,10 @@ def get_all_settings_api():
             "secudium_enabled": True,
         },
         "credentials": {
-            "regtech_username": "nextrade",
-            "regtech_password": "***",
-            "secudium_username": "nextrade",
-            "secudium_password": "***",
+            "regtech_username": "",
+            "regtech_password": "",
+            "secudium_username": "",
+            "secudium_password": "",
         },
         "security": {"session_timeout_minutes": 60, "api_rate_limit": 1000},
         "notification": {
