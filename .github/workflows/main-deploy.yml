@@ -68,6 +68,8 @@ jobs:
           # Check Python availability (assume pre-installed on self-hosted)
           python3 --version
           pip3 --version || python3 -m pip --version
+          # Add user local bin to PATH for tools installed with --user
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -83,12 +85,12 @@ jobs:
           
       - name: Run Bandit security scan
         run: |
-          bandit -r src/ -ll --skip B104 || true
+          python3 -m bandit -r src/ -ll --skip B104 || true
           
       - name: Run Safety check
         run: |
           python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
-          safety check || true
+          python3 -m safety check || ~/.local/bin/safety check || true
           
       - name: Set security status
         id: security-check
@@ -110,6 +112,8 @@ jobs:
           # Check Python availability (assume pre-installed on self-hosted)
           python3 --version
           pip3 --version || python3 -m pip --version
+          # Add user local bin to PATH for tools installed with --user
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -126,13 +130,13 @@ jobs:
           
       - name: Run linting
         run: |
-          flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 || true
+          python3 -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          python3 -m flake8 src/ --max-line-length=88 --extend-ignore=E203,W503 || true
           
       - name: Check formatting
         run: |
-          black --check src/ tests/ || true
-          isort --check-only src/ tests/ || true
+          python3 -m black --check src/ tests/ || true
+          python3 -m isort --check-only src/ tests/ || true
           
       - name: Set lint status
         id: lint-check
@@ -166,6 +170,8 @@ jobs:
           # Check Python availability (assume pre-installed on self-hosted)
           python3 --version
           pip3 --version || python3 -m pip --version
+          # Add user local bin to PATH for tools installed with --user
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           # Install pytest-xdist for parallel testing if not available
           python3 -m pip install pytest-xdist --user || echo "pytest-xdist installation failed, continuing..."
         
