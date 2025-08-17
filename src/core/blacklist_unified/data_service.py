@@ -100,6 +100,7 @@ class DataService:
                         ip_address TEXT,
                         source TEXT,
                         detection_date TIMESTAMP,
+                        collection_date TIMESTAMP,
                         reg_date TIMESTAMP,
                         attack_type TEXT,
                         reason TEXT,
@@ -129,6 +130,7 @@ class DataService:
                                     ip_data["ip"],
                                     ip_data.get("source", source),
                                     ip_data.get("detection_date"),
+                                    ip_data.get("collection_date"),
                                     ip_data.get("country"),
                                     ip_data.get("threat_type"),
                                     ip_data.get("confidence_score", 1.0),
@@ -143,10 +145,10 @@ class DataService:
                         cursor.executemany(
                             """
                             INSERT OR REPLACE INTO blacklist_entries (
-                                ip, source, detection_date, country,
+                                ip, source, detection_date, collection_date, country,
                                 attack_type, threat_level, is_active,
                                 expires_at, created_at, updated_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """,
                             batch_data,
                         )
@@ -341,6 +343,7 @@ class DataService:
                         ip,
                         source,
                         detection_date,
+                        collection_date,
                         country,
                         threat_type,
                         confidence as confidence_score,

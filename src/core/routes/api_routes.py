@@ -97,8 +97,8 @@ def service_status():
                     "service_status": "running",
                     "database_connected": True,
                     "cache_available": True,
-                    "total_ips": stats.get("total_ips", 0),
-                    "active_ips": stats.get("active_ips", 0),
+                    "total_ips": len(service.get_active_blacklist_entries()),
+                    "active_ips": len(service.get_active_blacklist_entries()),
                     "last_updated": datetime.utcnow().isoformat(),
                 },
             }

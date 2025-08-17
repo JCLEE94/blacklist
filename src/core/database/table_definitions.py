@@ -23,8 +23,11 @@ class TableDefinitions:
                 ip_address TEXT NOT NULL UNIQUE,
                 first_seen TEXT,
                 last_seen TEXT,
+                detection_date TEXT,
+                collection_date TEXT,
                 detection_months TEXT,  -- JSON 배열
                 is_active BOOLEAN DEFAULT 1,
+                expires_at DATETIME,
                 days_until_expiry INTEGER DEFAULT 90,
                 threat_level TEXT DEFAULT 'medium',
                 source TEXT NOT NULL DEFAULT 'unknown',  -- 출처 필드 강제

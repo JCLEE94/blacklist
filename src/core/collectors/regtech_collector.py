@@ -413,22 +413,46 @@ class RegtechCollector(BaseCollector):
 
     def _transform_data(self, raw_data: dict) -> dict:
         """
-        원시 데이터를 표준 형식으로 변환
+        원시 데이터를 표준 형식으로 변환 (탐지일 기준 3개월 만료)
         
         Args:
             raw_data: 원시 수집 데이터
             
         Returns:
-            변환된 데이터 딕셔너리
+            변환된 데이터 딕셔너리 (expires_at 포함)
         """
         try:
+            # 탐지일 파싱
+            detection_date_str = raw_data.get('date', datetime.now().strftime('%Y-%m-%d'))
+            
+            # 다양한 날짜 형식 처리
+            detection_date = None
+            try:
+                if len(detection_date_str.replace('-', '').replace('.', '')) == 8:
+                    # YYYYMMDD, YYYY-MM-DD, YYYY.MM.DD 형식
+                    clean_date = detection_date_str.replace('-', '').replace('.', '')
+                    detection_date = datetime.strptime(clean_date, '%Y%m%d')
+                else:
+                    # 기본적으로 ISO 형식 시도
+                    detection_date = datetime.fromisoformat(detection_date_str)
+            except:
+                # 파싱 실패 시 현재 날짜 사용
+                detection_date = datetime.now()
+                self.logger.warning(f"날짜 파싱 실패, 현재 날짜 사용: {detection_date_str}")
+            
+            # 수집일 기준 3개월 후 만료 설정 (탐지일 아님)
+            collection_date = datetime.now()  # 실제 수집한 날짜
+            expires_at = collection_date + timedelta(days=90)  # 수집일 + 3개월 = 90일
+            
             # 기본 변환
             transformed = {
                 'ip': raw_data.get('ip', ''),
                 'country': raw_data.get('country', 'Unknown'),
                 'reason': raw_data.get('reason', 'Unknown threat'),
                 'source': 'REGTECH',
-                'detection_date': raw_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+                'detection_date': detection_date.strftime('%Y-%m-%d'),  # 실제 탐지일 유지
+                'collection_date': collection_date.strftime('%Y-%m-%d'),  # 수집일 추가
+                'expires_at': expires_at.isoformat(),  # 수집일 기준 만료
                 'threat_level': raw_data.get('threat_level', 'medium'),
                 'category': raw_data.get('category', 'malware'),
                 'confidence': raw_data.get('confidence', 0.8)
@@ -446,12 +470,17 @@ class RegtechCollector(BaseCollector):
             
         except Exception as e:
             self.logger.error(f"Data transformation error: {e}")
-            # 최소한의 데이터 반환
+            # 최소한의 데이터 반환 (수집일 기준 3개월 만료)
+            fallback_collection = datetime.now()
+            fallback_expires = fallback_collection + timedelta(days=90)
             return {
                 'ip': raw_data.get('ip', '0.0.0.0'),
                 'source': 'REGTECH',
                 'country': 'Unknown',
-                'reason': 'Transform error'
+                'reason': 'Transform error',
+                'detection_date': fallback_collection.strftime('%Y-%m-%d'),  # 에러 시 수집일로 설정
+                'collection_date': fallback_collection.strftime('%Y-%m-%d'),  # 수집일
+                'expires_at': fallback_expires.isoformat()  # 수집일 기준 만료
             }
 
     def _is_valid_ip(self, ip: str) -> bool:
