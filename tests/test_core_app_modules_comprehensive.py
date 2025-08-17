@@ -135,26 +135,23 @@ class TestAppConfigurationMixin:
         mixin = AppConfigurationMixin()
         app = Flask(__name__)
         
-        # orjson import is disabled in the code (pass statement)
-        result = mixin._setup_json_optimization(app)
-        
-        # Should return False when orjson is not available
-        assert result == False
+        # Mock ImportError for orjson
+        with patch('src.core.app.config.orjson', side_effect=ImportError):
+            result = mixin._setup_json_optimization(app)
+            # Should return False when orjson is not available
+            assert result == False
 
-    @patch('src.core.app.config.get_logger')
-    def test_setup_json_optimization_with_orjson(self, mock_get_logger):
-        """Test JSON optimization when orjson would be available"""
+    def test_setup_json_optimization_with_orjson(self):
+        """Test JSON optimization when orjson is available"""
         mixin = AppConfigurationMixin()
         app = Flask(__name__)
         
-        mock_logger = Mock()
-        mock_get_logger.return_value = mock_logger
+        # Test with orjson available (should be installed in requirements.txt)
+        result = mixin._setup_json_optimization(app)
         
-        # Temporarily patch the HAS_ORJSON logic
-        with patch.object(mixin, '_setup_json_optimization') as mock_method:
-            mock_method.return_value = True
-            result = mock_method(app)
-            assert result == True
+        # Should return True when orjson is available
+        assert result == True
+        assert app.config.get('JSON_SORT_KEYS') == False
 
     @patch('time.tzset')
     def test_setup_timezone(self, mock_tzset):
@@ -384,7 +381,7 @@ class TestMixinIntegration:
         mock_proxy_fix.assert_called_once()
         mock_cors.assert_called_once()
         mock_compress_class.assert_called_once()
-        assert result == False  # orjson not available
+        assert result == True  # orjson is available in requirements.txt
 
     def test_mixin_method_resolution_order(self):
         """Test method resolution order with multiple inheritance"""
@@ -489,12 +486,12 @@ class TestPerformanceConfiguration:
         mixin = AppConfigurationMixin()
         app = Flask(__name__)
         
-        # Since orjson is disabled in code, test the False path
+        # Since orjson is available, test the True path
         result = mixin._setup_json_optimization(app)
-        assert result == False
+        assert result == True
         
-        # App config should not be modified when orjson is not available
-        assert 'JSON_SORT_KEYS' not in app.config or app.config.get('JSON_SORT_KEYS') != False
+        # App config should be modified when orjson is available
+        assert app.config.get('JSON_SORT_KEYS') == False
 
 
 if __name__ == '__main__':

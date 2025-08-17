@@ -62,8 +62,7 @@ class AppConfigurationMixin:
     def _setup_json_optimization(self, app):
         """JSON 직렬화 최적화"""
         try:
-            pass
-
+            import orjson
             HAS_ORJSON = True
         except ImportError:
             HAS_ORJSON = False
