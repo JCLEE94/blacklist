@@ -11,11 +11,13 @@ ENV/
 
 # Testing
 .coverage
+.coverage.*
 .pytest_cache/
 htmlcov/
 test-reports/
 .dev-reports/
 *.log
+.bandit
 
 # Database
 *.db
