@@ -551,7 +551,7 @@ X-RateLimit-Reset: 1692345600
   - API key authentication for automated systems
   - Complete security endpoint suite
 - **🚀 GitHub Container Registry Integration**
-  - Migration from registry.jclee.me to ghcr.io
+  - Migration from registry.jclee.me to registry.jclee.me
   - Enhanced CI/CD pipeline with ubuntu-latest
 - **🎨 GitHub Pages Portfolio**
   - Live portfolio site: https://jclee94.github.io/blacklist/
@@ -583,5 +583,5 @@ X-RateLimit-Reset: 1692345600
 **API Documentation Version**: v1.0.35  
 **Last Updated**: 2025-08-14  
 **Portfolio Site**: https://jclee94.github.io/blacklist/  
-**Container Registry**: ghcr.io/jclee94/blacklist  
+**Container Registry**: registry.jclee.me/jclee94/blacklist  
 **OpenAPI Specification**: Available at `/api/docs` (when enabled)

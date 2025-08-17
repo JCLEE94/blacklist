@@ -12,7 +12,7 @@ on:
       - 'Dockerfile'
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: registry.jclee.me
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:

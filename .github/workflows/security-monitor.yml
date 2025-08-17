@@ -17,7 +17,7 @@ permissions:
   actions: read
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: registry.jclee.me
   IMAGE_NAME: jclee94/blacklist
   PYTHON_VERSION: "3.11"
 
