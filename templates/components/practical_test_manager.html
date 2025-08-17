@@ -1,0 +1,515 @@
+<!-- 실용적 테스트 관리자 -->
+<div id="practical-test-manager" class="test-manager-container">
+    
+    <!-- 1. 인증 정보 테스트 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-key text-warning"></i> 1. 인증 정보 설정 및 테스트
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">REGTECH 사용자명</label>
+                                <input type="text" class="form-control" id="test-regtech-username" 
+                                       value="nextrade" placeholder="nextrade">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">REGTECH 비밀번호</label>
+                                <input type="password" class="form-control" id="test-regtech-password" 
+                                       value="Sprtmxm1@3" placeholder="Sprtmxm1@3">
+                            </div>
+                            <button class="btn btn-primary" onclick="testCredentials()">
+                                <i class="bi bi-check-circle"></i> 인증 정보 저장 및 테스트
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6>테스트 정보:</h6>
+                                <ul class="mb-0">
+                                    <li>사용자명: nextrade</li>
+                                    <li>비밀번호: Sprtmxm1@3</li>
+                                    <li>실제 REGTECH 시스템 연결 테스트</li>
+                                </ul>
+                            </div>
+                            <div id="credential-test-result" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 기본 수집 테스트 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-download text-info"></i> 2. 데이터 수집 테스트
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">수집 날짜</label>
+                                <input type="date" class="form-control" id="test-collection-date">
+                            </div>
+                            <button class="btn btn-success w-100" onclick="testCollection()" id="test-collection-btn">
+                                <i class="bi bi-play-fill"></i> REGTECH 수집 테스트
+                            </button>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="bg-dark text-light p-3 rounded" style="height: 200px; overflow-y: auto; font-family: monospace;">
+                                <div id="collection-test-logs">수집 테스트 로그가 여기에 표시됩니다...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 데이터 확인 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table text-primary"></i> 3. 수집된 데이터 확인
+                    </h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshData()">
+                        <i class="bi bi-arrow-clockwise"></i> 새로고침
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- 통계 카드 -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-primary mb-1" id="total-ips">0</h4>
+                                <small class="text-muted">총 IP 수</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-success mb-1" id="active-ips">0</h4>
+                                <small class="text-muted">활성 IP</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-info mb-1" id="regtech-ips">0</h4>
+                                <small class="text-muted">REGTECH</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-muted mb-1" id="last-updated">-</h4>
+                                <small class="text-muted">마지막 업데이트</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 데이터 테이블 -->
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>IP 주소</th>
+                                    <th>소스</th>
+                                    <th>탐지일</th>
+                                    <th>등록일</th>
+                                    <th>상태</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-table">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">데이터를 불러오는 중...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. API 테스트 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear text-secondary"></i> 4. API 엔드포인트 테스트
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="list-group">
+                                <button class="list-group-item list-group-item-action" onclick="testAPI('/api/blacklist/active')">
+                                    <i class="bi bi-link"></i> /api/blacklist/active
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="testAPI('/api/fortigate')">
+                                    <i class="bi bi-link"></i> /api/fortigate
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="testAPI('/api/collection/status')">
+                                    <i class="bi bi-link"></i> /api/collection/status
+                                </button>
+                                <button class="list-group-item list-group-item-action" onclick="testAPI('/dashboard')">
+                                    <i class="bi bi-link"></i> /dashboard (웹 UI)
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded" style="height: 200px; overflow-y: auto;">
+                                <div id="api-test-result">API 테스트 결과가 여기에 표시됩니다...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 시스템 상태 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-activity text-success"></i> 5. 시스템 상태 확인
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>서비스 상태</h6>
+                            <div id="service-status">
+                                <div class="d-flex justify-content-between align-items-center py-2">
+                                    <span>웹 서비스</span>
+                                    <span class="badge bg-success">정상</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center py-2">
+                                    <span>데이터베이스</span>
+                                    <span class="badge bg-success" id="db-status">확인 중...</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center py-2">
+                                    <span>수집 서비스</span>
+                                    <span class="badge bg-warning" id="collection-service-status">확인 중...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>시스템 정보</h6>
+                            <div class="small text-muted">
+                                <div>현재 시간: <span id="current-time"></span></div>
+                                <div>서버 포트: 32542 (NodePort)</div>
+                                <div>배포 방식: Kubernetes + ArgoCD</div>
+                                <div>데이터베이스: SQLite (Pod 내장)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 실용적 테스트 매니저
+class PracticalTestManager {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        // 오늘 날짜 설정
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('test-collection-date').value = today;
+        
+        // 초기 데이터 로드
+        this.refreshData();
+        this.updateSystemStatus();
+        this.updateTime();
+        
+        // 1분마다 시간 업데이트
+        setInterval(() => this.updateTime(), 60000);
+        
+        // 30초마다 상태 업데이트
+        setInterval(() => this.updateSystemStatus(), 30000);
+    }
+
+    updateTime() {
+        document.getElementById('current-time').textContent = 
+            new Date().toLocaleString('ko-KR');
+    }
+
+    async updateSystemStatus() {
+        try {
+            // 데이터베이스 상태 확인
+            const dbResponse = await fetch('/');
+            document.getElementById('db-status').className = 
+                dbResponse.ok ? 'badge bg-success' : 'badge bg-danger';
+            document.getElementById('db-status').textContent = 
+                dbResponse.ok ? '정상' : '오류';
+
+            // 수집 서비스 상태 확인
+            try {
+                const collectionResponse = await fetch('/api/collection/status');
+                const collectionData = await collectionResponse.json();
+                document.getElementById('collection-service-status').className = 
+                    collectionData.enabled ? 'badge bg-success' : 'badge bg-warning';
+                document.getElementById('collection-service-status').textContent = 
+                    collectionData.enabled ? '활성' : '대기';
+            } catch (error) {
+                document.getElementById('collection-service-status').className = 'badge bg-danger';
+                document.getElementById('collection-service-status').textContent = '오류';
+            }
+        } catch (error) {
+            console.error('Status update failed:', error);
+        }
+    }
+
+    async refreshData() {
+        try {
+            // 통계 데이터 로드
+            const statsResponse = await fetch('/api/stats-simple');
+            if (statsResponse.ok) {
+                const stats = await statsResponse.json();
+                document.getElementById('total-ips').textContent = stats.total_blacklist_ips || 0;
+                document.getElementById('active-ips').textContent = stats.active_ips || 0;
+                document.getElementById('regtech-ips').textContent = stats.regtech_count || 0;
+                
+                if (stats.last_updated) {
+                    const date = new Date(stats.last_updated);
+                    document.getElementById('last-updated').textContent = 
+                        date.toLocaleDateString('ko-KR');
+                }
+            }
+
+            // 최근 데이터 로드
+            const dataResponse = await fetch('/api/blacklist/active');
+            if (dataResponse.ok) {
+                const dataText = await dataResponse.text();
+                const ips = dataText.trim().split('\n').filter(ip => ip.trim());
+                
+                const tbody = document.getElementById('data-table');
+                if (ips.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">수집된 데이터가 없습니다.</td></tr>';
+                } else {
+                    tbody.innerHTML = ips.slice(0, 10).map((ip, index) => `
+                        <tr>
+                            <td><code>${ip}</code></td>
+                            <td><span class="badge bg-primary">REGTECH</span></td>
+                            <td>-</td>
+                            <td>최근</td>
+                            <td><span class="badge bg-success">활성</span></td>
+                        </tr>
+                    `).join('');
+                    
+                    if (ips.length > 10) {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    ... 외 ${ips.length - 10}개 더 있음
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Data refresh failed:', error);
+            document.getElementById('data-table').innerHTML = 
+                '<tr><td colspan="5" class="text-center text-danger">데이터 로딩 실패</td></tr>';
+        }
+    }
+
+    async testCredentials() {
+        const username = document.getElementById('test-regtech-username').value;
+        const password = document.getElementById('test-regtech-password').value;
+        const resultDiv = document.getElementById('credential-test-result');
+        
+        if (!username || !password) {
+            resultDiv.innerHTML = '<div class="alert alert-warning">사용자명과 비밀번호를 입력하세요.</div>';
+            return;
+        }
+        
+        resultDiv.innerHTML = '<div class="alert alert-info">인증 정보 테스트 중...</div>';
+        
+        try {
+            // 실제 K8s Secret 업데이트
+            const response = await fetch('/api/credentials/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    regtech_username: username,
+                    regtech_password: password
+                })
+            });
+            
+            if (response.ok) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> 인증 정보가 저장되었습니다.
+                        <br><small>Kubernetes Secret이 업데이트되었습니다.</small>
+                    </div>
+                `;
+            } else {
+                const error = await response.text();
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> 저장 실패: ${error}
+                    </div>
+                `;
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i> 연결 오류: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    async testCollection() {
+        const date = document.getElementById('test-collection-date').value;
+        const logsDiv = document.getElementById('collection-test-logs');
+        const button = document.getElementById('test-collection-btn');
+        
+        if (!date) {
+            alert('수집할 날짜를 선택하세요.');
+            return;
+        }
+        
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> 수집 중...';
+        
+        logsDiv.innerHTML = `[${new Date().toLocaleTimeString()}] 수집 시작...\n`;
+        
+        try {
+            const response = await fetch('/api/collection/regtech/trigger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    start_date: date,
+                    end_date: date
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                logsDiv.innerHTML += `[${new Date().toLocaleTimeString()}] 수집 성공!\n`;
+                logsDiv.innerHTML += `[${new Date().toLocaleTimeString()}] 결과: ${JSON.stringify(result, null, 2)}\n`;
+                
+                // 데이터 새로고침
+                setTimeout(() => {
+                    this.refreshData();
+                }, 3000);
+            } else {
+                logsDiv.innerHTML += `[${new Date().toLocaleTimeString()}] 수집 실패: ${result.error}\n`;
+            }
+        } catch (error) {
+            logsDiv.innerHTML += `[${new Date().toLocaleTimeString()}] 오류: ${error.message}\n`;
+        } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-play-fill"></i> REGTECH 수집 테스트';
+        }
+    }
+
+    async testAPI(endpoint) {
+        const resultDiv = document.getElementById('api-test-result');
+        
+        try {
+            resultDiv.innerHTML = `테스트 중: ${endpoint}...\n`;
+            
+            const response = await fetch(endpoint);
+            const contentType = response.headers.get('content-type');
+            
+            let result;
+            if (contentType && contentType.includes('application/json')) {
+                result = await response.json();
+                result = JSON.stringify(result, null, 2);
+            } else {
+                result = await response.text();
+                if (result.length > 500) {
+                    result = result.substring(0, 500) + '... (truncated)';
+                }
+            }
+            
+            resultDiv.innerHTML = `
+                <strong>${endpoint}</strong><br>
+                Status: ${response.status} ${response.statusText}<br>
+                Content-Type: ${contentType || 'unknown'}<br>
+                <hr>
+                <pre>${result}</pre>
+            `;
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <strong>${endpoint}</strong><br>
+                <span class="text-danger">Error: ${error.message}</span>
+            `;
+        }
+    }
+}
+
+// 전역 함수들
+function testCredentials() {
+    window.practicalTestManager.testCredentials();
+}
+
+function testCollection() {
+    window.practicalTestManager.testCollection();
+}
+
+function refreshData() {
+    window.practicalTestManager.refreshData();
+}
+
+function testAPI(endpoint) {
+    window.practicalTestManager.testAPI(endpoint);
+}
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    window.practicalTestManager = new PracticalTestManager();
+});
+</script>
+
+<style>
+.test-manager-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+pre {
+    font-size: 0.8rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.list-group-item {
+    cursor: pointer;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+</style>

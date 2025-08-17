@@ -1,0 +1,771 @@
+<!-- 고급 수집 관리 시스템 -->
+<div id="advanced-collection-manager" class="collection-manager-container">
+    
+    <!-- 인증 정보 설정 섹션 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-key text-warning"></i> 인증 정보 관리
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- REGTECH 인증 정보 -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-bank text-primary"></i> REGTECH 인증
+                                </h6>
+                                <div class="mb-2">
+                                    <label class="form-label small">사용자명</label>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           id="regtech-username" placeholder="nextrade" value="nextrade">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">비밀번호</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" class="form-control" 
+                                               id="regtech-password" placeholder="Sprtmxm1@3" value="Sprtmxm1@3">
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="togglePassword('regtech-password')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm w-100" onclick="saveCredentials('regtech')">
+                                    <i class="bi bi-check-circle"></i> 저장 및 테스트
+                                </button>
+                                <div id="regtech-credential-status" class="mt-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- SECUDIUM 인증 정보 -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 opacity-75">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-shield-x text-danger"></i> SECUDIUM 인증 (비활성)
+                                </h6>
+                                <div class="mb-2">
+                                    <label class="form-label small">사용자명</label>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           placeholder="사용자명" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">비밀번호</label>
+                                    <input type="password" class="form-control form-control-sm" 
+                                           placeholder="비밀번호" disabled>
+                                </div>
+                                <button class="btn btn-secondary btn-sm w-100" disabled>
+                                    <i class="bi bi-x-circle"></i> 비활성화됨
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 날짜별 수집 관리 섹션 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-calendar-check text-success"></i> 날짜별 수집 관리
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- 날짜 범위 선택 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">시작 날짜</label>
+                            <input type="date" class="form-control" id="collection-start-date">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">종료 날짜</label>
+                            <input type="date" class="form-control" id="collection-end-date">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">빠른 선택</label>
+                            <select class="form-control" onchange="setDateRange(this.value)">
+                                <option value="">선택하세요</option>
+                                <option value="today">오늘</option>
+                                <option value="yesterday">어제</option>
+                                <option value="last7days">최근 7일</option>
+                                <option value="last30days">최근 30일</option>
+                                <option value="thismonth">이번 달</option>
+                                <option value="lastmonth">지난 달</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button class="btn btn-info" onclick="checkDateRangeCollection()">
+                                    <i class="bi bi-search"></i> 수집 현황 조회
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 날짜별 수집 현황 테이블 -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>날짜</th>
+                                    <th>REGTECH</th>
+                                    <th>SECUDIUM</th>
+                                    <th>총 수집량</th>
+                                    <th>상태</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody id="date-collection-table">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        날짜 범위를 선택하고 조회 버튼을 클릭하세요.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 실시간 수집 모니터링 -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-activity text-info"></i> 실시간 수집 모니터링
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <button class="btn btn-success w-100" onclick="startAdvancedCollection()">
+                                <i class="bi bi-play-fill"></i> 고급 수집 시작
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-warning w-100" onclick="pauseCollection()">
+                                <i class="bi bi-pause-fill"></i> 수집 일시정지
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-danger w-100" onclick="stopCollection()">
+                                <i class="bi bi-stop-fill"></i> 수집 중지
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 진행률 표시 -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small">REGTECH 수집 진행률</span>
+                            <span class="small" id="regtech-progress-text">0%</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-primary" id="regtech-progress-bar" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 실시간 로그 -->
+                    <div class="bg-dark text-light p-3 rounded" 
+                         style="height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;"
+                         id="realtime-collection-logs">
+                        <div class="text-muted">수집 로그 대기 중...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-bar-chart text-warning"></i> 수집 통계
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- 실시간 통계 -->
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">오늘 수집량</span>
+                            <strong id="today-collection-count">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">이번 주 수집량</span>
+                            <strong id="week-collection-count">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">이번 달 수집량</span>
+                            <strong id="month-collection-count">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">총 데이터량</span>
+                            <strong id="total-collection-count">0</strong>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- 마지막 수집 정보 -->
+                    <div class="small text-muted">
+                        <div class="mb-1">
+                            <i class="bi bi-clock"></i> 마지막 수집: 
+                            <span id="last-collection-time">-</span>
+                        </div>
+                        <div class="mb-1">
+                            <i class="bi bi-database"></i> 활성 IP: 
+                            <span id="active-ip-count">0</span>
+                        </div>
+                        <div>
+                            <i class="bi bi-shield-check"></i> 차단 중: 
+                            <span id="blocking-ip-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 수집 데이터 미리보기 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-table text-primary"></i> 수집 데이터 미리보기
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadRecentData()">
+                                <i class="bi bi-arrow-clockwise"></i> 새로고침
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="exportData()">
+                                <i class="bi bi-download"></i> 내보내기
+                            </button>
+                        </div>
+                        <div>
+                            <span class="text-muted">표시된 항목: </span>
+                            <span id="preview-count">0</span> / 
+                            <span id="total-count">0</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>IP 주소</th>
+                                    <th>소스</th>
+                                    <th>탐지일</th>
+                                    <th>등록일</th>
+                                    <th>위험도</th>
+                                    <th>상태</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-preview-table">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        데이터를 불러오는 중...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 고급 수집 관리자 클래스
+class AdvancedCollectionManager {
+    constructor() {
+        this.isCollecting = false;
+        this.progressInterval = null;
+        this.logInterval = null;
+        this.init();
+    }
+
+    init() {
+        this.setDefaultDates();
+        this.loadStatistics();
+        this.loadRecentData();
+        this.startStatusMonitoring();
+    }
+
+    setDefaultDates() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('collection-start-date').value = today;
+        document.getElementById('collection-end-date').value = today;
+    }
+
+    startStatusMonitoring() {
+        // 30초마다 통계 업데이트
+        setInterval(() => {
+            this.loadStatistics();
+        }, 30000);
+    }
+
+    async loadStatistics() {
+        try {
+            const response = await fetch('/api/collection/statistics');
+            const data = await response.json();
+            
+            document.getElementById('today-collection-count').textContent = data.today || 0;
+            document.getElementById('week-collection-count').textContent = data.week || 0;
+            document.getElementById('month-collection-count').textContent = data.month || 0;
+            document.getElementById('total-collection-count').textContent = data.total || 0;
+            document.getElementById('active-ip-count').textContent = data.active || 0;
+            document.getElementById('blocking-ip-count').textContent = data.blocking || 0;
+            
+            if (data.last_collection) {
+                document.getElementById('last-collection-time').textContent = 
+                    new Date(data.last_collection).toLocaleString('ko-KR');
+            }
+        } catch (error) {
+            console.error('Statistics loading failed:', error);
+        }
+    }
+
+    async loadRecentData() {
+        try {
+            const response = await fetch('/api/blacklist/recent?limit=50');
+            const data = await response.json();
+            
+            const tbody = document.getElementById('data-preview-table');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">수집된 데이터가 없습니다.</td></tr>';
+                document.getElementById('preview-count').textContent = '0';
+                document.getElementById('total-count').textContent = '0';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td><code>${item.ip_address}</code></td>
+                    <td>
+                        <span class="badge bg-${item.source === 'REGTECH' ? 'primary' : 'secondary'}">
+                            ${item.source}
+                        </span>
+                    </td>
+                    <td>${item.detection_date}</td>
+                    <td>${new Date(item.created_at).toLocaleDateString('ko-KR')}</td>
+                    <td>
+                        <span class="badge bg-${this.getRiskColor(item.risk_level)}">
+                            ${item.risk_level || 'MEDIUM'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-${item.is_active ? 'success' : 'secondary'}">
+                            ${item.is_active ? '활성' : '비활성'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('preview-count').textContent = data.length;
+            
+            // 전체 개수도 업데이트
+            const totalResponse = await fetch('/api/blacklist/count');
+            const totalData = await totalResponse.json();
+            document.getElementById('total-count').textContent = totalData.total || 0;
+
+        } catch (error) {
+            console.error('Recent data loading failed:', error);
+            document.getElementById('data-preview-table').innerHTML = 
+                '<tr><td colspan="6" class="text-center text-danger">데이터 로딩 실패</td></tr>';
+        }
+    }
+
+    getRiskColor(riskLevel) {
+        switch (riskLevel) {
+            case 'HIGH': return 'danger';
+            case 'MEDIUM': return 'warning';
+            case 'LOW': return 'info';
+            default: return 'secondary';
+        }
+    }
+}
+
+// 전역 함수들
+function togglePassword(id) {
+    const input = document.getElementById(id);
+    const icon = event.target.closest('button').querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+async function saveCredentials(source) {
+    const username = document.getElementById(`${source}-username`).value;
+    const password = document.getElementById(`${source}-password`).value;
+    const statusDiv = document.getElementById(`${source}-credential-status`);
+    
+    if (!username || !password) {
+        statusDiv.innerHTML = '<small class="text-danger">사용자명과 비밀번호를 입력하세요.</small>';
+        return;
+    }
+    
+    try {
+        statusDiv.innerHTML = '<small class="text-info">저장 중...</small>';
+        
+        const response = await fetch('/api/credentials/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                source: source,
+                username: username,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            statusDiv.innerHTML = '<small class="text-success"><i class="bi bi-check-circle"></i> 저장 완료</small>';
+            
+            // 연결 테스트
+            setTimeout(() => testConnection(source), 1000);
+        } else {
+            statusDiv.innerHTML = `<small class="text-danger">저장 실패: ${data.error}</small>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = '<small class="text-danger">저장 중 오류 발생</small>';
+    }
+}
+
+async function testConnection(source) {
+    const statusDiv = document.getElementById(`${source}-credential-status`);
+    
+    try {
+        statusDiv.innerHTML = '<small class="text-info">연결 테스트 중...</small>';
+        
+        const response = await fetch(`/api/credentials/test/${source}`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            statusDiv.innerHTML = '<small class="text-success"><i class="bi bi-check-circle"></i> 연결 성공</small>';
+        } else {
+            statusDiv.innerHTML = `<small class="text-warning">연결 실패: ${data.error || '알 수 없는 오류'}</small>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = '<small class="text-danger">연결 테스트 실패</small>';
+    }
+}
+
+function setDateRange(period) {
+    const startDate = document.getElementById('collection-start-date');
+    const endDate = document.getElementById('collection-end-date');
+    const today = new Date();
+    
+    switch (period) {
+        case 'today':
+            startDate.value = today.toISOString().split('T')[0];
+            endDate.value = today.toISOString().split('T')[0];
+            break;
+        case 'yesterday':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            startDate.value = yesterday.toISOString().split('T')[0];
+            endDate.value = yesterday.toISOString().split('T')[0];
+            break;
+        case 'last7days':
+            const week = new Date(today);
+            week.setDate(week.getDate() - 7);
+            startDate.value = week.toISOString().split('T')[0];
+            endDate.value = today.toISOString().split('T')[0];
+            break;
+        case 'last30days':
+            const month = new Date(today);
+            month.setDate(month.getDate() - 30);
+            startDate.value = month.toISOString().split('T')[0];
+            endDate.value = today.toISOString().split('T')[0];
+            break;
+        case 'thismonth':
+            startDate.value = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+            endDate.value = today.toISOString().split('T')[0];
+            break;
+        case 'lastmonth':
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+            startDate.value = lastMonth.toISOString().split('T')[0];
+            endDate.value = lastMonthEnd.toISOString().split('T')[0];
+            break;
+    }
+}
+
+async function checkDateRangeCollection() {
+    const startDate = document.getElementById('collection-start-date').value;
+    const endDate = document.getElementById('collection-end-date').value;
+    const tbody = document.getElementById('date-collection-table');
+    
+    if (!startDate || !endDate) {
+        alert('시작 날짜와 종료 날짜를 선택하세요.');
+        return;
+    }
+    
+    try {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">조회 중...</td></tr>';
+        
+        const response = await fetch(`/api/collection/date-range?start=${startDate}&end=${endDate}`);
+        const data = await response.json();
+        
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">해당 기간에 수집된 데이터가 없습니다.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td>${item.date}</td>
+                <td>
+                    <span class="badge bg-${item.regtech_count > 0 ? 'success' : 'secondary'}">
+                        ${item.regtech_count}건
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-${item.secudium_count > 0 ? 'success' : 'secondary'}">
+                        ${item.secudium_count}건
+                    </span>
+                </td>
+                <td><strong>${item.total_count}건</strong></td>
+                <td>
+                    <span class="badge bg-${item.total_count > 0 ? 'success' : 'secondary'}">
+                        ${item.total_count > 0 ? '수집됨' : '미수집'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            onclick="viewDateDetail('${item.date}')">
+                        <i class="bi bi-eye"></i> 상세
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">조회 실패</td></tr>';
+    }
+}
+
+async function startAdvancedCollection() {
+    const startDate = document.getElementById('collection-start-date').value;
+    const endDate = document.getElementById('collection-end-date').value;
+    
+    if (!startDate || !endDate) {
+        alert('수집할 날짜 범위를 선택하세요.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/collection/advanced/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                start_date: startDate,
+                end_date: endDate,
+                sources: ['regtech'] // SECUDIUM은 비활성화
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showNotification('고급 수집이 시작되었습니다.', 'success');
+            window.advancedCollectionManager.isCollecting = true;
+            startProgressMonitoring();
+        } else {
+            showNotification('수집 시작 실패: ' + data.error, 'error');
+        }
+    } catch (error) {
+        showNotification('수집 시작 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+function startProgressMonitoring() {
+    const progressBar = document.getElementById('regtech-progress-bar');
+    const progressText = document.getElementById('regtech-progress-text');
+    const logsContainer = document.getElementById('realtime-collection-logs');
+    
+    let progress = 0;
+    
+    // 진행률 시뮬레이션
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 100) {
+            progress = 100;
+            clearInterval(progressInterval);
+            showNotification('수집이 완료되었습니다.', 'success');
+            setTimeout(() => {
+                window.advancedCollectionManager.loadRecentData();
+                window.advancedCollectionManager.loadStatistics();
+            }, 2000);
+        }
+        
+        progressBar.style.width = progress + '%';
+        progressText.textContent = Math.round(progress) + '%';
+    }, 2000);
+    
+    // 로그 시뮬레이션
+    const logs = [
+        '수집 작업 시작...',
+        'REGTECH 로그인 시도...',
+        'REGTECH 로그인 성공',
+        '데이터 검색 중...',
+        '신규 IP 주소 발견: 10개',
+        '데이터 검증 중...',
+        '데이터베이스 저장 중...',
+        '수집 작업 진행 중...'
+    ];
+    
+    let logIndex = 0;
+    const logInterval = setInterval(() => {
+        if (logIndex < logs.length && progress < 100) {
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            const logEntry = `<div class="log-entry">[${timestamp}] ${logs[logIndex]}</div>`;
+            logsContainer.innerHTML += logEntry;
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            logIndex++;
+        } else if (progress >= 100) {
+            clearInterval(logInterval);
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            logsContainer.innerHTML += `<div class="log-entry text-success">[${timestamp}] 수집 완료!</div>`;
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+    }, 3000);
+}
+
+function loadRecentData() {
+    window.advancedCollectionManager.loadRecentData();
+}
+
+function exportData() {
+    window.open('/api/export/json', '_blank');
+}
+
+function viewDateDetail(date) {
+    window.open(`/raw-data?date=${date}`, '_blank');
+}
+
+function showNotification(message, type = 'info') {
+    // 알림 표시 로직 (이전과 동일)
+    const existingAlert = document.querySelector('.notification-alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    const alertClass = type === 'success' ? 'alert-success' : 
+                     type === 'error' ? 'alert-danger' : 'alert-info';
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} notification-alert position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span>${message}</span>
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentElement) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    window.advancedCollectionManager = new AdvancedCollectionManager();
+});
+</script>
+
+<style>
+.collection-manager-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.modern-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.log-entry {
+    margin-bottom: 2px;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    color: #00ff00;
+}
+
+.log-entry.text-success {
+    color: #28a745 !important;
+    font-weight: bold;
+}
+
+.stat-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.progress {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.table td {
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+.notification-alert {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+</style>

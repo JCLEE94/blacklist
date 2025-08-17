@@ -22,7 +22,7 @@ spec:
       - name: image.repository
         value: registry.jclee.me/jclee94/blacklist
       - name: image.tag
-        value: latest
+        value: 62bfd33
       - name: image.pullPolicy
         value: Always
         
