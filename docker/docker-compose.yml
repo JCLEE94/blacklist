@@ -15,7 +15,7 @@ services:
     environment:
       FLASK_ENV: production
       PORT: 2542
-      DATABASE_URL: "sqlite:///:memory:"
+      DATABASE_URL: "sqlite:////app/instance/blacklist.db"
       REDIS_URL: redis://redis:6379/0
       COLLECTION_ENABLED: "true"
       FORCE_DISABLE_COLLECTION: "false"

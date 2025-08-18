@@ -250,21 +250,21 @@ class SystemMonitor:
             # 경고 메시지 생성
             warnings = []
             if cpu_percent > 80:
-                warnings.append("높은 CPU 사용률: {cpu_percent:.1f}%")
+                warnings.append(f"높은 CPU 사용률: {cpu_percent:.1f}%")
             if memory.percent > 80:
-                warnings.append("높은 메모리 사용률: {memory.percent:.1f}%")
+                warnings.append(f"높은 메모리 사용률: {memory.percent:.1f}%")
             if disk.percent > 80:
-                warnings.append("높은 디스크 사용률: {disk.percent:.1f}%")
+                warnings.append(f"높은 디스크 사용률: {disk.percent:.1f}%")
             if db_health["status"] != "healthy":
                 warnings.append(
-                    "데이터베이스 상태 이상: {db_health.get('error', 'Unknown')}"
+                    f"데이터베이스 상태 이상: {db_health.get('error', 'Unknown')}"
                 )
 
             # Get actual cache status
             cache_health = self._check_cache_status()
             if cache_health["status"] != "healthy":
                 warnings.append(
-                    "캐시 상태 이상: {cache_health.get('error', 'Unknown')}"
+                    f"캐시 상태 이상: {cache_health.get('error', 'Unknown')}"
                 )
 
             return SystemHealth(
@@ -282,7 +282,7 @@ class SystemMonitor:
         except Exception as e:
             logger.error(f"System health check failed: {e}")
             return SystemHealth(
-                database_status="error", warnings=["모니터링 오류: {str(e)}"]
+                database_status="error", warnings=[f"모니터링 오류: {str(e)}"]
             )
 
     def _count_recent_errors(self) -> int:
@@ -306,7 +306,7 @@ class SystemMonitor:
         """캐시 상태 확인"""
         try:
             # Redis 캐시 상태 확인
-            from src.core.cache_manager import get_cache_manager
+            from src.core.containers.utils import get_cache_manager
 
             cache_manager = get_cache_manager()
 
@@ -417,7 +417,7 @@ class SystemMonitor:
         if health.database_status != "healthy":
             success = self.db_manager.optimize_database()
             self.log_system_event(
-                "INFO", "Database optimization: {'success' if success else 'failed'}"
+                "INFO", f"Database optimization: {'success' if success else 'failed'}"
             )
 
         # 메모리 정리 (가비지 컬렉션)
