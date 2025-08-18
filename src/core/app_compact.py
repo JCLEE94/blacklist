@@ -166,7 +166,10 @@ class CompactFlaskApp(
             app.smart_cache = smart_cache
 
             # Setup enhanced security
-            security_manager = get_security_manager()
+            import os
+            secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-blacklist-management-system-2025')
+            jwt_secret = os.getenv('JWT_SECRET_KEY', 'dev-jwt-secret-key-blacklist-management-system-2025')
+            security_manager = get_security_manager(secret_key, jwt_secret)
             app.security_manager = security_manager
 
             # Initialize unified decorators with container services

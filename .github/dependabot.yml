@@ -1,4 +1,0 @@
-# Dependabot configuration
-# This file disables Dependabot by not specifying any package ecosystems
-version: 2
-updates: []
