@@ -1,3 +1,5 @@
+# Docker Compose 기반 배포 (K8s 대신 사용)
+# Watchtower 자동 업데이트 + Registry 연동
 version: '3.9'
 
 services:
@@ -13,7 +15,7 @@ services:
     environment:
       FLASK_ENV: production
       PORT: 2542
-      DATABASE_URL: sqlite:////app/instance/blacklist.db
+      DATABASE_URL: "sqlite:///:memory:"
       REDIS_URL: redis://redis:6379/0
       COLLECTION_ENABLED: "true"
       FORCE_DISABLE_COLLECTION: "false"
