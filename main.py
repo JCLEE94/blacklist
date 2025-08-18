@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.core.app_compact import create_app
 import logging
 import argparse
+from datetime import datetime
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -25,7 +26,7 @@ def main():
     
     args = parser.parse_args()
     
-    logger.info(f"Starting Blacklist Management System on {args.host}:{args.port}")
+    logger.info(f"🚀 Starting Blacklist Management System v1.0.37-DEPLOY-TEST-{datetime.now().strftime('%H:%M:%S')} on {args.host}:{args.port}")
     
     try:
         app = create_app()

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>통합 제어 대시보드 - Blacklist Management</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/unified_dashboard.css') }}">
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ Blacklist 통합 제어 센터</h1>
+        <p>실시간 모니터링, 수집 제어, 데이터 분석을 한 곳에서</p>
+    </div>
+    
+    <div class="container">
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('dashboard')">📊 대시보드</div>
+            <div class="tab" onclick="showTab('collection')">🔄 수집 제어</div>
+            <div class="tab" onclick="showTab('analytics')">📈 분석</div>
+            <div class="tab" onclick="showTab('settings')">⚙️ 설정</div>
+        </div>
+        
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content">
+            <div class="grid grid-4">
+                <div class="stat-card">
+                    <div class="value" id="total-threats">-</div>
+                    <div class="label">총 위협 IP</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="active-sources">-</div>
+                    <div class="label">활성 소스</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="last-updated">-</div>
+                    <div class="label">최근 업데이트</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="system-status">-</div>
+                    <div class="label">시스템 상태</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>📅 수집 캘린더</h3>
+                    <div id="collection-calendar"></div>
+                </div>
+                
+                <div class="card">
+                    <h3>📊 실시간 통계</h3>
+                    <div id="realtime-stats"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Collection Tab -->
+        <div id="collection-tab" class="tab-content" style="display: none;">
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>🔄 자동 수집 제어</h3>
+                    <div class="form-group">
+                        <label>자동 수집 활성화</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="auto-collection-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="collection-interval">수집 간격 (분)</label>
+                        <input type="number" id="collection-interval" class="form-control" value="60" min="5" max="1440">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="saveCollectionSettings()">설정 저장</button>
+                </div>
+                
+                <div class="card">
+                    <h3>🎯 수동 수집 실행</h3>
+                    <div class="form-group">
+                        <button class="btn btn-success" onclick="triggerCollection('regtech')">REGTECH 수집</button>
+                        <button class="btn btn-success" onclick="triggerCollection('secudium')">SECUDIUM 수집</button>
+                        <button class="btn btn-warning" onclick="triggerCollection('all')">전체 수집</button>
+                    </div>
+                    
+                    <div id="collection-log"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content" style="display: none;">
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>📈 위협 트렌드</h3>
+                    <div id="threat-trends"></div>
+                </div>
+                
+                <div class="card">
+                    <h3>🌍 지역별 분석</h3>
+                    <div id="geo-analysis"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🔍 상세 분석</h3>
+                <div id="detailed-analysis"></div>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content" style="display: none;">
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>⚙️ 시스템 설정</h3>
+                    <div class="form-group">
+                        <label for="max-entries">최대 저장 엔트리 수</label>
+                        <input type="number" id="max-entries" class="form-control" value="10000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="retention-days">데이터 보관 기간 (일)</label>
+                        <input type="number" id="retention-days" class="form-control" value="30">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="saveSystemSettings()">설정 저장</button>
+                </div>
+                
+                <div class="card">
+                    <h3>🔐 보안 설정</h3>
+                    <div class="form-group">
+                        <label>API 키 보호</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="api-protection-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn btn-warning" onclick="regenerateApiKey()">API 키 재생성</button>
+                        <button class="btn btn-danger" onclick="clearAllData()">모든 데이터 삭제</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/unified_dashboard.js') }}"></script>
+</body>
+</html>

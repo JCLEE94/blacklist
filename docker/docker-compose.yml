@@ -80,6 +80,43 @@ services:
           cpus: '0.05'
           memory: 64M
 
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # 1시간마다 업데이트 체크 (프로덕션)
+      WATCHTOWER_POLL_INTERVAL: 3600
+      # 오래된 이미지 자동 삭제
+      WATCHTOWER_CLEANUP: "true"
+      # 특정 컨테이너만 업데이트 (blacklist 컨테이너만)
+      WATCHTOWER_SCOPE: blacklist
+      # 로그 레벨
+      WATCHTOWER_DEBUG: "false"
+      # 시간대
+      TZ: Asia/Seoul
+      # 업데이트 후 알림 (선택사항)
+      WATCHTOWER_NOTIFICATIONS: shoutrrr
+      WATCHTOWER_NOTIFICATION_URL: "generic+http://localhost:32542/webhook/watchtower"
+    command: blacklist
+    networks:
+      - blacklist-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
 volumes:
   redis_data:
     driver: local
