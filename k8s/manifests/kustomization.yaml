@@ -15,6 +15,7 @@ resources:
   - 07-service.yaml
   - 08-ingress.yaml
   - 09-redis.yaml
+  - 10-restart-hook.yaml
 
 commonLabels:
   app.kubernetes.io/managed-by: kustomize
@@ -23,6 +24,7 @@ commonLabels:
 images:
   - name: registry.jclee.me/blacklist
     newTag: latest
+    # This will be automatically updated by ArgoCD Image Updater
 
 replicas:
   - name: blacklist

@@ -1,0 +1,55 @@
+---
+# ArgoCD PostSync Hook to force pod restart after sync
+# This ensures the latest image is always pulled
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: restart-deployment
+  namespace: blacklist
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      serviceAccountName: blacklist-sa
+      restartPolicy: Never
+      containers:
+      - name: kubectl
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Restarting blacklist deployment to pull latest image..."
+          kubectl rollout restart deployment/blacklist -n blacklist
+          kubectl rollout status deployment/blacklist -n blacklist --timeout=300s
+          echo "Deployment restarted successfully"
+---
+# Add permissions for the service account to restart deployments
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployment-restart
+  namespace: blacklist
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "patch", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments/scale"]
+  verbs: ["patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployment-restart
+  namespace: blacklist
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deployment-restart
+subjects:
+- kind: ServiceAccount
+  name: blacklist-sa
+  namespace: blacklist

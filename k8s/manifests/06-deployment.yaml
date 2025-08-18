@@ -40,7 +40,7 @@ spec:
       containers:
       - name: blacklist
         image: registry.jclee.me/blacklist:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 2542
