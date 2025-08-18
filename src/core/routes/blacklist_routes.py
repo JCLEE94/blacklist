@@ -10,6 +10,7 @@ from flask import Blueprint, Response, jsonify
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
+from ..container import get_container
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,10 @@ def get_active_blacklist():
     """활성 블랙리스트 IP 목록 반환 (텍스트 형식)"""
     try:
         # 활성 IP 목록 가져오기
-        active_ips = service.get_active_ips()
+        # Get blacklist manager from container and fetch active IPs
+        container = get_container()
+        blacklist_mgr = container.get('blacklist_manager')
+        active_ips = blacklist_mgr.get_active_ips()
 
         if not active_ips:
             logger.warning("No active IPs found")
@@ -60,7 +64,10 @@ def get_fortigate_format():
     """FortiGate External Connector 형식으로 블랙리스트 반환"""
     try:
         # 활성 IP 목록 가져오기
-        active_ips = service.get_active_ips()
+        # Get blacklist manager from container and fetch active IPs
+        container = get_container()
+        blacklist_mgr = container.get('blacklist_manager')
+        active_ips = blacklist_mgr.get_active_ips()
 
         if not active_ips:
             logger.warning("No active IPs for FortiGate format")
@@ -90,19 +97,32 @@ def get_fortigate_format():
 
     except Exception as e:
         logger.error(f"Failed to generate FortiGate format: {e}")
-        return create_error_response(
-            "fortigate_format_failed",
-            f"Failed to generate FortiGate format: {str(e)}",
-            500,
-        )
+        from ..exceptions import BlacklistError
+        error = BlacklistError(f"Failed to generate FortiGate format: {str(e)}")
+        return create_error_response(error)
 
 
 @blacklist_routes_bp.route("/api/v2/blacklist/enhanced", methods=["GET"])
 def get_enhanced_blacklist():
     """향상된 블랙리스트 - 메타데이터 포함"""
     try:
-        # 활성 IP와 메타데이터 가져오기
-        enhanced_data = service.get_enhanced_blacklist()
+        # Get blacklist manager from container for enhanced data
+        container = get_container()
+        blacklist_mgr = container.get('blacklist_manager')
+        
+        # Get enhanced blacklist data
+        if hasattr(service, 'get_enhanced_blacklist'):
+            enhanced_data = service.get_enhanced_blacklist()
+        else:
+            # Fallback to basic active IPs
+            active_ips = blacklist_mgr.get_active_ips()
+            enhanced_data = {
+                "ips": [{"ip": ip, "source": "unknown"} for ip in active_ips],
+                "sources": {},
+                "threat_levels": {},
+                "last_updated": datetime.utcnow().isoformat(),
+                "expiry_info": {}
+            }
 
         if not enhanced_data:
             logger.warning("No enhanced blacklist data found")
@@ -136,8 +156,6 @@ def get_enhanced_blacklist():
 
     except Exception as e:
         logger.error(f"Failed to get enhanced blacklist: {e}")
-        return create_error_response(
-            "enhanced_blacklist_failed",
-            f"Failed to get enhanced blacklist: {str(e)}",
-            500,
-        )
+        from ..exceptions import BlacklistError
+        error = BlacklistError(f"Failed to get enhanced blacklist: {str(e)}")
+        return create_error_response(error)

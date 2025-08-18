@@ -247,11 +247,11 @@ class DataService:
 
                 cursor.execute(
                     """
-                    SELECT DISTINCT ip
+                    SELECT DISTINCT ip_address
                     FROM blacklist_entries
                     WHERE is_active = 1
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
-                    ORDER BY ip
+                    ORDER BY ip_address
                     """
                 )
 

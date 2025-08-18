@@ -165,18 +165,18 @@ class StatisticsService:
                 cursor = conn.cursor()
 
                 # Get active IPs count
-                cursor.execute("SELECT COUNT(*) FROM blacklist_ip WHERE is_active = 1")
+                cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 1")
                 active_ips = cursor.fetchone()[0]
 
                 # Get total IPs count
-                cursor.execute("SELECT COUNT(*) FROM blacklist_ip")
+                cursor.execute("SELECT COUNT(*) FROM blacklist_entries")
                 total_ips = cursor.fetchone()[0]
 
                 # Get source counts
                 cursor.execute(
                     """
                     SELECT source, COUNT(*) as count 
-                    FROM blacklist_ip 
+                    FROM blacklist_entries 
                     WHERE is_active = 1 
                     GROUP BY source
                 """
