@@ -37,6 +37,72 @@ def get_collection_status():
         )
 
 
+@collection_bp.route("/daily-stats", methods=["GET"])
+@rate_limit(limit=30, window_seconds=60)  # 분당 30회
+def get_daily_collection_stats():
+    """날짜별 수집 통계 조회 (시각화용)"""
+    try:
+        days = request.args.get("days", 30, type=int)  # 기본 30일
+        
+        factory = get_collector_factory()
+        manager = factory.create_collection_manager()
+        
+        # 날짜별 수집 데이터 조회
+        daily_stats = manager.get_daily_collection_stats(days)
+        
+        # 시각화를 위한 데이터 변환
+        visualization_data = {
+            "labels": [stat["date"] for stat in daily_stats],
+            "datasets": [
+                {
+                    "label": "REGTECH",
+                    "data": [stat.get("regtech_count", 0) for stat in daily_stats],
+                    "backgroundColor": "rgba(54, 162, 235, 0.2)",
+                    "borderColor": "rgba(54, 162, 235, 1)",
+                    "borderWidth": 2
+                },
+                {
+                    "label": "SECUDIUM", 
+                    "data": [stat.get("secudium_count", 0) for stat in daily_stats],
+                    "backgroundColor": "rgba(255, 99, 132, 0.2)",
+                    "borderColor": "rgba(255, 99, 132, 1)", 
+                    "borderWidth": 2
+                },
+                {
+                    "label": "중복 제거됨",
+                    "data": [stat.get("duplicates_removed", 0) for stat in daily_stats],
+                    "backgroundColor": "rgba(255, 206, 86, 0.2)",
+                    "borderColor": "rgba(255, 206, 86, 1)",
+                    "borderWidth": 2
+                }
+            ],
+            "totals": {
+                "total_collected": sum([stat.get("total_count", 0) for stat in daily_stats]),
+                "total_duplicates": sum([stat.get("duplicates_removed", 0) for stat in daily_stats]),
+                "regtech_total": sum([stat.get("regtech_count", 0) for stat in daily_stats]),
+                "secudium_total": sum([stat.get("secudium_count", 0) for stat in daily_stats])
+            }
+        }
+
+        return jsonify({
+            "success": True,
+            "data": daily_stats,
+            "visualization": visualization_data,
+            "period": f"{days}일",
+            "summary": {
+                "total_days": len(daily_stats),
+                "collection_days": len([s for s in daily_stats if s.get("total_count", 0) > 0])
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"일별 수집 통계 조회 실패: {e}")
+        return (
+            jsonify({"success": False, "error": "일별 통계를 가져올 수 없습니다"}),
+            500,
+        )
+
+
 @collection_bp.route("/collectors", methods=["GET"])
 @require_auth(roles=["admin", "collector"])
 def list_collectors():

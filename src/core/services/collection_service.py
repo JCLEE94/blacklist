@@ -26,19 +26,30 @@ class CollectionServiceMixin:
     """
 
     async def collect_all_data(self, force: bool = False) -> Dict[str, Any]:
-        """모든 소스에서 데이터 수집"""
+        """모든 소스에서 데이터 수집 (중복 제거 포함)"""
         self.logger.info("🔄 전체 데이터 수집 시작...")
 
         results = {}
         total_success = 0
         total_failed = 0
+        all_collected_ips = set()  # 중복 제거를 위한 IP 집합
 
         # REGTECH 수집
         if "regtech" in self._components:
             try:
                 regtech_result = await self._collect_regtech_data(force)
                 results["regtech"] = regtech_result
-                if regtech_result.get("success"):
+                
+                # 수집된 IP들을 중복 제거 집합에 추가
+                if regtech_result.get("success") and regtech_result.get("ips"):
+                    regtech_ips = set(regtech_result["ips"])
+                    before_count = len(all_collected_ips)
+                    all_collected_ips.update(regtech_ips)
+                    after_count = len(all_collected_ips)
+                    
+                    regtech_result["duplicates_removed"] = len(regtech_ips) - (after_count - before_count)
+                    regtech_result["unique_ips"] = after_count - before_count
+                    
                     total_success += 1
                 else:
                     total_failed += 1
@@ -52,7 +63,17 @@ class CollectionServiceMixin:
             try:
                 secudium_result = await self._collect_secudium_data(force)
                 results["secudium"] = secudium_result
-                if secudium_result.get("success"):
+                
+                # 수집된 IP들을 중복 제거 집합에 추가
+                if secudium_result.get("success") and secudium_result.get("ips"):
+                    secudium_ips = set(secudium_result["ips"])
+                    before_count = len(all_collected_ips)
+                    all_collected_ips.update(secudium_ips)
+                    after_count = len(all_collected_ips)
+                    
+                    secudium_result["duplicates_removed"] = len(secudium_ips) - (after_count - before_count)
+                    secudium_result["unique_ips"] = after_count - before_count
+                    
                     total_success += 1
                 else:
                     total_failed += 1
@@ -61,12 +82,17 @@ class CollectionServiceMixin:
                 results["secudium"] = {"success": False, "error": str(e)}
                 total_failed += 1
 
+        # 중복 제거 통계 추가
+        total_duplicates = sum([r.get("duplicates_removed", 0) for r in results.values() if isinstance(r, dict)])
+        
         return {
             "success": total_success > 0,
             "results": results,
             "summary": {
                 "successful_sources": total_success,
                 "failed_sources": total_failed,
+                "total_unique_ips": len(all_collected_ips),
+                "total_duplicates_removed": total_duplicates,
                 "timestamp": datetime.now().isoformat(),
             },
         }

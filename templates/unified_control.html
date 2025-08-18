@@ -108,6 +108,46 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- 날짜별 수집 시각화 차트 -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="border rounded p-3 bg-light">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-bar-chart-line"></i> 날짜별 수집 트렌드
+                                </h6>
+                                <div style="height: 400px;">
+                                    <canvas id="dailyCollectionChart"></canvas>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h5 class="mb-0 text-primary" id="chart-total-regtech">0</h5>
+                                            <small class="text-muted">REGTECH 총계</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h5 class="mb-0 text-danger" id="chart-total-secudium">0</h5>
+                                            <small class="text-muted">SECUDIUM 총계</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h5 class="mb-0 text-warning" id="chart-total-duplicates">0</h5>
+                                            <small class="text-muted">중복 제거</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h5 class="mb-0 text-success" id="chart-collection-days">0</h5>
+                                            <small class="text-muted">수집 일수</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -703,11 +743,16 @@ class UnifiedControl {
     // Load daily stats
     async loadDailyStats() {
         try {
-            const response = await fetch('/api/stats/daily?days=30');
+            const response = await fetch('/api/collection/daily-stats?days=30');
             const data = await response.json();
             
-            if (data.success && data.stats) {
-                this.renderDailyStats(data.stats);
+            if (data.success && data.data) {
+                this.renderDailyStats(data.data);
+                
+                // 시각화 차트 렌더링
+                if (data.visualization) {
+                    this.renderDailyChart(data.visualization);
+                }
             }
         } catch (error) {
             console.error('Failed to load daily stats:', error);
@@ -761,6 +806,76 @@ class UnifiedControl {
                 </tr>
             `;
         }).join('');
+    }
+    
+    // Render daily collection chart
+    renderDailyChart(visualization) {
+        const ctx = document.getElementById('dailyCollectionChart');
+        if (!ctx) return;
+        
+        // 기존 차트 제거
+        if (this.dailyChart) {
+            this.dailyChart.destroy();
+        }
+        
+        // 새 차트 생성
+        this.dailyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: visualization.labels,
+                datasets: visualization.datasets.map(dataset => ({
+                    ...dataset,
+                    fill: false,
+                    tension: 0.3
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: '날짜별 수집 현황 (최근 30일)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'IP 개수'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '날짜'
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+        
+        // 통계 업데이트
+        if (visualization.totals) {
+            document.getElementById('chart-total-regtech').textContent = 
+                visualization.totals.regtech_total.toLocaleString();
+            document.getElementById('chart-total-secudium').textContent = 
+                visualization.totals.secudium_total.toLocaleString();
+            document.getElementById('chart-total-duplicates').textContent = 
+                visualization.totals.total_duplicates.toLocaleString();
+        }
+        
+        // 수집 일수 계산
+        const collectionDays = visualization.labels.length;
+        document.getElementById('chart-collection-days').textContent = collectionDays;
     }
     
     // Start status polling
