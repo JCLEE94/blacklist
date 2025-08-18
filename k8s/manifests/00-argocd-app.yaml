@@ -30,6 +30,7 @@ spec:
       prune: true
       selfHeal: true
       allowEmpty: false
+    refresh: normal  # Use normal refresh interval (default 3m)
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
@@ -39,11 +40,11 @@ spec:
       - ApplyOutOfSyncOnly=true  # Only sync out-of-sync resources
       - Replace=false  # Use strategic merge instead of replace
     retry:
-      limit: 5
+      limit: 3
       backoff:
-        duration: 5s
+        duration: 10s
         factor: 2
-        maxDuration: 3m
+        maxDuration: 5m
         
   ignoreDifferences:
     - group: apps
