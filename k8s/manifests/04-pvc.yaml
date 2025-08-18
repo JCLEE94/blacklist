@@ -4,6 +4,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: blacklist-data-pvc
   namespace: blacklist
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"  # PVCs before deployments
   labels:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: storage
@@ -20,6 +22,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: blacklist-logs-pvc
   namespace: blacklist
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"  # PVCs before deployments
   labels:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: storage

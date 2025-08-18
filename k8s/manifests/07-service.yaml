@@ -4,6 +4,8 @@ kind: Service
 metadata:
   name: blacklist
   namespace: blacklist
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"  # Service after deployment
   labels:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: backend

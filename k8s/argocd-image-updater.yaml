@@ -6,6 +6,8 @@ kind: ConfigMap
 metadata:
   name: argocd-image-updater-config
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"  # Configure before applications
 data:
   # Registry configuration
   registries.conf: |
@@ -16,15 +18,6 @@ data:
       insecure: no
       credentials: pullsecret:blacklist/registry-credentials
       default: true
-      
-  # Application-specific configuration
-  applications.conf: |
-    applications:
-    - name: blacklist
-      registry: jclee-registry
-      image: registry.jclee.me/blacklist
-      update_strategy: latest
-      pull_policy: always
       
 ---
 # ArgoCD Image Updater Application

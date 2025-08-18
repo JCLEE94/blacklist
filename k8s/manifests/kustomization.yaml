@@ -6,16 +6,21 @@ namespace: blacklist
 
 resources:
   # IMPORTANT: 00-argocd-app.yaml is NOT included here (applied separately)
-  - 01-namespace.yaml
-  - 02-configmap.yaml
-  - 03-secret.yaml
-  - 04-pvc.yaml
-  - 05-serviceaccount.yaml
-  - 06-deployment.yaml
-  - 07-service.yaml
-  - 08-ingress.yaml
-  - 09-redis.yaml
-  - 10-restart-hook.yaml
+  # Resources are applied in sync wave order
+  - 01-namespace.yaml        # Wave -5: Namespace first
+  - 02-configmap.yaml        # Wave -3: ConfigMaps
+  - 03-secret.yaml           # Wave -3: Secrets
+  - 04-pvc.yaml             # Wave -2: Storage
+  - 05-serviceaccount.yaml  # Wave -4: RBAC
+  - 06-deployment.yaml       # Wave  0: Main app
+  - 07-service.yaml          # Wave  1: Service
+  - 08-ingress.yaml          # Wave  2: Ingress
+  - 09-redis.yaml            # Wave -1: Redis cache
+  - 10-restart-hook.yaml     # Wave  3: Post-sync hook
+  - 11-pdb.yaml             # Wave  0: Pod Disruption Budget
+  - 12-networkpolicy.yaml   # Wave -4: Network policies
+  - 13-hpa.yaml             # Wave  1: Autoscaling
+  # Note: 14-argocd-health.yaml is applied to argocd namespace separately
 
 commonLabels:
   app.kubernetes.io/managed-by: kustomize

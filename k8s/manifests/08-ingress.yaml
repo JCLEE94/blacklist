@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: networking
   annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Ingress after service
     kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.tls: "true"

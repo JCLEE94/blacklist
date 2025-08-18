@@ -1,0 +1,37 @@
+---
+# Pod Disruption Budget for Blacklist Application
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: blacklist-pdb
+  namespace: blacklist
+  labels:
+    app.kubernetes.io/name: blacklist
+    app.kubernetes.io/component: policy
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # Same wave as deployment
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: blacklist
+      app.kubernetes.io/component: backend
+  unhealthyPodEvictionPolicy: IfHealthyBudget
+---
+# Pod Disruption Budget for Redis
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: blacklist-redis-pdb
+  namespace: blacklist
+  labels:
+    app.kubernetes.io/name: blacklist-redis
+    app.kubernetes.io/component: policy
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"  # Same wave as Redis deployment
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: blacklist-redis
+      app.kubernetes.io/component: cache

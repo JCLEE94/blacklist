@@ -8,6 +8,8 @@ metadata:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.37"
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # Main deployment
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -52,11 +54,11 @@ spec:
             name: blacklist-secrets
         resources:
           requests:
-            cpu: 50m
-            memory: 128Mi
+            cpu: 100m      # Increased for better scheduling
+            memory: 256Mi  # Increased for better performance
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 1000m     # Increased for burst handling
+            memory: 1Gi    # Increased for data processing
         volumeMounts:
         - name: data
           mountPath: /app/data

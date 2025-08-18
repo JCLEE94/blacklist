@@ -10,3 +10,5 @@ metadata:
     app.kubernetes.io/instance: blacklist
     app.kubernetes.io/component: backend
     app.kubernetes.io/managed-by: kubectl
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"  # Namespace must be created first

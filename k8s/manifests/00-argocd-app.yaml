@@ -32,9 +32,11 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
-      - PruneLast=true
+      - PruneLast=true  # Prune resources as final wave
       - RespectIgnoreDifferences=true
       - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true  # Only sync out-of-sync resources
+      - Replace=false  # Use strategic merge instead of replace
     retry:
       limit: 5
       backoff:

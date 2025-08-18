@@ -4,6 +4,8 @@ kind: ConfigMap
 metadata:
   name: blacklist-config
   namespace: blacklist
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"  # ConfigMaps before deployments
   labels:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: configuration

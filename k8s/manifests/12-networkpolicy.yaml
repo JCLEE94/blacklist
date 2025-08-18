@@ -1,0 +1,110 @@
+---
+# Network Policy for Blacklist Application
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: blacklist-netpol
+  namespace: blacklist
+  labels:
+    app.kubernetes.io/name: blacklist
+    app.kubernetes.io/component: network-security
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"  # Network policies early
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: blacklist
+      app.kubernetes.io/component: backend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from Ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: traefik-system
+    ports:
+    - protocol: TCP
+      port: 2542
+  # Allow traffic from within the namespace (for health checks)
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 2542
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    - podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow communication to Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: blacklist-redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow HTTPS traffic to external APIs (REGTECH, SECUDIUM)
+  - to:
+    - namespaceSelector: {}
+      podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  - to:
+    - namespaceSelector: {}
+      podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 80
+---
+# Network Policy for Redis
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: blacklist-redis-netpol
+  namespace: blacklist
+  labels:
+    app.kubernetes.io/name: blacklist-redis
+    app.kubernetes.io/component: network-security
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"  # Network policies early
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: blacklist-redis
+      app.kubernetes.io/component: cache
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Only allow traffic from blacklist app
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: blacklist
+          app.kubernetes.io/component: backend
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  # Redis typically doesn't need egress, but allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    - podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53

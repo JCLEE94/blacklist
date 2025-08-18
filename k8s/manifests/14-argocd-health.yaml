@@ -1,0 +1,98 @@
+---
+# ArgoCD Health Check ConfigMap
+# This ConfigMap enables advanced health checks for ArgoCD applications
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  # Enable application health assessment for sync waves between apps
+  resource.customizations: |
+    argoproj.io/Application:
+      health.lua: |
+        hs = {}
+        hs.status = "Progressing"
+        hs.message = ""
+        if obj.status ~= nil then
+          if obj.status.health ~= nil then
+            hs.status = obj.status.health.status
+            if obj.status.health.message ~= nil then
+              hs.message = obj.status.health.message
+            end
+          end
+        end
+        return hs
+    
+    # Custom health check for Deployments
+    apps/Deployment:
+      health.lua: |
+        hs = {}
+        if obj.status ~= nil then
+          if obj.status.conditions ~= nil then
+            for i, condition in ipairs(obj.status.conditions) do
+              if condition.type == "Progressing" and condition.status == "False" then
+                hs.status = "Degraded"
+                hs.message = condition.message
+                return hs
+              end
+              if condition.type == "Available" and condition.status == "False" then
+                hs.status = "Degraded"
+                hs.message = condition.message
+                return hs
+              end
+            end
+          end
+          if obj.status.replicas ~= nil and obj.status.readyReplicas ~= nil then
+            if obj.status.replicas == obj.status.readyReplicas then
+              hs.status = "Healthy"
+              hs.message = "All replicas are ready"
+            else
+              hs.status = "Progressing"
+              hs.message = string.format("%d/%d replicas ready", obj.status.readyReplicas or 0, obj.status.replicas)
+            end
+            return hs
+          end
+        end
+        hs.status = "Progressing"
+        hs.message = "Waiting for deployment to start"
+        return hs
+    
+    # Custom health check for PVCs
+    v1/PersistentVolumeClaim:
+      health.lua: |
+        hs = {}
+        if obj.status ~= nil then
+          if obj.status.phase ~= nil then
+            if obj.status.phase == "Bound" then
+              hs.status = "Healthy"
+              hs.message = "PVC is bound"
+            elseif obj.status.phase == "Pending" then
+              hs.status = "Progressing"
+              hs.message = "PVC is pending"
+            else
+              hs.status = "Degraded"
+              hs.message = "PVC is in " .. obj.status.phase .. " phase"
+            end
+            return hs
+          end
+        end
+        hs.status = "Progressing"
+        hs.message = "Waiting for PVC status"
+        return hs
+  
+  # Sync retry configuration
+  application.instanceLabelKey: argocd.argoproj.io/instance
+  
+  # Resource exclusions
+  resource.exclusions: |
+    - apiGroups:
+      - cilium.io
+      kinds:
+      - CiliumIdentity
+      clusters:
+      - "*"
+  
+  # Timeout settings
+  timeout.reconciliation: 180s
+  timeout.hard.reconciliation: 0
