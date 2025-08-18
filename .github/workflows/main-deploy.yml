@@ -83,7 +83,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-          cache-dependency-path: 'requirements.txt'
+          cache-dependency-path: 'config/requirements.txt'
           
       - name: Install security tools
         run: |
@@ -105,7 +105,7 @@ jobs:
           
       - name: Run Safety check
         run: |
-          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
+          python3 -m pip install -r config/requirements.txt --user || pip install -r config/requirements.txt
           python3 -m safety check || ~/.local/bin/safety check || true
           
       - name: Set security status
@@ -137,11 +137,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-          cache-dependency-path: 'requirements.txt'
+          cache-dependency-path: 'config/requirements.txt'
           
       - name: Install dependencies
         run: |
-          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
+          python3 -m pip install -r config/requirements.txt --user || pip install -r config/requirements.txt
           python3 -m pip install black isort flake8 --user || pip install black isort flake8
           
       - name: Run linting (non-blocking)
@@ -201,11 +201,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-          cache-dependency-path: 'requirements.txt'
+          cache-dependency-path: 'config/requirements.txt'
           
       - name: Install dependencies
         run: |
-          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
+          python3 -m pip install -r config/requirements.txt --user || pip install -r config/requirements.txt
           
       - name: Initialize database
         run: |
@@ -299,6 +299,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: docker/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -363,11 +364,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-          cache-dependency-path: 'requirements.txt'
+          cache-dependency-path: 'config/requirements.txt'
           
       - name: Install packaging tools
         run: |
-          python3 -m pip install -r requirements.txt --user || pip install -r requirements.txt
+          python3 -m pip install -r config/requirements.txt --user || pip install -r config/requirements.txt
           # docker-compose should be pre-installed on self-hosted runner
           docker-compose version || echo "docker-compose should be pre-installed on self-hosted runner"
           

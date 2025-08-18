@@ -141,11 +141,11 @@ class CodeQualityStage(PipelineStage):
 
     def _check_dependencies(self) -> bool:
         """Dependency check"""
-        if not Path("requirements.txt").exists():
+        if not Path("config/requirements.txt").exists():
             return True
 
         # Validate dependency format
-        with open("requirements.txt") as f:
+        with open("config/requirements.txt") as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#"):

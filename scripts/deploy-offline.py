@@ -55,9 +55,10 @@ def create_offline_package():
                        ))
         
         # Docker 관련 파일
-        for file in ['Dockerfile', 'docker-compose.yml', 'requirements.txt']:
+        for file in ['docker/Dockerfile', 'docker/docker-compose.yml', 'config/requirements.txt']:
             if os.path.exists(file):
-                shutil.copy(file, package_dir / 'app')
+                dest_file = file.split('/')[-1]  # Extract filename only
+                shutil.copy(file, package_dir / 'app' / dest_file)
         
         # 설치 스크립트 생성
         install_script = package_dir / 'install-offline.sh'

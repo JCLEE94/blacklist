@@ -33,8 +33,8 @@ help:
 # Initialize environment
 init:
 	@echo "Initializing environment..."
-	@pip install -r requirements.txt
-	@pip install -r requirements-dev.txt || echo "No dev requirements"
+	@pip install -r config/requirements.txt
+	@pip install -r config/requirements-dev.txt || echo "No dev requirements"
 	@python3 init_database.py
 	@cp .env.example .env 2>/dev/null || echo ".env already exists"
 	@echo "Environment initialized! Edit .env if needed."
@@ -53,23 +53,23 @@ lint:
 
 # Start services
 start:
-	@./start.sh start
+	@docker-compose -f docker/docker-compose.yml up -d
 
 # Stop services
 stop:
-	@./start.sh stop
+	@docker-compose -f docker/docker-compose.yml down
 
 # Restart services
 restart:
-	@./start.sh restart
+	@docker-compose -f docker/docker-compose.yml restart
 
 # Show logs
 logs:
-	@./start.sh logs
+	@docker-compose -f docker/docker-compose.yml logs -f
 
 # Check status
 status:
-	@./start.sh status
+	@docker-compose -f docker/docker-compose.yml ps
 
 # Clean up
 clean:
@@ -77,7 +77,7 @@ clean:
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete
 	@rm -rf .coverage htmlcov/
-	@./start.sh clean
+	@docker-compose -f docker/docker-compose.yml down --volumes --remove-orphans
 	@echo "Cleanup completed!"
 
 # Development shortcuts
@@ -89,7 +89,7 @@ run:
 
 # Install dependencies
 install:
-	@pip install -r requirements.txt
+	@pip install -r config/requirements.txt
 
 # Development mode with auto-reload (local)
 dev:
@@ -98,7 +98,7 @@ dev:
 # Docker operations
 docker-build:
 	@echo "Building Docker image..."
-	@docker build -t registry.jclee.me/jclee94/blacklist:latest .
+	@docker build -f docker/Dockerfile -t registry.jclee.me/jclee94/blacklist:latest .
 	@echo "Docker image built successfully!"
 
 docker-push:

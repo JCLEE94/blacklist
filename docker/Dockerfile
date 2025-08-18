@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /build
 
 # Copy requirements and install dependencies
-COPY requirements.txt .
+COPY config/requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Production stage

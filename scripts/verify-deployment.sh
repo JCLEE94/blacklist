@@ -65,8 +65,8 @@ fi
 
 # Test 5: Docker Compose configuration
 echo -e "${BLUE}5. Verifying Docker Compose configuration...${NC}"
-if [ -f "docker-compose.yml" ]; then
-    COMPOSE_IMAGE=$(grep "image:" docker-compose.yml | head -1 | awk '{print $2}')
+if [ -f "docker/docker-compose.yml" ]; then
+    COMPOSE_IMAGE=$(grep "image:" docker/docker-compose.yml | head -1 | awk '{print $2}')
     if [ "$COMPOSE_IMAGE" = "registry.jclee.me/jclee94/blacklist:latest" ]; then
         echo -e "   ${GREEN}✅ Docker Compose using correct registry${NC}"
     else
@@ -74,7 +74,7 @@ if [ -f "docker-compose.yml" ]; then
         exit 1
     fi
 else
-    echo -e "   ${RED}❌ docker-compose.yml not found${NC}"
+    echo -e "   ${RED}❌ docker/docker-compose.yml not found${NC}"
     exit 1
 fi
 

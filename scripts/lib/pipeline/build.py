@@ -25,8 +25,8 @@ class BuildStage(PipelineStage):
         """Build Docker image"""
         try:
             # Prepare build context
-            if not Path("deployment/Dockerfile").exists():
-                logger.error("Dockerfile not found")
+            if not Path("docker/Dockerfile").exists():
+                logger.error("Dockerfile not found in docker/ directory")
                 return False
 
             # Generate tags
@@ -45,7 +45,7 @@ class BuildStage(PipelineStage):
                     "docker",
                     "build",
                     "-f",
-                    "deployment/Dockerfile",
+                    "docker/Dockerfile",
                     "-t",
                     tag,
                     "--cache-from",
