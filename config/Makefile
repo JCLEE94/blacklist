@@ -39,8 +39,8 @@ init:
 	@echo "Initializing environment..."
 	@pip install -r config/requirements.txt
 	@pip install -r config/requirements-dev.txt || echo "No dev requirements"
-	@python3 init_database.py
-	@cp .env.example .env 2>/dev/null || echo ".env already exists"
+	@python3 commands/utils/init_database.py
+	@cp config/.env.example .env 2>/dev/null || echo ".env already exists"
 	@echo "Environment initialized! Edit .env if needed."
 
 # Run tests
