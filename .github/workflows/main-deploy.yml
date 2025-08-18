@@ -13,15 +13,39 @@ env:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Login to Container Registry
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
 
     - name: Build Docker image
       run: |
-        docker build -f docker/Dockerfile \
+        docker buildx build \
+          --platform linux/amd64 \
+          --cache-from type=local,src=/tmp/.buildx-cache \
+          --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+          -f docker/Dockerfile \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          --load \
           .
 
     - name: Push to registry
@@ -29,10 +53,26 @@ jobs:
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
+
+    - name: Test image health
+      run: |
+        docker run --rm --name test-container -d -p 8080:2542 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        sleep 30
+        curl -f http://localhost:8080/health || exit 1
+        docker stop test-container || true
+
     - name: Cleanup old images
       run: |
         docker image prune -f
         docker images | grep ${{ env.IMAGE_NAME }} | grep -v latest | head -n -3 | awk '{print $3}' | xargs -r docker rmi || true
+
+    - name: Logout from registry
+      if: always()
+      run: docker logout ${{ env.REGISTRY }}
 
     - name: Docker Compose Deployment Notification
       run: |

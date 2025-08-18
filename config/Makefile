@@ -19,11 +19,15 @@ help:
 	@echo "  make status       Check status"
 	@echo "  make clean        Clean up resources"
 	@echo ""
+	@echo "CI/CD operations:"
+	@echo "  make validate-cicd      Validate CI/CD pipeline"
+	@echo "  make docker-build       Build Docker image"
+	@echo "  make docker-push        Push Docker image"
+	@echo "  make deploy             Complete deployment workflow"
+	@echo ""
 	@echo "Registry operations:"
 	@echo "  make registry-test      Test registry connectivity"
 	@echo "  make registry-deploy    Build and deploy to registry"
-	@echo "  make docker-build       Build Docker image"
-	@echo "  make docker-push        Push Docker image"
 	@echo ""
 	@echo "Quick start:"
 	@echo "  make init         # Setup environment"
@@ -53,23 +57,23 @@ lint:
 
 # Start services
 start:
-	@docker-compose -f docker/docker-compose.yml up -d
+	@docker-compose up -d
 
 # Stop services
 stop:
-	@docker-compose -f docker/docker-compose.yml down
+	@docker-compose down
 
 # Restart services
 restart:
-	@docker-compose -f docker/docker-compose.yml restart
+	@docker-compose restart
 
 # Show logs
 logs:
-	@docker-compose -f docker/docker-compose.yml logs -f
+	@docker-compose logs -f
 
 # Check status
 status:
-	@docker-compose -f docker/docker-compose.yml ps
+	@docker-compose ps
 
 # Clean up
 clean:
@@ -77,11 +81,11 @@ clean:
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete
 	@rm -rf .coverage htmlcov/
-	@docker-compose -f docker/docker-compose.yml down --volumes --remove-orphans
+	@docker-compose down --volumes --remove-orphans
 	@echo "Cleanup completed!"
 
 # Development shortcuts
-.PHONY: run dev install docker-build docker-push k8s-deploy k8s-status argocd-sync registry-test registry-deploy
+.PHONY: run dev install docker-build docker-push k8s-deploy k8s-status argocd-sync registry-test registry-deploy validate-cicd
 
 # Run development server (local)
 run:
@@ -98,20 +102,20 @@ dev:
 # Docker operations
 docker-build:
 	@echo "Building Docker image..."
-	@docker build -f docker/Dockerfile -t registry.jclee.me/jclee94/blacklist:latest .
+	@docker build -f docker/Dockerfile -t registry.jclee.me/blacklist:latest .
 	@echo "Docker image built successfully!"
 
 docker-push:
 	@echo "Pushing Docker image to registry..."
-	@docker push registry.jclee.me/jclee94/blacklist:latest
+	@docker push registry.jclee.me/blacklist:latest
 	@echo "Docker image pushed successfully!"
 
 docker-run:
 	@echo "Running Docker container locally..."
 	@docker run -d --name blacklist-test \
-		-p 2541:2541 \
+		-p 2542:2542 \
 		-e FLASK_ENV=production \
-		registry.jclee.me/jclee94/blacklist:latest
+		registry.jclee.me/blacklist:latest
 
 # Registry operations
 registry-test:
@@ -121,6 +125,12 @@ registry-test:
 registry-deploy:
 	@echo "Building and deploying to registry..."
 	@scripts/registry-deploy.sh
+
+# CI/CD validation
+validate-cicd:
+	@echo "🔍 Validating CI/CD pipeline..."
+	@chmod +x scripts/validate-cicd.sh
+	@scripts/validate-cicd.sh
 
 # Kubernetes operations
 k8s-deploy:
