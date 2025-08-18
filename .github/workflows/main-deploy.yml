@@ -23,6 +23,8 @@ jobs:
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: network=host
       
     - name: Cache Docker layers
       uses: actions/cache@v3
@@ -34,7 +36,12 @@ jobs:
 
     - name: Login to Container Registry
       run: |
+        echo "Logging into registry: ${{ env.REGISTRY }}"
         echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+        if [ $? -ne 0 ]; then
+          echo "Failed to login to registry"
+          exit 1
+        fi
 
     - name: Build Docker image
       run: |
@@ -43,15 +50,15 @@ jobs:
           --cache-from type=local,src=/tmp/.buildx-cache \
           --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
           -f docker/Dockerfile \
-          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          -t ${{ env.REGISTRY }}/jclee94/${{ env.IMAGE_NAME }}:latest \
+          -t ${{ env.REGISTRY }}/jclee94/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           --load \
           .
 
     - name: Push to registry
       run: |
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/jclee94/${{ env.IMAGE_NAME }}:latest
+        docker push ${{ env.REGISTRY }}/jclee94/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
     - name: Move cache
       run: |
@@ -82,7 +89,7 @@ jobs:
         docker rm -f test-container || true
         
         # Run container with dynamic port
-        docker run --rm --name test-container -d -p $TEST_PORT:2542 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        docker run --rm --name test-container -d -p $TEST_PORT:2542 ${{ env.REGISTRY }}/jclee94/${{ env.IMAGE_NAME }}:latest
         
         # Wait for container to be ready with timeout
         echo "Waiting for container to be ready..."
@@ -119,7 +126,7 @@ jobs:
     - name: Docker Compose Deployment Notification
       run: |
         echo "🐳 DOCKER COMPOSE 기반 배포 완료"
-        echo "✅ Image pushed to registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "✅ Image pushed to registry: ${{ env.REGISTRY }}/jclee94/${{ env.IMAGE_NAME }}:latest"
         echo "🔄 Watchtower 자동 업데이트: 1시간 내 배포"
         echo ""
         echo "📋 즉시 수동 배포:"
