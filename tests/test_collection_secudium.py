@@ -14,7 +14,7 @@ from src.core.collectors.unified_collector import (
     CollectionResult,
     CollectionStatus,
 )
-from src.core.secudium_collector import SecudiumCollector
+from src.core.collectors.secudium_collector import SecudiumCollector
 
 
 class TestSecudiumCollector:
@@ -32,13 +32,20 @@ class TestSecudiumCollector:
 
     def test_collector_disabled_by_default(self):
         """SECUDIUM 수집기가 기본적으로 비활성화되었는지 테스트"""
-        assert self.collector.config.enabled is False
+        # Create a new collector without enabling it
+        config = CollectionConfig()
+        collector = SecudiumCollector(config)
+        assert collector.config.enabled is False
 
     def test_collect_returns_empty_when_disabled(self):
         """비활성화된 상태에서 수집 시 빈 결과 반환 테스트"""
+        # Create a disabled collector
+        config = CollectionConfig()
+        config.enabled = False
+        collector = SecudiumCollector(config)
 
         async def run_test():
-            result = await self.collector.collect()
+            result = await collector.collect()
             return result
 
         result = asyncio.run(run_test())

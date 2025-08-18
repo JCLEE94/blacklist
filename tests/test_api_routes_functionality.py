@@ -400,7 +400,7 @@ class TestCollectorFunctionality:
         """Test SECUDIUM collector methods"""
         try:
             from src.core.collectors.unified_collector import CollectionConfig
-            from src.core.secudium_collector import SecudiumCollector
+            from src.core.collectors.secudium_collector import SecudiumCollector
 
             config = CollectionConfig()
             collector = SecudiumCollector(config)

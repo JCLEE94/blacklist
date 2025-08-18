@@ -274,7 +274,7 @@ class TestSecudiumCollector:
     def test_secudium_collector_class(self):
         """Test SecudiumCollector class"""
         try:
-            from src.core.secudium_collector import SecudiumCollector
+            from src.core.collectors.secudium_collector import SecudiumCollector
 
             assert SecudiumCollector is not None
             assert hasattr(SecudiumCollector, "__init__")
@@ -290,7 +290,7 @@ class TestSecudiumCollector:
         mock_requests.post.return_value.json.return_value = {"token": "test_token"}
 
         try:
-            from src.core.secudium_collector import SecudiumCollector
+            from src.core.collectors.secudium_collector import SecudiumCollector
 
             collector = SecudiumCollector()
 
@@ -310,7 +310,7 @@ class TestSecudiumCollector:
         mock_requests.get.return_value.content = b"CSV file content"
 
         try:
-            from src.core.secudium_collector import SecudiumCollector
+            from src.core.collectors.secudium_collector import SecudiumCollector
 
             collector = SecudiumCollector()
 
@@ -326,7 +326,7 @@ class TestSecudiumCollector:
     def test_secudium_csv_parsing(self):
         """Test SECUDIUM CSV parsing"""
         try:
-            from src.core.secudium_collector import SecudiumCollector
+            from src.core.collectors.secudium_collector import SecudiumCollector
 
             collector = SecudiumCollector()
 
