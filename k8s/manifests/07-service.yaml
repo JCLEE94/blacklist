@@ -14,7 +14,7 @@ metadata:
     prometheus.io/port: "80"
     prometheus.io/path: "/metrics"
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: backend
@@ -22,7 +22,6 @@ spec:
   - name: http
     port: 80
     targetPort: http
-    nodePort: 32542
     protocol: TCP
   sessionAffinity: ClientIP
   sessionAffinityConfig:
