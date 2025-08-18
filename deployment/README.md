@@ -140,11 +140,33 @@ docker-compose up -d
 
 ## 마이그레이션 완료 체크리스트
 
-- [x] K8s 매니페스트 아카이브 처리
+- [x] K8s 매니페스트 아카이브 처리 (archive/k8s-deprecated-20250818/)
 - [x] Docker Compose 프로덕션 설정 생성
 - [x] Watchtower 자동 업데이트 구성
 - [x] GitHub Actions 워크플로우 업데이트
 - [x] 배포 가이드 문서화
 - [x] 모니터링 및 로깅 설정
+- [x] 프로젝트 구조 정리 및 파일 조직화 (2025-08-18)
+- [x] Root 디렉토리 위반 파일 정리 완료
+- [x] 설정 파일 통합 관리 (config/ 디렉토리)
+
+## 최종 프로젝트 구조 (정리 완료)
+
+```
+blacklist/
+├── archive/                    # K8s 아카이브 (deprecated-20250818)
+├── config/                     # 모든 설정 파일 통합
+│   ├── .env.* (환경별 설정)
+│   ├── docker-compose.prod.yml
+│   └── production-config.yml
+├── deployment/                 # Docker Compose 배포 파일
+│   ├── README.md (이 파일)
+│   └── docker-compose.production.yml
+├── docker/                     # 개발용 Docker 설정
+├── docs/                      # 문서화
+├── scripts/                   # 스크립트 통합
+└── src/                       # 소스 코드
+```
 
 🎯 **K8s 복잡성 제거하고 Compose 기반 간단한 배포 체계 완성!**
+✅ **프로젝트 구조 정리 완료 - 깔끔한 디렉토리 조직화**
