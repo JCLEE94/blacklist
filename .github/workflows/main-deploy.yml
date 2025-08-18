@@ -60,9 +60,51 @@ jobs:
 
     - name: Test image health
       run: |
-        docker run --rm --name test-container -d -p 8080:2542 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        sleep 30
-        curl -f http://localhost:8080/health || exit 1
+        # Function to find available port
+        find_available_port() {
+          local port
+          for i in {1..10}; do
+            port=$((RANDOM % 55000 + 10000))
+            if ! netstat -tuln | grep ":$port " > /dev/null 2>&1; then
+              echo $port
+              return 0
+            fi
+          done
+          echo "Failed to find available port" >&2
+          return 1
+        }
+        
+        # Get available port
+        TEST_PORT=$(find_available_port)
+        echo "Using dynamic port: $TEST_PORT"
+        
+        # Cleanup any existing test containers
+        docker rm -f test-container || true
+        
+        # Run container with dynamic port
+        docker run --rm --name test-container -d -p $TEST_PORT:2542 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+        # Wait for container to be ready with timeout
+        echo "Waiting for container to be ready..."
+        for i in {1..30}; do
+          if curl -sf http://localhost:$TEST_PORT/health > /dev/null 2>&1; then
+            echo "Container is ready after ${i} seconds"
+            break
+          fi
+          sleep 1
+        done
+        
+        # Final health check with detailed output
+        echo "Testing health endpoint at http://localhost:$TEST_PORT/health"
+        if ! curl -f http://localhost:$TEST_PORT/health; then
+          echo "Health check failed, showing container logs:"
+          docker logs test-container
+          exit 1
+        fi
+        
+        echo "✅ Health check passed"
+        
+        # Cleanup
         docker stop test-container || true
 
     - name: Cleanup old images
