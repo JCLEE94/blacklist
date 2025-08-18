@@ -25,7 +25,7 @@ env:
 
 jobs:
   build-offline-package:
-    name: 📦 Build Docker Compose Offline Package
+    name: 📦 Build Docker Compose 오프라인 패키지 (K8s 제거)
     runs-on: ubuntu-latest
     
     steps:

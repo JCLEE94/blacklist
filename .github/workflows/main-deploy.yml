@@ -34,10 +34,17 @@ jobs:
         docker image prune -f
         docker images | grep ${{ env.IMAGE_NAME }} | grep -v latest | head -n -3 | awk '{print $3}' | xargs -r docker rmi || true
 
-    - name: Deployment notification
+    - name: Docker Compose Deployment Notification
       run: |
+        echo "🐳 DOCKER COMPOSE 기반 배포 완료"
         echo "✅ Image pushed to registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-        echo "🔄 Watchtower will auto-update containers within 1 hour"
-        echo "📋 Manual update commands:"
-        echo "  Local: docker-compose pull && docker-compose up -d"
-        echo "  NAS: ssh -p 1111 docker@192.168.50.215 'cd /volume1/docker/blacklist && docker compose pull && docker compose up -d'"
+        echo "🔄 Watchtower 자동 업데이트: 1시간 내 배포"
+        echo ""
+        echo "📋 즉시 수동 배포:"
+        echo "  docker-compose pull && docker-compose up -d"
+        echo ""
+        echo "📊 서비스 상태 확인:"
+        echo "  docker-compose ps"
+        echo "  curl http://localhost:32542/health"
+        echo ""
+        echo "🎯 Compose 기반 완전 전환 완료 - K8s 의존성 제거됨"
