@@ -292,3 +292,42 @@ class RegtechCollector(BaseCollector):
     def _transform_data(self, raw_data: dict) -> dict:
         """데이터 변환 - 헬퍼 모듈 위임"""
         return self.data_transform.transform_data(raw_data)
+
+    def collect_from_web(self, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+        """
+        웹 수집 인터페이스 메서드 (동기 래퍼)
+        collection_service.py에서 호출하는 인터페이스
+        """
+        import asyncio
+        
+        try:
+            # 날짜 범위 설정
+            if not start_date or not end_date:
+                from datetime import datetime, timedelta
+                end_date = datetime.now().strftime('%Y-%m-%d')
+                start_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+            
+            # 비동기 수집 실행
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                collected_data = loop.run_until_complete(self._collect_data())
+                return {
+                    "success": True,
+                    "data": collected_data,
+                    "count": len(collected_data),
+                    "message": f"REGTECH에서 {len(collected_data)}개 IP 수집 완료"
+                }
+            finally:
+                loop.close()
+                
+        except Exception as e:
+            self.logger.error(f"REGTECH 웹 수집 실패: {e}")
+            return {
+                "success": False,
+                "data": [],
+                "count": 0,
+                "error": str(e),
+                "message": f"REGTECH 수집 중 오류: {e}"
+            }

@@ -62,3 +62,4 @@ server.log
 blacklist.pid
 {test_db}
 {test_db}*
+deployment/blacklist-internal-deployment-*/images/*.tar
