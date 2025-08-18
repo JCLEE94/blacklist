@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from src.core.collection_manager import CollectionManager
-from src.core.regtech_simple_collector import RegtechSimpleCollector
+from src.core.collectors.regtech_collector import RegtechCollector as RegtechSimpleCollector
 from src.core.unified_service import UnifiedBlacklistService
 
 
