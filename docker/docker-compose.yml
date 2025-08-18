@@ -8,8 +8,8 @@ services:
     ports:
       - "32542:2542"
     volumes:
-      - ./data:/app/instance
-      - ./logs:/app/logs
+      - ../data:/app/instance
+      - ../logs:/app/logs
     environment:
       FLASK_ENV: production
       PORT: 2542
@@ -20,7 +20,7 @@ services:
       MAX_AUTH_ATTEMPTS: 5
       BLOCK_DURATION_HOURS: 1
     env_file:
-      - .env
+      - ../.env
     depends_on:
       redis:
         condition: service_healthy

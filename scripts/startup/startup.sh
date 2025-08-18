@@ -28,4 +28,4 @@ fi
 
 # Start the application
 echo "Starting application..."
-exec python3 main.py
+exec python3 commands/scripts/main.py

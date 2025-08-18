@@ -6,7 +6,9 @@ Main entry point for the Blacklist Management System
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add root directory to path to maintain imports
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, root_dir)
 
 from src.core.app_compact import create_app
 import logging

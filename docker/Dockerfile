@@ -63,4 +63,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 EXPOSE 2542
 
 # Default command
-CMD ["python3", "main.py", "--host", "0.0.0.0", "--port", "2542"]
+CMD ["python3", "commands/scripts/main.py", "--host", "0.0.0.0", "--port", "2542"]
