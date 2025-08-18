@@ -4,17 +4,16 @@ kind: Service
 metadata:
   name: blacklist
   namespace: blacklist
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"  # Service after deployment
   labels:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: backend
   annotations:
+    argocd.argoproj.io/sync-wave: "1"  # Service after deployment
     prometheus.io/scrape: "true"
-    prometheus.io/port: "80"
+    prometheus.io/port: "2542"
     prometheus.io/path: "/metrics"
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app.kubernetes.io/name: blacklist
     app.kubernetes.io/component: backend
@@ -22,6 +21,7 @@ spec:
   - name: http
     port: 2542
     targetPort: 2542
+    nodePort: 32542
     protocol: TCP
   sessionAffinity: ClientIP
   sessionAffinityConfig:
