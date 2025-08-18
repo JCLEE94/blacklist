@@ -46,6 +46,7 @@ spec:
         ports:
         - name: http
           containerPort: 2542
+          hostPort: 2542
           protocol: TCP
         envFrom:
         - configMapRef:
