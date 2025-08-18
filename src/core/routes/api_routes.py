@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 # 메인 API 라우트 블루프린트
 api_routes_bp = Blueprint("api_routes", __name__)
 
+# Register sub-blueprints (health routes moved to unified_routes for root-level access)
+api_routes_bp.register_blueprint(blacklist_routes_bp)
+
 
 def register_sub_routes(app):
     """
