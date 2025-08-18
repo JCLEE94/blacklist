@@ -283,7 +283,7 @@ class TestSecudiumCollector:
         except Exception:
             assert True
 
-    @patch("src.core.secudium_collector.requests")
+    @patch("src.core.collectors.secudium_collector.requests")
     def test_secudium_authentication(self, mock_requests):
         """Test SECUDIUM authentication"""
         mock_requests.post.return_value.status_code = 200
@@ -303,7 +303,7 @@ class TestSecudiumCollector:
         except Exception:
             assert True
 
-    @patch("src.core.secudium_collector.requests")
+    @patch("src.core.collectors.secudium_collector.requests")
     def test_secudium_data_collection(self, mock_requests):
         """Test SECUDIUM data collection"""
         mock_requests.get.return_value.status_code = 200
