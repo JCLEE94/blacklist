@@ -63,3 +63,7 @@ blacklist.pid
 {test_db}
 {test_db}*
 deployment/blacklist-internal-deployment-*/images/*.tar
+
+# Docker runtime data
+docker/redis-data/
+redis-data/
