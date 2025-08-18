@@ -4,7 +4,7 @@ version: '3.9'
 
 services:
   blacklist:
-    image: registry.jclee.me/blacklist:latest
+    image: registry.jclee.me/jclee94/blacklist:latest
     container_name: blacklist
     restart: unless-stopped
     ports:
@@ -22,7 +22,7 @@ services:
       MAX_AUTH_ATTEMPTS: 5
       BLOCK_DURATION_HOURS: 1
     env_file:
-      - ./.env
+      - ../.env
     depends_on:
       redis:
         condition: service_healthy
@@ -100,6 +100,8 @@ services:
       WATCHTOWER_DEBUG: "false"
       # 시간대
       TZ: Asia/Seoul
+      # Private Registry 인증 설정
+      WATCHTOWER_REGISTRY_AUTH_FILE: /config.json
       # 업데이트 후 알림 (선택사항 - 현재 비활성화)
       # WATCHTOWER_NOTIFICATIONS: shoutrrr
       # WATCHTOWER_NOTIFICATION_URL: "generic+http://blacklist:2542/webhook/watchtower"
