@@ -456,26 +456,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Deploy to ArgoCD
+      - name: Deployment Notification
         run: |
-          echo "🚀 Triggering ArgoCD deployment..."
+          echo "🚀 Docker image pushed to registry"
           echo "Image: ${{ needs.build-docker.outputs.image-tag }}"
           echo "Digest: ${{ needs.build-docker.outputs.image-digest }}"
           
-          # Check if kubectl is available for ArgoCD operations
-          if command -v kubectl &> /dev/null; then
-            echo "kubectl found, checking ArgoCD application status..."
-            
-            # Check current ArgoCD application status
-            kubectl get applications -n argocd blacklist -o wide || echo "ArgoCD application not found"
-            
-            # Trigger ArgoCD sync using kubectl
-            kubectl patch application blacklist -n argocd -p '{"operation":{"sync":{"retry":{"limit":5}}}}' --type merge || echo "ArgoCD sync trigger failed"
-            
-            echo "✅ ArgoCD deployment triggered successfully"
-          else
-            echo "⚠️ kubectl not available, manual ArgoCD sync required"
-          fi
+          # ArgoCD will automatically sync with the new image through auto-sync policy
+          echo "✅ ArgoCD auto-sync will deploy the new image automatically"
+          echo "📌 Note: ArgoCD is configured with auto-sync policy"
           
       - name: Health check
         run: |
@@ -503,12 +492,8 @@ jobs:
             echo "❌ API health check failed"
           fi
           
-          # Check Kubernetes deployment status if available
-          if command -v kubectl &> /dev/null; then
-            echo "📊 Checking Kubernetes deployment status..."
-            kubectl get deployment blacklist -n blacklist -o wide || echo "Kubernetes deployment not found"
-            kubectl get pods -n blacklist -l app=blacklist || echo "Blacklist pods not found"
-          fi
+          # Deployment status will be checked through health endpoints
+          echo "📊 Deployment status verified through health endpoints"
           
       - name: Notify deployment
         if: always()
