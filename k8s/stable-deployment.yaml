@@ -1,0 +1,114 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blacklist
+---
+# ConfigMap for environment variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blacklist-config
+  namespace: blacklist
+data:
+  FLASK_ENV: "production"
+  PORT: "2542"
+  DATABASE_URL: "sqlite:////data/blacklist.db"
+  REDIS_URL: "redis://localhost:6379/0"
+  COLLECTION_ENABLED: "true"
+  FORCE_DISABLE_COLLECTION: "false"
+---
+# Single Pod Deployment with embedded Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist
+  namespace: blacklist
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # 단일 인스턴스 보장
+  selector:
+    matchLabels:
+      app: blacklist
+  template:
+    metadata:
+      labels:
+        app: blacklist
+    spec:
+      containers:
+      # Main application
+      - name: blacklist
+        image: registry.jclee.me/blacklist:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2542
+          hostPort: 32542  # Host에 직접 바인딩
+        envFrom:
+        - configMapRef:
+            name: blacklist-config
+        env:
+        - name: REDIS_URL
+          value: "redis://127.0.0.1:6379/0"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: logs
+          mountPath: /app/logs
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 2542
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 2542
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      # Sidecar Redis container
+      - name: redis
+        image: redis:7-alpine
+        command:
+        - redis-server
+        - --maxmemory
+        - 256mb
+        - --maxmemory-policy
+        - allkeys-lru
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      # HostPath volumes - 노드의 디렉토리 직접 사용
+      - name: data
+        hostPath:
+          path: /data/blacklist/db
+          type: DirectoryOrCreate
+      - name: logs
+        hostPath:
+          path: /data/blacklist/logs
+          type: DirectoryOrCreate
+      - name: redis-data
+        hostPath:
+          path: /data/blacklist/redis
+          type: DirectoryOrCreate
+      nodeSelector:
+        kubernetes.io/hostname: jclee-ops  # 특정 노드에 고정
+---
+# Service (Optional - for internal access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist
+  namespace: blacklist
+spec:
+  type: ClusterIP
+  selector:
+    app: blacklist
+  ports:
+  - port: 2542
+    targetPort: 2542

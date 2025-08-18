@@ -1,0 +1,401 @@
+name: Build Offline Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: 'Package version'
+        required: false
+        default: 'latest'
+        type: string
+      include_test_data:
+        description: 'Include test data'
+        required: false
+        default: false
+        type: boolean
+  push:
+    tags:
+      - 'v*'
+      - 'offline-*'
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  PACKAGE_NAME: blacklist-offline
+
+jobs:
+  build-offline-package:
+    name: 📦 Build Docker Compose Offline Package
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event.inputs.package_version }}" != "" ]; then
+            VERSION="${{ github.event.inputs.package_version }}"
+          elif [ "${{ github.ref_type }}" == "tag" ]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          else
+            VERSION="$(date +%Y%m%d)-${GITHUB_SHA::7}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Package version: $VERSION"
+          
+      - name: Build Docker image
+        run: |
+          echo "🔨 Building Docker image..."
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
+                       -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+                       -f docker/Dockerfile .
+          
+      - name: Save Docker images
+        run: |
+          echo "💾 Saving Docker images..."
+          mkdir -p offline-package/images
+          
+          # Save application image
+          docker save -o offline-package/images/blacklist.tar \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Pull and save Redis image
+          docker pull redis:7-alpine
+          docker save -o offline-package/images/redis.tar redis:7-alpine
+          
+          # Compress images
+          echo "🗜️ Compressing images..."
+          gzip offline-package/images/*.tar
+          
+          # Show sizes
+          ls -lh offline-package/images/
+          
+      - name: Prepare deployment files
+        run: |
+          echo "📋 Preparing deployment files..."
+          
+          # Copy Docker Compose files
+          cp deployment/docker-compose.prod.yml offline-package/docker-compose.yml
+          
+          # Create .env template
+          cat > offline-package/.env.template << 'EOF'
+          # Blacklist Offline Deployment Configuration
+          # Version: ${{ steps.version.outputs.version }}
+          # Generated: $(date +%Y-%m-%d)
+          
+          # 기본 설정
+          FLASK_ENV=production
+          PORT=2542
+          DATABASE_URL=sqlite:////app/instance/blacklist.db
+          REDIS_URL=redis://redis:6379/0
+          
+          # 보안 키 (반드시 변경하세요!)
+          SECRET_KEY=change-this-to-random-string-$(openssl rand -hex 16)
+          JWT_SECRET_KEY=change-this-to-random-string-$(openssl rand -hex 16)
+          API_KEY_ENABLED=true
+          DEFAULT_API_KEY=blk_$(openssl rand -hex 20)
+          
+          # 관리자 계정
+          ADMIN_USERNAME=admin
+          ADMIN_PASSWORD=change-this-password
+          
+          # 수집 설정
+          COLLECTION_ENABLED=true
+          FORCE_DISABLE_COLLECTION=false
+          
+          # 외부 서비스 (사내망 URL로 변경)
+          REGTECH_BASE_URL=https://internal-regtech.company.local
+          REGTECH_USERNAME=your-username
+          REGTECH_PASSWORD=your-password
+          
+          SECUDIUM_BASE_URL=https://internal-secudium.company.local  
+          SECUDIUM_USERNAME=your-username
+          SECUDIUM_PASSWORD=your-password
+          
+          # 로깅
+          LOG_LEVEL=INFO
+          EOF
+          
+      - name: Create installation script
+        run: |
+          cat > offline-package/install.sh << 'SCRIPT'
+          #!/bin/bash
+          # Blacklist Offline Installation Script
+          # Version: ${{ steps.version.outputs.version }}
+          
+          set -e
+          
+          echo "================================================"
+          echo "Blacklist Offline Package Installation"
+          echo "Version: ${{ steps.version.outputs.version }}"
+          echo "================================================"
+          echo ""
+          
+          # 1. Check Docker
+          if ! command -v docker &> /dev/null; then
+              echo "❌ Docker is not installed. Please install Docker first."
+              exit 1
+          fi
+          
+          if ! command -v docker-compose &> /dev/null; then
+              echo "❌ Docker Compose is not installed."
+              exit 1
+          fi
+          
+          echo "✅ Docker and Docker Compose found"
+          echo ""
+          
+          # 2. Create directories
+          echo "📁 Creating directories..."
+          sudo mkdir -p /opt/blacklist/{data,logs,redis}
+          sudo chown -R $USER:$USER /opt/blacklist
+          
+          # 3. Load Docker images
+          echo "🐳 Loading Docker images..."
+          echo "  Loading blacklist image..."
+          gunzip -c images/blacklist.tar.gz | docker load
+          echo "  Loading Redis image..."
+          gunzip -c images/redis.tar.gz | docker load
+          
+          # 4. Setup environment
+          echo "⚙️ Setting up environment..."
+          if [ ! -f .env ]; then
+              cp .env.template .env
+              echo "  📝 Created .env file from template"
+              echo "  ⚠️  Please edit .env file to configure your settings"
+              echo ""
+              read -p "Would you like to edit .env now? (y/n) " -n 1 -r
+              echo
+              if [[ $REPLY =~ ^[Yy]$ ]]; then
+                  ${EDITOR:-vi} .env
+              fi
+          else
+              echo "  ✅ Using existing .env file"
+          fi
+          
+          # 5. Initialize database
+          echo "🗄️ Initializing database..."
+          docker-compose run --rm blacklist python3 /app/commands/utils/init_database.py --force || true
+          
+          # 6. Start services
+          echo "🚀 Starting services..."
+          docker-compose up -d
+          
+          # 7. Wait for services
+          echo "⏳ Waiting for services to start..."
+          sleep 10
+          
+          # 8. Check status
+          echo "📊 Checking service status..."
+          docker-compose ps
+          
+          # 9. Test connection
+          echo "🔍 Testing service..."
+          if curl -s -o /dev/null -w "%{http_code}" http://localhost:32542/ | grep -q "200"; then
+              echo "✅ Service is running!"
+          else
+              echo "⚠️ Service may not be ready yet. Check logs with: docker-compose logs"
+          fi
+          
+          echo ""
+          echo "================================================"
+          echo "✅ Installation complete!"
+          echo "================================================"
+          echo ""
+          echo "🌐 Access URL: http://$(hostname -I | awk '{print $1}'):32542"
+          echo "📝 Logs: docker-compose logs -f"
+          echo "🔄 Restart: docker-compose restart"
+          echo "🛑 Stop: docker-compose down"
+          echo ""
+          SCRIPT
+          
+          chmod +x offline-package/install.sh
+          
+      - name: Create operation scripts
+        run: |
+          echo "📝 Creating operation scripts..."
+          mkdir -p offline-package/scripts
+          
+          # Start script
+          cat > offline-package/scripts/start.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")/.."
+          docker-compose up -d
+          docker-compose ps
+          EOF
+          
+          # Stop script
+          cat > offline-package/scripts/stop.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")/.."
+          docker-compose down
+          EOF
+          
+          # Restart script
+          cat > offline-package/scripts/restart.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")/.."
+          docker-compose restart
+          docker-compose ps
+          EOF
+          
+          # Logs script
+          cat > offline-package/scripts/logs.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")/.."
+          docker-compose logs -f --tail=100
+          EOF
+          
+          # Update script
+          cat > offline-package/scripts/update.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")/.."
+          echo "🔄 Updating Blacklist..."
+          docker-compose pull
+          docker-compose up -d
+          echo "✅ Update complete"
+          EOF
+          
+          # Health check script
+          cat > offline-package/scripts/health.sh << 'EOF'
+          #!/bin/bash
+          curl -s http://localhost:32542/api/health | jq || \
+          curl -s http://localhost:32542/ -o /dev/null -w "HTTP Status: %{http_code}\n"
+          EOF
+          
+          chmod +x offline-package/scripts/*.sh
+          
+      - name: Create README
+        run: |
+          cat > offline-package/README.md << 'EOF'
+          # Blacklist Offline Package
+          
+          Version: ${{ steps.version.outputs.version }}
+          Build Date: $(date +%Y-%m-%d)
+          
+          ## 📋 Requirements
+          
+          - Docker 20.10+
+          - Docker Compose 1.29+
+          - 2GB RAM minimum
+          - 10GB disk space
+          
+          ## 🚀 Quick Start
+          
+          1. Extract package:
+             ```bash
+             tar -xzf blacklist-offline-${{ steps.version.outputs.version }}.tar.gz
+             cd blacklist-offline
+             ```
+          
+          2. Install:
+             ```bash
+             ./install.sh
+             ```
+          
+          3. Access:
+             ```
+             http://your-server-ip:32542
+             ```
+          
+          ## 📁 Directory Structure
+          
+          ```
+          /opt/blacklist/
+          ├── data/      # SQLite database
+          ├── logs/      # Application logs
+          └── redis/     # Redis data
+          ```
+          
+          ## 🛠️ Operations
+          
+          - **Start**: `./scripts/start.sh`
+          - **Stop**: `./scripts/stop.sh`
+          - **Restart**: `./scripts/restart.sh`
+          - **View logs**: `./scripts/logs.sh`
+          - **Health check**: `./scripts/health.sh`
+          
+          ## ⚙️ Configuration
+          
+          Edit `.env` file to configure:
+          - Security keys
+          - Admin credentials
+          - External service URLs
+          - Collection settings
+          
+          ## 🔒 Security
+          
+          **Important**: Change these values in `.env`:
+          - `SECRET_KEY`
+          - `JWT_SECRET_KEY`
+          - `DEFAULT_API_KEY`
+          - `ADMIN_PASSWORD`
+          
+          ## 📞 Support
+          
+          For issues, check:
+          1. Logs: `docker-compose logs blacklist`
+          2. Service status: `docker-compose ps`
+          3. Port availability: `netstat -tlnp | grep 32542`
+          EOF
+          
+      - name: Create package archive
+        run: |
+          echo "📦 Creating package archive..."
+          cd offline-package
+          tar -czf ../${{ env.PACKAGE_NAME }}-${{ steps.version.outputs.version }}.tar.gz .
+          cd ..
+          
+          # Calculate checksums
+          sha256sum ${{ env.PACKAGE_NAME }}-${{ steps.version.outputs.version }}.tar.gz > checksums.txt
+          
+          # Show package info
+          echo "📊 Package information:"
+          ls -lh ${{ env.PACKAGE_NAME }}-${{ steps.version.outputs.version }}.tar.gz
+          cat checksums.txt
+          
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-package-${{ steps.version.outputs.version }}
+          path: |
+            ${{ env.PACKAGE_NAME }}-${{ steps.version.outputs.version }}.tar.gz
+            checksums.txt
+          retention-days: 30
+          
+      - name: Create release (if tagged)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ env.PACKAGE_NAME }}-${{ steps.version.outputs.version }}.tar.gz
+            checksums.txt
+          body: |
+            ## Blacklist Offline Package ${{ steps.version.outputs.version }}
+            
+            ### 📦 Package Contents
+            - Docker images (blacklist + Redis)
+            - Docker Compose configuration
+            - Installation scripts
+            - Operation scripts
+            - Documentation
+            
+            ### 🚀 Installation
+            ```bash
+            tar -xzf ${{ env.PACKAGE_NAME }}-${{ steps.version.outputs.version }}.tar.gz
+            cd blacklist-offline
+            ./install.sh
+            ```
+            
+            ### 📋 Checksums
+            ```
+            $(cat checksums.txt)
+            ```
+          draft: false
+          prerelease: false

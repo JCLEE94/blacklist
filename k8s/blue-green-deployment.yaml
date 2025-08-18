@@ -1,0 +1,90 @@
+---
+# Blue 환경 (현재 운영 중)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist-blue
+  namespace: blacklist
+  labels:
+    version: blue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blacklist
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: blacklist
+        version: blue
+    spec:
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/blacklist:stable
+        ports:
+        - containerPort: 2542
+        env:
+        - name: VERSION
+          value: "BLUE"
+---
+# Green 환경 (새 버전 테스트)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist-green
+  namespace: blacklist
+  labels:
+    version: green
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blacklist
+      version: green
+  template:
+    metadata:
+      labels:
+        app: blacklist
+        version: green
+    spec:
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/blacklist:latest
+        ports:
+        - containerPort: 2542
+        env:
+        - name: VERSION
+          value: "GREEN"
+---
+# 스위칭 가능한 Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist-active
+  namespace: blacklist
+spec:
+  type: NodePort
+  selector:
+    app: blacklist
+    version: blue  # ← 이것만 바꾸면 전환!
+  ports:
+  - port: 2542
+    targetPort: 2542
+    nodePort: 32542
+---
+# Green 테스트용 Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist-test
+  namespace: blacklist
+spec:
+  type: NodePort
+  selector:
+    app: blacklist
+    version: green
+  ports:
+  - port: 2542
+    targetPort: 2542
+    nodePort: 32543  # 다른 포트로 테스트

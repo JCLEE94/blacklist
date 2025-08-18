@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: blacklist
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+
+images:
+  - name: blacklist
+    newName: registry.jclee.me/blacklist
+    newTag: latest
+
+commonLabels:
+  app: blacklist
+  version: v1.0.35
+
+configMapGenerator:
+  - name: blacklist-env
+    literals:
+      - FLASK_ENV=production
+      - PORT=2542
+      - COLLECTION_ENABLED=true

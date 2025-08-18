@@ -1,0 +1,95 @@
+version: '3.9'
+
+# 사내망 배포용 Docker Compose
+# 외부 의존성 최소화, 안정성 최대화
+
+services:
+  blacklist:
+    image: blacklist:latest  # 로컬 이미지 사용
+    container_name: blacklist-app
+    restart: always
+    ports:
+      - "32542:2542"  # 고정 포트
+    volumes:
+      # 데이터 영속성 - 호스트 경로 직접 마운트
+      - /opt/blacklist/data:/app/instance
+      - /opt/blacklist/logs:/app/logs
+    environment:
+      # 프로덕션 설정
+      FLASK_ENV: production
+      PORT: 2542
+      DATABASE_URL: sqlite:////app/instance/blacklist.db
+      REDIS_URL: redis://redis:6379/0
+      
+      # 수집 설정
+      COLLECTION_ENABLED: ${COLLECTION_ENABLED:-true}
+      FORCE_DISABLE_COLLECTION: ${FORCE_DISABLE_COLLECTION:-false}
+      
+      # 보안 설정
+      SECRET_KEY: ${SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      API_KEY_ENABLED: true
+      
+      # 사내망 전용 설정
+      REGTECH_BASE_URL: ${REGTECH_BASE_URL:-https://internal-regtech.company.local}
+      SECUDIUM_BASE_URL: ${SECUDIUM_BASE_URL:-https://internal-secudium.company.local}
+      
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2542/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - blacklist-internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    restart: always
+    volumes:
+      - /opt/blacklist/redis:/data
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - blacklist-internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  blacklist-internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

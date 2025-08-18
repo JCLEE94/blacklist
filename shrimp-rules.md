@@ -2,8 +2,9 @@
 
 ## Project Overview
 
-**Technology Stack**: Python 3.9+ Flask 2.3.3, Redis 7, SQLite/PostgreSQL, Docker/Kubernetes
+**Technology Stack**: Python 3.9+ Flask 2.3.3, Redis 7, SQLite/PostgreSQL, Docker/Kubernetes, ArgoCD GitOps
 **Architecture**: Monolithic Flask with MSA components using mixin pattern and dependency injection
+**Port Configuration**: Docker 32542 (external) → 2542 (internal), Local Development 2542
 **Current Version**: v1.0.37 with 95% test coverage, GitOps maturity 9.0/10
 
 ## Critical File Size Rule
