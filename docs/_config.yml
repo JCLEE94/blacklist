@@ -4,8 +4,7 @@ description: "Enterprise Threat Intelligence Platform with Offline Deployment"
 url: "https://jclee94.github.io"
 baseurl: "/blacklist"
 
-# Theme
-theme: minima
+# Theme (use only one theme)
 remote_theme: pages-themes/cayman@v0.2.0
 
 # Navigation
