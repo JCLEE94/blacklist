@@ -15,10 +15,7 @@ from .constants import (
     SUPPORTED_IP_FORMATS,
 )
 
-# from .app_compact import create_compact_app  # Remove to avoid circular import
 # Import managers directly when needed to avoid circular imports
-# from .blacklist_unified import UnifiedBlacklistManager
-# from .routes_unified import UnifiedAPIRoutes
 from .database import DatabaseSchema as DatabaseManager  # Backward compatibility alias
 from .exceptions import BlacklistError, CacheError, DatabaseError, ValidationError
 from .models import BlacklistEntry, MonthData, SystemHealth
@@ -30,11 +27,7 @@ from .validators import (
 )
 
 __all__ = [
-    # Main application factory
-    # 'create_compact_app',  # Remove to avoid circular import
     # Core managers
-    # 'UnifiedBlacklistManager',
-    # 'UnifiedAPIRoutes',
     "DatabaseManager",
     # Validators
     "validate_ip",

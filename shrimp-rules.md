@@ -1,209 +1,319 @@
-# Development Guidelines
+# Blacklist Management System - AI Agent Development Rules
 
-## Project Architecture
+## Project Overview
 
-### Directory Structure Requirements
-- **ALWAYS** place source code in `src/` directory
-- **ALWAYS** place tests in `tests/` directory mirroring src/ structure
-- **ALWAYS** place configuration files in `config/` directory
-- **NEVER** create files in root directory except Makefile, docker-compose.yml, README.md, CLAUDE.md, shrimp-rules.md
-- **NEVER** create `app/` directory - use `src/core/` instead
+**ENTERPRISE THREAT INTELLIGENCE PLATFORM** - Flask-based blacklist management system with GitOps deployment, FortiGate integration, and dual-source data collection (REGTECH/SECUDIUM).
 
-### Module Organization Rules
-- **ENFORCE** 500-line maximum per Python file - split larger files immediately
-- **USE** mixins for service composition in `src/core/services/`
-- **USE** blueprints for route organization in `src/core/routes/`
-- **PLACE** all collectors in `src/core/collectors/`
-- **PLACE** all database models in `src/core/models.py` or `src/core/database/`
+### Core Technology Stack
+- **Backend**: Flask 2.3.3 + Python 3.9+ + Gunicorn
+- **Database**: PostgreSQL 15 (primary) + Redis 7 (cache)
+- **Security**: JWT + API Key dual authentication
+- **Deployment**: Docker Compose + ArgoCD GitOps
+- **Testing**: pytest (95% coverage requirement)
+- **Registry**: registry.jclee.me/blacklist:latest
 
-## Code Standards
+## Architecture Rules
 
-### Import Rules
-- **NEVER** use conditional imports with try/except for required packages
-- **ALWAYS** import required packages directly at file top
-- **USE** absolute imports from src: `from src.core.services import unified_service_factory`
-- **NEVER** use relative imports except within same package
+### File Size Limitation
+- **ENFORCE 500-LINE MAXIMUM** per Python file
+- **SPLIT IMMEDIATELY** when approaching 500 lines
+- **USE MIXINS** for service composition instead of large classes
+- **USE BLUEPRINTS** for route organization
 
-### Naming Conventions
-- **USE** snake_case for functions and variables
-- **USE** PascalCase for classes
-- **USE** UPPER_CASE for constants in `src/core/constants.py`
-- **PREFIX** private methods with underscore: `_internal_method()`
-- **SUFFIX** test files with `test_`: `test_apis.py`
+### Modular Structure Pattern
+- **ALWAYS USE MIXINS** for Flask app composition: `AppConfigurationMixin`, `MiddlewareMixin`, `BlueprintRegistrationMixin`, `ErrorHandlerMixin`
+- **FOLLOW MIXIN HIERARCHY** in `src/core/app_compact.py`
+- **NEVER CREATE MONOLITHIC FILES** - break into logical modules
 
-### Type Hints Requirements
-- **ALWAYS** add type hints to function parameters and returns
-- **USE** `from typing import Dict, List, Optional, Union, Tuple`
-- **NEVER** use `Any` when specific type is known
-- **DOCUMENT** complex types with docstrings
+### Entry Point Chain
+- **PRIMARY**: `main.py` → `src/core/app_compact.py`  
+- **FALLBACK**: `src/core/minimal_app.py` → legacy routes
+- **NEVER BYPASS** the established entry point chain
 
-## Functionality Implementation Standards
+## Service Access Patterns
 
-### Flask Application Rules
-- **ENTRY POINT** is always `src/core/app_compact.py`
-- **FALLBACK** chain: app_compact.py → minimal_app.py → legacy routes
-- **REGISTER** all blueprints in `app_compact.py` BlueprintRegistrationMixin
-- **NEVER** create new Flask() instances outside app factory
+### Dependency Injection (REQUIRED)
+```python
+# CORRECT - Container pattern
+from src.core.container import get_container
+container = get_container()
+service = container.get('unified_service')
 
-### Service Access Patterns
-- **USE** factory for singleton: `from src.core.services.unified_service_factory import get_unified_service`
-- **USE** container for DI: `from src.core.container import get_container`
-- **NEVER** instantiate services directly - always use factory or container
-- **CACHE** service instances to avoid recreation
+# ALTERNATIVE - Factory pattern  
+from src.core.services.unified_service_factory import get_unified_service
+service = get_unified_service()
 
-### Route Implementation Rules
-- **CREATE** new routes as blueprints in `src/core/routes/`
-- **REGISTER** blueprints in `src/core/app_compact.py`
-- **USE** `@bp.route()` not `@app.route()`
-- **SUPPORT** both JSON and form data in POST endpoints
-- **RETURN** consistent JSON responses with status codes
+# NEVER - Direct instantiation
+# service = UnifiedService()  # PROHIBITED
+```
 
-### Collection System Rules
-- **COLLECTORS** must inherit from base collector class
-- **IMPLEMENT** `collect()` method returning standardized format
-- **USE** `src/core/collectors/unified_collector.py` for orchestration
-- **HANDLE** authentication failures with retry logic
-- **LOG** all collection activities to database
+### Available Container Services
+- `unified_service` - Main orchestrator
+- `blacklist_manager` - IP management
+- `cache_manager` - Redis + memory fallback
+- `collection_manager` - Data collection
+- `auth_manager` - Authentication
 
-### Database Operations
-- **USE** SQLAlchemy models from `src/core/models.py`
-- **NEVER** use raw SQL except for migrations
-- **IMPLEMENT** connection pooling with size 20
-- **USE** transactions for multi-step operations
-- **HANDLE** SQLite locked errors with retry
+## Database Interaction Rules
 
-### Caching Rules
-- **USE** `ttl=` parameter, NOT `timeout=`
-- **USE** Redis with automatic memory fallback
-- **IMPLEMENT** cache decorator: `@cached(cache, ttl=300)`
-- **INVALIDATE** cache on data updates
-- **SET** appropriate TTL based on data volatility
+### Cache Usage (CRITICAL)
+```python
+# CORRECT - Use 'ttl=' parameter
+cache.set(key, value, ttl=300)
+@cached(cache, ttl=300, key_prefix="stats")
 
-## Framework Usage Standards
+# PROHIBITED - Using 'timeout='
+# cache.set(key, value, timeout=300)  # WRONG PARAMETER NAME
+```
 
-### Docker Deployment
-- **PORT** 32542 for Docker, 2542 for local development
-- **NEVER** hardcode ports - use environment variables
-- **UPDATE** both docker-compose.yml and .env when changing configuration
-- **USE** multi-stage builds for production images
-- **IMPLEMENT** health checks at /health endpoint
+### Connection Patterns
+- **PostgreSQL**: Use connection pooling via container
+- **Redis**: Auto-fallback to memory cache if Redis unavailable
+- **NEVER ASSUME** database availability - always implement fallbacks
 
-### Testing Requirements
-- **USE** pytest with markers: unit, integration, api, collection
-- **MAINTAIN** 95%+ test coverage
-- **NEVER** use MagicMock for core functionality
-- **TEST** with real data, not fake inputs
-- **RUN** `pytest -m unit` for quick tests
+### Date Handling
+```python
+# CORRECT - Use source dates
+if isinstance(detection_date_raw, pd.Timestamp):
+    detection_date = detection_date_raw.strftime('%Y-%m-%d')
 
-### Environment Variables
-- **REQUIRED**: REGTECH_USERNAME, REGTECH_PASSWORD, SECUDIUM_USERNAME, SECUDIUM_PASSWORD
-- **CHECK** credentials with `python3 scripts/setup-credentials.py --check`
-- **NEVER** commit credentials to repository
-- **USE** .env.example as template
+# PROHIBITED - Using current time for historical data
+# detection_date = datetime.now().strftime('%Y-%m-%d')  # WRONG
+```
 
-## Workflow Standards
+## API Development Rules
 
-### GitOps Pipeline
-- **TRIGGER** CI/CD on push to main branch
-- **USE** self-hosted runners for better performance
-- **PUSH** images to registry.jclee.me
-- **DEPLOY** via ArgoCD to Kubernetes
-- **UPDATE** GitHub Pages portfolio automatically
+### Request Data Handling
+```python
+# REQUIRED - Support both JSON and form data
+if request.is_json:
+    data = request.get_json() or {}
+else:
+    data = request.form.to_dict() or {}
+```
 
-### Error Handling
-- **NEVER** let application crash - always provide fallback
-- **LOG** errors with loguru: `from loguru import logger`
-- **RETURN** meaningful error messages in API responses
-- **IMPLEMENT** circuit breakers for external services
-- **USE** exponential backoff for retries
+### Performance Requirements
+- **API Response Time**: <50ms target, <200ms acceptable
+- **Use orjson**: Instead of standard json for 3x performance
+- **Enable Compression**: Flask-Compress for bandwidth optimization
+- **Cache Aggressively**: TTL-based caching for analytics endpoints
 
-## Key File Interactions
+### Error Handling Pattern
+```python
+# REQUIRED - Never crash, always fallback
+try:
+    result = risky_operation()
+except Exception as e:
+    logger.error(f"Operation failed: {e}")
+    return fallback_value
+```
 
-### Critical File Dependencies
-- **WHEN** modifying routes → update `src/core/app_compact.py` blueprint registration
-- **WHEN** adding models → update `src/core/database_schema.py` and run migrations
-- **WHEN** changing API → update both v1 (`src/core/routes/api_routes.py`) and v2 (`src/core/v2_routes/`)
-- **WHEN** modifying collectors → update `src/core/collectors/unified_collector.py`
-- **WHEN** changing configuration → update both `.env.example` and `docker-compose.yml`
-- **WHEN** updating documentation → update both README.md and CLAUDE.md
+## Security Requirements
 
-### Service Dependencies
-- **UnifiedService** depends on CollectionServiceMixin and StatisticsServiceMixin
-- **Collectors** depend on authentication services
-- **Routes** depend on service factory and container
-- **Cache** depends on Redis with memory fallback
-- **Database** operations depend on connection manager
+### Authentication System
+- **DUAL AUTHENTICATION**: JWT + API Key both required
+- **NO HARDCODED CREDENTIALS**: Always use environment variables
+- **CREDENTIAL ROTATION**: Support automatic key rotation
+- **AUDIT TRAILS**: Log all authentication attempts
 
-## AI Decision Standards
+### Environment Variables (CRITICAL)
+```bash
+# REQUIRED for collection functionality
+REGTECH_USERNAME=your-username
+REGTECH_PASSWORD=your-password  
+SECUDIUM_USERNAME=your-username
+SECUDIUM_PASSWORD=your-password
 
-### Priority Hierarchy
-1. **FIRST** check existing patterns in codebase
-2. **SECOND** follow established conventions in similar files
-3. **THIRD** consult CLAUDE.md for project-specific guidance
-4. **FOURTH** apply general Python/Flask best practices
-5. **NEVER** introduce new patterns without clear justification
+# Security system
+JWT_SECRET_KEY=change-in-production
+API_KEY_ENABLED=true
+DEFAULT_API_KEY=blk_generated-key-here
+```
 
-### File Modification Strategy
-- **CHECK** file size before editing - split if approaching 500 lines
-- **PRESERVE** existing code style and formatting
-- **MAINTAIN** backwards compatibility unless explicitly breaking
-- **UPDATE** tests when modifying functionality
-- **RUN** linters after modifications
+## Data Collection Rules
 
-### Troubleshooting Approach
-1. **CHECK** logs in `docker logs blacklist -f`
-2. **VERIFY** environment variables are set correctly
-3. **TEST** health endpoint: `curl http://localhost:32542/health`
-4. **EXAMINE** Redis connection and fallback
-5. **REVIEW** database locks and connections
+### External Source Integration
+- **REGTECH**: Session-based auth, Excel parsing, HAR fallback
+- **SECUDIUM**: POST login `/isap-api/loginProcess`, Bearer tokens
+- **RETRY LOGIC**: Implement exponential backoff for failed requests
+- **DATE VALIDATION**: Always validate date ranges from external sources
+
+### Collection Safety
+```python
+# PRODUCTION SAFETY - Check environment flags
+FORCE_DISABLE_COLLECTION = os.getenv('FORCE_DISABLE_COLLECTION', 'false').lower() == 'true'
+COLLECTION_ENABLED = os.getenv('COLLECTION_ENABLED', 'false').lower() == 'true'
+```
+
+## Testing Requirements
+
+### Coverage Standards
+- **MINIMUM 95% COVERAGE** - Non-negotiable
+- **REAL DATA TESTING** - Never use fake/mock data for core functionality
+- **NO MAGICMOCK** - Prohibited for core business logic testing
+
+### Test Markers (pytest.ini)
+```python
+# Use specific markers
+pytest -m unit -v          # Unit tests only
+pytest -m integration -v   # Integration tests  
+pytest -m api -v           # API endpoint tests
+pytest -m collection -v    # Collection system tests
+pytest -m regtech -v       # REGTECH-specific tests
+pytest -m secudium -v      # SECUDIUM-specific tests
+```
+
+### Test Structure Requirements
+```python
+# REQUIRED - Track ALL validation failures
+all_validation_failures = []
+total_tests = 0
+
+# PROHIBITED - Unconditional success messages
+# print("✅ All tests passed")  # NEVER use without actual validation
+
+# REQUIRED - Conditional success based on results
+if all_validation_failures:
+    print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed")
+    sys.exit(1)
+else:
+    print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+    sys.exit(0)
+```
+
+## Docker & Deployment Rules
+
+### Port Configuration
+- **Docker Environment**: Port 32542 (docker-compose.yml)
+- **Local Development**: Port 2542 (direct Python execution)
+- **NEVER HARDCODE PORTS** - Use environment variables
+
+### Docker Compose Integration
+```yaml
+# PRODUCTION DEFAULTS (docker-compose.yml)
+FORCE_DISABLE_COLLECTION=false    # Collection enabled
+COLLECTION_ENABLED=true           # Active collection
+RESTART_PROTECTION=false          # Docker: protection disabled
+```
+
+### Environment-Specific Settings
+- **Local .env.example**: Collection DISABLED (safety)
+- **Docker compose**: Collection ENABLED (production)
+- **ALWAYS VERIFY** environment-specific configurations
+
+## GitOps & CI/CD Rules
+
+### Registry Integration
+- **PRIMARY REGISTRY**: `registry.jclee.me/blacklist:latest`
+- **GITHUB CONTAINER REGISTRY**: Integrated with GitHub Actions
+- **SELF-HOSTED RUNNERS**: Performance-optimized CI/CD
+
+### Deployment Commands
+```bash
+# REQUIRED deployment verification
+make deploy                    # Full GitOps workflow
+make docker-build             # Build verification
+make k8s-deploy               # Kubernetes deployment
+make argocd-sync              # ArgoCD synchronization
+```
+
+### ArgoCD Integration
+- **AUTO-SYNC ENABLED**: Monitors Git repository
+- **HEALTH CHECKS**: K8s-compatible endpoints required
+- **ROLLBACK CAPABILITY**: Blue-green deployment support
+
+## Monitoring & Observability
+
+### Prometheus Metrics
+- **55 METRICS TOTAL**: System and business metrics
+- **23 ALERT RULES**: Critical system monitoring
+- **CUSTOM METRICS**: Collection performance, API response times
+
+### Health Check Endpoints
+```python
+# REQUIRED endpoints
+GET /health, /healthz, /ready    # K8s-compatible
+GET /api/health                  # Detailed service status
+GET /metrics                     # Prometheus metrics
+```
+
+### Logging Requirements
+- **USE LOGURU**: `from loguru import logger`
+- **STRUCTURED LOGGING**: JSON format for production
+- **LOG ROTATION**: 10MB file rotation
+
+## Performance Optimization
+
+### Response Time Targets
+- **Excellent**: <50ms
+- **Good**: <200ms  
+- **Acceptable**: <1000ms
+- **Poor**: >5000ms (requires immediate optimization)
+
+### Optimization Techniques
+- **orjson**: 3x faster JSON processing
+- **Connection Pooling**: Database optimization
+- **Redis Caching**: TTL-based with memory fallback
+- **Compression**: Flask-Compress for bandwidth
 
 ## Prohibited Actions
 
-### Never Do These
-- **NEVER** create files without clear purpose
-- **NEVER** modify .git directory or git configuration
-- **NEVER** commit sensitive data or credentials
-- **NEVER** use asyncio.run() inside functions
-- **NEVER** bypass the service factory/container pattern
-- **NEVER** create circular imports
-- **NEVER** ignore the 500-line file limit
-- **NEVER** use print() for logging - use logger
-- **NEVER** hardcode URLs or credentials
-- **NEVER** modify production database without backup
+### NEVER DO
+- **Create files >500 lines**
+- **Use hardcoded credentials**
+- **Mock core business logic in tests**
+- **Bypass container/factory patterns**
+- **Use asyncio.run() inside functions**
+- **Ignore cache parameter names (use ttl= not timeout=)**
+- **Create monolithic route files**
+- **Skip fallback implementations**
+- **Use unconditional test success messages**
 
-### Security Restrictions
-- **NEVER** disable FORCE_DISABLE_COLLECTION without authorization
-- **NEVER** expose internal APIs without authentication
-- **NEVER** log sensitive information (passwords, tokens)
-- **NEVER** use eval() or exec() with user input
-- **NEVER** bypass rate limiting on APIs
+### ALWAYS DO
+- **Use dependency injection**
+- **Implement error fallbacks**
+- **Test with real data**  
+- **Follow 500-line file limit**
+- **Use environment variables**
+- **Maintain 95% test coverage**
+- **Structure validation outputs**
+- **Verify actual vs expected results**
 
-### Development Restrictions
-- **NEVER** push untested code to main branch
-- **NEVER** skip CI/CD pipeline checks
-- **NEVER** ignore failing tests
-- **NEVER** reduce test coverage below 95%
-- **NEVER** merge without code review
+## Multi-File Coordination
 
-## Command Execution Standards
+### Simultaneous Updates Required
+1. **Database Schema Changes**: 
+   - `src/core/database_schema.py` + `src/core/database/table_definitions.py`
+   - Migration scripts in `scripts/database/migration/`
 
-### Development Commands
-- **RUN** `make init` for initial setup
-- **RUN** `make test` before committing
-- **RUN** `make lint` to check code quality
-- **USE** `python3` not `python` for all commands
-- **USE** `uv` for package management, not pip
+2. **Route Additions**:
+   - Blueprint file + `src/core/app/blueprints.py` registration
+   - Corresponding test file in `tests/`
 
-### Docker Commands
-- **START** services: `make start` or `docker-compose up -d`
-- **VIEW** logs: `make logs` or `docker-compose logs -f`
-- **RESTART** after changes: `make restart`
-- **CLEAN** resources: `make clean`
-- **UPDATE** images: `docker-compose pull && docker-compose up -d`
+3. **Service Changes**:
+   - Service implementation + container registration
+   - Factory pattern update if applicable
 
-### Database Commands
-- **INITIALIZE**: `python3 app/init_database.py`
-- **FORCE RESET**: `python3 app/init_database.py --force`
-- **CHECK** schema version before migrations
-- **BACKUP** before destructive operations
-- **USE** transactions for data modifications
+4. **Docker Configuration**:
+   - `docker-compose.yml` + `.env` updates
+   - `Dockerfile` modifications require build verification
+
+### Configuration Synchronization
+- **Environment Files**: `.env.example` (safe defaults) + docker-compose.yml (production)
+- **Test Configuration**: `pytest.ini` + `conftest.py` + test-specific fixtures
+- **Security Settings**: `config/security.json` + environment variables
+
+## Decision Making Priorities
+
+### Priority Order
+1. **Security** - Authentication, authorization, credential protection
+2. **Stability** - Error handling, fallbacks, graceful degradation
+3. **Performance** - Response times, resource optimization
+4. **Maintainability** - Modular design, test coverage
+5. **Features** - New functionality implementation
+
+### Conflict Resolution
+- **Security vs Performance**: Choose security
+- **Stability vs Features**: Choose stability  
+- **Test Coverage vs Speed**: Maintain 95% coverage
+- **Modularity vs Simplicity**: Enforce 500-line limit
