@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build-and-deploy:
     name: 📄 Build and Deploy Portfolio
-    runs-on: ubuntu-latest  # GitHub Pages는 ubuntu-latest 필요
+    runs-on: self-hosted
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -650,7 +650,7 @@ curl http://localhost:32542/health
   verify-deployment:
     name: 🧪 Verify Deployment
     needs: [build-and-deploy]
-    runs-on: ubuntu-latest  # 검증은 ubuntu-latest 사용
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     
     steps:

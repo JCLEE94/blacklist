@@ -1,6 +1,6 @@
-# Docker Compose 기반 배포 - PostgreSQL + Redis
-# Private Registry: registry.jclee.me
-version: '3.9'
+# 간단한 Docker Compose 구성 - 리소스 제한 없음
+# 다른 서버에서 "nanocpu not set" 에러 발생 시 사용
+version: '3.3'
 
 services:
   blacklist:
@@ -21,17 +21,14 @@ services:
       FORCE_DISABLE_COLLECTION: "false"
       MAX_AUTH_ATTEMPTS: 5
       BLOCK_DURATION_HOURS: 1
-      # Performance
       GUNICORN_WORKERS: 4
       GUNICORN_THREADS: 2
       GUNICORN_TIMEOUT: 60
     env_file:
       - ./.env
     depends_on:
-      redis:
-        condition: service_healthy
-      postgresql:
-        condition: service_healthy
+      - redis
+      - postgresql
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2542/health"]
       interval: 30s
@@ -40,69 +37,35 @@ services:
       start_period: 40s
     networks:
       - blacklist-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "10"
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-    labels:
-      - "com.watchtower.enable=true"
 
   redis:
-    image: registry.jclee.me/blacklist-redis:latest
+    image: redis:7-alpine
     container_name: blacklist-redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
-    environment:
-      - REDIS_MAXMEMORY=1gb
-      - REDIS_MAXMEMORY_POLICY=allkeys-lru
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 10s
     networks:
       - blacklist-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.2'
-          memory: 256M
-    labels:
-      - "com.watchtower.enable=true"
 
   postgresql:
-    image: registry.jclee.me/blacklist-postgresql:latest
+    image: postgres:15-alpine
     container_name: blacklist-postgresql
     restart: unless-stopped
     ports:
       - "32543:5432"
     volumes:
       - postgresql_data:/var/lib/postgresql/data
-      - ./postgresql-init:/docker-entrypoint-initdb.d/extra
     environment:
       POSTGRES_DB: blacklist
       POSTGRES_USER: blacklist_user
       POSTGRES_PASSWORD: blacklist_password_change_me
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "blacklist_user", "-d", "blacklist"]
       interval: 10s
@@ -111,29 +74,11 @@ services:
       start_period: 30s
     networks:
       - blacklist-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "20m"
-        max-file: "10"
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
-    labels:
-      - "com.watchtower.enable=true"
 
 volumes:
   redis_data:
-    driver: local
   postgresql_data:
-    driver: local
 
 networks:
   blacklist-net:
     driver: bridge
-    name: blacklist-network
