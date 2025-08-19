@@ -40,8 +40,6 @@ services:
       start_period: 40s
     networks:
       - blacklist-net
-    labels:
-      - "com.watchtower.enable=true"
 
   redis:
     image: registry.jclee.me/blacklist-redis:latest
@@ -60,8 +58,6 @@ services:
       start_period: 10s
     networks:
       - blacklist-net
-    labels:
-      - "com.watchtower.enable=true"
 
   postgresql:
     image: registry.jclee.me/blacklist-postgresql:latest
@@ -85,8 +81,6 @@ services:
       start_period: 30s
     networks:
       - blacklist-net
-    labels:
-      - "com.watchtower.enable=true"
 
 volumes:
   redis_data:

@@ -353,6 +353,10 @@ def test_period_collection():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+# Data endpoints moved to api_routes.py to avoid duplication
+# Use /api/data/all and /api/export/<format> instead
+
+
 # 헬퍼 함수들
 
 def get_source_collection_stats():

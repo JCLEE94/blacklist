@@ -142,7 +142,12 @@ def _get_dashboard_data():
 @web_routes_bp.route("/", methods=["GET"])
 @web_routes_bp.route("/dashboard", methods=["GET"])
 def dashboard():
-    """메인페이지 - 대시보드"""
+    """메인페이지 - 통합 관리패널로 리다이렉트"""
+    return redirect(url_for('web_routes.unified_control_panel'))
+
+@web_routes_bp.route("/legacy-dashboard", methods=["GET"])
+def legacy_dashboard():
+    """레거시 대시보드 (백업용)"""
     try:
         return render_template("dashboard.html", **_get_dashboard_data())
     except Exception as e:
@@ -158,6 +163,24 @@ def dashboard():
             500,
         )
 
+
+@web_routes_bp.route("/unified-control", methods=["GET"])
+def unified_control_panel():
+    """통합 관리패널"""
+    try:
+        return render_template("unified_dashboard.html", **_get_dashboard_data())
+    except Exception as e:
+        logger.error(f"Unified control panel error: {e}")
+        return jsonify({"error": "Unified control panel failed", "message": str(e)}), 500
+
+@web_routes_bp.route("/raw-data", methods=["GET"])
+def raw_data_page():
+    """전체 데이터 조회 페이지"""
+    try:
+        return render_template("raw_data.html", **_get_dashboard_data())
+    except Exception as e:
+        logger.error(f"Raw data page error: {e}")
+        return jsonify({"error": "Raw data page failed", "message": str(e)}), 500
 
 @web_routes_bp.route("/test", methods=["GET"])
 def test_page():

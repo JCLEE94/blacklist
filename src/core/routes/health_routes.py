@@ -122,3 +122,156 @@ def detailed_health_check():
         return create_error_response(
             "health_check_failed", f"Health check failed: {str(e)}", 500
         )
+
+
+@health_routes_bp.route("/build-info", methods=["GET"])
+def visual_build_info():
+    """빌드 정보 시각적 표시"""
+    try:
+        import os
+        import subprocess
+        from flask import render_template_string
+        
+        # Git 정보 수집
+        try:
+            git_commit = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
+                                               cwd=os.path.dirname(__file__)).decode().strip()
+        except:
+            git_commit = "unknown"
+            
+        try:
+            git_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], 
+                                               cwd=os.path.dirname(__file__)).decode().strip()
+        except:
+            git_branch = "unknown"
+            
+        try:
+            build_date = subprocess.check_output(['git', 'log', '-1', '--format=%ci'], 
+                                               cwd=os.path.dirname(__file__)).decode().strip()
+        except:
+            build_date = datetime.utcnow().isoformat()
+            
+        # 시스템 상태 정보
+        health_info = service.get_system_health()
+        
+        # HTML 템플릿
+        html_template = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blacklist Management - Build Info</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 20px; background: #f5f5f5;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { 
+            background: white; padding: 20px; margin: 20px 0; border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header { text-align: center; color: #333; }
+        .version { 
+            font-size: 2.5em; font-weight: bold; color: #007bff; 
+            margin: 20px 0; text-align: center;
+        }
+        .info-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; margin: 20px 0;
+        }
+        .info-item { padding: 15px; background: #f8f9fa; border-radius: 4px; }
+        .label { font-weight: bold; color: #6c757d; margin-bottom: 5px; }
+        .value { color: #333; font-family: monospace; }
+        .status { 
+            display: inline-block; padding: 4px 12px; border-radius: 20px; 
+            font-size: 0.8em; font-weight: bold; text-transform: uppercase;
+        }
+        .status.healthy { background: #d4edda; color: #155724; }
+        .status.degraded { background: #fff3cd; color: #856404; }
+        .footer { text-align: center; color: #6c757d; margin-top: 40px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="header">🛡️ Blacklist Management System</h1>
+            <div class="version">v{{ version }}</div>
+            <div style="text-align: center;">
+                <span class="status {{ status_class }}">{{ status.upper() }}</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📦 빌드 정보</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="label">Version</div>
+                    <div class="value">{{ version }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Git Commit</div>
+                    <div class="value">{{ git_commit }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Git Branch</div>
+                    <div class="value">{{ git_branch }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Build Date</div>
+                    <div class="value">{{ build_date }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📊 시스템 상태</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="label">Total IPs</div>
+                    <div class="value">{{ total_ips }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Active IPs</div>
+                    <div class="value">{{ active_ips }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Collection Status</div>
+                    <div class="value">{{ collection_status }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Last Updated</div>
+                    <div class="value">{{ timestamp }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🚀 Updated: {{ timestamp }}</p>
+            <p><a href="/health">JSON Health Check</a> | <a href="/api/health">Detailed Health</a></p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        # 템플릿 데이터
+        template_data = {
+            'version': '1.0.35',
+            'git_commit': git_commit,
+            'git_branch': git_branch,
+            'build_date': build_date,
+            'status': health_info.get('status', 'unknown'),
+            'status_class': 'healthy' if health_info.get('status') == 'healthy' else 'degraded',
+            'total_ips': health_info.get('total_ips', 0),
+            'active_ips': health_info.get('active_ips', 0),
+            'collection_status': 'enabled' if health_info.get('collection_enabled') else 'disabled',
+            'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+        }
+        
+        return render_template_string(html_template, **template_data)
+        
+    except Exception as e:
+        logger.error(f"Build info error: {e}")
+        return f"<h1>Build Info Error</h1><p>{str(e)}</p>", 500
