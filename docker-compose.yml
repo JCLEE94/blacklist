@@ -48,7 +48,7 @@ services:
     container_name: blacklist-redis
     restart: unless-stopped
     volumes:
-      - redis_data:/data
+      - ./data/redis:/data
     environment:
       - REDIS_MAXMEMORY=1gb
       - REDIS_MAXMEMORY_POLICY=allkeys-lru
@@ -70,7 +70,7 @@ services:
     ports:
       - "32543:5432"
     volumes:
-      - postgresql_data:/var/lib/postgresql/data
+      - ./data/postgresql:/var/lib/postgresql/data
       - ./postgresql-init:/docker-entrypoint-initdb.d/extra
     environment:
       POSTGRES_DB: blacklist
@@ -87,12 +87,6 @@ services:
       - blacklist-net
     labels:
       - "com.watchtower.enable=true"
-
-volumes:
-  redis_data:
-    driver: local
-  postgresql_data:
-    driver: local
 
 networks:
   blacklist-net:
