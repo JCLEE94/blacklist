@@ -6,10 +6,7 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/github-pages.yml'
-      - 'src/**'
-      - 'README.md'
   workflow_dispatch:
-  workflow_call:  # CI/CD 파이프라인에서 호출 가능
 
 permissions:
   contents: read

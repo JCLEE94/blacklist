@@ -18,18 +18,6 @@ on:
           - centos8
           - rocky8
           - ubuntu20
-  workflow_call:
-    inputs:
-      package_version:
-        description: 'Package version'
-        required: false
-        default: 'latest'
-        type: string
-      target_os:
-        description: 'Target OS'
-        required: false
-        default: 'rhel8'
-        type: string
   push:
     tags:
       - 'offline-*'
