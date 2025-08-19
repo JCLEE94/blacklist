@@ -133,19 +133,10 @@ services:
 volumes:
   redis_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./redis-data
   postgresql_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./postgresql-data
 
 networks:
   blacklist-net:
     driver: bridge
     name: blacklist-network
-    external: true

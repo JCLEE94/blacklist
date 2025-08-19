@@ -67,3 +67,8 @@ deployment/blacklist-internal-deployment-*/images/*.tar
 # Docker runtime data
 docker/redis-data/
 redis-data/
+test-postgresql-data/
+test-redis-data/
+postgresql-data/
+redis-data/
+data/
