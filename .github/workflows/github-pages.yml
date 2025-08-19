@@ -469,12 +469,12 @@ jobs:
                     <p style="margin: 1rem 0;">Successfully implemented dual deployment strategy supporting both Kubernetes and Docker Compose environments</p>
                     
                     <div class="code-preview">
-# Kubernetes Deployment (Production)
+<!-- Kubernetes Deployment (Production) -->
 kubectl apply -f k8s/
 argocd app sync blacklist
 kubectl get pods -n blacklist
 
-# Docker Compose Deployment (Development)
+<!-- Docker Compose Deployment (Development) -->
 docker-compose up -d
 docker-compose ps
 curl http://localhost:32542/health
