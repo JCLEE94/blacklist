@@ -14,6 +14,23 @@
 
 ## Architecture Rules
 
+### Root Directory Organization
+- **ALLOWED IN ROOT**: Only these files are permitted in root directory:
+  - `CLAUDE.md` - AI agent guidance
+  - `README.md` - Project documentation
+  - Dot files (`.gitignore`, `.env`, `.dockerignore`, etc.)
+  - `docker-compose.yml` - Docker orchestration
+  - `pytest.ini` - Test configuration
+  - `shrimp-rules.md` - AI agent rules
+- **PROHIBITED IN ROOT**: All other files MUST be moved to appropriate folders:
+  - Python scripts (*.py) → `scripts/` or feature-specific folder
+  - Test files (test_*.py) → `tests/`
+  - Documentation (*.md except README/CLAUDE) → `docs/`
+  - JSON data files → `data/` or `config/`
+  - Shell scripts (*.sh) → `scripts/`
+  - Log files (*.log) → `logs/` (should be gitignored)
+- **IMMEDIATE ACTION**: When finding non-allowed files in root, move them to correct location
+
 ### File Size Limitation
 - **ENFORCE 500-LINE MAXIMUM** per Python file
 - **SPLIT IMMEDIATELY** when approaching 500 lines
