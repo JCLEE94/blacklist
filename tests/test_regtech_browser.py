@@ -33,8 +33,8 @@ def test_with_playwright():
             page.wait_for_load_state('networkidle')
             
             # 스크린샷 저장
-            page.screenshot(path='regtech_login_page.png')
-            print("   📸 스크린샷: regtech_login_page.png")
+            page.screenshot(path='docs/regtech_login_page.png')
+            print("   📸 스크린샷: docs/regtech_login_page.png")
             
             # 2. 로그인 정보 입력
             print("\n2️⃣ 로그인 정보 입력...")
@@ -48,8 +48,8 @@ def test_with_playwright():
             print("   ✅ 비밀번호 입력: ********")
             
             # 스크린샷
-            page.screenshot(path='regtech_login_filled.png')
-            print("   📸 스크린샷: regtech_login_filled.png")
+            page.screenshot(path='docs/regtech_login_filled.png')
+            print("   📸 스크린샷: docs/regtech_login_filled.png")
             
             # 3. 로그인 버튼 클릭
             print("\n3️⃣ 로그인 시도...")
@@ -67,8 +67,8 @@ def test_with_playwright():
             print(f"   현재 URL: {current_url}")
             
             # 스크린샷
-            page.screenshot(path='regtech_after_login.png')
-            print("   📸 스크린샷: regtech_after_login.png")
+            page.screenshot(path='docs/regtech_after_login.png')
+            print("   📸 스크린샷: docs/regtech_after_login.png")
             
             # 로그인 성공 여부 확인
             if 'login' not in current_url.lower():
@@ -98,8 +98,8 @@ def test_with_playwright():
                         continue
                 
                 # 현재 페이지 스크린샷
-                page.screenshot(path='regtech_blacklist_page.png')
-                print("   📸 스크린샷: regtech_blacklist_page.png")
+                page.screenshot(path='docs/regtech_blacklist_page.png')
+                print("   📸 스크린샷: docs/regtech_blacklist_page.png")
                 
                 # 5. 데이터 추출
                 print("\n5️⃣ 데이터 추출...")
