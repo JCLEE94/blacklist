@@ -300,10 +300,10 @@ if __name__ == "__main__":
     enabled_sources = collector.get_enabled_sources()
     print(f"\n활성화된 소스: {[s['name'] for s in enabled_sources]}")
     
-    # 수집 테스트
+    # 수집 테스트 (자동 실행 - CI/CD 호환)
     if enabled_sources:
-        response = input(f"\n{enabled_sources[0]['name']} 수집을 테스트하시겠습니까? (y/N): ")
-        if response.lower() == 'y':
+        print(f"\n{enabled_sources[0]['name']} 수집 테스트 시작 (자동 모드)...")
+        if True:  # 자동 실행
             source_name = enabled_sources[0]['name']
             print(f"{source_name} 수집 시작...")
             

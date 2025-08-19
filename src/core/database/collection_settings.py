@@ -498,5 +498,4 @@ if __name__ == "__main__":
     print(f"전체 수집: {stats['total_collections']}회")
     print(f"성공: {stats['successful_collections']}회")
     print(f"총 IP: {stats['total_ips_collected']}개")
-    
     print("\n✅ 데이터베이스 테스트 완료")

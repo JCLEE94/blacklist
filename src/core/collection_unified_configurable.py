@@ -478,9 +478,9 @@ if __name__ == "__main__":
     if creds:
         print(f"저장된 사용자: {creds['username']}")
     
-    # 수집 테스트
-    response = input("\nREGTECH 수집을 테스트하시겠습니까? (y/N): ")
-    if response.lower() == 'y':
+    # 수집 테스트 (자동 실행 - CI/CD 호환)
+    print("\nREGTECH 수집 테스트 시작 (자동 모드)...")
+    if True:  # 자동 실행
         print("수집 시작...")
         result = system.collect_from_source("regtech")
         

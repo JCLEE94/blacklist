@@ -8,6 +8,7 @@ import logging
 import os
 
 from .base_container import ServiceContainer
+from src.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +63,6 @@ class BlacklistContainer(ServiceContainer):
         # Monitoring services removed for performance optimization
 
         # Blacklist Manager - 설정에서 데이터베이스 URI 가져오기
-        from ...config.settings import settings
-
         blacklist_db_url = settings.database_uri
 
         self.register(

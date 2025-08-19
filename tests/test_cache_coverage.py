@@ -21,20 +21,20 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 
-class TestCacheManager:
+class TestEnhancedSmartCache:
     """Test cache manager functionality"""
 
     def test_cache_manager_import(self):
         """Test cache manager can be imported"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
-        assert CacheManager is not None
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
+        assert EnhancedSmartCache is not None
 
     def test_cache_manager_creation(self):
         """Test cache manager creation"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
         # Test with memory backend (should always work)
-        manager = CacheManager(backend_type="memory")
+        manager = EnhancedSmartCache()
         assert manager is not None
         assert hasattr(manager, 'get')
         assert hasattr(manager, 'set')
@@ -42,9 +42,9 @@ class TestCacheManager:
 
     def test_cache_manager_basic_operations(self):
         """Test basic cache operations"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = CacheManager(backend_type="memory")
+        manager = EnhancedSmartCache()
         
         # Test set and get
         test_key = "test_key"
@@ -57,9 +57,9 @@ class TestCacheManager:
 
     def test_cache_manager_ttl(self):
         """Test cache TTL functionality"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = CacheManager(backend_type="memory")
+        manager = EnhancedSmartCache(backend_type="memory")
         
         # Test with very short TTL
         test_key = "ttl_test_key"
@@ -79,9 +79,9 @@ class TestCacheManager:
 
     def test_cache_manager_delete(self):
         """Test cache delete functionality"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = CacheManager(backend_type="memory")
+        manager = EnhancedSmartCache(backend_type="memory")
         
         test_key = "delete_test_key"
         test_value = "delete_test_value"
@@ -96,9 +96,9 @@ class TestCacheManager:
 
     def test_cache_manager_exists(self):
         """Test cache exists functionality"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = CacheManager(backend_type="memory")
+        manager = EnhancedSmartCache(backend_type="memory")
         
         test_key = "exists_test_key"
         test_value = "exists_test_value"
@@ -114,9 +114,9 @@ class TestCacheManager:
 
     def test_cache_manager_clear(self):
         """Test cache clear functionality"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = CacheManager(backend_type="memory")
+        manager = EnhancedSmartCache(backend_type="memory")
         
         # Set multiple values
         manager.set("key1", "value1")
@@ -241,9 +241,9 @@ class TestCacheDecorators:
     def test_cached_decorator_basic(self):
         """Test basic cached decorator functionality"""
         from src.utils.advanced_cache.decorators import cached
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = CacheManager(backend_type="memory")
+        cache = EnhancedSmartCache(backend_type="memory")
         
         call_count = 0
         
@@ -266,9 +266,9 @@ class TestCacheDecorators:
     def test_cached_decorator_different_args(self):
         """Test cached decorator with different arguments"""
         from src.utils.advanced_cache.decorators import cached
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = CacheManager(backend_type="memory")
+        cache = EnhancedSmartCache(backend_type="memory")
         
         call_count = 0
         
@@ -290,9 +290,9 @@ class TestCacheDecorators:
         """Test cache invalidation decorator if available"""
         try:
             from src.utils.advanced_cache.decorators import cache_invalidate
-            from src.utils.advanced_cache.cache_manager import CacheManager
+            from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
             
-            cache = CacheManager(backend_type="memory")
+            cache = EnhancedSmartCache(backend_type="memory")
             
             # Set a cached value
             cache.set("test_invalidate", "old_value")
@@ -404,9 +404,9 @@ class TestCacheIntegration:
 
     def test_cache_manager_with_real_data(self):
         """Test cache manager with realistic data"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = CacheManager(backend_type="memory")
+        cache = EnhancedSmartCache(backend_type="memory")
         
         # Test with blacklist-like data
         blacklist_data = {
@@ -425,9 +425,9 @@ class TestCacheIntegration:
 
     def test_cache_performance_simulation(self):
         """Test cache performance with multiple operations"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = CacheManager(backend_type="memory")
+        cache = EnhancedSmartCache(backend_type="memory")
         
         # Simulate multiple cache operations
         for i in range(100):
@@ -443,9 +443,9 @@ class TestCacheIntegration:
 
     def test_cache_error_handling(self):
         """Test cache error handling"""
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = CacheManager(backend_type="memory")
+        cache = EnhancedSmartCache(backend_type="memory")
         
         # Test with None key (should handle gracefully)
         try:
@@ -471,8 +471,8 @@ if __name__ == "__main__":
     # Test 1: Cache manager can be created
     total_tests += 1
     try:
-        from src.utils.advanced_cache.cache_manager import CacheManager
-        cache = CacheManager(backend_type="memory")
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
+        cache = EnhancedSmartCache(backend_type="memory")
         assert cache is not None
         print("✅ Cache manager creation: SUCCESS")
     except Exception as e:
@@ -481,8 +481,8 @@ if __name__ == "__main__":
     # Test 2: Basic cache operations work
     total_tests += 1
     try:
-        from src.utils.advanced_cache.cache_manager import CacheManager
-        cache = CacheManager(backend_type="memory")
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
+        cache = EnhancedSmartCache(backend_type="memory")
         cache.set("test", "value")
         assert cache.get("test") == "value"
         print("✅ Basic cache operations: SUCCESS")
@@ -504,9 +504,9 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         from src.utils.advanced_cache.decorators import cached
-        from src.utils.advanced_cache.cache_manager import CacheManager
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = CacheManager(backend_type="memory")
+        cache = EnhancedSmartCache(backend_type="memory")
         
         @cached(cache, ttl=300)
         def test_func(x):
@@ -544,8 +544,8 @@ if __name__ == "__main__":
     # Test 7: TTL functionality works
     total_tests += 1
     try:
-        from src.utils.advanced_cache.cache_manager import CacheManager
-        cache = CacheManager(backend_type="memory")
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
+        cache = EnhancedSmartCache(backend_type="memory")
         cache.set("ttl_test", "value", ttl=1)
         assert cache.get("ttl_test") == "value"
         print("✅ TTL functionality: SUCCESS")
@@ -555,8 +555,8 @@ if __name__ == "__main__":
     # Test 8: Complex data caching works
     total_tests += 1
     try:
-        from src.utils.advanced_cache.cache_manager import CacheManager
-        cache = CacheManager(backend_type="memory")
+        from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
+        cache = EnhancedSmartCache(backend_type="memory")
         
         complex_data = {
             "ip": "192.168.1.1",

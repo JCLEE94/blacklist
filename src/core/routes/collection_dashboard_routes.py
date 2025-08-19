@@ -262,10 +262,12 @@ def run_deduplication():
 def _start_date_collection(target_date: str) -> bool:
     """특정 날짜 수집 시작 (내부 함수)"""
     try:
-        # REGTECH 수집기로 해당 날짜 데이터 수집
-        collector = RegtechSimpleCollector(
-            username="nextrade", password="Sprtmxm1@3"  # 환경변수에서 가져와야 함
-        )
+        # REGTECH 수집기로 해당 날짜 데이터 수집  
+        from ..collectors.regtech_collector import RegtechCollector
+        from ..collectors.unified_collector import CollectionConfig
+        
+        config = CollectionConfig()
+        collector = RegtechCollector(config)
 
         # 날짜 범위 설정
         start_date = target_date

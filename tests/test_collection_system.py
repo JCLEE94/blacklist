@@ -108,8 +108,9 @@ def test_collection_system():
     print("\n6. 수집 테스트")
     print("-" * 40)
     
-    response = input("실제 수집을 테스트하시겠습니까? (y/N): ")
-    if response.lower() == 'y':
+    # Use environment variable to control collection test (non-interactive)
+    test_collection = os.getenv("TEST_COLLECTION", "n").lower()
+    if test_collection == 'y':
         print("REGTECH 수집 시작...")
         result = system.collect_regtech()
         
