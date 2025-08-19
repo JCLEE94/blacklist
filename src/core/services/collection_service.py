@@ -362,6 +362,32 @@ class CollectionServiceMixin:
                             "success": False,
                             "message": f"REGTECH 수집 실패: {result.get('error', 'Unknown error')}",
                         }
+                    
+                    # 데이터 저장 추가!
+                    collected_data = result.get("data", [])
+                    if collected_data:
+                        logger.info(f"REGTECH에서 {len(collected_data)}개 IP 수집됨, 저장 시작...")
+                        
+                        # PostgreSQL에 저장
+                        from src.core.data_storage_fixed import FixedDataStorage
+                        storage = FixedDataStorage()
+                        storage_result = storage.store_ips(collected_data, "REGTECH")
+                        
+                        if storage_result.get("success"):
+                            logger.info(f"✅ {storage_result.get('imported_count', 0)}개 IP 저장 완료")
+                            return {
+                                "success": True,
+                                "message": f"REGTECH 수집 및 저장 완료: {storage_result.get('imported_count', 0)}개 IP",
+                                "collected": len(collected_data),
+                                "stored": storage_result.get('imported_count', 0),
+                                "duplicates": storage_result.get('duplicate_count', 0)
+                            }
+                        else:
+                            logger.error(f"저장 실패: {storage_result.get('error')}")
+                            return {
+                                "success": False,
+                                "message": f"데이터 저장 실패: {storage_result.get('error')}",
+                            }
                 except Exception as collect_e:
                     return {
                         "success": False,

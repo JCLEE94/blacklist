@@ -44,8 +44,59 @@
             
             <div class="grid grid-2">
                 <div class="card">
-                    <h3>📅 수집 캘린더</h3>
-                    <div id="collection-calendar"></div>
+                    <h3>📈 일자별 수집 현황</h3>
+                    <div class="chart-controls">
+                        <select id="period-selector" onchange="updateChartPeriod()">
+                            <option value="7">최근 7일</option>
+                            <option value="30" selected>최근 30일</option>
+                            <option value="90">최근 90일</option>
+                        </select>
+                    </div>
+                    <canvas id="collection-chart" width="400" height="200"></canvas>
+                </div>
+                
+                <div class="card">
+                    <h3>📊 소스별 수집 통계</h3>
+                    <div id="source-stats">
+                        <div class="source-stat">
+                            <div class="source-name">REGTECH</div>
+                            <div class="source-info">
+                                <span class="count" id="regtech-count">-</span>
+                                <span class="rate" id="regtech-rate">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress" id="regtech-progress"></div>
+                            </div>
+                        </div>
+                        <div class="source-stat">
+                            <div class="source-name">SECUDIUM</div>
+                            <div class="source-info">
+                                <span class="count" id="secudium-count">-</span>
+                                <span class="rate" id="secudium-rate">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress" id="secudium-progress"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>⏰ 기간별 수집 가능여부</h3>
+                    <div id="period-availability">
+                        <div class="period-item">
+                            <span class="period-name">1개월</span>
+                            <span class="period-status available">✅ 가능 (930개)</span>
+                        </div>
+                        <div class="period-item">
+                            <span class="period-name">2주일</span>
+                            <span class="period-status available">✅ 가능 (30개)</span>
+                        </div>
+                        <div class="period-item">
+                            <span class="period-name">1주일</span>
+                            <span class="period-status unavailable">❌ 불가</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="card">

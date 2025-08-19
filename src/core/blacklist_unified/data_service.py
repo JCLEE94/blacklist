@@ -250,7 +250,14 @@ class DataService:
                     """
                 )
 
-                result = [row[0] for row in cursor.fetchall()]
+                result = []
+                for row in cursor.fetchall():
+                    ip_str = row[0]
+                    # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
+                    if '/' in ip_str:
+                        ip_str = ip_str.split('/')[0]
+                    result.append(ip_str)
+                
                 logger.info(f"Found {len(result)} active IPs from PostgreSQL database")
                 return result
 
