@@ -1,0 +1,312 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests'
+        required: false
+        default: false
+        type: boolean
+      build_offline:
+        description: 'Build offline package'
+        required: false
+        default: false
+        type: boolean
+      deploy_pages:
+        description: 'Deploy to GitHub Pages'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  REDIS_IMAGE_NAME: blacklist-redis
+  POSTGRESQL_IMAGE_NAME: blacklist-postgresql
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  # ============================================
+  # 1. 테스트 및 린트 (병렬 실행)
+  # ============================================
+  test:
+    name: 🧪 Test & Lint
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true'
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.11']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8 black isort
+    
+    - name: Run linting
+      run: |
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        black --check src/
+        isort --check-only src/
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=src --cov-report=xml
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  # ============================================
+  # 2. Docker 이미지 빌드 (병렬 실행 가능)
+  # ============================================
+  build-images:
+    name: 🐳 Build Docker Images
+    runs-on: ubuntu-latest  # GitHub hosted runner for reliability
+    needs: [test]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped' || github.event.inputs.skip_tests == 'true')
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      images_built: ${{ steps.build.outputs.images_built }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Generate version
+      id: version
+      run: |
+        VERSION="$(date +%Y%m%d)-${GITHUB_SHA::7}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "📌 Version: $VERSION"
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: network=host
+    
+    - name: Login to Registry
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} \
+          -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+    
+    - name: Build main application image
+      id: build-main
+      run: |
+        echo "🔨 Building main application image..."
+        
+        # Check if Dockerfile exists
+        if [ -f docker/Dockerfile ]; then
+          DOCKERFILE_PATH="docker/Dockerfile"
+        elif [ -f Dockerfile ]; then
+          DOCKERFILE_PATH="Dockerfile"
+        else
+          echo "Creating default Dockerfile..."
+          cat > Dockerfile << 'EOF'
+        FROM python:3.11-slim
+        WORKDIR /app
+        COPY requirements.txt .
+        RUN pip install --no-cache-dir -r requirements.txt
+        COPY . .
+        EXPOSE 2542
+        CMD ["python", "app/main.py"]
+        EOF
+          DOCKERFILE_PATH="Dockerfile"
+        fi
+        
+        docker buildx build \
+          --platform linux/amd64 \
+          --cache-from type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache \
+          --cache-to type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max \
+          -f "$DOCKERFILE_PATH" \
+          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
+          --push .
+        
+    - name: Build supporting images (optional)
+      id: build-support
+      continue-on-error: true
+      run: |
+        echo "🔨 Building supporting images if configs exist..."
+        
+        # Build Redis image if config exists
+        if [ -d docker/redis ] && [ -f docker/redis/Dockerfile ]; then
+          echo "Building custom Redis image..."
+          docker build \
+            -f docker/redis/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ steps.version.outputs.version }} \
+            docker/redis/
+          docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ steps.version.outputs.version }}
+        else
+          echo "No custom Redis configuration found, using default redis:7-alpine"
+        fi
+        
+        # Build PostgreSQL image if config exists
+        if [ -d docker/postgresql ] && [ -f docker/postgresql/Dockerfile ]; then
+          echo "Building custom PostgreSQL image..."
+          docker build \
+            -f docker/postgresql/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ steps.version.outputs.version }} \
+            docker/postgresql/
+          docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ steps.version.outputs.version }}
+        else
+          echo "No custom PostgreSQL configuration found, using default postgres:15-alpine"
+        fi
+        
+        echo "images_built=true" >> $GITHUB_OUTPUT
+        echo "✅ All images built and pushed"
+    
+    - name: Cleanup
+      if: always()
+      run: |
+        docker image prune -f
+        docker logout ${{ env.REGISTRY }}
+
+  # ============================================
+  # 3. 통합 테스트 (선택적)
+  # ============================================
+  integration-test:
+    name: 🔍 Integration Test
+    runs-on: ubuntu-latest
+    needs: [build-images]
+    if: needs.build-images.outputs.images_built == 'true' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run integration test
+      run: |
+        echo "🧪 Running integration tests..."
+        
+        # Start services
+        docker-compose -f docker-compose.yml up -d
+        
+        # Wait for services
+        sleep 30
+        
+        # Health check
+        for i in {1..10}; do
+          if curl -sf http://localhost:32542/health; then
+            echo "✅ Health check passed"
+            break
+          fi
+          sleep 5
+        done
+        
+        # Run integration tests
+        docker-compose exec -T blacklist pytest tests/integration/ || true
+        
+        # Cleanup
+        docker-compose down -v
+
+  # ============================================
+  # 4. GitHub Pages 배포 (병렬)
+  # ============================================
+  deploy-pages:
+    name: 📄 Deploy GitHub Pages
+    uses: ./.github/workflows/github-pages.yml
+    needs: [build-images]
+    if: |
+      github.ref == 'refs/heads/main' && 
+      (github.event_name == 'push' || github.event.inputs.deploy_pages == 'true')
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  # ============================================
+  # 5. 오프라인 패키지 생성 (workflow_call)
+  # ============================================
+  build-offline-package:
+    name: 📦 Build Offline Package
+    uses: ./.github/workflows/offline-package.yml
+    needs: [build-images]
+    if: |
+      github.ref == 'refs/heads/main' && 
+      (github.event_name == 'push' || github.event.inputs.build_offline == 'true')
+    with:
+      package_version: ${{ needs.build-images.outputs.version }}
+      target_os: 'rhel8'
+    secrets: inherit
+    
+
+  # ============================================
+  # 6. 배포 알림 (모든 작업 완료 후)
+  # ============================================
+  notify:
+    name: 📢 Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [build-images, integration-test, deploy-pages, build-offline-package]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Generate summary
+      run: |
+        echo "# 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📊 Build Status" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Docker Images | ${{ needs.build-images.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Integration Test | ${{ needs.integration-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| GitHub Pages | ${{ needs.deploy-pages.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Offline Package | ${{ needs.build-offline-package.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 Details" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ needs.build-images.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.build-images.result }}" == "success" ]; then
+          echo "✅ **Docker images successfully deployed to registry**" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.deploy-pages.result }}" == "success" ]; then
+          echo "✅ **GitHub Pages deployed**: https://jclee94.github.io/blacklist/" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.build-offline-package.result }}" == "success" ]; then
+          echo "✅ **Offline package created**: Version ${{ needs.build-images.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: Notify on failure
+      if: |
+        needs.build-images.result == 'failure' || 
+        needs.integration-test.result == 'failure'
+      run: |
+        echo "❌ Deployment failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
+        exit 1

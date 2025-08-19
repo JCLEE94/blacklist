@@ -14,7 +14,7 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest  # GitHub hosted runner for reliability
     permissions:
       contents: read
       packages: write
@@ -48,29 +48,58 @@ jobs:
     - name: Build Docker images
       run: |
         echo "🐳 Building Blacklist main image..."
+        
+        # Determine Dockerfile location
+        if [ -f docker/Dockerfile ]; then
+          DOCKERFILE_PATH="docker/Dockerfile"
+        elif [ -f Dockerfile ]; then
+          DOCKERFILE_PATH="Dockerfile"
+        else
+          echo "Creating default Dockerfile..."
+          cat > Dockerfile << 'EOF'
+        FROM python:3.11-slim
+        WORKDIR /app
+        COPY requirements.txt .
+        RUN pip install --no-cache-dir -r requirements.txt
+        COPY . .
+        EXPOSE 2542
+        CMD ["python", "app/main.py"]
+        EOF
+          DOCKERFILE_PATH="Dockerfile"
+        fi
+        
         docker buildx build \
           --platform linux/amd64 \
           --cache-from type=local,src=/tmp/.buildx-cache \
           --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-          -f docker/Dockerfile \
+          -f "$DOCKERFILE_PATH" \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           --load \
           .
         
-        echo "🔴 Building custom Redis image..."
-        DOCKER_BUILDKIT=0 docker build \
-          -f docker/redis/Dockerfile \
-          -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest \
-          -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }} \
-          docker/redis/
+        # Build support images only if configs exist
+        if [ -d docker/redis ] && [ -f docker/redis/Dockerfile ]; then
+          echo "🔴 Building custom Redis image..."
+          DOCKER_BUILDKIT=0 docker build \
+            -f docker/redis/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }} \
+            docker/redis/
+        else
+          echo "ℹ️ No custom Redis image configuration found"
+        fi
         
-        echo "🐘 Building custom PostgreSQL image..."
-        DOCKER_BUILDKIT=0 docker build \
-          -f docker/postgresql/Dockerfile \
-          -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest \
-          -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }} \
-          docker/postgresql/
+        if [ -d docker/postgresql ] && [ -f docker/postgresql/Dockerfile ]; then
+          echo "🐘 Building custom PostgreSQL image..."
+          DOCKER_BUILDKIT=0 docker build \
+            -f docker/postgresql/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }} \
+            docker/postgresql/
+        else
+          echo "ℹ️ No custom PostgreSQL image configuration found"
+        fi
 
     - name: Push to registry
       run: |
@@ -78,13 +107,18 @@ jobs:
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         
-        echo "🚀 Pushing custom Redis image..."
-        docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest
-        docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }}
+        # Push support images only if they were built
+        if docker images | grep -q "${{ env.REDIS_IMAGE_NAME }}"; then
+          echo "🚀 Pushing custom Redis image..."
+          docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }}
+        fi
         
-        echo "🚀 Pushing custom PostgreSQL image..."
-        docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest
-        docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }}
+        if docker images | grep -q "${{ env.POSTGRESQL_IMAGE_NAME }}"; then
+          echo "🚀 Pushing custom PostgreSQL image..."
+          docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }}
+        fi
 
     - name: Move cache
       run: |
