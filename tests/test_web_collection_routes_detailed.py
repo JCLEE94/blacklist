@@ -219,8 +219,9 @@ class TestCollectionResponseFormat:
         if response.status_code >= 400:
             # 에러 응답도 적절한 형식이어야 함
             assert (
-                response.content_type in ["application/json", "text/html", "text/plain"]
+                response.content_type in ["application/json", "text/html", "text/plain", "text/html; charset=utf-8"]
                 or "json" in response.content_type
+                or "html" in response.content_type
             )
 
 

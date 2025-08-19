@@ -151,7 +151,7 @@ class TestErrorHandlerPractical:
             from src.utils.error_handler.decorators import safe_execute
 
             # 안전 실행 데코레이터 테스트
-            @safe_execute(default="fallback")
+            @safe_execute(default_return="fallback")
             def test_function():
                 return "success"
 
