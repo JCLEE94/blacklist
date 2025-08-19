@@ -264,17 +264,56 @@ class CollectionServiceMixin:
 
     def trigger_collection(self, source: str = "all") -> str:
         """수집 트리거 (비동기 실행)"""
-        if source == "all":
-            asyncio.create_task(self.collect_all_data(force=True))
-            return "전체 수집이 시작되었습니다."
-        elif source == "regtech" and "regtech" in self._components:
-            asyncio.create_task(self._collect_regtech_data(force=True))
-            return "REGTECH 수집이 시작되었습니다."
-        elif source == "secudium" and "secudium" in self._components:
-            asyncio.create_task(self._collect_secudium_data(force=True))
-            return "SECUDIUM 수집이 시작되었습니다."
-        else:
-            return f"알 수 없는 소스: {source}"
+        try:
+            # Check if there's a running event loop
+            loop = None
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # No running loop, create task in new thread
+                import threading
+                def run_async_task(coro):
+                    """Run async task in new event loop in separate thread"""
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        new_loop.run_until_complete(coro)
+                    finally:
+                        new_loop.close()
+                
+                if source == "all":
+                    thread = threading.Thread(target=run_async_task, args=(self.collect_all_data(force=True),))
+                    thread.daemon = True
+                    thread.start()
+                    return "전체 수집이 시작되었습니다."
+                elif source == "regtech" and "regtech" in self._components:
+                    thread = threading.Thread(target=run_async_task, args=(self._collect_regtech_data(force=True),))
+                    thread.daemon = True
+                    thread.start()
+                    return "REGTECH 수집이 시작되었습니다."
+                elif source == "secudium" and "secudium" in self._components:
+                    thread = threading.Thread(target=run_async_task, args=(self._collect_secudium_data(force=True),))
+                    thread.daemon = True
+                    thread.start()
+                    return "SECUDIUM 수집이 시작되었습니다."
+                else:
+                    return f"알 수 없는 소스: {source}"
+            
+            # If there's a running loop, create task normally
+            if source == "all":
+                asyncio.create_task(self.collect_all_data(force=True))
+                return "전체 수집이 시작되었습니다."
+            elif source == "regtech" and "regtech" in self._components:
+                asyncio.create_task(self._collect_regtech_data(force=True))
+                return "REGTECH 수집이 시작되었습니다."
+            elif source == "secudium" and "secudium" in self._components:
+                asyncio.create_task(self._collect_secudium_data(force=True))
+                return "SECUDIUM 수집이 시작되었습니다."
+            else:
+                return f"알 수 없는 소스: {source}"
+        except Exception as e:
+            self.logger.error(f"Collection trigger error: {e}")
+            return f"수집 시작 중 오류 발생: {e}"
 
     def trigger_regtech_collection(
         self,
