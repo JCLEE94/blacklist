@@ -25,6 +25,18 @@ class RegtechAuth:
         self.password = password
         self.timeout = timeout
         self.session = None
+        self.cookie_auth_mode = False  # Track if using cookie-based auth
+        self.cookie_string = None  # Store cookie string for authentication
+
+    def set_cookie_string(self, cookie_string: str) -> None:
+        """Set cookie string for authentication"""
+        if cookie_string:
+            self.cookie_string = cookie_string
+            self.cookie_auth_mode = True
+            logger.info("✅ Cookie string set for authentication")
+        else:
+            self.cookie_auth_mode = False
+            logger.warning("⚠️ Empty cookie string provided, cookie auth disabled")
 
     def create_session(self) -> requests.Session:
         """새로운 세션 생성"""

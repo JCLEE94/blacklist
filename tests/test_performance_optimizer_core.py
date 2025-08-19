@@ -8,17 +8,15 @@ import threading
 import time
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from src.utils.performance_optimizer import (
-    PerformanceMetrics,
-    QueryOptimizer,
-    g_performance_monitor,
-    get_performance_monitor,
-    optimize_database_queries,
-)
+from src.utils.performance_optimizer import (PerformanceMetrics,
+                                             QueryOptimizer,
+                                             g_performance_monitor,
+                                             get_performance_monitor,
+                                             optimize_database_queries)
 
 
 class TestPerformanceMetrics(unittest.TestCase):

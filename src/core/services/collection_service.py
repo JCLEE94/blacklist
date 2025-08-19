@@ -25,6 +25,18 @@ class CollectionServiceMixin:
     UnifiedBlacklistService에서 사용됨
     """
 
+    def __init__(self):
+        """Initialize CollectionServiceMixin with status tracking"""
+        self.status = {
+            "enabled": False,
+            "sources": {
+                "REGTECH": {"enabled": False, "last_collection": None},
+                "SECUDIUM": {"enabled": False, "last_collection": None}
+            }
+        }
+        self.collection_enabled = False
+        self.daily_collection_enabled = False
+
     async def collect_all_data(self, force: bool = False) -> Dict[str, Any]:
         """모든 소스에서 데이터 수집 (중복 제거 포함)"""
         self.logger.info("🔄 전체 데이터 수집 시작...")

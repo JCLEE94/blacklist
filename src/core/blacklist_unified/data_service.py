@@ -6,6 +6,7 @@ Data Management Service for Unified Blacklist Manager
 import ipaddress
 import logging
 import os
+import sqlite3
 import threading
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Set

@@ -6,15 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Blacklist Management System** - Enterprise threat intelligence platform with Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Uses Watchtower for automated deployments and ArgoCD GitOps pipeline. 
 
-### Project Status (v1.0.37 - 2025-08-17 현재)
+### Project Status (v1.0.38 - 2025-01-19 현재)
 - **GitOps 성숙도**: 9.0/10 (Self-hosted Runners 전환 완료) - GitHub Container Registry 통합, V2 API 완료, 포트폴리오 사이트 런칭
 - **아키텍처**: Monolithic (Flask) + 완전 오프라인 배포 시스템
 - **성능 기준선**: API 평균 응답시간 7.58ms, 100+ 동시 요청 처리
 - **보안 시스템**: Fernet 암호화, 자동 로테이션, 감사 추적
 - **모니터링**: Prometheus 55개 메트릭, 23개 알림 규칙, 실시간 대시보드
-- **테스트 커버리지**: 95%+ 달성, 모든 통합 테스트 안정화
+- **테스트 커버리지**: 95%+ 달성, 통합 테스트 안정화 완료
 - **배포 전략**: 완전 오프라인 패키지 (에어갭 환경), 원클릭 설치
 - **CI/CD 파이프라인**: Self-hosted runners 전환으로 성능 및 제어 개선
+- **최근 변경사항**: shrimp-rules.md AI Agent 규칙 문서 생성, 테스트 인프라 개선
 
 ### Key Dependencies & Performance Stack (v1.0.35 Enhanced)
 - **Python 3.9+** with Flask 2.3.3 web framework + orjson (3x faster JSON)
@@ -68,7 +69,7 @@ curl http://localhost:32542/metrics           # Prometheus 메트릭
 curl http://localhost:32542/monitoring/dashboard  # 실시간 대시보드
 ```
 
-### Testing (v1.0.34 - 95% Coverage)
+### Testing (v1.0.38 - 95% Coverage Maintained)
 ```bash
 # Unit tests (make test = full test suite with coverage)
 pytest -v                          # All tests (95% coverage)
@@ -79,16 +80,16 @@ pytest --cov=src --cov-report=html  # Coverage report (95%+)
 
 # Test markers (from pytest.ini)
 pytest -m unit -v                  # Unit tests only
-pytest -m integration -v          # Integration tests (모두 수정됨)
+pytest -m integration -v          # Integration tests (안정화 완료)
 pytest -m api -v                   # API tests
 pytest -m collection -v           # Collection system tests
 pytest -m regtech -v              # REGTECH-specific
 pytest -m secudium -v             # SECUDIUM-specific
 
-# 새로운 테스트 시스템 (v1.0.34)
+# Enhanced test system (v1.0.38)
 pytest tests/conftest_enhanced.py  # 향상된 테스트 픽스처
-pytest tests/integration/test_cicd_pipeline_fixed.py  # 수정된 CI/CD 테스트
-pytest tests/integration/test_error_handling_edge_cases_fixed.py  # 에러 처리 테스트
+pytest tests/test_functional_managers.py  # 기능 매니저 테스트
+pytest tests/test_performance_optimizer_core.py  # 성능 최적화 테스트
 
 # Debug failing tests
 pytest --pdb tests/failing_test.py
@@ -299,6 +300,23 @@ curl -w "
 Time: %{time_total}s
 " http://localhost:32542/api/blacklist/active
 ```
+
+## AI Agent Development Rules
+
+### shrimp-rules.md
+The project now includes `shrimp-rules.md` - a comprehensive AI Agent development rules document that provides:
+- **Project-specific rules** for AI agents working on this codebase
+- **Architecture patterns** and modular structure requirements
+- **Service access patterns** with dependency injection
+- **Testing requirements** and coverage standards
+- **Error handling** and fallback strategies
+
+Key rules enforced:
+- **500-line maximum** per Python file
+- **Mixin pattern** for service composition
+- **Container/Factory pattern** for service access
+- **95% test coverage** requirement
+- **TTL-based caching** with Redis fallback
 
 ## Critical Implementation Patterns
 
