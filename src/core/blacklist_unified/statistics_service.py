@@ -5,9 +5,12 @@ blacklist_unified 모듈용 통계 서비스 클래스
 """
 
 import logging
-import sqlite3
+import os
 from datetime import datetime
 from typing import Any, Dict, List
+
+import psycopg2
+import psycopg2.extras
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +23,22 @@ class StatisticsService:
         self.data_dir = data_dir
         self.db_manager = db_manager
         self.cache_manager = cache_manager
+        
+        # Use PostgreSQL database URL from config
+        self.database_url = db_manager.database_url if db_manager else os.environ.get(
+            "DATABASE_URL", "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist"
+        )
+        logger.info(f"StatisticsService initialized with database: {self.database_url}")
 
     def get_stats_for_period(self, start_date: str, end_date: str) -> Dict[str, Any]:
-        """기간별 통계 (실제 DB 데이터 조회)"""
+        """기간별 통계 (PostgreSQL DB 데이터 조회)"""
         try:
-            with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
-                conn.row_factory = sqlite3.Row
+            with psycopg2.connect(self.database_url) as conn:
                 cursor = conn.cursor()
 
                 # 전체 IP 수
                 cursor.execute(
-                    "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 1"
+                    "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true"
                 )
                 total_ips = cursor.fetchone()[0]
 
@@ -38,8 +46,8 @@ class StatisticsService:
                 cursor.execute(
                     """
                     SELECT COUNT(*) FROM blacklist_entries 
-                    WHERE is_active = 1 
-                    AND created_at BETWEEN ? AND ?
+                    WHERE is_active = true
+                    AND created_at BETWEEN %s AND %s
                 """,
                     (start_date, end_date),
                 )
@@ -87,11 +95,11 @@ class StatisticsService:
             }
 
     def get_country_statistics(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """국가별 통계 (실제 DB 데이터 조회)"""
+        """국가별 통계 (PostgreSQL 실제 DB 데이터 조회)"""
         try:
-            with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            with psycopg2.connect(self.database_url) as conn:
+                conn.autocommit = True
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
                 cursor.execute(
                     """
@@ -100,10 +108,10 @@ class StatisticsService:
                         COUNT(*) as ip_count,
                         COUNT(DISTINCT source) as source_count
                     FROM blacklist_entries 
-                    WHERE is_active = 1 AND country IS NOT NULL
+                    WHERE is_active = true AND country IS NOT NULL
                     GROUP BY country 
                     ORDER BY ip_count DESC 
-                    LIMIT ?
+                    LIMIT %s
                 """,
                     (limit,),
                 )
@@ -122,11 +130,11 @@ class StatisticsService:
             return []
 
     def get_daily_trend_data(self, days: int = 7) -> Dict[str, Any]:
-        """일일 트렌드 데이터 (실제 DB 데이터 조회)"""
+        """일일 트렌드 데이터 (PostgreSQL 실제 DB 데이터 조회)"""
         try:
-            with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            with psycopg2.connect(self.database_url) as conn:
+                conn.autocommit = True
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
                 # 최근 N일간 일별 IP 추가 수
                 cursor.execute(
@@ -135,7 +143,7 @@ class StatisticsService:
                         DATE(created_at) as date,
                         COUNT(*) as count
                     FROM blacklist_entries 
-                    WHERE created_at >= date('now', '-' || ? || ' days')
+                    WHERE created_at >= CURRENT_DATE - INTERVAL '%s days'
                     GROUP BY DATE(created_at)
                     ORDER BY date DESC
                 """,
@@ -143,7 +151,7 @@ class StatisticsService:
                 )
 
                 trend_data = [
-                    {"date": row["date"], "count": row["count"]}
+                    {"date": str(row["date"]), "count": row["count"]}
                     for row in cursor.fetchall()
                 ]
 
@@ -159,13 +167,14 @@ class StatisticsService:
             return {"days": days, "trend_data": [], "total_changes": 0}
 
     def get_system_health(self) -> Dict[str, Any]:
-        """시스템 상태 with real database data"""
+        """시스템 상태 with PostgreSQL real database data"""
         try:
-            with sqlite3.connect(self.db_manager.db_path, timeout=10) as conn:
+            with psycopg2.connect(self.database_url) as conn:
+                conn.autocommit = True
                 cursor = conn.cursor()
 
                 # Get active IPs count
-                cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 1")
+                cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true")
                 active_ips = cursor.fetchone()[0]
 
                 # Get total IPs count
@@ -177,7 +186,7 @@ class StatisticsService:
                     """
                     SELECT source, COUNT(*) as count 
                     FROM blacklist_entries 
-                    WHERE is_active = 1 
+                    WHERE is_active = true 
                     GROUP BY source
                 """
                 )
@@ -189,13 +198,11 @@ class StatisticsService:
                     "uptime": "0d 0h 0m",
                     "memory_usage": "0MB",
                     "db_status": "connected",
-                    "database": {
-                        "active_ips": active_ips,
-                        "total_ips": total_ips,
-                        "regtech_count": source_counts.get("REGTECH", 0),
-                        "secudium_count": source_counts.get("SECUDIUM", 0),
-                        "public_count": source_counts.get("PUBLIC", 0),
-                    },
+                    "total_ips": total_ips,
+                    "active_ips": active_ips,
+                    "regtech_count": source_counts.get("REGTECH", 0),
+                    "secudium_count": source_counts.get("SECUDIUM", 0),
+                    "public_count": source_counts.get("PUBLIC", 0),
                 }
         except Exception as e:
             logger.error(f"Error getting system health: {e}")
@@ -205,13 +212,11 @@ class StatisticsService:
                 "uptime": "0d 0h 0m",
                 "memory_usage": "0MB",
                 "db_status": "error",
-                "database": {
-                    "active_ips": 0,
-                    "total_ips": 0,
-                    "regtech_count": 0,
-                    "secudium_count": 0,
-                    "public_count": 0,
-                },
+                "total_ips": 0,
+                "active_ips": 0,
+                "regtech_count": 0,
+                "secudium_count": 0,
+                "public_count": 0,
             }
 
     def get_expiration_stats(self) -> Dict[str, Any]:
@@ -223,20 +228,83 @@ class StatisticsService:
         return []
 
     def get_statistics(self) -> Dict[str, Any]:
-        """통합 통계 정보 (동기 버전)"""
+        """통합 통계 정보 (PostgreSQL에서 실제 데이터 조회)"""
+        conn = None
         try:
-            # 기본 통계 데이터 반환
+            conn = psycopg2.connect(self.database_url)
+            conn.autocommit = True  # Enable autocommit to avoid transaction issues
+            cursor = conn.cursor()
+
+            # 활성 IP 수
+            cursor.execute(
+                "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true"
+            )
+            active_ips = cursor.fetchone()[0]
+
+            # 전체 IP 수 (비활성 포함)
+            cursor.execute("SELECT COUNT(*) FROM blacklist_entries")
+            total_ips = cursor.fetchone()[0]
+
+            # 만료된 IP 수
+            cursor.execute(
+                """
+                SELECT COUNT(*) FROM blacklist_entries 
+                WHERE is_active = false OR (expiry_date IS NOT NULL AND expiry_date < CURRENT_DATE)
+                """
+            )
+            expired_ips = cursor.fetchone()[0]
+
+            # 소스별 통계
+            cursor.execute(
+                """
+                SELECT source, COUNT(*) as count
+                FROM blacklist_entries
+                WHERE is_active = true
+                GROUP BY source
+                """
+            )
+            sources = {}
+            for row in cursor.fetchall():
+                sources[row[0] or "unknown"] = row[1]
+
+            # 국가별 통계 (데이터가 있는 경우)
+            unique_countries = 0
+            try:
+                cursor.execute(
+                    """
+                    SELECT COUNT(DISTINCT country) FROM blacklist_entries 
+                    WHERE is_active = true AND country IS NOT NULL AND country != ''
+                    """
+                )
+                result = cursor.fetchone()
+                unique_countries = result[0] if result and result[0] else 0
+            except Exception as e:
+                logger.debug(f"Country count query failed: {e}")
+                unique_countries = 0
+
+            # 마지막 업데이트 시간
+            cursor.execute(
+                """
+                SELECT MAX(updated_at) FROM blacklist_entries 
+                WHERE is_active = true
+                """
+            )
+            last_update_raw = cursor.fetchone()[0]
+            last_update = last_update_raw.isoformat() if last_update_raw else datetime.now().isoformat()
+
             return {
-                "total_ips": 0,
-                "active_ips": 0,
-                "expired_ips": 0,
-                "unique_countries": 0,
-                "sources": {},
-                "last_update": datetime.now().isoformat(),
-                "database_size": "0 MB",
-                "status": "healthy",
+                "total_ips": total_ips,
+                "active_ips": active_ips,
+                "expired_ips": expired_ips,
+                "unique_countries": unique_countries,
+                "sources": sources,
+                "last_update": last_update,
+                "database_size": "PostgreSQL",
+                "status": "healthy" if active_ips > 0 else "warning",
             }
-        except Exception as e:
+
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error getting statistics: {e}")
             return {
                 "total_ips": 0,
                 "active_ips": 0,
@@ -248,3 +316,22 @@ class StatisticsService:
                 "status": "error",
                 "error": str(e),
             }
+        except Exception as e:
+            logger.error(f"Error getting statistics: {e}")
+            return {
+                "total_ips": 0,
+                "active_ips": 0,
+                "expired_ips": 0,
+                "unique_countries": 0,
+                "sources": {},
+                "last_update": None,
+                "database_size": "0 MB",
+                "status": "error",
+                "error": str(e),
+            }
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass

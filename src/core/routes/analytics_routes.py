@@ -4,7 +4,6 @@
 """
 
 import logging
-import sqlite3
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
@@ -34,90 +33,54 @@ def get_system_stats():
 
 @analytics_routes_bp.route("/api/blacklist/metadata", methods=["GET"])
 def get_blacklist_with_metadata():
-    """메타데이터 포함 블랙리스트 조회 - 실제 만료일 정보 포함"""
+    """메타데이터 포함 블랙리스트 조회 - PostgreSQL 실제 데이터"""
     try:
-        # 현재 시간
-        now = datetime.now()
-
-        # 데이터베이스에서 실제 만료 통계 조회
-        db_path = "/app/instance/blacklist.db"
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-
-        # 총 IP 수
-        cursor.execute("SELECT COUNT(*) FROM blacklist_entries")
-        total_ips = cursor.fetchone()[0]
-
-        # 활성 IP 수 (is_active = 1)
-        cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 1")
-        active_ips = cursor.fetchone()[0]
-
-        # 만료된 IP 수 (is_active = 0)
-        cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = 0")
-        expired_ips = cursor.fetchone()[0]
-
-        # 30일 내 만료 예정 IP 수 (활성이면서 expires_at이 30일 이내)
-        cursor.execute(
-            """
-            SELECT COUNT(*) FROM blacklist_entries
-            WHERE is_active = 1
-            AND expires_at IS NOT NULL
-            AND expires_at <= datetime('now', '+30 days')
-        """
-        )
-        expiring_soon = cursor.fetchone()[0]
-
-        # 7일 내 만료 예정 IP 수 (경고)
-        cursor.execute(
-            """
-            SELECT COUNT(*) FROM blacklist_entries
-            WHERE is_active = 1
-            AND expires_at IS NOT NULL
-            AND expires_at <= datetime('now', '+7 days')
-        """
-        )
-        expiring_warning = cursor.fetchone()[0]
-
-        conn.close()
-
-        # 만료 통계
-        expiry_stats = {
-            "total": total_ips,
-            "active": active_ips,
-            "expired": expired_ips,
-            "expiring_soon": expiring_soon,  # 30일 내
-            "expiring_warning": expiring_warning,  # 7일 내
-        }
-
-        # 간단한 데이터 샘플 (페이징용)
+        # 통계 서비스에서 실제 PostgreSQL 데이터 조회
+        stats = service.get_statistics()
+        
+        # 페이징 정보
         page = int(request.args.get("page", 1))
         per_page = min(int(request.args.get("per_page", 10)), 100)
-
-        sample_data = []
-        for i in range(min(per_page, 10)):
-            sample_data.append(
-                {
-                    "id": i + 1,
-                    "ip": "192.168.1.{i+1}",
-                    "source": "REGTECH" if i % 2 == 0 else "SECUDIUM",
-                    "is_expired": False,
-                    "days_until_expiry": 85 - (i * 5),
-                    "expiry_status": "active",
-                }
-            )
+        
+        # 실제 PostgreSQL에서 IP 데이터 조회
+        active_ips = service.get_active_ips()
+        
+        # 실제 IP 데이터를 페이징 처리
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paged_ips = active_ips[start_idx:end_idx]
+        
+        # 만료 통계 (실제 데이터 기반)
+        expiry_stats = {
+            "total": stats.get("total_ips", 0),
+            "active": stats.get("active_ips", 0),
+            "expired": stats.get("expired_ips", 0),
+            "expiring_soon": 0,  # PostgreSQL 스키마에 만료일 없음
+            "expiring_warning": 0,  # PostgreSQL 스키마에 만료일 없음
+        }
 
         return jsonify(
             {
                 "success": True,
-                "data": sample_data,
+                "data": [
+                    {
+                        "id": idx + start_idx + 1,
+                        "ip": ip_data.get("ip_address", ""),
+                        "source": ip_data.get("source", "UNKNOWN"),
+                        "is_expired": not ip_data.get("is_active", True),
+                        "days_until_expiry": None,  # PostgreSQL 스키마에 만료일 없음
+                        "expiry_status": "active" if ip_data.get("is_active", True) else "expired",
+                    }
+                    for idx, ip_data in enumerate(paged_ips)
+                ],
                 "pagination": {
                     "page": page,
                     "per_page": per_page,
-                    "total": total_ips,
-                    "pages": ((total_ips - 1) // per_page + 1) if total_ips > 0 else 0,
+                    "total": len(active_ips),
+                    "pages": ((len(active_ips) - 1) // per_page + 1) if active_ips else 0,
                 },
                 "expiry_stats": expiry_stats,
-                "timestamp": now.isoformat(),
+                "timestamp": datetime.now().isoformat(),
             }
         )
     except Exception as e:

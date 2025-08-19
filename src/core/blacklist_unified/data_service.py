@@ -6,10 +6,12 @@ Data Management Service for Unified Blacklist Manager
 import ipaddress
 import logging
 import os
-import sqlite3
 import threading
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Set
+
+import psycopg2
+from sqlalchemy import text
 
 from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_cache
@@ -33,19 +35,11 @@ class DataService:
         self.cache = cache
         self.lock = threading.RLock()
 
-        # Set database path for direct SQLite access
-        if (
-            hasattr(db_manager, "db_url")
-            and db_manager.db_url
-            and "sqlite:///" in db_manager.db_url
-        ):
-            self.db_path = db_manager.db_url.replace("sqlite:///", "")
-        else:
-            # Check for instance/blacklist.db first
-            if os.path.exists("instance/blacklist.db"):
-                self.db_path = "instance/blacklist.db"
-            else:
-                self.db_path = os.path.join(self.data_dir, "database.db")
+        # Use PostgreSQL database URL from config
+        self.database_url = db_manager.database_url if db_manager else os.environ.get(
+            "DATABASE_URL", "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist"
+        )
+        logger.info(f"DataService initialized with database: {self.database_url}")
 
     def _is_valid_ip(self, ip_str: str) -> bool:
         """Validate IP address format using centralized utility"""
@@ -239,27 +233,31 @@ class DataService:
             logger.error(f"Error updating file storage: {e}")
 
     def get_active_ips(self) -> List[str]:
-        """Get all active IP addresses from database"""
+        """Get all active IP addresses from PostgreSQL database"""
         try:
-            logger.debug(f"Getting active IPs from database: {self.db_path}")
-            with sqlite3.connect(self.db_path, timeout=10) as conn:
+            logger.debug(f"Getting active IPs from PostgreSQL: {self.database_url}")
+            with psycopg2.connect(self.database_url) as conn:
                 cursor = conn.cursor()
 
                 cursor.execute(
                     """
-                    SELECT DISTINCT ip_address
+                    SELECT DISTINCT ip::text
                     FROM blacklist_entries
-                    WHERE is_active = 1
-                      AND (expires_at IS NULL OR expires_at > datetime('now'))
-                    ORDER BY ip_address
+                    WHERE is_active = true
+                      AND (expiry_date IS NULL OR expiry_date > CURRENT_DATE)
+                    ORDER BY ip
                     """
                 )
 
                 result = [row[0] for row in cursor.fetchall()]
-                logger.info(f"Found {len(result)} active IPs from database")
+                logger.info(f"Found {len(result)} active IPs from PostgreSQL database")
                 return result
 
-        except sqlite3.Error as e:
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error getting active IPs: {e}")
+            # Fallback to file-based method
+            return self._get_active_ips_from_files()
+        except Exception as e:
             logger.error(f"Database error getting active IPs: {e}")
             # Fallback to file-based method
             return self._get_active_ips_from_files()

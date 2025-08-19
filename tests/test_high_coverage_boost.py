@@ -133,7 +133,7 @@ class TestCollectionService:
     def test_collection_service_import(self):
         """Test that collection service can be imported"""
         try:
-            from src.core.collection_service import CollectionService
+            from src.core.services.collection_service import CollectionServiceMixin as CollectionService
 
             assert CollectionService is not None
         except ImportError:
@@ -142,7 +142,7 @@ class TestCollectionService:
     def test_collection_service_basic_methods(self):
         """Test basic collection service methods"""
         try:
-            from src.core.collection_service import CollectionService
+            from src.core.services.collection_service import CollectionServiceMixin as CollectionService
 
             with patch("src.core.collection_service.DatabaseManager"):
                 service = CollectionService()

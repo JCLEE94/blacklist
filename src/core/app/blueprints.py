@@ -39,6 +39,15 @@ class BlueprintRegistrationMixin:
         except Exception as e:
             logger.error(f"Failed to register unified control dashboard: {e}")
         
+        # Register unified dashboard HTML routes (HTML 템플릿 기반 대시보드)
+        try:
+            from ..routes.unified_control_html import unified_dashboard_bp
+
+            app.register_blueprint(unified_dashboard_bp)
+            logger.info("Unified dashboard HTML routes registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register unified dashboard HTML routes: {e}")
+        
         # Register collection settings routes (UI -> DB 설정)
         try:
             from ..routes.collection_settings_routes import bp as collection_settings_bp

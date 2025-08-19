@@ -80,28 +80,27 @@ class BlacklistContainer(ServiceContainer):
 
     def _configure_collectors(self):
         """데이터 콜렉터 구성"""
-        # Collection Manager - Docker 환경 기반 경로 사용
+        # Collection Manager - Use PostgreSQL database URL
         try:
             from ..collection_manager import CollectionManager
 
-            # Docker 환경에서는 고정 경로 사용
-            db_path = "/app/instance/blacklist.db"
+            # Use PostgreSQL database URL from settings
+            db_url = settings.database_uri
             config_path = "/app/instance/collection_config.json"
 
             # 로컬 개발 환경에서는 상대 경로
             if not os.path.exists("/app"):
-                db_path = "instance/blacklist.db"
                 config_path = "instance/collection_config.json"
 
             self.register(
                 "collection_manager",
                 CollectionManager,
                 factory=lambda: CollectionManager(
-                    db_path=db_path, config_path=config_path
+                    db_path=db_url, config_path=config_path
                 ),
                 dependencies={},
             )
-            logger.info(f"Collection Manager registered with db_path: {db_path}")
+            logger.info(f"Collection Manager registered with db_url: {db_url}")
         except Exception as e:
             logger.warning(f"Collection Manager registration failed: {e}")
 

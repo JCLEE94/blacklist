@@ -170,7 +170,7 @@ class TestCollectionServiceCoverage:
     def test_collection_service_import(self):
         """Test collection service import"""
         try:
-            from src.core import collection_service
+            from src.core.services import collection_service
 
             assert collection_service is not None
         except ImportError:
@@ -179,7 +179,7 @@ class TestCollectionServiceCoverage:
     def test_collection_service_basic_usage(self):
         """Test basic collection service usage"""
         try:
-            from src.core.collection_service import CollectionService
+            from src.core.services.collection_service import CollectionServiceMixin as CollectionService
 
             # Mock all dependencies
             with patch("src.core.container.get_container") as mock_container:

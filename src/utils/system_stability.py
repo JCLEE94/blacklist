@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List
 
 import psutil
+import psycopg2
 
 logger = logging.getLogger(__name__)
 
@@ -46,31 +47,38 @@ class SystemHealth:
 
 
 class DatabaseStabilityManager:
-    """데이터베이스 안정성 관리"""
+    """데이터베이스 안정성 관리 (PostgreSQL/SQLite 지원)"""
 
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.connection_pool = []
         self.max_connections = 10
         self.lock = threading.Lock()
+        # Detect database type
+        self.is_postgresql = self.db_path.startswith('postgresql://')
+        logger.info(f"DatabaseStabilityManager initialized for {'PostgreSQL' if self.is_postgresql else 'SQLite'}")
 
     @contextmanager
     def get_connection(self):
-        """안전한 데이터베이스 연결 획득"""
+        """안전한 데이터베이스 연결 획득 (PostgreSQL/SQLite)"""
         conn = None
         try:
             with self.lock:
                 if self.connection_pool:
                     conn = self.connection_pool.pop()
                 else:
-                    conn = sqlite3.connect(
-                        self.db_path, timeout=30.0, check_same_thread=False
-                    )
-                    # WAL 모드 활성화 (동시성 향상)
-                    conn.execute("PRAGMA journal_mode=WAL")
-                    conn.execute("PRAGMA synchronous=NORMAL")
-                    conn.execute("PRAGMA cache_size=10000")
-                    conn.execute("PRAGMA temp_store=MEMORY")
+                    if self.is_postgresql:
+                        conn = psycopg2.connect(self.db_path)
+                        conn.set_session(autocommit=False)
+                    else:
+                        conn = sqlite3.connect(
+                            self.db_path, timeout=30.0, check_same_thread=False
+                        )
+                        # WAL 모드 활성화 (동시성 향상)
+                        conn.execute("PRAGMA journal_mode=WAL")
+                        conn.execute("PRAGMA synchronous=NORMAL")
+                        conn.execute("PRAGMA cache_size=10000")
+                        conn.execute("PRAGMA temp_store=MEMORY")
 
             yield conn
 
@@ -99,36 +107,67 @@ class DatabaseStabilityManager:
                         pass
 
     def check_database_health(self) -> Dict[str, Any]:
-        """데이터베이스 건강 상태 확인"""
+        """데이터베이스 건강 상태 확인 (PostgreSQL/SQLite)"""
         try:
             with self.get_connection() as conn:
-                # 기본 연결 테스트
-                conn.execute("SELECT 1").fetchone()
+                cursor = conn.cursor()
+                
+                if self.is_postgresql:
+                    # PostgreSQL 건강 상태 확인
+                    cursor.execute("SELECT 1")
+                    cursor.fetchone()
 
-                # 테이블 개수 확인
-                cursor = conn.execute(
+                    # 테이블 개수 확인
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM information_schema.tables
+                        WHERE table_schema = 'public'
+                        """
+                    )
+                    table_count = cursor.fetchone()[0]
+
+                    # 데이터베이스 크기 확인
+                    cursor.execute("SELECT pg_database_size(current_database())")
+                    db_size_bytes = cursor.fetchone()[0]
+                    db_size_mb = db_size_bytes / (1024 * 1024)
+
+                    # 인덱스 상태 확인
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM pg_indexes
+                        WHERE schemaname = 'public'
+                        """
+                    )
+                    index_count = cursor.fetchone()[0]
+                else:
+                    # SQLite 건강 상태 확인
+                    cursor.execute("SELECT 1")
+                    cursor.fetchone()
+
+                    # 테이블 개수 확인
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM sqlite_master
+                        WHERE type='table' AND name NOT LIKE 'sqlite_%'
                     """
-                    SELECT COUNT(*) FROM sqlite_master
-                    WHERE type='table' AND name NOT LIKE 'sqlite_%'
-                """
-                )
-                table_count = cursor.fetchone()[0]
+                    )
+                    table_count = cursor.fetchone()[0]
 
-                # 데이터베이스 크기 확인
-                cursor = conn.execute("PRAGMA page_count")
-                page_count = cursor.fetchone()[0]
-                cursor = conn.execute("PRAGMA page_size")
-                page_size = cursor.fetchone()[0]
-                db_size_mb = (page_count * page_size) / (1024 * 1024)
+                    # 데이터베이스 크기 확인
+                    cursor.execute("PRAGMA page_count")
+                    page_count = cursor.fetchone()[0]
+                    cursor.execute("PRAGMA page_size")
+                    page_size = cursor.fetchone()[0]
+                    db_size_mb = (page_count * page_size) / (1024 * 1024)
 
-                # 인덱스 상태 확인
-                cursor = conn.execute(
+                    # 인덱스 상태 확인
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM sqlite_master
+                        WHERE type='index' AND name NOT LIKE 'sqlite_%'
                     """
-                    SELECT COUNT(*) FROM sqlite_master
-                    WHERE type='index' AND name NOT LIKE 'sqlite_%'
-                """
-                )
-                index_count = cursor.fetchone()[0]
+                    )
+                    index_count = cursor.fetchone()[0]
 
                 return {
                     "status": "healthy",
@@ -136,6 +175,7 @@ class DatabaseStabilityManager:
                     "index_count": index_count,
                     "size_mb": round(db_size_mb, 2),
                     "connection_pool_size": len(self.connection_pool),
+                    "database_type": "PostgreSQL" if self.is_postgresql else "SQLite",
                 }
 
         except Exception as e:
@@ -144,6 +184,7 @@ class DatabaseStabilityManager:
                 "status": "error",
                 "error": str(e),
                 "connection_pool_size": len(self.connection_pool),
+                "database_type": "PostgreSQL" if self.is_postgresql else "SQLite",
             }
 
     def _check_cache_status(self) -> Dict[str, Any]:
