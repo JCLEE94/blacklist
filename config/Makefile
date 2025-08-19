@@ -28,6 +28,8 @@ help:
 	@echo "Registry operations:"
 	@echo "  make registry-test      Test registry connectivity"
 	@echo "  make registry-deploy    Build and deploy to registry"
+	@echo "  make redis-build        Build custom Redis image"
+	@echo "  make redis-push         Push Redis image to registry"
 	@echo ""
 	@echo "Quick start:"
 	@echo "  make init         # Setup environment"
@@ -186,3 +188,17 @@ deploy:
 	@echo "   Application: https://blacklist.jclee.me"
 	@echo "   ArgoCD: https://argo.jclee.me"
 	@echo "   Health: https://blacklist.jclee.me/health"
+
+# Redis custom image operations
+redis-build:
+	@echo "🐳 Building custom Redis image..."
+	@scripts/build-and-push-redis.sh $(VERSION)
+
+redis-push:
+	@echo "🚀 Pushing Redis image to registry..."
+	@docker push registry.jclee.me/jclee94/blacklist-redis:latest
+
+redis-deploy:
+	@echo "📦 Building and pushing Redis image..."
+	@make redis-build
+	@make redis-push

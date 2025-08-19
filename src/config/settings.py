@@ -90,9 +90,12 @@ class Settings:
     # ===== 데이터베이스 설정 =====
     @property
     def database_uri(self) -> str:
-        return os.getenv(
-            "DATABASE_URI", f"sqlite:///{self.base_dir}/instance/blacklist.db"
-        )
+        # PostgreSQL 전용 - 환경변수에서 URL 확인
+        db_url = os.getenv("DATABASE_URL") or os.getenv("DATABASE_URI")
+        if db_url:
+            return db_url
+        # 기본값은 PostgreSQL
+        return "postgresql://blacklist_user:blacklist_password_change_me@localhost:5432/blacklist"
 
     @property
     def redis_url(self) -> str:

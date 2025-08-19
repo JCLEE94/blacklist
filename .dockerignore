@@ -1,0 +1,91 @@
+# Docker ignore file for Blacklist application
+
+# Data directories
+config/data/
+config/logs/
+config/postgresql-data/
+config/redis-data/
+postgresql-data/
+redis-data/
+data/
+logs/
+docker/redis-data/
+docker/postgresql-data/
+test-postgresql-data/
+test-redis-data/
+**/pgdata/
+**/appendonlydir/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Documentation
+docs/
+*.md
+README*
+
+# Environment files
+.env*
+config/.env*
+
+# Jupyter notebooks
+*.ipynb
+
+# Docker files
+docker-compose*.yml
+Dockerfile*
+
+# Archives
+*.tar.gz
+*.zip
+
+# Backup files
+*.bak
+*.backup
+*~

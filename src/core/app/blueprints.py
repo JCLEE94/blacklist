@@ -48,6 +48,15 @@ class BlueprintRegistrationMixin:
         except Exception as e:
             logger.error(f"Failed to register collection settings routes: {e}")
         
+        # Register cookie collection routes
+        try:
+            from ..routes.cookie_collection_routes import cookie_collection_bp
+
+            app.register_blueprint(cookie_collection_bp)
+            logger.info("Cookie collection routes registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register cookie collection routes: {e}")
+        
         # Register collection visualization routes (API만 유지)
         try:
             from ..routes.collection_visualization_routes import bp as collection_viz_bp

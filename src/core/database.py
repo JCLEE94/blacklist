@@ -18,44 +18,29 @@ class DatabaseManager:
     """데이터베이스 관리자"""
 
     def __init__(self, database_url: str = None):
+        # PostgreSQL 전용으로 변경
         self.database_url = database_url or os.environ.get(
-            "DATABASE_URL", "sqlite:///instance/blacklist.db"
+            "DATABASE_URL", "postgresql://blacklist_user:blacklist_password_change_me@localhost:5432/blacklist"
         )
 
-        # 데이터베이스별 최적화된 연결 풀 설정
-        if self.database_url.startswith("postgresql"):
-            self.engine = create_engine(
-                self.database_url,
-                poolclass=QueuePool,
-                pool_size=20,  # 기본 연결 수 증가
-                max_overflow=40,  # 최대 오버플로우 증가
-                pool_timeout=30,  # 연결 대기 시간
-                pool_recycle=3600,  # 1시간마다 연결 재활용
-                pool_pre_ping=True,  # 연결 유효성 검사
-                echo=False,  # 쿼리 로깅 비활성화 (성능)
-                future=True,  # SQLAlchemy 2.0 스타일
-            )
-        else:
-            # SQLite 최적화 설정
-            self.engine = create_engine(
-                self.database_url,
-                poolclass=QueuePool,
-                pool_size=5,  # SQLite는 적은 연결 수
-                max_overflow=10,
-                pool_timeout=20,
-                pool_recycle=7200,  # 2시간
-                connect_args=(
-                    {
-                        "check_same_thread": False,
-                        "timeout": 30,  # 잠금 대기 시간
-                        "isolation_level": None,  # 자동 커밋 모드
-                    }
-                    if "sqlite" in self.database_url
-                    else {}
-                ),
-                echo=False,
-                future=True,
-            )
+        # PostgreSQL 전용 최적화된 연결 풀 설정
+        self.engine = create_engine(
+            self.database_url,
+            poolclass=QueuePool,
+            pool_size=20,  # 기본 연결 수
+            max_overflow=40,  # 최대 오버플로우
+            pool_timeout=30,  # 연결 대기 시간
+            pool_recycle=3600,  # 1시간마다 연결 재활용
+            pool_pre_ping=True,  # 연결 유효성 검사
+            echo=False,  # 쿼리 로깅 비활성화 (성능)
+            future=True,  # SQLAlchemy 2.0 스타일
+            # PostgreSQL 특화 설정
+            connect_args={
+                "options": "-c timezone=Asia/Seoul",
+                "connect_timeout": 10,
+                "application_name": "blacklist_app"
+            }
+        )
 
         # 세션 팩토리
         self.Session = scoped_session(sessionmaker(bind=self.engine))
@@ -68,19 +53,18 @@ class DatabaseManager:
         logger.info("Database initialized")
 
     def _create_tables(self):
-        """필요한 테이블 생성"""
+        """PostgreSQL 전용 테이블 생성"""
         with self.engine.connect() as conn:
-            # blacklist_entries 테이블 (실제 DB 스키마와 일치)
+            # blacklist_entries 테이블 (호환성 유지)
             conn.execute(
-                text(
-                    """
+                text("""
                 CREATE TABLE IF NOT EXISTS blacklist_entries (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip_address TEXT NOT NULL UNIQUE,
+                    id SERIAL PRIMARY KEY,
+                    ip_address INET NOT NULL,
                     first_seen TEXT,
                     last_seen TEXT,
                     detection_months TEXT,
-                    is_active BOOLEAN DEFAULT 1,
+                    is_active BOOLEAN DEFAULT true,
                     days_until_expiry INTEGER DEFAULT 90,
                     threat_level TEXT DEFAULT 'medium',
                     source TEXT NOT NULL DEFAULT 'unknown',
@@ -97,97 +81,140 @@ class DatabaseManager:
                     confidence_level REAL DEFAULT 1.0,
                     tags TEXT,
                     last_verified TIMESTAMP,
-                    verification_status TEXT DEFAULT 'unverified'
+                    verification_status TEXT DEFAULT 'unverified',
+                    UNIQUE(ip_address)
                 )
-            """
-                )
+                """)
             )
 
-            # collection_logs 테이블 (완전한 스키마)
+            # blacklist 테이블 (메인 테이블)
             conn.execute(
-                text(
-                    """
+                text("""
+                CREATE TABLE IF NOT EXISTS blacklist (
+                    id SERIAL PRIMARY KEY,
+                    ip_address INET NOT NULL,
+                    source TEXT NOT NULL,
+                    threat_level TEXT DEFAULT 'medium',
+                    description TEXT,
+                    country TEXT,
+                    detection_date DATE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_active BOOLEAN DEFAULT true
+                )
+                """)
+            )
+
+            # collection_logs 테이블
+            conn.execute(
+                text("""
                 CREATE TABLE IF NOT EXISTS collection_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     source TEXT NOT NULL,
                     status TEXT NOT NULL,
                     items_collected INTEGER DEFAULT 0,
-                    items_new INTEGER DEFAULT 0,
-                    items_updated INTEGER DEFAULT 0,
-                    items_failed INTEGER DEFAULT 0,
-                    execution_time_ms REAL DEFAULT 0.0,
+                    details JSONB,
                     error_message TEXT,
-                    details TEXT,
-                    collection_type TEXT DEFAULT 'scheduled',
-                    user_id TEXT,
-                    session_id TEXT,
-                    data_size_bytes INTEGER DEFAULT 0,
-                    memory_usage_mb REAL DEFAULT 0.0
+                    duration_seconds REAL,
+                    collection_type TEXT,
+                    event TEXT NOT NULL
                 )
-            """
-                )
+                """)
             )
 
-            # daily_stats 테이블
+            # metadata 테이블
             conn.execute(
-                text(
-                    """
-                CREATE TABLE IF NOT EXISTS daily_stats (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    date DATE UNIQUE NOT NULL,
-                    total_ips INTEGER DEFAULT 0,
-                    new_ips INTEGER DEFAULT 0,
-                    removed_ips INTEGER DEFAULT 0,
-                    active_ips INTEGER DEFAULT 0,
-                    malware_count INTEGER DEFAULT 0,
-                    phishing_count INTEGER DEFAULT 0,
-                    botnet_count INTEGER DEFAULT 0,
-                    spam_count INTEGER DEFAULT 0,
-                    other_count INTEGER DEFAULT 0,
-                    country_stats TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                text("""
+                CREATE TABLE IF NOT EXISTS metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """
-                )
+                """)
             )
 
+            # 업데이트 트리거 함수 생성
+            conn.execute(
+                text("""
+                CREATE OR REPLACE FUNCTION update_updated_at_column()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = CURRENT_TIMESTAMP;
+                    RETURN NEW;
+                END;
+                $$ language 'plpgsql';
+                """)
+            )
+            
+            # 트리거 적용
+            for table in ['blacklist', 'blacklist_entries', 'metadata']:
+                conn.execute(
+                    text(f"""
+                    DROP TRIGGER IF EXISTS update_{table}_updated_at ON {table};
+                    CREATE TRIGGER update_{table}_updated_at 
+                        BEFORE UPDATE ON {table} 
+                        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+                    """)
+                )
+            
             conn.commit()
+            logger.info("PostgreSQL tables created successfully")
 
     def create_indexes(self):
-        """성능 최적화를 위한 인덱스 생성"""
+        """PostgreSQL 전용 최적화 인덱스 생성"""
         with self.engine.connect() as conn:
-            # 기본 인덱스
+            # PostgreSQL 최적화 인덱스
             indexes = [
-                # blacklist_entries 테이블 인덱스 (실제 DB 스키마와 일치)
-                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_ip ON blacklist_entries(ip_address)",
+                # blacklist_entries 테이블 인덱스
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_ip ON blacklist_entries USING btree (ip_address)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_source ON blacklist_entries(source)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_country ON blacklist_entries(country)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_created_at ON blacklist_entries(created_at)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_active ON blacklist_entries(is_active)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_threat_level ON blacklist_entries(threat_level)",
+                
+                # blacklist 테이블 인덱스 (메인 테이블)
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_ip ON blacklist USING btree (ip_address)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_source ON blacklist(source)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_date ON blacklist(detection_date)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_active ON blacklist(is_active)",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_created ON blacklist(created_at)",
+                
                 # 복합 인덱스 (쿼리 패턴 기반)
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_ip_source ON blacklist_entries(ip_address, source)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_source_active ON blacklist_entries(source, is_active)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_country_threat ON blacklist_entries(country, threat_level)",
                 "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_created_source ON blacklist_entries(created_at, source)",
+                
                 # collection_logs 테이블 인덱스
                 "CREATE INDEX IF NOT EXISTS idx_collection_logs_timestamp ON collection_logs(timestamp DESC)",
                 "CREATE INDEX IF NOT EXISTS idx_collection_logs_source ON collection_logs(source)",
                 "CREATE INDEX IF NOT EXISTS idx_collection_logs_status ON collection_logs(status)",
                 "CREATE INDEX IF NOT EXISTS idx_collection_logs_source_status ON collection_logs(source, status)",
-                # daily_stats 테이블 인덱스
-                "CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_stats(date DESC)",
-                "CREATE INDEX IF NOT EXISTS idx_daily_stats_created ON daily_stats(created_at)",
+                
+                # metadata 테이블 인덱스
+                "CREATE INDEX IF NOT EXISTS idx_metadata_key ON metadata(key)",
+                "CREATE INDEX IF NOT EXISTS idx_metadata_created ON metadata(created_at)",
+                
+                # PostgreSQL 전용 고급 인덱스
+                # GIN 인덱스 (JSONB 검색용)
+                "CREATE INDEX IF NOT EXISTS idx_collection_logs_details_gin ON collection_logs USING gin(details)",
+                # 부분 인덱스 (조건부 인덱스)
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_active_only ON blacklist(ip_address) WHERE is_active = true",
+                "CREATE INDEX IF NOT EXISTS idx_blacklist_entries_active_only ON blacklist_entries(ip_address) WHERE is_active = true",
             ]
 
             for index_sql in indexes:
                 try:
                     conn.execute(text(index_sql))
                     conn.commit()
-                    logger.debug(f"인덱스 생성 완료: {index_sql.split()[-1]}")
+                    logger.debug(f"인덱스 생성 완료: {index_sql.split()[-1] if 'ON' in index_sql else 'custom'}")
                 except Exception as e:
                     logger.warning(f"Index creation failed: {e}")
+                    
+            logger.info("All PostgreSQL indexes created successfully")
 
     def optimize_database(self):
         """데이터베이스 최적화"""

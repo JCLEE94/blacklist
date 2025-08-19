@@ -4,6 +4,7 @@ REGTECH, SECUDIUM 데이터 수집 트리거 API
 """
 
 import logging
+import os
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
@@ -51,6 +52,12 @@ def trigger_regtech_collection():
 
         start_date = data.get("start_date")
         end_date = data.get("end_date")
+        cookies = data.get("cookies")  # 쿠키 파라미터 추가
+
+        # 쿠키가 제공된 경우 환경 변수에 설정
+        if cookies:
+            os.environ['REGTECH_COOKIES'] = cookies
+            logger.info("REGTECH cookies provided via API - set in environment")
 
         # REGTECH 수집 실행
         logger.info("About to call service.trigger_regtech_collection")

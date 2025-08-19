@@ -1,13 +1,14 @@
 # Multi-stage build for Python Flask application
 FROM python:3.11-slim as builder
 
-# Build dependencies
+# Build dependencies (PostgreSQL support)
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     python3-dev \
     libxml2-dev \
     libxslt-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -19,9 +20,11 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # Production stage
 FROM python:3.11-slim
 
-# Runtime dependencies only
+# Runtime dependencies (PostgreSQL support)
 RUN apt-get update && apt-get install -y \
     curl \
+    libpq5 \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Key Dependencies & Performance Stack (v1.0.35 Enhanced)
 - **Python 3.9+** with Flask 2.3.3 web framework + orjson (3x faster JSON)
 - **Redis 7** for caching (automatic memory fallback, 256MB limit)
-- **SQLite** (dev) / **PostgreSQL** (prod) with connection pooling + 스키마 v2.0
+- **PostgreSQL 15** (전용) with connection pooling + 스키마 v2.0 + INET type
 - **Docker & Kubernetes** - ArgoCD GitOps, **registry.jclee.me** GitHub Container Registry
 - **Gunicorn 23.0** WSGI server with Flask-Compress
 - **pytest** comprehensive testing (95% coverage, unit/integration/api markers)
@@ -44,9 +44,10 @@ make init                          # Initialize environment (dependencies, DB, .
 cp config/.env.example .env && nano .env  # Configure credentials (note: .env.example is in config/)
 python3 scripts/setup-credentials.py  # 자격증명 설정
 
-# Database initialization (스키마 v2.0)
-python3 app/init_database.py          # 새로운 스키마 v2.0 초기화
-python3 app/init_database.py --force  # 강제 재초기화
+# PostgreSQL Database initialization (스키마 v2.0)
+python3 commands/utils/init_database.py          # PostgreSQL 스키마 v2.0 초기화
+python3 commands/utils/init_database.py --force  # 강제 재초기화 (모든 데이터 삭제)
+python3 commands/utils/init_database.py --check  # PostgreSQL 연결 상태 확인
 
 # Run services (Docker Compose) - PORT 32542
 make start                         # Start all services (uses ./start.sh)
@@ -375,7 +376,7 @@ service = container.get('unified_service')
 - Runner: self-hosted (improved performance, environment control)
 - Build: Multi-stage Docker (Python 3.11 Alpine)
 - Security: Trivy + Bandit scanning
-- Push: registry.jclee.me/jclee94/blacklist:latest
+- Push: registry.jclee.me/blacklist:latest
 - GitHub Pages: Automatic portfolio deployment (ubuntu-latest)
 - Monitoring: Real-time health checks
 - Environment: Optimized cleanup and setup procedures
@@ -545,7 +546,7 @@ python3 scripts/init_security.py
 ### 🐳 GitHub Container Registry
 ```bash
 # New registry location
-registry.jclee.me/jclee94/blacklist:latest
+registry.jclee.me/blacklist:latest
 
 # Migration benefits:
 - Better integration with GitHub Actions

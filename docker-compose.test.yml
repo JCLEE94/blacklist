@@ -1,0 +1,54 @@
+# 테스트용 Docker Compose - 로컬 이미지 사용
+version: '3.9'
+
+services:
+  postgresql:
+    image: blacklist-postgresql:test
+    container_name: blacklist-postgresql-test
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./test-postgresql-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: blacklist
+      POSTGRES_USER: blacklist_user
+      POSTGRES_PASSWORD: blacklist_password_change_me
+      PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "blacklist_user", "-d", "blacklist"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - test-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis-test
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./test-redis-data:/data
+    environment:
+      - REDIS_MAXMEMORY=256mb
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - test-network
+
+volumes:
+  test-postgresql-data:
+    driver: local
+  test-redis-data:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge
