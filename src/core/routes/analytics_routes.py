@@ -17,6 +17,27 @@ logger = logging.getLogger(__name__)
 analytics_routes_bp = Blueprint("analytics_routes", __name__)
 
 
+@analytics_routes_bp.route("/api/stats/expiration", methods=["GET"])
+def get_expiration_stats():
+    """만료 통계 조회"""
+    try:
+        # Return empty expiration stats since SQLite doesn't have expiration data
+        return jsonify({
+            "success": True,
+            "data": {
+                "total": 0,
+                "expired": 0,
+                "expiring_soon": 0,
+                "expiring_warning": 0,
+                "active": 0
+            },
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Expiration stats error: {e}")
+        return jsonify(create_error_response(e)), 500
+
+
 @analytics_routes_bp.route("/api/stats", methods=["GET"])
 def get_system_stats():
     """시스템 통계 - 프론트엔드 호환 형식"""
