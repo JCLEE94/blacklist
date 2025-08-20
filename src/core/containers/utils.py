@@ -91,3 +91,18 @@ def get_auth_manager():
     """
     Auth Manager 인스턴스 반환"""
     return resolve_service("auth_manager")
+
+
+def get_unified_service():
+    """
+    Unified Service 인스턴스 반환"""
+    try:
+        return resolve_service("unified_service")
+    except ValueError:
+        logger.warning("Unified service not available in container")
+        # Fallback to factory
+        from ..services.unified_service_factory import (
+            get_unified_service as factory_get,
+        )
+
+        return factory_get()

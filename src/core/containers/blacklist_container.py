@@ -77,6 +77,7 @@ class BlacklistContainer(ServiceContainer):
 
         self._configure_collectors()
         self._configure_tracking_services()
+        self._configure_unified_service()
 
     def _configure_collectors(self):
         """데이터 콜렉터 구성"""
@@ -162,6 +163,18 @@ class BlacklistContainer(ServiceContainer):
             logger.info("Collection Progress Tracker registered in container")
         except Exception as e:
             logger.warning(f"Progress Tracker registration failed: {e}")
+
+    def _configure_unified_service(self):
+        """통합 서비스 구성"""
+        try:
+            from ..services.unified_service_factory import get_unified_service
+
+            self.register_factory(
+                "unified_service", lambda: get_unified_service(), singleton=True
+            )
+            logger.info("Unified service registered in container")
+        except Exception as e:
+            logger.warning(f"Unified service registration failed: {e}")
 
     def register_factory(self, name: str, factory: callable, singleton: bool = True):
         """팩토리 방식으로 서비스 등록"""
