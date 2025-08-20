@@ -2,6 +2,139 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚀 Commands Workflow - Claude Code Integration
+
+### Quick Commands for Instant Development
+Use these shortcuts with Claude Code for streamlined development workflow:
+
+#### Essential Workflow Commands
+```bash
+# 🎯 /main - Primary workflow execution
+/main                              # Full development cycle (init → test → deploy)
+
+# 🧪 /test - Comprehensive testing
+/test                              # Run all tests with coverage analysis
+/test unit                         # Unit tests only (pytest -m unit -v)
+/test api                          # API validation tests
+/test collection                   # Collection system tests
+
+# 🧹 /clean - Environment cleanup
+/clean                             # Remove cache, temp files, reset environment
+/clean docker                      # Clean Docker containers and images
+/clean coverage                    # Clean test coverage files
+
+# 🚀 /deploy - Deployment workflows  
+/deploy                            # Full GitOps deployment (build → push → verify)
+/deploy local                      # Local Docker deployment
+/deploy k8s                        # Kubernetes deployment
+
+# 🔧 /init - Environment initialization
+/init                              # Complete environment setup
+/init db                           # Database initialization only
+/init security                     # Security system setup
+```
+
+### Commands Workflow Usage Patterns
+
+#### 1. New Developer Onboarding
+```bash
+/init                              # Setup complete environment
+/test                              # Validate all systems
+curl http://localhost:32542/health | jq  # Verify deployment
+```
+
+#### 2. Feature Development Cycle
+```bash
+/test unit                         # Pre-development validation
+# [Make code changes]
+/test                              # Full validation
+/deploy local                      # Local testing
+/deploy                            # Production deployment
+```
+
+#### 3. Bug Investigation & Fix
+```bash
+/clean                             # Clean environment
+/test collection                   # Isolate collection issues
+# [Apply fixes]
+/test api                          # Validate API functionality
+```
+
+#### 4. Performance Optimization
+```bash
+/test                              # Baseline performance
+# [Apply optimizations]
+python3 tests/integration/performance_benchmark.py  # Benchmark
+/deploy local                      # Verify improvements
+```
+
+### Claude Code Integration Points
+
+#### Automatic Command Recognition
+Claude Code recognizes these patterns and auto-executes appropriate workflows:
+- **"run tests"** → `/test`
+- **"deploy application"** → `/deploy`
+- **"clean environment"** → `/clean`
+- **"setup project"** → `/init`
+- **"main workflow"** → `/main`
+
+#### Error Recovery Workflows
+```bash
+# Database issues
+/init db --force                   # Force database reset
+/test                              # Validate recovery
+
+# Collection failures
+/clean                             # Clean environment
+python3 scripts/setup-credentials.py  # Reset credentials
+/test collection                   # Validate collection
+
+# Deployment issues
+/clean docker                      # Clean Docker state
+/deploy local                      # Redeploy locally
+```
+
+#### Development Context Awareness
+Claude Code automatically detects:
+- **Environment state**: Local vs Docker vs K8s
+- **Test coverage**: Current 19% → Target 95%
+- **Security status**: JWT + API Key validation
+- **Performance metrics**: <50ms response time target
+
+### Integration with Existing Toolchain
+
+#### Makefile Integration
+```bash
+# Commands Workflow → Makefile mapping
+/init     → make init
+/test     → make test
+/clean    → make clean
+/deploy   → make deploy
+```
+
+#### Docker Compose Integration
+```bash
+# Port awareness (Commands Workflow auto-detects)
+Docker Environment:    PORT 32542
+Local Development:     PORT 2542
+```
+
+#### GitHub Actions Integration
+```bash
+# Commands trigger appropriate CI/CD
+/deploy → GitHub Actions → Self-hosted Runner → registry.jclee.me
+```
+
+### 🎯 Quick Reference - Most Used Commands
+For immediate execution in Claude Code:
+```bash
+/main                              # Complete development cycle
+/test                              # Run all tests (target: 95% coverage)
+/deploy                            # GitOps deployment to production
+make start                         # Start Docker services (port 32542)
+curl http://localhost:32542/health | jq  # Verify live system
+```
+
 ## Project Overview
 
 **Blacklist Management System** - Enterprise threat intelligence platform with Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Uses Watchtower for automated deployments and ArgoCD GitOps pipeline. 
@@ -39,6 +172,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+### Commands Workflow Integration
+The following traditional commands are enhanced by the Commands Workflow above:
+- Use `/main` for complete development cycle (replaces manual command sequences)
+- Use `/test` for comprehensive testing (replaces individual pytest commands)  
+- Use `/deploy` for automated deployment (replaces manual docker/k8s commands)
+- Use `/init` for environment setup (replaces manual initialization steps)
+- Use `/clean` for cleanup operations (replaces manual cache clearing)
+
 ### Quick Start (v1.0.34 Enhanced)
 ```bash
 # Environment setup
@@ -75,6 +216,8 @@ curl http://localhost:32542/dashboard          # Collection dashboard
 ```
 
 ### Testing (v1.0.35 - Improving from 19% to 95% Target)
+**Commands Workflow**: Use `/test` for automated test execution with coverage analysis.
+
 ```bash
 # Unit tests (improving coverage from 19% to 95% target)
 pytest -v                          # All tests
@@ -127,6 +270,8 @@ python3 scripts/setup-credentials.py --rotate # 자격증명 로테이션
 ```
 
 ### Deployment
+**Commands Workflow**: Use `/deploy` for automated GitOps deployment with health verification.
+
 ```bash
 # Docker Compose (single file at root)
 docker-compose up -d               # Start services
