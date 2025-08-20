@@ -28,7 +28,9 @@ class ConfigManager:
         """Load configuration file"""
         try:
             if not self.config_path.exists():
-                raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
+                raise FileNotFoundError(
+                    f"Configuration file not found: {self.config_path}"
+                )
 
             with open(self.config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
@@ -86,17 +88,17 @@ class ConfigManager:
 if __name__ == "__main__":
     # Validation function
     config_manager = ConfigManager()
-    
+
     # Test 1: Basic configuration loading
     enabled_sources = config_manager.get_enabled_sources()
     print(f"Enabled sources: {enabled_sources}")
-    
+
     # Test 2: Storage configuration
     storage_config = config_manager.get_storage_config()
     print(f"Storage config: {storage_config}")
-    
+
     # Test 3: Security configuration
     security_config = config_manager.get_security_config()
     print(f"Security config keys: {list(security_config.keys())}")
-    
+
     print("✅ Configuration manager validation complete")

@@ -273,8 +273,8 @@ def create_all_tables(engine):
                 text(
                     f"""
                 DROP TRIGGER IF EXISTS update_{table}_updated_at ON {table};
-                CREATE TRIGGER update_{table}_updated_at 
-                    BEFORE UPDATE ON {table} 
+                CREATE TRIGGER update_{table}_updated_at
+                    BEFORE UPDATE ON {table}
                     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
                 """
                 )

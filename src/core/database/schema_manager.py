@@ -142,8 +142,8 @@ class DatabaseSchema:
         """스키마 버전 기록"""
         conn.execute(
             """
-            INSERT OR REPLACE INTO metadata 
-            (key, value, value_type, description, category) 
+            INSERT OR REPLACE INTO metadata
+            (key, value, value_type, description, category)
             VALUES (?, ?, ?, ?, ?)
         """,
             (
@@ -194,7 +194,7 @@ class DatabaseSchema:
 
                         cursor = conn.execute(
                             f"""
-                            SELECT 
+                            SELECT
                                 MIN(rowid) as min_id,
                                 MAX(rowid) as max_id
                             FROM {table}

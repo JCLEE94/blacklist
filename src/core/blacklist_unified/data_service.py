@@ -20,7 +20,7 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List
 
 from ...utils.advanced_cache import EnhancedSmartCache
@@ -44,11 +44,11 @@ class DataService:
         self.db_manager = db_manager
         self.cache = cache
         self.lock = threading.RLock()
-        
+
         # Initialize component services
         self.db_ops = DatabaseOperations(db_manager)
         self.file_ops = FileOperations(data_dir)
-        
+
         # SQLite compatibility path (deprecated but kept for backward compatibility)
         self.db_path = os.path.join(data_dir, "blacklist.db")
 
@@ -95,7 +95,7 @@ class DataService:
             db_result = self.db_ops.bulk_import_ips(valid_ips, source, batch_size)
             processed = db_result["processed"]
             errors = db_result["errors"]
-            
+
             # Update file-based storage
             self.file_ops.update_file_storage(valid_ips, source)
 
@@ -122,7 +122,9 @@ class DataService:
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(f"Bulk import completed: {processed}/{len(valid_ips)} IPs processed")
+        logger.info(
+            f"Bulk import completed: {processed}/{len(valid_ips)} IPs processed"
+        )
         return result
 
     def get_active_ips(self) -> List[str]:
@@ -208,7 +210,9 @@ class DataService:
             # Clear file-based data via file operations
             file_result = self.file_ops.clear_file_data()
             cleared_items["files_removed"] = file_result.get("files_removed", 0)
-            cleared_items["directories_cleaned"] = file_result.get("directories_cleaned", 0)
+            cleared_items["directories_cleaned"] = file_result.get(
+                "directories_cleaned", 0
+            )
 
             # Clear caches
             cache_patterns = ["active_ips*", "stats*", "ip_search*", "fortigate*"]
@@ -218,7 +222,9 @@ class DataService:
 
         except Exception as e:
             logger.error(f"Error during clear_all operation: {e}")
-            raise DataProcessingError(f"Clear operation failed: {e}", operation="clear_all")
+            raise DataProcessingError(
+                f"Clear operation failed: {e}", operation="clear_all"
+            )
 
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
@@ -258,17 +264,19 @@ if __name__ == "__main__":
         class MockDBManager:
             def __init__(self):
                 self.database_url = "postgresql://test:test@localhost/test"
-        
+
         class MockCache:
             def delete_pattern(self, pattern):
                 return 0
-        
+
         with tempfile.TemporaryDirectory() as temp_dir:
             data_service = DataService(temp_dir, MockDBManager(), MockCache())
-            if hasattr(data_service, 'db_ops') and hasattr(data_service, 'file_ops'):
+            if hasattr(data_service, "db_ops") and hasattr(data_service, "file_ops"):
                 print("✅ DataService instantiation working")
             else:
-                all_validation_failures.append("DataService missing required components")
+                all_validation_failures.append(
+                    "DataService missing required components"
+                )
     except Exception as e:
         all_validation_failures.append(f"DataService instantiation failed: {e}")
 
@@ -277,24 +285,30 @@ if __name__ == "__main__":
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             data_service = DataService(temp_dir, MockDBManager(), MockCache())
-            
+
             valid_ip = data_service._is_valid_ip("192.168.1.1")
             invalid_ip = data_service._is_valid_ip("invalid.ip.address")
-            
+
             if valid_ip and not invalid_ip:
                 print("✅ IP validation function working")
             else:
-                all_validation_failures.append(f"IP validation failed: valid={valid_ip}, invalid={invalid_ip}")
+                all_validation_failures.append(
+                    f"IP validation failed: valid={valid_ip}, invalid={invalid_ip}"
+                )
     except Exception as e:
         all_validation_failures.append(f"IP validation failed: {e}")
 
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("DataService module is validated and ready for use")
         sys.exit(0)

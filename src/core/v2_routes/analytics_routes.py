@@ -29,9 +29,6 @@ def get_analytics_summary():
     try:
         period_days = request.args.get("period", 30, type=int)
 
-        # 실제 통계 데이터 조회
-        analytics_data = service.get_analytics_summary(period_days)
-
         # 기본 통계 직접 조회
         # 서비스를 통해 실제 데이터 조회
         all_ips_data = service.blacklist_manager.get_all_active_ips()

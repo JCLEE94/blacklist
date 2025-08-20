@@ -30,19 +30,21 @@ class HistoryManager:
         """Load collection history from file"""
         try:
             if not self.history_file.exists():
-                logger.info(f"No history file found, creating new one: {self.history_file}")
+                logger.info(
+                    f"No history file found, creating new one: {self.history_file}"
+                )
                 return []
-                
+
             with open(self.history_file, "r", encoding="utf-8") as f:
                 history = json.load(f)
-                
+
             if not isinstance(history, list):
                 logger.warning("Invalid history format, resetting to empty list")
                 return []
-                
+
             logger.info(f"Loaded {len(history)} history entries")
             return history
-            
+
         except Exception as e:
             logger.error(f"Failed to load collection history: {e}")
             return []
@@ -50,13 +52,15 @@ class HistoryManager:
     def _save_collection_history(self, history: Optional[List[Dict[str, Any]]] = None):
         """Save collection history to file"""
         try:
-            history_to_save = history if history is not None else self.collection_history
-            
+            history_to_save = (
+                history if history is not None else self.collection_history
+            )
+
             with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump(history_to_save, f, indent=2, ensure_ascii=False)
-                
+
             logger.debug(f"Saved {len(history_to_save)} history entries")
-            
+
         except Exception as e:
             logger.error(f"Failed to save collection history: {e}")
 
@@ -66,21 +70,21 @@ class HistoryManager:
             # Add timestamp if not present
             if "timestamp" not in result:
                 result["timestamp"] = datetime.now().isoformat()
-                
+
             # Add to history
             self.collection_history.append(result)
-            
+
             # Keep only last 1000 entries to prevent unlimited growth
             max_entries = 1000
             if len(self.collection_history) > max_entries:
                 self.collection_history = self.collection_history[-max_entries:]
                 logger.info(f"Trimmed history to {max_entries} entries")
-                
+
             # Save to file
             self._save_collection_history()
-            
+
             logger.info(f"Added history entry for {result.get('source', 'unknown')}")
-            
+
         except Exception as e:
             logger.error(f"Failed to add history entry: {e}")
 
@@ -93,19 +97,22 @@ class HistoryManager:
                     "sources": {},
                     "last_collection": None,
                     "success_rate": 0.0,
-                    "total_ips_collected": 0
+                    "total_ips_collected": 0,
                 }
 
             # Basic statistics
             total_collections = len(self.collection_history)
-            successful_collections = sum(1 for entry in self.collection_history 
-                                       if entry.get("status") == "success")
+            successful_collections = sum(
+                1
+                for entry in self.collection_history
+                if entry.get("status") == "success"
+            )
             success_rate = (successful_collections / total_collections) * 100
 
             # Source-specific statistics
             sources = {}
             total_ips = 0
-            
+
             for entry in self.collection_history:
                 source = entry.get("source", "unknown")
                 if source not in sources:
@@ -113,21 +120,23 @@ class HistoryManager:
                         "collections": 0,
                         "successful": 0,
                         "total_ips": 0,
-                        "last_collection": None
+                        "last_collection": None,
                     }
-                
+
                 sources[source]["collections"] += 1
                 if entry.get("status") == "success":
                     sources[source]["successful"] += 1
-                    
+
                 ip_count = entry.get("ip_count", 0)
                 sources[source]["total_ips"] += ip_count
                 total_ips += ip_count
-                
+
                 # Update last collection time
                 timestamp = entry.get("timestamp")
-                if timestamp and (not sources[source]["last_collection"] or 
-                                timestamp > sources[source]["last_collection"]):
+                if timestamp and (
+                    not sources[source]["last_collection"]
+                    or timestamp > sources[source]["last_collection"]
+                ):
                     sources[source]["last_collection"] = timestamp
 
             # Calculate success rates for each source
@@ -142,8 +151,11 @@ class HistoryManager:
             # Find last collection time
             last_collection = None
             if self.collection_history:
-                timestamps = [entry.get("timestamp") for entry in self.collection_history 
-                            if entry.get("timestamp")]
+                timestamps = [
+                    entry.get("timestamp")
+                    for entry in self.collection_history
+                    if entry.get("timestamp")
+                ]
                 if timestamps:
                     last_collection = max(timestamps)
 
@@ -153,7 +165,7 @@ class HistoryManager:
                 "success_rate": round(success_rate, 2),
                 "sources": sources,
                 "last_collection": last_collection,
-                "total_ips_collected": total_ips
+                "total_ips_collected": total_ips,
             }
 
         except Exception as e:
@@ -164,18 +176,21 @@ class HistoryManager:
                 "last_collection": None,
                 "success_rate": 0.0,
                 "total_ips_collected": 0,
-                "error": str(e)
+                "error": str(e),
             }
 
     def get_recent_entries(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get recent history entries"""
         return self.collection_history[-limit:] if self.collection_history else []
 
-    def get_entries_by_source(self, source: str, limit: int = None) -> List[Dict[str, Any]]:
+    def get_entries_by_source(
+        self, source: str, limit: int = None
+    ) -> List[Dict[str, Any]]:
         """Get history entries for specific source"""
-        source_entries = [entry for entry in self.collection_history 
-                         if entry.get("source") == source]
-        
+        source_entries = [
+            entry for entry in self.collection_history if entry.get("source") == source
+        ]
+
         if limit:
             return source_entries[-limit:]
         return source_entries
@@ -195,42 +210,42 @@ class HistoryManager:
 if __name__ == "__main__":
     # Validation function
     from tempfile import TemporaryDirectory
-    
+
     with TemporaryDirectory() as temp_dir:
         history_file = Path(temp_dir) / "test_history.json"
         history_mgr = HistoryManager(history_file)
-        
+
         # Test 1: Add history entries
         test_result1 = {
             "source": "regtech",
             "status": "success",
             "ip_count": 100,
-            "timestamp": "2024-01-01T10:00:00"
+            "timestamp": "2024-01-01T10:00:00",
         }
-        
+
         test_result2 = {
             "source": "secudium",
-            "status": "success", 
+            "status": "success",
             "ip_count": 50,
-            "timestamp": "2024-01-01T11:00:00"
+            "timestamp": "2024-01-01T11:00:00",
         }
-        
+
         history_mgr.add_to_history(test_result1)
         history_mgr.add_to_history(test_result2)
-        
+
         # Test 2: Get statistics
         stats = history_mgr.get_statistics()
         assert stats["total_collections"] == 2, "Total collections mismatch"
         assert stats["total_ips_collected"] == 150, "Total IPs mismatch"
         assert "regtech" in stats["sources"], "Regtech source missing"
-        
+
         # Test 3: Get recent entries
         recent = history_mgr.get_recent_entries(1)
         assert len(recent) == 1, "Recent entries count mismatch"
         assert recent[0]["source"] == "secudium", "Recent entry source mismatch"
-        
+
         # Test 4: Get entries by source
         regtech_entries = history_mgr.get_entries_by_source("regtech")
         assert len(regtech_entries) == 1, "Source entries count mismatch"
-        
+
         print("✅ History manager validation complete")

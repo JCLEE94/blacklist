@@ -312,10 +312,10 @@ def _perform_deduplication() -> int:
         # 중복 IP 찾기 (같은 IP를 가진 레코드 중 가장 오래된 것만 유지)
         cursor.execute(
             """
-            DELETE FROM blacklist_entries 
+            DELETE FROM blacklist_entries
             WHERE id NOT IN (
-                SELECT MIN(id) 
-                FROM blacklist_entries 
+                SELECT MIN(id)
+                FROM blacklist_entries
                 GROUP BY ip_address
             )
         """

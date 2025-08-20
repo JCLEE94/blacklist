@@ -18,16 +18,14 @@ Expected output: Database operation results, health status
 
 import logging
 import os
-import sqlite3
 import threading
 from datetime import datetime
 from typing import Any, Dict, List
 
 import psycopg2
-from sqlalchemy import text
 
-from .models import DataProcessingError
 from ..database import DatabaseManager
+from .models import DataProcessingError
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +36,7 @@ class DatabaseOperations:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
         self.lock = threading.RLock()
-        
+
         # Use PostgreSQL database URL from config
         self.database_url = (
             db_manager.database_url
@@ -48,7 +46,7 @@ class DatabaseOperations:
                 "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
             )
         )
-        
+
         logger.info(f"DatabaseOperations initialized with: {self.database_url}")
 
     def bulk_import_ips(
@@ -130,7 +128,9 @@ class DatabaseOperations:
                         )
 
                         processed += len(batch)
-                        logger.debug(f"Processed batch {i//batch_size + 1}, total: {processed}")
+                        logger.debug(
+                            f"Processed batch {i//batch_size + 1}, total: {processed}"
+                        )
 
                     except Exception as e:
                         error_msg = f"Error processing batch {i//batch_size + 1}: {e}"
@@ -159,8 +159,9 @@ class DatabaseOperations:
         try:
             # Try SQLite first for local development
             import sqlite3
+
             sqlite_db_path = "instance/blacklist.db"
-            
+
             if os.path.exists(sqlite_db_path):
                 logger.debug(f"Getting active IPs from SQLite: {sqlite_db_path}")
                 with sqlite3.connect(sqlite_db_path) as conn:
@@ -182,7 +183,7 @@ class DatabaseOperations:
                         result.append(ip_str)
                     logger.info(f"Found {len(result)} active IPs from SQLite database")
                     return result
-            
+
             # Fallback to PostgreSQL if SQLite not available
             logger.debug(f"Getting active IPs from PostgreSQL: {self.database_url}")
             with psycopg2.connect(self.database_url) as conn:
@@ -211,11 +212,14 @@ class DatabaseOperations:
 
         except Exception as e:
             logger.error(f"Database error getting active IPs: {e}")
-            raise DataProcessingError(f"Database error: {e}", operation="get_active_ips")
+            raise DataProcessingError(
+                f"Database error: {e}", operation="get_active_ips"
+            )
 
     def cleanup_old_data(self, days: int = 365) -> Dict[str, Any]:
         """Clean up old data beyond specified days"""
         from datetime import timedelta
+
         cutoff_date = datetime.now() - timedelta(days=days)
 
         try:
@@ -258,7 +262,9 @@ class DatabaseOperations:
                 cursor = conn.cursor()
 
                 # Count records before deletion
-                cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true")
+                cursor.execute(
+                    "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true"
+                )
                 cleared_records = cursor.fetchone()[0]
 
                 # Mark all records as inactive instead of deleting
@@ -272,7 +278,9 @@ class DatabaseOperations:
 
         except Exception as e:
             logger.error(f"Error during clear_all operation: {e}")
-            raise DataProcessingError(f"Clear operation failed: {e}", operation="clear_all")
+            raise DataProcessingError(
+                f"Clear operation failed: {e}", operation="clear_all"
+            )
 
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
@@ -299,12 +307,14 @@ if __name__ == "__main__":
         class MockDBManager:
             def __init__(self):
                 self.database_url = "postgresql://test:test@localhost/test"
-        
+
         db_ops = DatabaseOperations(MockDBManager())
-        if hasattr(db_ops, 'database_url') and hasattr(db_ops, 'lock'):
+        if hasattr(db_ops, "database_url") and hasattr(db_ops, "lock"):
             print("✅ DatabaseOperations instantiation working")
         else:
-            all_validation_failures.append("DatabaseOperations missing required attributes")
+            all_validation_failures.append(
+                "DatabaseOperations missing required attributes"
+            )
     except Exception as e:
         all_validation_failures.append(f"DatabaseOperations instantiation failed: {e}")
 
@@ -320,9 +330,9 @@ if __name__ == "__main__":
             "threat_type": "malware",
             "confidence_score": 0.8,
             "is_active": 1,
-            "expires_at": None
+            "expires_at": None,
         }
-        
+
         # Simulate batch data preparation
         batch_tuple = (
             test_ip_data["ip"],
@@ -337,21 +347,27 @@ if __name__ == "__main__":
             datetime.now(),
             datetime.now(),
         )
-        
+
         if len(batch_tuple) == 11 and batch_tuple[0] == "192.168.1.1":
             print("✅ Batch data preparation structure working")
         else:
-            all_validation_failures.append(f"Batch data structure invalid: {len(batch_tuple)} items, first: {batch_tuple[0]}")
+            all_validation_failures.append(
+                f"Batch data structure invalid: {len(batch_tuple)} items, first: {batch_tuple[0]}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Batch data preparation failed: {e}")
 
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("DatabaseOperations module is validated and ready for use")
         sys.exit(0)

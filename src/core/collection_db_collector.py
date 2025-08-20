@@ -329,7 +329,7 @@ if __name__ == "__main__":
 
     # 통계 확인
     stats = collector.get_statistics()
-    print(f"\n통계:")
+    print("\n통계:")
     print(f"  - 전체 수집: {stats['total_collections']}회")
     print(f"  - 성공: {stats['successful_collections']}회")
     print(f"  - 총 IP: {stats['total_ips_collected']}개")

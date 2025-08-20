@@ -51,14 +51,14 @@ class CollectionDashboard:
             # 인덱스 생성
             cursor.execute(
                 """
-                CREATE INDEX IF NOT EXISTS idx_daily_collection_date 
+                CREATE INDEX IF NOT EXISTS idx_daily_collection_date
                 ON daily_collection_tracking(collection_date)
             """
             )
 
             cursor.execute(
                 """
-                CREATE INDEX IF NOT EXISTS idx_daily_collection_source 
+                CREATE INDEX IF NOT EXISTS idx_daily_collection_source
                 ON daily_collection_tracking(source)
             """
             )
@@ -89,7 +89,7 @@ class CollectionDashboard:
             # 기존 기록 확인
             cursor.execute(
                 """
-                SELECT id FROM daily_collection_tracking 
+                SELECT id FROM daily_collection_tracking
                 WHERE collection_date = ? AND source = ?
             """,
                 (collection_date, source),
@@ -101,7 +101,7 @@ class CollectionDashboard:
                 # 업데이트
                 cursor.execute(
                     """
-                    UPDATE daily_collection_tracking 
+                    UPDATE daily_collection_tracking
                     SET total_collected = ?, new_ips = ?, updated_ips = ?,
                         collection_status = ?, collection_time_ms = ?,
                         error_message = ?, updated_at = CURRENT_TIMESTAMP
@@ -123,8 +123,8 @@ class CollectionDashboard:
                 cursor.execute(
                     """
                     INSERT INTO daily_collection_tracking (
-                        collection_date, source, total_collected, new_ips, 
-                        updated_ips, collection_status, collection_time_ms, 
+                        collection_date, source, total_collected, new_ips,
+                        updated_ips, collection_status, collection_time_ms,
                         error_message
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -161,9 +161,9 @@ class CollectionDashboard:
             # 일별 수집 데이터 조회
             cursor.execute(
                 """
-                SELECT collection_date, source, total_collected, 
+                SELECT collection_date, source, total_collected,
                        collection_status, collection_time_ms
-                FROM daily_collection_tracking 
+                FROM daily_collection_tracking
                 WHERE collection_date BETWEEN ? AND ?
                 ORDER BY collection_date DESC
             """,
@@ -263,12 +263,12 @@ class CollectionDashboard:
             # 일별 트렌드 데이터
             cursor.execute(
                 """
-                SELECT collection_date, 
+                SELECT collection_date,
                        SUM(total_collected) as daily_total,
                        SUM(new_ips) as daily_new,
                        AVG(collection_time_ms) as avg_time,
                        COUNT(DISTINCT source) as active_sources
-                FROM daily_collection_tracking 
+                FROM daily_collection_tracking
                 WHERE collection_date BETWEEN ? AND ?
                 GROUP BY collection_date
                 ORDER BY collection_date
@@ -297,7 +297,7 @@ class CollectionDashboard:
                        SUM(total_collected) as total_collected,
                        AVG(total_collected) as avg_daily,
                        AVG(collection_time_ms) as avg_time
-                FROM daily_collection_tracking 
+                FROM daily_collection_tracking
                 WHERE collection_date BETWEEN ? AND ?
                 GROUP BY source
             """,
@@ -342,9 +342,9 @@ class CollectionDashboard:
             # 수집된 날짜들 조회
             cursor.execute(
                 """
-                SELECT DISTINCT collection_date 
-                FROM daily_collection_tracking 
-                WHERE collection_date BETWEEN ? AND ? 
+                SELECT DISTINCT collection_date
+                FROM daily_collection_tracking
+                WHERE collection_date BETWEEN ? AND ?
                   AND collection_status = 'success'
             """,
                 (start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")),
@@ -388,7 +388,7 @@ class CollectionDashboard:
                 """
                 SELECT MAX(collection_date) as last_collection,
                        SUM(total_collected) as total_today
-                FROM daily_collection_tracking 
+                FROM daily_collection_tracking
                 WHERE collection_date = DATE('now')
             """
             )

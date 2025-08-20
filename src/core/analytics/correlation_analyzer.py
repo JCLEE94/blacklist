@@ -41,9 +41,9 @@ class CorrelationAnalyzer(BaseAnalyzer):
     def _get_attack_correlations(self) -> List[Dict[str, Any]]:
         """Get attack type correlations by frequency and geography"""
         query = """
-            SELECT reason, country, threat_level, 
+            SELECT reason, country, threat_level,
                    collection_date, COUNT(*) as frequency
-            FROM blacklist_entries 
+            FROM blacklist_entries
             GROUP BY reason, country, threat_level, collection_date
             HAVING frequency > 1
             ORDER BY frequency DESC
@@ -75,7 +75,7 @@ class CorrelationAnalyzer(BaseAnalyzer):
             SELECT strftime('%H', created_at) as hour,
                    COUNT(*) as count,
                    threat_level
-            FROM blacklist_entries 
+            FROM blacklist_entries
             WHERE created_at IS NOT NULL
             GROUP BY hour, threat_level
             ORDER BY hour

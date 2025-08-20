@@ -109,35 +109,37 @@ def get_enhanced_blacklist():
     """향상된 블랙리스트 - 메타데이터 포함"""
     try:
         from flask import request
-        
+
         # Get pagination parameters
         per_page = min(int(request.args.get("per_page", 100)), 1000)
         page = int(request.args.get("page", 1))
-        
+
         # Get blacklist manager from container for enhanced data
         container = get_container()
         blacklist_mgr = container.get("blacklist_manager")
 
         # Get active IPs
         active_ips = blacklist_mgr.get_active_ips()
-        
+
         # Paginate the results
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         paged_ips = active_ips[start_idx:end_idx] if active_ips else []
-        
+
         # Format data for JavaScript expectations
         formatted_data = []
         for idx, ip in enumerate(paged_ips):
-            formatted_data.append({
-                "id": idx + start_idx + 1,
-                "ip": ip,
-                "source": "REGTECH",  # Default source since we know it's from REGTECH
-                "is_expired": False,
-                "days_until_expiry": None,  # SQLite doesn't have expiration data
-                "expiry_status": "active"
-            })
-        
+            formatted_data.append(
+                {
+                    "id": idx + start_idx + 1,
+                    "ip": ip,
+                    "source": "REGTECH",  # Default source since we know it's from REGTECH
+                    "is_expired": False,
+                    "days_until_expiry": None,  # SQLite doesn't have expiration data
+                    "expiry_status": "active",
+                }
+            )
+
         # Calculate expiry stats (simplified for SQLite)
         total = len(active_ips)
         expiry_stats = {
@@ -145,7 +147,7 @@ def get_enhanced_blacklist():
             "active": total,  # All are active in SQLite
             "expired": 0,
             "expiring_soon": 0,
-            "expiring_warning": 0
+            "expiring_warning": 0,
         }
 
         # Response in the format expected by JavaScript
@@ -156,13 +158,15 @@ def get_enhanced_blacklist():
                 "page": page,
                 "per_page": per_page,
                 "total": total,
-                "pages": ((total - 1) // per_page + 1) if total > 0 else 0
+                "pages": ((total - 1) // per_page + 1) if total > 0 else 0,
             },
             "expiry_stats": expiry_stats,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
-        logger.info(f"Generated enhanced blacklist with {len(formatted_data)} IPs (page {page})")
+        logger.info(
+            f"Generated enhanced blacklist with {len(formatted_data)} IPs (page {page})"
+        )
         return jsonify(response_data), 200
 
     except Exception as e:

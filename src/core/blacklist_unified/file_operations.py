@@ -22,7 +22,6 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Set
 
-from ...utils.unified_decorators import unified_cache
 from ..common.ip_utils import IPUtils
 
 logger = logging.getLogger(__name__)
@@ -35,7 +34,7 @@ class FileOperations:
         self.data_dir = data_dir
         self.blacklist_dir = os.path.join(data_dir, "blacklist_entries")
         self.detection_dir = os.path.join(data_dir, "by_detection_month")
-        
+
         logger.info(f"FileOperations initialized with data_dir: {data_dir}")
 
     def update_file_storage(self, ips_data: List[Dict[str, Any]], source: str):
@@ -61,12 +60,16 @@ class FileOperations:
                 detection_date = ip_data.get("detection_date")
                 if detection_date:
                     try:
-                        month_key = datetime.fromisoformat(detection_date).strftime("%Y-%m")
+                        month_key = datetime.fromisoformat(detection_date).strftime(
+                            "%Y-%m"
+                        )
                         if month_key not in ips_by_month:
                             ips_by_month[month_key] = set()
                         ips_by_month[month_key].add(ip_data["ip"])
                     except ValueError:
-                        logger.warning(f"Invalid detection date format: {detection_date}")
+                        logger.warning(
+                            f"Invalid detection date format: {detection_date}"
+                        )
 
             for month_key, ips in ips_by_month.items():
                 month_file = os.path.join(self.detection_dir, f"{month_key}.txt")
@@ -133,7 +136,9 @@ class FileOperations:
                                 regtech_ips.add(ip_str)
 
                 except Exception as e:
-                    logger.warning(f"Error processing REGTECH Excel file {excel_file}: {e}")
+                    logger.warning(
+                        f"Error processing REGTECH Excel file {excel_file}: {e}"
+                    )
 
         return regtech_ips
 
@@ -211,10 +216,12 @@ if __name__ == "__main__":
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             file_ops = FileOperations(temp_dir)
-            if hasattr(file_ops, 'data_dir') and hasattr(file_ops, 'blacklist_dir'):
+            if hasattr(file_ops, "data_dir") and hasattr(file_ops, "blacklist_dir"):
                 print("✅ FileOperations instantiation working")
             else:
-                all_validation_failures.append("FileOperations missing required attributes")
+                all_validation_failures.append(
+                    "FileOperations missing required attributes"
+                )
     except Exception as e:
         all_validation_failures.append(f"FileOperations instantiation failed: {e}")
 
@@ -225,18 +232,20 @@ if __name__ == "__main__":
             file_ops = FileOperations(temp_dir)
             test_ips = [
                 {"ip": "192.168.1.1", "source": "test", "detection_date": "2025-01-01"},
-                {"ip": "192.168.1.2", "source": "test", "detection_date": "2025-01-01"}
+                {"ip": "192.168.1.2", "source": "test", "detection_date": "2025-01-01"},
             ]
-            
+
             # This should not raise an exception
             file_ops.update_file_storage(test_ips, "test")
-            
+
             # Check if file was created
             source_file = os.path.join(file_ops.blacklist_dir, "test.txt")
             if os.path.exists(source_file):
                 print("✅ File storage update working")
             else:
-                all_validation_failures.append("File storage update did not create expected file")
+                all_validation_failures.append(
+                    "File storage update did not create expected file"
+                )
     except Exception as e:
         all_validation_failures.append(f"File storage update failed: {e}")
 
@@ -247,22 +256,28 @@ if __name__ == "__main__":
             file_ops = FileOperations(temp_dir)
             stats = file_ops.get_file_stats()
             expected_keys = ["blacklist_files", "detection_files", "total_size_bytes"]
-            
+
             if all(key in stats for key in expected_keys):
                 print("✅ File statistics functionality working")
             else:
                 missing_keys = [key for key in expected_keys if key not in stats]
-                all_validation_failures.append(f"File statistics missing keys: {missing_keys}")
+                all_validation_failures.append(
+                    f"File statistics missing keys: {missing_keys}"
+                )
     except Exception as e:
         all_validation_failures.append(f"File statistics failed: {e}")
 
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("FileOperations module is validated and ready for use")
         sys.exit(0)

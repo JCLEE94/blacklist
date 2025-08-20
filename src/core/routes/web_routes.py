@@ -47,19 +47,19 @@ def _get_dashboard_data():
             if os.path.exists(sqlite_db_path):
                 with sqlite3.connect(sqlite_db_path) as conn:
                     cursor = conn.cursor()
-                    
+
                     # 소스별 카운트 조회 (SQLite 문법)
                     cursor.execute(
                         """
-                        SELECT 
+                        SELECT
                             LOWER(source) as source_name,
                             COUNT(*) as count
-                        FROM blacklist 
-                        WHERE is_active = 1 
+                        FROM blacklist
+                        WHERE is_active = 1
                         GROUP BY LOWER(source)
                     """
                     )
-                    
+
                     source_results = cursor.fetchall()
                     for source_name, count in source_results:
                         if "regtech" in source_name:
@@ -83,11 +83,11 @@ def _get_dashboard_data():
                     # PostgreSQL 문법
                     cursor.execute(
                         """
-                        SELECT 
+                        SELECT
                             LOWER(source) as source_name,
                             COUNT(*) as count
-                        FROM blacklist_entries 
-                        WHERE is_active = true 
+                        FROM blacklist_entries
+                        WHERE is_active = true
                           AND (expiry_date IS NULL OR expiry_date > NOW())
                         GROUP BY LOWER(source)
                     """

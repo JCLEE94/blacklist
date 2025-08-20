@@ -3,7 +3,7 @@
 Advanced Analytics System - Legacy compatibility wrapper
 Maintains backward compatibility while using the new modular analytics system
 
-This module now acts as a compatibility layer, delegating to the new 
+This module now acts as a compatibility layer, delegating to the new
 modular analytics system in src/core/analytics/
 """
 

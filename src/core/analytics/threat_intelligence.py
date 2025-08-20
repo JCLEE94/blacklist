@@ -54,9 +54,9 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
     def _get_threat_distribution(self) -> Dict[str, int]:
         """Get threat level distribution"""
         query = """
-            SELECT threat_level, COUNT(*) 
-            FROM blacklist_entries 
-            GROUP BY threat_level 
+            SELECT threat_level, COUNT(*)
+            FROM blacklist_entries
+            GROUP BY threat_level
             ORDER BY COUNT(*) DESC
         """
         result = self._execute_query(query)
@@ -68,7 +68,7 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             SELECT country, COUNT(*) as count,
                    threat_level,
                    GROUP_CONCAT(DISTINCT reason) as attack_types
-            FROM blacklist_entries 
+            FROM blacklist_entries
             WHERE country != 'UNKNOWN'
             GROUP BY country, threat_level
             ORDER BY count DESC
@@ -95,7 +95,7 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             SELECT reason, COUNT(*) as frequency,
                    threat_level,
                    GROUP_CONCAT(DISTINCT country) as affected_countries
-            FROM blacklist_entries 
+            FROM blacklist_entries
             GROUP BY reason, threat_level
             ORDER BY frequency DESC
             LIMIT 20
@@ -122,7 +122,7 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             SELECT collection_date, COUNT(*) as daily_count,
                    threat_level,
                    AVG(confidence_level) as avg_confidence
-            FROM blacklist_entries 
+            FROM blacklist_entries
             WHERE collection_date >= date('now', '-30 days')
             GROUP BY collection_date, threat_level
             ORDER BY collection_date DESC

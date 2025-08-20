@@ -46,7 +46,7 @@ SETTINGS_UI_HTML = """
             <h1>🔧 수집 설정 관리</h1>
             <p>수집 소스 설정 및 자격증명을 관리합니다</p>
         </div>
-        
+
         <!-- 새 소스 추가 -->
         <div class="card">
             <h3>새 수집 소스 추가</h3>
@@ -70,7 +70,7 @@ SETTINGS_UI_HTML = """
                 <button type="submit" class="btn btn-primary">소스 추가</button>
             </form>
         </div>
-        
+
         <!-- 기존 소스 목록 -->
         <div class="card">
             <h3>기존 수집 소스</h3>
@@ -78,7 +78,7 @@ SETTINGS_UI_HTML = """
                 <!-- 동적으로 생성 -->
             </div>
         </div>
-        
+
         <!-- 자격증명 관리 -->
         <div class="card">
             <h3>자격증명 관리</h3>
@@ -101,7 +101,7 @@ SETTINGS_UI_HTML = """
                 <button type="button" class="btn btn-warning" onclick="testCredentials()">연결 테스트</button>
             </form>
         </div>
-        
+
         <!-- 테스트 결과 -->
         <div class="card">
             <h3>테스트 및 상태</h3>
@@ -112,46 +112,46 @@ SETTINGS_UI_HTML = """
             <button class="btn btn-success" onclick="loadSources()">목록 새로고침</button>
         </div>
     </div>
-    
+
     <script>
         // 페이지 로드시 소스 목록 로드
         document.addEventListener('DOMContentLoaded', function() {
             loadSources();
         });
-        
+
         // 소스 목록 로드
         async function loadSources() {
             try {
                 const response = await fetch('/api/collection/settings/sources');
                 const sources = await response.json();
-                
+
                 displaySources(sources);
                 updateCredentialSourceOptions(sources);
-                
+
             } catch (error) {
                 showResult('error', '소스 목록 로드 실패: ' + error.message);
             }
         }
-        
+
         // 소스 목록 표시
         function displaySources(sources) {
             const container = document.getElementById('sourcesList');
             container.innerHTML = '';
-            
+
             if (sources.length === 0) {
                 container.innerHTML = '<p>등록된 소스가 없습니다.</p>';
                 return;
             }
-            
+
             sources.forEach(source => {
                 const card = document.createElement('div');
                 card.className = `source-card ${source.enabled ? 'enabled' : 'disabled'}`;
                 card.innerHTML = `
                     <h4>${source.display_name} (${source.name})</h4>
                     <p><strong>URL:</strong> ${source.base_url}</p>
-                    <p><strong>상태:</strong> 
+                    <p><strong>상태:</strong>
                         <label class="toggle-switch">
-                            <input type="checkbox" ${source.enabled ? 'checked' : ''} 
+                            <input type="checkbox" ${source.enabled ? 'checked' : ''}
                                    onchange="toggleSource('${source.name}', this.checked)">
                             <span class="slider"></span>
                         </label>
@@ -164,12 +164,12 @@ SETTINGS_UI_HTML = """
                 container.appendChild(card);
             });
         }
-        
+
         // 자격증명 소스 옵션 업데이트
         function updateCredentialSourceOptions(sources) {
             const select = document.getElementById('credentialSource');
             select.innerHTML = '<option value="">선택하세요</option>';
-            
+
             sources.forEach(source => {
                 const option = document.createElement('option');
                 option.value = source.name;
@@ -177,11 +177,11 @@ SETTINGS_UI_HTML = """
                 select.appendChild(option);
             });
         }
-        
+
         // 새 소스 추가
         document.getElementById('addSourceForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const formData = {
                 name: document.getElementById('sourceName').value,
                 display_name: document.getElementById('displayName').value,
@@ -189,16 +189,16 @@ SETTINGS_UI_HTML = """
                 config: document.getElementById('sourceConfig').value,
                 enabled: true
             };
-            
+
             try {
                 const response = await fetch('/api/collection/settings/sources', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(formData)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showResult('success', '소스가 성공적으로 추가되었습니다.');
                     document.getElementById('addSourceForm').reset();
@@ -206,48 +206,48 @@ SETTINGS_UI_HTML = """
                 } else {
                     showResult('error', '소스 추가 실패: ' + result.error);
                 }
-                
+
             } catch (error) {
                 showResult('error', '요청 실패: ' + error.message);
             }
         });
-        
+
         // 자격증명 저장
         document.getElementById('credentialsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const formData = {
                 source_name: document.getElementById('credentialSource').value,
                 username: document.getElementById('username').value,
                 password: document.getElementById('password').value
             };
-            
+
             if (!formData.source_name || !formData.username || !formData.password) {
                 showResult('error', '모든 필드를 입력해주세요.');
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/collection/settings/credentials', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(formData)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showResult('success', '자격증명이 성공적으로 저장되었습니다.');
                     document.getElementById('credentialsForm').reset();
                 } else {
                     showResult('error', '자격증명 저장 실패: ' + result.error);
                 }
-                
+
             } catch (error) {
                 showResult('error', '요청 실패: ' + error.message);
             }
         });
-        
+
         // 소스 토글
         async function toggleSource(sourceName, enabled) {
             try {
@@ -256,21 +256,21 @@ SETTINGS_UI_HTML = """
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({enabled: enabled})
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showResult('success', `${sourceName} 소스가 ${enabled ? '활성화' : '비활성화'}되었습니다.`);
                     loadSources();
                 } else {
                     showResult('error', '소스 상태 변경 실패: ' + result.error);
                 }
-                
+
             } catch (error) {
                 showResult('error', '요청 실패: ' + error.message);
             }
         }
-        
+
         // 수집 테스트
         async function runCollectionTest() {
             const sourceName = document.getElementById('credentialSource').value;
@@ -278,33 +278,33 @@ SETTINGS_UI_HTML = """
                 showResult('error', '테스트할 소스를 선택하세요.');
                 return;
             }
-            
+
             showResult('info', '수집 테스트 진행 중...');
-            
+
             try {
                 const response = await fetch(`/api/collection/settings/test/${sourceName}`, {
                     method: 'POST'
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showResult('success', `테스트 성공! ${result.count}개 IP 수집됨`);
                 } else {
                     showResult('error', '테스트 실패: ' + result.error);
                 }
-                
+
             } catch (error) {
                 showResult('error', '테스트 요청 실패: ' + error.message);
             }
         }
-        
+
         // 결과 표시
         function showResult(type, message) {
             const container = document.getElementById('testResults');
             container.innerHTML = `<div class="status ${type}">${message}</div>`;
         }
-        
+
         // 연결 테스트
         async function testCredentials() {
             const sourceName = document.getElementById('credentialSource').value;
@@ -312,22 +312,22 @@ SETTINGS_UI_HTML = """
                 showResult('error', '테스트할 소스를 선택하세요.');
                 return;
             }
-            
+
             showResult('info', '연결 테스트 진행 중...');
-            
+
             try {
                 const response = await fetch(`/api/collection/settings/test-connection/${sourceName}`, {
                     method: 'POST'
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showResult('success', '연결 테스트 성공!');
                 } else {
                     showResult('error', '연결 테스트 실패: ' + result.error);
                 }
-                
+
             } catch (error) {
                 showResult('error', '테스트 요청 실패: ' + error.message);
             }

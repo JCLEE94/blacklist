@@ -230,8 +230,8 @@ class DataProcessor:
                         # 기존 항목 업데이트
                         cursor.execute(
                             """
-                            UPDATE blacklist_entries 
-                            SET last_seen = ?, updated_at = ?, 
+                            UPDATE blacklist_entries
+                            SET last_seen = ?, updated_at = ?,
                                 country = ?, reason = ?, threat_level = ?
                             WHERE ip_address = ?
                         """,
@@ -294,8 +294,8 @@ class DataProcessor:
             # 소스별 통계
             cursor.execute(
                 """
-                SELECT source, COUNT(*) 
-                FROM blacklist_entries 
+                SELECT source, COUNT(*)
+                FROM blacklist_entries
                 GROUP BY source
             """
             )
@@ -304,10 +304,10 @@ class DataProcessor:
             # 국가별 통계 (상위 10개)
             cursor.execute(
                 """
-                SELECT country, COUNT(*) 
-                FROM blacklist_entries 
-                GROUP BY country 
-                ORDER BY COUNT(*) DESC 
+                SELECT country, COUNT(*)
+                FROM blacklist_entries
+                GROUP BY country
+                ORDER BY COUNT(*) DESC
                 LIMIT 10
             """
             )
@@ -316,8 +316,8 @@ class DataProcessor:
             # 위험도별 통계
             cursor.execute(
                 """
-                SELECT threat_level, COUNT(*) 
-                FROM blacklist_entries 
+                SELECT threat_level, COUNT(*)
+                FROM blacklist_entries
                 GROUP BY threat_level
             """
             )
@@ -326,10 +326,10 @@ class DataProcessor:
             # 일별 수집 통계
             cursor.execute(
                 """
-                SELECT collection_date, COUNT(*) 
-                FROM blacklist_entries 
-                GROUP BY collection_date 
-                ORDER BY collection_date DESC 
+                SELECT collection_date, COUNT(*)
+                FROM blacklist_entries
+                GROUP BY collection_date
+                ORDER BY collection_date DESC
                 LIMIT 7
             """
             )

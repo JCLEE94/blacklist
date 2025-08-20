@@ -36,33 +36,31 @@ class ConfigurableCollectionSystem:
         """Initialize with modular components"""
         # Initialize component managers
         self.config_manager = ConfigManager(config_path)
-        
+
         # Get configurations
         storage_config = self.config_manager.get_storage_config()
         security_config = self.config_manager.get_security_config()
-        
+
         # Initialize managers with appropriate file paths
         from pathlib import Path
-        
-        credentials_file = Path(storage_config.get(
-            "credentials_file", "instance/credentials.enc"
-        ))
-        history_file = Path(storage_config.get(
-            "history_file", "instance/collection_history.json"
-        ))
-        cipher_key_file = Path(storage_config.get(
-            "cipher_key_file", "instance/.cipher_key"
-        ))
-        
+
+        credentials_file = Path(
+            storage_config.get("credentials_file", "instance/credentials.enc")
+        )
+        history_file = Path(
+            storage_config.get("history_file", "instance/collection_history.json")
+        )
+        cipher_key_file = Path(
+            storage_config.get("cipher_key_file", "instance/.cipher_key")
+        )
+
         self.credentials_manager = CredentialsManager(
             credentials_file, cipher_key_file, security_config
         )
         self.history_manager = HistoryManager(history_file)
-        
+
         # Reports directory
-        self.reports_dir = Path(storage_config.get(
-            "reports_dir", "instance/reports"
-        ))
+        self.reports_dir = Path(storage_config.get("reports_dir", "instance/reports"))
         self.reports_dir.mkdir(exist_ok=True)
 
         enabled_sources = self.config_manager.get_enabled_sources()
@@ -71,8 +69,13 @@ class ConfigurableCollectionSystem:
         )
 
     # Delegation methods for backwards compatibility
-    def save_credentials(self, source: str, username: str, password: str, 
-                        additional_fields: Optional[Dict[str, str]] = None) -> bool:
+    def save_credentials(
+        self,
+        source: str,
+        username: str,
+        password: str,
+        additional_fields: Optional[Dict[str, str]] = None,
+    ) -> bool:
         """Save credentials via credentials manager"""
         return self.credentials_manager.save_credentials(
             source, username, password, additional_fields
@@ -280,13 +283,13 @@ class ConfigurableCollectionSystem:
         """Generate collection calendar for given month"""
         try:
             from calendar import monthrange
-            
+
             # Get days in month
             _, days_in_month = monthrange(year, month)
-            
+
             # Get history entries for the month
             history_entries = self.history_manager.collection_history
-            
+
             # Filter entries for the specific month
             calendar_data = {}
             for day in range(1, days_in_month + 1):
@@ -294,31 +297,41 @@ class ConfigurableCollectionSystem:
                 calendar_data[date_str] = {
                     "collections": [],
                     "total_ips": 0,
-                    "sources": set()
+                    "sources": set(),
                 }
-                
+
                 # Find entries for this date
                 for entry in history_entries:
                     collected_at = entry.get("collected_at", "")
                     if collected_at.startswith(date_str):
                         calendar_data[date_str]["collections"].append(entry)
                         calendar_data[date_str]["total_ips"] += entry.get("count", 0)
-                        calendar_data[date_str]["sources"].add(entry.get("source", "unknown"))
-                
+                        calendar_data[date_str]["sources"].add(
+                            entry.get("source", "unknown")
+                        )
+
                 # Convert set to list for JSON serialization
-                calendar_data[date_str]["sources"] = list(calendar_data[date_str]["sources"])
-            
+                calendar_data[date_str]["sources"] = list(
+                    calendar_data[date_str]["sources"]
+                )
+
             return {
                 "year": year,
                 "month": month,
                 "calendar": calendar_data,
                 "summary": {
-                    "total_collection_days": sum(1 for data in calendar_data.values() 
-                                                if data["collections"]),
-                    "total_ips": sum(data["total_ips"] for data in calendar_data.values()),
-                    "active_sources": list(set().union(*[data["sources"] 
-                                                        for data in calendar_data.values()]))
-                }
+                    "total_collection_days": sum(
+                        1 for data in calendar_data.values() if data["collections"]
+                    ),
+                    "total_ips": sum(
+                        data["total_ips"] for data in calendar_data.values()
+                    ),
+                    "active_sources": list(
+                        set().union(
+                            *[data["sources"] for data in calendar_data.values()]
+                        )
+                    ),
+                },
             }
         except Exception as e:
             logger.error(f"Calendar generation failed: {e}")
@@ -328,13 +341,13 @@ class ConfigurableCollectionSystem:
 if __name__ == "__main__":
     # Validation function
     import sys
-    from tempfile import TemporaryDirectory
     from pathlib import Path
-    
+    from tempfile import TemporaryDirectory
+
     # Set up temporary test environment
     with TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-        
+
         # Create minimal test config
         config_file = temp_path / "test_config.json"
         test_config = {
@@ -345,46 +358,47 @@ if __name__ == "__main__":
                     "endpoints": {
                         "login": "/login",
                         "login_action": "/login_action",
-                        "search": "/search"
-                    }
+                        "search": "/search",
+                    },
                 }
             },
             "storage": {
                 "credentials_file": str(temp_path / "creds.enc"),
                 "history_file": str(temp_path / "history.json"),
-                "cipher_key_file": str(temp_path / "cipher.key")
+                "cipher_key_file": str(temp_path / "cipher.key"),
             },
             "security": {},
-            "collection": {"default_date_range": 7}
+            "collection": {"default_date_range": 7},
         }
-        
+
         import json
+
         with open(config_file, "w") as f:
             json.dump(test_config, f)
-        
+
         # Test system initialization
         try:
             system = ConfigurableCollectionSystem(str(config_file))
-            
+
             # Test 1: Configuration loading
             enabled_sources = system.config_manager.get_enabled_sources()
             assert "regtech" in enabled_sources, "Regtech source not enabled"
-            
+
             # Test 2: Credentials management
             creds_saved = system.save_credentials("test", "user", "pass")
             assert creds_saved, "Failed to save credentials"
-            
+
             retrieved_creds = system.get_credentials("test")
             assert retrieved_creds is not None, "Failed to retrieve credentials"
             assert retrieved_creds["username"] == "user", "Username mismatch"
-            
+
             # Test 3: Statistics
             stats = system.get_statistics()
             assert "total_collections" in stats, "Statistics missing total_collections"
-            
+
             print("✅ Configurable collection system validation complete")
             sys.exit(0)
-            
+
         except Exception as e:
             print(f"❌ Validation failed: {e}")
             sys.exit(1)

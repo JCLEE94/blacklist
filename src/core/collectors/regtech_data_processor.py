@@ -62,7 +62,7 @@ class RegtechDataProcessor:
                                 "threat_level": "medium",
                                 "detection_date": datetime.now().strftime("%Y-%m-%d"),
                                 "method": "excel_download",
-                                "description": f"Blacklisted IP from REGTECH Excel export",
+                                "description": "Blacklisted IP from REGTECH Excel export",
                             }
                         )
                         break
@@ -93,7 +93,7 @@ class RegtechDataProcessor:
                             "threat_level": "medium",
                             "detection_date": datetime.now().strftime("%Y-%m-%d"),
                             "method": "html_parsing",
-                            "description": f"Blacklisted IP from REGTECH web page",
+                            "description": "Blacklisted IP from REGTECH web page",
                         }
                     )
 

@@ -43,7 +43,7 @@ class ConfigurationManager:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO collection_sources 
+                    INSERT OR REPLACE INTO collection_sources
                     (name, display_name, enabled, base_url, config_json, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """,
@@ -110,7 +110,7 @@ class ConfigurationManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
                     """
-                    SELECT name, display_name, enabled, base_url, updated_at 
+                    SELECT name, display_name, enabled, base_url, updated_at
                     FROM collection_sources ORDER BY display_name
                 """
                 )
@@ -141,7 +141,7 @@ class ConfigurationManager:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO collection_credentials 
+                    INSERT OR REPLACE INTO collection_credentials
                     (source_name, credentials_encrypted, updated_at)
                     VALUES (?, ?, ?)
                 """,
@@ -162,7 +162,7 @@ class ConfigurationManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
                     """
-                    SELECT credentials_encrypted FROM collection_credentials 
+                    SELECT credentials_encrypted FROM collection_credentials
                     WHERE source_name = ?
                 """,
                     (source_name,),
@@ -188,7 +188,7 @@ class ConfigurationManager:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO collection_settings 
+                    INSERT OR REPLACE INTO collection_settings
                     (key, value_json, description, updated_at)
                     VALUES (?, ?, ?, ?)
                 """,

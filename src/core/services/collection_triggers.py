@@ -6,7 +6,7 @@
 import asyncio
 import threading
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Optional
 
 
 class CollectionTriggersMixin:

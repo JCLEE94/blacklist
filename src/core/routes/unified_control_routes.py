@@ -3,7 +3,7 @@
 Unified Control Dashboard - Legacy compatibility wrapper
 Maintains backward compatibility while using the new modular route system
 
-This module now acts as a compatibility layer, delegating to the new 
+This module now acts as a compatibility layer, delegating to the new
 modular route handlers and templates
 """
 

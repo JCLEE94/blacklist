@@ -22,17 +22,19 @@ def get_expiration_stats():
     """만료 통계 조회"""
     try:
         # Return empty expiration stats since SQLite doesn't have expiration data
-        return jsonify({
-            "success": True,
-            "data": {
-                "total": 0,
-                "expired": 0,
-                "expiring_soon": 0,
-                "expiring_warning": 0,
-                "active": 0
-            },
-            "timestamp": datetime.now().isoformat()
-        })
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "total": 0,
+                    "expired": 0,
+                    "expiring_soon": 0,
+                    "expiring_warning": 0,
+                    "active": 0,
+                },
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Expiration stats error: {e}")
         return jsonify(create_error_response(e)), 500
@@ -45,7 +47,7 @@ def get_system_stats():
         # Get service lazily to ensure latest version
         service = get_unified_service()
         stats = service.get_system_health()
-        
+
         # 프론트엔드가 기대하는 형식으로 변환
         formatted_stats = {
             "success": True,
@@ -58,11 +60,11 @@ def get_system_stats():
                 "status": stats.get("status", "unknown"),
                 "last_update": stats.get("last_update", ""),
                 "expired_ips": stats.get("expired_ips", 0),
-                "expiring_soon": stats.get("expiring_soon", 0)
+                "expiring_soon": stats.get("expiring_soon", 0),
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
         return jsonify(formatted_stats)
     except Exception as e:
         logger.error(f"System stats error: {e}")
@@ -277,7 +279,7 @@ def realtime_stats():
     try:
         service = get_unified_service()
         stats = service.get_system_health()
-        
+
         # Realtime dashboard 형식으로 변환
         realtime_data = {
             "success": True,
@@ -285,7 +287,12 @@ def realtime_stats():
                 "total_ips": stats.get("total_ips", 0),
                 "active_ips": stats.get("active_ips", 0),
                 "system_status": "정상" if stats.get("status") == "healthy" else "이상",
-                "active_sources": 2 if stats.get("regtech_count", 0) > 0 or stats.get("secudium_count", 0) > 0 else 0,
+                "active_sources": (
+                    2
+                    if stats.get("regtech_count", 0) > 0
+                    or stats.get("secudium_count", 0) > 0
+                    else 0
+                ),
             },
             "recent_activity": [
                 {
@@ -294,12 +301,12 @@ def realtime_stats():
                     "count": stats.get("total_ips", 0),
                     "type": "info",
                     "icon": "bi-shield-check",
-                    "message": f"{stats.get('total_ips', 0)}개 IP 상태 확인"
+                    "message": f"{stats.get('total_ips', 0)}개 IP 상태 확인",
                 }
             ],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
         return jsonify(realtime_data)
     except Exception as e:
         logger.error(f"Realtime stats error: {e}")
@@ -313,38 +320,42 @@ def realtime_collection_status():
         # Get collection status from the main service
         service = get_unified_service()
         collection_status = service.get_collection_status()
-        
+
         collections = []
-        
+
         # Always add REGTECH (main source)
-        collections.append({
-            "name": "REGTECH",
-            "status": "active" if collection_status.get("enabled", False) else "waiting",
-            "progress": 100 if collection_status.get("enabled", False) else 0
-        })
-            
+        collections.append(
+            {
+                "name": "REGTECH",
+                "status": (
+                    "active" if collection_status.get("enabled", False) else "waiting"
+                ),
+                "progress": 100 if collection_status.get("enabled", False) else 0,
+            }
+        )
+
         # SECUDIUM is disabled by default
-        collections.append({
-            "name": "SECUDIUM", 
-            "status": "disabled",
-            "progress": 0
-        })
-        
-        return jsonify({
-            "success": True,
-            "collections": collections,
-            "timestamp": datetime.now().isoformat()
-        })
+        collections.append({"name": "SECUDIUM", "status": "disabled", "progress": 0})
+
+        return jsonify(
+            {
+                "success": True,
+                "collections": collections,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Realtime collection status error: {e}")
-        return jsonify({
-            "success": True,
-            "collections": [
-                {"name": "REGTECH", "status": "unknown", "progress": 0},
-                {"name": "SECUDIUM", "status": "disabled", "progress": 0}
-            ],
-            "timestamp": datetime.now().isoformat()
-        })
+        return jsonify(
+            {
+                "success": True,
+                "collections": [
+                    {"name": "REGTECH", "status": "unknown", "progress": 0},
+                    {"name": "SECUDIUM", "status": "disabled", "progress": 0},
+                ],
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
 @analytics_routes_bp.route("/api/monitoring/system", methods=["GET"])
@@ -352,48 +363,50 @@ def monitoring_system():
     """시스템 모니터링 정보"""
     try:
         import psutil
-        
+
         system_info = {
             "success": True,
             "system": {
                 "cpu_percent": psutil.cpu_percent(interval=1),
                 "memory_percent": psutil.virtual_memory().percent,
-                "disk_percent": psutil.disk_usage('/').percent
+                "disk_percent": psutil.disk_usage("/").percent,
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
         return jsonify(system_info)
     except Exception as e:
         logger.error(f"System monitoring error: {e}")
-        return jsonify({
-            "success": True, 
-            "system": {
-                "cpu_percent": 15.0,
-                "memory_percent": 45.0, 
-                "disk_percent": 25.0
-            },
-            "timestamp": datetime.now().isoformat()
-        })
+        return jsonify(
+            {
+                "success": True,
+                "system": {
+                    "cpu_percent": 15.0,
+                    "memory_percent": 45.0,
+                    "disk_percent": 25.0,
+                },
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
-@analytics_routes_bp.route("/api/realtime/feed", methods=["GET"]) 
+@analytics_routes_bp.route("/api/realtime/feed", methods=["GET"])
 def realtime_feed():
     """실시간 피드"""
     try:
         service = get_unified_service()
         stats = service.get_system_health()
-        
+
         feed_event = {
             "success": True,
             "event": {
                 "timestamp": datetime.now().strftime("%H:%M:%S"),
                 "message": f"시스템 상태 확인 완료 - {stats.get('total_ips', 0)}개 IP 활성",
                 "type": "info",
-                "icon": "bi-shield-check"
-            }
+                "icon": "bi-shield-check",
+            },
         }
-        
+
         return jsonify(feed_event)
     except Exception as e:
         logger.error(f"Realtime feed error: {e}")

@@ -181,29 +181,29 @@ def visual_build_info():
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0; padding: 20px; background: #f5f5f5;
         }
         .container { max-width: 800px; margin: 0 auto; }
-        .card { 
-            background: white; padding: 20px; margin: 20px 0; border-radius: 8px; 
+        .card {
+            background: white; padding: 20px; margin: 20px 0; border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .header { text-align: center; color: #333; }
-        .version { 
-            font-size: 2.5em; font-weight: bold; color: #007bff; 
+        .version {
+            font-size: 2.5em; font-weight: bold; color: #007bff;
             margin: 20px 0; text-align: center;
         }
-        .info-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+        .info-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px; margin: 20px 0;
         }
         .info-item { padding: 15px; background: #f8f9fa; border-radius: 4px; }
         .label { font-weight: bold; color: #6c757d; margin-bottom: 5px; }
         .value { color: #333; font-family: monospace; }
-        .status { 
-            display: inline-block; padding: 4px 12px; border-radius: 20px; 
+        .status {
+            display: inline-block; padding: 4px 12px; border-radius: 20px;
             font-size: 0.8em; font-weight: bold; text-transform: uppercase;
         }
         .status.healthy { background: #d4edda; color: #155724; }
@@ -220,7 +220,7 @@ def visual_build_info():
                 <span class="status {{ status_class }}">{{ status.upper() }}</span>
             </div>
         </div>
-        
+
         <div class="card">
             <h2>📦 빌드 정보</h2>
             <div class="info-grid">
@@ -242,7 +242,7 @@ def visual_build_info():
                 </div>
             </div>
         </div>
-        
+
         <div class="card">
             <h2>📊 시스템 상태</h2>
             <div class="info-grid">
@@ -264,7 +264,7 @@ def visual_build_info():
                 </div>
             </div>
         </div>
-        
+
         <div class="footer">
             <p>🚀 Updated: {{ timestamp }}</p>
             <p><a href="/health">JSON Health Check</a> | <a href="/api/health">Detailed Health</a></p>

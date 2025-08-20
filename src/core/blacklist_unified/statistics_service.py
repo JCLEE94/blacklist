@@ -51,7 +51,7 @@ class StatisticsService:
                 # 기간별 새로운 IP
                 cursor.execute(
                     """
-                    SELECT COUNT(*) FROM blacklist_entries 
+                    SELECT COUNT(*) FROM blacklist_entries
                     WHERE is_active = true
                     AND created_at BETWEEN %s AND %s
                 """,
@@ -62,9 +62,9 @@ class StatisticsService:
                 # 소스별 통계
                 cursor.execute(
                     """
-                    SELECT source, COUNT(*) as count 
-                    FROM blacklist_entries 
-                    WHERE is_active = 1 
+                    SELECT source, COUNT(*) as count
+                    FROM blacklist_entries
+                    WHERE is_active = 1
                     GROUP BY source
                 """
                 )
@@ -73,11 +73,11 @@ class StatisticsService:
                 # 국가별 통계
                 cursor.execute(
                     """
-                    SELECT country, COUNT(*) as count 
-                    FROM blacklist_entries 
-                    WHERE is_active = 1 AND country IS NOT NULL 
-                    GROUP BY country 
-                    ORDER BY count DESC 
+                    SELECT country, COUNT(*) as count
+                    FROM blacklist_entries
+                    WHERE is_active = 1 AND country IS NOT NULL
+                    GROUP BY country
+                    ORDER BY count DESC
                     LIMIT 10
                 """
                 )
@@ -109,14 +109,14 @@ class StatisticsService:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         country,
                         COUNT(*) as ip_count,
                         COUNT(DISTINCT source) as source_count
-                    FROM blacklist_entries 
+                    FROM blacklist_entries
                     WHERE is_active = true AND country IS NOT NULL
-                    GROUP BY country 
-                    ORDER BY ip_count DESC 
+                    GROUP BY country
+                    ORDER BY ip_count DESC
                     LIMIT %s
                 """,
                     (limit,),
@@ -145,10 +145,10 @@ class StatisticsService:
                 # 최근 N일간 일별 IP 추가 수
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         DATE(created_at) as date,
                         COUNT(*) as count
-                    FROM blacklist_entries 
+                    FROM blacklist_entries
                     WHERE created_at >= CURRENT_DATE - INTERVAL '%s days'
                     GROUP BY DATE(created_at)
                     ORDER BY date DESC
@@ -192,9 +192,9 @@ class StatisticsService:
                 # Get source counts
                 cursor.execute(
                     """
-                    SELECT source, COUNT(*) as count 
-                    FROM blacklist_entries 
-                    WHERE is_active = true 
+                    SELECT source, COUNT(*) as count
+                    FROM blacklist_entries
+                    WHERE is_active = true
                     GROUP BY source
                 """
                 )
@@ -240,24 +240,25 @@ class StatisticsService:
         conn = None
         try:
             # Try SQLite first for local development
-            import sqlite3
+
+
             sqlite_db_path = "instance/blacklist.db"
-            
+
             if os.path.exists(sqlite_db_path):
                 logger.debug(f"Getting statistics from SQLite: {sqlite_db_path}")
                 conn = sqlite3.connect(sqlite_db_path)
                 cursor = conn.cursor()
-                
+
                 # 활성 IP 수
                 cursor.execute(
                     "SELECT COUNT(DISTINCT ip_address) FROM blacklist WHERE is_active = 1"
                 )
                 active_ips = cursor.fetchone()[0]
-                
+
                 # 전체 IP 수 (비활성 포함)
                 cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM blacklist")
                 total_ips = cursor.fetchone()[0]
-                
+
                 # 소스별 통계
                 cursor.execute(
                     """
@@ -271,24 +272,26 @@ class StatisticsService:
                 for row in cursor.fetchall():
                     source_name = row[0] or "unknown"
                     sources[source_name] = row[1]
-                    
+
                 # 특정 소스별 카운트 추가 (대시보드 호환성)
                 regtech_count = sources.get("regtech", 0)
                 secudium_count = sources.get("secudium", 0)
                 public_count = sources.get("public", 0)
-                
+
                 # 마지막 업데이트 시간
                 cursor.execute(
                     """
-                    SELECT MAX(created_at) FROM blacklist 
+                    SELECT MAX(created_at) FROM blacklist
                     WHERE is_active = 1
                     """
                 )
                 last_update_raw = cursor.fetchone()[0]
-                last_update = last_update_raw if last_update_raw else datetime.now().isoformat()
-                
+                last_update = (
+                    last_update_raw if last_update_raw else datetime.now().isoformat()
+                )
+
                 conn.close()
-                
+
                 stats = {
                     "total_ips": total_ips,
                     "active_ips": active_ips,
@@ -302,10 +305,12 @@ class StatisticsService:
                     "database_size": f"{os.path.getsize(sqlite_db_path) / 1024 / 1024:.2f} MB",
                     "status": "healthy" if active_ips > 0 else "warning",
                 }
-                
-                logger.info(f"SQLite stats: {active_ips} active IPs from {len(sources)} sources")
+
+                logger.info(
+                    f"SQLite stats: {active_ips} active IPs from {len(sources)} sources"
+                )
                 return stats
-                
+
             # Fallback to PostgreSQL
             conn = psycopg2.connect(self.database_url)
             conn.autocommit = True  # Enable autocommit to avoid transaction issues
@@ -324,7 +329,7 @@ class StatisticsService:
             # 만료된 IP 수
             cursor.execute(
                 """
-                SELECT COUNT(*) FROM blacklist_entries 
+                SELECT COUNT(*) FROM blacklist_entries
                 WHERE is_active = false OR (expiry_date IS NOT NULL AND expiry_date < CURRENT_DATE)
                 """
             )
@@ -348,7 +353,7 @@ class StatisticsService:
             try:
                 cursor.execute(
                     """
-                    SELECT COUNT(DISTINCT country) FROM blacklist_entries 
+                    SELECT COUNT(DISTINCT country) FROM blacklist_entries
                     WHERE is_active = true AND country IS NOT NULL AND country != ''
                     """
                 )
@@ -361,7 +366,7 @@ class StatisticsService:
             # 마지막 업데이트 시간
             cursor.execute(
                 """
-                SELECT MAX(updated_at) FROM blacklist_entries 
+                SELECT MAX(updated_at) FROM blacklist_entries
                 WHERE is_active = true
                 """
             )

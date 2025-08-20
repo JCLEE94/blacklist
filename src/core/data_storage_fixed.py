@@ -108,7 +108,7 @@ class FixedDataStorage:
                             cursor.execute(
                                 """
                                 INSERT INTO blacklist_entries (
-                                    ip_address, source, description, threat_type, 
+                                    ip_address, source, description, threat_type,
                                     detection_date, expiry_date, added_at, updated_at, is_active
                                 ) VALUES (
                                     %(ip_address)s, %(source)s, %(description)s, %(threat_type)s,
@@ -264,11 +264,11 @@ class FixedDataStorage:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT ip_address::text, source, description, threat_type, 
+                    SELECT ip_address::text, source, description, threat_type,
                            detection_date, added_at, updated_at
-                    FROM blacklist_entries 
-                    WHERE is_active = TRUE 
-                    ORDER BY added_at DESC 
+                    FROM blacklist_entries
+                    WHERE is_active = TRUE
+                    ORDER BY added_at DESC
                     LIMIT %s
                 """,
                     (limit,),
@@ -309,8 +309,8 @@ class FixedDataStorage:
                 # Mark all as inactive instead of deleting
                 cursor.execute(
                     """
-                    UPDATE blacklist_entries 
-                    SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP 
+                    UPDATE blacklist_entries
+                    SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
                     WHERE is_active = TRUE
                 """
                 )

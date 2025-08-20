@@ -41,7 +41,7 @@ class PredictiveAnalyzer(BaseAnalyzer):
         """Get trend data for the last 14 days"""
         query = """
             SELECT collection_date, COUNT(*) as daily_count
-            FROM blacklist_entries 
+            FROM blacklist_entries
             WHERE collection_date >= date('now', '-14 days')
             GROUP BY collection_date
             ORDER BY collection_date
@@ -82,12 +82,12 @@ class PredictiveAnalyzer(BaseAnalyzer):
         """Predict high-risk regions based on recent activity"""
         query = """
             SELECT country, COUNT(*) as threat_count,
-                   AVG(CASE 
+                   AVG(CASE
                        WHEN threat_level = 'CRITICAL' THEN 4
                        WHEN threat_level = 'HIGH' THEN 3
                        WHEN threat_level = 'MEDIUM' THEN 2
                        ELSE 1 END) as avg_severity
-            FROM blacklist_entries 
+            FROM blacklist_entries
             WHERE collection_date >= date('now', '-7 days')
             GROUP BY country
             HAVING threat_count > 5

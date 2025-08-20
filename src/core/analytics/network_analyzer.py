@@ -58,7 +58,7 @@ class NetworkAnalyzer(BaseAnalyzer):
             try:
                 network = ipaddress.ip_network(f"{ip}/24", strict=False)
                 subnet_counter[str(network)] += 1
-            except:
+            except (ipaddress.AddressValueError, ValueError):
                 continue
 
         high_risk_subnets = [
@@ -123,7 +123,7 @@ class NetworkAnalyzer(BaseAnalyzer):
                     private_ranges += 1
                 else:
                     public_ranges += 1
-            except:
+            except (ipaddress.AddressValueError, ValueError):
                 continue
 
         total_ips = private_ranges + public_ranges

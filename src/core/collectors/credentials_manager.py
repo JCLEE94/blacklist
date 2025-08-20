@@ -21,16 +21,18 @@ logger = logging.getLogger(__name__)
 class CredentialsManager:
     """Handles secure credentials storage and retrieval"""
 
-    def __init__(self, credentials_file: Path, cipher_key_file: Path, security_config: Dict):
+    def __init__(
+        self, credentials_file: Path, cipher_key_file: Path, security_config: Dict
+    ):
         """Initialize credentials manager"""
         self.credentials_file = credentials_file
         self.cipher_key_file = cipher_key_file
         self.security_config = security_config
-        
+
         # Ensure parent directories exist
         self.credentials_file.parent.mkdir(exist_ok=True)
         self.cipher_key_file.parent.mkdir(exist_ok=True)
-        
+
         # Initialize encryption
         self.cipher_key = self._get_or_create_cipher_key()
         self.cipher = Fernet(self.cipher_key)
@@ -48,39 +50,41 @@ class CredentialsManager:
             logger.info(f"Generated new cipher key: {self.cipher_key_file}")
             return key
 
-    def save_credentials(self, source: str, username: str, password: str, 
-                        additional_fields: Optional[Dict[str, str]] = None) -> bool:
+    def save_credentials(
+        self,
+        source: str,
+        username: str,
+        password: str,
+        additional_fields: Optional[Dict[str, str]] = None,
+    ) -> bool:
         """Save encrypted credentials for a source"""
         try:
             # Load existing credentials
             all_credentials = self._load_all_credentials()
-            
+
             # Create credential entry
-            credentials = {
-                "username": username,
-                "password": password
-            }
-            
+            credentials = {"username": username, "password": password}
+
             # Add additional fields if provided
             if additional_fields:
                 credentials.update(additional_fields)
-            
+
             # Update credentials for this source
             all_credentials[source] = credentials
-            
+
             # Encrypt and save
             encrypted_data = self.cipher.encrypt(
-                json.dumps(all_credentials).encode('utf-8')
+                json.dumps(all_credentials).encode("utf-8")
             )
-            
+
             # Write to file with secure permissions
             self.credentials_file.write_bytes(encrypted_data)
             permissions = self.security_config.get("credentials_permissions", 0o600)
             self.credentials_file.chmod(permissions)
-            
+
             logger.info(f"Credentials saved for source: {source}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to save credentials for {source}: {e}")
             return False
@@ -90,11 +94,11 @@ class CredentialsManager:
         try:
             if not self.credentials_file.exists():
                 return {}
-                
+
             encrypted_data = self.credentials_file.read_bytes()
             decrypted_data = self.cipher.decrypt(encrypted_data)
-            return json.loads(decrypted_data.decode('utf-8'))
-            
+            return json.loads(decrypted_data.decode("utf-8"))
+
         except Exception as e:
             logger.error(f"Failed to load credentials: {e}")
             return {}
@@ -104,19 +108,19 @@ class CredentialsManager:
         try:
             all_credentials = self._load_all_credentials()
             credentials = all_credentials.get(source)
-            
+
             if not credentials:
                 logger.warning(f"No credentials found for source: {source}")
                 return None
-                
+
             # Validate required fields
             if "username" not in credentials or "password" not in credentials:
                 logger.error(f"Invalid credentials for source: {source}")
                 return None
-                
+
             logger.debug(f"Credentials loaded for source: {source}")
             return credentials
-            
+
         except Exception as e:
             logger.error(f"Failed to get credentials for {source}: {e}")
             return None
@@ -125,22 +129,22 @@ class CredentialsManager:
         """Delete credentials for specific source"""
         try:
             all_credentials = self._load_all_credentials()
-            
+
             if source in all_credentials:
                 del all_credentials[source]
-                
+
                 # Save updated credentials
                 encrypted_data = self.cipher.encrypt(
-                    json.dumps(all_credentials).encode('utf-8')
+                    json.dumps(all_credentials).encode("utf-8")
                 )
                 self.credentials_file.write_bytes(encrypted_data)
-                
+
                 logger.info(f"Credentials deleted for source: {source}")
                 return True
             else:
                 logger.warning(f"No credentials to delete for source: {source}")
                 return False
-                
+
         except Exception as e:
             logger.error(f"Failed to delete credentials for {source}: {e}")
             return False
@@ -158,32 +162,32 @@ class CredentialsManager:
 if __name__ == "__main__":
     # Validation function
     from tempfile import TemporaryDirectory
-    
+
     with TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         creds_file = temp_path / "test_creds.enc"
         key_file = temp_path / "test_key"
         security_config = {"credentials_permissions": 0o600}
-        
+
         creds_mgr = CredentialsManager(creds_file, key_file, security_config)
-        
+
         # Test 1: Save and retrieve credentials
         success = creds_mgr.save_credentials("test_source", "test_user", "test_pass")
         assert success, "Failed to save credentials"
-        
+
         retrieved = creds_mgr.get_credentials("test_source")
         assert retrieved is not None, "Failed to retrieve credentials"
         assert retrieved["username"] == "test_user", "Username mismatch"
-        
+
         # Test 2: List sources
         sources = creds_mgr.list_sources()
         assert "test_source" in sources, "Source not in list"
-        
+
         # Test 3: Delete credentials
         deleted = creds_mgr.delete_credentials("test_source")
         assert deleted, "Failed to delete credentials"
-        
+
         sources_after = creds_mgr.list_sources()
         assert "test_source" not in sources_after, "Source still in list after deletion"
-        
+
         print("✅ Credentials manager validation complete")

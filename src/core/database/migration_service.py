@@ -109,8 +109,8 @@ class MigrationService:
         """스키마 버전 기록"""
         conn.execute(
             """
-            INSERT OR REPLACE INTO metadata 
-            (key, value, value_type, description, category) 
+            INSERT OR REPLACE INTO metadata
+            (key, value, value_type, description, category)
             VALUES (?, ?, ?, ?, ?)
         """,
             (
@@ -131,7 +131,7 @@ class MigrationService:
                 # 오래된 수집 로그 삭제
                 cursor = conn.execute(
                     """
-                    DELETE FROM collection_logs 
+                    DELETE FROM collection_logs
                     WHERE timestamp < datetime('now', '-{} days')
                 """.format(
                         days_to_keep
@@ -142,7 +142,7 @@ class MigrationService:
                 # 오래된 인증 시도 기록 삭제 (성공한 것만, 실패한 것은 보안상 더 오래 보관)
                 cursor = conn.execute(
                     """
-                    DELETE FROM auth_attempts 
+                    DELETE FROM auth_attempts
                     WHERE timestamp < datetime('now', '-{} days') AND success = 1
                 """.format(
                         days_to_keep
@@ -153,7 +153,7 @@ class MigrationService:
                 # 오래된 시스템 상태 기록 삭제
                 cursor = conn.execute(
                     """
-                    DELETE FROM system_status 
+                    DELETE FROM system_status
                     WHERE timestamp < datetime('now', '-{} days')
                 """.format(
                         days_to_keep
@@ -164,7 +164,7 @@ class MigrationService:
                 # 만료된 캐시 항목 삭제
                 cursor = conn.execute(
                     """
-                    DELETE FROM cache_entries 
+                    DELETE FROM cache_entries
                     WHERE datetime(created_at, '+' || ttl || ' seconds') < datetime('now')
                 """
                 )
@@ -174,7 +174,7 @@ class MigrationService:
                 try:
                     cursor = conn.execute(
                         """
-                        DELETE FROM system_logs 
+                        DELETE FROM system_logs
                         WHERE timestamp < datetime('now', '-{} days')
                     """.format(
                             days_to_keep

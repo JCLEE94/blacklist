@@ -4,7 +4,7 @@ V2 Sources API Routes
 소스별 상태 및 통계 정보 제공
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 

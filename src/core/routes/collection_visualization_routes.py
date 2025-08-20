@@ -23,10 +23,10 @@ COLLECTION_DASHBOARD_HTML = """
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         .header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; }
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin: 20px 0; }
-        .day { 
-            border: 1px solid #ddd; 
-            padding: 10px; 
-            min-height: 60px; 
+        .day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 60px;
             background: white;
             border-radius: 4px;
             position: relative;
@@ -36,10 +36,10 @@ COLLECTION_DASHBOARD_HTML = """
         .day-failed { background: #e74c3c; color: white; }
         .day-number { font-weight: bold; margin-bottom: 5px; }
         .ip-count { font-size: 0.9em; }
-        .stats { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 20px; 
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
             margin: 20px 0;
         }
         .stat-card {
@@ -82,7 +82,7 @@ COLLECTION_DASHBOARD_HTML = """
         <h1>🔍 블랙리스트 수집 현황 대시보드</h1>
         <p>날짜별 IP 수집 상태를 시각화합니다</p>
     </div>
-    
+
     <div class="controls">
         <button class="btn btn-primary" onclick="loadCalendar()">📅 캘린더 새로고침</button>
         <button class="btn btn-success" onclick="collectNow()">▶️ 지금 수집</button>
@@ -91,30 +91,30 @@ COLLECTION_DASHBOARD_HTML = """
             <!-- 동적으로 생성 -->
         </select>
     </div>
-    
+
     <div id="calendar" class="calendar">
         <!-- 캘린더가 여기 표시됨 -->
     </div>
-    
+
     <div id="stats" class="stats">
         <!-- 통계가 여기 표시됨 -->
     </div>
-    
+
     <div class="recent-list">
         <h3>최근 수집 이력</h3>
         <div id="recentCollections">
             <!-- 최근 수집 이력 표시 -->
         </div>
     </div>
-    
+
     <script>
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth() + 1;
-        
+
         function initMonthSelector() {
             const selector = document.getElementById('monthSelector');
             const now = new Date();
-            
+
             for (let i = -6; i <= 0; i++) {
                 const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
                 const option = document.createElement('option');
@@ -124,15 +124,15 @@ COLLECTION_DASHBOARD_HTML = """
                 selector.appendChild(option);
             }
         }
-        
+
         async function loadCalendar() {
             try {
                 const response = await fetch(`/api/collection/viz/calendar?year=${currentYear}&month=${currentMonth}`);
                 const data = await response.json();
-                
+
                 const calendarDiv = document.getElementById('calendar');
                 calendarDiv.innerHTML = '';
-                
+
                 // 요일 헤더
                 const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
                 weekdays.forEach(day => {
@@ -141,43 +141,43 @@ COLLECTION_DASHBOARD_HTML = """
                     div.textContent = day;
                     calendarDiv.appendChild(div);
                 });
-                
+
                 // 첫 날의 요일 계산
                 const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
-                
+
                 // 빈 칸 채우기
                 for (let i = 0; i < firstDay; i++) {
                     const div = document.createElement('div');
                     div.className = 'day';
                     calendarDiv.appendChild(div);
                 }
-                
+
                 // 날짜 표시
                 Object.entries(data.calendar).forEach(([date, info]) => {
                     const day = parseInt(date.split('-')[2]);
                     const div = document.createElement('div');
                     div.className = 'day';
-                    
+
                     if (info.collected) {
                         div.classList.add('day-collected');
                     }
-                    
+
                     div.innerHTML = `
                         <div class="day-number">${day}</div>
                         ${info.collected ? `<div class="ip-count">${info.count} IPs</div>` : ''}
                     `;
-                    
+
                     calendarDiv.appendChild(div);
                 });
-                
+
                 // 통계 업데이트
                 updateStats(data.summary);
-                
+
             } catch (error) {
                 console.error('캘린더 로드 실패:', error);
             }
         }
-        
+
         function updateStats(summary) {
             const statsDiv = document.getElementById('stats');
             statsDiv.innerHTML = `
@@ -195,17 +195,17 @@ COLLECTION_DASHBOARD_HTML = """
                 </div>
             `;
         }
-        
+
         async function collectNow() {
             if (!confirm('지금 수집을 시작하시겠습니까?')) return;
-            
+
             try {
                 const response = await fetch('/api/collection/viz/collect', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'}
                 });
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert(`수집 성공! ${result.count}개 IP 수집됨`);
                     loadCalendar();
@@ -217,50 +217,50 @@ COLLECTION_DASHBOARD_HTML = """
                 alert('수집 요청 실패: ' + error);
             }
         }
-        
+
         async function showStats() {
             try {
                 const response = await fetch('/api/collection/viz/stats');
                 const stats = await response.json();
-                
+
                 alert(`수집 통계:
 - 전체 수집: ${stats.total_collections}회
 - 성공: ${stats.successful_collections}회
 - 실패: ${stats.failed_collections}회
 - 총 IP: ${stats.total_ips_collected}개`);
-                
+
             } catch (error) {
                 console.error('통계 로드 실패:', error);
             }
         }
-        
+
         async function loadRecentCollections() {
             try {
                 const response = await fetch('/api/collection/viz/recent');
                 const data = await response.json();
-                
+
                 const recentDiv = document.getElementById('recentCollections');
                 recentDiv.innerHTML = '';
-                
+
                 data.recent.forEach(item => {
                     const div = document.createElement('div');
                     div.className = `recent-item ${item.success ? 'success' : 'failed'}`;
-                    
+
                     const date = new Date(item.collected_at);
                     div.innerHTML = `
-                        <strong>${item.source}</strong> - 
+                        <strong>${item.source}</strong> -
                         ${date.toLocaleDateString()} ${date.toLocaleTimeString()}<br>
                         ${item.success ? `✅ ${item.count} IPs` : `❌ ${item.error}`}
                     `;
-                    
+
                     recentDiv.appendChild(div);
                 });
-                
+
             } catch (error) {
                 console.error('최근 수집 로드 실패:', error);
             }
         }
-        
+
         function changeMonth() {
             const selector = document.getElementById('monthSelector');
             const [year, month] = selector.value.split('-');
@@ -268,12 +268,12 @@ COLLECTION_DASHBOARD_HTML = """
             currentMonth = parseInt(month);
             loadCalendar();
         }
-        
+
         // 초기화
         initMonthSelector();
         loadCalendar();
         loadRecentCollections();
-        
+
         // 주기적 새로고침 (30초마다)
         setInterval(() => {
             loadCalendar();
