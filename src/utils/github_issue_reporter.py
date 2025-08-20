@@ -133,7 +133,7 @@ class GitHubIssueReporter:
         short_message = (
             error_message[:60] + "..." if len(error_message) > 60 else error_message
         )
-        return "🚨 {error_type}: {short_message} ({error_hash})"
+        return f"🚨 {error_type}: {short_message} ({error_hash})"
 
     def _format_error_body(self, error_data: Dict[str, Any]) -> str:
         """에러 이슈 본문 포맷"""
@@ -147,7 +147,7 @@ class GitHubIssueReporter:
         request_method = error_data.get("request_method", "Unknown")
         server_info = error_data.get("server_info", {})
 
-        body = """## 🚨 자동 에러 리포트
+        body = f"""## 🚨 자동 에러 리포트
 
 ### 📊 에러 정보
 - **발생 시간**: {timestamp}

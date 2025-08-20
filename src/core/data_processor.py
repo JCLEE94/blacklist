@@ -358,7 +358,7 @@ if __name__ == "__main__":
     print("🔄 수집된 데이터 처리 시작...")
     results = processor.process_collected_data()
 
-    print(f"📊 처리 결과:")
+    print("📊 처리 결과:")
     print(f"  - 처리된 파일: {len(results['processed_files'])}")
     print(f"  - 총 처리된 항목: {results['total_processed']}")
     print(f"  - 유효한 IP: {results['total_valid']}")

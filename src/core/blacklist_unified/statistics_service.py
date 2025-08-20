@@ -241,12 +241,14 @@ class StatisticsService:
         try:
             # Use PostgreSQL first in production environment
             flask_env = os.environ.get("FLASK_ENV", "development")
-            
-            if flask_env == "production" or self.database_url.startswith("postgresql://"):
+
+            if flask_env == "production" or self.database_url.startswith(
+                "postgresql://"
+            ):
                 # Priority: PostgreSQL in production
                 logger.debug(f"Getting statistics from PostgreSQL: {self.database_url}")
                 return self._get_postgresql_statistics()
-            
+
             # Fallback: Try SQLite for local development
             sqlite_db_path = "instance/blacklist.db"
 
@@ -262,7 +264,9 @@ class StatisticsService:
                 active_ips = cursor.fetchone()[0]
 
                 # 전체 IP 수 (비활성 포함)
-                cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries")
+                cursor.execute(
+                    "SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries"
+                )
                 total_ips = cursor.fetchone()[0]
 
                 # 소스별 통계
@@ -397,7 +401,9 @@ class StatisticsService:
             )
 
             # Log success with PostgreSQL stats
-            logger.info(f"PostgreSQL stats: {active_ips} active IPs from {len(sources)} sources")
+            logger.info(
+                f"PostgreSQL stats: {active_ips} active IPs from {len(sources)} sources"
+            )
 
             return {
                 "total_ips": total_ips,

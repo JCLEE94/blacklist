@@ -104,7 +104,7 @@ def cache_lock(lock_key: str, timeout: int = 30, retry_interval: float = 0.1):
                 return func(*args, **kwargs)
 
             # Generate lock key
-            full_lock_key = "lock:{lock_key}:{func.__name__}"
+            full_lock_key = f"lock:{lock_key}:{func.__name__}"
 
             # Try to acquire lock
             acquired = False
@@ -119,7 +119,7 @@ def cache_lock(lock_key: str, timeout: int = 30, retry_interval: float = 0.1):
 
             if not acquired:
                 raise TimeoutError(
-                    "Could not acquire lock '{full_lock_key}' within {timeout} seconds"
+                    f"Could not acquire lock '{full_lock_key}' within {timeout} seconds"
                 )
 
             try:
@@ -151,20 +151,22 @@ def _generate_cache_key(
         key_parts.append(key_prefix)
 
     # Add function name and module
-    key_parts.append("{func.__module__}.{func.__name__}")
+    key_parts.append(f"{func.__module__}.{func.__name__}")
 
     # Add arguments
     if include_args and args:
         args_str = ":".join(str(arg) for arg in args)
-        key_parts.append("args:{args_str}")
+        key_parts.append(f"args:{args_str}")
 
     # Add keyword arguments (excluding specified ones)
     if include_kwargs and kwargs:
         exclude_set = set(exclude_args or [])
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in exclude_set}
         if filtered_kwargs:
-            kwargs_str = ":".join("{k}={v}" for k, v in sorted(filtered_kwargs.items()))
-            key_parts.append("kwargs:{kwargs_str}")
+            kwargs_str = ":".join(
+                f"{k}={v}" for k, v in sorted(filtered_kwargs.items())
+            )
+            key_parts.append(f"kwargs:{kwargs_str}")
 
     # Create final key
     cache_key = ":".join(key_parts)

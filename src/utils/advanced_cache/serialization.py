@@ -86,8 +86,18 @@ class SerializationManager:
             except (json.JSONDecodeError, UnicodeDecodeError, orjson.JSONDecodeError):
                 pass
 
-            # Fallback to pickle
-            return pickle.loads(data)
+            # Fallback to pickle (only for trusted internal data)
+            try:
+                # Add security check - only deserialize if data source is trusted
+                # This should only be used for internally cached data
+                if hasattr(self, '_trust_pickle') and self._trust_pickle:
+                    return pickle.loads(data)
+                else:
+                    logger.warning("Pickle deserialization skipped for security")
+                    return None
+            except (pickle.UnpicklingError, TypeError):
+                logger.warning("Pickle deserialization failed")
+                return None
 
         except Exception as e:
             logger.error(f"Deserialization error: {e}")

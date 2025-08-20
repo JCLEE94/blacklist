@@ -282,6 +282,7 @@ class TestCacheDecorators:
         from src.utils.advanced_cache.decorators import set_cache_instance
 
         cache = EnhancedSmartCache(redis_url=None)
+        cache.clear()  # Clear cache to prevent pollution
         set_cache_instance(cache)
 
         call_count = 0
@@ -331,35 +332,38 @@ class TestCacheFactory:
 
     def test_cache_factory_import(self):
         """Test cache factory can be imported"""
-        from src.utils.advanced_cache.factory import CacheFactory
+        from src.utils.advanced_cache.factory import get_smart_cache, get_cache
 
-        assert CacheFactory is not None
+        assert get_smart_cache is not None
+        assert get_cache is not None
 
     def test_cache_factory_create_memory(self):
         """Test cache factory creates memory backend"""
-        from src.utils.advanced_cache.factory import CacheFactory
+        from src.utils.advanced_cache.factory import get_smart_cache
 
-        cache = CacheFactory.create("memory")
+        cache = get_smart_cache(redis_url=None)
         assert cache is not None
         assert hasattr(cache, "get")
         assert hasattr(cache, "set")
 
     def test_cache_factory_create_redis_fallback(self):
         """Test cache factory creates Redis with fallback"""
-        from src.utils.advanced_cache.factory import CacheFactory
+        from src.utils.advanced_cache.factory import get_cache
 
         try:
-            cache = CacheFactory.create("redis")
+            cache = get_cache("redis://invalid:6379/0")  # Will fallback to memory
             assert cache is not None
+            assert hasattr(cache, "get")
+            assert hasattr(cache, "set")
         except Exception:
             # Redis may not be available, which is fine
             pass
 
     def test_cache_factory_default(self):
         """Test cache factory default creation"""
-        from src.utils.advanced_cache.factory import CacheFactory
+        from src.utils.advanced_cache.factory import get_cache
 
-        cache = CacheFactory.create()
+        cache = get_cache()
         assert cache is not None
         assert hasattr(cache, "get")
         assert hasattr(cache, "set")
@@ -370,15 +374,15 @@ class TestSerialization:
 
     def test_serialization_import(self):
         """Test serialization can be imported"""
-        from src.utils.advanced_cache.serialization import JsonSerializer
+        from src.utils.advanced_cache.serialization import SerializationManager
 
-        assert JsonSerializer is not None
+        assert SerializationManager is not None
 
     def test_json_serializer_basic(self):
         """Test JSON serializer basic functionality"""
-        from src.utils.advanced_cache.serialization import JsonSerializer
+        from src.utils.advanced_cache.serialization import SerializationManager
 
-        serializer = JsonSerializer()
+        serializer = SerializationManager()
 
         # Test simple data
         data = {"key": "value", "number": 42}
@@ -389,9 +393,9 @@ class TestSerialization:
 
     def test_json_serializer_complex_data(self):
         """Test JSON serializer with complex data"""
-        from src.utils.advanced_cache.serialization import JsonSerializer
+        from src.utils.advanced_cache.serialization import SerializationManager
 
-        serializer = JsonSerializer()
+        serializer = SerializationManager()
 
         # Test complex data structure
         data = {
@@ -552,9 +556,9 @@ if __name__ == "__main__":
     # Test 6: Serialization works
     total_tests += 1
     try:
-        from src.utils.advanced_cache.serialization import JsonSerializer
+        from src.utils.advanced_cache.serialization import SerializationManager
 
-        serializer = JsonSerializer()
+        serializer = SerializationManager()
         data = {"test": "data"}
         serialized = serializer.serialize(data)
         deserialized = serializer.deserialize(serialized)

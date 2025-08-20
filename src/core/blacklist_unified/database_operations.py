@@ -182,13 +182,14 @@ class DatabaseOperations:
 
                 logger.info(f"Found {len(result)} active IPs from PostgreSQL database")
                 return result
-                
+
         except Exception as e:
             logger.warning(f"PostgreSQL error: {e}, trying SQLite fallback")
-            
+
             # Fallback to SQLite if PostgreSQL fails
             try:
                 import sqlite3
+
                 sqlite_db_path = "instance/blacklist.db"
 
                 if os.path.exists(sqlite_db_path):
@@ -210,7 +211,9 @@ class DatabaseOperations:
                             if "/" in ip_str:
                                 ip_str = ip_str.split("/")[0]
                             result.append(ip_str)
-                        logger.info(f"Found {len(result)} active IPs from SQLite database")
+                        logger.info(
+                            f"Found {len(result)} active IPs from SQLite database"
+                        )
                         return result
 
             except Exception as sqlite_e:

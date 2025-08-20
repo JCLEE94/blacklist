@@ -169,27 +169,30 @@ class ProtectionService:
             # Check if we should use PostgreSQL in production
             flask_env = os.environ.get("FLASK_ENV", "development")
             database_url = os.environ.get("DATABASE_URL", "")
-            
+
             if flask_env == "production" and database_url.startswith("postgresql://"):
                 # Use PostgreSQL in production
                 import psycopg2
+
                 with psycopg2.connect(database_url) as conn:
                     cursor = conn.cursor()
                     cutoff_time = datetime.now() - timedelta(hours=hours)
-                    
+
                     # Check if auth_attempts table exists
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         SELECT EXISTS (
                             SELECT 1 FROM information_schema.tables 
                             WHERE table_name = 'auth_attempts'
                         )
-                    """)
+                    """
+                    )
                     table_exists = cursor.fetchone()[0]
-                    
+
                     if not table_exists:
                         logger.debug("auth_attempts table doesn't exist in PostgreSQL")
                         return 0
-                    
+
                     cursor.execute(
                         """
                         SELECT COUNT(*) FROM auth_attempts
@@ -205,7 +208,7 @@ class ProtectionService:
                 if not os.path.exists(self.db_path):
                     logger.debug(f"SQLite database doesn't exist: {self.db_path}")
                     return 0
-                    
+
                 with sqlite3.connect(self.db_path, timeout=5) as conn:
                     cursor = conn.cursor()
                     cutoff_time = datetime.now() - timedelta(hours=hours)

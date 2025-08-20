@@ -402,7 +402,7 @@ if __name__ == "__main__":
             retrieved_setting = config_mgr.get_setting("test_setting")
             if not retrieved_setting:
                 all_validation_failures.append("Settings: Retrieve failed")
-            elif retrieved_setting["enabled"] != True:
+            elif not retrieved_setting["enabled"]:
                 all_validation_failures.append("Settings: Data mismatch after retrieve")
 
         except Exception as e:

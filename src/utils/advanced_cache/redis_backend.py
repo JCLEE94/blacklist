@@ -47,10 +47,18 @@ class RedisBackend:
             else:
                 # Default Redis connection - use Docker service name in production
                 import os
-                redis_host = os.environ.get("REDIS_HOST", "redis" if os.environ.get("FLASK_ENV") == "production" else "localhost")
+
+                redis_host = os.environ.get(
+                    "REDIS_HOST",
+                    (
+                        "redis"
+                        if os.environ.get("FLASK_ENV") == "production"
+                        else "localhost"
+                    ),
+                )
                 redis_port = int(os.environ.get("REDIS_PORT", "6379"))
                 redis_db = int(os.environ.get("REDIS_DB", "0"))
-                
+
                 self.redis = redis.Redis(
                     host=redis_host,
                     port=redis_port,

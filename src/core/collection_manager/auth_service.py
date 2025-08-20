@@ -258,7 +258,7 @@ class AuthService:
 
             return (
                 True,
-                "최근 1시간 내 {failed_count}회 인증 실패로 일시 차단 (한도: {self.max_auth_attempts}회)",
+                f"최근 1시간 내 {failed_count}회 인증 실패로 일시 차단 (한도: {self.max_auth_attempts}회)",
             )
 
         return False, "인증 가능"

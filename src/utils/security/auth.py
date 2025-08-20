@@ -14,7 +14,6 @@ Expected output: JWT tokens, password hashes, authentication status
 import hashlib
 import logging
 import secrets
-import time
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional

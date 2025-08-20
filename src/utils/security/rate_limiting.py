@@ -14,9 +14,9 @@ import logging
 import time
 from collections import defaultdict, deque
 from functools import wraps
-from typing import Callable, Dict, Set
+from typing import Callable, Dict
 
-from flask import g, jsonify, request
+from flask import jsonify, request
 
 logger = logging.getLogger(__name__)
 

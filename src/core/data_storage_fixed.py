@@ -48,7 +48,9 @@ class FixedDataStorage:
 
         try:
             with psycopg2.connect(self.database_url) as conn:
-                conn.autocommit = True  # Enable autocommit to avoid transaction rollback issues
+                conn.autocommit = (
+                    True  # Enable autocommit to avoid transaction rollback issues
+                )
                 cursor = conn.cursor()
 
                 # Ensure table exists with proper schema
@@ -123,7 +125,7 @@ class FixedDataStorage:
                             f"Error storing IP {ip_entry.get('ip', 'unknown')}: {e}"
                         )
                         failed_count += 1
-                        
+
                         # Force rollback of current transaction if needed
                         try:
                             conn.rollback()
@@ -203,25 +205,25 @@ class FixedDataStorage:
         """Parse date string to TEXT format for reg_date column"""
         if not date_str:
             return datetime.now().strftime("%Y-%m-%d")
-        
+
         if isinstance(date_str, datetime):
             return date_str.strftime("%Y-%m-%d")
-        
+
         # Try to parse various date formats
         date_formats = [
             "%Y-%m-%d",
-            "%Y/%m/%d", 
+            "%Y/%m/%d",
             "%d/%m/%Y",
             "%m/%d/%Y",
             "%Y-%m-%d %H:%M:%S",
         ]
-        
+
         for fmt in date_formats:
             try:
                 return datetime.strptime(str(date_str), fmt).strftime("%Y-%m-%d")
             except ValueError:
                 continue
-        
+
         # If all parsing fails, return current date
         logger.warning(f"Could not parse date: {date_str}, using current date")
         return datetime.now().strftime("%Y-%m-%d")

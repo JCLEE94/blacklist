@@ -17,7 +17,7 @@ import secrets
 from functools import wraps
 from typing import Any, Callable, Dict
 
-from flask import jsonify, request, session
+from flask import jsonify, request
 
 logger = logging.getLogger(__name__)
 

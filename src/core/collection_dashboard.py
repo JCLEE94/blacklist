@@ -18,7 +18,8 @@ class CollectionDashboard:
 
     def __init__(self, db_path: str = "instance/blacklist.db"):
         self.db_path = db_path
-        self.regtech_dir = Path("/tmp/regtech_data")
+        import tempfile
+        self.regtech_dir = Path(tempfile.gettempdir()) / "regtech_data"
 
     def create_daily_tracking_table(self):
         """일별 수집 추적 테이블 생성"""

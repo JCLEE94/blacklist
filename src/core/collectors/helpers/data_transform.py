@@ -42,10 +42,10 @@ class RegtechDataTransform:
                 else:
                     # 기본적으로 ISO 형식 시도
                     detection_date = datetime.fromisoformat(detection_date_str)
-            except:
+            except (ValueError, TypeError) as e:
                 # 파싱 실패 시 현재 날짜 사용
                 detection_date = datetime.now()
-                logger.warning(f"날짜 파싱 실패, 현재 날짜 사용: {detection_date_str}")
+                logger.warning(f"날짜 파싱 실패, 현재 날짜 사용: {detection_date_str}, 오류: {e}")
 
             # 수집일 기준 3개월 후 만료 설정 (탐지일 아님)
             collection_date = datetime.now()  # 실제 수집한 날짜

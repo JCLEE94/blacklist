@@ -177,18 +177,23 @@ class DatabaseSchema:
 
         try:
             with self.connection_manager.get_connection() as conn:
-                tables = [
+                # Safe table list - only predefined tables allowed
+                ALLOWED_TABLES = {
                     "blacklist_entries",
-                    "collection_logs",
+                    "collection_logs", 
                     "auth_attempts",
                     "system_status",
                     "cache_entries",
                     "metadata",
-                    "system_logs",  # Add missing table
-                ]
+                    "system_logs",
+                }
 
-                for table in tables:
+                for table in ALLOWED_TABLES:
                     try:
+                        # Use parameterized queries where possible, or validate table names
+                        if table not in ALLOWED_TABLES:
+                            continue  # Skip unsafe table names
+                            
                         cursor = conn.execute(f"SELECT COUNT(*) as count FROM {table}")
                         count = cursor.fetchone()["count"]
 

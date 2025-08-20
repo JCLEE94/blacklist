@@ -18,6 +18,7 @@ except ImportError:
 
 from .handlers.health_handler import HealthCheckHandler
 from .handlers.status_handler import UnifiedStatusHandler
+
 # Import template content
 from .templates.dashboard_template import get_dashboard_template
 

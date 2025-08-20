@@ -239,7 +239,7 @@ class RegtechDataProcessor:
                     return False
 
             return True
-        except:
+        except (ValueError, AttributeError, TypeError):
             return False
 
     def remove_duplicates(self, ip_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

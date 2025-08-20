@@ -70,7 +70,7 @@ class RegtechIntegrationSystem:
         """
         collection_start_time = datetime.now()
 
-        logger.info(f"Starting REGTECH collection pipeline")
+        logger.info("Starting REGTECH collection pipeline")
         logger.info(f"Date range: {start_date} to {end_date}")
         logger.info(f"Clear existing: {clear_existing}")
 
@@ -145,7 +145,7 @@ class RegtechIntegrationSystem:
                 "message": f"Successfully collected and stored {stored_count} IPs from REGTECH",
             }
 
-            logger.info(f"Collection pipeline completed successfully")
+            logger.info("Collection pipeline completed successfully")
             logger.info(
                 f"Final result: {stored_count} new IPs, {final_ip_count} total IPs in database"
             )
