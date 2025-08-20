@@ -194,7 +194,7 @@ class ProtectionService:
                         """
                         SELECT COUNT(*) FROM auth_attempts
                         WHERE success = false
-                          AND created_at > %s
+                          AND attempt_time > %s
                         """,
                         (cutoff_time,),
                     )

@@ -349,7 +349,7 @@ class StatisticsService:
             cursor.execute(
                 """
                 SELECT COUNT(*) FROM blacklist_entries
-                WHERE is_active = false OR (expiry_date IS NOT NULL AND expiry_date < CURRENT_DATE)
+                WHERE is_active = false OR (exp_date IS NOT NULL AND exp_date::date < CURRENT_DATE)
                 """
             )
             expired_ips = cursor.fetchone()[0]
