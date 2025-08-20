@@ -18,6 +18,7 @@ Expected output: Database operation results, health status
 
 import logging
 import os
+import sqlite3
 import threading
 from datetime import datetime
 from typing import Any, Dict, List
@@ -154,8 +155,35 @@ class DatabaseOperations:
         }
 
     def get_active_ips(self) -> List[str]:
-        """Get all active IP addresses from PostgreSQL database"""
+        """Get all active IP addresses from database (PostgreSQL or SQLite)"""
         try:
+            # Try SQLite first for local development
+            import sqlite3
+            sqlite_db_path = "instance/blacklist.db"
+            
+            if os.path.exists(sqlite_db_path):
+                logger.debug(f"Getting active IPs from SQLite: {sqlite_db_path}")
+                with sqlite3.connect(sqlite_db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        """
+                        SELECT DISTINCT ip_address
+                        FROM blacklist
+                        WHERE is_active = 1
+                        ORDER BY ip_address
+                        """
+                    )
+                    result = []
+                    for row in cursor.fetchall():
+                        ip_str = row[0]
+                        # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
+                        if "/" in ip_str:
+                            ip_str = ip_str.split("/")[0]
+                        result.append(ip_str)
+                    logger.info(f"Found {len(result)} active IPs from SQLite database")
+                    return result
+            
+            # Fallback to PostgreSQL if SQLite not available
             logger.debug(f"Getting active IPs from PostgreSQL: {self.database_url}")
             with psycopg2.connect(self.database_url) as conn:
                 cursor = conn.cursor()
@@ -181,8 +209,8 @@ class DatabaseOperations:
                 logger.info(f"Found {len(result)} active IPs from PostgreSQL database")
                 return result
 
-        except psycopg2.Error as e:
-            logger.error(f"PostgreSQL error getting active IPs: {e}")
+        except Exception as e:
+            logger.error(f"Database error getting active IPs: {e}")
             raise DataProcessingError(f"Database error: {e}", operation="get_active_ips")
 
     def cleanup_old_data(self, days: int = 365) -> Dict[str, Any]:

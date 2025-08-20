@@ -17,6 +17,7 @@ Expected output: Processing results, active IP lists, operation status
 """
 
 import logging
+import os
 import sqlite3
 import threading
 from datetime import datetime, timedelta

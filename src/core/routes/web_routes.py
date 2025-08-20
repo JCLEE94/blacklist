@@ -38,46 +38,78 @@ def _get_dashboard_data():
         public_count = 0
 
         try:
-            # 데이터베이스에서 소스별 통계 직접 조회 (PostgreSQL 연결 사용)
+            # Try SQLite first for local development
             import os
+            import sqlite3
 
-            import psycopg2
-
-            # Get PostgreSQL connection URL from environment
-            database_url = os.environ.get(
-                "DATABASE_URL",
-                "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
-            )
-
-            with psycopg2.connect(database_url) as conn:
-                cursor = conn.cursor()
-
-                # 소스별 카운트 조회 (blacklist_entries 테이블 사용 - PostgreSQL 문법)
-                cursor.execute(
+            # Try SQLite database
+            sqlite_db_path = "instance/blacklist.db"
+            if os.path.exists(sqlite_db_path):
+                with sqlite3.connect(sqlite_db_path) as conn:
+                    cursor = conn.cursor()
+                    
+                    # 소스별 카운트 조회 (SQLite 문법)
+                    cursor.execute(
+                        """
+                        SELECT 
+                            LOWER(source) as source_name,
+                            COUNT(*) as count
+                        FROM blacklist 
+                        WHERE is_active = 1 
+                        GROUP BY LOWER(source)
                     """
-                    SELECT 
-                        LOWER(source) as source_name,
-                        COUNT(*) as count
-                    FROM blacklist_entries 
-                    WHERE is_active = true 
-                      AND (expiry_date IS NULL OR expiry_date > NOW())
-                    GROUP BY LOWER(source)
-                """
+                    )
+                    
+                    source_results = cursor.fetchall()
+                    for source_name, count in source_results:
+                        if "regtech" in source_name:
+                            regtech_count += count
+                        elif "secudium" in source_name:
+                            secudium_count += count
+                        else:
+                            public_count += count
+            else:
+                # Fallback to PostgreSQL if SQLite not available
+                import psycopg2
+
+                database_url = os.environ.get(
+                    "DATABASE_URL",
+                    "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
                 )
 
-                source_results = cursor.fetchall()
-                for source_name, count in source_results:
-                    if "regtech" in source_name:
-                        regtech_count += count
-                    elif "secudium" in source_name:
-                        secudium_count += count
-                    else:
-                        public_count += count
+                with psycopg2.connect(database_url) as conn:
+                    cursor = conn.cursor()
+
+                    # PostgreSQL 문법
+                    cursor.execute(
+                        """
+                        SELECT 
+                            LOWER(source) as source_name,
+                            COUNT(*) as count
+                        FROM blacklist_entries 
+                        WHERE is_active = true 
+                          AND (expiry_date IS NULL OR expiry_date > NOW())
+                        GROUP BY LOWER(source)
+                    """
+                    )
+
+                    source_results = cursor.fetchall()
+                    for source_name, count in source_results:
+                        if "regtech" in source_name:
+                            regtech_count += count
+                        elif "secudium" in source_name:
+                            secudium_count += count
+                        else:
+                            public_count += count
 
         except Exception as db_error:
             logger.error(f"Database source query error: {db_error}")
-            # 기본값으로 전체를 public으로 처리
-            public_count = total_ips
+            # Try to get counts from memory/direct query
+            if total_ips > 0:
+                # If we have IPs but no source data, assume they're from REGTECH (based on collection)
+                regtech_count = total_ips
+            else:
+                public_count = 0
 
         stats = {
             "total_ips": total_ips,
@@ -147,29 +179,33 @@ def _get_dashboard_data():
 @web_routes_bp.route("/", methods=["GET"])
 @web_routes_bp.route("/dashboard-fixed", methods=["GET"])
 def dashboard():
-    """메인페이지 - 통합 관리패널 (임시로 다른 경로 사용)"""
+    """메인페이지 - 대시보드 with real data"""
     try:
-        # Use the same template as working unified-control endpoint
-        return render_template("unified_control.html")
+        # Use dashboard.html with actual data
+        return render_template("dashboard.html", **_get_dashboard_data())
     except Exception as e:
         logger.error(f"Dashboard error: {e}")
-        # Return simple HTML as fallback
-        return (
-            """
-        <html>
-        <head><title>Dashboard</title></head>
-        <body>
-            <h1>Dashboard Temporarily Unavailable</h1>
-            <p>Error: {}</p>
-            <p><a href="/unified-control">Use Unified Control Panel</a></p>
-            <p><a href="/test">Test Page</a></p>
-        </body>
-        </html>
-        """.format(
-                str(e)
-            ),
-            500,
-        )
+        # Fallback to unified_control.html if dashboard fails
+        try:
+            return render_template("unified_control.html")
+        except:
+            # Return simple HTML as ultimate fallback
+            return (
+                """
+            <html>
+            <head><title>Dashboard</title></head>
+            <body>
+                <h1>Dashboard Temporarily Unavailable</h1>
+                <p>Error: {}</p>
+                <p><a href="/unified-control">Use Unified Control Panel</a></p>
+                <p><a href="/test">Test Page</a></p>
+            </body>
+            </html>
+            """.format(
+                    str(e)
+                ),
+                500,
+            )
 
 
 @web_routes_bp.route("/legacy-dashboard", methods=["GET"])
@@ -256,7 +292,8 @@ def collection_control():
 def unified_control():
     """통합 관리 패널 (수집 제어 + 데이터 관리)"""
     try:
-        return render_template("unified_control.html")
+        # Pass dashboard data to unified control too
+        return render_template("unified_control.html", **_get_dashboard_data())
     except Exception as e:
         logger.error(f"Unified control page error: {e}")
         return (
