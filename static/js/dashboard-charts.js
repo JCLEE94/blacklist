@@ -3,16 +3,32 @@ console.log("Loading dashboard-charts.js...");
 
 // Wait for Chart.js to be loaded
 window.addEventListener("load", function () {
-  console.log("Window loaded, initializing charts...");
+  console.log("Window loaded, checking Chart.js availability...");
 
-  // Initialize monthly trend chart
-  initializeMonthlyChart();
+  // Check if Chart.js is available
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js not available, skipping chart initialization");
+    // Hide chart containers to prevent errors
+    const chartContainers = document.querySelectorAll('.chart-container');
+    chartContainers.forEach(container => {
+      container.style.display = 'none';
+    });
+    return;
+  }
 
-  // Initialize source distribution chart
-  initializeSourceChart();
+  try {
+    // Initialize monthly trend chart
+    initializeMonthlyChart();
 
-  // Load data
-  loadDashboardData();
+    // Initialize source distribution chart
+    initializeSourceChart();
+
+    // Load data
+    loadDashboardData();
+  } catch (error) {
+    console.error("Chart initialization error:", error);
+    // Prevent popup errors
+  }
 });
 
 function initializeMonthlyChart() {
@@ -25,7 +41,14 @@ function initializeMonthlyChart() {
   console.log("Creating monthly chart...");
 
   const ctx = canvas.getContext("2d");
-  window.monthlyChart = new Chart(ctx, {
+  
+  // Destroy existing chart if it exists
+  if (window.monthlyChart) {
+    window.monthlyChart.destroy();
+  }
+  
+  try {
+    window.monthlyChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: ["2월", "3월", "4월", "5월", "6월", "7월"],
@@ -81,7 +104,10 @@ function initializeMonthlyChart() {
     },
   });
 
-  console.log("Monthly chart created");
+    console.log("Monthly chart created");
+  } catch (error) {
+    console.error("Failed to create monthly chart:", error);
+  }
 }
 
 function initializeSourceChart() {
@@ -94,7 +120,14 @@ function initializeSourceChart() {
   console.log("Creating source chart...");
 
   const ctx = canvas.getContext("2d");
-  window.sourceChart = new Chart(ctx, {
+  
+  // Destroy existing chart if it exists
+  if (window.sourceChart) {
+    window.sourceChart.destroy();
+  }
+  
+  try {
+    window.sourceChart = new Chart(ctx, {
     type: "doughnut",
     data: {
       labels: ["REGTECH", "SECUDIUM", "Public"],
@@ -135,7 +168,10 @@ function initializeSourceChart() {
     },
   });
 
-  console.log("Source chart created");
+    console.log("Source chart created");
+  } catch (error) {
+    console.error("Failed to create source chart:", error);
+  }
 }
 
 async function loadDashboardData() {
