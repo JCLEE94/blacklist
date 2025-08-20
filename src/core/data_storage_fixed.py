@@ -7,7 +7,9 @@ Handles PostgreSQL storage with proper schema compatibility
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 import psycopg2
 from dotenv import load_dotenv

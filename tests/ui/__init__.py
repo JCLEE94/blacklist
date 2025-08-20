@@ -8,7 +8,8 @@ from .api_tests import APITestSuite
 from .base_test_suite import BaseUITestSuite
 from .collection_tests import CollectionTestSuite
 from .dashboard_tests import DashboardTestSuite
-from .responsive_tests import RealtimeTestSuite, ResponsiveTestSuite
+from .responsive_tests import RealtimeTestSuite
+from .responsive_tests import ResponsiveTestSuite
 from .test_config import UITestConfig
 from .test_reporter import UITestReporter
 

@@ -10,7 +10,9 @@ from datetime import datetime
 from pathlib import Path
 
 import jwt
-from flask import Blueprint, jsonify, request
+from flask import Blueprint
+from flask import jsonify
+from flask import request
 
 from src.config.settings import settings
 

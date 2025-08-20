@@ -12,6 +12,7 @@ from flask import Blueprint
 from .handlers.health_handler import HealthCheckHandler
 from .handlers.status_handler import UnifiedStatusHandler
 from .templates.dashboard_template import get_dashboard_template
+
 # Import the refactored modular system
 from .unified_control_routes_refactored import bp as refactored_bp
 

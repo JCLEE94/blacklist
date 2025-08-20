@@ -7,10 +7,13 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 
 from .connection_manager import ConnectionManager
 from .index_manager import IndexManager

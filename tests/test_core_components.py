@@ -5,7 +5,9 @@ Tests for core application components split from test_final_coverage_push.py
 """
 
 import os
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 from flask import Flask

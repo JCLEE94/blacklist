@@ -7,7 +7,9 @@ Collection Status Service
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 from .auth_service import AuthService
 from .config_service import CollectionConfigService

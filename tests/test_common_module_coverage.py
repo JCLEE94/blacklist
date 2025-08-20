@@ -2,7 +2,8 @@
 Test coverage for common module
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -43,7 +44,9 @@ class TestCommonModule:
     def test_common_error_classes(self):
         """Test common error classes"""
         try:
-            from src.common import BaseError, ConfigurationError, ValidationError
+            from src.common import BaseError
+            from src.common import ConfigurationError
+            from src.common import ValidationError
 
             # Test that error classes can be instantiated
             base_error = BaseError("Test error")
@@ -62,7 +65,8 @@ class TestCommonModule:
     def test_common_logging_setup(self):
         """Test common logging configuration"""
         try:
-            from src.common import get_logger, setup_logging
+            from src.common import get_logger
+            from src.common import setup_logging
 
             logger = get_logger(__name__)
             assert logger is not None
@@ -78,7 +82,9 @@ class TestCommonModule:
     def test_common_path_utilities(self):
         """Test common path utility functions"""
         try:
-            from src.common import get_config_dir, get_data_dir, get_project_root
+            from src.common import get_config_dir
+            from src.common import get_data_dir
+            from src.common import get_project_root
 
             project_root = get_project_root()
             assert isinstance(project_root, str)
@@ -96,7 +102,9 @@ class TestCommonModule:
     def test_common_environment_helpers(self):
         """Test environment helper functions"""
         try:
-            from src.common import is_development, is_production, is_testing
+            from src.common import is_development
+            from src.common import is_production
+            from src.common import is_testing
 
             # These should return boolean values
             assert isinstance(is_development(), bool)
@@ -110,7 +118,9 @@ class TestCommonModule:
     def test_common_validation_helpers(self):
         """Test validation helper functions"""
         try:
-            from src.common import validate_email, validate_ip, validate_url
+            from src.common import validate_email
+            from src.common import validate_ip
+            from src.common import validate_url
 
             # Test IP validation
             assert validate_ip("192.168.1.1") == True
@@ -131,11 +141,9 @@ class TestCommonModule:
     def test_common_string_utilities(self):
         """Test string utility functions"""
         try:
-            from src.common import (
-                normalize_whitespace,
-                sanitize_string,
-                truncate_string,
-            )
+            from src.common import normalize_whitespace
+            from src.common import sanitize_string
+            from src.common import truncate_string
 
             # Test string sanitization
             sanitized = sanitize_string("<script>alert('xss')</script>")
@@ -158,11 +166,9 @@ class TestCommonModule:
         try:
             from datetime import datetime
 
-            from src.common import (
-                format_datetime,
-                get_current_timestamp,
-                parse_datetime,
-            )
+            from src.common import format_datetime
+            from src.common import get_current_timestamp
+            from src.common import parse_datetime
 
             now = datetime.now()
 

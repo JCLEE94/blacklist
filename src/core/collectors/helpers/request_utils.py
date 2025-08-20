@@ -6,7 +6,9 @@ REGTECH 요청 유틸리티 모듈
 
 import asyncio
 import logging
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 import requests
 from bs4 import BeautifulSoup

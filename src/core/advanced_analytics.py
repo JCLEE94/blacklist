@@ -8,7 +8,8 @@ modular analytics system in src/core/analytics/
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 
 # Import the new modular coordinator
 from .analytics.analytics_coordinator import AnalyticsCoordinator

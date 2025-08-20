@@ -11,10 +11,15 @@ import os
 import sys
 import tempfile
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -30,6 +35,7 @@ class TestErrorHandlerComponents:
         """Test error handler __init__ import"""
         try:
             from src.utils.error_handler import __init__
+
             # Should import successfully
         except ImportError:
             pytest.skip("error_handler __init__ not available")
@@ -38,6 +44,7 @@ class TestErrorHandlerComponents:
         """Test error handler core import"""
         try:
             from src.utils.error_handler import core_handler
+
             assert core_handler is not None
         except ImportError:
             pytest.skip("error_handler.core_handler not available")
@@ -46,6 +53,7 @@ class TestErrorHandlerComponents:
         """Test custom errors import"""
         try:
             from src.utils.error_handler import custom_errors
+
             assert custom_errors is not None
         except ImportError:
             pytest.skip("error_handler.custom_errors not available")
@@ -54,16 +62,20 @@ class TestErrorHandlerComponents:
         """Test custom error class definitions"""
         try:
             from src.utils.error_handler import custom_errors
-            
+
             # Look for custom exception classes
             attrs = dir(custom_errors)
-            error_classes = [attr for attr in attrs if 'Error' in attr or 'Exception' in attr]
-            
+            error_classes = [
+                attr for attr in attrs if "Error" in attr or "Exception" in attr
+            ]
+
             # Test that error classes can be instantiated
             for error_class_name in error_classes:
-                if not error_class_name.startswith('_'):
+                if not error_class_name.startswith("_"):
                     error_class = getattr(custom_errors, error_class_name)
-                    if isinstance(error_class, type) and issubclass(error_class, Exception):
+                    if isinstance(error_class, type) and issubclass(
+                        error_class, Exception
+                    ):
                         # Test instantiation
                         try:
                             error_instance = error_class("Test error message")
@@ -71,7 +83,7 @@ class TestErrorHandlerComponents:
                         except Exception:
                             # Some errors might require different parameters
                             pass
-                            
+
         except ImportError:
             pytest.skip("error_handler.custom_errors not available")
 
@@ -79,21 +91,21 @@ class TestErrorHandlerComponents:
         """Test error handler decorators"""
         try:
             from src.utils.error_handler import decorators
-            
+
             # Look for decorator functions
             attrs = dir(decorators)
-            decorator_functions = [attr for attr in attrs if not attr.startswith('_')]
-            
+            decorator_functions = [attr for attr in attrs if not attr.startswith("_")]
+
             # Should have some decorator functions
             assert len(decorator_functions) >= 0
-            
+
             # Test common decorator patterns
             for decorator_name in decorator_functions:
                 decorator_func = getattr(decorators, decorator_name)
                 if callable(decorator_func):
                     # Test that decorator can be called (basic test)
                     assert decorator_func is not None
-                    
+
         except ImportError:
             pytest.skip("error_handler.decorators not available")
 
@@ -101,14 +113,16 @@ class TestErrorHandlerComponents:
         """Test error handler context manager"""
         try:
             from src.utils.error_handler import context_manager
-            
+
             # Look for context manager classes
             attrs = dir(context_manager)
-            
+
             for attr_name in attrs:
-                if not attr_name.startswith('_'):
+                if not attr_name.startswith("_"):
                     attr_value = getattr(context_manager, attr_name)
-                    if hasattr(attr_value, '__enter__') and hasattr(attr_value, '__exit__'):
+                    if hasattr(attr_value, "__enter__") and hasattr(
+                        attr_value, "__exit__"
+                    ):
                         # Test context manager usage
                         try:
                             with attr_value() as cm:
@@ -120,7 +134,7 @@ class TestErrorHandlerComponents:
                         except Exception:
                             # Context manager might have specific requirements
                             pass
-                            
+
         except ImportError:
             pytest.skip("error_handler.context_manager not available")
 
@@ -128,14 +142,14 @@ class TestErrorHandlerComponents:
         """Test error handler validators"""
         try:
             from src.utils.error_handler import validators
-            
+
             # Look for validation functions
             attrs = dir(validators)
-            validator_functions = [attr for attr in attrs if not attr.startswith('_')]
-            
+            validator_functions = [attr for attr in attrs if not attr.startswith("_")]
+
             # Should have some validator functions
             assert len(validator_functions) >= 0
-            
+
             # Test common validator patterns
             for validator_name in validator_functions:
                 validator_func = getattr(validators, validator_name)
@@ -148,7 +162,7 @@ class TestErrorHandlerComponents:
                     except Exception:
                         # Validators might have specific requirements
                         pass
-                        
+
         except ImportError:
             pytest.skip("error_handler.validators not available")
 
@@ -156,21 +170,21 @@ class TestErrorHandlerComponents:
         """Test Flask integration components"""
         try:
             from src.utils.error_handler import flask_integration
-            
+
             # Look for Flask-specific functions
             attrs = dir(flask_integration)
-            flask_functions = [attr for attr in attrs if not attr.startswith('_')]
-            
+            flask_functions = [attr for attr in attrs if not attr.startswith("_")]
+
             # Should have some Flask integration functions
             assert len(flask_functions) >= 0
-            
+
             # Test Flask error handler patterns
             for func_name in flask_functions:
                 func = getattr(flask_integration, func_name)
                 if callable(func):
                     # Test that function exists and is callable
                     assert func is not None
-                    
+
         except ImportError:
             pytest.skip("error_handler.flask_integration not available")
 
@@ -182,6 +196,7 @@ class TestExceptionModules:
         """Test exceptions __init__ import"""
         try:
             from src.core.exceptions import __init__
+
             # Should import successfully
         except ImportError:
             pytest.skip("exceptions __init__ not available")
@@ -190,6 +205,7 @@ class TestExceptionModules:
         """Test auth exceptions import"""
         try:
             from src.core.exceptions import auth_exceptions
+
             assert auth_exceptions is not None
         except ImportError:
             pytest.skip("auth_exceptions not available")
@@ -198,16 +214,20 @@ class TestExceptionModules:
         """Test auth exception class definitions"""
         try:
             from src.core.exceptions import auth_exceptions
-            
+
             # Look for exception classes
             attrs = dir(auth_exceptions)
-            exception_classes = [attr for attr in attrs if 'Error' in attr or 'Exception' in attr]
-            
+            exception_classes = [
+                attr for attr in attrs if "Error" in attr or "Exception" in attr
+            ]
+
             # Test exception classes
             for exception_name in exception_classes:
-                if not exception_name.startswith('_'):
+                if not exception_name.startswith("_"):
                     exception_class = getattr(auth_exceptions, exception_name)
-                    if isinstance(exception_class, type) and issubclass(exception_class, Exception):
+                    if isinstance(exception_class, type) and issubclass(
+                        exception_class, Exception
+                    ):
                         # Test instantiation
                         try:
                             exc_instance = exception_class("Test auth error")
@@ -216,7 +236,7 @@ class TestExceptionModules:
                         except Exception:
                             # Some exceptions might require different parameters
                             pass
-                            
+
         except ImportError:
             pytest.skip("auth_exceptions not available")
 
@@ -224,6 +244,7 @@ class TestExceptionModules:
         """Test base exceptions import"""
         try:
             from src.core.exceptions import base_exceptions
+
             assert base_exceptions is not None
         except ImportError:
             pytest.skip("base_exceptions not available")
@@ -232,16 +253,20 @@ class TestExceptionModules:
         """Test base exception class definitions"""
         try:
             from src.core.exceptions import base_exceptions
-            
+
             # Look for base exception classes
             attrs = dir(base_exceptions)
-            exception_classes = [attr for attr in attrs if 'Error' in attr or 'Exception' in attr]
-            
+            exception_classes = [
+                attr for attr in attrs if "Error" in attr or "Exception" in attr
+            ]
+
             # Test base exception classes
             for exception_name in exception_classes:
-                if not exception_name.startswith('_'):
+                if not exception_name.startswith("_"):
                     exception_class = getattr(base_exceptions, exception_name)
-                    if isinstance(exception_class, type) and issubclass(exception_class, Exception):
+                    if isinstance(exception_class, type) and issubclass(
+                        exception_class, Exception
+                    ):
                         # Test instantiation
                         try:
                             exc_instance = exception_class("Test base error")
@@ -249,7 +274,7 @@ class TestExceptionModules:
                         except Exception:
                             # Some exceptions might require different parameters
                             pass
-                            
+
         except ImportError:
             pytest.skip("base_exceptions not available")
 
@@ -257,6 +282,7 @@ class TestExceptionModules:
         """Test config exceptions import"""
         try:
             from src.core.exceptions import config_exceptions
+
             assert config_exceptions is not None
         except ImportError:
             pytest.skip("config_exceptions not available")
@@ -265,6 +291,7 @@ class TestExceptionModules:
         """Test data exceptions import"""
         try:
             from src.core.exceptions import data_exceptions
+
             assert data_exceptions is not None
         except ImportError:
             pytest.skip("data_exceptions not available")
@@ -273,6 +300,7 @@ class TestExceptionModules:
         """Test service exceptions import"""
         try:
             from src.core.exceptions import service_exceptions
+
             assert service_exceptions is not None
         except ImportError:
             pytest.skip("service_exceptions not available")
@@ -281,6 +309,7 @@ class TestExceptionModules:
         """Test validation exceptions import"""
         try:
             from src.core.exceptions import validation_exceptions
+
             assert validation_exceptions is not None
         except ImportError:
             pytest.skip("validation_exceptions not available")
@@ -289,6 +318,7 @@ class TestExceptionModules:
         """Test infrastructure exceptions import"""
         try:
             from src.core.exceptions import infrastructure_exceptions
+
             assert infrastructure_exceptions is not None
         except ImportError:
             pytest.skip("infrastructure_exceptions not available")
@@ -297,6 +327,7 @@ class TestExceptionModules:
         """Test error utils import"""
         try:
             from src.core.exceptions import error_utils
+
             assert error_utils is not None
         except ImportError:
             pytest.skip("error_utils not available")
@@ -305,21 +336,21 @@ class TestExceptionModules:
         """Test error utils functions"""
         try:
             from src.core.exceptions import error_utils
-            
+
             # Look for utility functions
             attrs = dir(error_utils)
-            util_functions = [attr for attr in attrs if not attr.startswith('_')]
-            
+            util_functions = [attr for attr in attrs if not attr.startswith("_")]
+
             # Should have some utility functions
             assert len(util_functions) >= 0
-            
+
             # Test common utility patterns
             for util_name in util_functions:
                 util_func = getattr(error_utils, util_name)
                 if callable(util_func):
                     # Test that utility function exists
                     assert util_func is not None
-                    
+
         except ImportError:
             pytest.skip("error_utils not available")
 
@@ -327,10 +358,10 @@ class TestExceptionModules:
 if __name__ == "__main__":
     # Validation tests for error handling components
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Error handler imports (optional)
     total_tests += 1
     try:
@@ -338,7 +369,7 @@ if __name__ == "__main__":
     except ImportError:
         # This is optional, not a failure
         pass
-    
+
     # Test 2: Exception imports (optional)
     total_tests += 1
     try:
@@ -346,7 +377,7 @@ if __name__ == "__main__":
     except ImportError:
         # This is optional, not a failure
         pass
-    
+
     # Test 3: Basic functionality
     total_tests += 1
     try:
@@ -357,14 +388,18 @@ if __name__ == "__main__":
             assert str(e) == "Test exception"
     except Exception as e:
         all_validation_failures.append(f"Basic exception test failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Security error handling tests are validated and ready for execution")
         sys.exit(0)

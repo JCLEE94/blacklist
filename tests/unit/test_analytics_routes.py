@@ -6,7 +6,8 @@ Tests V2 analytics API endpoints and statistical analysis routes.
 
 import json
 import unittest.mock as mock
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 import pytest
 from flask import Flask

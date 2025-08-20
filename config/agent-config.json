@@ -1,0 +1,66 @@
+{
+  "agentConfiguration": {
+    "name": "Blacklist Management System Agent",
+    "version": "1.0.37",
+    "environment": "development",
+    "capabilities": [
+      "code_analysis",
+      "dependency_injection",
+      "route_management",
+      "testing_automation",
+      "gitops_deployment",
+      "container_management"
+    ]
+  },
+  "projectRules": {
+    "rulesFile": "shrimp-rules.md",
+    "enforcementLevel": "strict",
+    "validationRequired": true
+  },
+  "developmentWorkflow": {
+    "testingRequired": true,
+    "codeQualityChecks": true,
+    "gitopsIntegration": true,
+    "containerizedDeployment": true
+  },
+  "codeStandards": {
+    "language": "python",
+    "framework": "flask",
+    "version": "3.9+",
+    "namingConvention": "snake_case",
+    "importStyle": "absolute",
+    "errorHandling": "comprehensive"
+  },
+  "serviceArchitecture": {
+    "pattern": "dependency_injection",
+    "containerFile": "src/core/container.py",
+    "serviceLayer": "src/core/services/",
+    "routeOrganization": "src/core/routes/"
+  },
+  "testingConfiguration": {
+    "framework": "pytest",
+    "coverageMinimum": 80,
+    "testTypes": ["unit", "integration", "api"],
+    "mockingRequired": true
+  },
+  "deploymentConfiguration": {
+    "strategy": "gitops",
+    "registry": "registry.jclee.me",
+    "kubernetesManifests": "k8s/manifests/",
+    "argocdEnabled": true,
+    "githubActionsEnabled": true
+  },
+  "monitoringAndLogging": {
+    "loggingLevel": "INFO",
+    "healthChecksRequired": true,
+    "prometheusMetrics": true,
+    "errorTracking": true
+  },
+  "securityRequirements": {
+    "authenticationRequired": true,
+    "jwtTokens": true,
+    "inputValidation": true,
+    "secretsManagement": true,
+    "httpsOnly": true
+  }
+}

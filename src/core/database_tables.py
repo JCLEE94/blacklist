@@ -3,6 +3,7 @@
 """
 
 import logging
+
 from sqlalchemy import text
 
 logger = logging.getLogger(__name__)

@@ -4,9 +4,12 @@ Auth Decorators - Unified authentication functionality
 
 import logging
 from functools import wraps
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
-from flask import g, jsonify, request
+from flask import g
+from flask import jsonify
+from flask import request
 
 from .registry import get_registry
 

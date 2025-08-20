@@ -8,8 +8,10 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Dict
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
 
 # Database-driven collection system (통합 수집 시스템)
 try:

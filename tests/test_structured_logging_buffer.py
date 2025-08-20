@@ -8,11 +8,15 @@ import logging
 import tempfile
 import time
 import unittest
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
-from src.utils.structured_logging import BufferHandler, LogManager, StructuredLogger
+from src.utils.structured_logging import BufferHandler
+from src.utils.structured_logging import LogManager
+from src.utils.structured_logging import StructuredLogger
 
 
 class TestBufferHandler(unittest.TestCase):

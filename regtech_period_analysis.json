@@ -1,0 +1,207 @@
+{
+  "period_results": {
+    "1일": {
+      "days_back": 1,
+      "start_date": "2025-08-19",
+      "end_date": "2025-08-20",
+      "ip_count": 0,
+      "available": false,
+      "sample_ips": []
+    },
+    "1주일": {
+      "days_back": 7,
+      "start_date": "2025-08-13",
+      "end_date": "2025-08-20",
+      "ip_count": 0,
+      "available": false,
+      "sample_ips": []
+    },
+    "2주일": {
+      "days_back": 14,
+      "start_date": "2025-08-06",
+      "end_date": "2025-08-20",
+      "ip_count": 30,
+      "available": true,
+      "sample_ips": [
+        "1.55.131.187",
+        "165.231.148.50",
+        "101.35.147.66",
+        "193.202.81.16",
+        "171.40.165.188"
+      ]
+    },
+    "1개월": {
+      "days_back": 30,
+      "start_date": "2025-07-21",
+      "end_date": "2025-08-20",
+      "ip_count": 930,
+      "available": true,
+      "sample_ips": [
+        "23.236.216.213",
+        "37.202.248.78",
+        "104.239.19.60",
+        "87.117.221.239",
+        "31.207.47.227"
+      ]
+    },
+    "2개월": {
+      "days_back": 60,
+      "start_date": "2025-06-21",
+      "end_date": "2025-08-20",
+      "ip_count": 930,
+      "available": true,
+      "sample_ips": [
+        "23.236.216.213",
+        "37.202.248.78",
+        "104.239.19.60",
+        "87.117.221.239",
+        "31.207.47.227"
+      ]
+    },
+    "3개월": {
+      "days_back": 90,
+      "start_date": "2025-05-22",
+      "end_date": "2025-08-20",
+      "ip_count": 930,
+      "available": true,
+      "sample_ips": [
+        "23.236.216.213",
+        "37.202.248.78",
+        "104.239.19.60",
+        "87.117.221.239",
+        "31.207.47.227"
+      ]
+    },
+    "6개월": {
+      "days_back": 180,
+      "start_date": "2025-02-21",
+      "end_date": "2025-08-20",
+      "ip_count": 930,
+      "available": true,
+      "sample_ips": [
+        "23.236.216.213",
+        "37.202.248.78",
+        "104.239.19.60",
+        "87.117.221.239",
+        "31.207.47.227"
+      ]
+    },
+    "1년": {
+      "days_back": 365,
+      "start_date": "2024-08-20",
+      "end_date": "2025-08-20",
+      "ip_count": 930,
+      "available": true,
+      "sample_ips": [
+        "23.236.216.213",
+        "37.202.248.78",
+        "104.239.19.60",
+        "87.117.221.239",
+        "31.207.47.227"
+      ]
+    },
+    "2년": {
+      "days_back": 730,
+      "start_date": "2023-08-21",
+      "end_date": "2025-08-20",
+      "ip_count": 930,
+      "available": true,
+      "sample_ips": [
+        "23.236.216.213",
+        "37.202.248.78",
+        "104.239.19.60",
+        "87.117.221.239",
+        "31.207.47.227"
+      ]
+    }
+  },
+  "monthly_results": {
+    "2025년 07월": {
+      "start_date": "2025-07-02",
+      "end_date": "2025-08-01",
+      "ip_count": 990,
+      "available": true
+    },
+    "2025년 06월": {
+      "start_date": "2025-06-02",
+      "end_date": "2025-07-02",
+      "ip_count": 994,
+      "available": true
+    },
+    "2025년 05월": {
+      "start_date": "2025-05-03",
+      "end_date": "2025-06-02",
+      "ip_count": 990,
+      "available": true
+    },
+    "2025년 04월": {
+      "start_date": "2025-04-03",
+      "end_date": "2025-05-03",
+      "ip_count": 992,
+      "available": true
+    },
+    "2025년 03월": {
+      "start_date": "2025-03-04",
+      "end_date": "2025-04-03",
+      "ip_count": 976,
+      "available": true
+    },
+    "2025년 02월": {
+      "start_date": "2025-02-02",
+      "end_date": "2025-03-04",
+      "ip_count": 982,
+      "available": true
+    },
+    "2025년 01월": {
+      "start_date": "2025-01-03",
+      "end_date": "2025-02-02",
+      "ip_count": 707,
+      "available": true
+    },
+    "2024년 12월": {
+      "start_date": "2024-12-04",
+      "end_date": "2025-01-03",
+      "ip_count": 990,
+      "available": true
+    },
+    "2024년 11월": {
+      "start_date": "2024-11-04",
+      "end_date": "2024-12-04",
+      "ip_count": 991,
+      "available": true
+    },
+    "2024년 10월": {
+      "start_date": "2024-10-05",
+      "end_date": "2024-11-04",
+      "ip_count": 998,
+      "available": true
+    },
+    "2024년 09월": {
+      "start_date": "2024-09-05",
+      "end_date": "2024-10-05",
+      "ip_count": 981,
+      "available": true
+    },
+    "2024년 08월": {
+      "start_date": "2024-08-06",
+      "end_date": "2024-09-05",
+      "ip_count": 964,
+      "available": true
+    }
+  },
+  "summary": {
+    "max_ips": 930,
+    "optimal_periods": [
+      "1개월",
+      "2개월",
+      "3개월",
+      "6개월",
+      "1년",
+      "2년"
+    ],
+    "total_periods_tested": 9,
+    "available_periods": 7,
+    "available_months": 12,
+    "total_months": 12
+  }
+}

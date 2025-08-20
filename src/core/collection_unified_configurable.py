@@ -8,9 +8,13 @@ import json
 import logging
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup

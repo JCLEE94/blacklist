@@ -5,7 +5,9 @@
 """
 import os
 
-from .setting_types import SettingCategory, SettingDefinition, SettingType
+from .setting_types import SettingCategory
+from .setting_types import SettingDefinition
+from .setting_types import SettingType
 
 
 def get_default_settings():

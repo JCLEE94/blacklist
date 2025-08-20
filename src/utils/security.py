@@ -6,12 +6,18 @@ rate limiting, and security headers
 
 import hashlib
 import logging
+import os
 import secrets
 import time
-from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from collections import defaultdict
+from collections import deque
+from datetime import datetime
+from datetime import timedelta
 from functools import wraps
-from typing import Any, Callable, Dict, List
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
 
 import jwt
 
@@ -63,11 +69,15 @@ class SecurityManager:
     ) -> str:
         """Generate JWT token"""
         try:
+            import time
+            # Use microsecond precision for uniqueness
+            now = datetime.utcnow()
             payload = {
                 "user_id": user_id,
                 "roles": roles or [],
-                "iat": datetime.utcnow(),
-                "exp": datetime.utcnow() + timedelta(hours=expires_hours),
+                "iat": now,
+                "exp": now + timedelta(hours=expires_hours),
+                "nonce": secrets.token_hex(8),  # Add randomness for uniqueness
             }
 
             token = jwt.encode(payload, self.jwt_secret, algorithm="HS256")
@@ -155,14 +165,41 @@ class SecurityManager:
 
     def generate_api_key(self, prefix: str = "ak") -> str:
         """Generate secure API key"""
-        random_part = secrets.token_urlsafe(32)
-        return f"{prefix}_{random_part}"
+        # Generate URL-safe token without underscores to avoid conflicts
+        random_part = secrets.token_urlsafe(32).replace('_', '')
+        # If too short after removing underscores, regenerate
+        while len(random_part) < 40:
+            random_part += secrets.token_urlsafe(8).replace('_', '')
+        return f"{prefix}_{random_part[:43]}"  # Limit to consistent length
 
     def validate_api_key_format(self, api_key: str) -> bool:
         """Validate API key format"""
         try:
+            if not api_key or not isinstance(api_key, str):
+                return False
+            
+            # Must contain exactly one underscore
+            if api_key.count('_') != 1:
+                return False
+                
             parts = api_key.split("_")
-            return len(parts) == 2 and len(parts[1]) >= 32
+            if len(parts) != 2:
+                return False
+                
+            prefix, token = parts
+            
+            # Validate prefix: 2-10 chars, alphanumeric, starts with letter
+            if not (2 <= len(prefix) <= 10 and 
+                   prefix.isalpha() and  # Only letters for prefix (no numbers)
+                   prefix.islower()):    # Lowercase convention
+                return False
+                
+            # Validate token: 40+ chars, URL-safe characters (no underscores in token part)
+            if not (len(token) >= 40 and 
+                   all(c.isalnum() or c == '-' for c in token)):  # No underscores in token
+                return False
+                
+            return True
         except Exception as e:
             return False
 
@@ -202,7 +239,9 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import current_app, g, request
+            from flask import current_app
+            from flask import g
+            from flask import request
 
             try:
                 security_manager = getattr(current_app, "security_manager", None)
@@ -261,7 +300,8 @@ def rate_limit(limit: int = 100, window_seconds: int = 3600):
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import current_app, request
+            from flask import current_app
+            from flask import request
 
             try:
                 security_manager = getattr(current_app, "security_manager", None)
@@ -475,3 +515,207 @@ def security_check(f: Callable) -> Callable:
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+# Standalone Security Functions
+# These functions provide convenient access to SecurityManager functionality
+# without requiring direct instantiation
+
+def hash_password(password: str, salt: str = None) -> tuple:
+    """
+    Standalone password hashing function
+    
+    Args:
+        password: Password to hash
+        salt: Optional salt value (generated if not provided)
+        
+    Returns:
+        tuple: (hash, salt)
+        
+    Example:
+        hash_val, salt = hash_password("MyPassword123")
+    """
+    try:
+        # Get or create security manager
+        security_manager = get_security_manager("temp_key")
+        if not security_manager:
+            security_manager = SecurityManager("default_key")
+            
+        return security_manager.hash_password(password, salt)
+    except Exception as e:
+        logger.error(f"Password hashing failed: {e}")
+        raise
+
+
+def verify_password(password: str, password_hash: str, salt: str) -> bool:
+    """
+    Standalone password verification function
+    
+    Args:
+        password: Password to verify
+        password_hash: Stored password hash
+        salt: Salt used for hashing
+        
+    Returns:
+        bool: True if password matches, False otherwise
+        
+    Example:
+        is_valid = verify_password("MyPassword123", stored_hash, stored_salt)
+    """
+    try:
+        # Get or create security manager
+        security_manager = get_security_manager("temp_key")
+        if not security_manager:
+            security_manager = SecurityManager("default_key")
+            
+        return security_manager.verify_password(password, password_hash, salt)
+    except Exception as e:
+        logger.error(f"Password verification failed: {e}")
+        return False
+
+
+def generate_jwt_token(user_id: str, roles: List[str] = None, expires_hours: int = 24) -> str:
+    """
+    Standalone JWT token generation function
+    
+    Args:
+        user_id: User identifier
+        roles: List of user roles (optional)
+        expires_hours: Token expiration in hours (default: 24)
+        
+    Returns:
+        str: JWT token
+        
+    Example:
+        token = generate_jwt_token("user123", ["admin", "user"], 12)
+    """
+    try:
+        # Get JWT secret from environment or use default
+        jwt_secret = os.environ.get("JWT_SECRET_KEY", "default_jwt_secret")
+        
+        # Get or create security manager
+        security_manager = get_security_manager("temp_key", jwt_secret)
+        if not security_manager:
+            security_manager = SecurityManager("default_key", jwt_secret)
+            
+        return security_manager.generate_jwt_token(user_id, roles, expires_hours)
+    except Exception as e:
+        logger.error(f"JWT token generation failed: {e}")
+        raise
+
+
+def validate_api_key(api_key: str) -> bool:
+    """
+    Standalone API key validation function
+    
+    Args:
+        api_key: API key to validate
+        
+    Returns:
+        bool: True if valid format, False otherwise
+        
+    Note: This validates format only. For database validation,
+        use the ApiKeyManager from models.api_key
+        
+    Example:
+        is_valid = validate_api_key("ak_1234567890abcdef")
+    """
+    try:
+        if not api_key or not isinstance(api_key, str):
+            return False
+            
+        # Get or create security manager
+        security_manager = get_security_manager("temp_key")
+        if not security_manager:
+            security_manager = SecurityManager("default_key")
+            
+        return security_manager.validate_api_key_format(api_key)
+    except Exception as e:
+        logger.error(f"API key validation failed: {e}")
+        return False
+
+
+def create_rate_limiter(limit: int = 100, window_seconds: int = 3600):
+    """
+    Standalone rate limiter creation function
+    
+    Args:
+        limit: Maximum requests allowed
+        window_seconds: Time window in seconds
+        
+    Returns:
+        RateLimiter: Rate limiter instance
+        
+    Example:
+        limiter = create_rate_limiter(50, 1800)  # 50 requests per 30 minutes
+        is_allowed = limiter.check_rate_limit("user_id")
+    """
+    try:
+        class RateLimiter:
+            """Simple rate limiter implementation"""
+            
+            def __init__(self, limit: int, window_seconds: int):
+                self.limit = limit
+                self.window_seconds = window_seconds
+                self.security_manager = get_security_manager("temp_key")
+                if not self.security_manager:
+                    self.security_manager = SecurityManager("default_key")
+            
+            def check_rate_limit(self, identifier: str) -> bool:
+                """Check if request is within rate limit"""
+                return self.security_manager.check_rate_limit(
+                    identifier, self.limit, self.window_seconds
+                )
+            
+            def check(self, identifier: str) -> bool:
+                """Alias for check_rate_limit"""
+                return self.check_rate_limit(identifier)
+        
+        return RateLimiter(limit, window_seconds)
+    except Exception as e:
+        logger.error(f"Rate limiter creation failed: {e}")
+        raise
+
+
+# Additional utility functions for completeness
+def generate_api_key(prefix: str = "ak") -> str:
+    """
+    Generate a new API key with the specified prefix
+    
+    Args:
+        prefix: Key prefix (default: "ak")
+        
+    Returns:
+        str: Generated API key
+    """
+    try:
+        security_manager = get_security_manager("temp_key")
+        if not security_manager:
+            security_manager = SecurityManager("default_key")
+            
+        return security_manager.generate_api_key(prefix)
+    except Exception as e:
+        logger.error(f"API key generation failed: {e}")
+        return f"{prefix}_{secrets.token_urlsafe(32)}"
+
+
+def verify_jwt_token(token: str) -> Dict[str, Any]:
+    """
+    Verify and decode a JWT token
+    
+    Args:
+        token: JWT token to verify
+        
+    Returns:
+        dict: Token payload if valid, None if invalid
+    """
+    try:
+        jwt_secret = os.environ.get("JWT_SECRET_KEY", "default_jwt_secret")
+        security_manager = get_security_manager("temp_key", jwt_secret)
+        if not security_manager:
+            security_manager = SecurityManager("default_key", jwt_secret)
+            
+        return security_manager.verify_jwt_token(token)
+    except Exception as e:
+        logger.error(f"JWT token verification failed: {e}")
+        return None

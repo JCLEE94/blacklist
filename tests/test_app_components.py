@@ -4,7 +4,8 @@ App Components Tests
 Test core app components like CompactFlaskApp, mixins, etc.
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 

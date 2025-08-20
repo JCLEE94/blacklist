@@ -5,9 +5,12 @@ Handles collection system status, daily stats, and history
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint
+from flask import jsonify
+from flask import request
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory

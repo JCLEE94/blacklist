@@ -4,7 +4,8 @@
 Flask 템플릿을 사용한 최적화된 구조로 리팩토링됨
 """
 
-from flask import Blueprint, render_template
+from flask import Blueprint
+from flask import render_template
 
 # Blueprint 생성
 unified_dashboard_bp = Blueprint("unified_dashboard", __name__)

@@ -8,18 +8,18 @@ Tests PerformanceMetrics, QueryOptimizer, SmartCache, and MemoryOptimizer classe
 import threading
 import time
 import unittest
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from datetime import datetime
+from datetime import timedelta
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
 # Test imports
-from src.utils.performance_optimizer import (
-    MemoryOptimizer,
-    PerformanceMetrics,
-    QueryOptimizer,
-    SmartCache,
-)
+from src.utils.performance_optimizer import MemoryOptimizer
+from src.utils.performance_optimizer import PerformanceMetrics
+from src.utils.performance_optimizer import QueryOptimizer
+from src.utils.performance_optimizer import SmartCache
 
 
 class TestPerformanceMetrics:

@@ -65,11 +65,9 @@ class TestPerformanceOptimizerImports(unittest.TestCase):
     def test_import_decorators(self):
         """데코레이터 임포트 테스트"""
         try:
-            from src.utils.performance_optimizer import (
-                batch_process,
-                cached_result,
-                performance_monitor,
-            )
+            from src.utils.performance_optimizer import batch_process
+            from src.utils.performance_optimizer import cached_result
+            from src.utils.performance_optimizer import performance_monitor
 
             self.assertIsNotNone(performance_monitor)
             self.assertIsNotNone(cached_result)
@@ -80,11 +78,9 @@ class TestPerformanceOptimizerImports(unittest.TestCase):
     def test_import_utility_functions(self):
         """유틸리티 함수 임포트 테스트"""
         try:
-            from src.utils.performance_optimizer import (
-                cleanup_performance_data,
-                get_performance_monitor,
-                optimize_database_queries,
-            )
+            from src.utils.performance_optimizer import cleanup_performance_data
+            from src.utils.performance_optimizer import get_performance_monitor
+            from src.utils.performance_optimizer import optimize_database_queries
 
             self.assertIsNotNone(get_performance_monitor)
             self.assertIsNotNone(optimize_database_queries)

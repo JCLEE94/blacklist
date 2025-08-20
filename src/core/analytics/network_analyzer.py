@@ -5,8 +5,12 @@ Analyzes network patterns and geographic distribution of threats
 """
 
 import ipaddress
-from collections import Counter, defaultdict
-from typing import Any, Dict, List, Tuple
+from collections import Counter
+from collections import defaultdict
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 from .base_analyzer import BaseAnalyzer
 

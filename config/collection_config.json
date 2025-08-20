@@ -1,0 +1,50 @@
+{
+  "sources": {
+    "regtech": {
+      "name": "REGTECH",
+      "enabled": true,
+      "base_url": "https://regtech.fsec.or.kr",
+      "endpoints": {
+        "login": "/login/loginForm",
+        "login_action": "/login/loginAction",
+        "search": "/mipam/miPamBoard013.do",
+        "data": "/mipam/miPamBoard013Excel.do"
+      },
+      "timeout": 30,
+      "retry_count": 3,
+      "page_delay": 1,
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+      }
+    },
+    "secudium": {
+      "name": "SECUDIUM",
+      "enabled": false,
+      "base_url": "https://www.secudium.com",
+      "endpoints": {
+        "login": "/isap-api/loginProcess",
+        "search": "/board/list",
+        "data": "/board/excel"
+      },
+      "timeout": 30,
+      "retry_count": 3
+    }
+  },
+  "collection": {
+    "default_date_range": 7,
+    "max_history_records": 100,
+    "auto_cleanup_days": 30,
+    "batch_size": 1000
+  },
+  "storage": {
+    "credentials_file": "instance/credentials.enc",
+    "history_file": "instance/collection_history.json",
+    "cipher_key_file": "instance/.cipher_key",
+    "reports_dir": "instance/reports"
+  },
+  "security": {
+    "file_permissions": "0o600",
+    "encryption_algorithm": "Fernet",
+    "key_rotation_days": 90
+  }
+}

@@ -7,7 +7,9 @@ Excel, HTML, JSON 응답 처리 및 IP 추출
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 logger = logging.getLogger(__name__)
 

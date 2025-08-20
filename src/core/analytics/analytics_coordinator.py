@@ -4,7 +4,8 @@ Analytics Coordinator - Main interface for the modularized analytics system
 Provides backward compatibility with the original AdvancedAnalytics interface
 """
 
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 
 from .base_analyzer import BaseAnalyzer
 from .correlation_analyzer import CorrelationAnalyzer

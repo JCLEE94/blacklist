@@ -14,7 +14,8 @@ from typing import Optional
 
 from flask import Flask
 
-from ..utils.structured_logging import get_logger, setup_request_logging
+from ..utils.structured_logging import get_logger
+from ..utils.structured_logging import setup_request_logging
 from .app.blueprints import BlueprintRegistrationMixin
 from .app.config import AppConfigurationMixin
 from .app.error_handlers import ErrorHandlerMixin
@@ -113,8 +114,7 @@ class CompactFlaskApp(
 
             # Initialize system stability monitoring
             try:
-                from ..utils.system_stability import \
-                    initialize_system_stability
+                from ..utils.system_stability import initialize_system_stability
 
                 initialize_system_stability()
                 logger.info("System stability monitoring initialized")

@@ -5,7 +5,8 @@ Refactored Coverage Tests
 500줄 제한을 준수하도록 리팩토링
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -102,7 +103,8 @@ class TestRefactoredModules:
         """기존 코드와의 호환성 테스트"""
         try:
             # 기존 api_routes.py에서 임포트하던 함수들이 여전히 접근 가능한지 확인
-            from src.core.routes.api_routes import get_active_blacklist, health_check
+            from src.core.routes.api_routes import get_active_blacklist
+            from src.core.routes.api_routes import health_check
 
             assert callable(health_check)
             assert callable(get_active_blacklist)

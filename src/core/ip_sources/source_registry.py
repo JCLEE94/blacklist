@@ -4,7 +4,10 @@ IP 소스 레지스트리
 """
 
 import logging
-from typing import Any, Dict, List, Type
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Type
 
 from .base_source import BaseIPSource
 

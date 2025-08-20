@@ -6,8 +6,11 @@
 
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from dataclasses import field
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 

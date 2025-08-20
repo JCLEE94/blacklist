@@ -6,7 +6,8 @@ Extracted from msa_comprehensive_integration_test.py for better organization.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict
+from typing import Optional
 
 
 @dataclass

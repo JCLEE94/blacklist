@@ -10,22 +10,24 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, mock_open, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import mock_open
+from unittest.mock import patch
 
 import pytest
-from flask import Blueprint, Flask
+from flask import Blueprint
+from flask import Flask
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.web.api_routes import (
-    api_bp,
-    api_search,
-    api_stats_simple,
-    get_daily_ips,
-    get_month_details,
-    get_stats,
-    refresh_data,
-)
+from src.web.api_routes import api_bp
+from src.web.api_routes import api_search
+from src.web.api_routes import api_stats_simple
+from src.web.api_routes import get_daily_ips
+from src.web.api_routes import get_month_details
+from src.web.api_routes import get_stats
+from src.web.api_routes import refresh_data
 
 
 class TestApiBlueprint:

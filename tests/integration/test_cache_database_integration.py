@@ -8,7 +8,8 @@ import sqlite3
 import threading
 import time
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -57,7 +58,8 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
             if start_date or end_date:
                 # 날짜가 지정된 경우
                 if not start_date:
-                    from datetime import datetime, timedelta
+                    from datetime import datetime
+                    from datetime import timedelta
 
                     start_date = (datetime.now() - timedelta(days=7)).strftime(
                         "%Y-%m-%d"

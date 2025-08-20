@@ -6,7 +6,8 @@ Tests collection operations, data gathering, and source management.
 
 import asyncio
 import unittest.mock as mock
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 import pytest
 

@@ -1,23 +1,21 @@
-# Python
+# Dependencies
+node_modules/
+venv/
+env/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-venv/
-env/
-ENV/
-.venv
 
-# Testing
-.coverage
-.coverage.*
-.pytest_cache/
-htmlcov/
-test-reports/
-.dev-reports/
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+
+# Logs
+logs/
 *.log
-.bandit
 
 # Database
 *.db
@@ -25,50 +23,46 @@ test-reports/
 *.sqlite3
 instance/
 
+# Docker volumes
+data/
+config/redis-data/
+config/postgresql-data/
+docker/redis-data/
+test-postgresql-data/
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Environment
-.env
-.env.*
-\!.env.example
-
-# Data
-data/
-logs/
-*.json
-\!package.json
-
-# Build
-dist/
-build/
-*.egg-info/
-*.tar.gz
-*.tgz
-
-# Temporary
-*.tmp
-*.bak
+# OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Project specific
-.serena/
-.gitops_sync
-server.log
-blacklist.pid
-{test_db}
-{test_db}*
-deployment/blacklist-internal-deployment-*/images/*.tar
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+.nyc_output
+coverage.xml
+*.cover
+.hypothesis/
 
-# Docker runtime data
-docker/redis-data/
-redis-data/
-test-postgresql-data/
-test-redis-data/
-postgresql-data/
-redis-data/
-data/
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

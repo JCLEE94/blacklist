@@ -6,7 +6,8 @@ Test database-related components and operations.
 
 import sqlite3
 import tempfile
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -69,12 +70,14 @@ class TestDatabaseComponents:
             cursor = conn.cursor()
 
             # Create a test table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS test_table (
                     id INTEGER PRIMARY KEY,
                     name TEXT NOT NULL
                 )
-            """)
+            """
+            )
 
             # Insert test data
             cursor.execute("INSERT INTO test_table (name) VALUES (?)", ("test",))

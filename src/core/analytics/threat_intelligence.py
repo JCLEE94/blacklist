@@ -5,7 +5,9 @@ Provides threat distribution, geographic analysis, and attack patterns
 """
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 from .base_analyzer import BaseAnalyzer
 

@@ -5,7 +5,9 @@ Analyzes relationships between attacks and identifies patterns over time
 """
 
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 from .base_analyzer import BaseAnalyzer
 

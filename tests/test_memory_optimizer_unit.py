@@ -9,12 +9,14 @@ import gc
 import threading
 import time
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
 # Test imports
-from src.utils.memory.core_optimizer import CoreMemoryOptimizer, MemoryStats
+from src.utils.memory.core_optimizer import CoreMemoryOptimizer
+from src.utils.memory.core_optimizer import MemoryStats
 
 
 class TestMemoryStats:

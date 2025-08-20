@@ -12,12 +12,16 @@ import time
 import unittest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
-from flask import Flask, g
+from flask import Flask
+from flask import g
 
-from src.utils.structured_logging import StructuredLogger, get_logger
+from src.utils.structured_logging import StructuredLogger
+from src.utils.structured_logging import get_logger
 
 
 class TestStructuredLogger(unittest.TestCase):

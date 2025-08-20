@@ -5,18 +5,17 @@
 """
 
 from .collection_operations import CollectionOperationsMixin
-from .collection_triggers import CollectionTriggersMixin
 from .collection_status import CollectionStatusMixin
+from .collection_triggers import CollectionTriggersMixin
 
 
 class CollectionServiceMixin(
-    CollectionOperationsMixin, 
-    CollectionTriggersMixin, 
-    CollectionStatusMixin
+    CollectionOperationsMixin, CollectionTriggersMixin, CollectionStatusMixin
 ):
     """
     수집 관련 기능을 제공하는 믹스인 클래스
     UnifiedBlacklistService에서 사용됨
     기능은 각각의 별도 모듈로 분산되어 있음
     """
+
     pass

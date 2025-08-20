@@ -7,16 +7,18 @@ PerformanceMetrics, QueryOptimizer, and core functionality tests
 import threading
 import time
 import unittest
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from datetime import datetime
+from datetime import timedelta
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
-from src.utils.performance_optimizer import (PerformanceMetrics,
-                                             QueryOptimizer,
-                                             g_performance_monitor,
-                                             get_performance_monitor,
-                                             optimize_database_queries)
+from src.utils.performance_optimizer import PerformanceMetrics
+from src.utils.performance_optimizer import QueryOptimizer
+from src.utils.performance_optimizer import g_performance_monitor
+from src.utils.performance_optimizer import get_performance_monitor
+from src.utils.performance_optimizer import optimize_database_queries
 
 
 class TestPerformanceMetrics(unittest.TestCase):

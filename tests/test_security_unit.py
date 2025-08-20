@@ -8,7 +8,9 @@ Tests SecurityManager and related security functions.
 import sys
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -16,12 +18,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import modules with fallbacks
 try:
-    from src.utils.security import (
-        SecurityManager,
-        decrypt_data,
-        encrypt_data,
-        generate_api_key,
-    )
+    from src.utils.security import SecurityManager
+    from src.utils.security import decrypt_data
+    from src.utils.security import encrypt_data
+    from src.utils.security import generate_api_key
 except ImportError:
 
     class SecurityManager:

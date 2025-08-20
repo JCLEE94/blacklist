@@ -6,7 +6,9 @@ Provides the main dashboard endpoints with template support
 
 from datetime import datetime
 
-from flask import Blueprint, jsonify, render_template_string
+from flask import Blueprint
+from flask import jsonify
+from flask import render_template_string
 
 try:
     from ..collection_db_collector import DatabaseCollectionSystem
@@ -18,6 +20,7 @@ except ImportError:
 
 from .handlers.health_handler import HealthCheckHandler
 from .handlers.status_handler import UnifiedStatusHandler
+
 # Import template content
 from .templates.dashboard_template import get_dashboard_template
 

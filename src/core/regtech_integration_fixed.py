@@ -7,7 +7,9 @@ End-to-end solution that handles collection, storage, and API serving
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 from dotenv import load_dotenv
 

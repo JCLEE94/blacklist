@@ -5,7 +5,9 @@ Index Manager 테스트
 import os
 import sqlite3
 import tempfile
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock
+from unittest.mock import call
+from unittest.mock import patch
 
 import pytest
 
@@ -228,7 +230,12 @@ class TestIndexManager:
         plan_with_index = cursor.fetchall()
 
         # 실행 계획이 다르면 인덱스가 사용되고 있음을 의미
-        assert plan_without_index != plan_with_index
+        # SQLite Row 객체는 직접 비교가 어려우므로 문자열로 변환하여 비교
+        plan_without_str = [str(dict(row)) for row in plan_without_index]
+        plan_with_str = [str(dict(row)) for row in plan_with_index]
+        
+        # 실행 계획이 변경되었는지 확인
+        assert plan_without_str != plan_with_str, f"Plans should differ: without={plan_without_str}, with={plan_with_str}"
 
     @pytest.mark.integration
     def test_compound_indexes(self, temp_db):

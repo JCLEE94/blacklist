@@ -9,21 +9,21 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 from flask import Flask
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.web.api_routes import (
-    api_bp,
-    api_stats_simple,
-    download_daily_ips,
-    export_data,
-    get_daily_ips,
-    get_month_details,
-)
+from src.web.api_routes import api_bp
+from src.web.api_routes import api_stats_simple
+from src.web.api_routes import download_daily_ips
+from src.web.api_routes import export_data
+from src.web.api_routes import get_daily_ips
+from src.web.api_routes import get_month_details
 
 
 class TestGetMonthDetails:

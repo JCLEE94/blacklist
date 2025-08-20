@@ -399,8 +399,8 @@ class TestCollectorFunctionality:
     def test_secudium_collector_methods(self):
         """Test SECUDIUM collector methods"""
         try:
-            from src.core.collectors.unified_collector import CollectionConfig
             from src.core.collectors.secudium_collector import SecudiumCollector
+            from src.core.collectors.unified_collector import CollectionConfig
 
             config = CollectionConfig()
             collector = SecudiumCollector(config)

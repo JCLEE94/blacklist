@@ -5,7 +5,8 @@
 
 import asyncio
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 
 
 class CollectionOperationsMixin:
@@ -149,11 +150,11 @@ class CollectionOperationsMixin:
             self.daily_collection_enabled = True
 
             # CollectionManager와 동기화
-            if hasattr(self, 'collection_manager') and self.collection_manager:
+            if hasattr(self, "collection_manager") and self.collection_manager:
                 self.collection_manager.collection_enabled = True
 
             # 로그 남기기
-            if hasattr(self, 'add_collection_log'):
+            if hasattr(self, "add_collection_log"):
                 self.add_collection_log(
                     source="system",
                     action="collection_enabled",
@@ -181,11 +182,11 @@ class CollectionOperationsMixin:
             self.daily_collection_enabled = False
 
             # CollectionManager와 동기화
-            if hasattr(self, 'collection_manager') and self.collection_manager:
+            if hasattr(self, "collection_manager") and self.collection_manager:
                 self.collection_manager.collection_enabled = False
 
             # 로그 남기기
-            if hasattr(self, 'add_collection_log'):
+            if hasattr(self, "add_collection_log"):
                 self.add_collection_log(source="system", action="collection_disabled")
 
             return {

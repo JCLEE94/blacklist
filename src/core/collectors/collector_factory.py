@@ -5,13 +5,16 @@
 
 import logging
 import os
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
+from typing import Dict
+from typing import Optional
 
 if TYPE_CHECKING:
     from ..collectors.secudium_collector import SecudiumCollector
 
 from .regtech_collector import RegtechCollector
-from .unified_collector import CollectionConfig, UnifiedCollectionManager
+from .unified_collector import CollectionConfig
+from .unified_collector import UnifiedCollectionManager
 
 logger = logging.getLogger(__name__)
 

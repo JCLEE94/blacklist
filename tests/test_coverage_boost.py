@@ -9,9 +9,12 @@ import os
 import sqlite3
 import sys
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock
+from unittest.mock import call
+from unittest.mock import patch
 
 import pytest
 from flask import Flask
@@ -179,8 +182,9 @@ class TestCollectionServiceCoverage:
     def test_collection_service_basic_usage(self):
         """Test basic collection service usage"""
         try:
-            from src.core.services.collection_service import \
-                CollectionServiceMixin as CollectionService
+            from src.core.services.collection_service import (
+                CollectionServiceMixin as CollectionService,
+            )
 
             # Mock all dependencies
             with patch("src.core.container.get_container") as mock_container:
@@ -211,8 +215,7 @@ class TestBlacklistUnifiedCoverage:
     def test_data_service_basic_methods(self):
         """Test data service basic methods"""
         try:
-            from src.core.blacklist_unified.data_service import \
-                BlacklistDataService
+            from src.core.blacklist_unified.data_service import BlacklistDataService
 
             # Mock dependencies
             with patch("sqlite3.connect") as mock_connect:
@@ -242,8 +245,7 @@ class TestBlacklistUnifiedCoverage:
     def test_expiration_service_basic_methods(self):
         """Test expiration service basic methods"""
         try:
-            from src.core.blacklist_unified.expiration_service import \
-                ExpirationService
+            from src.core.blacklist_unified.expiration_service import ExpirationService
 
             with patch("sqlite3.connect") as mock_connect:
                 mock_conn = Mock()
@@ -343,8 +345,7 @@ class TestCollectionManagerCoverage:
     def test_protection_service_basic_usage(self):
         """Test protection service basic usage"""
         try:
-            from src.core.collection_manager.protection_service import \
-                ProtectionService
+            from src.core.collection_manager.protection_service import ProtectionService
 
             # Mock dependencies
             with (

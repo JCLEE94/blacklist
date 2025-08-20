@@ -9,11 +9,17 @@
 """
 
 # 하위 호환성을 위한 임포트 - 새로운 모듈 구조에서 가져옴
-from .containers import (BlacklistContainer, ServiceContainer,
-                         ServiceDefinition, get_auth_manager,
-                         get_blacklist_manager, get_cache_manager,
-                         get_collection_manager, get_container, inject,
-                         reset_container, resolve_service)
+from .containers import BlacklistContainer
+from .containers import ServiceContainer
+from .containers import ServiceDefinition
+from .containers import get_auth_manager
+from .containers import get_blacklist_manager
+from .containers import get_cache_manager
+from .containers import get_collection_manager
+from .containers import get_container
+from .containers import inject
+from .containers import reset_container
+from .containers import resolve_service
 
 # 테스트 모듈 임포트 제거 - 모듈이 누락됨
 

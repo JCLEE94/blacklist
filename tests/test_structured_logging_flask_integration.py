@@ -8,13 +8,18 @@ Flask integration setup, and API endpoints.
 
 import json
 import logging
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
+from datetime import datetime
+from datetime import timedelta
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
 # Test imports
-from src.utils.structured_logging import get_logger, log_manager, setup_request_logging
+from src.utils.structured_logging import get_logger
+from src.utils.structured_logging import log_manager
+from src.utils.structured_logging import setup_request_logging
 
 
 class TestFlaskIntegration:

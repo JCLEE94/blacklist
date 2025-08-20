@@ -6,8 +6,11 @@ Unified Blacklist Manager - Main coordination class
 import logging
 import os
 import threading
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
 
 from src.utils.unified_decorators import unified_monitoring
 
@@ -51,8 +54,7 @@ class UnifiedBlacklistManager:
         if cache_backend:
             self.cache = cache_backend
         else:
-            from ...utils.advanced_cache import \
-                EnhancedSmartCache as CacheManager
+            from ...utils.advanced_cache import EnhancedSmartCache as CacheManager
 
             self.cache = CacheManager()
 

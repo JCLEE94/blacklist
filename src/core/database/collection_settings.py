@@ -8,7 +8,10 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from cryptography.fernet import Fernet
 
@@ -459,7 +462,8 @@ class CollectionSettingsDB:
                 calendar_data = {}
 
                 # 해당 월의 모든 날짜 초기화
-                from datetime import datetime, timedelta
+                from datetime import datetime
+                from datetime import timedelta
 
                 start_date = datetime(year, month, 1)
                 if month == 12:

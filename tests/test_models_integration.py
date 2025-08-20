@@ -5,20 +5,19 @@ Tests for model interactions, JSON serialization, and edge cases
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 import pytest
 
 # Import mock classes from the metrics test file
 from test_models_metrics import ComponentStatus
 
-from src.core.models import (
-    APIResponse,
-    BlacklistEntry,
-    HealthStatus,
-    MonthData,
-    SystemHealth,
-)
+from src.core.models import APIResponse
+from src.core.models import BlacklistEntry
+from src.core.models import HealthStatus
+from src.core.models import MonthData
+from src.core.models import SystemHealth
 
 
 class TestModelIntegration:

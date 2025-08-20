@@ -5,9 +5,11 @@ UI 테스트 기본 스위트
 """
 
 import time
-from typing import Any, Callable
+from typing import Any
+from typing import Callable
 
-from playwright.async_api import Page, expect
+from playwright.async_api import Page
+from playwright.async_api import expect
 
 from .test_config import UITestConfig
 from .test_reporter import UITestReporter

@@ -9,18 +9,17 @@ Tests for security utility functions including:
 - Security setup functionality
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
-from src.utils.security import (
-    SecurityManager,
-    generate_csrf_token,
-    get_security_manager,
-    sanitize_input,
-    setup_security,
-    validate_csrf_token,
-)
+from src.utils.security import SecurityManager
+from src.utils.security import generate_csrf_token
+from src.utils.security import get_security_manager
+from src.utils.security import sanitize_input
+from src.utils.security import setup_security
+from src.utils.security import validate_csrf_token
 
 
 class TestSecurityUtilities:

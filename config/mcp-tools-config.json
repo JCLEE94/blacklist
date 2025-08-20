@@ -1,0 +1,64 @@
+{
+  "mcpToolsConfiguration": {
+    "serverName": "blacklist-management-mcp",
+    "version": "1.0.0",
+    "description": "MCP tools configuration for Blacklist Management System",
+    "activeTools": [
+      "serena",
+      "shrimp-task-manager",
+      "sequential-thinking",
+      "memory",
+      "code-runner",
+      "eslint"
+    ]
+  },
+  "serenaConfiguration": {
+    "projectName": "blacklist",
+    "language": "python",
+    "framework": "flask",
+    "modes": ["editing", "interactive"],
+    "codeStyleEnforcement": true,
+    "symbolLevelEditing": true,
+    "regexBasedEditing": true
+  },
+  "taskManagerConfiguration": {
+    "planningEnabled": true,
+    "analysisDepth": "comprehensive",
+    "reflectionEnabled": true,
+    "taskSplittingEnabled": true,
+    "verificationRequired": true
+  },
+  "memoryConfiguration": {
+    "entityTracking": true,
+    "relationshipMapping": true,
+    "observationLogging": true,
+    "knowledgeGraphEnabled": true
+  },
+  "codeRunnerConfiguration": {
+    "supportedLanguages": ["python", "javascript", "typescript"],
+    "executionEnvironment": "sandboxed",
+    "timeoutSeconds": 30,
+    "memoryLimitMB": 256
+  },
+  "projectSpecificRules": {
+    "enforceContainerPattern": true,
+    "requireTestCoverage": 80,
+    "enforceGitOpsWorkflow": true,
+    "validateKubernetesManifests": true,
+    "requireSecurityValidation": true
+  },
+  "workflowIntegration": {
+    "githubActions": true,
+    "argocdSync": true,
+    "containerRegistry": "registry.jclee.me",
+    "testAutomation": true,
+    "deploymentValidation": true
+  },
+  "qualityAssurance": {
+    "codeReview": true,
+    "performanceMonitoring": true,
+    "securityScanning": true,
+    "dependencyChecks": true,
+    "complianceValidation": true
+  }
+}

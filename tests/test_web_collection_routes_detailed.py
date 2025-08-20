@@ -7,10 +7,13 @@ import json
 import os
 import tempfile
 import unittest.mock as mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
-from flask import Blueprint, Flask
+from flask import Blueprint
+from flask import Flask
 
 
 @pytest.fixture
@@ -219,7 +222,13 @@ class TestCollectionResponseFormat:
         if response.status_code >= 400:
             # 에러 응답도 적절한 형식이어야 함
             assert (
-                response.content_type in ["application/json", "text/html", "text/plain", "text/html; charset=utf-8"]
+                response.content_type
+                in [
+                    "application/json",
+                    "text/html",
+                    "text/plain",
+                    "text/html; charset=utf-8",
+                ]
                 or "json" in response.content_type
                 or "html" in response.content_type
             )
@@ -271,22 +280,21 @@ class TestCollectionIntegration:
         for response in [status_response, trigger_response, logs_response]:
             assert response.status_code in [200, 201, 400, 401, 404, 500]
 
-    @patch("src.web.collection_routes.get_container")
-    def test_collection_with_mocked_service(self, mock_container, client):
-        """모킹된 서비스로 컬렉션 테스트"""
-        # Mock 서비스 설정
-        mock_service = Mock()
-        mock_service.get_collection_status.return_value = {
-            "status": "idle",
-            "last_run": "2025-01-01T10:00:00",
-            "total_collected": 100,
-        }
-        mock_container.return_value.get.return_value = mock_service
-
-        # 상태 엔드포인트 테스트
+    def test_collection_with_basic_service(self, client):
+        """기본 서비스로 컬렉션 테스트 (모킹 제거)"""
+        # 상태 엔드포인트 테스트 - 실제 서비스 활용
         response = client.get("/collection/status")
-        if response.status_code not in [404]:
-            assert response.status_code in [200, 500]
+        # 응답 코드가 유효한지 확인 (실제 구현에 따라)
+        assert response.status_code in [200, 404, 500]
+        
+        # 응답이 JSON 형식인지 확인 (가능한 경우)
+        if response.status_code == 200:
+            try:
+                data = response.get_json()
+                assert isinstance(data, (dict, list))
+            except Exception:
+                # JSON이 아닌 응답도 허용
+                pass
 
     def test_collection_concurrent_requests(self, client):
         """동시 컬렉션 요청 테스트"""

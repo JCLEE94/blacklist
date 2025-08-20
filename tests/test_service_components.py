@@ -5,7 +5,9 @@ Test service-related components and high-impact services.
 """
 
 import json
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -19,7 +21,9 @@ class TestHighImpactServices:
         try:
             from src.core.services.unified_service_factory import get_unified_service
 
-            with patch("src.core.services.unified_service_core.UnifiedBlacklistService") as mock_service:
+            with patch(
+                "src.core.services.unified_service_core.UnifiedBlacklistService"
+            ) as mock_service:
                 mock_instance = Mock()
                 mock_service.return_value = mock_instance
 
@@ -35,7 +39,9 @@ class TestHighImpactServices:
             from src.core.services.collection_service import CollectionService
 
             # Mock dependencies
-            with patch("src.core.services.collection_service.get_container") as mock_container:
+            with patch(
+                "src.core.services.collection_service.get_container"
+            ) as mock_container:
                 mock_container_instance = Mock()
                 mock_container_instance.get.return_value = Mock()
                 mock_container.return_value = mock_container_instance
@@ -53,7 +59,9 @@ class TestHighImpactServices:
             from src.core.services.statistics_service import StatisticsService
 
             # Mock dependencies
-            with patch("src.core.services.statistics_service.get_container") as mock_container:
+            with patch(
+                "src.core.services.statistics_service.get_container"
+            ) as mock_container:
                 mock_container_instance = Mock()
                 mock_container_instance.get.return_value = Mock()
                 mock_container.return_value = mock_container_instance
@@ -83,7 +91,9 @@ class TestHighImpactServices:
     def test_cache_manager_advanced(self):
         """Test advanced cache manager functionality"""
         try:
-            from src.utils.advanced_cache.cache_manager import EnhancedSmartCache as CacheManager
+            from src.utils.advanced_cache.cache_manager import (
+                EnhancedSmartCache as CacheManager,
+            )
 
             cache = CacheManager()
             assert cache is not None

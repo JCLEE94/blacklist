@@ -6,7 +6,8 @@ Validate the 7.58ms API response baseline and other performance metrics
 import os
 import statistics
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 

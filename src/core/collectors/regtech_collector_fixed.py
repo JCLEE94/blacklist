@@ -7,8 +7,12 @@ Complete implementation that handles authentication and data collection
 import logging
 import os
 import re
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -124,27 +128,6 @@ class FixedRegtechCollector:
             logger.debug(f"Response URL: {login_resp.url}")
             logger.debug(f"Response status: {login_resp.status_code}")
             return False
-
-            logger.info(f"Submitting login to: {action}")
-
-            response = self.session.post(
-                action,
-                data=login_data,
-                timeout=self.timeout,
-                verify=False,
-                allow_redirects=True,
-            )
-
-            # Check if login successful
-            if "/login" not in response.url.lower() or self._check_login_success(
-                response
-            ):
-                logger.info("✅ REGTECH authentication successful")
-                self.authenticated = True
-                return True
-            else:
-                logger.error("❌ REGTECH authentication failed")
-                return False
 
         except Exception as e:
             logger.error(f"Authentication error: {e}")

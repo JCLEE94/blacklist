@@ -5,7 +5,8 @@ Base Analytics Class - Common functionality for all analyzers
 
 import logging
 import sqlite3
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 

@@ -4,11 +4,15 @@
 
 import logging
 import os
-from datetime import datetime, timedelta
-from typing import Dict, Optional
+from datetime import datetime
+from datetime import timedelta
+from typing import Dict
+from typing import Optional
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy import text
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 
 logger = logging.getLogger(__name__)
@@ -48,9 +52,9 @@ class DatabaseManager:
 
     def init_db(self):
         """데이터베이스 초기화"""
-        from .database_tables import create_all_tables
         from .database_indexes import create_all_indexes
-        
+        from .database_tables import create_all_tables
+
         # 테이블 생성 (필요한 경우)
         create_all_tables(self.engine)
         create_all_indexes(self.engine)

@@ -5,8 +5,11 @@ REGTECH 데이터 변환 모듈
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
 
 logger = logging.getLogger(__name__)
 

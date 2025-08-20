@@ -8,8 +8,12 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Set
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Set
 
 import psycopg2
 from sqlalchemy import text
@@ -45,10 +49,10 @@ class DataService:
                 "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
             )
         )
-        
+
         # SQLite compatibility path (deprecated but kept for backward compatibility)
         self.db_path = os.path.join(data_dir, "blacklist.db")
-        
+
         logger.info(f"DataService initialized with database: {self.database_url}")
 
     def _is_valid_ip(self, ip_str: str) -> bool:
@@ -97,7 +101,7 @@ class DataService:
                 # PostgreSQL connection
                 conn = psycopg2.connect(self.database_url)
                 cursor = conn.cursor()
-                
+
                 # PostgreSQL-specific table creation
                 cursor.execute(
                     """

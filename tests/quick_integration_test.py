@@ -35,7 +35,7 @@ def test_health_endpoint(base_url):
             and "components" in data
         )
 
-        components = data.get('components', {})
+        components = data.get("components", {})
         message = f"Status: {data.get('status')}, Components: {len(components)}"
         print_test("Health Endpoint", passed, message)
         return passed
@@ -65,12 +65,14 @@ def test_fortigate_endpoint(base_url):
     """Test FortiGate endpoint"""
     try:
         response = requests.get(f"{base_url}/api/fortigate", timeout=10)
-        
+
         # FortiGate endpoint returns plain text configuration, not JSON
         passed = response.status_code == 200 and response.text
-        
+
         # Count IP entries by counting lines with 'set src'
-        ip_count = len([line for line in response.text.split('\n') if 'set src' in line])
+        ip_count = len(
+            [line for line in response.text.split("\n") if "set src" in line]
+        )
         message = f"IP Count: {ip_count}"
         print_test("FortiGate Endpoint", passed, message)
         return passed
@@ -94,7 +96,9 @@ def test_regtech_trigger(base_url):
 
         if response.status_code == 200:
             data = response.json()
-            message = f"Success: {data.get('success')}, Message: {data.get('message', '')}"
+            message = (
+                f"Success: {data.get('success')}, Message: {data.get('message', '')}"
+            )
         else:
             message = f"Status Code: {response.status_code}"
 
@@ -116,7 +120,9 @@ def test_secudium_disabled(base_url):
         passed = response.status_code == 503
         data = response.json() if response.text else {}
 
-        message = f"Status: {response.status_code}, Disabled: {data.get('disabled', False)}"
+        message = (
+            f"Status: {response.status_code}, Disabled: {data.get('disabled', False)}"
+        )
         print_test("SECUDIUM Disabled", passed, message)
         return passed
     except Exception as e:
@@ -128,14 +134,14 @@ def test_cookie_configuration():
     """Test cookie configuration in local environment"""
     try:
         # This test checks if cookies are properly configured
-        import sys
         import os
-        
+        import sys
+
         # Add project root to path if not already there
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
-            
+
         from src.core.regtech_collector import RegtechCollector
 
         collector = RegtechCollector("data/test")

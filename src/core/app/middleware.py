@@ -8,7 +8,8 @@ Flask 미들웨어 및 요청/응답 처리
 import os
 import time
 
-from flask import g, request
+from flask import g
+from flask import request
 
 from src.core.constants import SECURITY_HEADERS
 from src.utils.structured_logging import get_logger

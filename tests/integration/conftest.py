@@ -5,7 +5,8 @@ CI/CD 통합 테스트를 위한 pytest fixtures
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 import yaml

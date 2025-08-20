@@ -8,6 +8,7 @@ for backward compatibility and centralized route registration.
 from flask import Blueprint
 
 from .settings.api_routes import api_settings_bp
+
 # Import modular route blueprints
 from .settings.auth_routes import auth_settings_bp
 from .settings.ui_routes import ui_settings_bp

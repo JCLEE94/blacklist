@@ -5,8 +5,11 @@
 
 import asyncio
 import threading
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 
 class CollectionTriggersMixin:
@@ -128,8 +131,11 @@ class CollectionTriggersMixin:
                         # PostgreSQL에 저장
                         try:
                             from src.core.data_storage_fixed import FixedDataStorage
+
                             storage = FixedDataStorage()
-                            storage_result = storage.store_ips(collected_data, "REGTECH")
+                            storage_result = storage.store_ips(
+                                collected_data, "REGTECH"
+                            )
 
                             if storage_result.get("success"):
                                 self.logger.info(
@@ -140,10 +146,14 @@ class CollectionTriggersMixin:
                                     "message": f"REGTECH 수집 및 저장 완료: {storage_result.get('imported_count', 0)}개 IP",
                                     "collected": len(collected_data),
                                     "stored": storage_result.get("imported_count", 0),
-                                    "duplicates": storage_result.get("duplicate_count", 0),
+                                    "duplicates": storage_result.get(
+                                        "duplicate_count", 0
+                                    ),
                                 }
                             else:
-                                self.logger.error(f"저장 실패: {storage_result.get('error')}")
+                                self.logger.error(
+                                    f"저장 실패: {storage_result.get('error')}"
+                                )
                                 return {
                                     "success": False,
                                     "message": f"데이터 저장 실패: {storage_result.get('error')}",
@@ -162,7 +172,7 @@ class CollectionTriggersMixin:
                     }
 
                 # 로그 남기기
-                if hasattr(self, 'add_collection_log'):
+                if hasattr(self, "add_collection_log"):
                     self.add_collection_log(
                         source="regtech",
                         action="manual_trigger_with_dates",
@@ -196,9 +206,11 @@ class CollectionTriggersMixin:
                     }
 
                 # 로그 남기기
-                if hasattr(self, 'add_collection_log'):
+                if hasattr(self, "add_collection_log"):
                     self.add_collection_log(
-                        source="regtech", action="manual_trigger", details={"force": force}
+                        source="regtech",
+                        action="manual_trigger",
+                        details={"force": force},
                     )
 
                 return {
@@ -237,7 +249,7 @@ class CollectionTriggersMixin:
             asyncio.create_task(self._collect_secudium_data(force=True))
 
             # 로그 남기기
-            if hasattr(self, 'add_collection_log'):
+            if hasattr(self, "add_collection_log"):
                 self.add_collection_log(source="secudium", action="manual_trigger")
 
             return {

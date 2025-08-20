@@ -4,16 +4,16 @@ Core Services 테스트
 
 import os
 import tempfile
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
-from .test_core_services_mocks import (
-    MockBlacklistManager,
-    MockCacheManager,
-    MockCollectionManager,
-    MockUnifiedService,
-)
+from .test_core_services_mocks import MockBlacklistManager
+from .test_core_services_mocks import MockCacheManager
+from .test_core_services_mocks import MockCollectionManager
+from .test_core_services_mocks import MockUnifiedService
 
 
 class TestCoreServices:

@@ -1,0 +1,23 @@
+{
+  "jwt": {
+    "algorithm": "HS256",
+    "access_token_expires": 3600,
+    "refresh_token_expires": 604800
+  },
+  "api_key": {
+    "enabled": true,
+    "header_name": "X-API-Key",
+    "max_keys_per_user": 5
+  },
+  "rate_limiting": {
+    "enabled": true,
+    "default_limit": 100,
+    "window_seconds": 60
+  },
+  "security_headers": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+  }
+}

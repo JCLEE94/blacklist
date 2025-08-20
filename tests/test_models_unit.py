@@ -8,7 +8,9 @@ Tests model classes and integration scenarios.
 import sys
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -16,7 +18,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import modules with fallbacks
 try:
-    from src.core.models import ApiKey, BlacklistEntry, CollectionHistory, User
+    from src.core.models import ApiKey
+    from src.core.models import BlacklistEntry
+    from src.core.models import CollectionHistory
+    from src.core.models import User
 except ImportError:
 
     class BlacklistEntry:
@@ -120,7 +125,8 @@ class TestIntegrationScenarios:
         """Test data pipeline with security features"""
         try:
             from src.core.data_pipeline import DataCleaningPipeline
-            from src.utils.security import SecurityManager, generate_api_key
+            from src.utils.security import SecurityManager
+            from src.utils.security import generate_api_key
 
             pipeline = DataCleaningPipeline()
             security_manager = SecurityManager()
@@ -163,7 +169,8 @@ class TestIntegrationScenarios:
     def test_security_with_models(self):
         """Test security features with models"""
         try:
-            from src.utils.security import SecurityManager, generate_api_key
+            from src.utils.security import SecurityManager
+            from src.utils.security import generate_api_key
 
             security_manager = SecurityManager()
 

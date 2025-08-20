@@ -4,20 +4,19 @@ Base model tests for src/core/models.py
 Core enums and basic model tests
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 import pytest
 
-from src.core.models import (
-    APIResponse,
-    BlacklistEntry,
-    CacheEntry,
-    HealthStatus,
-    IPAddressType,
-    MonthData,
-    SystemHealth,
-    ValidationResult,
-)
+from src.core.models import APIResponse
+from src.core.models import BlacklistEntry
+from src.core.models import CacheEntry
+from src.core.models import HealthStatus
+from src.core.models import IPAddressType
+from src.core.models import MonthData
+from src.core.models import SystemHealth
+from src.core.models import ValidationResult
 
 
 class TestHealthStatus:

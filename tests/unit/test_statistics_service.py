@@ -8,7 +8,8 @@ import os
 import sqlite3
 import tempfile
 import unittest.mock as mock
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 import pytest
 

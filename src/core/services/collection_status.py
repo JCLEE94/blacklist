@@ -3,8 +3,10 @@
 상태 조회, 로그 관리, 비밀 날짜 처리 등
 """
 
-from datetime import datetime, timedelta
-from typing import Any, Dict
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
 
 
 class CollectionStatusMixin:
@@ -15,8 +17,10 @@ class CollectionStatusMixin:
         try:
             # 기본 상태 정보
             status = {
-                "collection_enabled": getattr(self, 'collection_enabled', False),
-                "daily_collection_enabled": getattr(self, 'daily_collection_enabled', False),
+                "collection_enabled": getattr(self, "collection_enabled", False),
+                "daily_collection_enabled": getattr(
+                    self, "daily_collection_enabled", False
+                ),
                 "last_collection_time": None,
                 "next_collection_time": None,
                 "sources": {},
@@ -25,7 +29,7 @@ class CollectionStatusMixin:
             }
 
             # CollectionManager 상태도 확인
-            if hasattr(self, 'collection_manager') and self.collection_manager:
+            if hasattr(self, "collection_manager") and self.collection_manager:
                 status["collection_manager_status"] = {
                     "enabled": self.collection_manager.collection_enabled,
                     "last_run": getattr(self.collection_manager, "last_run", None),
@@ -33,13 +37,13 @@ class CollectionStatusMixin:
 
             # 최근 로그 추가
             try:
-                if hasattr(self, 'get_collection_logs'):
+                if hasattr(self, "get_collection_logs"):
                     status["recent_logs"] = self.get_collection_logs(limit=5)
             except Exception as e:
                 status["recent_logs"] = []
 
             # 소스 상태 확인
-            if hasattr(self, '_components'):
+            if hasattr(self, "_components"):
                 for source in ["regtech", "secudium"]:
                     status["sources"][source] = {
                         "available": source in self._components,
@@ -49,7 +53,7 @@ class CollectionStatusMixin:
 
             return status
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.error(f"수집 상태 조회 실패: {e}")
             return {
                 "success": False,
@@ -73,14 +77,14 @@ class CollectionStatusMixin:
 
             return missing_dates
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.error(f"누락 날짜 조회 실패: {e}")
             return []
 
     def _has_data_for_date(self, source: str, date_str: str) -> bool:
         """특정 날짜에 데이터가 있는지 확인"""
         try:
-            if not hasattr(self, 'blacklist_manager') or not self.blacklist_manager:
+            if not hasattr(self, "blacklist_manager") or not self.blacklist_manager:
                 return False
 
             # 간단한 데이터 존재 확인
@@ -93,24 +97,25 @@ class CollectionStatusMixin:
         """수집 요약 정보"""
         try:
             status = self.get_collection_status()
-            
+
             # 요약 통계 계산
             total_sources = len(status.get("sources", {}))
             available_sources = sum(
-                1 for source_data in status.get("sources", {}).values() 
+                1
+                for source_data in status.get("sources", {}).values()
                 if source_data.get("available", False)
             )
-            
+
             return {
                 "collection_enabled": status.get("collection_enabled", False),
                 "total_sources": total_sources,
                 "available_sources": available_sources,
                 "recent_activity": len(status.get("recent_logs", [])),
                 "last_update": status.get("timestamp"),
-                "health_status": "healthy" if available_sources > 0 else "warning"
+                "health_status": "healthy" if available_sources > 0 else "warning",
             }
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.error(f"수집 요약 조회 실패: {e}")
             return {
                 "collection_enabled": False,
@@ -118,5 +123,5 @@ class CollectionStatusMixin:
                 "available_sources": 0,
                 "recent_activity": 0,
                 "health_status": "error",
-                "error": str(e)
+                "error": str(e),
             }

@@ -3,10 +3,13 @@
 Tests for web routes modules
 Testing API routes, collection routes, dashboard routes, and data routes
 """
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
-from flask import Blueprint, Flask
+from flask import Blueprint
+from flask import Flask
 
 
 class TestWebRoutesImports:

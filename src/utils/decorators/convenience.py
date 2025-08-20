@@ -2,7 +2,8 @@
 Convenience Decorators - High-level decorator combinations
 """
 
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
 
 def api_endpoint(

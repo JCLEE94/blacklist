@@ -3,7 +3,8 @@
 Functional tests for Manager and Collector classes
 Tests unified collector, blacklist manager, and data service
 """
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 

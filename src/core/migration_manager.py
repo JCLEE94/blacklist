@@ -4,6 +4,7 @@
 
 import logging
 from typing import Optional
+
 from sqlalchemy import text
 
 logger = logging.getLogger(__name__)

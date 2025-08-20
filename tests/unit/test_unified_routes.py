@@ -3,12 +3,15 @@
 Unit tests for src/core/unified_routes.py
 Testing unified API route system and blueprint registration
 """
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
-from flask import Blueprint, Flask
+from flask import Blueprint
+from flask import Flask
 
-from src.core.unified_routes import configure_routes, unified_bp
+from src.core.unified_routes import configure_routes
+from src.core.unified_routes import unified_bp
 
 
 class TestUnifiedRoutes:

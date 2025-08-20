@@ -5,7 +5,9 @@ Focus on testing collection managers and route handlers
 
 import json
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -192,7 +194,8 @@ def test_regtech_collector_basic():
 def test_flask_app_factory():
     """Test Flask app factory functionality"""
     try:
-        from src.core.app_compact import CompactFlaskApp, create_compact_app
+        from src.core.app_compact import CompactFlaskApp
+        from src.core.app_compact import create_compact_app
 
         # Test factory class
         factory = CompactFlaskApp()

@@ -2,7 +2,8 @@
 Flask 애플리케이션 관련 테스트 픽스처
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 

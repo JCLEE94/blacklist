@@ -5,7 +5,9 @@ Focus on application factory pattern and mixin composition
 """
 import os
 import tempfile
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 from flask import Flask
@@ -14,7 +16,8 @@ from src.core.app.blueprints import BlueprintRegistrationMixin
 from src.core.app.config import AppConfigurationMixin
 from src.core.app.error_handlers import ErrorHandlerMixin
 from src.core.app.middleware import MiddlewareMixin
-from src.core.app_compact import CompactFlaskApp, get_connection_manager
+from src.core.app_compact import CompactFlaskApp
+from src.core.app_compact import get_connection_manager
 
 
 class TestCompactFlaskApp:

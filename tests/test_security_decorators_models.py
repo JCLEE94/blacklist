@@ -11,10 +11,15 @@ import os
 import sys
 import tempfile
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
 
@@ -30,6 +35,7 @@ class TestSecurityDecorators:
         """Test decorators auth import"""
         try:
             from src.utils.decorators import auth
+
             assert auth is not None
         except ImportError:
             pytest.skip("decorators.auth not available")
@@ -38,21 +44,21 @@ class TestSecurityDecorators:
         """Test auth decorators functions"""
         try:
             from src.utils.decorators import auth
-            
+
             # Look for decorator functions
             attrs = dir(auth)
-            decorator_functions = [attr for attr in attrs if not attr.startswith('_')]
-            
+            decorator_functions = [attr for attr in attrs if not attr.startswith("_")]
+
             # Should have some decorator functions
             assert len(decorator_functions) >= 0
-            
+
             # Test decorator patterns
             for decorator_name in decorator_functions:
                 decorator_func = getattr(auth, decorator_name)
                 if callable(decorator_func):
                     # Test that decorator function exists and is callable
                     assert decorator_func is not None
-                    
+
         except ImportError:
             pytest.skip("decorators.auth not available")
 
@@ -60,6 +66,7 @@ class TestSecurityDecorators:
         """Test validation decorators import"""
         try:
             from src.utils.decorators import validation
+
             assert validation is not None
         except ImportError:
             pytest.skip("decorators.validation not available")
@@ -68,21 +75,21 @@ class TestSecurityDecorators:
         """Test validation decorators functions"""
         try:
             from src.utils.decorators import validation
-            
+
             # Look for validation decorator functions
             attrs = dir(validation)
-            decorator_functions = [attr for attr in attrs if not attr.startswith('_')]
-            
+            decorator_functions = [attr for attr in attrs if not attr.startswith("_")]
+
             # Should have some validation decorators
             assert len(decorator_functions) >= 0
-            
+
             # Test validation decorator patterns
             for decorator_name in decorator_functions:
                 decorator_func = getattr(validation, decorator_name)
                 if callable(decorator_func):
                     # Test that validation decorator exists
                     assert decorator_func is not None
-                    
+
         except ImportError:
             pytest.skip("decorators.validation not available")
 
@@ -90,6 +97,7 @@ class TestSecurityDecorators:
         """Test rate limit decorators import"""
         try:
             from src.utils.decorators import rate_limit
+
             assert rate_limit is not None
         except ImportError:
             pytest.skip("decorators.rate_limit not available")
@@ -102,6 +110,7 @@ class TestModelsApiKey:
         """Test API key model import"""
         try:
             from src.models import api_key
+
             assert api_key is not None
         except ImportError:
             pytest.skip("models.api_key not available")
@@ -110,13 +119,13 @@ class TestModelsApiKey:
         """Test API key class definition"""
         try:
             from src.models import api_key
-            
+
             # Look for API key class
             attrs = dir(api_key)
-            
+
             # Look for class definitions
             for attr_name in attrs:
-                if not attr_name.startswith('_'):
+                if not attr_name.startswith("_"):
                     attr_value = getattr(api_key, attr_name)
                     if isinstance(attr_value, type):
                         # Test class instantiation
@@ -127,7 +136,7 @@ class TestModelsApiKey:
                         except Exception:
                             # Class might require parameters
                             pass
-                            
+
         except ImportError:
             pytest.skip("models.api_key not available")
 
@@ -135,19 +144,23 @@ class TestModelsApiKey:
         """Test API key methods"""
         try:
             from src.models import api_key
-            
+
             # Look for API key related functions
             attrs = dir(api_key)
-            functions = [attr for attr in attrs if not attr.startswith('_') and callable(getattr(api_key, attr))]
-            
+            functions = [
+                attr
+                for attr in attrs
+                if not attr.startswith("_") and callable(getattr(api_key, attr))
+            ]
+
             # Should have some API key functions
             assert len(functions) >= 0
-            
+
             # Test function availability
             for func_name in functions:
                 func = getattr(api_key, func_name)
                 assert func is not None
-                
+
         except ImportError:
             pytest.skip("models.api_key not available")
 
@@ -155,10 +168,10 @@ class TestModelsApiKey:
 if __name__ == "__main__":
     # Validation tests for security decorators and models
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Decorator modules (optional)
     total_tests += 1
     try:
@@ -166,7 +179,7 @@ if __name__ == "__main__":
     except ImportError:
         # This is optional, not a failure
         pass
-    
+
     # Test 2: Model modules (optional)
     total_tests += 1
     try:
@@ -174,34 +187,42 @@ if __name__ == "__main__":
     except ImportError:
         # This is optional, not a failure
         pass
-    
+
     # Test 3: Basic security functionality
     total_tests += 1
     try:
         # Test basic hashing functionality
         import hashlib
+
         test_data = "test_security_data"
         hash_result = hashlib.md5(test_data.encode()).hexdigest()
         if len(hash_result) != 32:
             all_validation_failures.append("Basic hashing test failed")
-            
+
         # Test base64 encoding (common in security)
         import base64
+
         encoded = base64.b64encode(test_data.encode()).decode()
         decoded = base64.b64decode(encoded).decode()
         if decoded != test_data:
             all_validation_failures.append("Base64 encoding/decoding test failed")
-            
+
     except Exception as e:
         all_validation_failures.append(f"Basic security functionality test failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
-        print("Security decorators and models tests are validated and ready for execution")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
+        print(
+            "Security decorators and models tests are validated and ready for execution"
+        )
         sys.exit(0)

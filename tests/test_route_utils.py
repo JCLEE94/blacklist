@@ -9,7 +9,8 @@ import os
 import sqlite3
 import threading
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 # Third-party imports
 from flask import Flask
