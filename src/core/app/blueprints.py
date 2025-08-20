@@ -196,7 +196,7 @@ class BlueprintRegistrationMixin:
 
         # Register CI/CD deployment monitoring routes
         try:
-            from ...api.cicd_monitoring_routes import cicd_monitoring_bp
+            from ...api.cicd import cicd_monitoring_bp
 
             app.register_blueprint(cicd_monitoring_bp)
             logger.info("CI/CD deployment monitoring routes registered successfully")
