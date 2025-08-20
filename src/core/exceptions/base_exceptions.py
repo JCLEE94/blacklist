@@ -28,7 +28,7 @@ class BlacklistError(Exception):
 
         # 로깅
         logger.error(
-            "{self.error_code}: {message}",
+            f"{self.error_code}: {message}",
             extra={
                 "error_code": self.error_code,
                 "details": self.details,

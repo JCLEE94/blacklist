@@ -58,7 +58,19 @@ class StructuredLogger:
     def _setup_logger(self) -> logging.Logger:
         """로거 설정"""
         logger = logging.getLogger(self.name)
-        logger.setLevel(logging.DEBUG)
+        
+        # 환경변수에서 로그 레벨 읽기
+        log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+        if log_level == "DEBUG":
+            level = logging.DEBUG
+        elif log_level == "WARNING":
+            level = logging.WARNING
+        elif log_level == "ERROR":
+            level = logging.ERROR
+        else:
+            level = logging.INFO
+            
+        logger.setLevel(level)
 
         # 기존 핸들러 제거
         logger.handlers.clear()
@@ -86,18 +98,18 @@ class StructuredLogger:
         # Docker 환경에서 로그 폴더 권한 설정 후 활성화 필요
         try:
             # 파일 핸들러 (JSON 로그)
-            json_file = self.log_dir / "{self.name}.json"
+            json_file = self.log_dir / f"{self.name}.json"
             json_handler = logging.handlers.RotatingFileHandler(
-                json_file, maxBytes=10 * 1024 * 1024, backupCount=5  # 10MB
+                json_file, maxBytes=2 * 1024 * 1024, backupCount=3  # 2MB
             )
             json_handler.setLevel(logging.INFO)
             json_handler.setFormatter(json_formatter)
             logger.addHandler(json_handler)
 
             # 에러 파일 핸들러
-            error_file = self.log_dir / "{self.name}_errors.log"
+            error_file = self.log_dir / f"{self.name}_errors.log"
             error_handler = logging.handlers.RotatingFileHandler(
-                error_file, maxBytes=5 * 1024 * 1024, backupCount=3  # 5MB
+                error_file, maxBytes=1 * 1024 * 1024, backupCount=2  # 1MB
             )
             error_handler.setLevel(logging.ERROR)
             error_handler.setFormatter(json_formatter)

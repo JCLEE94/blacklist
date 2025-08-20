@@ -15,6 +15,12 @@ class BlueprintRegistrationMixin:
 
     def _register_core_blueprints(self, app, container):
         """핵심 블루프린트 등록"""
+        # Register root route blueprint
+        from ..root_route import root_bp
+        
+        app.register_blueprint(root_bp)
+        logger.info("Root routes registered successfully")
+
         # Register unified routes blueprint directly
         from ..unified_routes import unified_bp
 
@@ -179,4 +185,17 @@ class BlueprintRegistrationMixin:
                 "Failed to register monitoring routes",
                 exception=e,
                 blueprint="monitoring_bp",
+            )
+
+        # Register CI/CD deployment monitoring routes
+        try:
+            from ...api.cicd_monitoring_routes import cicd_monitoring_bp
+
+            app.register_blueprint(cicd_monitoring_bp)
+            logger.info("CI/CD deployment monitoring routes registered successfully")
+        except Exception as e:
+            logger.error(
+                "Failed to register CI/CD monitoring routes",
+                exception=e,
+                blueprint="cicd_monitoring_bp",
             )

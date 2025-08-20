@@ -25,6 +25,8 @@ services:
       GUNICORN_WORKERS: 4
       GUNICORN_THREADS: 2
       GUNICORN_TIMEOUT: 60
+      # Logging
+      LOG_LEVEL: WARNING
     env_file:
       - ./.env
     depends_on:
@@ -42,6 +44,11 @@ services:
       - blacklist-net
     labels:
       - "com.watchtower.enable=true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: registry.jclee.me/blacklist-redis:latest

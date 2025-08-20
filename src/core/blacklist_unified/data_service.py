@@ -45,6 +45,10 @@ class DataService:
                 "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
             )
         )
+        
+        # SQLite compatibility path (deprecated but kept for backward compatibility)
+        self.db_path = os.path.join(data_dir, "blacklist.db")
+        
         logger.info(f"DataService initialized with database: {self.database_url}")
 
     def _is_valid_ip(self, ip_str: str) -> bool:
@@ -88,16 +92,18 @@ class DataService:
         errors = []
 
         try:
-            with sqlite3.connect(self.db_path, timeout=30) as conn:
+            # Use PostgreSQL if available, otherwise fall back to SQLite
+            if self.database_url and self.database_url.startswith("postgresql://"):
+                # PostgreSQL connection
+                conn = psycopg2.connect(self.database_url)
                 cursor = conn.cursor()
-
-                # Ensure table exists
+                
+                # PostgreSQL-specific table creation
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS blacklist_entries (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ip TEXT NOT NULL,
-                        ip_address TEXT,
+                        id SERIAL PRIMARY KEY,
+                        ip_address INET NOT NULL,
                         source TEXT,
                         detection_date TIMESTAMP,
                         collection_date TIMESTAMP,
