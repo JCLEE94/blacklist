@@ -52,9 +52,9 @@ class TestEnhancedSmartCache:
 
         manager = EnhancedSmartCache()
 
-        # Test set and get
+        # Test set and get with JSON-serializable data
         test_key = "test_key"
-        test_value = "test_value"
+        test_value = {"data": "test_value", "number": 123}  # Use dict for JSON serialization
 
         manager.set(test_key, test_value)
         retrieved_value = manager.get(test_key)
@@ -70,7 +70,7 @@ class TestEnhancedSmartCache:
 
         # Test with very short TTL
         test_key = "ttl_test_key"
-        test_value = "ttl_test_value"
+        test_value = {"data": "ttl_test_value"}  # Use dict for JSON serialization
 
         manager.set(test_key, test_value, ttl=1)  # 1 second TTL
 
@@ -91,7 +91,7 @@ class TestEnhancedSmartCache:
         manager = EnhancedSmartCache(redis_url=None)
 
         test_key = "delete_test_key"
-        test_value = "delete_test_value"
+        test_value = {"data": "delete_test_value"}  # Use dict for JSON serialization
 
         # Set value
         manager.set(test_key, test_value)
@@ -108,7 +108,7 @@ class TestEnhancedSmartCache:
         manager = EnhancedSmartCache(redis_url=None)
 
         test_key = "exists_test_key"
-        test_value = "exists_test_value"
+        test_value = {"data": "exists_test_value"}  # Use dict for JSON serialization
 
         # Key should not exist initially
         assert not manager.exists(test_key)

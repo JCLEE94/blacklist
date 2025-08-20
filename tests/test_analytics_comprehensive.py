@@ -214,7 +214,13 @@ class TestAnalyticsDataProcessing:
         if response1.status_code == 200:
             # Second request might be faster due to caching
             # But this isn't guaranteed, so we just ensure both succeed
-            assert response1.json() == response2.json()
+            # Compare data without timestamp since it may vary slightly
+            data1 = response1.json()
+            data2 = response2.json()
+            
+            # Compare success and data fields, excluding timestamp
+            assert data1.get('success') == data2.get('success')
+            assert data1.get('data') == data2.get('data')
     
     def test_analytics_data_validation(self):
         """Test analytics data validation and sanitization"""
