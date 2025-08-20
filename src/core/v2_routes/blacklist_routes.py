@@ -4,13 +4,13 @@ V2 Blacklist API Routes
 """
 
 
-from flask import Blueprint
-from flask import jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
-from ...utils.unified_decorators import unified_cache
-from ...utils.unified_decorators import unified_rate_limit
-from ...utils.unified_decorators import unified_validation
+from ...utils.unified_decorators import (
+    unified_cache,
+    unified_rate_limit,
+    unified_validation,
+)
 from .service import V2APIService
 
 blacklist_v2_bp = Blueprint("blacklist_v2", __name__)

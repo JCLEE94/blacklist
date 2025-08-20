@@ -16,8 +16,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-import requests
-from flask import Blueprint, jsonify, request, render_template
+from flask import Blueprint, jsonify, render_template, request
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +52,7 @@ def trigger_deployment():
     """Trigger a new deployment"""
     try:
         data = request.get_json() or {}
-        
+
         deployment_id = str(uuid.uuid4())
         deployment_config = {
             "deployment_id": deployment_id,
@@ -64,7 +63,7 @@ def trigger_deployment():
             "triggered_at": datetime.now().isoformat(),
             "status": "initiated",
         }
-        
+
         # Store deployment info
         deployment_logs[deployment_id] = {
             "config": deployment_config,
@@ -75,24 +74,56 @@ def trigger_deployment():
                 f"[{datetime.now().isoformat()}] Triggered by: {deployment_config['triggered_by']}",
             ],
             "steps": [
-                {"name": "Build", "status": "pending", "started_at": None, "completed_at": None},
-                {"name": "Test", "status": "pending", "started_at": None, "completed_at": None},
-                {"name": "Security Scan", "status": "pending", "started_at": None, "completed_at": None},
-                {"name": "Deploy", "status": "pending", "started_at": None, "completed_at": None},
-                {"name": "Verify", "status": "pending", "started_at": None, "completed_at": None},
+                {
+                    "name": "Build",
+                    "status": "pending",
+                    "started_at": None,
+                    "completed_at": None,
+                },
+                {
+                    "name": "Test",
+                    "status": "pending",
+                    "started_at": None,
+                    "completed_at": None,
+                },
+                {
+                    "name": "Security Scan",
+                    "status": "pending",
+                    "started_at": None,
+                    "completed_at": None,
+                },
+                {
+                    "name": "Deploy",
+                    "status": "pending",
+                    "started_at": None,
+                    "completed_at": None,
+                },
+                {
+                    "name": "Verify",
+                    "status": "pending",
+                    "started_at": None,
+                    "completed_at": None,
+                },
             ],
         }
-        
+
         # In a real implementation, this would trigger the actual deployment pipeline
-        logger.info(f"Deployment {deployment_id} triggered for {deployment_config['environment']}")
-        
-        return jsonify({
-            "deployment_id": deployment_id,
-            "status": "initiated",
-            "message": "Deployment pipeline started",
-            "config": deployment_config,
-        }), 202
-        
+        logger.info(
+            f"Deployment {deployment_id} triggered for {deployment_config['environment']}"
+        )
+
+        return (
+            jsonify(
+                {
+                    "deployment_id": deployment_id,
+                    "status": "initiated",
+                    "message": "Deployment pipeline started",
+                    "config": deployment_config,
+                }
+            ),
+            202,
+        )
+
     except Exception as e:
         logger.error(f"Deployment trigger error: {e}")
         return jsonify({"error": f"Failed to trigger deployment: {str(e)}"}), 500
@@ -104,24 +135,26 @@ def get_deployment_logs(deployment_id):
     try:
         if deployment_id not in deployment_logs:
             return jsonify({"error": "Deployment not found"}), 404
-        
+
         deployment_data = deployment_logs[deployment_id]
-        
+
         # Simulate log progression for demo
         now = datetime.now()
         if len(deployment_data["logs"]) < 10:  # Simulate ongoing deployment
             deployment_data["logs"].append(
                 f"[{now.isoformat()}] Processing step {len(deployment_data['logs']) - 3}..."
             )
-        
-        return jsonify({
-            "deployment_id": deployment_id,
-            "config": deployment_data["config"],
-            "logs": deployment_data["logs"],
-            "steps": deployment_data["steps"],
-            "retrieved_at": now.isoformat(),
-        })
-        
+
+        return jsonify(
+            {
+                "deployment_id": deployment_id,
+                "config": deployment_data["config"],
+                "logs": deployment_data["logs"],
+                "steps": deployment_data["steps"],
+                "retrieved_at": now.isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Deployment logs error: {e}")
         return jsonify({"error": f"Failed to get deployment logs: {str(e)}"}), 500
@@ -133,24 +166,28 @@ def get_deployment_status():
     try:
         deployments = []
         for deployment_id, data in deployment_logs.items():
-            deployments.append({
-                "deployment_id": deployment_id,
-                "environment": data["config"]["environment"],
-                "status": data["config"]["status"],
-                "triggered_at": data["config"]["triggered_at"],
-                "triggered_by": data["config"]["triggered_by"],
-                "branch": data["config"]["branch"],
-            })
-        
+            deployments.append(
+                {
+                    "deployment_id": deployment_id,
+                    "environment": data["config"]["environment"],
+                    "status": data["config"]["status"],
+                    "triggered_at": data["config"]["triggered_at"],
+                    "triggered_by": data["config"]["triggered_by"],
+                    "branch": data["config"]["branch"],
+                }
+            )
+
         # Sort by triggered_at descending
         deployments.sort(key=lambda x: x["triggered_at"], reverse=True)
-        
-        return jsonify({
-            "deployments": deployments[:20],  # Last 20 deployments
-            "total_deployments": len(deployments),
-            "retrieved_at": datetime.now().isoformat(),
-        })
-        
+
+        return jsonify(
+            {
+                "deployments": deployments[:20],  # Last 20 deployments
+                "total_deployments": len(deployments),
+                "retrieved_at": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Deployment status error: {e}")
         return jsonify({"error": f"Failed to get deployment status: {str(e)}"}), 500
@@ -164,34 +201,38 @@ def get_deployment_history():
         history = []
         for i in range(20):
             status = "success" if i < 18 else "failed"
-            history.append({
-                "deployment_id": f"deploy-{1000 + i}",
-                "environment": "production",
-                "status": status,
-                "deployed_at": (datetime.now() - timedelta(days=i)).isoformat(),
-                "duration": f"{120 + i * 10}s",
-                "version": f"v1.0.{38 - i}",
-                "triggered_by": "github-actions",
-            })
-        
+            history.append(
+                {
+                    "deployment_id": f"deploy-{1000 + i}",
+                    "environment": "production",
+                    "status": status,
+                    "deployed_at": (datetime.now() - timedelta(days=i)).isoformat(),
+                    "duration": f"{120 + i * 10}s",
+                    "version": f"v1.0.{38 - i}",
+                    "triggered_by": "github-actions",
+                }
+            )
+
         # Calculate statistics
         total_deployments = len(history)
         successful_deployments = len([d for d in history if d["status"] == "success"])
         failed_deployments = total_deployments - successful_deployments
         success_rate = (successful_deployments / total_deployments) * 100
-        
-        return jsonify({
-            "history": history,
-            "statistics": {
-                "total_deployments": total_deployments,
-                "successful_deployments": successful_deployments,
-                "failed_deployments": failed_deployments,
-                "success_rate": success_rate,
-                "average_duration": "2m 15s",
-            },
-            "retrieved_at": datetime.now().isoformat(),
-        })
-        
+
+        return jsonify(
+            {
+                "history": history,
+                "statistics": {
+                    "total_deployments": total_deployments,
+                    "successful_deployments": successful_deployments,
+                    "failed_deployments": failed_deployments,
+                    "success_rate": success_rate,
+                    "average_duration": "2m 15s",
+                },
+                "retrieved_at": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Deployment history error: {e}")
         return jsonify({"error": f"Failed to get deployment history: {str(e)}"}), 500
@@ -204,10 +245,10 @@ def rollback_deployment():
         data = request.get_json() or {}
         target_version = data.get("version")
         environment = data.get("environment", "production")
-        
+
         if not target_version:
             return jsonify({"error": "Target version is required"}), 400
-        
+
         rollback_id = str(uuid.uuid4())
         rollback_config = {
             "rollback_id": rollback_id,
@@ -217,7 +258,7 @@ def rollback_deployment():
             "triggered_at": datetime.now().isoformat(),
             "status": "initiated",
         }
-        
+
         # Store rollback info
         deployment_logs[rollback_id] = {
             "config": rollback_config,
@@ -233,16 +274,21 @@ def rollback_deployment():
                 {"name": "Verify Rollback", "status": "pending"},
             ],
         }
-        
+
         logger.info(f"Rollback {rollback_id} initiated to version {target_version}")
-        
-        return jsonify({
-            "rollback_id": rollback_id,
-            "status": "initiated",
-            "message": f"Rollback to {target_version} started",
-            "config": rollback_config,
-        }), 202
-        
+
+        return (
+            jsonify(
+                {
+                    "rollback_id": rollback_id,
+                    "status": "initiated",
+                    "message": f"Rollback to {target_version} started",
+                    "config": rollback_config,
+                }
+            ),
+            202,
+        )
+
     except Exception as e:
         logger.error(f"Rollback error: {e}")
         return jsonify({"error": f"Failed to initiate rollback: {str(e)}"}), 500
@@ -286,11 +332,11 @@ def generate_next_steps():
 
 if __name__ == "__main__":
     import sys
-    
+
     # Test deployment operations functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: ArgoCD status check
     total_tests += 1
     try:
@@ -298,10 +344,12 @@ if __name__ == "__main__":
         expected_fields = ["status", "sync_status", "health_status"]
         for field in expected_fields:
             if field not in status:
-                all_validation_failures.append(f"ArgoCD status: Missing field '{field}'")
+                all_validation_failures.append(
+                    f"ArgoCD status: Missing field '{field}'"
+                )
     except Exception as e:
         all_validation_failures.append(f"ArgoCD status: Exception occurred - {e}")
-    
+
     # Test 2: Next steps generation
     total_tests += 1
     try:
@@ -314,7 +362,7 @@ if __name__ == "__main__":
             all_validation_failures.append("Next steps: Not all steps are strings")
     except Exception as e:
         all_validation_failures.append(f"Next steps: Exception occurred - {e}")
-    
+
     # Test 3: Deployment log structure
     total_tests += 1
     try:
@@ -323,30 +371,42 @@ if __name__ == "__main__":
             "config": {
                 "deployment_id": deployment_id,
                 "environment": "test",
-                "status": "initiated"
+                "status": "initiated",
             },
             "logs": ["Test log entry"],
-            "steps": [{"name": "Test", "status": "pending"}]
+            "steps": [{"name": "Test", "status": "pending"}],
         }
-        
+
         required_keys = ["config", "logs", "steps"]
         for key in required_keys:
             if key not in test_deployment:
-                all_validation_failures.append(f"Deployment structure: Missing key '{key}'")
-        
+                all_validation_failures.append(
+                    f"Deployment structure: Missing key '{key}'"
+                )
+
         if "deployment_id" not in test_deployment["config"]:
-            all_validation_failures.append("Deployment structure: Missing deployment_id in config")
-            
+            all_validation_failures.append(
+                "Deployment structure: Missing deployment_id in config"
+            )
+
     except Exception as e:
-        all_validation_failures.append(f"Deployment structure: Exception occurred - {e}")
-    
+        all_validation_failures.append(
+            f"Deployment structure: Exception occurred - {e}"
+        )
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
-        print("Deployment operations module is validated and formal tests can now be written")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
+        print(
+            "Deployment operations module is validated and formal tests can now be written"
+        )
         sys.exit(0)

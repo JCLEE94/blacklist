@@ -8,10 +8,7 @@ import logging
 import re
 from datetime import datetime
 from io import BytesIO
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 

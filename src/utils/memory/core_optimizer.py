@@ -10,9 +10,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
+from typing import Any, Dict, List
 
 import psutil
 from loguru import logger

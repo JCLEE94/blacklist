@@ -6,8 +6,7 @@ api_routes.py에서 분할된 헬스체크 관련 엔드포인트
 import logging
 from datetime import datetime
 
-from flask import Blueprint
-from flask import jsonify
+from flask import Blueprint, jsonify
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service

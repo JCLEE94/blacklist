@@ -116,13 +116,15 @@ class ConfigurationManager:
                 )
 
                 for row in cursor.fetchall():
-                    sources.append({
-                        "name": row["name"],
-                        "display_name": row["display_name"],
-                        "enabled": bool(row["enabled"]),
-                        "base_url": row["base_url"],
-                        "updated_at": row["updated_at"],
-                    })
+                    sources.append(
+                        {
+                            "name": row["name"],
+                            "display_name": row["display_name"],
+                            "enabled": bool(row["enabled"]),
+                            "base_url": row["base_url"],
+                            "updated_at": row["updated_at"],
+                        }
+                    )
 
         except Exception as e:
             print(f"Sources list retrieval failed: {e}")
@@ -231,7 +233,11 @@ class ConfigurationManager:
                 for row in cursor.fetchall():
                     try:
                         settings[row["key"]] = {
-                            "value": json.loads(row["value_json"]) if row["value_json"] else None,
+                            "value": (
+                                json.loads(row["value_json"])
+                                if row["value_json"]
+                                else None
+                            ),
                             "description": row["description"],
                         }
                     except json.JSONDecodeError:
@@ -251,8 +257,12 @@ class ConfigurationManager:
             with sqlite3.connect(self.db_path) as conn:
                 # Delete from all related tables
                 conn.execute("DELETE FROM collection_sources WHERE name = ?", (name,))
-                conn.execute("DELETE FROM collection_credentials WHERE source_name = ?", (name,))
-                conn.execute("DELETE FROM collection_history WHERE source_name = ?", (name,))
+                conn.execute(
+                    "DELETE FROM collection_credentials WHERE source_name = ?", (name,)
+                )
+                conn.execute(
+                    "DELETE FROM collection_history WHERE source_name = ?", (name,)
+                )
                 conn.commit()
 
             return True
@@ -279,26 +289,27 @@ class ConfigurationManager:
 
 
 if __name__ == "__main__":
+    import os
     import sys
     import tempfile
-    import os
-    
+
     # Test configuration management functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     # Create temporary database for testing
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_db:
         test_db_path = tmp_db.name
-    
+
     try:
         # Create cipher for testing
         cipher_key = Fernet.generate_key()
         cipher = Fernet(cipher_key)
-        
+
         # Initialize database tables first
         with sqlite3.connect(test_db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE collection_sources (
                     name TEXT PRIMARY KEY,
                     display_name TEXT NOT NULL,
@@ -307,29 +318,34 @@ if __name__ == "__main__":
                     config_json TEXT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
-            
-            conn.execute("""
+            """
+            )
+
+            conn.execute(
+                """
                 CREATE TABLE collection_credentials (
                     source_name TEXT PRIMARY KEY,
                     credentials_encrypted TEXT NOT NULL,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
-            
-            conn.execute("""
+            """
+            )
+
+            conn.execute(
+                """
                 CREATE TABLE collection_settings (
                     key TEXT PRIMARY KEY,
                     value_json TEXT,
                     description TEXT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
-            
+            """
+            )
+
             conn.commit()
-        
+
         config_mgr = ConfigurationManager(test_db_path, cipher)
-        
+
         # Test 1: Source configuration save and retrieve
         total_tests += 1
         try:
@@ -339,65 +355,79 @@ if __name__ == "__main__":
             )
             if not success:
                 all_validation_failures.append("Source config: Save failed")
-            
+
             retrieved_config = config_mgr.get_source_config("test_source")
             if not retrieved_config:
                 all_validation_failures.append("Source config: Retrieve failed")
             elif retrieved_config["config"]["timeout"] != 30:
-                all_validation_failures.append("Source config: Data mismatch after retrieve")
-                
+                all_validation_failures.append(
+                    "Source config: Data mismatch after retrieve"
+                )
+
         except Exception as e:
             all_validation_failures.append(f"Source config: Exception occurred - {e}")
-        
+
         # Test 2: Credentials save and retrieve
         total_tests += 1
         try:
             success = config_mgr.save_credentials("test_source", "testuser", "testpass")
             if not success:
                 all_validation_failures.append("Credentials: Save failed")
-            
+
             retrieved_creds = config_mgr.get_credentials("test_source")
             if not retrieved_creds:
                 all_validation_failures.append("Credentials: Retrieve failed")
             elif retrieved_creds["username"] != "testuser":
-                all_validation_failures.append("Credentials: Username mismatch after retrieve")
+                all_validation_failures.append(
+                    "Credentials: Username mismatch after retrieve"
+                )
             elif retrieved_creds["password"] != "testpass":
-                all_validation_failures.append("Credentials: Password mismatch after retrieve")
-                
+                all_validation_failures.append(
+                    "Credentials: Password mismatch after retrieve"
+                )
+
         except Exception as e:
             all_validation_failures.append(f"Credentials: Exception occurred - {e}")
-        
+
         # Test 3: Settings save and retrieve
         total_tests += 1
         try:
             test_setting_value = {"enabled": True, "interval": 3600}
-            success = config_mgr.save_setting("test_setting", test_setting_value, "Test setting")
+            success = config_mgr.save_setting(
+                "test_setting", test_setting_value, "Test setting"
+            )
             if not success:
                 all_validation_failures.append("Settings: Save failed")
-            
+
             retrieved_setting = config_mgr.get_setting("test_setting")
             if not retrieved_setting:
                 all_validation_failures.append("Settings: Retrieve failed")
             elif retrieved_setting["enabled"] != True:
                 all_validation_failures.append("Settings: Data mismatch after retrieve")
-                
+
         except Exception as e:
             all_validation_failures.append(f"Settings: Exception occurred - {e}")
-        
+
     finally:
         # Clean up test database
         try:
             os.unlink(test_db_path)
         except OSError:
             pass
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
-        print("Configuration management module is validated and formal tests can now be written")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
+        print(
+            "Configuration management module is validated and formal tests can now be written"
+        )
         sys.exit(0)

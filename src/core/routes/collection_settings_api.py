@@ -4,9 +4,7 @@
 HTML과 분리된 API 엔드포인트들
 """
 
-from flask import Blueprint
-from flask import jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
 try:
     from ..database.collection_settings import CollectionSettingsDB

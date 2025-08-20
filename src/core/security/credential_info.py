@@ -4,13 +4,9 @@
 자격증명 관리에 필요한 데이터 구조를 정의합니다.
 """
 
-from dataclasses import dataclass
-from dataclasses import field
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import Optional
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
 
 
 @dataclass

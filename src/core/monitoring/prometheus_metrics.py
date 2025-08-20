@@ -10,14 +10,9 @@ import time
 from typing import Optional
 
 from flask import Response
-from prometheus_client import CONTENT_TYPE_LATEST
-from prometheus_client import REGISTRY
-from prometheus_client import CollectorRegistry
+from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, CollectorRegistry
 from prometheus_client import Counter as PrometheusCounter
-from prometheus_client import Gauge
-from prometheus_client import Histogram
-from prometheus_client import Info
-from prometheus_client import generate_latest
+from prometheus_client import Gauge, Histogram, Info, generate_latest
 
 from .mixins.collection_metrics import CollectionMetricsMixin
 

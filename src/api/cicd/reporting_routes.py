@@ -29,7 +29,7 @@ def generate_deployment_report():
         data = request.get_json() or {}
         report_type = data.get("type", "summary")
         time_range = data.get("time_range", "7d")
-        
+
         # Parse time range
         if time_range == "24h":
             start_date = datetime.now() - timedelta(hours=24)
@@ -39,7 +39,7 @@ def generate_deployment_report():
             start_date = datetime.now() - timedelta(days=30)
         else:
             start_date = datetime.now() - timedelta(days=7)
-        
+
         # Generate report based on type
         if report_type == "summary":
             report = generate_summary_report(start_date)
@@ -49,18 +49,20 @@ def generate_deployment_report():
             report = generate_performance_report(start_date)
         else:
             report = generate_summary_report(start_date)
-        
-        return jsonify({
-            "report": report,
-            "metadata": {
-                "type": report_type,
-                "time_range": time_range,
-                "start_date": start_date.isoformat(),
-                "end_date": datetime.now().isoformat(),
-                "generated_at": datetime.now().isoformat(),
+
+        return jsonify(
+            {
+                "report": report,
+                "metadata": {
+                    "type": report_type,
+                    "time_range": time_range,
+                    "start_date": start_date.isoformat(),
+                    "end_date": datetime.now().isoformat(),
+                    "generated_at": datetime.now().isoformat(),
+                },
             }
-        })
-        
+        )
+
     except Exception as e:
         logger.error(f"Report generation error: {e}")
         return jsonify({"error": f"Failed to generate report: {str(e)}"}), 500
@@ -104,12 +106,14 @@ def get_deployment_analytics():
                 "off_peak_success_rate": 98.1,
             },
         }
-        
-        return jsonify({
-            "analytics": analytics,
-            "generated_at": datetime.now().isoformat(),
-        })
-        
+
+        return jsonify(
+            {
+                "analytics": analytics,
+                "generated_at": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Deployment analytics error: {e}")
         return jsonify({"error": f"Failed to get analytics: {str(e)}"}), 500
@@ -155,12 +159,14 @@ def get_system_analytics():
                 "security_incidents": 0,
             },
         }
-        
-        return jsonify({
-            "analytics": analytics,
-            "generated_at": datetime.now().isoformat(),
-        })
-        
+
+        return jsonify(
+            {
+                "analytics": analytics,
+                "generated_at": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"System analytics error: {e}")
         return jsonify({"error": f"Failed to get system analytics: {str(e)}"}), 500
@@ -173,10 +179,10 @@ def export_report():
         data = request.get_json() or {}
         report_id = data.get("report_id")
         export_format = data.get("format", "json")
-        
+
         if not report_id:
             return jsonify({"error": "Report ID is required"}), 400
-        
+
         # Simulate report export
         export_data = {
             "report_id": report_id,
@@ -186,12 +192,14 @@ def export_report():
             "size_bytes": 1024 * 150,  # 150KB
             "status": "ready",
         }
-        
-        return jsonify({
-            "export": export_data,
-            "exported_at": datetime.now().isoformat(),
-        })
-        
+
+        return jsonify(
+            {
+                "export": export_data,
+                "exported_at": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Report export error: {e}")
         return jsonify({"error": f"Failed to export report: {str(e)}"}), 500
@@ -327,70 +335,84 @@ def generate_recommendations():
 
 if __name__ == "__main__":
     import sys
-    
+
     # Test reporting functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Summary report generation
     total_tests += 1
     try:
         start_date = datetime.now() - timedelta(days=7)
         report = generate_summary_report(start_date)
-        
+
         required_sections = ["overview", "recent_deployments", "recommendations"]
         for section in required_sections:
             if section not in report:
-                all_validation_failures.append(f"Summary report: Missing section '{section}'")
-        
+                all_validation_failures.append(
+                    f"Summary report: Missing section '{section}'"
+                )
+
         if "total_deployments" not in report.get("overview", {}):
-            all_validation_failures.append("Summary report: Missing total_deployments in overview")
-            
+            all_validation_failures.append(
+                "Summary report: Missing total_deployments in overview"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"Summary report: Exception occurred - {e}")
-    
+
     # Test 2: Detailed report generation
     total_tests += 1
     try:
         start_date = datetime.now() - timedelta(days=7)
         report = generate_detailed_report(start_date)
-        
+
         required_sections = ["summary", "detailed_metrics", "environment_details"]
         for section in required_sections:
             if section not in report:
-                all_validation_failures.append(f"Detailed report: Missing section '{section}'")
-                
+                all_validation_failures.append(
+                    f"Detailed report: Missing section '{section}'"
+                )
+
     except Exception as e:
         all_validation_failures.append(f"Detailed report: Exception occurred - {e}")
-    
+
     # Test 3: Recommendations generation
     total_tests += 1
     try:
         recommendations = generate_recommendations()
-        
+
         if not isinstance(recommendations, list):
             all_validation_failures.append("Recommendations: Result is not a list")
-        
+
         if len(recommendations) == 0:
-            all_validation_failures.append("Recommendations: No recommendations generated")
-        
+            all_validation_failures.append(
+                "Recommendations: No recommendations generated"
+            )
+
         for rec in recommendations:
             required_fields = ["category", "priority", "title", "description", "action"]
             for field in required_fields:
                 if field not in rec:
-                    all_validation_failures.append(f"Recommendations: Missing field '{field}' in recommendation")
+                    all_validation_failures.append(
+                        f"Recommendations: Missing field '{field}' in recommendation"
+                    )
                     break
-                    
+
     except Exception as e:
         all_validation_failures.append(f"Recommendations: Exception occurred - {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Reporting module is validated and formal tests can now be written")
         sys.exit(0)

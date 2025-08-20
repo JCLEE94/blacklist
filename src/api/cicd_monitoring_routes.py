@@ -9,10 +9,11 @@ from src.api.cicd import register_cicd_blueprints, cicd_monitoring_bp
 Deprecated: This file will be removed in a future version.
 """
 
+import logging
+
 # Import everything from the new modular cicd package
 from .cicd import *
 
-import logging
 logger = logging.getLogger(__name__)
 
 # Add deprecation warning

@@ -9,10 +9,11 @@ from src.utils.security import SecurityManager, require_auth, rate_limit
 Deprecated: This file will be removed in a future version.
 """
 
+import logging
+
 # Import everything from the new modular security package
 from .security import *
 
-import logging
 logger = logging.getLogger(__name__)
 
 # Add deprecation warning

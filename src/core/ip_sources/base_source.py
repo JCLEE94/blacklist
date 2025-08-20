@@ -4,15 +4,10 @@ Base class for IP source plugins
 """
 
 import logging
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 logger = logging.getLogger(__name__)
 

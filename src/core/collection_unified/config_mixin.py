@@ -47,20 +47,20 @@ class ConfigurationMixin:
                     "enabled": True,
                     "base_url": "https://regtech.fsec.or.kr",
                     "timeout": 30,
-                    "retry_count": 3
+                    "retry_count": 3,
                 }
             },
             "storage": {
                 "credentials_file": "instance/credentials.enc",
                 "history_file": "instance/collection_history.json",
                 "cipher_key_file": "instance/.cipher_key",
-                "reports_dir": "instance/reports"
+                "reports_dir": "instance/reports",
             },
             "collection": {
                 "default_date_range": 7,
                 "max_retry_attempts": 3,
-                "batch_size": 1000
-            }
+                "batch_size": 1000,
+            },
         }
 
     def _get_enabled_sources(self) -> List[str]:
@@ -148,7 +148,7 @@ class ConfigurationMixin:
         try:
             credentials = self._load_all_credentials()
             source_creds = credentials.get(source)
-            
+
             if not source_creds:
                 logger.warning(f"No credentials found for source: {source}")
                 return None
@@ -164,24 +164,26 @@ class ConfigurationMixin:
             logger.error(f"Failed to get credentials for {source}: {e}")
             return None
 
-    def update_source_config(self, source_name: str, config_updates: Dict[str, Any]) -> bool:
+    def update_source_config(
+        self, source_name: str, config_updates: Dict[str, Any]
+    ) -> bool:
         """Update configuration for a source"""
         try:
             if "sources" not in self.config:
                 self.config["sources"] = {}
-            
+
             if source_name not in self.config["sources"]:
                 self.config["sources"][source_name] = {}
-            
+
             self.config["sources"][source_name].update(config_updates)
-            
+
             # Save updated configuration
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
-            
+
             logger.info(f"Configuration updated for source: {source_name}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to update config for {source_name}: {e}")
             return False
@@ -197,29 +199,29 @@ class ConfigurationMixin:
     def validate_config(self) -> List[str]:
         """Validate configuration and return list of issues"""
         issues = []
-        
+
         # Check required sections
         required_sections = ["sources", "storage", "collection"]
         for section in required_sections:
             if section not in self.config:
                 issues.append(f"Missing required section: {section}")
-        
+
         # Validate sources
         sources = self.config.get("sources", {})
         if not sources:
             issues.append("No sources configured")
-        
+
         for source_name, source_config in sources.items():
             if not isinstance(source_config, dict):
                 issues.append(f"Invalid configuration for source {source_name}")
                 continue
-            
+
             # Check required source fields
             required_fields = ["enabled", "base_url"]
             for field in required_fields:
                 if field not in source_config:
                     issues.append(f"Missing {field} in source {source_name}")
-        
+
         # Validate storage paths
         storage_config = self.config.get("storage", {})
         for key, path in storage_config.items():
@@ -227,99 +229,117 @@ class ConfigurationMixin:
                 path_obj = Path(path)
                 if key.endswith("_dir"):
                     if not path_obj.parent.exists():
-                        issues.append(f"Parent directory for {key} does not exist: {path}")
-        
+                        issues.append(
+                            f"Parent directory for {key} does not exist: {path}"
+                        )
+
         return issues
 
 
 if __name__ == "__main__":
+    import os
     import sys
     import tempfile
-    import os
     from datetime import datetime
-    
+
     # Test configuration mixin functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     # Create a test class that uses the mixin
     class TestConfigSystem(ConfigurationMixin):
         def __init__(self, config_path):
             self.config_path = Path(config_path)
             self.config = self._load_config()
-            
+
             # Initialize storage paths
             storage_config = self.config.get("storage", {})
-            self.credentials_file = Path(storage_config.get("credentials_file", "test_credentials.enc"))
-            self.cipher_key_file = Path(storage_config.get("cipher_key_file", "test_cipher_key"))
-            
+            self.credentials_file = Path(
+                storage_config.get("credentials_file", "test_credentials.enc")
+            )
+            self.cipher_key_file = Path(
+                storage_config.get("cipher_key_file", "test_cipher_key")
+            )
+
             # Initialize encryption
             self.cipher_key = self._get_or_create_cipher_key()
             self.cipher = Fernet(self.cipher_key)
-    
+
     # Create temporary files for testing
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp_config:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".json", delete=False
+    ) as tmp_config:
         test_config = {
             "sources": {
                 "regtech": {
                     "enabled": True,
                     "base_url": "https://regtech.fsec.or.kr",
-                    "timeout": 30
+                    "timeout": 30,
                 }
             },
             "storage": {
                 "credentials_file": "test_credentials.enc",
-                "cipher_key_file": "test_cipher_key"
-            }
+                "cipher_key_file": "test_cipher_key",
+            },
         }
         json.dump(test_config, tmp_config)
         test_config_path = tmp_config.name
-    
+
     try:
         # Test 1: Configuration loading
         total_tests += 1
         try:
             config_system = TestConfigSystem(test_config_path)
-            
+
             if "sources" not in config_system.config:
-                all_validation_failures.append("Config loading: Missing sources section")
-            
+                all_validation_failures.append(
+                    "Config loading: Missing sources section"
+                )
+
             enabled_sources = config_system._get_enabled_sources()
             if "regtech" not in enabled_sources:
-                all_validation_failures.append("Config loading: REGTECH not in enabled sources")
-                
+                all_validation_failures.append(
+                    "Config loading: REGTECH not in enabled sources"
+                )
+
         except Exception as e:
             all_validation_failures.append(f"Config loading: Exception occurred - {e}")
-        
+
         # Test 2: Credentials management
         total_tests += 1
         try:
             config_system = TestConfigSystem(test_config_path)
-            
-            success = config_system.save_credentials("test_source", "test_user", "test_pass")
+
+            success = config_system.save_credentials(
+                "test_source", "test_user", "test_pass"
+            )
             if not success:
                 all_validation_failures.append("Credentials: Save failed")
-            
+
             retrieved_creds = config_system.get_credentials("test_source")
             if not retrieved_creds or retrieved_creds["username"] != "test_user":
                 all_validation_failures.append("Credentials: Retrieve failed")
-                
+
         except Exception as e:
             all_validation_failures.append(f"Credentials: Exception occurred - {e}")
-        
+
         # Test 3: Configuration validation
         total_tests += 1
         try:
             config_system = TestConfigSystem(test_config_path)
-            
+
             issues = config_system.validate_config()
             # Should have minimal issues with our test config
             if len(issues) > 2:  # Allow for some minor issues
-                all_validation_failures.append(f"Config validation: Too many issues found: {len(issues)}")
-                
+                all_validation_failures.append(
+                    f"Config validation: Too many issues found: {len(issues)}"
+                )
+
         except Exception as e:
-            all_validation_failures.append(f"Config validation: Exception occurred - {e}")
-        
+            all_validation_failures.append(
+                f"Config validation: Exception occurred - {e}"
+            )
+
     finally:
         # Clean up test files
         try:
@@ -330,14 +350,18 @@ if __name__ == "__main__":
                 os.unlink("test_cipher_key")
         except OSError:
             pass
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Configuration mixin is validated and formal tests can now be written")
         sys.exit(0)

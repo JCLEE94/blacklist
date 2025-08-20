@@ -4,10 +4,7 @@ Predictive Analyzer - Trend prediction and risk forecasting
 Provides predictive insights based on historical threat data
 """
 
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
+from typing import Any, Dict, List, Tuple
 
 from .base_analyzer import BaseAnalyzer
 

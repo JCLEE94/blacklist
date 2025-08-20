@@ -4,13 +4,9 @@
 """
 
 import json
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from flask import Blueprint
-from flask import jsonify
-from flask import render_template_string
-from flask import request
+from flask import Blueprint, jsonify, render_template_string, request
 
 from ..collection_unified import UnifiedCollectionSystem
 

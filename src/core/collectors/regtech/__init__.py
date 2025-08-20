@@ -20,17 +20,17 @@ class FixedRegtechCollector:
         self.auth_manager = AuthenticationManager(username, password)
         self.data_collector = None
         self.processor = DataProcessor()
-        
+
         # Properties for compatibility
         self.base_url = self.auth_manager.base_url
         self.username = self.auth_manager.username
         self.password = self.auth_manager.password
         self.timeout = self.auth_manager.timeout
-        
+
     @property
     def session(self):
         return self.auth_manager.get_session()
-    
+
     @property
     def authenticated(self):
         return self.auth_manager.is_authenticated()
@@ -49,11 +49,11 @@ class FixedRegtechCollector:
         if not self.authenticated:
             if not self.authenticate():
                 raise RuntimeError("Cannot collect data - authentication failed")
-        
+
         if not self.data_collector:
             session = self.auth_manager.get_session()
             self.data_collector = DataCollector(session, self.base_url)
-        
+
         return self.data_collector.collect_blacklist_data(start_date, end_date)
 
     def collect_from_web(self, target_urls=None):
@@ -61,11 +61,11 @@ class FixedRegtechCollector:
         if not self.authenticated:
             if not self.authenticate():
                 raise RuntimeError("Cannot collect data - authentication failed")
-        
+
         if not self.data_collector:
             session = self.auth_manager.get_session()
             self.data_collector = DataCollector(session, self.base_url)
-        
+
         return self.data_collector.collect_from_web(target_urls)
 
     def logout(self) -> bool:
@@ -118,8 +118,8 @@ class FixedRegtechCollector:
 
 # Export all important classes and functions
 __all__ = [
-    'FixedRegtechCollector',
-    'AuthenticationManager',
-    'DataCollector', 
-    'DataProcessor'
+    "FixedRegtechCollector",
+    "AuthenticationManager",
+    "DataCollector",
+    "DataProcessor",
 ]

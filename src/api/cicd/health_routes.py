@@ -39,20 +39,27 @@ def check_production_health():
         detailed_response = requests.get(f"{PRODUCTION_URL}/api/health", timeout=5)
         detailed_health = detailed_response.json()
 
-        return jsonify({
-            "status": "healthy" if response.status_code == 200 else "unhealthy",
-            "basic_health": health_data,
-            "detailed_health": detailed_health,
-            "response_time_ms": response.elapsed.total_seconds() * 1000,
-            "checked_at": datetime.now().isoformat(),
-        })
+        return jsonify(
+            {
+                "status": "healthy" if response.status_code == 200 else "unhealthy",
+                "basic_health": health_data,
+                "detailed_health": detailed_health,
+                "response_time_ms": response.elapsed.total_seconds() * 1000,
+                "checked_at": datetime.now().isoformat(),
+            }
+        )
     except requests.RequestException as e:
         logger.error(f"Production health check failed: {e}")
-        return jsonify({
-            "status": "error",
-            "error": str(e),
-            "checked_at": datetime.now().isoformat(),
-        }), 503
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": str(e),
+                    "checked_at": datetime.now().isoformat(),
+                }
+            ),
+            503,
+        )
 
 
 @health_monitoring_bp.route("/api/verify/endpoints")
@@ -74,37 +81,47 @@ def verify_api_endpoints():
         try:
             url = f"{PRODUCTION_URL}{endpoint}"
             response = requests.get(url, timeout=5)
-            results.append({
-                "endpoint": endpoint,
-                "status_code": response.status_code,
-                "response_time_ms": response.elapsed.total_seconds() * 1000,
-                "status": "success" if response.status_code == 200 else "failed",
-            })
+            results.append(
+                {
+                    "endpoint": endpoint,
+                    "status_code": response.status_code,
+                    "response_time_ms": response.elapsed.total_seconds() * 1000,
+                    "status": "success" if response.status_code == 200 else "failed",
+                }
+            )
         except Exception as e:
-            results.append({
-                "endpoint": endpoint,
-                "status_code": 0,
-                "response_time_ms": 0,
-                "status": "error",
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "endpoint": endpoint,
+                    "status_code": 0,
+                    "response_time_ms": 0,
+                    "status": "error",
+                    "error": str(e),
+                }
+            )
 
     # Calculate overall health
     total_endpoints = len(results)
     successful_endpoints = len([r for r in results if r["status"] == "success"])
     health_percentage = (successful_endpoints / total_endpoints) * 100
 
-    return jsonify({
-        "endpoints": results,
-        "summary": {
-            "total_endpoints": total_endpoints,
-            "successful_endpoints": successful_endpoints,
-            "failed_endpoints": total_endpoints - successful_endpoints,
-            "health_percentage": health_percentage,
-            "overall_status": "healthy" if health_percentage >= 90 else "degraded" if health_percentage >= 50 else "unhealthy",
-        },
-        "checked_at": datetime.now().isoformat(),
-    })
+    return jsonify(
+        {
+            "endpoints": results,
+            "summary": {
+                "total_endpoints": total_endpoints,
+                "successful_endpoints": successful_endpoints,
+                "failed_endpoints": total_endpoints - successful_endpoints,
+                "health_percentage": health_percentage,
+                "overall_status": (
+                    "healthy"
+                    if health_percentage >= 90
+                    else "degraded" if health_percentage >= 50 else "unhealthy"
+                ),
+            },
+            "checked_at": datetime.now().isoformat(),
+        }
+    )
 
 
 @health_monitoring_bp.route("/api/verify/blacklist-jclee-me")
@@ -149,50 +166,84 @@ def verify_blacklist_jclee_me():
             try:
                 if step["step"] == "Basic Health Check":
                     response = requests.get(f"{PRODUCTION_URL}/health", timeout=10)
-                    step["status"] = "passed" if response.status_code == 200 else "failed"
+                    step["status"] = (
+                        "passed" if response.status_code == 200 else "failed"
+                    )
                     step["response_time"] = response.elapsed.total_seconds() * 1000
-                    step["details"] = response.json() if response.status_code == 200 else {"error": "Non-200 response"}
-                
+                    step["details"] = (
+                        response.json()
+                        if response.status_code == 200
+                        else {"error": "Non-200 response"}
+                    )
+
                 elif step["step"] == "API Health Check":
                     response = requests.get(f"{PRODUCTION_URL}/api/health", timeout=10)
-                    step["status"] = "passed" if response.status_code == 200 else "failed"
+                    step["status"] = (
+                        "passed" if response.status_code == 200 else "failed"
+                    )
                     step["response_time"] = response.elapsed.total_seconds() * 1000
-                    step["details"] = response.json() if response.status_code == 200 else {"error": "Non-200 response"}
-                
+                    step["details"] = (
+                        response.json()
+                        if response.status_code == 200
+                        else {"error": "Non-200 response"}
+                    )
+
                 elif step["step"] == "Core API Endpoints":
                     core_endpoints = ["/api/blacklist/active", "/api/fortigate"]
                     endpoint_results = []
                     for endpoint in core_endpoints:
                         try:
-                            resp = requests.get(f"{PRODUCTION_URL}{endpoint}", timeout=5)
-                            endpoint_results.append({
-                                "endpoint": endpoint,
-                                "status": "passed" if resp.status_code == 200 else "failed",
-                                "response_time": resp.elapsed.total_seconds() * 1000,
-                            })
+                            resp = requests.get(
+                                f"{PRODUCTION_URL}{endpoint}", timeout=5
+                            )
+                            endpoint_results.append(
+                                {
+                                    "endpoint": endpoint,
+                                    "status": (
+                                        "passed"
+                                        if resp.status_code == 200
+                                        else "failed"
+                                    ),
+                                    "response_time": resp.elapsed.total_seconds()
+                                    * 1000,
+                                }
+                            )
                         except Exception as e:
-                            endpoint_results.append({
-                                "endpoint": endpoint,
-                                "status": "error",
-                                "error": str(e),
-                            })
-                    
+                            endpoint_results.append(
+                                {
+                                    "endpoint": endpoint,
+                                    "status": "error",
+                                    "error": str(e),
+                                }
+                            )
+
                     step["details"] = endpoint_results
-                    passed_count = len([r for r in endpoint_results if r["status"] == "passed"])
-                    step["status"] = "passed" if passed_count == len(endpoint_results) else "failed"
-                
+                    passed_count = len(
+                        [r for r in endpoint_results if r["status"] == "passed"]
+                    )
+                    step["status"] = (
+                        "passed" if passed_count == len(endpoint_results) else "failed"
+                    )
+
                 elif step["step"] == "Performance Test":
                     response = requests.get(f"{PRODUCTION_URL}/health", timeout=5)
                     response_time = response.elapsed.total_seconds() * 1000
                     step["response_time"] = response_time
-                    step["status"] = "passed" if response_time < 1000 else "warning" if response_time < 5000 else "failed"
-                    step["details"] = {"response_time_ms": response_time, "threshold_ms": 1000}
-                
+                    step["status"] = (
+                        "passed"
+                        if response_time < 1000
+                        else "warning" if response_time < 5000 else "failed"
+                    )
+                    step["details"] = {
+                        "response_time_ms": response_time,
+                        "threshold_ms": 1000,
+                    }
+
                 else:
                     # For DNS and HTTPS checks, simulate results
                     step["status"] = "passed"
                     step["details"] = {"simulated": True}
-            
+
             except Exception as e:
                 step["status"] = "error"
                 step["error"] = str(e)
@@ -200,23 +251,29 @@ def verify_blacklist_jclee_me():
         # Generate overall status
         passed_steps = len([s for s in verification_steps if s["status"] == "passed"])
         total_steps = len(verification_steps)
-        overall_status = "healthy" if passed_steps == total_steps else "degraded" if passed_steps >= total_steps * 0.8 else "unhealthy"
+        overall_status = (
+            "healthy"
+            if passed_steps == total_steps
+            else "degraded" if passed_steps >= total_steps * 0.8 else "unhealthy"
+        )
 
         # Generate recommendations
         recommendations = generate_verification_recommendations(verification_steps)
 
-        return jsonify({
-            "verification_steps": verification_steps,
-            "summary": {
-                "total_steps": total_steps,
-                "passed_steps": passed_steps,
-                "failed_steps": total_steps - passed_steps,
-                "success_rate": (passed_steps / total_steps) * 100,
-                "overall_status": overall_status,
-            },
-            "recommendations": recommendations,
-            "verified_at": datetime.now().isoformat(),
-        })
+        return jsonify(
+            {
+                "verification_steps": verification_steps,
+                "summary": {
+                    "total_steps": total_steps,
+                    "passed_steps": passed_steps,
+                    "failed_steps": total_steps - passed_steps,
+                    "success_rate": (passed_steps / total_steps) * 100,
+                    "overall_status": overall_status,
+                },
+                "recommendations": recommendations,
+                "verified_at": datetime.now().isoformat(),
+            }
+        )
 
     except Exception as e:
         logger.error(f"Verification error: {e}")
@@ -266,24 +323,32 @@ def run_smoke_tests():
                 start_time = datetime.now()
                 response = requests.get(test["url"], timeout=test["timeout"])
                 end_time = datetime.now()
-                
+
                 response_time = (end_time - start_time).total_seconds() * 1000
-                
-                results.append({
-                    "test": test["test"],
-                    "status": "passed" if response.status_code == test["expected_status"] else "failed",
-                    "response_code": response.status_code,
-                    "expected_code": test["expected_status"],
-                    "response_time_ms": response_time,
-                    "timestamp": start_time.isoformat(),
-                })
+
+                results.append(
+                    {
+                        "test": test["test"],
+                        "status": (
+                            "passed"
+                            if response.status_code == test["expected_status"]
+                            else "failed"
+                        ),
+                        "response_code": response.status_code,
+                        "expected_code": test["expected_status"],
+                        "response_time_ms": response_time,
+                        "timestamp": start_time.isoformat(),
+                    }
+                )
             except Exception as e:
-                results.append({
-                    "test": test["test"],
-                    "status": "error",
-                    "error": str(e),
-                    "timestamp": datetime.now().isoformat(),
-                })
+                results.append(
+                    {
+                        "test": test["test"],
+                        "status": "error",
+                        "error": str(e),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
         # Calculate summary
         total_tests = len(results)
@@ -291,18 +356,22 @@ def run_smoke_tests():
         failed_tests = len([r for r in results if r["status"] == "failed"])
         error_tests = len([r for r in results if r["status"] == "error"])
 
-        return jsonify({
-            "smoke_tests": results,
-            "summary": {
-                "total_tests": total_tests,
-                "passed_tests": passed_tests,
-                "failed_tests": failed_tests,
-                "error_tests": error_tests,
-                "success_rate": (passed_tests / total_tests) * 100,
-                "overall_status": "passed" if passed_tests == total_tests else "failed",
-            },
-            "executed_at": datetime.now().isoformat(),
-        })
+        return jsonify(
+            {
+                "smoke_tests": results,
+                "summary": {
+                    "total_tests": total_tests,
+                    "passed_tests": passed_tests,
+                    "failed_tests": failed_tests,
+                    "error_tests": error_tests,
+                    "success_rate": (passed_tests / total_tests) * 100,
+                    "overall_status": (
+                        "passed" if passed_tests == total_tests else "failed"
+                    ),
+                },
+                "executed_at": datetime.now().isoformat(),
+            }
+        )
 
     except Exception as e:
         logger.error(f"Smoke tests error: {e}")
@@ -312,23 +381,29 @@ def run_smoke_tests():
 def generate_verification_recommendations(steps):
     """Generate recommendations based on verification results"""
     recommendations = []
-    
+
     for step in steps:
         if step["status"] == "failed":
             if step["step"] == "Basic Health Check":
-                recommendations.append("Check application logs and restart service if needed")
+                recommendations.append(
+                    "Check application logs and restart service if needed"
+                )
             elif step["step"] == "API Health Check":
                 recommendations.append("Verify API endpoints are properly configured")
             elif step["step"] == "Core API Endpoints":
                 recommendations.append("Check database connectivity and API routes")
             elif step["step"] == "Performance Test":
-                recommendations.append("Investigate performance issues and optimize response times")
+                recommendations.append(
+                    "Investigate performance issues and optimize response times"
+                )
         elif step["status"] == "warning":
-            recommendations.append(f"Monitor {step['step']} - performance may be degraded")
-    
+            recommendations.append(
+                f"Monitor {step['step']} - performance may be degraded"
+            )
+
     if not recommendations:
         recommendations.append("All verification steps passed - system is healthy")
-    
+
     return recommendations
 
 
@@ -344,11 +419,11 @@ def determine_overall_status(*statuses):
 
 if __name__ == "__main__":
     import sys
-    
+
     # Test health monitoring functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Verification recommendations generation
     total_tests += 1
     try:
@@ -358,56 +433,76 @@ if __name__ == "__main__":
         ]
         recommendations = generate_verification_recommendations(test_steps)
         if not recommendations:
-            all_validation_failures.append("Recommendations: No recommendations generated")
+            all_validation_failures.append(
+                "Recommendations: No recommendations generated"
+            )
         if not any("logs" in rec.lower() for rec in recommendations):
-            all_validation_failures.append("Recommendations: Missing expected health check recommendation")
+            all_validation_failures.append(
+                "Recommendations: Missing expected health check recommendation"
+            )
     except Exception as e:
         all_validation_failures.append(f"Recommendations: Exception occurred - {e}")
-    
+
     # Test 2: Overall status determination
     total_tests += 1
     try:
         healthy_status = determine_overall_status("healthy", "healthy", "healthy")
         degraded_status = determine_overall_status("healthy", "degraded", "healthy")
         unhealthy_status = determine_overall_status("healthy", "error", "healthy")
-        
+
         if healthy_status != "healthy":
-            all_validation_failures.append(f"Status determination: Expected 'healthy', got '{healthy_status}'")
+            all_validation_failures.append(
+                f"Status determination: Expected 'healthy', got '{healthy_status}'"
+            )
         if degraded_status != "degraded":
-            all_validation_failures.append(f"Status determination: Expected 'degraded', got '{degraded_status}'")
+            all_validation_failures.append(
+                f"Status determination: Expected 'degraded', got '{degraded_status}'"
+            )
         if unhealthy_status != "unhealthy":
-            all_validation_failures.append(f"Status determination: Expected 'unhealthy', got '{unhealthy_status}'")
+            all_validation_failures.append(
+                f"Status determination: Expected 'unhealthy', got '{unhealthy_status}'"
+            )
     except Exception as e:
-        all_validation_failures.append(f"Status determination: Exception occurred - {e}")
-    
+        all_validation_failures.append(
+            f"Status determination: Exception occurred - {e}"
+        )
+
     # Test 3: Endpoint validation structure
     total_tests += 1
     try:
         endpoints = ["/health", "/api/health"]
         if len(endpoints) < 2:
             all_validation_failures.append("Endpoints: Insufficient test endpoints")
-        
+
         # Test endpoint result structure
         expected_fields = ["endpoint", "status_code", "response_time_ms", "status"]
         test_result = {
             "endpoint": "/health",
             "status_code": 200,
             "response_time_ms": 100,
-            "status": "success"
+            "status": "success",
         }
         for field in expected_fields:
             if field not in test_result:
-                all_validation_failures.append(f"Endpoints: Missing field '{field}' in result structure")
+                all_validation_failures.append(
+                    f"Endpoints: Missing field '{field}' in result structure"
+                )
     except Exception as e:
         all_validation_failures.append(f"Endpoints: Exception occurred - {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
-        print("Health monitoring module is validated and formal tests can now be written")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
+        print(
+            "Health monitoring module is validated and formal tests can now be written"
+        )
         sys.exit(0)

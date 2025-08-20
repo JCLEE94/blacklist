@@ -4,15 +4,9 @@ import functools
 import logging
 import traceback
 from datetime import datetime
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Union
+from typing import Any, Callable, Dict, Optional, Union
 
-from flask import current_app
-from flask import jsonify
-from flask import request
+from flask import current_app, jsonify, request
 from werkzeug.exceptions import HTTPException
 
 from .custom_errors import BaseError

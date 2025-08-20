@@ -6,12 +6,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Type
-from typing import TypeVar
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,8 @@
 """데이터베이스 모듈 - 스키마, 연결, 마이그레이션 관리"""
 
 # SQLAlchemy imports for test compatibility
-from sqlalchemy import create_engine
-from sqlalchemy import text
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from .connection_manager import ConnectionManager
 from .migration_service import MigrationService

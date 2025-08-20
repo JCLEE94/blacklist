@@ -8,11 +8,8 @@ import sqlite3
 import threading
 import time
 from contextlib import contextmanager
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Callable
-from typing import Dict
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict
 
 import psutil
 import psycopg2

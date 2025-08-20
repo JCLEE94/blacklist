@@ -27,10 +27,8 @@ class DataProcessor:
 
     def __init__(self):
         # IP address regex pattern
-        self.ip_pattern = re.compile(
-            r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
-        )
-        
+        self.ip_pattern = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+
         # Common IP extraction patterns
         self.extraction_patterns = [
             r"IP[:\s]+([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})",
@@ -41,24 +39,24 @@ class DataProcessor:
     def parse_board_page(self, html_content: str, source: str) -> List[Dict[str, Any]]:
         """Parse HTML content from board pages"""
         ips_data = []
-        
+
         try:
             soup = BeautifulSoup(html_content, "html.parser")
-            
+
             # Extract text content
             text_content = soup.get_text()
-            
+
             # Find IP addresses using multiple patterns
             found_ips = set()
-            
+
             for pattern in self.extraction_patterns:
                 matches = re.findall(pattern, text_content, re.IGNORECASE)
                 found_ips.update(matches)
-            
+
             # Also try simple IP pattern
             simple_matches = self.ip_pattern.findall(text_content)
             found_ips.update(simple_matches)
-            
+
             # Process each found IP
             for ip in found_ips:
                 if self._is_valid_ip(ip):
@@ -71,12 +69,12 @@ class DataProcessor:
                         "raw_data": self._extract_context(text_content, ip),
                     }
                     ips_data.append(ip_data)
-                    
+
             logger.info(f"Parsed {len(ips_data)} IPs from board page")
-            
+
         except Exception as e:
             logger.error(f"Board page parsing error: {e}")
-            
+
         return ips_data
 
     def parse_excel_response(
@@ -84,7 +82,7 @@ class DataProcessor:
     ) -> List[Dict[str, Any]]:
         """Parse Excel file content"""
         ips_data = []
-        
+
         try:
             # Try reading as Excel file
             try:
@@ -92,24 +90,24 @@ class DataProcessor:
             except Exception:
                 # Try with xlrd engine
                 df = pd.read_excel(excel_content, engine="xlrd")
-            
+
             logger.info(f"Excel file has {len(df)} rows and {len(df.columns)} columns")
-            
+
             # Look for IP addresses in all columns
             for _, row in df.iterrows():
                 for col_name, cell_value in row.items():
                     if pd.isna(cell_value):
                         continue
-                    
+
                     cell_str = str(cell_value)
                     ips = self.ip_pattern.findall(cell_str)
-                    
+
                     for ip in ips:
                         if self._is_valid_ip(ip):
                             # Try to extract additional data from the row
                             detection_date = self._extract_date_from_row(row)
                             threat_type = self._extract_threat_type_from_row(row)
-                            
+
                             ip_data = {
                                 "ip": ip,
                                 "source": source,
@@ -119,12 +117,12 @@ class DataProcessor:
                                 "raw_data": row.to_dict(),
                             }
                             ips_data.append(ip_data)
-                            
+
             logger.info(f"Parsed {len(ips_data)} IPs from Excel file")
-            
+
         except Exception as e:
             logger.error(f"Excel parsing error: {e}")
-            
+
         return ips_data
 
     def parse_json_response(
@@ -132,7 +130,7 @@ class DataProcessor:
     ) -> List[Dict[str, Any]]:
         """Parse JSON response data"""
         ips_data = []
-        
+
         try:
             # Handle different JSON structures
             if isinstance(json_data, list):
@@ -153,7 +151,7 @@ class DataProcessor:
                 for key, value in json_data.items():
                     if isinstance(value, list):
                         items.extend(value)
-            
+
             # Process each item
             for item in items:
                 if isinstance(item, str):
@@ -168,7 +166,7 @@ class DataProcessor:
                             "raw_data": item,
                         }
                         ips_data.append(ip_data)
-                        
+
                 elif isinstance(item, dict):
                     # Dictionary - extract IP and other data
                     ip = self._extract_ip_from_dict(item)
@@ -182,25 +180,25 @@ class DataProcessor:
                             "raw_data": item,
                         }
                         ips_data.append(ip_data)
-                        
+
             logger.info(f"Parsed {len(ips_data)} IPs from JSON response")
-            
+
         except Exception as e:
             logger.error(f"JSON parsing error: {e}")
-            
+
         return ips_data
 
     def _extract_ip_from_dict(self, data: Dict) -> Optional[str]:
         """Extract IP address from dictionary"""
         # Common field names for IP addresses
         ip_fields = ["ip", "ip_address", "address", "host", "target"]
-        
+
         for field in ip_fields:
             if field in data and data[field]:
                 ip = str(data[field])
                 if self._is_valid_ip(ip):
                     return ip
-        
+
         # Search in all fields
         for key, value in data.items():
             if value and isinstance(value, str):
@@ -208,7 +206,7 @@ class DataProcessor:
                 for ip in ips:
                     if self._is_valid_ip(ip):
                         return ip
-        
+
         return None
 
     def _is_valid_ip(self, ip_str: str) -> bool:
@@ -217,17 +215,17 @@ class DataProcessor:
             parts = ip_str.split(".")
             if len(parts) != 4:
                 return False
-            
+
             # Check each part is valid number
             for part in parts:
                 num = int(part)
                 if not 0 <= num <= 255:
                     return False
-            
+
             # Exclude private and reserved ranges
             first_octet = int(parts[0])
             second_octet = int(parts[1])
-            
+
             # Private ranges
             if first_octet == 10:  # 10.0.0.0/8
                 return False
@@ -235,13 +233,32 @@ class DataProcessor:
                 return False
             if first_octet == 192 and second_octet == 168:  # 192.168.0.0/16
                 return False
-            
+
             # Reserved ranges
-            if first_octet in [0, 127, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239]:
+            if first_octet in [
+                0,
+                127,
+                224,
+                225,
+                226,
+                227,
+                228,
+                229,
+                230,
+                231,
+                232,
+                233,
+                234,
+                235,
+                236,
+                237,
+                238,
+                239,
+            ]:
                 return False
-            
+
             return True
-            
+
         except (ValueError, IndexError):
             return False
 
@@ -249,13 +266,13 @@ class DataProcessor:
         """Remove duplicate IP entries"""
         seen_ips = set()
         unique_ips = []
-        
+
         for ip_data in ips:
             ip = ip_data.get("ip")
             if ip and ip not in seen_ips:
                 seen_ips.add(ip)
                 unique_ips.append(ip_data)
-        
+
         logger.info(f"Removed {len(ips) - len(unique_ips)} duplicate IPs")
         return unique_ips
 
@@ -266,13 +283,13 @@ class DataProcessor:
             ip_index = text.find(ip)
             if ip_index == -1:
                 return ""
-            
+
             # Extract 100 characters before and after
             start = max(0, ip_index - 100)
             end = min(len(text), ip_index + len(ip) + 100)
-            
+
             return text[start:end].strip()
-            
+
         except Exception:
             return ""
 
@@ -280,7 +297,7 @@ class DataProcessor:
         """Extract date from pandas row"""
         # Look for date-like columns
         date_columns = ["date", "timestamp", "detected", "created", "updated"]
-        
+
         for col in date_columns:
             if col in row.index and not pd.isna(row[col]):
                 try:
@@ -288,24 +305,24 @@ class DataProcessor:
                     return date_value.strftime("%Y-%m-%d")
                 except Exception:
                     continue
-        
+
         return datetime.now().strftime("%Y-%m-%d")
 
     def _extract_threat_type_from_row(self, row: pd.Series) -> str:
         """Extract threat type from pandas row"""
         # Look for threat type columns
         type_columns = ["type", "threat_type", "category", "classification"]
-        
+
         for col in type_columns:
             if col in row.index and not pd.isna(row[col]):
                 return str(row[col]).lower()
-        
+
         return "unknown"
 
     def _extract_date_from_dict(self, data: Dict) -> str:
         """Extract date from dictionary"""
         date_fields = ["date", "timestamp", "detected_at", "created_at", "updated_at"]
-        
+
         for field in date_fields:
             if field in data and data[field]:
                 try:
@@ -313,23 +330,23 @@ class DataProcessor:
                     return date_value.strftime("%Y-%m-%d")
                 except Exception:
                     continue
-        
+
         return datetime.now().strftime("%Y-%m-%d")
 
     def _extract_threat_type_from_dict(self, data: Dict) -> str:
         """Extract threat type from dictionary"""
         type_fields = ["type", "threat_type", "category", "classification"]
-        
+
         for field in type_fields:
             if field in data and data[field]:
                 return str(data[field]).lower()
-        
+
         return "unknown"
 
     def _extract_confidence_from_dict(self, data: Dict) -> float:
         """Extract confidence score from dictionary"""
         confidence_fields = ["confidence", "score", "probability", "certainty"]
-        
+
         for field in confidence_fields:
             if field in data and data[field] is not None:
                 try:
@@ -337,102 +354,113 @@ class DataProcessor:
                     return max(0.0, min(1.0, confidence))  # Clamp to 0-1 range
                 except (ValueError, TypeError):
                     continue
-        
+
         return 0.6  # Default confidence
 
     def validate_ip_data(self, ip_data: Dict[str, Any]) -> bool:
         """Validate IP data structure"""
         required_fields = ["ip", "source", "detection_date"]
-        
+
         for field in required_fields:
             if field not in ip_data or not ip_data[field]:
                 return False
-        
+
         # Validate IP format
         if not self._is_valid_ip(ip_data["ip"]):
             return False
-        
+
         return True
 
-    def standardize_ip_data(self, ip_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def standardize_ip_data(
+        self, ip_data: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Standardize IP data format"""
         standardized = []
-        
+
         for data in ip_data:
             if not self.validate_ip_data(data):
                 continue
-            
+
             # Ensure all required fields exist
             standard_data = {
                 "ip": data["ip"].strip(),
                 "source": data.get("source", "unknown"),
-                "detection_date": data.get("detection_date", datetime.now().strftime("%Y-%m-%d")),
+                "detection_date": data.get(
+                    "detection_date", datetime.now().strftime("%Y-%m-%d")
+                ),
                 "threat_type": data.get("threat_type", "unknown").lower(),
                 "confidence": float(data.get("confidence", 0.6)),
                 "raw_data": data.get("raw_data", {}),
                 "processed_at": datetime.now().isoformat(),
             }
-            
+
             standardized.append(standard_data)
-        
+
         return standardized
 
 
 if __name__ == "__main__":
     import sys
-    
+
     # Test data processing functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     processor = DataProcessor()
-    
+
     # Test 1: IP validation
     total_tests += 1
     try:
         valid_ips = ["8.8.8.8", "1.1.1.1", "208.67.222.222"]
         invalid_ips = ["192.168.1.1", "10.0.0.1", "256.256.256.256", "invalid"]
-        
+
         for ip in valid_ips:
             if not processor._is_valid_ip(ip):
                 all_validation_failures.append(f"IP validation: Valid IP {ip} rejected")
-        
+
         for ip in invalid_ips:
             if processor._is_valid_ip(ip):
-                all_validation_failures.append(f"IP validation: Invalid IP {ip} accepted")
-                
+                all_validation_failures.append(
+                    f"IP validation: Invalid IP {ip} accepted"
+                )
+
     except Exception as e:
         all_validation_failures.append(f"IP validation: Exception occurred - {e}")
-    
+
     # Test 2: HTML parsing
     total_tests += 1
     try:
-        test_html = "<html><body>Detected malicious IP: 8.8.8.8 at location</body></html>"
+        test_html = (
+            "<html><body>Detected malicious IP: 8.8.8.8 at location</body></html>"
+        )
         parsed_data = processor.parse_board_page(test_html, "test_source")
-        
+
         if len(parsed_data) != 1:
-            all_validation_failures.append(f"HTML parsing: Expected 1 IP, got {len(parsed_data)}")
+            all_validation_failures.append(
+                f"HTML parsing: Expected 1 IP, got {len(parsed_data)}"
+            )
         elif parsed_data[0]["ip"] != "8.8.8.8":
-            all_validation_failures.append(f"HTML parsing: Wrong IP extracted: {parsed_data[0]['ip']}")
-            
+            all_validation_failures.append(
+                f"HTML parsing: Wrong IP extracted: {parsed_data[0]['ip']}"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"HTML parsing: Exception occurred - {e}")
-    
+
     # Test 3: JSON parsing
     total_tests += 1
     try:
-        test_json = {
-            "ips": ["8.8.8.8", "1.1.1.1"],
-            "count": 2
-        }
+        test_json = {"ips": ["8.8.8.8", "1.1.1.1"], "count": 2}
         parsed_data = processor.parse_json_response(test_json, "test_api")
-        
+
         if len(parsed_data) != 2:
-            all_validation_failures.append(f"JSON parsing: Expected 2 IPs, got {len(parsed_data)}")
-            
+            all_validation_failures.append(
+                f"JSON parsing: Expected 2 IPs, got {len(parsed_data)}"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"JSON parsing: Exception occurred - {e}")
-    
+
     # Test 4: Duplicate removal
     total_tests += 1
     try:
@@ -442,20 +470,26 @@ if __name__ == "__main__":
             {"ip": "1.1.1.1", "source": "test1"},
         ]
         unique_data = processor.remove_duplicates(test_data)
-        
+
         if len(unique_data) != 2:
-            all_validation_failures.append(f"Duplicate removal: Expected 2 unique IPs, got {len(unique_data)}")
-            
+            all_validation_failures.append(
+                f"Duplicate removal: Expected 2 unique IPs, got {len(unique_data)}"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"Duplicate removal: Exception occurred - {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Data processing module is validated and formal tests can now be written")
         sys.exit(0)

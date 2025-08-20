@@ -5,9 +5,7 @@ DB 기반 설정 관리 API 엔드포인트
 """
 import logging
 
-from flask import Blueprint
-from flask import jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

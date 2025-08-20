@@ -7,11 +7,8 @@ BaseCollector 상속 및 강화된 에러 핸들링
 import asyncio
 import logging
 import os
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
 import requests
 
@@ -22,8 +19,7 @@ from .helpers.validation_utils import RegtechValidationUtils
 from .regtech_auth import RegtechAuth
 from .regtech_browser import RegtechBrowserAutomation
 from .regtech_data_processor import RegtechDataProcessor
-from .unified_collector import BaseCollector
-from .unified_collector import CollectionConfig
+from .unified_collector import BaseCollector, CollectionConfig
 
 logger = logging.getLogger(__name__)
 

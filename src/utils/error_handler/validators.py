@@ -1,10 +1,7 @@
 """Validation utilities"""
 
 import ipaddress
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Optional
+from typing import Any, Callable, Dict, Optional
 
 from .custom_errors import ValidationError
 

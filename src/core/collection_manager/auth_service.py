@@ -6,10 +6,8 @@ Collection Authentication Service
 
 import logging
 import sqlite3
-from datetime import datetime
-from datetime import timedelta
-from typing import Dict
-from typing import Tuple
+from datetime import datetime, timedelta
+from typing import Dict, Tuple
 
 logger = logging.getLogger(__name__)
 

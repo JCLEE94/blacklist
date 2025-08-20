@@ -34,16 +34,15 @@ class TestAnalyticsV2API:
         
         assert response.status_code in [200, 503]
         data = response.json()
-        assert "success" in data
+        assert "status" in data
         
-        if response.status_code == 200 and data["success"]:
-            assert "trends" in data
-            assert "metadata" in data
+        if response.status_code == 200 and data["status"] == "success":
+            assert "data" in data
             assert "timestamp" in data
             
-            # Validate trends structure
-            trends = data["trends"]
-            assert isinstance(trends, (list, dict))
+            # Validate data structure
+            data_section = data["data"]
+            assert isinstance(data_section, dict)
     
     def test_analytics_trends_with_parameters(self):
         """Test trends endpoint with various parameters"""

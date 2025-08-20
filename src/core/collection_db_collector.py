@@ -7,12 +7,8 @@ UI에서 저장된 DB 설정을 활용하여 데이터 수집
 import json
 import logging
 import re
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 import requests
 from bs4 import BeautifulSoup

@@ -10,10 +10,11 @@ from src.core.collectors.regtech import FixedRegtechCollector
 Deprecated: This file will be removed in a future version.
 """
 
+import logging
+
 # Import everything from the new modular regtech package
 from .regtech import *
 
-import logging
 logger = logging.getLogger(__name__)
 
 # Add deprecation warning

@@ -5,11 +5,8 @@ Expiration Service for Unified Blacklist Manager
 
 import logging
 import sqlite3
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
 from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_monitoring

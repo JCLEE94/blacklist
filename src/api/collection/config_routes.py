@@ -6,15 +6,11 @@ Handles collection system configuration get and update operations
 
 import logging
 
-from flask import Blueprint
-from flask import jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory
-    from ...utils.security import input_validation
-    from ...utils.security import rate_limit
-    from ...utils.security import require_auth
+    from ...utils.security import input_validation, rate_limit, require_auth
 
     COLLECTOR_AVAILABLE = True
 except ImportError:

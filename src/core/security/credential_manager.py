@@ -11,9 +11,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes

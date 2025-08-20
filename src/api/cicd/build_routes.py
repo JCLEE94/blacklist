@@ -15,7 +15,6 @@ import logging
 import os
 from datetime import datetime, timedelta
 
-import requests
 from flask import Blueprint, jsonify
 
 logger = logging.getLogger(__name__)
@@ -151,21 +150,25 @@ def get_build_history():
         # Simulate build history
         builds = []
         for i in range(10):
-            builds.append({
-                "build_id": f"build-{1000 + i}",
-                "commit_sha": f"commit-{i}",
-                "status": "success" if i < 9 else "failed",
-                "started_at": datetime.now() - timedelta(hours=i + 1),
-                "duration": f"{90 + i * 5}s",
-                "branch": "main",
-                "version": f"v1.0.{38 - i}",
-            })
-        
-        return jsonify({
-            "builds": builds,
-            "total_builds": len(builds),
-            "success_rate": 90.0,
-        })
+            builds.append(
+                {
+                    "build_id": f"build-{1000 + i}",
+                    "commit_sha": f"commit-{i}",
+                    "status": "success" if i < 9 else "failed",
+                    "started_at": datetime.now() - timedelta(hours=i + 1),
+                    "duration": f"{90 + i * 5}s",
+                    "branch": "main",
+                    "version": f"v1.0.{38 - i}",
+                }
+            )
+
+        return jsonify(
+            {
+                "builds": builds,
+                "total_builds": len(builds),
+                "success_rate": 90.0,
+            }
+        )
     except Exception as e:
         logger.error(f"Build history error: {e}")
         return jsonify({"error": "Failed to get build history"}), 500
@@ -200,11 +203,11 @@ def get_build_stats():
 
 if __name__ == "__main__":
     import sys
-    
+
     # Test build monitoring functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: GitHub Actions status check
     total_tests += 1
     try:
@@ -215,7 +218,7 @@ if __name__ == "__main__":
             all_validation_failures.append("GitHub Actions: Invalid status value")
     except Exception as e:
         all_validation_failures.append(f"GitHub Actions: Exception occurred - {e}")
-    
+
     # Test 2: Registry status check
     total_tests += 1
     try:
@@ -226,17 +229,24 @@ if __name__ == "__main__":
             all_validation_failures.append("Registry: Invalid status value")
     except Exception as e:
         all_validation_failures.append(f"Registry: Exception occurred - {e}")
-    
+
     # Test 3: Metrics structure validation
     total_tests += 1
     try:
         # Test with mock Flask app
         from flask import Flask
+
         app = Flask(__name__)
         with app.app_context():
             with app.test_request_context():
                 # This would test the actual route, but we'll test the logic structure
-                expected_keys = ["timestamp", "production", "github_actions", "container_registry", "argocd"]
+                expected_keys = [
+                    "timestamp",
+                    "production",
+                    "github_actions",
+                    "container_registry",
+                    "argocd",
+                ]
                 # Simulate the metrics structure
                 metrics = {
                     "timestamp": datetime.now().isoformat(),
@@ -250,14 +260,20 @@ if __name__ == "__main__":
                         all_validation_failures.append(f"Metrics: Missing key {key}")
     except Exception as e:
         all_validation_failures.append(f"Metrics: Exception occurred - {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
-        print("Build monitoring module is validated and formal tests can now be written")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
+        print(
+            "Build monitoring module is validated and formal tests can now be written"
+        )
         sys.exit(0)

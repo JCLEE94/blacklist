@@ -3,9 +3,7 @@ Async to Sync wrapper utility for collectors
 """
 
 import asyncio
-from typing import Any
-from typing import Callable
-from typing import Dict
+from typing import Any, Callable, Dict
 
 
 def async_to_sync(async_func: Callable) -> Callable:

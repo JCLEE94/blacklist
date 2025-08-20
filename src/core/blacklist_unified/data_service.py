@@ -8,12 +8,8 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Set
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Set
 
 import psycopg2
 from sqlalchemy import text

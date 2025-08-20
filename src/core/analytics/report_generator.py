@@ -5,8 +5,7 @@ Generates exportable reports in various formats
 """
 
 from datetime import datetime
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 from .base_analyzer import BaseAnalyzer
 

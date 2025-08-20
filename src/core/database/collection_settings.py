@@ -10,10 +10,11 @@ from src.core.database.collection_settings import CollectionSettingsDB
 Deprecated: This file will be removed in a future version.
 """
 
+import logging
+
 # Import everything from the new modular collection_settings package
 from .collection_settings import *
 
-import logging
 logger = logging.getLogger(__name__)
 
 # Add deprecation warning

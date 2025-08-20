@@ -7,9 +7,7 @@ import logging
 import os
 from datetime import datetime
 
-from flask import Blueprint
-from flask import jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

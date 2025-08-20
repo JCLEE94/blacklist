@@ -19,19 +19,25 @@ class CollectionSettingsDB:
     def __init__(self, db_path: str = "instance/blacklist.db"):
         # Initialize validation manager (which also initializes the database)
         self.validation_mgr = ValidationManager(db_path)
-        
+
         # Initialize other managers with the database path and cipher
-        self.config_mgr = ConfigurationManager(db_path, self.validation_mgr.get_cipher())
+        self.config_mgr = ConfigurationManager(
+            db_path, self.validation_mgr.get_cipher()
+        )
         self.db_ops = DatabaseOperations(db_path)
-        
+
         # Store references for compatibility
         self.db_path = self.validation_mgr.db_path
         self.cipher_key = self.validation_mgr.cipher_key
         self.cipher = self.validation_mgr.cipher
 
     # Configuration management methods
-    def save_source_config(self, name: str, display_name: str, base_url: str, config, enabled: bool = True) -> bool:
-        return self.config_mgr.save_source_config(name, display_name, base_url, config, enabled)
+    def save_source_config(
+        self, name: str, display_name: str, base_url: str, config, enabled: bool = True
+    ) -> bool:
+        return self.config_mgr.save_source_config(
+            name, display_name, base_url, config, enabled
+        )
 
     def get_source_config(self, name: str):
         return self.config_mgr.get_source_config(name)
@@ -52,8 +58,17 @@ class CollectionSettingsDB:
         return self.config_mgr.get_setting(key, default)
 
     # Database operations methods
-    def save_collection_result(self, source_name: str, success: bool, collected_count: int = 0, error_message: str = None, metadata=None) -> bool:
-        return self.db_ops.save_collection_result(source_name, success, collected_count, error_message, metadata)
+    def save_collection_result(
+        self,
+        source_name: str,
+        success: bool,
+        collected_count: int = 0,
+        error_message: str = None,
+        metadata=None,
+    ) -> bool:
+        return self.db_ops.save_collection_result(
+            source_name, success, collected_count, error_message, metadata
+        )
 
     def get_collection_statistics(self):
         return self.db_ops.get_collection_statistics()
@@ -61,7 +76,9 @@ class CollectionSettingsDB:
     def get_collection_calendar(self, year: int, month: int):
         return self.db_ops.get_collection_calendar(year, month)
 
-    def get_collection_history(self, source_name: str = None, limit: int = 100, offset: int = 0):
+    def get_collection_history(
+        self, source_name: str = None, limit: int = 100, offset: int = 0
+    ):
         return self.db_ops.get_collection_history(source_name, limit, offset)
 
     # Validation and utility methods
@@ -87,8 +104,8 @@ class CollectionSettingsDB:
 
 # Export all important classes and functions
 __all__ = [
-    'CollectionSettingsDB',
-    'ConfigurationManager',
-    'DatabaseOperations', 
-    'ValidationManager'
+    "CollectionSettingsDB",
+    "ConfigurationManager",
+    "DatabaseOperations",
+    "ValidationManager",
 ]

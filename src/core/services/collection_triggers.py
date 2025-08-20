@@ -5,11 +5,8 @@
 
 import asyncio
 import threading
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
 
 
 class CollectionTriggersMixin:

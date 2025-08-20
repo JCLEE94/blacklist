@@ -58,23 +58,23 @@ class AuthenticationManager:
         """Authenticate with REGTECH system"""
         try:
             logger.info("🔑 Starting REGTECH authentication...")
-            
+
             # Create new session
             self.session = self.create_session()
-            
+
             # Step 1: Get login page
             logger.info("🌍 Getting login page...")
             login_page_resp = self.session.get(
                 f"{self.base_url}/login", timeout=self.timeout
             )
-            
+
             if login_page_resp.status_code != 200:
                 logger.error(f"Failed to get login page: {login_page_resp.status_code}")
                 return False
 
-            # Parse login page for tokens or hidden fields
-            soup = BeautifulSoup(login_page_resp.text, "html.parser")
-            
+            # Parse login page for tokens or hidden fields (for future CSRF token extraction)
+            # soup = BeautifulSoup(login_page_resp.text, "html.parser")
+
             # Step 2: Perform login
             logger.info("🔑 Performing actual login...")
             login_form_data = {
@@ -150,10 +150,10 @@ class AuthenticationManager:
             logout_resp = self.session.get(
                 f"{self.base_url}/login/logout", timeout=self.timeout
             )
-            
+
             self.authenticated = False
             self.session = None
-            
+
             logger.info("🚪 REGTECH logout completed")
             return logout_resp.status_code == 200
 
@@ -183,20 +183,22 @@ class AuthenticationManager:
         """Extract CSRF token from page content"""
         try:
             soup = BeautifulSoup(page_content, "html.parser")
-            
+
             # Look for common CSRF token patterns
-            csrf_inputs = soup.find_all("input", {"name": ["_token", "csrf_token", "authenticity_token"]})
+            csrf_inputs = soup.find_all(
+                "input", {"name": ["_token", "csrf_token", "authenticity_token"]}
+            )
             for csrf_input in csrf_inputs:
                 if csrf_input.get("value"):
                     return csrf_input.get("value")
-            
+
             # Look for meta tags
             csrf_meta = soup.find("meta", {"name": ["csrf-token", "_token"]})
             if csrf_meta and csrf_meta.get("content"):
                 return csrf_meta.get("content")
-            
+
             return None
-            
+
         except Exception as e:
             logger.debug(f"CSRF token extraction failed: {e}")
             return None
@@ -213,75 +215,91 @@ class AuthenticationManager:
 
 if __name__ == "__main__":
     import sys
-    
+
     # Test authentication functionality
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Session creation
     total_tests += 1
     try:
         auth_mgr = AuthenticationManager("test_user", "test_pass")
         session = auth_mgr.create_session()
-        
+
         if not isinstance(session, requests.Session):
-            all_validation_failures.append("Session creation: Result is not a requests.Session")
-        
+            all_validation_failures.append(
+                "Session creation: Result is not a requests.Session"
+            )
+
         required_headers = ["User-Agent", "Accept"]
         for header in required_headers:
             if header not in session.headers:
-                all_validation_failures.append(f"Session creation: Missing header '{header}'")
-                
+                all_validation_failures.append(
+                    f"Session creation: Missing header '{header}'"
+                )
+
     except Exception as e:
         all_validation_failures.append(f"Session creation: Exception occurred - {e}")
-    
+
     # Test 2: Login success check
     total_tests += 1
     try:
         auth_mgr = AuthenticationManager("test_user", "test_pass")
-        
+
         # Create mock response objects for testing
         class MockResponse:
             def __init__(self, text, url):
                 self.text = text
                 self.url = url
-        
-        success_response = MockResponse("로그아웃 button", "https://regtech.fsec.or.kr/main")
-        failure_response = MockResponse("로그인 실패", "https://regtech.fsec.or.kr/login")
-        
+
+        success_response = MockResponse(
+            "로그아웃 button", "https://regtech.fsec.or.kr/main"
+        )
+        failure_response = MockResponse(
+            "로그인 실패", "https://regtech.fsec.or.kr/login"
+        )
+
         if not auth_mgr.check_login_success(success_response):
-            all_validation_failures.append("Login check: Success response not recognized")
-        
+            all_validation_failures.append(
+                "Login check: Success response not recognized"
+            )
+
         if auth_mgr.check_login_success(failure_response):
-            all_validation_failures.append("Login check: Failure response not recognized")
-            
+            all_validation_failures.append(
+                "Login check: Failure response not recognized"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"Login check: Exception occurred - {e}")
-    
+
     # Test 3: Session information
     total_tests += 1
     try:
         auth_mgr = AuthenticationManager("test_user", "test_pass")
         session_info = auth_mgr.get_session_info()
-        
+
         required_keys = ["authenticated", "username", "base_url", "session_active"]
         for key in required_keys:
             if key not in session_info:
                 all_validation_failures.append(f"Session info: Missing key '{key}'")
-        
+
         if session_info["username"] != "test_user":
             all_validation_failures.append("Session info: Username mismatch")
-            
+
     except Exception as e:
         all_validation_failures.append(f"Session info: Exception occurred - {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Authentication module is validated and formal tests can now be written")
         sys.exit(0)

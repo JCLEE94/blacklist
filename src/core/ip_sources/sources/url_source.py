@@ -6,13 +6,11 @@ URL 기반 IP 소스 플러그인
 import logging
 import re
 from datetime import datetime
-from typing import Iterator
-from typing import List
+from typing import Iterator, List
 
 import requests
 
-from ..base_source import BaseIPSource
-from ..base_source import IPEntry
+from ..base_source import BaseIPSource, IPEntry
 
 logger = logging.getLogger(__name__)
 

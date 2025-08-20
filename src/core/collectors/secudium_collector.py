@@ -9,18 +9,14 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
 from ..common.ip_utils import IPUtils
-from .unified_collector import BaseCollector
-from .unified_collector import CollectionConfig
+from .unified_collector import BaseCollector, CollectionConfig
 
 logger = logging.getLogger(__name__)
 
