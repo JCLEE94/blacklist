@@ -155,36 +155,9 @@ class DatabaseOperations:
         }
 
     def get_active_ips(self) -> List[str]:
-        """Get all active IP addresses from database (PostgreSQL or SQLite)"""
+        """Get all active IP addresses from database (PostgreSQL preferred)"""
         try:
-            # Try SQLite first for local development
-            import sqlite3
-
-            sqlite_db_path = "instance/blacklist.db"
-
-            if os.path.exists(sqlite_db_path):
-                logger.debug(f"Getting active IPs from SQLite: {sqlite_db_path}")
-                with sqlite3.connect(sqlite_db_path) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        """
-                        SELECT DISTINCT ip_address
-                        FROM blacklist
-                        WHERE is_active = 1
-                        ORDER BY ip_address
-                        """
-                    )
-                    result = []
-                    for row in cursor.fetchall():
-                        ip_str = row[0]
-                        # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
-                        if "/" in ip_str:
-                            ip_str = ip_str.split("/")[0]
-                        result.append(ip_str)
-                    logger.info(f"Found {len(result)} active IPs from SQLite database")
-                    return result
-
-            # Fallback to PostgreSQL if SQLite not available
+            # Try PostgreSQL first (primary database)
             logger.debug(f"Getting active IPs from PostgreSQL: {self.database_url}")
             with psycopg2.connect(self.database_url) as conn:
                 cursor = conn.cursor()
@@ -194,7 +167,7 @@ class DatabaseOperations:
                     SELECT DISTINCT ip_address::text
                     FROM blacklist_entries
                     WHERE is_active = true
-                      AND (expiry_date IS NULL OR expiry_date > CURRENT_DATE)
+                      AND (exp_date IS NULL OR exp_date > CURRENT_DATE::text)
                     ORDER BY ip_address
                     """
                 )
@@ -209,9 +182,42 @@ class DatabaseOperations:
 
                 logger.info(f"Found {len(result)} active IPs from PostgreSQL database")
                 return result
-
+                
         except Exception as e:
-            logger.error(f"Database error getting active IPs: {e}")
+            logger.warning(f"PostgreSQL error: {e}, trying SQLite fallback")
+            
+            # Fallback to SQLite if PostgreSQL fails
+            try:
+                import sqlite3
+                sqlite_db_path = "instance/blacklist.db"
+
+                if os.path.exists(sqlite_db_path):
+                    logger.debug(f"Getting active IPs from SQLite: {sqlite_db_path}")
+                    with sqlite3.connect(sqlite_db_path) as conn:
+                        cursor = conn.cursor()
+                        cursor.execute(
+                            """
+                            SELECT DISTINCT ip_address
+                            FROM blacklist_entries
+                            WHERE is_active = 1
+                            ORDER BY ip_address
+                            """
+                        )
+                        result = []
+                        for row in cursor.fetchall():
+                            ip_str = row[0]
+                            # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
+                            if "/" in ip_str:
+                                ip_str = ip_str.split("/")[0]
+                            result.append(ip_str)
+                        logger.info(f"Found {len(result)} active IPs from SQLite database")
+                        return result
+
+            except Exception as sqlite_e:
+                logger.error(f"SQLite fallback also failed: {sqlite_e}")
+
+            # Final fallback to empty list
+            logger.error("All database access attempts failed")
             raise DataProcessingError(
                 f"Database error: {e}", operation="get_active_ips"
             )

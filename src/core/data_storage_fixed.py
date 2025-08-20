@@ -48,6 +48,7 @@ class FixedDataStorage:
 
         try:
             with psycopg2.connect(self.database_url) as conn:
+                conn.autocommit = True  # Enable autocommit to avoid transaction rollback issues
                 cursor = conn.cursor()
 
                 # Ensure table exists with proper schema
@@ -64,19 +65,16 @@ class FixedDataStorage:
                             failed_count += 1
                             continue
 
-                        # Prepare data for insertion
+                        # Prepare data for insertion (matching blacklist_entries schema)
                         insert_data = {
                             "ip_address": ip_address,
                             "source": ip_entry.get("source", source),
-                            "description": ip_entry.get("description", ""),
-                            "threat_type": ip_entry.get("confidence", "medium"),
-                            "detection_date": self._parse_date(
+                            "reason": ip_entry.get("description", ""),
+                            "threat_level": ip_entry.get("confidence", "medium"),
+                            "reg_date": self._parse_date_text(
                                 ip_entry.get("detection_date")
                             ),
-                            "expiry_date": self._calculate_expiry_date(
-                                ip_entry.get("detection_date")
-                            ),
-                            "added_at": datetime.now(),
+                            "created_at": datetime.now(),
                             "updated_at": datetime.now(),
                             "is_active": True,
                         }
@@ -94,9 +92,9 @@ class FixedDataStorage:
                                 """
                                 UPDATE blacklist_entries SET
                                     source = %(source)s,
-                                    description = %(description)s,
-                                    threat_type = %(threat_type)s,
-                                    detection_date = %(detection_date)s,
+                                    reason = %(reason)s,
+                                    threat_level = %(threat_level)s,
+                                    reg_date = %(reg_date)s,
                                     updated_at = %(updated_at)s,
                                     is_active = %(is_active)s
                                 WHERE ip_address = %(ip_address)s
@@ -108,11 +106,11 @@ class FixedDataStorage:
                             cursor.execute(
                                 """
                                 INSERT INTO blacklist_entries (
-                                    ip_address, source, description, threat_type,
-                                    detection_date, expiry_date, added_at, updated_at, is_active
+                                    ip_address, source, reason, threat_level,
+                                    reg_date, created_at, updated_at, is_active
                                 ) VALUES (
-                                    %(ip_address)s, %(source)s, %(description)s, %(threat_type)s,
-                                    %(detection_date)s, %(expiry_date)s, %(added_at)s, %(updated_at)s, %(is_active)s
+                                    %(ip_address)s, %(source)s, %(reason)s, %(threat_level)s,
+                                    %(reg_date)s, %(created_at)s, %(updated_at)s, %(is_active)s
                                 )
                             """,
                                 insert_data,
@@ -125,9 +123,15 @@ class FixedDataStorage:
                             f"Error storing IP {ip_entry.get('ip', 'unknown')}: {e}"
                         )
                         failed_count += 1
+                        
+                        # Force rollback of current transaction if needed
+                        try:
+                            conn.rollback()
+                        except:
+                            pass
                         continue
 
-                conn.commit()
+                # No explicit commit needed with autocommit=True
 
                 result = {
                     "success": True,
@@ -194,6 +198,33 @@ class FixedDataStorage:
             CREATE INDEX IF NOT EXISTS idx_blacklist_source ON blacklist_entries (source);
         """
         )
+
+    def _parse_date_text(self, date_str) -> str:
+        """Parse date string to TEXT format for reg_date column"""
+        if not date_str:
+            return datetime.now().strftime("%Y-%m-%d")
+        
+        if isinstance(date_str, datetime):
+            return date_str.strftime("%Y-%m-%d")
+        
+        # Try to parse various date formats
+        date_formats = [
+            "%Y-%m-%d",
+            "%Y/%m/%d", 
+            "%d/%m/%Y",
+            "%m/%d/%Y",
+            "%Y-%m-%d %H:%M:%S",
+        ]
+        
+        for fmt in date_formats:
+            try:
+                return datetime.strptime(str(date_str), fmt).strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+        
+        # If all parsing fails, return current date
+        logger.warning(f"Could not parse date: {date_str}, using current date")
+        return datetime.now().strftime("%Y-%m-%d")
 
     def _parse_date(self, date_str) -> str:
         """Parse date string to YYYY-MM-DD format"""

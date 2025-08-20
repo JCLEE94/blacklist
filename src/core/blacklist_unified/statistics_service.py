@@ -236,11 +236,18 @@ class StatisticsService:
         return []
 
     def get_statistics(self) -> Dict[str, Any]:
-        """통합 통계 정보 (SQLite 또는 PostgreSQL에서 실제 데이터 조회)"""
+        """통합 통계 정보 (PostgreSQL 우선, SQLite 폴백)"""
         conn = None
         try:
-            # Try SQLite first for local development
-
+            # Use PostgreSQL first in production environment
+            flask_env = os.environ.get("FLASK_ENV", "development")
+            
+            if flask_env == "production" or self.database_url.startswith("postgresql://"):
+                # Priority: PostgreSQL in production
+                logger.debug(f"Getting statistics from PostgreSQL: {self.database_url}")
+                return self._get_postgresql_statistics()
+            
+            # Fallback: Try SQLite for local development
             sqlite_db_path = "instance/blacklist.db"
 
             if os.path.exists(sqlite_db_path):
@@ -250,19 +257,19 @@ class StatisticsService:
 
                 # 활성 IP 수
                 cursor.execute(
-                    "SELECT COUNT(DISTINCT ip_address) FROM blacklist WHERE is_active = 1"
+                    "SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries WHERE is_active = 1"
                 )
                 active_ips = cursor.fetchone()[0]
 
                 # 전체 IP 수 (비활성 포함)
-                cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM blacklist")
+                cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries")
                 total_ips = cursor.fetchone()[0]
 
                 # 소스별 통계
                 cursor.execute(
                     """
                     SELECT LOWER(source) as source_name, COUNT(DISTINCT ip_address) as count
-                    FROM blacklist
+                    FROM blacklist_entries
                     WHERE is_active = 1
                     GROUP BY LOWER(source)
                     """
@@ -280,7 +287,7 @@ class StatisticsService:
                 # 마지막 업데이트 시간
                 cursor.execute(
                     """
-                    SELECT MAX(created_at) FROM blacklist
+                    SELECT MAX(created_at) FROM blacklist_entries
                     WHERE is_active = 1
                     """
                 )
@@ -310,7 +317,20 @@ class StatisticsService:
                 )
                 return stats
 
-            # Fallback to PostgreSQL
+            # If SQLite doesn't exist, fall back to PostgreSQL
+            return self._get_postgresql_statistics()
+
+        except Exception as e:
+            logger.error(f"Error getting statistics: {e}")
+            return {"error": str(e), "active_ips": 0, "total_ips": 0}
+        finally:
+            if conn:
+                conn.close()
+
+    def _get_postgresql_statistics(self) -> Dict[str, Any]:
+        """PostgreSQL에서 통계 조회"""
+        conn = None
+        try:
             conn = psycopg2.connect(self.database_url)
             conn.autocommit = True  # Enable autocommit to avoid transaction issues
             cursor = conn.cursor()
@@ -375,6 +395,9 @@ class StatisticsService:
                 if last_update_raw
                 else datetime.now().isoformat()
             )
+
+            # Log success with PostgreSQL stats
+            logger.info(f"PostgreSQL stats: {active_ips} active IPs from {len(sources)} sources")
 
             return {
                 "total_ips": total_ips,

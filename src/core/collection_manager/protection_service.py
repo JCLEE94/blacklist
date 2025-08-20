@@ -164,24 +164,63 @@ class ProtectionService:
             logger.error(f"Error recording protection event: {e}")
 
     def _count_recent_auth_failures(self, hours: int = 1) -> int:
-        """최근 인증 실패 횟수 조회"""
+        """최근 인증 실패 횟수 조회 (SQLite 또는 PostgreSQL)"""
         try:
-            with sqlite3.connect(self.db_path, timeout=5) as conn:
-                cursor = conn.cursor()
+            # Check if we should use PostgreSQL in production
+            flask_env = os.environ.get("FLASK_ENV", "development")
+            database_url = os.environ.get("DATABASE_URL", "")
+            
+            if flask_env == "production" and database_url.startswith("postgresql://"):
+                # Use PostgreSQL in production
+                import psycopg2
+                with psycopg2.connect(database_url) as conn:
+                    cursor = conn.cursor()
+                    cutoff_time = datetime.now() - timedelta(hours=hours)
+                    
+                    # Check if auth_attempts table exists
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.tables 
+                            WHERE table_name = 'auth_attempts'
+                        )
+                    """)
+                    table_exists = cursor.fetchone()[0]
+                    
+                    if not table_exists:
+                        logger.debug("auth_attempts table doesn't exist in PostgreSQL")
+                        return 0
+                    
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM auth_attempts
+                        WHERE success = false
+                          AND created_at > %s
+                        """,
+                        (cutoff_time,),
+                    )
+                    row = cursor.fetchone()
+                    return row[0] if row else 0
+            else:
+                # Fall back to SQLite for local development
+                if not os.path.exists(self.db_path):
+                    logger.debug(f"SQLite database doesn't exist: {self.db_path}")
+                    return 0
+                    
+                with sqlite3.connect(self.db_path, timeout=5) as conn:
+                    cursor = conn.cursor()
+                    cutoff_time = datetime.now() - timedelta(hours=hours)
 
-                cutoff_time = datetime.now() - timedelta(hours=hours)
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM auth_attempts
+                        WHERE success = 0
+                          AND created_at > ?
+                        """,
+                        (cutoff_time.isoformat(),),
+                    )
 
-                cursor.execute(
-                    """
-                    SELECT COUNT(*) FROM auth_attempts
-                    WHERE success = 0
-                      AND created_at > ?
-                    """,
-                    (cutoff_time.isoformat(),),
-                )
-
-                row = cursor.fetchone()
-                return row[0] if row else 0
+                    row = cursor.fetchone()
+                    return row[0] if row else 0
 
         except Exception as e:
             logger.error(f"Error counting recent auth failures: {e}")
