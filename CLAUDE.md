@@ -6,29 +6,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Blacklist Management System** - Enterprise threat intelligence platform with Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Uses Watchtower for automated deployments and ArgoCD GitOps pipeline. 
 
-### Project Status (v1.0.38 - 2025-01-19 현재)
-- **GitOps 성숙도**: 9.0/10 (Self-hosted Runners 전환 완료) - GitHub Container Registry 통합, V2 API 완료, 포트폴리오 사이트 런칭
-- **아키텍처**: Monolithic (Flask) + 완전 오프라인 배포 시스템
-- **성능 기준선**: API 평균 응답시간 7.58ms, 100+ 동시 요청 처리
-- **보안 시스템**: Fernet 암호화, 자동 로테이션, 감사 추적
-- **모니터링**: Prometheus 55개 메트릭, 23개 알림 규칙, 실시간 대시보드
-- **테스트 커버리지**: 95%+ 달성, 통합 테스트 안정화 완료
-- **배포 전략**: 완전 오프라인 패키지 (에어갭 환경), 원클릭 설치
-- **CI/CD 파이프라인**: Self-hosted runners 전환으로 성능 및 제어 개선
-- **최근 변경사항**: shrimp-rules.md AI Agent 규칙 문서 생성, 테스트 인프라 개선
+### Live System Status (v1.0.35 - 2025-08-20 현재)
+- **🌐 Live System**: https://blacklist.jclee.me/ - **FULLY OPERATIONAL**
+- **GitOps 성숙도**: 8.5/10 (Production-ready with GitHub Actions)
+- **아키텍처**: Flask + PostgreSQL + Redis with Docker Compose
+- **성능 실측값**: API 응답시간 50-65ms (excellent), 100+ 동시 요청 처리
+- **보안 시스템**: JWT + API Key 이중 인증 검증 완료
+- **모니터링**: 실시간 헬스체크, 성능 메트릭, 자동 장애 감지
+- **테스트 커버리지**: 19% (95% 목표로 개선 중)
+- **배포 전략**: GitOps with automated GitHub Actions
+- **최근 성과**: 라이브 시스템 안정 운영, 보안 검증 완료, 성능 최적화
 
-### Key Dependencies & Performance Stack (v1.0.35 Enhanced)
-- **Python 3.9+** with Flask 2.3.3 web framework + orjson (3x faster JSON)
-- **Redis 7** for caching (automatic memory fallback, 256MB limit)
-- **PostgreSQL 15** (전용) with connection pooling + 스키마 v2.0 + INET type
-- **Docker & Kubernetes** - ArgoCD GitOps, **registry.jclee.me** GitHub Container Registry
-- **Gunicorn 23.0** WSGI server with Flask-Compress
-- **pytest** comprehensive testing (95% coverage, unit/integration/api markers)
-- **Prometheus** 55개 메트릭 + 23개 알림 규칙
-- **JWT + API Key 이중 보안** 완전 구현 인증 시스템
-- **GitHub Pages 포트폴리오** 현대적 설계 (https://jclee94.github.io/blacklist/)
-- **완전한 V2 API** Sources + Analytics 엔드포인트
-- **오프라인 배포** 완전 자체 포함 패키지
+### Live System Architecture & Performance Stack
+- **🌐 Production URL**: https://blacklist.jclee.me/ (validated operational)
+- **Python 3.9+** with Flask 2.3.3 web framework + performance optimizations
+- **PostgreSQL** with connection pooling and optimized schema
+- **Redis 7** for caching with automatic memory fallback
+- **Docker Compose** production deployment with health monitoring
+- **registry.jclee.me** private container registry
+- **Gunicorn** WSGI server with optimized worker configuration
+- **pytest** testing framework (19% coverage, improving to 95%)
+- **JWT + API Key** dual authentication system (validated)
+- **GitHub Pages** portfolio at https://jclee94.github.io/blacklist/
+- **GitOps** automated deployment with GitHub Actions
+- **Real-time monitoring** with health checks and performance tracking
 
 ### MSA Architecture Components
 - **API Gateway Service** - 라우팅 및 인증
@@ -62,17 +63,21 @@ python3 app/main.py --debug           # Debug mode with verbose logging
 make dev                           # Auto-reload development mode (FLASK_ENV=development)
 make run                           # Same as python3 app/main.py --debug
 
-# 새로운 모니터링 및 헬스체크
-curl http://localhost:32542/health | jq        # 기본 헬스체크
-curl http://localhost:32542/api/health | jq    # 상세 헬스체크
-curl http://localhost:32542/metrics           # Prometheus 메트릭
-curl http://localhost:32542/monitoring/dashboard  # 실시간 대시보드
+# Live System Monitoring
+curl https://blacklist.jclee.me/health | jq                    # Live production health
+curl https://blacklist.jclee.me/api/blacklist/active          # Live IP blacklist
+curl https://blacklist.jclee.me/api/collection/status | jq    # Collection status
+
+# Local Development
+curl http://localhost:32542/health | jq        # Local health check
+curl http://localhost:32542/api/health | jq    # Detailed local health
+curl http://localhost:32542/dashboard          # Collection dashboard
 ```
 
-### Testing (v1.0.38 - 95% Coverage Maintained)
+### Testing (v1.0.35 - Improving from 19% to 95% Target)
 ```bash
-# Unit tests (make test = full test suite with coverage)
-pytest -v                          # All tests (95% coverage)
+# Unit tests (improving coverage from 19% to 95% target)
+pytest -v                          # All tests
 pytest -k "test_name" -v          # Specific test by name
 pytest tests/test_apis.py::test_regtech_apis -v  # Single test function
 pytest -m "not slow" -v           # Skip slow tests
@@ -86,18 +91,19 @@ pytest -m collection -v           # Collection system tests
 pytest -m regtech -v              # REGTECH-specific
 pytest -m secudium -v             # SECUDIUM-specific
 
-# Enhanced test system (v1.0.38)
-pytest tests/conftest_enhanced.py  # 향상된 테스트 픽스처
-pytest tests/test_functional_managers.py  # 기능 매니저 테스트
-pytest tests/test_performance_optimizer_core.py  # 성능 최적화 테스트
+# Test system validation
+pytest tests/test_core_functionality_coverage.py  # Core functionality tests
+pytest tests/test_apis.py                         # API validation tests
+pytest tests/test_collection_system.py            # Collection system tests
 
 # Debug failing tests
 pytest --pdb tests/failing_test.py
 pytest -vvs tests/                # Verbose with stdout
 pytest --tb=short                 # Short traceback (default in pytest.ini)
 
-# 성능 테스트
-python3 tests/integration/performance_benchmark.py  # 성능 벤치마크
+# Performance validation (live system tested at 50-65ms)
+python3 tests/integration/performance_benchmark.py  # Performance benchmarks
+curl -w "Time: %{time_total}s\n" https://blacklist.jclee.me/health  # Live response time
 ```
 
 ### 오프라인 배포 (v1.0.34 새 기능)

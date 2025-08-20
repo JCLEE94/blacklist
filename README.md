@@ -1,53 +1,70 @@
-# 🛡️ Blacklist Management System v1.0.36
+# 🛡️ Blacklist Management System v1.0.35
 
-> **Production-Ready** | **GitOps** | **Enterprise** | **Advanced Analytics**
+> **Production-Ready** | **GitOps** | **Enterprise** | **Live System**
 
-차세대 위협 인텔리전스 플랫폼 - 고급 분석, 실시간 대시보드, 자동 수집 시스템 완비
+차세대 위협 인텔리전스 플랫폼 - 실시간 대시보드, 자동 수집 시스템, JWT 보안 완비
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-jclee94.github.io-blue?style=for-the-badge&logo=github-pages)](https://jclee94.github.io/blacklist/)
+[![Live System](https://img.shields.io/badge/Live%20System-blacklist.jclee.me-success?style=for-the-badge&logo=server)](https://blacklist.jclee.me/)
+[![Live Demo](https://img.shields.io/badge/Portfolio-jclee94.github.io-blue?style=for-the-badge&logo=github-pages)](https://jclee94.github.io/blacklist/)
 [![Docker](https://img.shields.io/badge/Docker-registry.jclee.me-2496ED?style=for-the-badge&logo=docker)](https://registry.jclee.me)
-[![GitOps](https://img.shields.io/badge/GitOps-9.5%2F10-success?style=for-the-badge)](https://github.com/JCLEE94/blacklist/actions)
+[![GitOps](https://img.shields.io/badge/GitOps-8.5%2F10-success?style=for-the-badge)](https://github.com/JCLEE94/blacklist/actions)
 
 ---
 
 ## 🚀 Quick Start
 
+### 🌐 Live System Access
+```bash
+# Production System (Live)
+curl https://blacklist.jclee.me/health | jq
+curl https://blacklist.jclee.me/api/blacklist/active
+open https://blacklist.jclee.me/dashboard
+
+# Portfolio Site
+open https://jclee94.github.io/blacklist/
+```
+
+### 🐳 Local Development
 ```bash
 # Private Registry
-docker run -p 32542:2541 registry.jclee.me/blacklist:latest
+docker run -p 32542:2542 registry.jclee.me/blacklist:latest
 
-# 포트폴리오 사이트 확인
-open https://jclee94.github.io/blacklist/
-
-# API 테스트
+# Local API Testing
 curl http://localhost:32542/health | jq
-curl http://localhost:32542/api/v2/analytics/trends | jq
+curl http://localhost:32542/api/blacklist/active
 
-# 보안 시스템 초기화 (로컬 개발용)
+# Security System Setup
 python3 scripts/init_security.py
 ```
 
-## 📊 시스템 현황 (v1.0.36 Enhanced)
+## 📊 Live System Status (v1.0.35)
 
-- **포트폴리오**: [`jclee94.github.io/blacklist`](https://jclee94.github.io/blacklist/) (GitHub Pages)
-- **컨테이너**: `registry.jclee.me/blacklist` (Private Registry)  
-- **아키텍처**: Flask + SQLite + Redis + 고급 분석 엔진
-- **수집**: REGTECH/SECUDIUM 자동화 + 실시간 대시보드
-- **분석**: 위협 인텔리전스 + 네트워크 분석 + 예측 시스템
-- **배포**: GitOps (Push → GitHub Actions → 자동 배포)
+- **🌐 Live URL**: [`blacklist.jclee.me`](https://blacklist.jclee.me/) - **OPERATIONAL**
+- **📊 Portfolio**: [`jclee94.github.io/blacklist`](https://jclee94.github.io/blacklist/) (GitHub Pages)
+- **🐳 Container**: `registry.jclee.me/blacklist:latest` (Private Registry)
+- **🏗️ Architecture**: Flask + PostgreSQL + Redis + JWT Authentication
+- **📡 Collection**: REGTECH/SECUDIUM Automated + Real-time Dashboard
+- **🔒 Security**: JWT + API Key dual authentication system
+- **🚀 Deployment**: GitOps with GitHub Actions
+- **📈 Performance**: 50-65ms response times (excellent)
 
-## 🔗 주요 엔드포인트
+## 🔗 Live System Endpoints
 
-### 🆕 Advanced Analytics API (v1.0.36 New!)
-| URL | 기능 | 상태 |
-|-----|------|------|
-| `/api/analytics/threat-intelligence` | 위협 인텔리전스 보고서 | ✅ |
-| `/api/analytics/network-analysis` | 네트워크 분석 (서브넷, 지리적) | ✅ |
-| `/api/analytics/attack-correlations` | 공격 상관관계 분석 | ✅ |
-| `/api/analytics/predictions` | 예측 인사이트 | ✅ |
-| `/api/analytics/comprehensive-report` | 종합 위협 보고서 | ✅ |
-| `/dashboard` | 수집 대시보드 (캘린더 + 트렌드) | ✅ |
-| `/analytics` | 고급 분석 대시보드 | ✅ |
+### 🌐 Core System (Live at blacklist.jclee.me)
+| URL | Description | Status |
+|-----|-------------|--------|
+| [`/health`](https://blacklist.jclee.me/health) | System health check | ✅ LIVE |
+| [`/api/blacklist/active`](https://blacklist.jclee.me/api/blacklist/active) | Active IP blacklist | ✅ LIVE |
+| [`/api/fortigate`](https://blacklist.jclee.me/api/fortigate) | FortiGate integration | ✅ LIVE |
+| [`/dashboard`](https://blacklist.jclee.me/dashboard) | Collection dashboard | ✅ LIVE |
+| [`/statistics`](https://blacklist.jclee.me/statistics) | Statistics dashboard | ✅ LIVE |
+
+### 🔒 Authentication & Security
+| URL | Description | Status |
+|-----|-------------|--------|
+| `/api/auth/login` | JWT Authentication | ✅ |
+| `/api/keys/verify` | API Key verification | ✅ |
+| `/api/collection/status` | Collection status | ✅ |
 
 ### 🔒 V2 API & Auth
 | URL | 기능 | 상태 |
@@ -99,113 +116,127 @@ git push origin main
 - 23개 알림 규칙  
 - 실시간 대시보드
 
-## 📈 성능 지표
+## 📈 Performance Metrics (Live System)
 
-- **응답 시간**: 평균 7.58ms
-- **동시 처리**: 100+ 요청
-- **테스트 커버리지**: 95%+
-- **GitOps 성숙도**: 9.5/10
-- **보안 시스템**: JWT + API Key 완전 구현
+- **⚡ Response Time**: 50-65ms (excellent)
+- **🔄 Concurrent Requests**: 100+ supported
+- **🧪 Test Coverage**: 19% (improving toward 95% target)
+- **🔄 GitOps Maturity**: 8.5/10 (production-ready)
+- **🔒 Security**: JWT + API Key authentication validated
+- **💾 Database**: PostgreSQL with connection pooling
+- **🚀 Deployment**: Automated with GitHub Actions
 
-## 🔍 Advanced Analytics System (v1.0.36 Major Update)
+## 🔍 Live System Features
 
-### 📊 실시간 분석 현황
-- **총 위협 분석**: 2,367개 IP 주소
-- **위험도 분포**: HIGH 1,298개, MEDIUM 878개, CRITICAL 188개
-- **네트워크 분석**: 18개 고위험 서브넷, 47개 위험 국가
-- **보안 권장사항**: 5개 실행 가능한 권장사항 자동 생성
-
-### 🧠 위협 인텔리전스 엔진
+### 📊 Real-time Threat Intelligence
 ```bash
-# 위협 인텔리전스 보고서
-curl http://localhost:32542/api/analytics/threat-intelligence | jq
-
-# 네트워크 분석 (서브넷 + 지리적)
-curl http://localhost:32542/api/analytics/network-analysis | jq
-
-# 공격 패턴 상관관계
-curl http://localhost:32542/api/analytics/attack-correlations | jq
-
-# 예측 인사이트
-curl http://localhost:32542/api/analytics/predictions | jq
+# Live System API Testing
+curl https://blacklist.jclee.me/health | jq
+curl https://blacklist.jclee.me/api/blacklist/active
+curl https://blacklist.jclee.me/api/collection/status | jq
 ```
 
-### 📈 대시보드 시스템
-- **수집 대시보드** (`/dashboard`): 일별 수집 현황, 캘린더 시각화, 자동수집
-- **고급 분석 대시보드** (`/analytics`): 위협 분석, 네트워크 매핑, 예측 시스템
-- **실시간 차트**: Chart.js 기반 인터랙티브 시각화
-- **자동 갱신**: 5분 주기 자동 데이터 업데이트
+### 📈 Dashboard System
+- **Collection Dashboard** ([`/dashboard`](https://blacklist.jclee.me/dashboard)): Daily collection status, calendar visualization
+- **Statistics Dashboard** ([`/statistics`](https://blacklist.jclee.me/statistics)): Real-time analytics and charts
+- **System Health**: Real-time monitoring with health checks
+- **Performance Metrics**: Response time and system resource tracking
 
-### 🔄 자동 수집 시스템
-- **미수집일 자동 감지**: 30일 기간 내 누락된 수집일 식별
-- **배치 수집**: 최대 10일분 일괄 자동 수집
-- **진행률 추적**: 실시간 수집 진행 상황 모니터링
-- **품질 관리**: IP 검증, 중복 제거, 위협도 자동 분류
+### 🔄 Automated Collection System
+- **REGTECH Integration**: Automated threat data collection
+- **SECUDIUM Integration**: Secondary threat intelligence source
+- **Real-time Processing**: Immediate IP validation and classification
+- **Quality Control**: Duplicate removal and threat level classification
+- **Progress Tracking**: Real-time collection progress monitoring
 
-## 🆕 새로운 기능 (v1.0.35-1.0.36)
+## 🆕 Production System Features (v1.0.35)
 
-### 🎨 프로덕션 사이트
-- **라이브 데모**: https://jclee94.github.io/blacklist/
-- 모던 다크 테마 + 반응형 디자인
-- 대화형 성능 메트릭 차트
-- 완전한 API 문서 + 아키텍처 다이어그램
+### 🌐 Live Production System
+- **Live URL**: https://blacklist.jclee.me/ - **FULLY OPERATIONAL**
+- **High Availability**: Docker Compose with health checks
+- **Performance**: 50-65ms response times validated
+- **Security**: JWT + API Key authentication working
 
-### 🔐 JWT + API Key 보안 시스템
+### 🎨 Portfolio Website
+- **Demo Site**: https://jclee94.github.io/blacklist/
+- Modern dark theme with responsive design
+- Interactive performance metrics charts
+- Complete API documentation and architecture diagrams
+
+### 🔐 Security System
 ```bash
-# 자동 초기화
+# Live System Security Testing
+curl https://blacklist.jclee.me/api/keys/verify
+curl -X POST https://blacklist.jclee.me/api/auth/login
+
+# Local Development Setup
 python3 scripts/init_security.py
-
-# API 키 테스트
-curl -H "X-API-Key: blk_your-key" http://localhost:32542/api/keys/verify
-
-# JWT 로그인
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"your-password"}' \
-  http://localhost:32542/api/auth/login
 ```
 
-### ✅ V2 API 완전 구현
-- Analytics API (6개 엔드포인트)
-- Sources API (실시간 상태)
-- 통합 캐싱 + 에러 처리
-- OpenAPI 문서 자동 생성
+### ✅ System Infrastructure
+- **Database**: PostgreSQL with connection pooling
+- **Cache**: Redis with memory fallback
+- **Monitoring**: Health checks and performance metrics
+- **Deployment**: GitOps with automated GitHub Actions
 
-## 🔧 개발 환경
+## 🔧 Development Environment
 
+### 🌐 Live System Testing
 ```bash
-# 환경 설정
-make init                          # 프로젝트 초기화
-python3 scripts/setup-credentials.py  # 자격증명 설정
-
-# 테스트
-pytest -v                          # 전체 테스트 (95% 커버리지)
-pytest -m unit                     # 유닛 테스트만
-pytest -m api                      # API 테스트만
-
-# 코드 품질
-flake8 src/ --count                # 린팅
-black src/ tests/                  # 포맷팅
-bandit -r src/                     # 보안 스캔
-
-# 로컬 실행
-python3 main.py --debug            # 개발 서버 (포트 2542)
-docker-compose up -d               # Docker 환경 (포트 32542)
-
-# 대시보드 접속
-open http://localhost:32542/dashboard      # 수집 대시보드
-open http://localhost:32542/analytics      # 고급 분석 대시보드
+# Test live production system
+curl https://blacklist.jclee.me/health | jq
+curl https://blacklist.jclee.me/api/blacklist/active
+open https://blacklist.jclee.me/dashboard
 ```
 
-## 🚢 배포
-
+### 🛠️ Local Development
 ```bash
-# GitHub Container Registry 사용
-docker pull ghcr.io/jclee94/blacklist:latest
+# Environment setup
+make init                              # Project initialization
+python3 scripts/setup-credentials.py  # Credentials setup
 
-# 자동 배포 (GitOps)
-git push origin main  # GitHub Actions가 자동으로 배포
+# Testing (improving from 19% to 95% target)
+pytest -v                              # All tests
+pytest -m unit                         # Unit tests only
+pytest -m api                          # API tests only
+pytest --cov=src --cov-report=html    # Coverage report
 
-# 오프라인 패키지 생성
+# Code quality
+flake8 src/ --count                    # Linting
+black src/ tests/                      # Formatting
+bandit -r src/                         # Security scan
+
+# Local execution
+docker-compose up -d                   # Docker environment (port 32542:2542)
+
+# Access dashboards
+open http://localhost:32542/dashboard      # Collection dashboard
+open http://localhost:32542/statistics     # Statistics dashboard
+```
+
+## 🚢 Deployment
+
+### 🌐 Production System
+```bash
+# Live production system (already deployed)
+https://blacklist.jclee.me/
+
+# Registry access
+docker pull registry.jclee.me/blacklist:latest
+
+# GitOps deployment
+git push origin main  # Triggers GitHub Actions automatic deployment
+```
+
+### 🐳 Local Deployment
+```bash
+# Docker Compose (matches production configuration)
+docker-compose up -d
+
+# Health verification
+curl http://localhost:32542/health | jq
+
+# Offline package creation
 python3 scripts/create-offline-package.py
 ```
 
