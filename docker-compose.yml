@@ -12,6 +12,8 @@ services:
     volumes:
       - ./data:/app/instance
       - ./logs:/app/logs
+      - ./src:/app/src  # Mount source code for development
+      - ./templates:/app/templates  # Mount templates
     environment:
       FLASK_ENV: production
       PORT: 2542

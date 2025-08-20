@@ -22,9 +22,9 @@ def control_alias():
     return render_template("unified_dashboard.html")
 
 
-@unified_dashboard_bp.route("/dashboard")
+@unified_dashboard_bp.route("/dashboard-old")
 def dashboard_alias():
-    """대시보드 접근 별칭 URL"""
+    """대시보드 접근 별칭 URL (임시 비활성화)"""
     return render_template("unified_dashboard.html")
 
 

@@ -38,24 +38,28 @@ def _get_dashboard_data():
         public_count = 0
 
         try:
-            # 데이터베이스에서 소스별 통계 직접 조회 (올바른 테이블명 사용)
-            import sqlite3
+            # 데이터베이스에서 소스별 통계 직접 조회 (PostgreSQL 연결 사용)
+            import os
+            import psycopg2
 
-            from src.config.settings import settings
-
-            db_path = settings.database_uri.replace("sqlite:///", "")
-            with sqlite3.connect(db_path, timeout=10) as conn:
+            # Get PostgreSQL connection URL from environment
+            database_url = os.environ.get(
+                "DATABASE_URL",
+                "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist"
+            )
+            
+            with psycopg2.connect(database_url) as conn:
                 cursor = conn.cursor()
 
-                # 소스별 카운트 조회 (blacklist_entries 테이블 사용)
+                # 소스별 카운트 조회 (blacklist_entries 테이블 사용 - PostgreSQL 문법)
                 cursor.execute(
                     """
                     SELECT 
                         LOWER(source) as source_name,
                         COUNT(*) as count
                     FROM blacklist_entries 
-                    WHERE is_active = 1 
-                      AND (exp_date IS NULL OR exp_date > datetime('now'))
+                    WHERE is_active = true 
+                      AND (expiry_date IS NULL OR expiry_date > NOW())
                     GROUP BY LOWER(source)
                 """
                 )
@@ -140,10 +144,26 @@ def _get_dashboard_data():
 
 
 @web_routes_bp.route("/", methods=["GET"])
-@web_routes_bp.route("/dashboard", methods=["GET"])
+@web_routes_bp.route("/dashboard-fixed", methods=["GET"])
 def dashboard():
-    """메인페이지 - 통합 관리패널로 리다이렉트"""
-    return redirect(url_for("web_routes.unified_control_panel"))
+    """메인페이지 - 통합 관리패널 (임시로 다른 경로 사용)"""
+    try:
+        # Use the same template as working unified-control endpoint
+        return render_template("unified_control.html")
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        # Return simple HTML as fallback
+        return """
+        <html>
+        <head><title>Dashboard</title></head>
+        <body>
+            <h1>Dashboard Temporarily Unavailable</h1>
+            <p>Error: {}</p>
+            <p><a href="/unified-control">Use Unified Control Panel</a></p>
+            <p><a href="/test">Test Page</a></p>
+        </body>
+        </html>
+        """.format(str(e)), 500
 
 
 @web_routes_bp.route("/legacy-dashboard", methods=["GET"])
@@ -165,9 +185,9 @@ def legacy_dashboard():
         )
 
 
-@web_routes_bp.route("/unified-control", methods=["GET"])
+@web_routes_bp.route("/unified-control-old", methods=["GET"])
 def unified_control_panel():
-    """통합 관리패널"""
+    """통합 관리패널 (원래 데이터 포함 버전 - 임시 비활성화)"""
     try:
         return render_template("unified_dashboard.html", **_get_dashboard_data())
     except Exception as e:

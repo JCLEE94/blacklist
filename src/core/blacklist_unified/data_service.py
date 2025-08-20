@@ -253,11 +253,11 @@ class DataService:
 
                 cursor.execute(
                     """
-                    SELECT DISTINCT ip::text
+                    SELECT DISTINCT ip_address::text
                     FROM blacklist_entries
                     WHERE is_active = true
                       AND (expiry_date IS NULL OR expiry_date > CURRENT_DATE)
-                    ORDER BY ip
+                    ORDER BY ip_address
                     """
                 )
 
@@ -370,7 +370,7 @@ class DataService:
                     FROM blacklist_entries
                     WHERE is_active = 1
                       AND (expires_at IS NULL OR expires_at > datetime('now'))
-                    ORDER BY updated_at DESC, ip
+                    ORDER BY updated_at DESC, ip_address
                     """
                 )
 

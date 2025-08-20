@@ -165,12 +165,16 @@ class RegtechCollector(BaseCollector):
 
             logger.info("Starting cookie-based data collection")
 
-            # 블랙리스트 페이지들 시도
+            # 실제 REGTECH 사이트 구조에 맞는 블랙리스트 페이지들
             blacklist_urls = [
-                "/board/boardList?menuCode=HPHB0620101",  # 악성IP차단
-                "/board/excelDownload?menuCode=HPHB0620101",  # Excel 다운로드
-                "/threat/blacklist/list",
-                "/api/blacklist/search",
+                "/board/11/boardList",  # 공지사항 게시판 (위협 정보 포함 가능)
+                "/fcti/securityAdvisory/advisoryList",  # 보안 권고 목록
+                "/fcti/securityAdvisory/blacklistDownload",  # 블랙리스트 다운로드
+                "/fcti/threat/threatList",  # 위협 정보 목록
+                "/fcti/threat/ipBlacklist",  # IP 블랙리스트
+                "/fcti/report/threatReport",  # 위협 리포트
+                "/board/boardList?menuCode=FCTI",  # FCTI 관련 게시판
+                "/threat/intelligence/ipList",  # 위협 인텔리전스 IP 목록
             ]
 
             for path in blacklist_urls:
@@ -263,7 +267,7 @@ class RegtechCollector(BaseCollector):
                 self.current_session = session
 
                 # 로그인 시도
-                if not await self._robust_login(session):
+                if not self._robust_login(session):
                     raise Exception("로그인 실패 후 재시도 한계 도달")
 
                 # 데이터 수집
@@ -308,9 +312,9 @@ class RegtechCollector(BaseCollector):
 
         return collected_ips
 
-    async def _robust_login(self, session: requests.Session) -> bool:
+    def _robust_login(self, session: requests.Session) -> bool:
         """강화된 로그인 로직 - 인증 모듈로 위임"""
-        return await self.auth.robust_login(session)
+        return self.auth.robust_login(session)
 
     async def _robust_collect_ips(
         self, session: requests.Session, start_date: str, end_date: str

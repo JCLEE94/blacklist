@@ -69,7 +69,7 @@ class RegtechRequestUtils:
                 "estId": "",
             }
 
-            # 요청 전송
+            # 보안 권고 목록 페이지로 요청 전송
             url = f"{self.base_url}/fcti/securityAdvisory/advisoryList"
             response = session.post(
                 url,

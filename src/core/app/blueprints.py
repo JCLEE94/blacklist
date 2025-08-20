@@ -15,6 +15,15 @@ class BlueprintRegistrationMixin:
 
     def _register_core_blueprints(self, app, container):
         """핵심 블루프린트 등록"""
+        # Register dashboard fix blueprint first (highest priority)
+        try:
+            from ..routes.dashboard_fix import dashboard_fix_bp
+            
+            app.register_blueprint(dashboard_fix_bp)
+            logger.info("Dashboard fix routes registered successfully (highest priority)")
+        except Exception as e:
+            logger.error(f"Failed to register dashboard fix routes: {e}")
+
         # Register root route blueprint
         from ..root_route import root_bp
 

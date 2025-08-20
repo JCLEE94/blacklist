@@ -162,8 +162,8 @@ class RegtechAuth:
 
     def robust_login(self, session: requests.Session) -> bool:
         """
-        강화된 로그인 로직 - 새로운 2단계 프로세스 (2025년 업데이트)
-        브라우저 분석으로 검증된 성공한 인증 방식 적용
+        강화된 로그인 로직 - 수정된 2단계 프로세스 (2025년 8월 업데이트)
+        실제 브라우저 네트워크 분석 결과 적용
 
         Args:
             session: 사용할 세션 객체
@@ -173,23 +173,28 @@ class RegtechAuth:
         """
         try:
             # 1. 로그인 페이지 접속 (세션 쿠키 획득)
-            logger.info("🔐 Getting session cookie...")
-            session.get(f"{self.base_url}/login/loginForm", timeout=self.timeout)
+            logger.info("🔐 Getting session cookie from login form...")
+            login_form_resp = session.get(f"{self.base_url}/login/loginForm", timeout=self.timeout)
+            if login_form_resp.status_code != 200:
+                logger.error(f"❌ Failed to access login form: {login_form_resp.status_code}")
+                return False
 
             # 2. 사용자 확인 API 호출 (첫 번째 단계)
             logger.info(f"👤 Verifying user: {self.username}")
-            verify_data = {"memberId": self.username, "memberPw": self.password}
+            
+            # AJAX 헤더로 업데이트
+            session.headers.update({
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Origin": self.base_url,
+                "Referer": f"{self.base_url}/login/loginForm",
+            })
 
-            # AJAX 헤더 설정
-            session.headers.update(
-                {
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Accept": "application/json, text/javascript, */*; q=0.01",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Origin": self.base_url,
-                    "Referer": f"{self.base_url}/login/loginForm",
-                }
-            )
+            verify_data = {
+                "memberId": self.username,
+                "memberPw": self.password
+            }
 
             verify_resp = session.post(
                 f"{self.base_url}/member/findOneMember",
@@ -197,17 +202,49 @@ class RegtechAuth:
                 timeout=self.timeout,
             )
 
-            if verify_resp.status_code != 200:
+            # 사용자 검증 응답 확인
+            if verify_resp.status_code == 200:
+                logger.info("✅ User verification successful")
+            elif verify_resp.status_code == 404:
+                # 404는 사용자 정보 오류를 의미할 수 있음
+                try:
+                    error_data = verify_resp.json()
+                    error_code = error_data.get('code', '')
+                    error_msg = error_data.get('message', '')
+                    
+                    if error_code in ['E00010002', 'E00010201']:
+                        logger.error(f"❌ Invalid credentials: {error_msg}")
+                        return False
+                    elif error_code == 'E00010203':
+                        logger.error("❌ Email certification required")
+                        return False
+                    elif error_code == 'E00010204':
+                        logger.error("❌ Account locked due to multiple login failures")
+                        return False
+                    else:
+                        logger.warning(f"⚠️ Unknown error code {error_code}: {error_msg}")
+                except:
+                    logger.error(f"❌ User verification failed with status {verify_resp.status_code}")
+                    return False
+            else:
                 logger.error(f"❌ User verification failed: {verify_resp.status_code}")
                 return False
 
-            logger.info("✅ User verified successfully")
-
             # 3. 실제 로그인 (두 번째 단계)
             logger.info("🔑 Performing actual login...")
+            
+            # 일반 폼 헤더로 변경
+            session.headers.update({
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            })
+            # AJAX 헤더 제거
+            if "X-Requested-With" in session.headers:
+                del session.headers["X-Requested-With"]
+
             login_form_data = {
-                "username": self.username,  # 브라우저 분석으로 확인된 필드명
-                "password": self.password,  # 브라우저 분석으로 확인된 필드명
+                "username": self.username,
+                "password": self.password,
                 "login_error": "",
                 "txId": "",
                 "token": "",
@@ -216,26 +253,48 @@ class RegtechAuth:
             }
 
             login_resp = session.post(
-                f"{self.base_url}/login/addLogin",  # 브라우저 분석으로 확인된 엔드포인트
+                f"{self.base_url}/login/addLogin",
                 data=login_form_data,
                 timeout=self.timeout,
                 allow_redirects=True,
             )
 
             # 로그인 성공 확인
-            if login_resp.status_code == 200 and "main" in login_resp.url:
-                if "logout" in login_resp.text.lower() or "로그아웃" in login_resp.text:
-                    logger.info("✅ REGTECH login successful!")
-                    self.session = session
-                    return True
+            if login_resp.status_code == 200:
+                # URL 체크 - 메인 페이지로 리다이렉트되었는지 확인
+                if "/main/main" in login_resp.url or "main" in login_resp.url:
+                    # 페이지 내용에서 로그인 성공 지표 확인
+                    if "logout" in login_resp.text.lower() or "로그아웃" in login_resp.text:
+                        logger.info("✅ REGTECH login successful!")
+                        self.session = session
+                        return True
+                    else:
+                        logger.warning("⚠️ Redirected to main but logout link not found")
+                
+                # 로그인 실패 메시지 확인
+                if "로그인 실패" in login_resp.text or "login failed" in login_resp.text.lower():
+                    logger.error("❌ Login failed - incorrect credentials")
+                    return False
+                
+                # 로그인 폼이 여전히 존재하는지 확인
+                if 'id="loginForm"' in login_resp.text or 'name="loginForm"' in login_resp.text:
+                    logger.error("❌ Login failed - still on login page")
+                    return False
 
-            logger.error("❌ REGTECH login failed - redirect or content check failed")
+            logger.error("❌ REGTECH login failed - unexpected response")
             logger.debug(f"Response URL: {login_resp.url}")
             logger.debug(f"Response status: {login_resp.status_code}")
+            logger.debug(f"Response text (first 500 chars): {login_resp.text[:500]}")
             return False
 
+        except requests.exceptions.Timeout:
+            logger.error("❌ REGTECH login timeout")
+            return False
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"❌ REGTECH login connection error: {e}")
+            return False
         except Exception as e:
-            logger.error(f"❌ REGTECH login error: {e}")
+            logger.error(f"❌ REGTECH login unexpected error: {e}")
             return False
 
     def create_authenticated_session(self) -> requests.Session:

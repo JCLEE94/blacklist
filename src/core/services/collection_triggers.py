@@ -120,6 +120,11 @@ class CollectionTriggersMixin:
 
                     # 데이터 저장 추가!
                     collected_data = result.get("data", [])
+                    self.logger.info(f"🔍 Debug: result keys = {result.keys()}")
+                    self.logger.info(f"🔍 Debug: collected_data length = {len(collected_data)}")
+                    self.logger.info(f"🔍 Debug: collected_data type = {type(collected_data)}")
+                    if collected_data and len(collected_data) > 0:
+                        self.logger.info(f"🔍 Debug: first item = {collected_data[0]}")
                     if collected_data:
                         self.logger.info(
                             f"REGTECH에서 {len(collected_data)}개 IP 수집됨, 저장 시작..."

@@ -66,24 +66,24 @@ class FixedDataStorage:
 
                         # Prepare data for insertion
                         insert_data = {
-                            "ip": ip_address,
+                            "ip_address": ip_address,
                             "source": ip_entry.get("source", source),
                             "description": ip_entry.get("description", ""),
-                            "threat_level": ip_entry.get("confidence", "medium"),
+                            "threat_type": ip_entry.get("confidence", "medium"),
                             "detection_date": self._parse_date(
                                 ip_entry.get("detection_date")
                             ),
                             "expiry_date": self._calculate_expiry_date(
                                 ip_entry.get("detection_date")
                             ),
-                            "created_at": datetime.now(),
+                            "added_at": datetime.now(),
                             "updated_at": datetime.now(),
                             "is_active": True,
                         }
 
                         # First check if IP exists
                         cursor.execute(
-                            "SELECT id FROM blacklist_entries WHERE ip = %s",
+                            "SELECT id FROM blacklist_entries WHERE ip_address = %s",
                             (ip_address,),
                         )
                         existing = cursor.fetchone()
@@ -95,11 +95,11 @@ class FixedDataStorage:
                                 UPDATE blacklist_entries SET
                                     source = %(source)s,
                                     description = %(description)s,
-                                    threat_level = %(threat_level)s,
+                                    threat_type = %(threat_type)s,
                                     detection_date = %(detection_date)s,
                                     updated_at = %(updated_at)s,
                                     is_active = %(is_active)s
-                                WHERE ip = %(ip)s
+                                WHERE ip_address = %(ip_address)s
                             """,
                                 insert_data,
                             )
@@ -108,11 +108,11 @@ class FixedDataStorage:
                             cursor.execute(
                                 """
                                 INSERT INTO blacklist_entries (
-                                    ip, source, description, threat_level, 
-                                    detection_date, expiry_date, created_at, updated_at, is_active
+                                    ip_address, source, description, threat_type, 
+                                    detection_date, expiry_date, added_at, updated_at, is_active
                                 ) VALUES (
-                                    %(ip)s, %(source)s, %(description)s, %(threat_level)s,
-                                    %(detection_date)s, %(expiry_date)s, %(created_at)s, %(updated_at)s, %(is_active)s
+                                    %(ip_address)s, %(source)s, %(description)s, %(threat_type)s,
+                                    %(detection_date)s, %(expiry_date)s, %(added_at)s, %(updated_at)s, %(is_active)s
                                 )
                             """,
                                 insert_data,
@@ -165,13 +165,13 @@ class FixedDataStorage:
             """
             CREATE TABLE IF NOT EXISTS blacklist_entries (
                 id SERIAL PRIMARY KEY,
-                ip INET NOT NULL UNIQUE,
+                ip_address INET NOT NULL UNIQUE,
                 source VARCHAR(100),
                 description TEXT,
-                threat_level VARCHAR(50) DEFAULT 'medium',
+                threat_type VARCHAR(50) DEFAULT 'medium',
                 detection_date DATE,
                 expiry_date DATE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 is_active BOOLEAN DEFAULT TRUE
             )
@@ -181,7 +181,7 @@ class FixedDataStorage:
         # Create indexes for performance
         cursor.execute(
             """
-            CREATE INDEX IF NOT EXISTS idx_blacklist_ip ON blacklist_entries (ip);
+            CREATE INDEX IF NOT EXISTS idx_blacklist_ip_address ON blacklist_entries (ip_address);
         """
         )
         cursor.execute(
@@ -264,11 +264,11 @@ class FixedDataStorage:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT ip::text, source, description, threat_level, 
-                           detection_date, created_at, updated_at
+                    SELECT ip_address::text, source, description, threat_type, 
+                           detection_date, added_at, updated_at
                     FROM blacklist_entries 
                     WHERE is_active = TRUE 
-                    ORDER BY created_at DESC 
+                    ORDER BY added_at DESC 
                     LIMIT %s
                 """,
                     (limit,),

@@ -95,64 +95,19 @@ def simple_test():
 
 
 @dashboard_bp.route("/")
-@dashboard_bp.route("/dashboard")
+@dashboard_bp.route("/dashboard-disabled-for-debug")
 def dashboard():
-    """Main dashboard page"""
-    try:
-        # Get system statistics
-        stats = get_stats()
-        build_info = {
-            "version": get_build_version(),
-            "build_time": get_build_time(),
-        }
-
-        # Calculate percentages for chart
-        total = stats.get("total_ips", 0)
-        sources = stats.get("sources", {})
-
-        source_percentages = {}
-        if total > 0:
-            for source, count in sources.items():
-                source_percentages[source] = round((count / total) * 100, 1)
-        else:
-            source_percentages = {source: 0 for source in sources.keys()}
-
-        # Recent activity (mock data)
-        recent_activity = [
-            {
-                "time": (datetime.now() - timedelta(minutes=5)).strftime("%H:%M:%S"),
-                "action": "시스템 상태 확인",
-                "status": "success",
-            },
-            {
-                "time": (datetime.now() - timedelta(minutes=15)).strftime("%H:%M:%S"),
-                "action": "블랙리스트 업데이트",
-                "status": "success",
-            },
-            {
-                "time": (datetime.now() - timedelta(minutes=30)).strftime("%H:%M:%S"),
-                "action": "데이터 수집",
-                "status": "success",
-            },
-        ]
-
-        return render_template(
-            "dashboard.html",
-            stats=stats,
-            build_info=build_info,
-            source_percentages=source_percentages,
-            recent_activity=recent_activity,
-            current_time=datetime.now(),
-        )
-
-    except Exception as e:
-        logger.error(f"Dashboard error: {e}")
-        # Return a simple error page
-        return (
-            "<h1>Dashboard Error</h1><p>Error: {str(e)}</p>"
-            '<p><a href="/test">Test Page</a></p>',
-            500,
-        )
+    """Main dashboard page - DISABLED FOR DEBUG"""
+    return """
+    <html>
+    <head><title>Dashboard Disabled</title></head>
+    <body>
+        <h1>Dashboard Disabled for Debugging</h1>
+        <p>Original route disabled to identify issue source</p>
+        <p><a href="/unified-control">Unified Control Panel</a></p>
+    </body>
+    </html>
+    """
 
 
 @dashboard_bp.route("/data-management")

@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 collection_dashboard_bp = Blueprint("collection_dashboard", __name__)
 
 
-@collection_dashboard_bp.route("/dashboard")
+@collection_dashboard_bp.route("/dashboard-collection")
 def dashboard_page():
-    """대시보드 페이지"""
+    """대시보드 페이지 (경로 변경으로 충돌 해결)"""
     return render_template("collection_dashboard.html")
 
 
