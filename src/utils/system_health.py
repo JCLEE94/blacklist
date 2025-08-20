@@ -68,11 +68,11 @@ class SystemHealth:
         # timestamp 처리
         if "timestamp" in data and isinstance(data["timestamp"], str):
             data["timestamp"] = datetime.fromisoformat(data["timestamp"])
-        
+
         # warnings 처리
         if "warnings" not in data:
             data["warnings"] = []
-            
+
         return cls(**data)
 
     def is_critical(self) -> bool:
@@ -86,7 +86,7 @@ class SystemHealth:
     def get_issues(self) -> List[str]:
         """현재 발생한 이슈 목록 반환"""
         issues = []
-        
+
         if self.cpu_percent > 90:
             issues.append(f"High CPU usage: {self.cpu_percent:.1f}%")
         if self.memory_percent > 90:
@@ -99,45 +99,51 @@ class SystemHealth:
             issues.append(f"Cache status: {self.cache_status}")
         if self.error_count_last_hour > 10:
             issues.append(f"High error count: {self.error_count_last_hour} errors/hour")
-            
+
         return issues
 
 
 if __name__ == "__main__":
     # Validation tests for system health
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: SystemHealth creation
     total_tests += 1
     try:
         health = SystemHealth()
         if health.overall_status != "healthy":
-            all_validation_failures.append(f"Default health status should be healthy, got {health.overall_status}")
+            all_validation_failures.append(
+                f"Default health status should be healthy, got {health.overall_status}"
+            )
     except Exception as e:
         all_validation_failures.append(f"SystemHealth creation failed: {e}")
-    
+
     # Test 2: Warning system
     total_tests += 1
     try:
         health = SystemHealth()
         health.add_warning("Test warning")
         if len(health.warnings) != 1:
-            all_validation_failures.append(f"Warning not added correctly, expected 1, got {len(health.warnings)}")
+            all_validation_failures.append(
+                f"Warning not added correctly, expected 1, got {len(health.warnings)}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Warning system test failed: {e}")
-    
+
     # Test 3: Status calculation
     total_tests += 1
     try:
         health = SystemHealth(cpu_percent=95.0)
         if health.overall_status != "warning":
-            all_validation_failures.append(f"High CPU should trigger warning status, got {health.overall_status}")
+            all_validation_failures.append(
+                f"High CPU should trigger warning status, got {health.overall_status}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Status calculation test failed: {e}")
-    
+
     # Test 4: Dictionary conversion
     total_tests += 1
     try:
@@ -147,14 +153,18 @@ if __name__ == "__main__":
             all_validation_failures.append("Dictionary conversion failed")
     except Exception as e:
         all_validation_failures.append(f"Dictionary conversion test failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("System health dataclass is validated and ready for use")
         sys.exit(0)

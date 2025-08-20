@@ -59,7 +59,8 @@ class TestEnhancedSmartCache:
         """Test cache TTL functionality"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = EnhancedSmartCache(backend_type="memory")
+        # Force memory backend by passing redis_url=None
+        manager = EnhancedSmartCache(redis_url=None)
         
         # Test with very short TTL
         test_key = "ttl_test_key"
@@ -81,7 +82,7 @@ class TestEnhancedSmartCache:
         """Test cache delete functionality"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = EnhancedSmartCache(backend_type="memory")
+        manager = EnhancedSmartCache(redis_url=None)
         
         test_key = "delete_test_key"
         test_value = "delete_test_value"
@@ -98,7 +99,7 @@ class TestEnhancedSmartCache:
         """Test cache exists functionality"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = EnhancedSmartCache(backend_type="memory")
+        manager = EnhancedSmartCache(redis_url=None)
         
         test_key = "exists_test_key"
         test_value = "exists_test_value"
@@ -116,7 +117,7 @@ class TestEnhancedSmartCache:
         """Test cache clear functionality"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        manager = EnhancedSmartCache(backend_type="memory")
+        manager = EnhancedSmartCache(redis_url=None)
         
         # Set multiple values
         manager.set("key1", "value1")
@@ -234,20 +235,21 @@ class TestCacheDecorators:
     """Test cache decorators"""
 
     def test_cached_decorator_import(self):
-        """Test cached decorator can be imported"""
-        from src.utils.advanced_cache.decorators import cached
-        assert cached is not None
+        """Test cache decorator can be imported"""
+        from src.utils.advanced_cache.decorators import cache_decorator
+        assert cache_decorator is not None
 
     def test_cached_decorator_basic(self):
-        """Test basic cached decorator functionality"""
-        from src.utils.advanced_cache.decorators import cached
+        """Test basic cache decorator functionality"""
+        from src.utils.advanced_cache.decorators import cache_decorator, set_cache_instance
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)
+        set_cache_instance(cache)
         
         call_count = 0
         
-        @cached(cache, ttl=300)
+        @cache_decorator(ttl=300)
         def expensive_function(x):
             nonlocal call_count
             call_count += 1
@@ -264,15 +266,16 @@ class TestCacheDecorators:
         assert call_count == 1  # Should not increment
 
     def test_cached_decorator_different_args(self):
-        """Test cached decorator with different arguments"""
-        from src.utils.advanced_cache.decorators import cached
+        """Test cache decorator with different arguments"""
+        from src.utils.advanced_cache.decorators import cache_decorator, set_cache_instance
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)
+        set_cache_instance(cache)
         
         call_count = 0
         
-        @cached(cache, ttl=300)
+        @cache_decorator(ttl=300)
         def math_function(x, y):
             nonlocal call_count
             call_count += 1

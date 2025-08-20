@@ -37,19 +37,19 @@ def get_blacklist_with_metadata():
     try:
         # 통계 서비스에서 실제 PostgreSQL 데이터 조회
         stats = service.get_statistics()
-        
+
         # 페이징 정보
         page = int(request.args.get("page", 1))
         per_page = min(int(request.args.get("per_page", 10)), 100)
-        
+
         # 실제 PostgreSQL에서 IP 데이터 조회
         active_ips = service.get_active_ips()
-        
+
         # 실제 IP 데이터를 페이징 처리
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         paged_ips = active_ips[start_idx:end_idx]
-        
+
         # 만료 통계 (실제 데이터 기반)
         expiry_stats = {
             "total": stats.get("total_ips", 0),
@@ -69,7 +69,9 @@ def get_blacklist_with_metadata():
                         "source": ip_data.get("source", "UNKNOWN"),
                         "is_expired": not ip_data.get("is_active", True),
                         "days_until_expiry": None,  # PostgreSQL 스키마에 만료일 없음
-                        "expiry_status": "active" if ip_data.get("is_active", True) else "expired",
+                        "expiry_status": (
+                            "active" if ip_data.get("is_active", True) else "expired"
+                        ),
                     }
                     for idx, ip_data in enumerate(paged_ips)
                 ],
@@ -77,7 +79,9 @@ def get_blacklist_with_metadata():
                     "page": page,
                     "per_page": per_page,
                     "total": len(active_ips),
-                    "pages": ((len(active_ips) - 1) // per_page + 1) if active_ips else 0,
+                    "pages": (
+                        ((len(active_ips) - 1) // per_page + 1) if active_ips else 0
+                    ),
                 },
                 "expiry_stats": expiry_stats,
                 "timestamp": datetime.now().isoformat(),

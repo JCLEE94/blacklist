@@ -12,7 +12,6 @@ from flask import Blueprint, Response, jsonify, request
 from src.core.container import get_container
 
 from .blacklist_routes import blacklist_routes_bp
-
 # 분할된 라우트 모듈들 임포트
 from .health_routes import health_routes_bp
 
@@ -53,12 +52,8 @@ def register_sub_routes(app):
     logger.info("Registered all sub-route blueprints")
 
 
-from .blacklist_routes import (
-    get_active_blacklist,
-    get_enhanced_blacklist,
-    get_fortigate_format,
-)
-
+from .blacklist_routes import (get_active_blacklist, get_enhanced_blacklist,
+                               get_fortigate_format)
 # 레거시 호환성을 위한 임포트 (기존 코드와의 호환성 유지)
 from .health_routes import health_check
 

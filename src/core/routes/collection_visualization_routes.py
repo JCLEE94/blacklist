@@ -5,11 +5,12 @@
 
 import json
 from datetime import datetime, timedelta
+
 from flask import Blueprint, jsonify, render_template_string, request
 
 from ..collection_unified import UnifiedCollectionSystem
 
-bp = Blueprint('collection_viz', __name__, url_prefix='/api/collection/viz')
+bp = Blueprint("collection_viz", __name__, url_prefix="/api/collection/viz")
 
 
 # HTML 템플릿
@@ -287,6 +288,7 @@ COLLECTION_DASHBOARD_HTML = """
 # 통합 시스템 인스턴스
 collection_system = None
 
+
 def get_collection_system():
     """싱글톤 패턴으로 수집 시스템 반환"""
     global collection_system
@@ -298,19 +300,19 @@ def get_collection_system():
 # @bp.route('/dashboard') - 중복 제거됨, /unified-control 사용
 
 
-@bp.route('/calendar')
+@bp.route("/calendar")
 def get_calendar():
     """특정 월의 수집 캘린더 데이터"""
-    year = request.args.get('year', datetime.now().year, type=int)
-    month = request.args.get('month', datetime.now().month, type=int)
-    
+    year = request.args.get("year", datetime.now().year, type=int)
+    month = request.args.get("month", datetime.now().month, type=int)
+
     system = get_collection_system()
     calendar_data = system.get_collection_calendar(year, month)
-    
+
     return jsonify(calendar_data)
 
 
-@bp.route('/stats')
+@bp.route("/stats")
 def get_stats():
     """수집 통계"""
     system = get_collection_system()
@@ -318,7 +320,7 @@ def get_stats():
     return jsonify(stats)
 
 
-@bp.route('/recent')
+@bp.route("/recent")
 def get_recent():
     """최근 수집 이력"""
     system = get_collection_system()
@@ -326,33 +328,33 @@ def get_recent():
     return jsonify({"recent": recent})
 
 
-@bp.route('/collect', methods=['POST'])
+@bp.route("/collect", methods=["POST"])
 def trigger_collection():
     """수집 트리거"""
     data = request.get_json() or {}
-    
-    start_date = data.get('start_date')
-    end_date = data.get('end_date')
-    
+
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+
     system = get_collection_system()
     result = system.collect_regtech(start_date, end_date)
-    
+
     return jsonify(result)
 
 
-@bp.route('/credentials', methods=['POST'])
+@bp.route("/credentials", methods=["POST"])
 def save_credentials():
     """자격증명 저장"""
     data = request.get_json() or {}
-    
-    username = data.get('username')
-    password = data.get('password')
-    source = data.get('source', 'regtech')
-    
+
+    username = data.get("username")
+    password = data.get("password")
+    source = data.get("source", "regtech")
+
     if not username or not password:
         return jsonify({"error": "자격증명 필요"}), 400
-    
+
     system = get_collection_system()
     saved = system.save_credentials(username, password, source)
-    
+
     return jsonify({"success": saved})

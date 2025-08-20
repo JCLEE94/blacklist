@@ -5,12 +5,14 @@ Provides comprehensive system status information
 """
 
 from datetime import datetime
+from typing import Any, Dict
+
 from flask import jsonify
-from typing import Dict, Any
 
 try:
-    from ...database.collection_settings import CollectionSettingsDB
     from ...collection_db_collector import DatabaseCollectionSystem
+    from ...database.collection_settings import CollectionSettingsDB
+
     DB_AVAILABLE = True
 except ImportError:
     DB_AVAILABLE = False
@@ -18,10 +20,10 @@ except ImportError:
 
 class UnifiedStatusHandler:
     """Handles unified system status requests"""
-    
+
     def __init__(self):
         self.db_available = DB_AVAILABLE
-        
+
     def get_status(self) -> Dict[str, Any]:
         """Get comprehensive system status"""
         try:
@@ -36,21 +38,26 @@ class UnifiedStatusHandler:
                 "stats": self._get_system_stats(),
                 "collection": self._get_collection_status(),
             }
-            
+
             return jsonify(status_data)
-            
+
         except Exception as e:
-            return jsonify({
-                "success": False,
-                "error": str(e),
-                "timestamp": datetime.now().isoformat(),
-            }), 500
-            
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": str(e),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                ),
+                500,
+            )
+
     def _get_uptime(self) -> str:
         """Get system uptime information"""
         # Simplified uptime - in production would track actual startup time
         return "running"
-        
+
     def _get_system_stats(self) -> Dict[str, Any]:
         """Get system statistics"""
         if not self.db_available:
@@ -58,9 +65,9 @@ class UnifiedStatusHandler:
                 "total_threats": "-",
                 "active_sources": "-",
                 "last_updated": "-",
-                "note": "Database unavailable"
+                "note": "Database unavailable",
             }
-            
+
         try:
             # In production, would query actual database
             return {
@@ -74,41 +81,37 @@ class UnifiedStatusHandler:
                 "active_sources": "-",
                 "last_updated": "-",
             }
-            
+
     def _get_collection_status(self) -> Dict[str, Any]:
         """Get collection system status"""
         if not self.db_available:
             return {
                 "enabled": False,
                 "last_run": None,
-                "status": "Database unavailable"
+                "status": "Database unavailable",
             }
-            
+
         try:
             # In production, would check actual collection system
             return {
                 "enabled": True,
                 "last_run": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "status": "ready"
+                "status": "ready",
             }
         except Exception:
-            return {
-                "enabled": False,
-                "last_run": None,
-                "status": "error"
-            }
+            return {"enabled": False, "last_run": None, "status": "error"}
 
 
 if __name__ == "__main__":
     # Validation test for status handler
     import sys
-    
+
     handler = UnifiedStatusHandler()
     print("📊 Testing Unified Status Handler...")
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Status response structure
     total_tests += 1
     try:
@@ -119,7 +122,7 @@ if __name__ == "__main__":
         print("  - Status handler response generated")
     except Exception as e:
         all_validation_failures.append(f"Status Handler: Exception occurred - {str(e)}")
-    
+
     # Test 2: System stats
     total_tests += 1
     try:
@@ -132,7 +135,7 @@ if __name__ == "__main__":
             print("  - System stats generated successfully")
     except Exception as e:
         all_validation_failures.append(f"System Stats: Exception occurred - {str(e)}")
-    
+
     # Test 3: Collection status
     total_tests += 1
     try:
@@ -144,15 +147,21 @@ if __name__ == "__main__":
         else:
             print("  - Collection status generated successfully")
     except Exception as e:
-        all_validation_failures.append(f"Collection Status: Exception occurred - {str(e)}")
-    
+        all_validation_failures.append(
+            f"Collection Status: Exception occurred - {str(e)}"
+        )
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Unified Status Handler is ready for use")
         sys.exit(0)

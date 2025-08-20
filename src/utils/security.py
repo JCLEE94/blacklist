@@ -304,14 +304,16 @@ def input_validation(schema: Dict[str, Any]):
                 # Skip validation if no JSON data or empty schema
                 if not request.is_json or not schema:
                     return f(*args, **kwargs)
-                
+
                 data = request.get_json()
                 if not data:
                     return f(*args, **kwargs)
 
                 # Basic validation
                 for field, rules in schema.items():
-                    if rules.get("required", False) and (field not in data or data[field] is None or data[field] == ""):
+                    if rules.get("required", False) and (
+                        field not in data or data[field] is None or data[field] == ""
+                    ):
                         return {"error": f"Missing required field: {field}"}, 400
 
                     if field in data and data[field] is not None:
@@ -320,14 +322,18 @@ def input_validation(schema: Dict[str, Any]):
                         # Type validation
                         expected_type = rules.get("type")
                         if expected_type and not isinstance(value, expected_type):
-                            return {"error": f"Invalid type for {field}: expected {expected_type.__name__}, got {type(value).__name__}"}, 400
+                            return {
+                                "error": f"Invalid type for {field}: expected {expected_type.__name__}, got {type(value).__name__}"
+                            }, 400
 
                         # Length validation for strings
                         if isinstance(value, str):
                             min_len = rules.get("min_length", 0)
                             max_len = rules.get("max_length", float("inf"))
                             if not (min_len <= len(value) <= max_len):
-                                return {"error": f"Invalid length for {field}: must be between {min_len} and {max_len} characters"}, 400
+                                return {
+                                    "error": f"Invalid length for {field}: must be between {min_len} and {max_len} characters"
+                                }, 400
 
                 return f(*args, **kwargs)
 

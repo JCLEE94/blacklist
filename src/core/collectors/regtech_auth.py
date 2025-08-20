@@ -164,10 +164,10 @@ class RegtechAuth:
         """
         강화된 로그인 로직 - 새로운 2단계 프로세스 (2025년 업데이트)
         브라우저 분석으로 검증된 성공한 인증 방식 적용
-        
+
         Args:
             session: 사용할 세션 객체
-            
+
         Returns:
             bool: 로그인 성공 여부
         """
@@ -175,93 +175,92 @@ class RegtechAuth:
             # 1. 로그인 페이지 접속 (세션 쿠키 획득)
             logger.info("🔐 Getting session cookie...")
             session.get(f"{self.base_url}/login/loginForm", timeout=self.timeout)
-            
+
             # 2. 사용자 확인 API 호출 (첫 번째 단계)
             logger.info(f"👤 Verifying user: {self.username}")
-            verify_data = {
-                'memberId': self.username,
-                'memberPw': self.password
-            }
-            
+            verify_data = {"memberId": self.username, "memberPw": self.password}
+
             # AJAX 헤더 설정
-            session.headers.update({
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json, text/javascript, */*; q=0.01',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Origin': self.base_url,
-                'Referer': f'{self.base_url}/login/loginForm'
-            })
-            
+            session.headers.update(
+                {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Origin": self.base_url,
+                    "Referer": f"{self.base_url}/login/loginForm",
+                }
+            )
+
             verify_resp = session.post(
                 f"{self.base_url}/member/findOneMember",
                 data=verify_data,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
-            
+
             if verify_resp.status_code != 200:
                 logger.error(f"❌ User verification failed: {verify_resp.status_code}")
                 return False
-            
+
             logger.info("✅ User verified successfully")
-            
+
             # 3. 실제 로그인 (두 번째 단계)
             logger.info("🔑 Performing actual login...")
             login_form_data = {
-                'username': self.username,  # 브라우저 분석으로 확인된 필드명
-                'password': self.password,  # 브라우저 분석으로 확인된 필드명
-                'login_error': '',
-                'txId': '',
-                'token': '',
-                'memberId': '',
-                'smsTimeExcess': 'N'
+                "username": self.username,  # 브라우저 분석으로 확인된 필드명
+                "password": self.password,  # 브라우저 분석으로 확인된 필드명
+                "login_error": "",
+                "txId": "",
+                "token": "",
+                "memberId": "",
+                "smsTimeExcess": "N",
             }
-            
+
             login_resp = session.post(
                 f"{self.base_url}/login/addLogin",  # 브라우저 분석으로 확인된 엔드포인트
                 data=login_form_data,
                 timeout=self.timeout,
-                allow_redirects=True
+                allow_redirects=True,
             )
-            
+
             # 로그인 성공 확인
-            if login_resp.status_code == 200 and 'main' in login_resp.url:
-                if 'logout' in login_resp.text.lower() or '로그아웃' in login_resp.text:
+            if login_resp.status_code == 200 and "main" in login_resp.url:
+                if "logout" in login_resp.text.lower() or "로그아웃" in login_resp.text:
                     logger.info("✅ REGTECH login successful!")
                     self.session = session
                     return True
-            
+
             logger.error("❌ REGTECH login failed - redirect or content check failed")
             logger.debug(f"Response URL: {login_resp.url}")
             logger.debug(f"Response status: {login_resp.status_code}")
             return False
-            
+
         except Exception as e:
             logger.error(f"❌ REGTECH login error: {e}")
             return False
-    
+
     def create_authenticated_session(self) -> requests.Session:
         """
         인증된 세션 생성 (쿠키 기반)
-        
+
         Returns:
             requests.Session: 쿠키가 설정된 세션
         """
         session = self.create_session()
-        
+
         if self.cookie_auth_mode and self.cookie_string:
             # 쿠키 문자열 파싱 및 설정
             cookies = {}
-            for cookie_pair in self.cookie_string.split('; '):
-                if '=' in cookie_pair:
-                    key, value = cookie_pair.split('=', 1)
+            for cookie_pair in self.cookie_string.split("; "):
+                if "=" in cookie_pair:
+                    key, value = cookie_pair.split("=", 1)
                     cookies[key] = value
-            
+
             # 세션에 쿠키 설정
             for key, value in cookies.items():
                 session.cookies.set(key, value)
-            
+
             logger.info(f"✅ Created authenticated session with {len(cookies)} cookies")
-        
+
         return session
 
     def logout(self) -> bool:

@@ -4,6 +4,7 @@ Dashboard Template Provider - Modular HTML template management
 Provides the main dashboard HTML template
 """
 
+
 def get_dashboard_template() -> str:
     """Get the main dashboard HTML template"""
     return DASHBOARD_HTML_TEMPLATE
@@ -150,22 +151,24 @@ DASHBOARD_HTML_TEMPLATE = """
 if __name__ == "__main__":
     # Validation test for template
     import sys
-    
+
     print("🌨️ Testing Dashboard Template...")
-    
+
     template = get_dashboard_template()
     if not template or not isinstance(template, str):
         print("❌ VALIDATION FAILED - Template is empty or invalid")
         sys.exit(1)
-    
+
     if len(template) < 1000:
         print("❌ VALIDATION FAILED - Template appears incomplete")
         sys.exit(1)
-        
+
     if "<!DOCTYPE html>" not in template:
         print("❌ VALIDATION FAILED - Template missing DOCTYPE")
         sys.exit(1)
-        
-    print(f"✅ VALIDATION PASSED - Template loaded successfully ({len(template)} characters)")
+
+    print(
+        f"✅ VALIDATION PASSED - Template loaded successfully ({len(template)} characters)"
+    )
     print("Dashboard Template is ready for use")
     sys.exit(0)

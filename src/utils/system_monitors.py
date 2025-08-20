@@ -1,6 +1,7 @@
 """
 시스템 모니터링 및 데이터베이스 안정성 관리 클래스
 """
+
 import logging
 import os
 import sqlite3
@@ -9,21 +10,30 @@ import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict
+
 import psutil
 import psycopg2
+
 # Import SystemHealth from the new location
 from .system_health import SystemHealth
+
 logger = logging.getLogger(__name__)
+
+
 class DatabaseStabilityManager:
     """데이터베이스 안정성 관리 (PostgreSQL/SQLite 지원)"""
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.connection_pool = []
         self.max_connections = 10
         self.lock = threading.Lock()
         # Detect database type
-        self.is_postgresql = self.db_path.startswith('postgresql://')
-        logger.info(f"DatabaseStabilityManager initialized for {'PostgreSQL' if self.is_postgresql else 'SQLite'}")
+        self.is_postgresql = self.db_path.startswith("postgresql://")
+        logger.info(
+            f"DatabaseStabilityManager initialized for {'PostgreSQL' if self.is_postgresql else 'SQLite'}"
+        )
+
     @contextmanager
     def get_connection(self):
         """안전한 데이터베이스 연결 획득 (PostgreSQL/SQLite)"""
@@ -69,12 +79,13 @@ class DatabaseStabilityManager:
                         conn.close()
                     except Exception as e:
                         pass
+
     def check_database_health(self) -> Dict[str, Any]:
         """데이터베이스 건강 상태 확인 (PostgreSQL/SQLite)"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 if self.is_postgresql:
                     # PostgreSQL 건강 상태 확인
                     cursor.execute("SELECT 1")
@@ -141,6 +152,7 @@ class DatabaseStabilityManager:
                 "connection_pool_size": len(self.connection_pool),
                 "database_type": "PostgreSQL" if self.is_postgresql else "SQLite",
             }
+
     def optimize_database(self) -> bool:
         """데이터베이스 최적화 실행"""
         try:
@@ -174,8 +186,11 @@ class DatabaseStabilityManager:
         except Exception as e:
             logger.error(f"Database optimization failed: {e}")
             return False
+
+
 class SystemMonitor:
     """시스템 모니터링 및 자동 복구"""
+
     def __init__(self, db_manager: DatabaseStabilityManager):
         self.db_manager = db_manager
         self.start_time = time.time()
@@ -183,6 +198,7 @@ class SystemMonitor:
         self.monitoring_enabled = True
         self._monitor_thread = None
         self._monitoring_event = threading.Event()  # 이벤트 기반 대기용
+
     def get_system_health(self) -> SystemHealth:
         """시스템 전체 건강 상태 조회"""
         try:
@@ -230,6 +246,7 @@ class SystemMonitor:
             return SystemHealth(
                 database_status="error", warnings=[f"모니터링 오류: {str(e)}"]
             )
+
     def _count_recent_errors(self) -> int:
         """최근 1시간 에러 수 계산"""
         try:
@@ -246,11 +263,13 @@ class SystemMonitor:
                 return cursor.fetchone()[0]
         except Exception as e:
             return 0
+
     def _check_cache_status(self) -> Dict[str, Any]:
         """캐시 상태 확인"""
         try:
             # Redis 캐시 상태 확인
             from src.core.containers.utils import get_cache_manager
+
             cache_manager = get_cache_manager()
             if hasattr(cache_manager, "redis_client") and cache_manager.redis_client:
                 try:
@@ -276,6 +295,7 @@ class SystemMonitor:
         except Exception as e:
             logger.error(f"Cache status check failed: {e}")
             return {"status": "error", "error": str(e)}
+
     def log_system_event(
         self, level: str, message: str, component: str = None, **kwargs
     ):
@@ -297,11 +317,13 @@ class SystemMonitor:
                 )
         except Exception as e:
             logger.error(f"Failed to log system event: {e}")
+
     def start_monitoring(self, interval: int = 300):
         """백그라운드 모니터링 시작 (기본 5분 간격)"""
         if self._monitor_thread and self._monitor_thread.is_alive():
             logger.warning("Monitoring already running")
             return
+
         def monitor_loop():
             while self.monitoring_enabled:
                 try:
@@ -331,15 +353,18 @@ class SystemMonitor:
                     logger.error(f"Monitoring loop error: {e}")
                     # 에러 시 이벤트 기반 대기
                     self._monitoring_event.wait(timeout=60)
+
         self._monitor_thread = threading.Thread(target=monitor_loop, daemon=True)
         self._monitor_thread.start()
         logger.info(f"System monitoring started (interval: {interval}s)")
+
     def stop_monitoring(self):
         """모니터링 중지"""
         self.monitoring_enabled = False
         if self._monitor_thread:
             self._monitor_thread.join(timeout=10)
         logger.info("System monitoring stopped")
+
     def _attempt_auto_recovery(self, health: SystemHealth):
         """자동 복구 시도"""
         logger.info("Attempting auto-recovery...")
@@ -352,8 +377,11 @@ class SystemMonitor:
         # 메모리 정리 (가비지 컴렉션)
         if health.memory_percent > 90:
             import gc
+
             gc.collect()
             self.log_system_event("INFO", "Forced garbage collection")
+
+
 def safe_execute(func: Callable, default_return=None, log_errors: bool = True) -> Any:
     """안전한 함수 실행 래퍼"""
     try:
@@ -362,6 +390,8 @@ def safe_execute(func: Callable, default_return=None, log_errors: bool = True) -
         if log_errors:
             logger.error(f"Safe execution failed for {func.__name__}: {e}")
         return default_return
+
+
 def create_system_monitor(db_path: str = None) -> SystemMonitor:
     """시스템 모니터 인스턴스 생성"""
     if not db_path:
@@ -371,63 +401,80 @@ def create_system_monitor(db_path: str = None) -> SystemMonitor:
     db_manager = DatabaseStabilityManager(db_path)
     monitor = SystemMonitor(db_manager)
     return monitor
+
+
 # 전역 모니터 인스턴스
 _global_monitor = None
+
+
 def get_system_monitor() -> SystemMonitor:
     """전역 시스템 모니터 인스턴스 반환"""
     global _global_monitor
     if _global_monitor is None:
         _global_monitor = create_system_monitor()
     return _global_monitor
+
+
 def initialize_system_stability():
     """시스템 안정성 초기화"""
     monitor = get_system_monitor()
     monitor.start_monitoring()
     logger.info("System stability monitoring initialized")
     return monitor
+
+
 if __name__ == "__main__":
     # Validation tests for system monitors
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: DatabaseStabilityManager creation
     total_tests += 1
     try:
         db_manager = DatabaseStabilityManager("test.db")
-        if not hasattr(db_manager, 'db_path'):
-            all_validation_failures.append("DatabaseStabilityManager initialization failed")
+        if not hasattr(db_manager, "db_path"):
+            all_validation_failures.append(
+                "DatabaseStabilityManager initialization failed"
+            )
     except Exception as e:
         all_validation_failures.append(f"DatabaseStabilityManager creation failed: {e}")
-    
+
     # Test 2: SystemMonitor creation
     total_tests += 1
     try:
         db_manager = DatabaseStabilityManager("test.db")
         monitor = SystemMonitor(db_manager)
-        if not hasattr(monitor, 'db_manager'):
+        if not hasattr(monitor, "db_manager"):
             all_validation_failures.append("SystemMonitor initialization failed")
     except Exception as e:
         all_validation_failures.append(f"SystemMonitor creation failed: {e}")
-    
+
     # Test 3: Safe execute function
     total_tests += 1
     try:
+
         def test_func():
             return "success"
-        
+
         result = safe_execute(test_func)
         if result != "success":
-            all_validation_failures.append(f"Safe execute failed, expected 'success', got {result}")
+            all_validation_failures.append(
+                f"Safe execute failed, expected 'success', got {result}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Safe execute test failed: {e}")
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         sys.exit(0)

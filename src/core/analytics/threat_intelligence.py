@@ -12,29 +12,26 @@ from .base_analyzer import BaseAnalyzer
 
 class ThreatIntelligenceAnalyzer(BaseAnalyzer):
     """Analyzes threat intelligence from collected data"""
-    
+
     def get_threat_intelligence_report(self) -> Dict[str, Any]:
         """Generate comprehensive threat intelligence report"""
-        return self._safe_execute(
-            "Threat Intelligence",
-            self._generate_threat_report
-        )
-        
+        return self._safe_execute("Threat Intelligence", self._generate_threat_report)
+
     def _generate_threat_report(self) -> Dict[str, Any]:
         """Internal threat report generation"""
         # Basic statistics
         total_threats = self._get_total_threats()
         threat_distribution = self._get_threat_distribution()
-        
+
         # Geographic analysis
         geo_threats = self._get_geographic_threats()
-        
+
         # Attack patterns
         attack_patterns = self._get_attack_patterns()
-        
+
         # Time trends
         time_trends = self._get_time_trends()
-        
+
         return {
             "summary": {
                 "total_threats": total_threats,
@@ -48,12 +45,12 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
                 threat_distribution, geo_threats
             ),
         }
-        
+
     def _get_total_threats(self) -> int:
         """Get total number of threats"""
         result = self._execute_query("SELECT COUNT(*) FROM blacklist_entries")
         return result[0][0] if result else 0
-        
+
     def _get_threat_distribution(self) -> Dict[str, int]:
         """Get threat level distribution"""
         query = """
@@ -64,7 +61,7 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
         """
         result = self._execute_query(query)
         return dict(result)
-        
+
     def _get_geographic_threats(self) -> List[Dict[str, Any]]:
         """Get geographic threat analysis (top 15 countries)"""
         query = """
@@ -78,18 +75,20 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             LIMIT 15
         """
         result = self._execute_query(query)
-        
+
         geo_threats = []
         for row in result:
             country, count, threat_level, attack_types = row
-            geo_threats.append({
-                "country": country,
-                "threat_count": count,
-                "threat_level": threat_level,
-                "attack_types": attack_types.split(",") if attack_types else [],
-            })
+            geo_threats.append(
+                {
+                    "country": country,
+                    "threat_count": count,
+                    "threat_level": threat_level,
+                    "attack_types": attack_types.split(",") if attack_types else [],
+                }
+            )
         return geo_threats
-        
+
     def _get_attack_patterns(self) -> List[Dict[str, Any]]:
         """Analyze attack patterns by type and frequency"""
         query = """
@@ -102,19 +101,21 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             LIMIT 20
         """
         result = self._execute_query(query)
-        
+
         attack_patterns = []
         for row in result:
             reason, freq, level, countries = row
-            attack_patterns.append({
-                "attack_type": reason,
-                "frequency": freq,
-                "threat_level": level,
-                "affected_countries": countries.split(",") if countries else [],
-                "severity_score": self._calculate_severity_score(freq, level),
-            })
+            attack_patterns.append(
+                {
+                    "attack_type": reason,
+                    "frequency": freq,
+                    "threat_level": level,
+                    "affected_countries": countries.split(",") if countries else [],
+                    "severity_score": self._calculate_severity_score(freq, level),
+                }
+            )
         return attack_patterns
-        
+
     def _get_time_trends(self) -> List[Dict[str, Any]]:
         """Get time-based threat trends (last 30 days)"""
         query = """
@@ -127,25 +128,29 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             ORDER BY collection_date DESC
         """
         result = self._execute_query(query)
-        
+
         time_trends = []
         for row in result:
             date, count, level, confidence = row
-            time_trends.append({
-                "date": date,
-                "count": count,
-                "threat_level": level,
-                "confidence": round(confidence or 0, 2),
-            })
+            time_trends.append(
+                {
+                    "date": date,
+                    "count": count,
+                    "threat_level": level,
+                    "confidence": round(confidence or 0, 2),
+                }
+            )
         return time_trends
-        
-    def _generate_risk_assessment(self, threat_dist: Dict, geo_threats: List) -> Dict[str, Any]:
+
+    def _generate_risk_assessment(
+        self, threat_dist: Dict, geo_threats: List
+    ) -> Dict[str, Any]:
         """Generate overall risk assessment"""
         total_threats = sum(threat_dist.values()) if threat_dist else 0
         critical_ratio = (
             threat_dist.get("CRITICAL", 0) / total_threats if total_threats > 0 else 0
         )
-        
+
         risk_level = "LOW"
         if critical_ratio > 0.2:
             risk_level = "CRITICAL"
@@ -153,7 +158,7 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             risk_level = "HIGH"
         elif critical_ratio > 0.05:
             risk_level = "MEDIUM"
-            
+
         return {
             "overall_risk_level": risk_level,
             "critical_threat_ratio": round(critical_ratio, 3),
@@ -162,7 +167,7 @@ class ThreatIntelligenceAnalyzer(BaseAnalyzer):
             ),
             "recommendation": self._get_risk_recommendation(risk_level),
         }
-        
+
     def _get_risk_recommendation(self, risk_level: str) -> str:
         """Get risk-based recommendations"""
         recommendations = {
@@ -178,7 +183,7 @@ if __name__ == "__main__":
     # Validation function
     analyzer = ThreatIntelligenceAnalyzer()
     print("🔍 Testing Threat Intelligence Analyzer...")
-    
+
     result = analyzer.get_threat_intelligence_report()
     if result:
         summary = result.get("summary", {})

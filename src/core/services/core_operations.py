@@ -93,7 +93,7 @@ class CoreOperationsMixin:
         if DatabaseCollectionSystem:
             self._components["db_collector"] = DatabaseCollectionSystem()
             self.logger.info("✅ 통합 수집 시스템 초기화 완료")
-        
+
         # REGTECH 수집기 초기화 (호환성)
         if self.config.get("regtech_enabled") and RegtechCollector:
             try:

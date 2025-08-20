@@ -7,8 +7,9 @@ Blacklist 시스템의 모든 핵심 서비스를 등록하고 관리하는 전�
 import logging
 import os
 
-from .base_container import ServiceContainer
 from src.config.settings import settings
+
+from .base_container import ServiceContainer
 
 logger = logging.getLogger(__name__)
 

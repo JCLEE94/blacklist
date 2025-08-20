@@ -130,30 +130,48 @@ def visual_build_info():
     try:
         import os
         import subprocess
+
         from flask import render_template_string
-        
+
         # Git 정보 수집
         try:
-            git_commit = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
-                                               cwd=os.path.dirname(__file__)).decode().strip()
+            git_commit = (
+                subprocess.check_output(
+                    ["git", "rev-parse", "--short", "HEAD"],
+                    cwd=os.path.dirname(__file__),
+                )
+                .decode()
+                .strip()
+            )
         except:
             git_commit = "unknown"
-            
+
         try:
-            git_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], 
-                                               cwd=os.path.dirname(__file__)).decode().strip()
+            git_branch = (
+                subprocess.check_output(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    cwd=os.path.dirname(__file__),
+                )
+                .decode()
+                .strip()
+            )
         except:
             git_branch = "unknown"
-            
+
         try:
-            build_date = subprocess.check_output(['git', 'log', '-1', '--format=%ci'], 
-                                               cwd=os.path.dirname(__file__)).decode().strip()
+            build_date = (
+                subprocess.check_output(
+                    ["git", "log", "-1", "--format=%ci"], cwd=os.path.dirname(__file__)
+                )
+                .decode()
+                .strip()
+            )
         except:
             build_date = datetime.utcnow().isoformat()
-            
+
         # 시스템 상태 정보
         health_info = service.get_system_health()
-        
+
         # HTML 템플릿
         html_template = """
 <!DOCTYPE html>
@@ -255,23 +273,27 @@ def visual_build_info():
 </body>
 </html>
         """
-        
+
         # 템플릿 데이터
         template_data = {
-            'version': '1.0.35',
-            'git_commit': git_commit,
-            'git_branch': git_branch,
-            'build_date': build_date,
-            'status': health_info.get('status', 'unknown'),
-            'status_class': 'healthy' if health_info.get('status') == 'healthy' else 'degraded',
-            'total_ips': health_info.get('total_ips', 0),
-            'active_ips': health_info.get('active_ips', 0),
-            'collection_status': 'enabled' if health_info.get('collection_enabled') else 'disabled',
-            'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+            "version": "1.0.35",
+            "git_commit": git_commit,
+            "git_branch": git_branch,
+            "build_date": build_date,
+            "status": health_info.get("status", "unknown"),
+            "status_class": (
+                "healthy" if health_info.get("status") == "healthy" else "degraded"
+            ),
+            "total_ips": health_info.get("total_ips", 0),
+            "active_ips": health_info.get("active_ips", 0),
+            "collection_status": (
+                "enabled" if health_info.get("collection_enabled") else "disabled"
+            ),
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
         }
-        
+
         return render_template_string(html_template, **template_data)
-        
+
     except Exception as e:
         logger.error(f"Build info error: {e}")
         return f"<h1>Build Info Error</h1><p>{str(e)}</p>", 500

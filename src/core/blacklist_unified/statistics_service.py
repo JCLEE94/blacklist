@@ -23,10 +23,15 @@ class StatisticsService:
         self.data_dir = data_dir
         self.db_manager = db_manager
         self.cache_manager = cache_manager
-        
+
         # Use PostgreSQL database URL from config
-        self.database_url = db_manager.database_url if db_manager else os.environ.get(
-            "DATABASE_URL", "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist"
+        self.database_url = (
+            db_manager.database_url
+            if db_manager
+            else os.environ.get(
+                "DATABASE_URL",
+                "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
+            )
         )
         logger.info(f"StatisticsService initialized with database: {self.database_url}")
 
@@ -174,7 +179,9 @@ class StatisticsService:
                 cursor = conn.cursor()
 
                 # Get active IPs count
-                cursor.execute("SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true")
+                cursor.execute(
+                    "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true"
+                )
                 active_ips = cursor.fetchone()[0]
 
                 # Get total IPs count
@@ -290,7 +297,11 @@ class StatisticsService:
                 """
             )
             last_update_raw = cursor.fetchone()[0]
-            last_update = last_update_raw.isoformat() if last_update_raw else datetime.now().isoformat()
+            last_update = (
+                last_update_raw.isoformat()
+                if last_update_raw
+                else datetime.now().isoformat()
+            )
 
             return {
                 "total_ips": total_ips,

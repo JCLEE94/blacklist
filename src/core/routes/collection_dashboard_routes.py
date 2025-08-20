@@ -14,9 +14,10 @@ from flask import Blueprint, current_app, jsonify, render_template, request
 from ..advanced_analytics import AdvancedAnalytics
 from ..collection_dashboard import CollectionDashboard
 from ..data_processor import DataProcessor
+
 try:
-    from ..collectors.regtech_collector import RegtechCollector
     from ..collection_db_collector import DatabaseCollectionSystem
+    from ..collectors.regtech_collector import RegtechCollector
 except ImportError:
     RegtechCollector = None
     DatabaseCollectionSystem = None
@@ -262,10 +263,10 @@ def run_deduplication():
 def _start_date_collection(target_date: str) -> bool:
     """특정 날짜 수집 시작 (내부 함수)"""
     try:
-        # REGTECH 수집기로 해당 날짜 데이터 수집  
+        # REGTECH 수집기로 해당 날짜 데이터 수집
         from ..collectors.regtech_collector import RegtechCollector
         from ..collectors.unified_collector import CollectionConfig
-        
+
         config = CollectionConfig()
         collector = RegtechCollector(config)
 

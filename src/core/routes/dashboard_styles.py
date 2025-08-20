@@ -101,10 +101,10 @@ DASHBOARD_CSS = """
 if __name__ == "__main__":
     # CSS 스타일 모듈 테스트
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: CSS 문자열 존재 확인
     total_tests += 1
     try:
@@ -112,32 +112,43 @@ if __name__ == "__main__":
             all_validation_failures.append("CSS 문자열이 너무 짧거나 존재하지 않음")
     except Exception as e:
         all_validation_failures.append(f"CSS 확인 테스트 실패: {e}")
-    
+
     # Test 2: 필수 CSS 클래스 존재 확인
     total_tests += 1
     try:
-        required_classes = ['.header', '.container', '.tabs', '.card', '.btn', '.status']
+        required_classes = [
+            ".header",
+            ".container",
+            ".tabs",
+            ".card",
+            ".btn",
+            ".status",
+        ]
         for css_class in required_classes:
             if css_class not in DASHBOARD_CSS:
                 all_validation_failures.append(f"필수 CSS 클래스 누락: {css_class}")
     except Exception as e:
         all_validation_failures.append(f"CSS 클래스 확인 테스트 실패: {e}")
-    
+
     # Test 3: 반응형 미디어 쿼리 존재 확인
     total_tests += 1
     try:
-        if '@media' not in DASHBOARD_CSS:
+        if "@media" not in DASHBOARD_CSS:
             all_validation_failures.append("반응형 미디어 쿼리 누락")
     except Exception as e:
         all_validation_failures.append(f"미디어 쿼리 확인 테스트 실패: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Dashboard CSS styles module is validated and ready for use")
         sys.exit(0)

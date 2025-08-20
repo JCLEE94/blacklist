@@ -16,10 +16,10 @@ from ..common.ip_utils import IPUtils
 from .helpers.data_transform import RegtechDataTransform
 from .helpers.request_utils import RegtechRequestUtils
 from .helpers.validation_utils import RegtechValidationUtils
-from .unified_collector import BaseCollector, CollectionConfig
 from .regtech_auth import RegtechAuth
 from .regtech_browser import RegtechBrowserAutomation
 from .regtech_data_processor import RegtechDataProcessor
+from .unified_collector import BaseCollector, CollectionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,11 @@ class RegtechCollector(BaseCollector):
         # 기본 설정
         self.base_url = "https://regtech.fsec.or.kr"
         self.config_data = {}
-        
+
         # 환경 변수에서 설정 로드
-        self.username = os.getenv('REGTECH_USERNAME')
-        self.password = os.getenv('REGTECH_PASSWORD')
-        
+        self.username = os.getenv("REGTECH_USERNAME")
+        self.password = os.getenv("REGTECH_PASSWORD")
+
         # DB에서 설정 로드 (선택적)
         self._load_db_config()
 
@@ -57,15 +57,17 @@ class RegtechCollector(BaseCollector):
 
         # 모듈화된 컴포넌트들 초기화
         self.auth = RegtechAuth(self.base_url, self.username, self.password)
-        self.browser_automation = RegtechBrowserAutomation(self.base_url, self.username, self.password)
+        self.browser_automation = RegtechBrowserAutomation(
+            self.base_url, self.username, self.password
+        )
         self.data_processor = RegtechDataProcessor()
-        
+
         # Helper 객체들 초기화
         self.request_utils = RegtechRequestUtils(self.base_url, self.request_timeout)
         self.data_transform = RegtechDataTransform()
         self.validation_utils = RegtechValidationUtils()
         self.validation_utils.set_ip_utils(IPUtils)
-        
+
         # 데이터 프로세서에 검증 유틸리티 설정
         self.data_processor.validation_utils = self.validation_utils
 
@@ -75,16 +77,17 @@ class RegtechCollector(BaseCollector):
         """DB에서 설정 로드 (선택적)"""
         try:
             from ..database.collection_settings import CollectionSettingsDB
+
             self.db = CollectionSettingsDB()
-            
+
             # DB에서 REGTECH 설정 가져오기
             source_config = self.db.get_source_config("regtech")
             credentials = self.db.get_credentials("regtech")
-            
+
             if source_config:
                 self.base_url = source_config.get("base_url", self.base_url)
                 self.config_data = source_config.get("config", {})
-            
+
             if credentials:
                 self.username = credentials["username"]
                 self.password = credentials["password"]
@@ -92,7 +95,7 @@ class RegtechCollector(BaseCollector):
                 # 환경변수 fallback
                 self.username = os.getenv("REGTECH_USERNAME")
                 self.password = os.getenv("REGTECH_PASSWORD")
-                
+
         except ImportError:
             # DB 없으면 기본값/환경변수 사용
             self.base_url = "https://regtech.fsec.or.kr"
@@ -121,25 +124,33 @@ class RegtechCollector(BaseCollector):
                 self.auth.set_cookie_string(cookie_string)
                 logger.info("✅ Automatic cookie extraction successful")
             else:
-                logger.warning("❌ Automatic cookie extraction failed - falling back to login mode")
+                logger.warning(
+                    "❌ Automatic cookie extraction failed - falling back to login mode"
+                )
                 return await self._collect_with_login()
-        
+
         # 2. 쿠키 기반 수집 시도
         if self.auth.cookie_auth_mode:
             collected_data = await self._collect_with_cookies()
-            
+
             # 3. 수집 결과가 없거나 쿠키 만료 의심 시 재추출 시도
             if not collected_data:
-                logger.warning("🔄 No data collected - cookies might be expired, attempting re-extraction...")
+                logger.warning(
+                    "🔄 No data collected - cookies might be expired, attempting re-extraction..."
+                )
                 cookie_string = self.browser_automation.auto_extract_cookies()
                 if cookie_string:
                     self.auth.set_cookie_string(cookie_string)
-                    logger.info("✅ Cookie re-extraction successful - retrying collection...")
+                    logger.info(
+                        "✅ Cookie re-extraction successful - retrying collection..."
+                    )
                     collected_data = await self._collect_with_cookies()
                 else:
-                    logger.error("❌ Cookie re-extraction failed - falling back to login mode")
+                    logger.error(
+                        "❌ Cookie re-extraction failed - falling back to login mode"
+                    )
                     return await self._collect_with_login()
-            
+
             return collected_data
         else:
             return await self._collect_with_login()
@@ -147,76 +158,95 @@ class RegtechCollector(BaseCollector):
     async def _collect_with_cookies(self) -> List[Any]:
         """쿠키 기반 데이터 수집"""
         collected_ips = []
-        
+
         try:
             # 인증된 세션 생성
             session = self.auth.create_authenticated_session()
-            
+
             logger.info("Starting cookie-based data collection")
-            
+
             # 블랙리스트 페이지들 시도
             blacklist_urls = [
-                '/board/boardList?menuCode=HPHB0620101',  # 악성IP차단
-                '/board/excelDownload?menuCode=HPHB0620101',  # Excel 다운로드
-                '/threat/blacklist/list',
-                '/api/blacklist/search'
+                "/board/boardList?menuCode=HPHB0620101",  # 악성IP차단
+                "/board/excelDownload?menuCode=HPHB0620101",  # Excel 다운로드
+                "/threat/blacklist/list",
+                "/api/blacklist/search",
             ]
-            
+
             for path in blacklist_urls:
                 try:
                     url = f"{self.base_url}{path}"
                     logger.info(f"Trying URL: {url}")
-                    
-                    response = session.get(url, verify=False, timeout=self.request_timeout)
-                    
+
+                    response = session.get(
+                        url, verify=False, timeout=self.request_timeout
+                    )
+
                     # 쿠키 만료 확인
                     if self.auth._is_cookie_expired(response):
-                        logger.warning(f"Cookies expired at {url} - will trigger re-extraction")
+                        logger.warning(
+                            f"Cookies expired at {url} - will trigger re-extraction"
+                        )
                         return []  # 빈 결과 반환하여 상위에서 재추출 트리거
-                    
+
                     if response.status_code == 200:
-                        content_type = response.headers.get('content-type', '').lower()
-                        
+                        content_type = response.headers.get("content-type", "").lower()
+
                         # 데이터 프로세서로 위임
-                        if 'excel' in content_type or 'spreadsheet' in content_type:
-                            ips = await self.data_processor.process_excel_response(response)
+                        if "excel" in content_type or "spreadsheet" in content_type:
+                            ips = await self.data_processor.process_excel_response(
+                                response
+                            )
                             if ips:
                                 collected_ips.extend(ips)
-                                logger.info(f"Collected {len(ips)} IPs from Excel download")
+                                logger.info(
+                                    f"Collected {len(ips)} IPs from Excel download"
+                                )
                                 break
-                        
-                        elif 'text/html' in content_type:
-                            ips = await self.data_processor.process_html_response(response)
+
+                        elif "text/html" in content_type:
+                            ips = await self.data_processor.process_html_response(
+                                response
+                            )
                             if ips:
                                 collected_ips.extend(ips)
                                 logger.info(f"Collected {len(ips)} IPs from HTML page")
                                 if len(ips) > 10:  # 충분한 데이터가 있으면 중단
                                     break
-                        
-                        elif 'application/json' in content_type:
-                            ips = await self.data_processor.process_json_response(response)
+
+                        elif "application/json" in content_type:
+                            ips = await self.data_processor.process_json_response(
+                                response
+                            )
                             if ips:
                                 collected_ips.extend(ips)
                                 logger.info(f"Collected {len(ips)} IPs from JSON API")
                                 break
-                    
-                    elif response.status_code == 302 and 'login' in response.headers.get('Location', ''):
+
+                    elif (
+                        response.status_code == 302
+                        and "login" in response.headers.get("Location", "")
+                    ):
                         logger.warning("Redirected to login - cookies may be expired")
                         break
-                    
+
                 except Exception as e:
                     logger.error(f"Error accessing {path}: {e}")
                     continue
-            
+
             # 수집된 데이터 검증 및 변환
             if collected_ips:
-                validated_ips = self.data_processor.validate_and_transform_data(collected_ips)
-                logger.info(f"Validated {len(validated_ips)} out of {len(collected_ips)} collected IPs")
+                validated_ips = self.data_processor.validate_and_transform_data(
+                    collected_ips
+                )
+                logger.info(
+                    f"Validated {len(validated_ips)} out of {len(collected_ips)} collected IPs"
+                )
                 return validated_ips
             else:
                 logger.warning("No IPs collected - check cookies or access permissions")
                 return []
-                
+
         except Exception as e:
             logger.error(f"Cookie-based collection failed: {e}")
             return []
@@ -319,9 +349,7 @@ class RegtechCollector(BaseCollector):
                 page_ips = valid_page_ips
 
                 if not page_ips:
-                    logger.info(
-                        f"페이지 {page + 1}에서 더 이상 데이터 없음, 수집 종료"
-                    )
+                    logger.info(f"페이지 {page + 1}에서 더 이상 데이터 없음, 수집 종료")
                     break
 
                 all_ips.extend(page_ips)
@@ -361,34 +389,36 @@ class RegtechCollector(BaseCollector):
         """데이터 변환 - 헬퍼 모듈 위임"""
         return self.data_transform.transform_data(raw_data)
 
-    def collect_from_web(self, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+    def collect_from_web(
+        self, start_date: str = None, end_date: str = None
+    ) -> Dict[str, Any]:
         """
         웹 수집 인터페이스 메서드 (동기 래퍼)
         collection_service.py에서 호출하는 인터페이스
         """
         import asyncio
-        
+
         try:
             # 날짜 범위 설정
             if not start_date or not end_date:
-                end_date = datetime.now().strftime('%Y-%m-%d')
-                start_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-            
+                end_date = datetime.now().strftime("%Y-%m-%d")
+                start_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+
             # 비동기 수집 실행
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
+
             try:
                 collected_data = loop.run_until_complete(self._collect_data())
                 return {
                     "success": True,
                     "data": collected_data,
                     "count": len(collected_data),
-                    "message": f"REGTECH에서 {len(collected_data)}개 IP 수집 완료"
+                    "message": f"REGTECH에서 {len(collected_data)}개 IP 수집 완료",
                 }
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"REGTECH 웹 수집 실패: {e}")
             return {
@@ -396,59 +426,70 @@ class RegtechCollector(BaseCollector):
                 "data": [],
                 "count": 0,
                 "error": str(e),
-                "message": f"REGTECH 수집 중 오류: {e}"
+                "message": f"REGTECH 수집 중 오류: {e}",
             }
 
 
 if __name__ == "__main__":
     # 모듈화된 REGTECH 컴렉터 테스트
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: 기본 컴렉터 생성
     total_tests += 1
     try:
         from .unified_collector import CollectionConfig
+
         config = CollectionConfig()
         collector = RegtechCollector(config)
-        if not hasattr(collector, 'auth') or not hasattr(collector, 'data_processor'):
+        if not hasattr(collector, "auth") or not hasattr(collector, "data_processor"):
             all_validation_failures.append("필수 컴포넌트 누락")
     except Exception as e:
         all_validation_failures.append(f"컴렉터 생성 실패: {e}")
-    
+
     # Test 2: 메서드 존재 확인
     total_tests += 1
     try:
         from .unified_collector import CollectionConfig
+
         config = CollectionConfig()
         collector = RegtechCollector(config)
-        required_methods = ['_collect_data', '_collect_with_cookies', 'collect_from_web']
+        required_methods = [
+            "_collect_data",
+            "_collect_with_cookies",
+            "collect_from_web",
+        ]
         for method_name in required_methods:
             if not hasattr(collector, method_name):
                 all_validation_failures.append(f"필수 메서드 누락: {method_name}")
     except Exception as e:
         all_validation_failures.append(f"메서드 확인 테스트 실패: {e}")
-    
+
     # Test 3: 쿠키 설정 테스트
     total_tests += 1
     try:
         from .unified_collector import CollectionConfig
+
         config = CollectionConfig()
         collector = RegtechCollector(config)
         collector.set_cookie_string("test_cookie=test_value")
         # 에러 없이 실행되면 성공
     except Exception as e:
         all_validation_failures.append(f"쿠키 설정 테스트 실패: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Modularized RegtechCollector is validated and ready for use")
         sys.exit(0)

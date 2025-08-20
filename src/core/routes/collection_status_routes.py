@@ -48,7 +48,7 @@ def get_collection_status():
 
         # 소스별 수집 현황
         source_stats = get_source_collection_stats()
-        
+
         # 기간별 수집 가능여부 (캐시된 정보)
         period_availability = get_period_availability_cache()
 
@@ -77,7 +77,9 @@ def get_collection_status():
                 "daily_collection": {
                     "today": today_stats.get("count", 0) if today_stats else 0,
                     "recent_days": daily_stats[:7] if daily_stats else [],  # 최근 7일
-                    "chart_data": format_chart_data(daily_stats[:30]),  # 차트용 30일 데이터
+                    "chart_data": format_chart_data(
+                        daily_stats[:30]
+                    ),  # 차트용 30일 데이터
                 },
                 "sources": collection_status.get("sources", {}),
                 "source_stats": source_stats,
@@ -297,37 +299,40 @@ def update_collection_intervals():
 
 # 추가된 API 엔드포인트들 (통합 관리패널용)
 
+
 @collection_status_bp.route("/api/collection/dashboard/data", methods=["GET"])
 def get_dashboard_data():
     """통합 관리패널용 대시보드 데이터"""
     try:
-        days = request.args.get('days', 30, type=int)
+        days = request.args.get("days", 30, type=int)
         days = min(days, 365)  # 최대 1년
-        
+
         # 일자별 수집 통계
         daily_stats = service.get_daily_collection_stats()[:days]
-        
+
         # 소스별 통계
         source_stats = get_source_collection_stats()
-        
+
         # 시스템 상태
         system_health = service.get_system_health()
-        
+
         # 기간별 수집 가능여부
         period_availability = get_period_availability_cache()
-        
-        return jsonify({
-            "success": True,
-            "data": {
-                "daily_stats": daily_stats,
-                "chart_data": format_chart_data(daily_stats),
-                "source_stats": source_stats,
-                "system_health": system_health,
-                "period_availability": period_availability,
-                "last_updated": datetime.now().isoformat()
+
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "daily_stats": daily_stats,
+                    "chart_data": format_chart_data(daily_stats),
+                    "source_stats": source_stats,
+                    "system_health": system_health,
+                    "period_availability": period_availability,
+                    "last_updated": datetime.now().isoformat(),
+                },
             }
-        })
-        
+        )
+
     except Exception as e:
         logger.error(f"Dashboard data error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -338,16 +343,13 @@ def test_period_collection():
     """기간별 수집 테스트"""
     try:
         data = request.get_json() or {}
-        days = data.get('days', 30)
-        
+        days = data.get("days", 30)
+
         # 기간별 수집 테스트 실행
         test_result = service.test_period_collection(days)
-        
-        return jsonify({
-            "success": True,
-            "data": test_result
-        })
-        
+
+        return jsonify({"success": True, "data": test_result})
+
     except Exception as e:
         logger.error(f"Period test error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -359,11 +361,16 @@ def test_period_collection():
 
 # 헬퍼 함수들
 
+
 def get_source_collection_stats():
     """소스별 수집 통계"""
     try:
-        regtech_status = service.get_regtech_status() if hasattr(service, 'get_regtech_status') else {}
-        
+        regtech_status = (
+            service.get_regtech_status()
+            if hasattr(service, "get_regtech_status")
+            else {}
+        )
+
         stats = {
             "REGTECH": {
                 "name": "REGTECH",
@@ -371,7 +378,7 @@ def get_source_collection_stats():
                 "total_ips": regtech_status.get("total_ips", 0),
                 "last_collection": regtech_status.get("last_collection_time"),
                 "success_rate": calculate_success_rate("REGTECH", 7),
-                "enabled": True
+                "enabled": True,
             },
             "SECUDIUM": {
                 "name": "SECUDIUM",
@@ -379,12 +386,12 @@ def get_source_collection_stats():
                 "total_ips": 0,
                 "last_collection": None,
                 "success_rate": 0,
-                "enabled": False
-            }
+                "enabled": False,
+            },
         }
-        
+
         return stats
-        
+
     except Exception as e:
         logger.error(f"Error getting source stats: {e}")
         return {}
@@ -401,11 +408,11 @@ def get_period_availability_cache():
             "1개월": {"available": True, "ip_count": 930},
             "3개월": {"available": True, "ip_count": 930},
             "6개월": {"available": True, "ip_count": 930},
-            "1년": {"available": True, "ip_count": 930}
+            "1년": {"available": True, "ip_count": 930},
         }
-        
+
         return availability
-        
+
     except Exception as e:
         logger.error(f"Error getting period availability: {e}")
         return {}
@@ -421,29 +428,29 @@ def format_chart_data(daily_stats):
                     "label": "REGTECH",
                     "data": [],
                     "borderColor": "#4CAF50",
-                    "backgroundColor": "rgba(76, 175, 80, 0.1)"
+                    "backgroundColor": "rgba(76, 175, 80, 0.1)",
                 },
                 {
-                    "label": "SECUDIUM", 
+                    "label": "SECUDIUM",
                     "data": [],
                     "borderColor": "#2196F3",
-                    "backgroundColor": "rgba(33, 150, 243, 0.1)"
-                }
-            ]
+                    "backgroundColor": "rgba(33, 150, 243, 0.1)",
+                },
+            ],
         }
-        
+
         for stat in daily_stats:
             chart_data["labels"].append(stat.get("date", ""))
-            
+
             sources = stat.get("sources", {})
             regtech_count = sources.get("regtech", 0)
             secudium_count = sources.get("secudium", 0)
-            
+
             chart_data["datasets"][0]["data"].append(regtech_count)
             chart_data["datasets"][1]["data"].append(secudium_count)
-        
+
         return chart_data
-        
+
     except Exception as e:
         logger.error(f"Error formatting chart data: {e}")
         return {"labels": [], "datasets": []}
@@ -459,7 +466,7 @@ def calculate_success_rate(source: str, days: int) -> float:
             return 0.0
         else:
             return 0.0
-            
+
     except Exception as e:
         logger.error(f"Error calculating success rate: {e}")
         return 0.0

@@ -8,9 +8,9 @@ from datetime import datetime
 
 from flask import Blueprint, Response, jsonify
 
+from ..container import get_container
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
-from ..container import get_container
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def get_active_blacklist():
         # 활성 IP 목록 가져오기
         # Get blacklist manager from container and fetch active IPs
         container = get_container()
-        blacklist_mgr = container.get('blacklist_manager')
+        blacklist_mgr = container.get("blacklist_manager")
         active_ips = blacklist_mgr.get_active_ips()
 
         if not active_ips:
@@ -66,7 +66,7 @@ def get_fortigate_format():
         # 활성 IP 목록 가져오기
         # Get blacklist manager from container and fetch active IPs
         container = get_container()
-        blacklist_mgr = container.get('blacklist_manager')
+        blacklist_mgr = container.get("blacklist_manager")
         active_ips = blacklist_mgr.get_active_ips()
 
         if not active_ips:
@@ -98,6 +98,7 @@ def get_fortigate_format():
     except Exception as e:
         logger.error(f"Failed to generate FortiGate format: {e}")
         from ..exceptions import BlacklistError
+
         error = BlacklistError(f"Failed to generate FortiGate format: {str(e)}")
         return create_error_response(error)
 
@@ -108,10 +109,10 @@ def get_enhanced_blacklist():
     try:
         # Get blacklist manager from container for enhanced data
         container = get_container()
-        blacklist_mgr = container.get('blacklist_manager')
-        
+        blacklist_mgr = container.get("blacklist_manager")
+
         # Get enhanced blacklist data
-        if hasattr(service, 'get_enhanced_blacklist'):
+        if hasattr(service, "get_enhanced_blacklist"):
             enhanced_data = service.get_enhanced_blacklist()
         else:
             # Fallback to basic active IPs
@@ -121,7 +122,7 @@ def get_enhanced_blacklist():
                 "sources": {},
                 "threat_levels": {},
                 "last_updated": datetime.utcnow().isoformat(),
-                "expiry_info": {}
+                "expiry_info": {},
             }
 
         if not enhanced_data:
@@ -157,5 +158,6 @@ def get_enhanced_blacklist():
     except Exception as e:
         logger.error(f"Failed to get enhanced blacklist: {e}")
         from ..exceptions import BlacklistError
+
         error = BlacklistError(f"Failed to get enhanced blacklist: {str(e)}")
         return create_error_response(error)

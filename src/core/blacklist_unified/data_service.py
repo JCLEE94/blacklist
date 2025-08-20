@@ -37,8 +37,13 @@ class DataService:
         self.lock = threading.RLock()
 
         # Use PostgreSQL database URL from config
-        self.database_url = db_manager.database_url if db_manager else os.environ.get(
-            "DATABASE_URL", "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist"
+        self.database_url = (
+            db_manager.database_url
+            if db_manager
+            else os.environ.get(
+                "DATABASE_URL",
+                "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
+            )
         )
         logger.info(f"DataService initialized with database: {self.database_url}")
 
@@ -254,10 +259,10 @@ class DataService:
                 for row in cursor.fetchall():
                     ip_str = row[0]
                     # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
-                    if '/' in ip_str:
-                        ip_str = ip_str.split('/')[0]
+                    if "/" in ip_str:
+                        ip_str = ip_str.split("/")[0]
                     result.append(ip_str)
-                
+
                 logger.info(f"Found {len(result)} active IPs from PostgreSQL database")
                 return result
 

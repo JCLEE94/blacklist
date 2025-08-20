@@ -15,7 +15,6 @@ from prometheus_client import Counter as PrometheusCounter
 from prometheus_client import Gauge, Histogram, Info, generate_latest
 
 from .mixins.collection_metrics import CollectionMetricsMixin
-
 # 믹스인 모듈 import
 from .mixins.system_metrics import SystemMetricsMixin
 
@@ -154,8 +153,7 @@ def track_http_requests(func):
 
 def track_collection_operation(source: str):
     """데이터 수집 작업 추적 데코레이터"""
-    from .mixins.decorators import (
-        track_collection_operation as _track_collection_operation,
-    )
+    from .mixins.decorators import \
+        track_collection_operation as _track_collection_operation
 
     return _track_collection_operation(source)

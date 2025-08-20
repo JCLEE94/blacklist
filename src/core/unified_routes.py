@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 unified_bp = Blueprint("unified", __name__)
 
 # Register all sub-blueprints
-unified_bp.register_blueprint(health_routes_bp)  # Register health routes first at root level
+unified_bp.register_blueprint(
+    health_routes_bp
+)  # Register health routes first at root level
 unified_bp.register_blueprint(web_routes_bp)
 unified_bp.register_blueprint(api_routes_bp)
 unified_bp.register_blueprint(export_routes_bp)

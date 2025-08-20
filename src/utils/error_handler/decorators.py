@@ -6,7 +6,8 @@ from typing import Any, Callable, Union
 
 from flask import Response, jsonify
 
-from .custom_errors import AuthenticationError, AuthorizationError, ValidationError
+from .custom_errors import (AuthenticationError, AuthorizationError,
+                            ValidationError)
 
 logger = logging.getLogger(__name__)
 
