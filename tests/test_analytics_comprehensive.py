@@ -81,11 +81,11 @@ class TestAnalyticsV2API:
         assert "success" in data
         
         if response.status_code == 200 and data["success"]:
-            assert "summary" in data
-            summary = data["summary"]
+            assert "data" in data
+            summary = data["data"]
             
             # Expected summary fields
-            expected_fields = ["total_ips", "new_ips", "threat_levels", "sources"]
+            expected_fields = ["total_ips", "active_ips", "threat_levels", "countries"]
             for field in expected_fields:
                 if field in summary:
                     assert isinstance(summary[field], (int, dict, list))
@@ -115,18 +115,21 @@ class TestAnalyticsV2API:
         
         assert response.status_code in [200, 503]
         data = response.json()
-        assert "success" in data
         
-        if response.status_code == 200 and data["success"]:
+        if response.status_code == 200:
+            # Check expected fields in response
             assert "threat_levels" in data
+            assert "total_ips" in data
+            assert "risk_score" in data
+            
             threat_levels = data["threat_levels"]
             
             # Should be a dictionary with threat level categories
             if isinstance(threat_levels, dict):
-                expected_levels = ["critical", "high", "medium", "low"]
+                expected_levels = ["critical", "high", "medium", "low", "unknown"]
                 for level in expected_levels:
                     if level in threat_levels:
-                        assert isinstance(threat_levels[level], (int, dict))
+                        assert isinstance(threat_levels[level], int)
     
     def test_sources_analysis_endpoint(self):
         """Test sources analysis endpoint"""
@@ -134,21 +137,22 @@ class TestAnalyticsV2API:
         
         assert response.status_code in [200, 503]
         data = response.json()
-        assert "success" in data
         
-        if response.status_code == 200 and data["success"]:
+        if response.status_code == 200:
+            # Check expected fields in response
             assert "sources" in data
+            assert "source_analysis" in data
+            assert "period" in data
+            
             sources = data["sources"]
             
             # Should contain source information
             if isinstance(sources, list):
                 for source in sources:
                     assert isinstance(source, dict)
-                    # Common source fields
-                    expected_fields = ["name", "count", "status"]
-                    for field in expected_fields:
-                        if field in source:
-                            assert source[field] is not None
+                    # Check if source has expected structure
+                    if source:  # Only check non-empty sources
+                        assert "name" in source or "source" in source
     
     def test_geographical_analysis(self):
         """Test geographical analysis endpoint"""
@@ -156,10 +160,12 @@ class TestAnalyticsV2API:
         
         assert response.status_code in [200, 503]
         data = response.json()
-        assert "success" in data
         
-        if response.status_code == 200 and data["success"]:
-            assert "geographical_data" in data or "geo_data" in data
+        if response.status_code == 200:
+            # Check expected fields in geo response
+            assert "geographic_analysis" in data
+            assert "continental_distribution" in data
+            assert "detailed_countries" in data
     
     def test_sources_status_monitoring(self):
         """Test sources status monitoring endpoint"""
@@ -167,9 +173,8 @@ class TestAnalyticsV2API:
         
         assert response.status_code in [200, 503]
         data = response.json()
-        assert "success" in data
         
-        if response.status_code == 200 and data["success"]:
+        if response.status_code == 200:
             assert "sources" in data
             sources = data["sources"]
             

@@ -174,27 +174,30 @@ class RegtechAuth:
         try:
             # 1. 로그인 페이지 접속 (세션 쿠키 획득)
             logger.info("🔐 Getting session cookie from login form...")
-            login_form_resp = session.get(f"{self.base_url}/login/loginForm", timeout=self.timeout)
+            login_form_resp = session.get(
+                f"{self.base_url}/login/loginForm", timeout=self.timeout
+            )
             if login_form_resp.status_code != 200:
-                logger.error(f"❌ Failed to access login form: {login_form_resp.status_code}")
+                logger.error(
+                    f"❌ Failed to access login form: {login_form_resp.status_code}"
+                )
                 return False
 
             # 2. 사용자 확인 API 호출 (첫 번째 단계)
             logger.info(f"👤 Verifying user: {self.username}")
-            
-            # AJAX 헤더로 업데이트
-            session.headers.update({
-                "X-Requested-With": "XMLHttpRequest",
-                "Accept": "application/json, text/javascript, */*; q=0.01",
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Origin": self.base_url,
-                "Referer": f"{self.base_url}/login/loginForm",
-            })
 
-            verify_data = {
-                "memberId": self.username,
-                "memberPw": self.password
-            }
+            # AJAX 헤더로 업데이트
+            session.headers.update(
+                {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Origin": self.base_url,
+                    "Referer": f"{self.base_url}/login/loginForm",
+                }
+            )
+
+            verify_data = {"memberId": self.username, "memberPw": self.password}
 
             verify_resp = session.post(
                 f"{self.base_url}/member/findOneMember",
@@ -209,22 +212,26 @@ class RegtechAuth:
                 # 404는 사용자 정보 오류를 의미할 수 있음
                 try:
                     error_data = verify_resp.json()
-                    error_code = error_data.get('code', '')
-                    error_msg = error_data.get('message', '')
-                    
-                    if error_code in ['E00010002', 'E00010201']:
+                    error_code = error_data.get("code", "")
+                    error_msg = error_data.get("message", "")
+
+                    if error_code in ["E00010002", "E00010201"]:
                         logger.error(f"❌ Invalid credentials: {error_msg}")
                         return False
-                    elif error_code == 'E00010203':
+                    elif error_code == "E00010203":
                         logger.error("❌ Email certification required")
                         return False
-                    elif error_code == 'E00010204':
+                    elif error_code == "E00010204":
                         logger.error("❌ Account locked due to multiple login failures")
                         return False
                     else:
-                        logger.warning(f"⚠️ Unknown error code {error_code}: {error_msg}")
+                        logger.warning(
+                            f"⚠️ Unknown error code {error_code}: {error_msg}"
+                        )
                 except:
-                    logger.error(f"❌ User verification failed with status {verify_resp.status_code}")
+                    logger.error(
+                        f"❌ User verification failed with status {verify_resp.status_code}"
+                    )
                     return False
             else:
                 logger.error(f"❌ User verification failed: {verify_resp.status_code}")
@@ -232,12 +239,14 @@ class RegtechAuth:
 
             # 3. 실제 로그인 (두 번째 단계)
             logger.info("🔑 Performing actual login...")
-            
+
             # 일반 폼 헤더로 변경
-            session.headers.update({
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            })
+            session.headers.update(
+                {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                }
+            )
             # AJAX 헤더 제거
             if "X-Requested-With" in session.headers:
                 del session.headers["X-Requested-With"]
@@ -264,20 +273,29 @@ class RegtechAuth:
                 # URL 체크 - 메인 페이지로 리다이렉트되었는지 확인
                 if "/main/main" in login_resp.url or "main" in login_resp.url:
                     # 페이지 내용에서 로그인 성공 지표 확인
-                    if "logout" in login_resp.text.lower() or "로그아웃" in login_resp.text:
+                    if (
+                        "logout" in login_resp.text.lower()
+                        or "로그아웃" in login_resp.text
+                    ):
                         logger.info("✅ REGTECH login successful!")
                         self.session = session
                         return True
                     else:
                         logger.warning("⚠️ Redirected to main but logout link not found")
-                
+
                 # 로그인 실패 메시지 확인
-                if "로그인 실패" in login_resp.text or "login failed" in login_resp.text.lower():
+                if (
+                    "로그인 실패" in login_resp.text
+                    or "login failed" in login_resp.text.lower()
+                ):
                     logger.error("❌ Login failed - incorrect credentials")
                     return False
-                
+
                 # 로그인 폼이 여전히 존재하는지 확인
-                if 'id="loginForm"' in login_resp.text or 'name="loginForm"' in login_resp.text:
+                if (
+                    'id="loginForm"' in login_resp.text
+                    or 'name="loginForm"' in login_resp.text
+                ):
                     logger.error("❌ Login failed - still on login page")
                     return False
 

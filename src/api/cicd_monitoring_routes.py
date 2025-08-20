@@ -12,7 +12,8 @@ Deprecated: This file will be removed in a future version.
 import logging
 
 # Import everything from the new modular cicd package
-from .cicd import *
+# from .cicd import *  # Removed to fix linting issues
+# Use specific imports instead when needed
 
 logger = logging.getLogger(__name__)
 

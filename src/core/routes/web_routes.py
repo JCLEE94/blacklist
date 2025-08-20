@@ -40,14 +40,15 @@ def _get_dashboard_data():
         try:
             # 데이터베이스에서 소스별 통계 직접 조회 (PostgreSQL 연결 사용)
             import os
+
             import psycopg2
 
             # Get PostgreSQL connection URL from environment
             database_url = os.environ.get(
                 "DATABASE_URL",
-                "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist"
+                "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
             )
-            
+
             with psycopg2.connect(database_url) as conn:
                 cursor = conn.cursor()
 
@@ -153,7 +154,8 @@ def dashboard():
     except Exception as e:
         logger.error(f"Dashboard error: {e}")
         # Return simple HTML as fallback
-        return """
+        return (
+            """
         <html>
         <head><title>Dashboard</title></head>
         <body>
@@ -163,7 +165,11 @@ def dashboard():
             <p><a href="/test">Test Page</a></p>
         </body>
         </html>
-        """.format(str(e)), 500
+        """.format(
+                str(e)
+            ),
+            500,
+        )
 
 
 @web_routes_bp.route("/legacy-dashboard", methods=["GET"])

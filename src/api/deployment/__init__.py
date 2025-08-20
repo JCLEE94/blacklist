@@ -6,4 +6,4 @@ Deployment API 모듈 초기화
 
 from .health_routes import deployment_health_bp
 
-__all__ = ['deployment_health_bp']
+__all__ = ["deployment_health_bp"]

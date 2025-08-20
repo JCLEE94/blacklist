@@ -18,9 +18,11 @@ class BlueprintRegistrationMixin:
         # Register dashboard fix blueprint first (highest priority)
         try:
             from ..routes.dashboard_fix import dashboard_fix_bp
-            
+
             app.register_blueprint(dashboard_fix_bp)
-            logger.info("Dashboard fix routes registered successfully (highest priority)")
+            logger.info(
+                "Dashboard fix routes registered successfully (highest priority)"
+            )
         except Exception as e:
             logger.error(f"Failed to register dashboard fix routes: {e}")
 

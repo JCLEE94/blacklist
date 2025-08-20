@@ -6,7 +6,7 @@ Handles enabling, disabling, triggering, and canceling collectors
 
 import logging
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify  # removed unused request import
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory
