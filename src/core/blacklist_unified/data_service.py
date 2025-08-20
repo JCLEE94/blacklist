@@ -1,23 +1,33 @@
 #!/usr/bin/env python3
 """
 Data Management Service for Unified Blacklist Manager
+
+This module provides a high-level interface for blacklist data operations including:
+- IP address validation and processing
+- Bulk import operations with comprehensive validation
+- Active IP retrieval with fallback mechanisms
+- Data cleanup and maintenance operations
+
+Third-party packages:
+- sqlite3: Python standard library
+- Enhanced cache: Local caching system
+
+Sample input: IP data lists, source identifiers, configuration parameters
+Expected output: Processing results, active IP lists, operation status
 """
 
-import ipaddress
 import logging
-import os
 import sqlite3
 import threading
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Set
-
-import psycopg2
-from sqlalchemy import text
+from typing import Any, Dict, List
 
 from ...utils.advanced_cache import EnhancedSmartCache
 from ...utils.unified_decorators import unified_cache
 from ..common.ip_utils import IPUtils
 from ..database import DatabaseManager
+from .database_operations import DatabaseOperations
+from .file_operations import FileOperations
 from .models import DataProcessingError
 
 logger = logging.getLogger(__name__)
@@ -30,26 +40,18 @@ class DataService:
         self, data_dir: str, db_manager: DatabaseManager, cache: EnhancedSmartCache
     ):
         self.data_dir = data_dir
-        self.blacklist_dir = os.path.join(data_dir, "blacklist_entries")
-        self.detection_dir = os.path.join(data_dir, "by_detection_month")
         self.db_manager = db_manager
         self.cache = cache
         self.lock = threading.RLock()
-
-        # Use PostgreSQL database URL from config
-        self.database_url = (
-            db_manager.database_url
-            if db_manager
-            else os.environ.get(
-                "DATABASE_URL",
-                "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
-            )
-        )
-
+        
+        # Initialize component services
+        self.db_ops = DatabaseOperations(db_manager)
+        self.file_ops = FileOperations(data_dir)
+        
         # SQLite compatibility path (deprecated but kept for backward compatibility)
         self.db_path = os.path.join(data_dir, "blacklist.db")
 
-        logger.info(f"DataService initialized with database: {self.database_url}")
+        logger.info(f"DataService initialized with data_dir: {data_dir}")
 
     def _is_valid_ip(self, ip_str: str) -> bool:
         """Validate IP address format using centralized utility"""
@@ -87,92 +89,14 @@ class DataService:
             else:
                 invalid_ips.append({"ip": ip, "reason": "Invalid IP format"})
 
-        # Process in batches
-        processed = 0
-        errors = []
-
+        # Process via database operations
         try:
-            # Use PostgreSQL if available, otherwise fall back to SQLite
-            if self.database_url and self.database_url.startswith("postgresql://"):
-                # PostgreSQL connection
-                conn = psycopg2.connect(self.database_url)
-                cursor = conn.cursor()
-
-                # PostgreSQL-specific table creation
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS blacklist_entries (
-                        id SERIAL PRIMARY KEY,
-                        ip_address INET NOT NULL,
-                        source TEXT,
-                        detection_date TIMESTAMP,
-                        collection_date TIMESTAMP,
-                        reg_date TIMESTAMP,
-                        attack_type TEXT,
-                        reason TEXT,
-                        country TEXT,
-                        threat_level TEXT,
-                        as_name TEXT,
-                        city TEXT,
-                        is_active INTEGER DEFAULT 1,
-                        expires_at DATETIME,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        extra_data TEXT
-                    )
-                    """
-                )
-
-                # Process in batches
-                for i in range(0, len(valid_ips), batch_size):
-                    batch = valid_ips[i : i + batch_size]
-
-                    try:
-                        # Prepare batch data
-                        batch_data = []
-                        for ip_data in batch:
-                            batch_data.append(
-                                (
-                                    ip_data["ip"],
-                                    ip_data.get("source", source),
-                                    ip_data.get("detection_date"),
-                                    ip_data.get("collection_date"),
-                                    ip_data.get("country"),
-                                    ip_data.get("threat_type"),
-                                    ip_data.get("confidence_score", 1.0),
-                                    ip_data.get("is_active", 1),
-                                    ip_data.get("expires_at"),
-                                    datetime.now(),
-                                    datetime.now(),
-                                )
-                            )
-
-                        # Batch insert with upsert logic
-                        cursor.executemany(
-                            """
-                            INSERT OR REPLACE INTO blacklist_entries (
-                                ip, source, detection_date, collection_date, country,
-                                attack_type, threat_level, is_active,
-                                expires_at, created_at, updated_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """,
-                            batch_data,
-                        )
-
-                        processed += len(batch)
-                        logger.debug(
-                            "Processed batch {i//batch_size + 1}, total: {processed}"
-                        )
-
-                    except Exception as e:
-                        error_msg = f"Error processing batch {i//batch_size + 1}: {e}"
-                        logger.error(error_msg)
-                        errors.append(error_msg)
-
-                conn.commit()
-
-                # Update file-based storage
-                self._update_file_storage(valid_ips, source)
+            db_result = self.db_ops.bulk_import_ips(valid_ips, source, batch_size)
+            processed = db_result["processed"]
+            errors = db_result["errors"]
+            
+            # Update file-based storage
+            self.file_ops.update_file_storage(valid_ips, source)
 
         except Exception as e:
             error_msg = f"Database error during bulk import: {e}"
@@ -197,158 +121,22 @@ class DataService:
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(
-            f"Bulk import completed: {processed}/{len(valid_ips)} IPs processed"
-        )
+        logger.info(f"Bulk import completed: {processed}/{len(valid_ips)} IPs processed")
         return result
 
-    def _update_file_storage(self, ips_data: List[Dict[str, Any]], source: str):
-        """Update file-based storage for backward compatibility"""
-        try:
-            # Ensure directories exist
-            os.makedirs(self.blacklist_dir, exist_ok=True)
-            os.makedirs(self.detection_dir, exist_ok=True)
-
-            # Update source file
-            source_file = os.path.join(self.blacklist_dir, "{source}.txt")
-            with open(source_file, "w", encoding="utf-8") as f:
-                ips_by_source = [
-                    ip_data["ip"]
-                    for ip_data in ips_data
-                    if ip_data.get("source") == source
-                ]
-                f.write("\n".join(sorted(set(ips_by_source))))
-
-            # Update monthly detection files
-            ips_by_month = {}
-            for ip_data in ips_data:
-                detection_date = ip_data.get("detection_date")
-                if detection_date:
-                    try:
-                        month_key = datetime.fromisoformat(detection_date).strftime(
-                            "%Y-%m"
-                        )
-                        if month_key not in ips_by_month:
-                            ips_by_month[month_key] = set()
-                        ips_by_month[month_key].add(ip_data["ip"])
-                    except ValueError:
-                        logger.warning(
-                            "Invalid detection date format: {detection_date}"
-                        )
-
-            for month_key, ips in ips_by_month.items():
-                month_file = os.path.join(self.detection_dir, "{month_key}.txt")
-                with open(month_file, "w", encoding="utf-8") as f:
-                    f.write("\n".join(sorted(ips)))
-
-        except Exception as e:
-            logger.error(f"Error updating file storage: {e}")
-
     def get_active_ips(self) -> List[str]:
-        """Get all active IP addresses from PostgreSQL database"""
+        """Get all active IP addresses with database and file fallback"""
         try:
-            logger.debug(f"Getting active IPs from PostgreSQL: {self.database_url}")
-            with psycopg2.connect(self.database_url) as conn:
-                cursor = conn.cursor()
-
-                cursor.execute(
-                    """
-                    SELECT DISTINCT ip_address::text
-                    FROM blacklist_entries
-                    WHERE is_active = true
-                      AND (expiry_date IS NULL OR expiry_date > CURRENT_DATE)
-                    ORDER BY ip_address
-                    """
-                )
-
-                result = []
-                for row in cursor.fetchall():
-                    ip_str = row[0]
-                    # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
-                    if "/" in ip_str:
-                        ip_str = ip_str.split("/")[0]
-                    result.append(ip_str)
-
-                logger.info(f"Found {len(result)} active IPs from PostgreSQL database")
-                return result
-
-        except psycopg2.Error as e:
-            logger.error(f"PostgreSQL error getting active IPs: {e}")
-            # Fallback to file-based method
-            return self._get_active_ips_from_files()
+            # Try database operations first
+            return self.db_ops.get_active_ips()
         except Exception as e:
             logger.error(f"Database error getting active IPs: {e}")
             # Fallback to file-based method
-            return self._get_active_ips_from_files()
-
-    def _get_active_ips_from_files(self) -> List[str]:
-        """Fallback method to get IPs from files"""
-        all_ips = set()
-
-        # Load from blacklist directory
-        if os.path.exists(self.blacklist_dir):
-            for filename in os.listdir(self.blacklist_dir):
-                if filename.endswith(".txt"):
-                    file_path = os.path.join(self.blacklist_dir, filename)
-                    try:
-                        with open(file_path, "r", encoding="utf-8") as f:
-                            for line in f:
-                                ip = line.strip()
-                                if ip and self._is_valid_ip(ip):
-                                    all_ips.add(ip)
-                    except Exception as e:
-                        logger.warning(f"Error reading {file_path}: {e}")
-
-        # Load REGTECH IPs specifically
-        regtech_ips = self._load_regtech_ips()
-        all_ips.update(regtech_ips)
-
-        return sorted(all_ips)
-
-    def _load_regtech_ips(self) -> Set[str]:
-        """Load REGTECH IPs from Excel files with robust parsing"""
-        regtech_ips = set()
-
-        try:
-            import pandas as pd
-        except ImportError:
-            logger.warning("pandas not available, skipping REGTECH Excel parsing")
-            return regtech_ips
-
-        excel_patterns = ["regtech*.xlsx", "REGTECH*.xlsx", "*regtech*.xlsx"]
-
-        for pattern in excel_patterns:
-            import glob
-
-            for excel_file in glob.glob(
-                os.path.join(self.data_dir, "**", pattern), recursive=True
-            ):
-                try:
-                    df = pd.read_excel(excel_file)
-
-                    # Look for IP columns
-                    ip_columns = [
-                        col
-                        for col in df.columns
-                        if "ip" in col.lower() or "주소" in col.lower()
-                    ]
-
-                    for col in ip_columns:
-                        for ip in df[col].dropna():
-                            ip_str = str(ip).strip()
-                            if self._is_valid_ip(ip_str):
-                                regtech_ips.add(ip_str)
-
-                except Exception as e:
-                    logger.warning(
-                        f"Error processing REGTECH Excel file {excel_file}: {e}"
-                    )
-
-        return regtech_ips
+            return self.file_ops.get_active_ips_from_files()
 
     @unified_cache(ttl=600)
     def get_all_active_ips(self) -> List[Dict[str, Any]]:
-        """Get all active IPs with metadata"""
+        """Get all active IPs with metadata (SQLite fallback for legacy support)"""
         try:
             with sqlite3.connect(self.db_path, timeout=15) as conn:
                 conn.row_factory = sqlite3.Row
@@ -412,43 +200,14 @@ class DataService:
         }
 
         try:
-            # Clear database
-            with sqlite3.connect(self.db_path, timeout=10) as conn:
-                cursor = conn.cursor()
+            # Clear database via database operations
+            db_result = self.db_ops.clear_all_data()
+            cleared_items["database_records"] = db_result.get("cleared_records", 0)
 
-                # Count records before deletion
-                cursor.execute("SELECT COUNT(*) FROM ip_detections WHERE is_active = 1")
-                cleared_items["database_records"] = cursor.fetchone()[0]
-
-                # Mark all records as inactive instead of deleting
-                cursor.execute(
-                    "UPDATE ip_detections SET is_active = 0, updated_at = ? "
-                    "WHERE is_active = 1",
-                    (datetime.now(),),
-                )
-
-                conn.commit()
-
-            # Clear file-based data
-            if os.path.exists(self.blacklist_dir):
-                for filename in os.listdir(self.blacklist_dir):
-                    file_path = os.path.join(self.blacklist_dir, filename)
-                    try:
-                        os.remove(file_path)
-                        cleared_items["files_removed"] += 1
-                    except Exception as e:
-                        logger.warning(f"Could not remove {file_path}: {e}")
-
-            if os.path.exists(self.detection_dir):
-                for filename in os.listdir(self.detection_dir):
-                    file_path = os.path.join(self.detection_dir, filename)
-                    try:
-                        os.remove(file_path)
-                        cleared_items["files_removed"] += 1
-                    except Exception as e:
-                        logger.warning(f"Could not remove {file_path}: {e}")
-
-                cleared_items["directories_cleaned"] = 2
+            # Clear file-based data via file operations
+            file_result = self.file_ops.clear_file_data()
+            cleared_items["files_removed"] = file_result.get("files_removed", 0)
+            cleared_items["directories_cleaned"] = file_result.get("directories_cleaned", 0)
 
             # Clear caches
             cache_patterns = ["active_ips*", "stats*", "ip_search*", "fortigate*"]
@@ -458,9 +217,7 @@ class DataService:
 
         except Exception as e:
             logger.error(f"Error during clear_all operation: {e}")
-            raise DataProcessingError(
-                "Clear operation failed: {e}", operation="clear_all"
-            )
+            raise DataProcessingError(f"Clear operation failed: {e}", operation="clear_all")
 
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
@@ -476,36 +233,67 @@ class DataService:
         logger.info(f"Clear all completed: {cleared_items}")
         return result
 
-    def cleanup_old_data(self, days: int = 365):
+    def cleanup_old_data(self, days: int = 365) -> Dict[str, Any]:
         """Clean up old data beyond specified days"""
-        cutoff_date = datetime.now() - timedelta(days=days)
-
         try:
-            with sqlite3.connect(self.db_path, timeout=10) as conn:
-                cursor = conn.cursor()
-
-                # Count records to be cleaned
-                cursor.execute(
-                    "SELECT COUNT(*) FROM ip_detections WHERE created_at < ?",
-                    (cutoff_date,),
-                )
-                count = cursor.fetchone()[0]
-
-                # Mark old records as inactive
-                cursor.execute(
-                    "UPDATE ip_detections SET is_active = 0, updated_at = ? "
-                    "WHERE created_at < ? AND is_active = 1",
-                    (datetime.now(), cutoff_date),
-                )
-
-                conn.commit()
-
-                logger.info(f"Cleaned up {count} records older than {days} days")
-                return {
-                    "cleaned_records": count,
-                    "cutoff_date": cutoff_date.isoformat(),
-                }
-
-        except sqlite3.Error as e:
+            return self.db_ops.cleanup_old_data(days)
+        except Exception as e:
             logger.error(f"Error during cleanup: {e}")
             return {"error": str(e)}
+
+
+if __name__ == "__main__":
+    # Validation tests
+    import sys
+    import tempfile
+
+    all_validation_failures = []
+    total_tests = 0
+
+    # Test 1: DataService instantiation
+    total_tests += 1
+    try:
+        # Mock components for testing
+        class MockDBManager:
+            def __init__(self):
+                self.database_url = "postgresql://test:test@localhost/test"
+        
+        class MockCache:
+            def delete_pattern(self, pattern):
+                return 0
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            data_service = DataService(temp_dir, MockDBManager(), MockCache())
+            if hasattr(data_service, 'db_ops') and hasattr(data_service, 'file_ops'):
+                print("✅ DataService instantiation working")
+            else:
+                all_validation_failures.append("DataService missing required components")
+    except Exception as e:
+        all_validation_failures.append(f"DataService instantiation failed: {e}")
+
+    # Test 2: IP validation function
+    total_tests += 1
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            data_service = DataService(temp_dir, MockDBManager(), MockCache())
+            
+            valid_ip = data_service._is_valid_ip("192.168.1.1")
+            invalid_ip = data_service._is_valid_ip("invalid.ip.address")
+            
+            if valid_ip and not invalid_ip:
+                print("✅ IP validation function working")
+            else:
+                all_validation_failures.append(f"IP validation failed: valid={valid_ip}, invalid={invalid_ip}")
+    except Exception as e:
+        all_validation_failures.append(f"IP validation failed: {e}")
+
+    # Final validation result
+    if all_validation_failures:
+        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        for failure in all_validation_failures:
+            print(f"  - {failure}")
+        sys.exit(1)
+    else:
+        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print("DataService module is validated and ready for use")
+        sys.exit(0)

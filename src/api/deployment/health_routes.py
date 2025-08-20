@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 배포 검증용 상세 헬스체크 API 모듈
 
@@ -17,16 +18,20 @@ Expected output: JSON with comprehensive health status including dependencies, p
 
 import logging
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Tuple
+from datetime import datetime
 
-import psutil
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 
 # Import handling for both module and standalone execution
 try:
     from ...core.exceptions import create_error_response
     from ...core.unified_service import get_unified_service
+    from .health_checks import (
+        check_database_health,
+        check_redis_health,
+        check_collection_health,
+        get_performance_metrics,
+    )
 except ImportError:
     # Fallback for standalone execution
     import os
@@ -37,6 +42,12 @@ except ImportError:
     try:
         from src.core.exceptions import create_error_response
         from src.core.unified_service import get_unified_service
+        from src.api.deployment.health_checks import (
+            check_database_health,
+            check_redis_health,
+            check_collection_health,
+            get_performance_metrics,
+        )
     except ImportError:
         # Mock for testing
         def get_unified_service():
@@ -48,6 +59,16 @@ except ImportError:
 
         def create_error_response(code, message, status_code):
             return {"error": {"code": code, "message": message}}, status_code
+            
+        # Mock health check functions
+        def check_database_health():
+            return "healthy", {"status": "healthy"}
+        def check_redis_health():
+            return "healthy", {"status": "healthy"}
+        def check_collection_health():
+            return "enabled", {"status": "enabled"}
+        def get_performance_metrics():
+            return {"cpu_percent": 10}
 
 
 logger = logging.getLogger(__name__)
@@ -61,149 +82,6 @@ deployment_health_bp = Blueprint(
 service = get_unified_service()
 
 
-def check_database_health() -> Tuple[str, Dict[str, Any]]:
-    """Database connectivity and performance check"""
-    try:
-        start_time = time.time()
-        health_info = service.get_system_health()
-        response_time_ms = int((time.time() - start_time) * 1000)
-
-        if health_info.get("status") == "healthy":
-            return "healthy", {
-                "status": "healthy",
-                "response_time_ms": response_time_ms,
-                "total_entries": health_info.get("total_ips", 0),
-                "last_updated": health_info.get("last_updated", "unknown"),
-                "connection_pool": "available",
-            }
-        else:
-            return "unhealthy", {
-                "status": "unhealthy",
-                "error": health_info.get("error", "Unknown database error"),
-                "response_time_ms": response_time_ms,
-            }
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
-        return "error", {"status": "error", "error": str(e), "response_time_ms": 5000}
-
-
-def check_redis_health() -> Tuple[str, Dict[str, Any]]:
-    """Redis cache connectivity and performance check"""
-    try:
-        # Import handling
-        try:
-            from ...core.container import get_container
-        except ImportError:
-            try:
-                from src.core.container import get_container
-            except ImportError:
-                # Mock for testing
-                def get_container():
-                    class MockContainer:
-                        def get(self, key):
-                            class MockCacheManager:
-                                def set(self, key, value, ttl=None):
-                                    return True
-
-                                def get(self, key):
-                                    return "test"
-
-                                def delete(self, key):
-                                    return True
-
-                            return MockCacheManager()
-
-                    return MockContainer()
-
-        container = get_container()
-        cache_manager = container.get("cache_manager")
-
-        start_time = time.time()
-        # Test cache connectivity
-        test_key = "_health_check_test"
-        cache_manager.set(test_key, "test", ttl=10)
-        result = cache_manager.get(test_key)
-        cache_manager.delete(test_key)
-        response_time_ms = int((time.time() - start_time) * 1000)
-
-        if result == "test":
-            return "healthy", {
-                "status": "healthy",
-                "type": "redis",
-                "response_time_ms": response_time_ms,
-                "fallback_enabled": True,
-            }
-        else:
-            return "degraded", {
-                "status": "degraded",
-                "type": "memory_fallback",
-                "response_time_ms": response_time_ms,
-                "message": "Using memory fallback",
-            }
-    except Exception as e:
-        logger.error(f"Redis health check failed: {e}")
-        return "error", {"status": "error", "error": str(e), "fallback": "memory_cache"}
-
-
-def check_collection_health() -> Tuple[str, Dict[str, Any]]:
-    """Data collection system health check"""
-    try:
-        health_info = service.get_system_health()
-        collection_enabled = health_info.get("collection_enabled", False)
-        last_collection = health_info.get("last_collection", "never")
-
-        status = "enabled" if collection_enabled else "disabled"
-
-        # Check if last collection was recent (within 24 hours)
-        recent_collection = False
-        if last_collection != "never":
-            try:
-                from dateutil import parser
-
-                last_time = parser.parse(last_collection)
-                recent_collection = (datetime.now() - last_time) < timedelta(hours=24)
-            except:
-                recent_collection = False
-
-        return status, {
-            "status": status,
-            "last_collection": last_collection,
-            "recent_collection": recent_collection,
-            "sources": {"regtech": "available", "secudium": "available"},
-        }
-    except Exception as e:
-        logger.error(f"Collection health check failed: {e}")
-        return "error", {"status": "error", "error": str(e)}
-
-
-def get_performance_metrics() -> Dict[str, Any]:
-    """System performance metrics"""
-    try:
-        # CPU and memory usage
-        cpu_percent = psutil.cpu_percent(interval=0.1)
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage("/")
-
-        return {
-            "cpu_percent": cpu_percent,
-            "memory": {
-                "total_mb": round(memory.total / 1024 / 1024),
-                "used_mb": round(memory.used / 1024 / 1024),
-                "percent": memory.percent,
-            },
-            "disk": {
-                "total_gb": round(disk.total / 1024 / 1024 / 1024),
-                "used_gb": round(disk.used / 1024 / 1024 / 1024),
-                "percent": round((disk.used / disk.total) * 100, 1),
-            },
-        }
-    except Exception as e:
-        logger.warning(f"Performance metrics unavailable: {e}")
-        return {
-            "cpu_percent": "unavailable",
-            "memory": {"status": "unavailable"},
-            "disk": {"status": "unavailable"},
-        }
 
 
 @deployment_health_bp.route("/health-detailed", methods=["GET"])
@@ -212,7 +90,7 @@ def detailed_deployment_health():
     try:
         start_time = time.time()
 
-        # Check all components
+        # Check all components using imported health check functions
         db_status, db_details = check_database_health()
         redis_status, redis_details = check_redis_health()
         collection_status, collection_details = check_collection_health()
@@ -364,18 +242,18 @@ def dependencies_check():
         dependencies = {}
         overall_healthy = True
 
-        # Database dependency
+        # Database dependency using imported function
         db_status, db_details = check_database_health()
         dependencies["postgresql"] = db_details
         if db_status == "error":
             overall_healthy = False
 
-        # Cache dependency
+        # Cache dependency using imported function
         redis_status, redis_details = check_redis_health()
         dependencies["redis"] = redis_details
         # Redis degradation is not critical
 
-        # Collection system dependency
+        # Collection system dependency using imported function
         collection_status, collection_details = check_collection_health()
         dependencies["collection"] = collection_details
         # Collection disabled is not critical
@@ -433,6 +311,8 @@ def deployment_metrics():
         )
 
 
+
+
 if __name__ == "__main__":
     # Validation tests
     import sys
@@ -440,72 +320,33 @@ if __name__ == "__main__":
     all_validation_failures = []
     total_tests = 0
 
-    # Test 1: Database health check function
-    total_tests += 1
-    try:
-        db_status, db_details = check_database_health()
-        if db_status in ["healthy", "unhealthy", "error"] and isinstance(
-            db_details, dict
-        ):
-            print("✅ Database health check function working")
-        else:
-            all_validation_failures.append(
-                f"Database health check returned invalid format: {db_status}, {type(db_details)}"
-            )
-    except Exception as e:
-        all_validation_failures.append(f"Database health check function failed: {e}")
-
-    # Test 2: Redis health check function
-    total_tests += 1
-    try:
-        redis_status, redis_details = check_redis_health()
-        if redis_status in ["healthy", "degraded", "error"] and isinstance(
-            redis_details, dict
-        ):
-            print("✅ Redis health check function working")
-        else:
-            all_validation_failures.append(
-                f"Redis health check returned invalid format: {redis_status}, {type(redis_details)}"
-            )
-    except Exception as e:
-        all_validation_failures.append(f"Redis health check function failed: {e}")
-
-    # Test 3: Performance metrics function
-    total_tests += 1
-    try:
-        metrics = get_performance_metrics()
-        if isinstance(metrics, dict) and "cpu_percent" in metrics:
-            print("✅ Performance metrics function working")
-        else:
-            all_validation_failures.append(
-                f"Performance metrics returned invalid format: {type(metrics)}"
-            )
-    except Exception as e:
-        all_validation_failures.append(f"Performance metrics function failed: {e}")
-
-    # Test 4: Blueprint registration
+    # Test 1: Blueprint configuration
     total_tests += 1
     try:
         if deployment_health_bp.name == "deployment_health":
             print("✅ Blueprint properly configured")
         else:
-            all_validation_failures.append(
-                f"Blueprint name incorrect: {deployment_health_bp.name}"
-            )
+            all_validation_failures.append(f"Blueprint name incorrect: {deployment_health_bp.name}")
     except Exception as e:
         all_validation_failures.append(f"Blueprint configuration failed: {e}")
 
+    # Test 2: Service instance availability
+    total_tests += 1
+    try:
+        if hasattr(service, 'get_system_health'):
+            print("✅ Service instance working")
+        else:
+            all_validation_failures.append("Service instance missing get_system_health method")
+    except Exception as e:
+        all_validation_failures.append(f"Service instance failed: {e}")
+
     # Final validation result
     if all_validation_failures:
-        print(
-            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
-        )
+        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(
-            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
-        )
-        print("Deployment health API module is validated and ready for use")
+        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print("Deployment health routes module is validated and ready for use")
         sys.exit(0)
