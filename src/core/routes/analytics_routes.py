@@ -16,14 +16,13 @@ logger = logging.getLogger(__name__)
 # 분석 라우트 블루프린트
 analytics_routes_bp = Blueprint("analytics_routes", __name__)
 
-# 통합 서비스 인스턴스
-service = get_unified_service()
-
 
 @analytics_routes_bp.route("/api/stats", methods=["GET"])
 def get_system_stats():
     """시스템 통계 - 프론트엔드 호환 형식"""
     try:
+        # Get service lazily to ensure latest version
+        service = get_unified_service()
         stats = service.get_system_health()
         
         # 프론트엔드가 기대하는 형식으로 변환
@@ -53,6 +52,8 @@ def get_system_stats():
 def get_blacklist_with_metadata():
     """메타데이터 포함 블랙리스트 조회 - PostgreSQL 실제 데이터"""
     try:
+        # Get service lazily
+        service = get_unified_service()
         # 통계 서비스에서 실제 PostgreSQL 데이터 조회
         stats = service.get_statistics()
 
@@ -137,6 +138,7 @@ def api_monthly_data():
             # month_end = current_date.replace(day=last_day).strftime("%Y-%m-%d")
 
             # 해당 월의 통계 조회 (간소화된 버전)
+            service = get_unified_service()
             stats = service.get_system_health()
 
             monthly_stats.append(
@@ -189,6 +191,7 @@ def api_monthly_data():
 def api_sources_distribution():
     """소스별 분포 데이터"""
     try:
+        service = get_unified_service()
         stats = service.get_system_health()
 
         sources_data = []
@@ -251,6 +254,7 @@ def api_sources_distribution():
 def realtime_stats():
     """실시간 통계 조회"""
     try:
+        service = get_unified_service()
         stats = service.get_system_health()
         
         # Realtime dashboard 형식으로 변환
@@ -286,6 +290,7 @@ def realtime_collection_status():
     """실시간 수집 상태 조회"""
     try:
         # Get collection status from the main service
+        service = get_unified_service()
         collection_status = service.get_collection_status()
         
         collections = []
@@ -355,6 +360,7 @@ def monitoring_system():
 def realtime_feed():
     """실시간 피드"""
     try:
+        service = get_unified_service()
         stats = service.get_system_health()
         
         feed_event = {

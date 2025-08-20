@@ -6,6 +6,7 @@ blacklist_unified 모듈용 통계 서비스 클래스
 
 import logging
 import os
+import sqlite3
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -235,9 +236,77 @@ class StatisticsService:
         return []
 
     def get_statistics(self) -> Dict[str, Any]:
-        """통합 통계 정보 (PostgreSQL에서 실제 데이터 조회)"""
+        """통합 통계 정보 (SQLite 또는 PostgreSQL에서 실제 데이터 조회)"""
         conn = None
         try:
+            # Try SQLite first for local development
+            import sqlite3
+            sqlite_db_path = "instance/blacklist.db"
+            
+            if os.path.exists(sqlite_db_path):
+                logger.debug(f"Getting statistics from SQLite: {sqlite_db_path}")
+                conn = sqlite3.connect(sqlite_db_path)
+                cursor = conn.cursor()
+                
+                # 활성 IP 수
+                cursor.execute(
+                    "SELECT COUNT(DISTINCT ip_address) FROM blacklist WHERE is_active = 1"
+                )
+                active_ips = cursor.fetchone()[0]
+                
+                # 전체 IP 수 (비활성 포함)
+                cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM blacklist")
+                total_ips = cursor.fetchone()[0]
+                
+                # 소스별 통계
+                cursor.execute(
+                    """
+                    SELECT LOWER(source) as source_name, COUNT(DISTINCT ip_address) as count
+                    FROM blacklist
+                    WHERE is_active = 1
+                    GROUP BY LOWER(source)
+                    """
+                )
+                sources = {}
+                for row in cursor.fetchall():
+                    source_name = row[0] or "unknown"
+                    sources[source_name] = row[1]
+                    
+                # 특정 소스별 카운트 추가 (대시보드 호환성)
+                regtech_count = sources.get("regtech", 0)
+                secudium_count = sources.get("secudium", 0)
+                public_count = sources.get("public", 0)
+                
+                # 마지막 업데이트 시간
+                cursor.execute(
+                    """
+                    SELECT MAX(created_at) FROM blacklist 
+                    WHERE is_active = 1
+                    """
+                )
+                last_update_raw = cursor.fetchone()[0]
+                last_update = last_update_raw if last_update_raw else datetime.now().isoformat()
+                
+                conn.close()
+                
+                stats = {
+                    "total_ips": total_ips,
+                    "active_ips": active_ips,
+                    "expired_ips": total_ips - active_ips,
+                    "unique_countries": 0,  # SQLite doesn't have country data
+                    "sources": sources,
+                    "regtech_count": regtech_count,
+                    "secudium_count": secudium_count,
+                    "public_count": public_count,
+                    "last_update": last_update,
+                    "database_size": f"{os.path.getsize(sqlite_db_path) / 1024 / 1024:.2f} MB",
+                    "status": "healthy" if active_ips > 0 else "warning",
+                }
+                
+                logger.info(f"SQLite stats: {active_ips} active IPs from {len(sources)} sources")
+                return stats
+                
+            # Fallback to PostgreSQL
             conn = psycopg2.connect(self.database_url)
             conn.autocommit = True  # Enable autocommit to avoid transaction issues
             cursor = conn.cursor()

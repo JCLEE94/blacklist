@@ -235,13 +235,16 @@ class UnifiedBlacklistManager:
         try:
             stats = self.statistics_service.get_statistics()
 
-            # Format for backward compatibility
+            # Format for backward compatibility - include source-specific counts
             return {
                 "total_ips": stats.get("total_ips", 0),
                 "active_ips": stats.get("active_ips", 0),
                 "expired_ips": stats.get("expired_ips", 0),
                 "unique_countries": stats.get("unique_countries", 0),
                 "sources": stats.get("sources", {}),
+                "regtech_count": stats.get("regtech_count", 0),
+                "secudium_count": stats.get("secudium_count", 0),
+                "public_count": stats.get("public_count", 0),
                 "last_update": stats.get("last_update"),
                 "database_size": stats.get("database_size", "0 MB"),
                 "health": "healthy" if stats.get("active_ips", 0) > 0 else "warning",
@@ -254,6 +257,9 @@ class UnifiedBlacklistManager:
                 "expired_ips": 0,
                 "unique_countries": 0,
                 "sources": {},
+                "regtech_count": 0,
+                "secudium_count": 0,
+                "public_count": 0,
                 "last_update": None,
                 "database_size": "0 MB",
                 "health": "error",
