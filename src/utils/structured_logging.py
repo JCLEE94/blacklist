@@ -200,7 +200,7 @@ class StructuredLogger:
                 # 로그 레코드 삽입
                 cursor.execute(
                     """
-                    INSERT INTO structured_logs 
+                    INSERT INTO structured_logs
                     (timestamp, level, logger_name, message, context)
                     VALUES (?, ?, ?, ?, ?)
                 """,

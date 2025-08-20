@@ -6,7 +6,8 @@ Handles enabling, disabling, triggering, and canceling collectors
 
 import logging
 
-from flask import Blueprint, jsonify  # removed unused request import
+from flask import Blueprint  # removed unused request import
+from flask import jsonify
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory
@@ -252,7 +253,6 @@ if __name__ == "__main__":
             return isinstance(name, str) and len(name) > 0
 
     # Replace imports for testing
-    import sys
 
     sys.modules["...utils.security"] = type(
         "MockModule",

@@ -250,6 +250,7 @@ class SystemMonitor:
 
 if __name__ == "__main__":
     import sys
+
     from .database_stability import DatabaseStabilityManager
 
     all_validation_failures = []

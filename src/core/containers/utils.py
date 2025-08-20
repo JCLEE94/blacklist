@@ -101,8 +101,7 @@ def get_unified_service():
     except ValueError:
         logger.warning("Unified service not available in container")
         # Fallback to factory
-        from ..services.unified_service_factory import (
-            get_unified_service as factory_get,
-        )
+        from ..services.unified_service_factory import \
+            get_unified_service as factory_get
 
         return factory_get()

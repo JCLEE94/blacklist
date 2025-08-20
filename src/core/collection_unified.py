@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
 import requests
 from cryptography.fernet import Fernet
 
@@ -111,7 +110,8 @@ class UnifiedCollectionSystem:
         if self.collection_history_file.exists():
             try:
                 return json.loads(self.collection_history_file.read_text())
-            except:
+            except Exception as e:
+                logger.warning(f"History file load error: {e}")
                 return []
         return []
 

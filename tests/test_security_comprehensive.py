@@ -26,100 +26,92 @@ class TestSecurityAuth:
     
     def test_auth_module_import(self):
         """Test that security auth module can be imported"""
-        from src.utils.security.auth import AuthManager
+        from src.utils.security.auth import AuthenticationManager
         from src.utils.security.auth import generate_jwt_token
         from src.utils.security.auth import verify_jwt_token
         
-        assert AuthManager is not None
+        assert AuthenticationManager is not None
         assert generate_jwt_token is not None
         assert verify_jwt_token is not None
     
     def test_auth_manager_creation(self):
         """Test AuthManager creation and initialization"""
-        from src.utils.security.auth import AuthManager
+        from src.utils.security.auth import AuthenticationManager
         
-        auth_manager = AuthManager(secret_key="test_secret_key")
+        auth_manager = AuthenticationManager(secret_key="test_secret_key")
         assert auth_manager is not None
         assert hasattr(auth_manager, 'secret_key')
     
     def test_jwt_token_generation(self):
         """Test JWT token generation"""
-        from src.utils.security.auth import generate_jwt_token
+        from src.utils.security.auth import AuthenticationManager
         
-        payload = {
-            'user_id': 123,
-            'username': 'testuser',
-            'role': 'admin'
-        }
+        auth_mgr = AuthenticationManager(secret_key="test_secret")
+        user_id = "testuser"
+        roles = ["admin"]
         
-        token = generate_jwt_token(payload, secret_key="test_secret")
+        token = auth_mgr.generate_jwt_token(user_id, roles)
         assert token is not None
         assert isinstance(token, str)
         assert len(token) > 0
     
     def test_jwt_token_verification(self):
         """Test JWT token verification"""
-        from src.utils.security.auth import generate_jwt_token, verify_jwt_token
+        from src.utils.security.auth import AuthenticationManager
         
-        payload = {
-            'user_id': 123,
-            'username': 'testuser',
-            'exp': datetime.utcnow() + timedelta(hours=1)
-        }
+        auth_mgr = AuthenticationManager(secret_key="test_secret_key")
+        user_id = "testuser"
+        roles = ["admin"]
         
-        secret_key = "test_secret_key"
-        token = generate_jwt_token(payload, secret_key=secret_key)
+        # Generate token
+        token = auth_mgr.generate_jwt_token(user_id, roles)
         
         # Verify valid token
-        decoded_payload = verify_jwt_token(token, secret_key=secret_key)
+        decoded_payload = auth_mgr.verify_jwt_token(token)
         assert decoded_payload is not None
-        assert decoded_payload['user_id'] == 123
-        assert decoded_payload['username'] == 'testuser'
+        assert decoded_payload['user_id'] == user_id
+        assert decoded_payload['roles'] == roles
     
     def test_jwt_token_expiration(self):
         """Test JWT token expiration handling"""
-        from src.utils.security.auth import generate_jwt_token, verify_jwt_token
+        from src.utils.security.auth import AuthenticationManager
         
-        # Create expired token
-        payload = {
-            'user_id': 123,
-            'exp': datetime.utcnow() - timedelta(seconds=1)  # Already expired
-        }
+        auth_mgr = AuthenticationManager(secret_key="test_secret_key")
         
-        secret_key = "test_secret_key"
-        token = generate_jwt_token(payload, secret_key=secret_key)
+        # Create extremely short-lived token
+        token = auth_mgr.generate_jwt_token("testuser", ["admin"], expires_hours=-0.001)  # Negative to ensure expiration
         
-        # Verify expired token raises exception
-        with pytest.raises(Exception):
-            verify_jwt_token(token, secret_key=secret_key)
+        # Verify expired token returns None (no exception in this implementation)
+        decoded_payload = auth_mgr.verify_jwt_token(token)
+        assert decoded_payload is None
     
     def test_api_key_generation(self):
         """Test API key generation"""
-        from src.utils.security.auth import AuthManager
+        from src.utils.security.auth import AuthenticationManager
         
-        auth_manager = AuthManager(secret_key="test_secret")
+        auth_manager = AuthenticationManager(secret_key="test_secret")
         
-        api_key = auth_manager.generate_api_key(user_id=123)
+        api_key = auth_manager.generate_api_key(prefix="test")
         assert api_key is not None
         assert isinstance(api_key, str)
+        assert api_key.startswith("test_")
         assert len(api_key) > 20  # Should be reasonably long
     
     def test_api_key_validation(self):
         """Test API key validation"""
-        from src.utils.security.auth import AuthManager
+        from src.utils.security.auth import AuthenticationManager
         
-        auth_manager = AuthManager(secret_key="test_secret")
+        auth_manager = AuthenticationManager(secret_key="test_secret")
         
         # Generate and validate API key
-        user_id = 123
-        api_key = auth_manager.generate_api_key(user_id=user_id)
+        api_key = auth_manager.generate_api_key(prefix="test")
         
-        is_valid = auth_manager.validate_api_key(api_key)
+        is_valid = auth_manager.validate_api_key_format(api_key)
         assert is_valid == True
         
         # Test invalid API key
         invalid_key = "invalid_api_key_123"
-        is_invalid = auth_manager.validate_api_key(invalid_key)
+        is_invalid = auth_manager.validate_api_key_format(invalid_key)
         assert is_invalid == False
 
 @pytest.mark.unit

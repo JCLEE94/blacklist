@@ -33,7 +33,7 @@ class DatabaseStabilityManager:
         self.lock = threading.Lock()
         # Detect database type
         self.is_postgresql = self.db_path.startswith("postgresql://")
-        db_type = 'PostgreSQL' if self.is_postgresql else 'SQLite'
+        db_type = "PostgreSQL" if self.is_postgresql else "SQLite"
         logger.info(f"DatabaseStabilityManager initialized for {db_type}")
 
     @contextmanager

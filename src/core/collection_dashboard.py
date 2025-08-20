@@ -4,12 +4,11 @@
 Collection Dashboard with Daily Tracking System
 """
 
-import json
 import logging
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

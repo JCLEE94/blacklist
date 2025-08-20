@@ -4,7 +4,6 @@ DB 기반 수집기 시스템
 UI에서 저장된 DB 설정을 활용하여 데이터 수집
 """
 
-import json
 import logging
 import re
 from datetime import datetime, timedelta
@@ -250,7 +249,8 @@ class DatabaseCollectionSystem:
                 return False
 
             return True
-        except:
+        except Exception as e:
+            logger.warning(f"IP validation error: {e}")
             return False
 
     def collect_all_enabled_sources(

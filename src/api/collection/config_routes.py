@@ -242,7 +242,6 @@ if __name__ == "__main__":
             return {"valid": True, "errors": []}
 
     # Replace imports for testing
-    import sys
 
     sys.modules["...utils.security"] = type(
         "MockModule",

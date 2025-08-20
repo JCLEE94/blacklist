@@ -241,7 +241,6 @@ class StatisticsService:
         try:
             # Try SQLite first for local development
 
-
             sqlite_db_path = "instance/blacklist.db"
 
             if os.path.exists(sqlite_db_path):

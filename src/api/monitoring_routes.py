@@ -7,15 +7,10 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
-from ..utils.error_recovery import (
-    get_error_collector,
-    get_health_checker,
-    get_resource_monitor,
-)
-from ..utils.performance_optimizer import (
-    get_performance_monitor,
-    optimize_database_queries,
-)
+from ..utils.error_recovery import (get_error_collector, get_health_checker,
+                                    get_resource_monitor)
+from ..utils.performance_optimizer import (get_performance_monitor,
+                                           optimize_database_queries)
 from ..utils.security import rate_limit, require_auth
 from ..utils.system_stability import get_system_monitor
 
@@ -331,7 +326,8 @@ def _register_default_health_checks(health_checker):
     def collection_check():
         """수집 시스템 체크"""
         try:
-            from ..core.collectors.collector_factory import get_collector_factory
+            from ..core.collectors.collector_factory import \
+                get_collector_factory
 
             factory = get_collector_factory()
             status = factory.get_collector_status()

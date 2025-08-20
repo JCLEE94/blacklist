@@ -130,7 +130,7 @@ class SearchService:
                                 if ip in content:
                                     # Extract date from filename
                                     date_part = filename.replace(".txt", "")
-                                    found_sources.append("detection_{date_part}")
+                                    found_sources.append(f"detection_{date_part}")
                         except Exception as e:
                             logger.warning(f"Error reading {file_path}: {e}")
                             continue

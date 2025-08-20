@@ -4,11 +4,10 @@ Main Collection Routes - Combined blueprint with all collection endpoints
 Provides the main collection_bp that combines all modular route blueprints
 """
 
-from flask import Blueprint
+from flask import Blueprint, Flask
 
 from .collector_routes import collector_bp
 from .config_routes import config_bp
-
 # Import all modular route blueprints
 from .status_routes import status_bp
 
@@ -17,7 +16,6 @@ collection_bp = Blueprint("collection", __name__, url_prefix="/api/collection")
 
 # Register all sub-blueprints with the main blueprint
 # Note: We need to handle URL prefix conflicts carefully
-from flask import Flask
 
 
 def register_collection_routes(app: Flask):

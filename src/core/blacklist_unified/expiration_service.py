@@ -99,14 +99,14 @@ class ExpirationService:
             logger.error(f"Database error updating expiration status: {e}")
             return {
                 "success": False,
-                "error": "Database error: {e}",
+                "error": f"Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Unexpected error updating expiration status: {e}")
             return {
                 "success": False,
-                "error": "Unexpected error: {e}",
+                "error": f"Unexpected error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
 
@@ -125,7 +125,7 @@ class ExpirationService:
                 if cursor.fetchone()[0] == 0:
                     return {
                         "success": False,
-                        "error": "IP {ip} not found or not active",
+                        "error": f"IP {ip} not found or not active",
                         "timestamp": datetime.now().isoformat(),
                     }
 
@@ -160,14 +160,14 @@ class ExpirationService:
             logger.error(f"Database error setting IP expiration: {e}")
             return {
                 "success": False,
-                "error": "Database error: {e}",
+                "error": f"Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Unexpected error setting IP expiration: {e}")
             return {
                 "success": False,
-                "error": "Unexpected error: {e}",
+                "error": f"Unexpected error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
 
@@ -221,7 +221,7 @@ class ExpirationService:
                             errors.append("IP {ip} not found or not active")
 
                     except sqlite3.Error as e:
-                        errors.append("Error updating IP {ip}: {e}")
+                        errors.append(f"Error updating IP {ip}: {e}")
 
                 conn.commit()
 
@@ -241,14 +241,14 @@ class ExpirationService:
             logger.error(f"Database error in bulk expiration update: {e}")
             return {
                 "success": False,
-                "error": "Database error: {e}",
+                "error": f"Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Unexpected error in bulk expiration update: {e}")
             return {
                 "success": False,
-                "error": "Unexpected error: {e}",
+                "error": f"Unexpected error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
 
@@ -268,7 +268,7 @@ class ExpirationService:
                 if not row:
                     return {
                         "success": False,
-                        "error": "IP {ip} not found or not active",
+                        "error": f"IP {ip} not found or not active",
                         "timestamp": datetime.now().isoformat(),
                     }
 
@@ -315,13 +315,13 @@ class ExpirationService:
             logger.error(f"Database error extending IP expiration: {e}")
             return {
                 "success": False,
-                "error": "Database error: {e}",
+                "error": f"Database error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Unexpected error extending IP expiration: {e}")
             return {
                 "success": False,
-                "error": "Unexpected error: {e}",
+                "error": f"Unexpected error: {e}",
                 "timestamp": datetime.now().isoformat(),
             }
