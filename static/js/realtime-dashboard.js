@@ -374,18 +374,26 @@ class RealtimeDashboard {
 
     try {
       const response = await fetch(
-        `${this.options.apiBase}/stats/detection-trends?days=90`,
+        `${this.options.apiBase}/stats/monthly`,
       );
       if (!response.ok) return;
 
       const data = await response.json();
 
-      if (data.daily_trends) {
-        const labels = data.daily_trends.map((d) => d.date);
-        const values = data.daily_trends.map((d) => d.new_detections);
+      if (data.success && data.data) {
+        const monthly_data = data.data;
+        const labels = monthly_data.map((d) => {
+          const [year, month] = d.month.split("-");
+          return parseInt(month) + "월";
+        });
+        const regtech_values = monthly_data.map((d) => d.regtech_count || 0);
+        const secudium_values = monthly_data.map((d) => d.secudium_count || 0);
 
         this.charts.monthly.data.labels = labels;
-        this.charts.monthly.data.datasets[0].data = values;
+        this.charts.monthly.data.datasets[0].data = regtech_values;
+        if (this.charts.monthly.data.datasets[1]) {
+          this.charts.monthly.data.datasets[1].data = secudium_values;
+        }
         this.charts.monthly.update("none");
       }
     } catch (error) {
@@ -400,13 +408,18 @@ class RealtimeDashboard {
     if (!this.charts.source) return;
 
     try {
-      const response = await fetch(`${this.options.apiBase}/v2/sources/status`);
+      const response = await fetch(`${this.options.apiBase}/stats`);
       if (!response.ok) return;
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (data.sources) {
-        const values = data.sources.map((s) => s.records_count);
+      if (result.success && result.data) {
+        const data = result.data;
+        const values = [
+          data.regtech_count || 0,
+          data.secudium_count || 0,
+          data.public_count || 0
+        ];
         this.charts.source.data.datasets[0].data = values;
         this.charts.source.update("none");
       }

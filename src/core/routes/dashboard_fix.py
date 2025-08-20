@@ -13,8 +13,27 @@ dashboard_fix_bp = Blueprint("dashboard_fix", __name__)
 def fixed_dashboard():
     """Working dashboard using the original dashboard.html template"""
     try:
-        # Use the original dashboard.html template
-        return render_template("dashboard.html")
+        # Get current stats for template context
+        from ..services.unified_service_factory import get_unified_service
+        from datetime import datetime
+        
+        service = get_unified_service()
+        stats = service.get_system_health()
+        
+        # Prepare template context with actual data
+        template_data = {
+            'total_ips': stats.get('total_ips', 0),
+            'active_ips': stats.get('active_ips', 0),
+            'regtech_count': stats.get('regtech_count', 0),
+            'secudium_count': stats.get('secudium_count', 0),
+            'public_count': stats.get('public_count', 0),
+            'active_sources': ['REGTECH'] if stats.get('regtech_count', 0) > 0 else [],
+            'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'system_status': stats.get('status', 'healthy')
+        }
+        
+        # Use the original dashboard.html template with data
+        return render_template("dashboard.html", **template_data)
     except Exception as e:
         # Return simple working HTML as fallback
         return f"""

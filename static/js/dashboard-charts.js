@@ -170,10 +170,10 @@ async function loadDashboardData() {
 
         window.monthlyChart.data.labels = labels;
         window.monthlyChart.data.datasets[0].data = data.map(
-          (d) => d.regtech || 0,
+          (d) => d.regtech_count || 0,
         );
         window.monthlyChart.data.datasets[1].data = data.map(
-          (d) => d.secudium || 0,
+          (d) => d.secudium_count || 0,
         );
 
         window.monthlyChart.update();

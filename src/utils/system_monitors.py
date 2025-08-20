@@ -157,30 +157,55 @@ class DatabaseStabilityManager:
         """데이터베이스 최적화 실행"""
         try:
             with self.get_connection() as conn:
+                cursor = conn.cursor()
                 logger.info("데이터베이스 최적화 시작...")
-                # VACUUM으로 데이터베이스 정리
-                conn.execute("VACUUM")
-                # 통계 업데이트
-                conn.execute("ANALYZE")
-                # 오래된 로그 정리 (30일 이상)
-                cutoff_date = datetime.now() - timedelta(days=30)
-                conn.execute(
-                    """
-                    DELETE FROM system_logs
-                    WHERE timestamp < ?
-                """,
-                    (cutoff_date.isoformat(),),
-                )
-                # 만료된 인증 시도 기록 정리 (7일 이상)
-                cutoff_date = datetime.now() - timedelta(days=7)
-                conn.execute(
-                    """
-                    DELETE FROM auth_attempts
-                    WHERE attempt_time < ?
-                """,
-                    (cutoff_date.isoformat(),),
-                )
+                
+                if self.is_postgresql:
+                    # PostgreSQL 최적화
+                    cursor.execute("VACUUM ANALYZE")
+                    # 오래된 로그 정리 (30일 이상)
+                    cutoff_date = datetime.now() - timedelta(days=30)
+                    cursor.execute(
+                        """
+                        DELETE FROM system_logs
+                        WHERE timestamp < %s
+                    """,
+                        (cutoff_date.isoformat(),),
+                    )
+                    # 만료된 인증 시도 기록 정리 (7일 이상)
+                    cutoff_date = datetime.now() - timedelta(days=7)
+                    cursor.execute(
+                        """
+                        DELETE FROM auth_attempts
+                        WHERE attempt_time < %s
+                    """,
+                        (cutoff_date.isoformat(),),
+                    )
+                else:
+                    # SQLite 최적화
+                    cursor.execute("VACUUM")
+                    cursor.execute("ANALYZE")
+                    # 오래된 로그 정리 (30일 이상)
+                    cutoff_date = datetime.now() - timedelta(days=30)
+                    cursor.execute(
+                        """
+                        DELETE FROM system_logs
+                        WHERE timestamp < ?
+                    """,
+                        (cutoff_date.isoformat(),),
+                    )
+                    # 만료된 인증 시도 기록 정리 (7일 이상)
+                    cutoff_date = datetime.now() - timedelta(days=7)
+                    cursor.execute(
+                        """
+                        DELETE FROM auth_attempts
+                        WHERE attempt_time < ?
+                    """,
+                        (cutoff_date.isoformat(),),
+                    )
+                
                 conn.commit()
+                cursor.close()
                 logger.info("데이터베이스 최적화 완료")
                 return True
         except Exception as e:
@@ -252,15 +277,28 @@ class SystemMonitor:
         try:
             cutoff_time = datetime.now() - timedelta(hours=1)
             with self.db_manager.get_connection() as conn:
-                cursor = conn.execute(
-                    """
-                    SELECT COUNT(*) FROM system_logs
-                    WHERE level IN ('ERROR', 'CRITICAL')
-                    AND timestamp > ?
-                """,
-                    (cutoff_time.isoformat(),),
-                )
-                return cursor.fetchone()[0]
+                cursor = conn.cursor()
+                if self.db_manager.is_postgresql:
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM system_logs
+                        WHERE level IN ('ERROR', 'CRITICAL')
+                        AND timestamp > %s
+                    """,
+                        (cutoff_time.isoformat(),),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM system_logs
+                        WHERE level IN ('ERROR', 'CRITICAL')
+                        AND timestamp > ?
+                    """,
+                        (cutoff_time.isoformat(),),
+                    )
+                result = cursor.fetchone()[0]
+                cursor.close()
+                return result
         except Exception as e:
             return 0
 
@@ -302,19 +340,37 @@ class SystemMonitor:
         """시스템 이벤트 로깅"""
         try:
             with self.db_manager.get_connection() as conn:
-                conn.execute(
-                    """
-                    INSERT INTO system_logs
-                    (level, message, component, additional_data)
-                    VALUES (?, ?, ?, ?)
-                """,
-                    (
-                        level,
-                        message,
-                        component or "system_monitor",
-                        str(kwargs) if kwargs else None,
-                    ),
-                )
+                cursor = conn.cursor()
+                if self.db_manager.is_postgresql:
+                    cursor.execute(
+                        """
+                        INSERT INTO system_logs
+                        (level, message, logger_name, extra_data)
+                        VALUES (%s, %s, %s, %s)
+                    """,
+                        (
+                            level,
+                            message,
+                            component or "system_monitor",
+                            str(kwargs) if kwargs else None,
+                        ),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        INSERT INTO system_logs
+                        (level, message, component, additional_data)
+                        VALUES (?, ?, ?, ?)
+                    """,
+                        (
+                            level,
+                            message,
+                            component or "system_monitor",
+                            str(kwargs) if kwargs else None,
+                        ),
+                    )
+                cursor.close()
+                conn.commit()
         except Exception as e:
             logger.error(f"Failed to log system event: {e}")
 
