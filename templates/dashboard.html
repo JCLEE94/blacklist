@@ -1014,6 +1014,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 initializeCharts();
             } else {
                 console.warn('Chart.js not loaded. Charts will not be displayed.');
+                // Hide chart containers to prevent errors
+                const chartContainers = document.querySelectorAll('.chart-container');
+                chartContainers.forEach(container => {
+                    container.style.display = 'none';
+                });
             }
         }, 1000);
     }
@@ -1116,6 +1121,38 @@ function updateStatCards(stats) {
             }
         };
         updateSourceChart(distribution);
+    }
+}
+
+// Source distribution chart update function
+function updateSourceChart(distribution) {
+    try {
+        // Update source distribution UI elements if they exist
+        const regtechElement = document.getElementById('regtech-count');
+        const secudiumElement = document.getElementById('secudium-count');
+        const publicElement = document.getElementById('public-count');
+        
+        if (regtechElement) {
+            regtechElement.textContent = `${distribution.regtech.count} (${distribution.regtech.percentage}%)`;
+        }
+        if (secudiumElement) {
+            secudiumElement.textContent = `${distribution.secudium.count} (${distribution.secudium.percentage}%)`;
+        }
+        if (publicElement) {
+            publicElement.textContent = `${distribution.public.count} (${distribution.public.percentage}%)`;
+        }
+        
+        // Update chart if it exists
+        if (typeof Chart !== 'undefined' && window.sourceChart) {
+            window.sourceChart.data.datasets[0].data = [
+                distribution.regtech.count,
+                distribution.secudium.count,
+                distribution.public.count
+            ];
+            window.sourceChart.update();
+        }
+    } catch (error) {
+        console.error('Source chart update error:', error);
     }
 }
 

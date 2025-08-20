@@ -439,21 +439,51 @@ def format_chart_data(daily_stats):
             ],
         }
 
-        for stat in daily_stats:
-            chart_data["labels"].append(stat.get("date", ""))
+        # 데이터가 없을 경우 최근 7일 기본 데이터 생성
+        if not daily_stats:
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            for i in range(6, -1, -1):
+                date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
+                chart_data["labels"].append(date)
+                chart_data["datasets"][0]["data"].append(0)
+                chart_data["datasets"][1]["data"].append(0)
+        else:
+            for stat in daily_stats:
+                chart_data["labels"].append(stat.get("date", ""))
 
-            sources = stat.get("sources", {})
-            regtech_count = sources.get("regtech", 0)
-            secudium_count = sources.get("secudium", 0)
+                sources = stat.get("sources", {})
+                regtech_count = sources.get("regtech", 0)
+                secudium_count = sources.get("secudium", 0)
 
-            chart_data["datasets"][0]["data"].append(regtech_count)
-            chart_data["datasets"][1]["data"].append(secudium_count)
+                chart_data["datasets"][0]["data"].append(regtech_count)
+                chart_data["datasets"][1]["data"].append(secudium_count)
 
         return chart_data
 
     except Exception as e:
         logger.error(f"Error formatting chart data: {e}")
-        return {"labels": [], "datasets": []}
+        # 오류 발생 시에도 기본 구조 반환
+        from datetime import datetime, timedelta
+        today = datetime.now()
+        default_data = {
+            "labels": [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)],
+            "datasets": [
+                {
+                    "label": "REGTECH",
+                    "data": [0, 0, 0, 0, 0, 0, 0],
+                    "borderColor": "#4CAF50",
+                    "backgroundColor": "rgba(76, 175, 80, 0.1)",
+                },
+                {
+                    "label": "SECUDIUM",
+                    "data": [0, 0, 0, 0, 0, 0, 0],
+                    "borderColor": "#2196F3",
+                    "backgroundColor": "rgba(33, 150, 243, 0.1)",
+                },
+            ],
+        }
+        return default_data
 
 
 def calculate_success_rate(source: str, days: int) -> float:
