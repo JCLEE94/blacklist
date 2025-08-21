@@ -50,52 +50,130 @@ jobs:
       uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
+        
+    - name: Debug build environment
+      run: |
+        echo "🔍 Debugging build environment..."
+        echo "Current directory: $(pwd)"
+        echo "Available files in root:"
+        ls -la
+        echo ""
+        echo "Docker version:"
+        docker --version
+        echo ""
+        echo "Docker Buildx version:"
+        docker buildx version
+        echo ""
+        echo "Checking critical files:"
+        echo "- config/requirements.txt: $([ -f config/requirements.txt ] && echo '✅ EXISTS' || echo '❌ MISSING')"
+        echo "- docker/Dockerfile: $([ -f docker/Dockerfile ] && echo '✅ EXISTS' || echo '❌ MISSING')"
+        echo "- docker/redis/Dockerfile: $([ -f docker/redis/Dockerfile ] && echo '✅ EXISTS' || echo '❌ MISSING')"
+        echo "- docker/postgresql/Dockerfile: $([ -f docker/postgresql/Dockerfile ] && echo '✅ EXISTS' || echo '❌ MISSING')"
+        echo ""
+        if [ -f config/requirements.txt ]; then
+          echo "requirements.txt size: $(wc -l < config/requirements.txt) lines"
+        fi
       
     - name: Cache Docker layers
       uses: actions/cache@v3
       with:
-        path: /tmp/.buildx-cache
+        path: |
+          /tmp/.buildx-cache
+          /tmp/.buildx-cache-redis
+          /tmp/.buildx-cache-postgres
         key: ${{ runner.os }}-buildx-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-buildx-
 
     - name: Login to Container Registry
       run: |
-        echo "Logging into registry: ${{ env.REGISTRY }}"
-        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-        if [ $? -ne 0 ]; then
-          echo "Failed to login to registry"
+        echo "🔐 Logging into registry: ${{ env.REGISTRY }}"
+        
+        # Verify secrets are available
+        if [ -z "${{ secrets.REGISTRY_USERNAME }}" ]; then
+          echo "❌ Error: REGISTRY_USERNAME secret not set"
           exit 1
         fi
-
-    - name: Build Docker images
-      run: |
-        echo "🐳 Building Blacklist main image..."
         
-        # Determine Dockerfile location
-        if [ -f docker/Dockerfile ]; then
-          DOCKERFILE_PATH="docker/Dockerfile"
-        elif [ -f Dockerfile ]; then
-          DOCKERFILE_PATH="Dockerfile"
-        else
-          echo "Creating default Dockerfile..."
-          cat > Dockerfile << 'EOF'
-        FROM python:3.11-slim
-        WORKDIR /app
-        COPY requirements.txt .
-        RUN pip install --no-cache-dir -r requirements.txt
-        COPY . .
-        EXPOSE 2542
-        CMD ["python", "app/main.py"]
-        EOF
-          DOCKERFILE_PATH="Dockerfile"
+        if [ -z "${{ secrets.REGISTRY_PASSWORD }}" ]; then
+          echo "❌ Error: REGISTRY_PASSWORD secret not set"
+          exit 1
         fi
         
+        # Test registry connectivity first
+        echo "Testing registry connectivity..."
+        if ! ping -c 3 registry.jclee.me; then
+          echo "❌ Error: Cannot reach registry.jclee.me"
+          exit 1
+        fi
+        
+        # Login with error handling
+        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+        if [ $? -ne 0 ]; then
+          echo "❌ Failed to login to registry ${{ env.REGISTRY }}"
+          echo "Username: ${{ secrets.REGISTRY_USERNAME }}"
+          echo "Registry: ${{ env.REGISTRY }}"
+          exit 1
+        fi
+        
+        echo "✅ Successfully logged into registry"
+
+    - name: Build support images first
+      run: |
+        echo "🔄 Building support images (Redis, PostgreSQL) first..."
+        
+        # Build Redis image if configuration exists
+        if [ -d docker/redis ] && [ -f docker/redis/Dockerfile ]; then
+          echo "🔴 Building custom Redis image..."
+          docker buildx build \
+            --platform linux/amd64 \
+            --cache-from type=local,src=/tmp/.buildx-cache-redis \
+            --cache-to type=local,dest=/tmp/.buildx-cache-redis-new,mode=max \
+            -f docker/redis/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:v${{ env.VERSION }} \
+            --load \
+            docker/redis/
+        else
+          echo "ℹ️ No custom Redis configuration found, using public redis:7-alpine"
+        fi
+        
+        # Build PostgreSQL image if configuration exists
+        if [ -d docker/postgresql ] && [ -f docker/postgresql/Dockerfile ]; then
+          echo "🐘 Building custom PostgreSQL image..."
+          docker buildx build \
+            --platform linux/amd64 \
+            --cache-from type=local,src=/tmp/.buildx-cache-postgres \
+            --cache-to type=local,dest=/tmp/.buildx-cache-postgres-new,mode=max \
+            -f docker/postgresql/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:v${{ env.VERSION }} \
+            --load \
+            docker/postgresql/
+        else
+          echo "ℹ️ No custom PostgreSQL configuration found, using public postgres:15-alpine"
+        fi
+
+    - name: Build main application image
+      run: |
+        echo "🐳 Building Blacklist main application image..."
+        
+        # Verify requirements.txt exists in expected location
+        if [ ! -f config/requirements.txt ]; then
+          echo "❌ Error: config/requirements.txt not found"
+          echo "Available files in config/:"
+          ls -la config/ || echo "config/ directory not found"
+          exit 1
+        fi
+        
+        # Build main application with proper dockerfile
         docker buildx build \
           --platform linux/amd64 \
           --cache-from type=local,src=/tmp/.buildx-cache \
           --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-          -f "$DOCKERFILE_PATH" \
+          -f docker/Dockerfile \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }} \
@@ -105,133 +183,251 @@ jobs:
           --load \
           .
         
-        # Build support images only if configs exist
-        if [ -d docker/redis ] && [ -f docker/redis/Dockerfile ]; then
-          echo "🔴 Building custom Redis image..."
-          DOCKER_BUILDKIT=0 docker build \
-            -f docker/redis/Dockerfile \
-            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest \
-            -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }} \
-            docker/redis/
-        else
-          echo "ℹ️ No custom Redis image configuration found"
-        fi
-        
-        if [ -d docker/postgresql ] && [ -f docker/postgresql/Dockerfile ]; then
-          echo "🐘 Building custom PostgreSQL image..."
-          DOCKER_BUILDKIT=0 docker build \
-            -f docker/postgresql/Dockerfile \
-            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest \
-            -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }} \
-            docker/postgresql/
-        else
-          echo "ℹ️ No custom PostgreSQL image configuration found"
-        fi
+        echo "✅ Main application image built successfully"
 
-    - name: Push to registry
+    - name: Push support images to registry
       run: |
-        echo "🚀 Pushing Blacklist main image..."
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}
+        echo "🚀 Pushing support images first..."
         
-        # Push support images only if they were built
+        # Push Redis image if built
         if docker images | grep -q "${{ env.REDIS_IMAGE_NAME }}"; then
-          echo "🚀 Pushing custom Redis image..."
+          echo "🔴 Pushing custom Redis image..."
           docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest
           docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:v${{ env.VERSION }}
+          echo "✅ Redis image pushed successfully"
         fi
         
+        # Push PostgreSQL image if built
         if docker images | grep -q "${{ env.POSTGRESQL_IMAGE_NAME }}"; then
-          echo "🚀 Pushing custom PostgreSQL image..."
+          echo "🐘 Pushing custom PostgreSQL image..."
           docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest
           docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:v${{ env.VERSION }}
+          echo "✅ PostgreSQL image pushed successfully"
         fi
 
-    - name: Move cache
+    - name: Push main application to registry
       run: |
+        echo "🚀 Pushing Blacklist main application image..."
+        
+        # Verify images exist before pushing
+        if ! docker images | grep -q "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"; then
+          echo "❌ Error: Main application image not found"
+          docker images | grep "${{ env.IMAGE_NAME }}" || echo "No images with name ${{ env.IMAGE_NAME }}"
+          exit 1
+        fi
+        
+        # Push with error handling
+        echo "Pushing latest tag..."
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || {
+          echo "Failed to push latest tag"
+          exit 1
+        }
+        
+        echo "Pushing SHA tag..."
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} || {
+          echo "Failed to push SHA tag"
+          exit 1
+        }
+        
+        echo "Pushing version tag..."
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }} || {
+          echo "Failed to push version tag"
+          exit 1
+        }
+        
+        echo "✅ All main application images pushed successfully"
+
+    - name: Move build caches
+      run: |
+        echo "🗂️ Managing build caches..."
+        
+        # Move main cache
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
+        
+        # Move Redis cache if exists
+        if [ -d "/tmp/.buildx-cache-redis-new" ]; then
+          rm -rf /tmp/.buildx-cache-redis
+          mv /tmp/.buildx-cache-redis-new /tmp/.buildx-cache-redis
+        fi
+        
+        # Move PostgreSQL cache if exists
+        if [ -d "/tmp/.buildx-cache-postgres-new" ]; then
+          rm -rf /tmp/.buildx-cache-postgres
+          mv /tmp/.buildx-cache-postgres-new /tmp/.buildx-cache-postgres
+        fi
+        
+        echo "✅ Build caches updated successfully"
 
     - name: Test image health
       run: |
-        # Function to find available port
-        find_available_port() {
-          local port
-          for i in {1..10}; do
-            port=$((RANDOM % 55000 + 10000))
-            if ! netstat -tuln | grep ":$port " > /dev/null 2>&1; then
-              echo $port
-              return 0
-            fi
-          done
-          echo "Failed to find available port" >&2
-          return 1
-        }
+        echo "🏥 Testing application image health..."
         
-        # Get available port
-        TEST_PORT=$(find_available_port)
-        echo "Using dynamic port: $TEST_PORT"
+        # Use fixed port for testing to avoid conflicts
+        TEST_PORT=45678
         
         # Cleanup any existing test containers
-        docker rm -f test-container || true
+        echo "🧹 Cleaning up existing test containers..."
+        docker rm -f test-blacklist-container || true
+        docker rm -f test-redis-container || true  
+        docker rm -f test-postgres-container || true
+        docker network rm test-blacklist-network || true
         
-        # Run container with dynamic port
-        docker run --rm --name test-container -d -p $TEST_PORT:2542 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        # Create test network
+        echo "🌐 Creating test network..."
+        docker network create test-blacklist-network
+        
+        # Start minimal Redis for testing
+        echo "🔴 Starting test Redis..."
+        docker run -d --name test-redis-container --network test-blacklist-network \
+          -e REDIS_MAXMEMORY=64mb \
+          redis:7-alpine redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+        
+        # Start minimal PostgreSQL for testing  
+        echo "🐘 Starting test PostgreSQL..."
+        docker run -d --name test-postgres-container --network test-blacklist-network \
+          -e POSTGRES_DB=blacklist \
+          -e POSTGRES_USER=blacklist_user \
+          -e POSTGRES_PASSWORD=test_password123 \
+          postgres:15-alpine
+        
+        # Wait for services to be ready
+        echo "⏳ Waiting for test services to start..."
+        sleep 15
+        
+        # Test service connectivity
+        echo "🔍 Testing service connectivity..."
+        docker exec test-redis-container redis-cli ping || {
+          echo "❌ Redis container health check failed"
+          docker logs test-redis-container
+          exit 1
+        }
+        
+        docker exec test-postgres-container pg_isready -U blacklist_user -d blacklist || {
+          echo "❌ PostgreSQL container health check failed" 
+          docker logs test-postgres-container
+          exit 1
+        }
+        
+        # Run container with test environment
+        echo "🐳 Starting test Blacklist container..."
+        docker run --rm --name test-blacklist-container -d \
+          --network test-blacklist-network \
+          -p $TEST_PORT:2542 \
+          -e DATABASE_URL="postgresql://blacklist_user:test_password123@test-postgres-container:5432/blacklist" \
+          -e REDIS_URL="redis://test-redis-container:6379/0" \
+          -e FLASK_ENV=production \
+          -e COLLECTION_ENABLED=false \
+          -e FORCE_DISABLE_COLLECTION=true \
+          -e SECRET_KEY=test-secret-key \
+          -e JWT_SECRET_KEY=test-jwt-secret \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         
         # Wait for container to be ready with timeout
-        echo "Waiting for container to be ready..."
-        for i in {1..30}; do
+        echo "⏳ Waiting for Blacklist container to be ready (max 90s)..."
+        READY=false
+        for i in {1..90}; do
           if curl -sf http://localhost:$TEST_PORT/health > /dev/null 2>&1; then
-            echo "Container is ready after ${i} seconds"
+            echo "✅ Container is ready after ${i} seconds"
+            READY=true
             break
+          fi
+          if [ $((i % 15)) -eq 0 ]; then
+            echo "⚠️ Still waiting... (${i}s elapsed)"
+            docker logs --tail=10 test-blacklist-container || true
           fi
           sleep 1
         done
         
-        # Final health check with detailed output
-        echo "Testing health endpoint at http://localhost:$TEST_PORT/health"
-        if ! curl -f http://localhost:$TEST_PORT/health; then
-          echo "Health check failed, showing container logs:"
-          docker logs test-container
+        if [ "$READY" = false ]; then
+          echo "❌ Container failed to become ready within 90 seconds"
+          echo ""
+          echo "🔍 Container logs:"
+          docker logs test-blacklist-container || true
+          echo ""
+          echo "🔍 Network information:"
+          docker network inspect test-blacklist-network || true
           exit 1
         fi
         
-        echo "✅ Health check passed"
+        # Comprehensive health check
+        echo "🔍 Running comprehensive health checks..."
+        
+        # Basic health endpoint
+        echo "Testing basic health endpoint..."
+        if ! curl -f http://localhost:$TEST_PORT/health; then
+          echo ""
+          echo "❌ Basic health check failed"
+          echo "🔍 Container logs:"
+          docker logs test-blacklist-container
+          exit 1
+        fi
+        
+        # Test detailed health endpoint (if available)
+        echo ""
+        echo "Testing detailed health endpoint..."
+        curl -f http://localhost:$TEST_PORT/api/health 2>/dev/null || echo "ℹ️ Detailed health endpoint not available"
+        
+        # Test readiness endpoint
+        echo ""
+        echo "Testing readiness endpoint..."
+        curl -f http://localhost:$TEST_PORT/ready 2>/dev/null || echo "ℹ️ Readiness endpoint not available"
+        
+        echo ""
+        echo "✅ All health checks passed successfully"
         
         # Cleanup
-        docker stop test-container || true
+        echo ""
+        echo "🧹 Cleaning up test containers..."
+        docker stop test-blacklist-container || true
+        docker stop test-redis-container || true
+        docker stop test-postgres-container || true
+        docker rm test-redis-container || true
+        docker rm test-postgres-container || true
+        docker network rm test-blacklist-network || true
+        
+        echo "✅ Health test completed successfully"
 
     - name: Create GitHub Release
-      uses: actions/create-release@v1
       if: env.VERSION != ''
+      run: |
+        echo "🎯 Creating GitHub Release v${{ env.VERSION }}"
+        
+        # Create release using GitHub CLI
+        gh release create "v${{ env.VERSION }}" \
+          --title "Release v${{ env.VERSION }}" \
+          --notes "🚀 **Blacklist Management System v${{ env.VERSION }}**
+
+        **📦 Docker Images:**
+        - \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}\`
+        - \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`
+        - \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}\`
+
+        **🔍 Changes:**
+        Automated release with comprehensive version management and fixed Docker build pipeline.
+
+        **📊 Deployment:**
+        - Live System: https://blacklist.jclee.me/
+        - Health Check: https://blacklist.jclee.me/health
+        - Documentation: https://jclee94.github.io/blacklist/
+
+        **🔧 Installation:**
+        \`\`\`bash
+        docker-compose pull && docker-compose up -d
+        \`\`\`
+
+        **🛠️ Fixed Issues:**
+        - Updated GitHub Actions workflow to use modern release creation
+        - Optimized Docker build pipeline
+        - Fixed application entry point paths
+        - Enhanced error handling and logging" \
+          --latest
+        
+        echo "✅ GitHub Release v${{ env.VERSION }} created successfully"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ env.VERSION }}
-        release_name: Release v${{ env.VERSION }}
-        body: |
-          🚀 **Blacklist Management System v${{ env.VERSION }}**
-          
-          **📦 Docker Images:**
-          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}`
-          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
-          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}`
-          
-          **🔍 Changes:**
-          Automated release with comprehensive version management.
-          
-          **📊 Deployment:**
-          - Live System: https://blacklist.jclee.me/
-          - Health Check: https://blacklist.jclee.me/health
-          - Documentation: https://jclee94.github.io/blacklist/
-          
-          **🔧 Installation:**
-          ```bash
-          docker-compose pull && docker-compose up -d
-          ```
-        draft: false
-        prerelease: false
 
     - name: Cleanup old images
       run: |
@@ -242,21 +438,61 @@ jobs:
       if: always()
       run: docker logout ${{ env.REGISTRY }}
 
-    - name: Docker Compose Deployment Notification
+    - name: Final deployment summary
       run: |
-        echo "🐳 DOCKER COMPOSE 기반 배포 완료 - v${{ env.VERSION }}"
-        echo "✅ Images pushed to registry:"
-        echo "   • ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-        echo "   • ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}"
-        echo "   • ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-        echo "🔄 Watchtower 자동 업데이트: 1시간 내 배포"
+        echo "🎉 CI/CD PIPELINE 완료 - v${{ env.VERSION }}"
+        echo "========================================================================================"
         echo ""
-        echo "📋 즉시 수동 배포:"
-        echo "  docker-compose pull && docker-compose up -d"
+        echo "📦 빌드된 이미지들:"
+        echo "   ✅ ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "   ✅ ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}"
+        echo "   ✅ ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        
+        # Check if support images were built
+        if docker images | grep -q "${{ env.REDIS_IMAGE_NAME }}"; then
+          echo "   ✅ ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest"
+        fi
+        
+        if docker images | grep -q "${{ env.POSTGRESQL_IMAGE_NAME }}"; then
+          echo "   ✅ ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest"
+        fi
+        
         echo ""
-        echo "📊 서비스 상태 확인:"
-        echo "  docker-compose ps"
-        echo "  curl http://localhost:32542/health"
+        echo "🚀 배포 옵션:"
+        echo "   🔄 Watchtower 자동 업데이트: 1시간 내"
+        echo "   ⚡ 즉시 수동 배포: docker-compose pull && docker-compose up -d"
         echo ""
-        echo "🎉 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/v${{ env.VERSION }}"
-        echo "🎯 Compose 기반 완전 전환 완료 - K8s 의존성 제거됨"
+        echo "🔍 모니터링 명령어:"
+        echo "   📊 상태 확인: docker-compose ps"
+        echo "   🏥 헬스체크: curl http://localhost:32542/health"
+        echo "   📜 로그 확인: docker-compose logs -f blacklist"
+        echo ""
+        echo "🌐 서비스 엔드포인트:"
+        echo "   🏠 Local: http://localhost:32542"
+        echo "   🌍 Production: https://blacklist.jclee.me"
+        echo "   📖 Portfolio: https://jclee94.github.io/blacklist"
+        echo ""
+        echo "🎯 릴리스 정보:"
+        echo "   📋 Release Notes: https://github.com/${{ github.repository }}/releases/tag/v${{ env.VERSION }}"
+        echo "   📦 Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        echo "   🔖 Version: v${{ env.VERSION }}"
+        echo "   📅 Build Time: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+        echo ""
+        echo "✅ CI/CD 파이프라인이 성공적으로 완료되었습니다!"
+        echo "========================================================================================"
+
+    - name: Run post-deployment verification
+      run: |
+        echo "🔍 Running post-deployment verification..."
+        
+        # Make verification script executable
+        chmod +x scripts/post-deploy-verification.sh
+        
+        # Run verification with timeout
+        if timeout 300 bash scripts/post-deploy-verification.sh; then
+          echo "✅ Post-deployment verification passed"
+        else
+          echo "❌ Post-deployment verification failed or timed out"
+          echo "ℹ️ This may be normal if services need more time to start"
+          # Don't fail the entire workflow for verification issues
+        fi

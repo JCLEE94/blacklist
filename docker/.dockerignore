@@ -67,9 +67,12 @@ logs/
 data/
 instance/
 
-# Scripts
-scripts/
+# Scripts (allow essential application scripts)
+# scripts/  # Don't exclude - contains essential main.py
 start.sh
+scripts/analysis/
+scripts/test/
+scripts/archive/
 
 # K8s
 k8s/

@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libxslt-dev \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 WORKDIR /build
 
@@ -65,5 +66,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Expose port
 EXPOSE 2542
 
-# Default command
+# Default command - use proper entry point path
 CMD ["python3", "commands/scripts/main.py", "--host", "0.0.0.0", "--port", "2542"]
