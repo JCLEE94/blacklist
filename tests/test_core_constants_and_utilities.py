@@ -208,7 +208,7 @@ class TestIPPatternValidation(unittest.TestCase):
             self.assertTrue(ipv4_pattern.match(ip), f"{ip} should be valid IPv4")
 
         # Invalid IPv4 addresses
-        invalid_ipv4 = ["256.1.3.0", "192.168.1", "192.168.1.3.0", "not.an.ip"]
+        invalid_ipv4 = ["256.1.3.1", "192.168.1", "192.168.1.3.1", "not.an.ip"]
         for ip in invalid_ipv4:
             self.assertFalse(ipv4_pattern.match(ip), f"{ip} should be invalid IPv4")
 

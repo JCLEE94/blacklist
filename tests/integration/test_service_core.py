@@ -63,7 +63,7 @@ class TestServiceCore(IntegrationTestFixtures):
         """Test system health check aggregates data from all components"""
         # Mock various component states
         service.blacklist_manager.get_all_ips.return_value = [
-            {"ip": "1.3.0.1", "is_active": True},
+            {"ip": "1.3.1.1", "is_active": True},
             {"ip": "2.2.2.2", "is_active": True},
             {"ip": "3.3.3.3", "is_active": False},
         ]

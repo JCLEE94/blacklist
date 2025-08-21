@@ -41,7 +41,7 @@ def statistics_page():
             "public_count": 0,
             "collection_enabled": True,
             "health_status": "healthy",
-            "version": "1.3.0",
+            "version": "1.3.1",
         }
 
         return jsonify(
