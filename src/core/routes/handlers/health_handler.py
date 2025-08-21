@@ -19,7 +19,7 @@ class HealthCheckHandler:
             health_data = {
                 "status": "healthy",
                 "timestamp": datetime.now().isoformat(),
-                "version": "1.1.8",
+                "version": "1.1.9",
                 "components": self._check_components(),
                 "uptime": "operational",
             }

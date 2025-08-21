@@ -119,7 +119,7 @@ class TestMigrationManager:
         up_func1 = Mock()
         up_func2 = Mock()
         migration_mgr.add_migration("1.0.0", up_func1)
-        migration_mgr.add_migration("1.1.8", up_func2)
+        migration_mgr.add_migration("1.1.9", up_func2)
 
         migration_mgr.run_migrations()
 
@@ -150,7 +150,7 @@ class TestMigrationManager:
         up_func1 = Mock()
         up_func2 = Mock()
         migration_mgr.add_migration("1.0.0", up_func1)  # Should not run
-        migration_mgr.add_migration("1.1.8", up_func2)  # Should run
+        migration_mgr.add_migration("1.1.9", up_func2)  # Should run
 
         migration_mgr.run_migrations()
 
