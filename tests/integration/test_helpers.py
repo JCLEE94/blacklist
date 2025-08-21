@@ -36,11 +36,11 @@ def create_mock_service(failing=False):
         service.parse_error = json.JSONDecodeError("Invalid JSON", "", 0)
     else:
         # Configure success responses
-        service.get_active_ips.return_value = (["1.1.7.1", "2.2.2.2"], 2)
+        service.get_active_ips.return_value = (["1.1.8.1", "2.2.2.2"], 2)
         service.add_ip.return_value = True
         service.get_all_ips.return_value = [
             {
-                "ip": "1.1.7.1",
+                "ip": "1.1.8.1",
                 "source": "regtech",
                 "detection_date": datetime.now().isoformat(),
                 "is_active": True,

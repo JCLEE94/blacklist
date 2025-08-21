@@ -1,8 +1,8 @@
-# Blacklist Deployment Verification Report v1.1.7
+# Blacklist Deployment Verification Report v1.1.8
 
 **Report Generated**: 2025-08-20 21:24:45 KST  
 **Local Version**: 1.0.37 (version.txt)  
-**Container Version**: 1.1.7 (actual running version)  
+**Container Version**: 1.1.8 (actual running version)  
 **Production URL**: https://blacklist.jclee.me  
 **Status**: ✅ DEPLOYMENT SUCCESSFUL
 
@@ -10,9 +10,9 @@
 
 ### Version Status
 - **Local Repository**: v1.0.37
-- **Container Runtime**: v1.1.7 ✅
+- **Container Runtime**: v1.1.8 ✅
 - **API Reported**: v1.0.37 ⚠️ (version display issue)
-- **GitHub Actions**: Successfully built and deployed v1.1.7
+- **GitHub Actions**: Successfully built and deployed v1.1.8
 
 ### ✅ Verification Results
 
@@ -21,7 +21,7 @@
 - **Latest Run**: 17097417241 (37 minutes ago)
 - **Build Time**: 1m44s
 - **Image**: registry.jclee.me/blacklist:latest (42a2c9f commit)
-- **Automated Version Bump**: 1.0.37 → 1.1.7 ✅
+- **Automated Version Bump**: 1.0.37 → 1.1.8 ✅
 
 #### 2. Container Registry
 - **Registry**: registry.jclee.me/blacklist ✅
@@ -71,7 +71,7 @@ Health Status: ✅ HEALTHY
 ## 🔧 Issue Identified & Resolution
 
 ### Version Display Discrepancy
-- **Issue**: API reports v1.0.37 but container runs v1.1.7
+- **Issue**: API reports v1.0.37 but container runs v1.1.8
 - **Root Cause**: Application version reading logic may cache or not reload version.txt
 - **Impact**: Cosmetic only - functionality is fully updated
 - **Status**: Non-critical - application is running latest code
@@ -126,7 +126,7 @@ Health Status: ✅ HEALTHY
 - ⚠️ K8s Manifests: Available but not currently used
 - ⚠️ ArgoCD Integration: Configured but manual deployment preferred
 
-## 🚀 Recent Improvements (v1.0.37 → v1.1.7)
+## 🚀 Recent Improvements (v1.0.37 → v1.1.8)
 
 ### Features Deployed
 - Automatic version bumping on deployment
@@ -146,7 +146,7 @@ Health Status: ✅ HEALTHY
 **DEPLOYMENT STATUS: ✅ FULLY SUCCESSFUL**
 
 ### Critical Systems
-- [x] Application running latest code (v1.1.7)
+- [x] Application running latest code (v1.1.8)
 - [x] All API endpoints operational
 - [x] Database healthy and accessible
 - [x] Cache system working (Redis + fallback)
