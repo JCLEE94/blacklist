@@ -28,7 +28,7 @@ def main():
     
     args = parser.parse_args()
     
-    logger.info(f"🚀 Starting Blacklist Management System v1.0.37-DEPLOY-TEST-{datetime.now().strftime('%H:%M:%S')} on {args.host}:{args.port}")
+    logger.info(f"🚀 Starting Blacklist Management System v1.1.6-{datetime.now().strftime('%H:%M:%S')} on {args.host}:{args.port}")
     
     try:
         app = create_app()
