@@ -41,7 +41,7 @@ init:
 	@echo "Initializing environment..."
 	@pip install -r config/requirements.txt
 	@pip install -r config/requirements-dev.txt || echo "No dev requirements"
-	@python3 commands/utils/init_database.py
+	@python3 scripts/database/maintenance/init_db.py
 	@cp config/.env.example .env 2>/dev/null || echo ".env already exists"
 	@echo "Environment initialized! Edit .env if needed."
 
@@ -91,7 +91,7 @@ clean:
 
 # Run development server (local)
 run:
-	@python3 commands/scripts/main.py --debug
+	@python3 src/core/app_compact.py --debug
 
 # Install dependencies
 install:

@@ -66,3 +66,7 @@ dist/
 tmp/
 temp/
 *.tmp
+
+# Development setup files (user-specific)
+.project-config
+.tmux-startup.sh
