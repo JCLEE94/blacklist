@@ -39,9 +39,18 @@ class RegtechCollector(BaseCollector):
         self.base_url = "https://regtech.fsec.or.kr"
         self.config_data = {}
 
-        # 환경 변수에서 설정 로드
-        self.username = os.getenv("REGTECH_USERNAME")
-        self.password = os.getenv("REGTECH_PASSWORD")
+        # Auth manager에서 설정 로드
+        from ..auth_manager import get_auth_manager
+        auth_manager = get_auth_manager()
+        credentials = auth_manager.get_credentials("regtech")
+        
+        if credentials:
+            self.username = credentials["username"]
+            self.password = credentials["password"]
+        else:
+            # Fallback to env vars if needed
+            self.username = os.getenv("REGTECH_USERNAME")
+            self.password = os.getenv("REGTECH_PASSWORD")
 
         # DB에서 설정 로드 (선택적)
         self._load_db_config()

@@ -54,9 +54,18 @@ class SecudiumCollector(BaseCollector):
                 self.username = credentials["username"]
                 self.password = credentials["password"]
             else:
-                # 환경변수 fallback
-                self.username = os.getenv("SECUDIUM_USERNAME")
-                self.password = os.getenv("SECUDIUM_PASSWORD")
+                # Auth manager에서 설정 로드
+                from ..auth_manager import get_auth_manager
+                auth_manager = get_auth_manager()
+                ui_credentials = auth_manager.get_credentials("secudium")
+                
+                if ui_credentials:
+                    self.username = ui_credentials["username"]
+                    self.password = ui_credentials["password"]
+                else:
+                    # 환경변수 fallback
+                    self.username = os.getenv("SECUDIUM_USERNAME")
+                    self.password = os.getenv("SECUDIUM_PASSWORD")
 
         except ImportError:
             # DB 없으면 기본값/환경변수 사용

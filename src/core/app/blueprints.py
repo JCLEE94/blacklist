@@ -67,6 +67,24 @@ class BlueprintRegistrationMixin:
         except Exception as e:
             logger.error(f"Failed to register unified dashboard HTML routes: {e}")
 
+        # Register auth config routes (UI 기반 인증 설정)
+        try:
+            from ..routes.auth_config_routes import auth_config_bp
+
+            app.register_blueprint(auth_config_bp)
+            logger.info("Auth config routes registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register auth config routes: {e}")
+
+        # Register unified collection routes (통합 수집 API)
+        try:
+            from ..routes.unified_collection_routes import unified_collection_bp
+
+            app.register_blueprint(unified_collection_bp)
+            logger.info("Unified collection routes registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register unified collection routes: {e}")
+
         # Register collection settings routes (UI -> DB 설정)
         try:
             from ..routes.collection_settings_routes import \
