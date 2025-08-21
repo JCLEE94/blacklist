@@ -1,6 +1,8 @@
-"""
-수집 트리거 관리 모듈 (< 300 lines)
-수동 트리거, 스케줄링, 비동기 실행 등
+"""Collection triggers management module.
+
+This module provides functionality for triggering and managing data collection operations.
+Supports manual triggers, asynchronous execution, and progress tracking for various sources.
+Designed to be under 300 lines following project architecture guidelines.
 """
 
 import asyncio
@@ -32,7 +34,8 @@ class CollectionTriggersMixin:
 
                 if source == "all":
                     thread = threading.Thread(
-                        target=run_async_task, args=(self.collect_all_data(force=True),)
+                        target=run_async_task, 
+                        args=(self.collect_all_data(force=True),)
                     )
                     thread.daemon = True
                     thread.start()
@@ -144,17 +147,38 @@ class CollectionTriggersMixin:
                             )
 
                             if storage_result.get("success"):
+                                imported_count = storage_result.get("imported_count", 0)
+                                duplicate_count = storage_result.get("duplicate_count", 0)
+                                total_count = len(collected_data)
+                                
                                 self.logger.info(
-                                    f"✅ {storage_result.get('imported_count', 0)}개 IP 저장 완료"
+                                    f"✅ {imported_count}개 IP 저장 완료 "
+                                    f"(중복 {duplicate_count}개)"
                                 )
+                                
+                                # 수집 완료 로그 추가 - 의미있는 데이터 포함
+                                if hasattr(self, "add_collection_log"):
+                                    self.add_collection_log(
+                                        source="regtech",
+                                        action="collection_completed",
+                                        details={
+                                            "start_date": start_date,
+                                            "end_date": end_date,
+                                            "total_ips": total_count,
+                                            "new_ips": imported_count,
+                                            "duplicates": duplicate_count,
+                                            "ips_collected": total_count,
+                                            "timestamp": datetime.now().isoformat()
+                                        },
+                                    )
+                                
                                 return {
                                     "success": True,
-                                    "message": f"REGTECH 수집 및 저장 완료: {storage_result.get('imported_count', 0)}개 IP",
-                                    "collected": len(collected_data),
-                                    "stored": storage_result.get("imported_count", 0),
-                                    "duplicates": storage_result.get(
-                                        "duplicate_count", 0
-                                    ),
+                                    "message": f"REGTECH 수집 및 저장 완료: {imported_count}개 IP (중복 {duplicate_count}개)",
+                                    "collected": total_count,
+                                    "stored": imported_count,
+                                    "duplicates": duplicate_count,
+                                    "new_ips": imported_count,
                                 }
                             else:
                                 self.logger.error(
@@ -172,6 +196,18 @@ class CollectionTriggersMixin:
                                 "collected": len(collected_data),
                             }
                 except Exception as collect_e:
+                    # 수집 실패 로그 추가
+                    if hasattr(self, "add_collection_log"):
+                        self.add_collection_log(
+                            source="regtech",
+                            action="collection_failed",
+                            details={
+                                "start_date": start_date,
+                                "end_date": end_date,
+                                "error": str(collect_e),
+                                "timestamp": datetime.now().isoformat()
+                            },
+                        )
                     return {
                         "success": False,
                         "message": f"REGTECH 수집 중 오류: {str(collect_e)}",

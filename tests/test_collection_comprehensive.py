@@ -124,9 +124,12 @@ class TestCollectionTriggers:
             assert "message" in data
         elif response.status_code == 503:
             # Collection already running or disabled
+            message = data.get("message", "") or ""
+            error = data.get("error", "") or ""
             assert (
-                "already" in data.get("message", "").lower()
-                or "disabled" in data.get("error", "").lower()
+                "already" in message.lower()
+                or "disabled" in error.lower()
+                or "비활성화" in message  # Korean for "disabled"
             )
 
     def test_regtech_trigger_validation(self):

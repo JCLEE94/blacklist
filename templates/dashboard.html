@@ -99,6 +99,76 @@
         color: white;
     }
     
+    /* Chart specific styles */
+    .chart-container canvas {
+        max-height: 350px;
+    }
+    
+    .source-badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.375rem;
+    }
+    
+    .success-rate-indicator {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .collection-stats {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* Animation for chart updates */
+    .chart-container {
+        transition: opacity 0.3s ease;
+    }
+    
+    .chart-loading {
+        opacity: 0.6;
+        position: relative;
+    }
+    
+    .chart-loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 32px;
+        height: 32px;
+        margin: -16px 0 0 -16px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Enhanced hover effects */
+    .modern-card:hover .chart-container {
+        transform: scale(1.01);
+        transition: transform 0.3s ease;
+    }
+    
+    /* Improved button group styling */
+    .btn-group .btn {
+        border-color: var(--bs-primary);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-group .btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    }
+    
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .dashboard-header {
@@ -111,6 +181,15 @@
         
         .stat-card h2 {
             font-size: 1.75rem;
+        }
+        
+        .chart-container {
+            height: 250px !important;
+        }
+        
+        .btn-group .btn {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
         }
     }
 </style>
@@ -388,7 +467,8 @@
                             <h6 class="mb-2">
                                 <i class="bi bi-terminal"></i> 수집 로그
                             </h6>
-                            <div id="collection-logs" class="bg-dark text-light p-3 rounded" 
+                            <div id="collection-logs" 
+                                 class="bg-dark text-light p-3 rounded" 
                                  style="height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
                                 <div class="text-muted">로그를 불러오는 중...</div>
                             </div>
@@ -448,18 +528,18 @@
                 <div class="card-header bg-transparent border-0 pb-0">
                     <div class="d-flex align-items-center justify-content-between">
                         <h5 class="mb-0 fw-semibold">
-                            <i class="bi bi-graph-up text-primary"></i> 월별 블랙리스트 추이
+                            <i class="bi bi-calendar-week text-primary"></i> 날짜별 수집 현황 (최근 30일)
                         </h5>
                         <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-primary active">3개월</button>
-                            <button type="button" class="btn btn-outline-primary">6개월</button>
-                            <button type="button" class="btn btn-outline-primary">1년</button>
+                            <button type="button" class="btn btn-outline-primary active" onclick="loadDailyChart(7)">7일</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="loadDailyChart(30)">30일</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="loadDailyChart(90)">90일</button>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
-                        <canvas id="monthlyChart"></canvas>
+                        <canvas id="dailyCollectionChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -468,48 +548,54 @@
             <div class="modern-card">
                 <div class="card-header bg-transparent border-0 pb-0">
                     <h5 class="mb-0 fw-semibold">
-                        <i class="bi bi-activity text-info"></i> 시스템 상태
+                        <i class="bi bi-pie-chart text-success"></i> 소스별 수집 현황
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="status-item mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted">데이터베이스</span>
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-circle"></i> 정상
-                            </span>
-                        </div>
+                    <div class="chart-container" style="height: 280px;">
+                        <canvas id="sourceDistributionChart"></canvas>
                     </div>
-                    <div class="status-item mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted">캐시 시스템</span>
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-circle"></i> 활성
-                            </span>
-                        </div>
-                    </div>
-                    <div class="status-item mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted">수집 서비스</span>
-                            <span id="collection-status-badge" class="badge bg-warning">
-                                <i class="bi bi-pause-circle"></i> 대기
-                            </span>
-                        </div>
-                    </div>
-                    <hr>
                     <div class="mt-3">
-                        <small class="text-muted d-block mb-2">
-                            <i class="bi bi-clock"></i> 마지막 업데이트: <span id="last-update-time">{{ last_update }}</span>
-                        </small>
-                        <small class="text-muted d-block">
-                            <i class="bi bi-hdd"></i> 데이터 보관: 90일
-                        </small>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">REGTECH</span>
+                            <span class="badge bg-primary" id="regtech-count">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">SECUDIUM</span>
+                            <span class="badge bg-info" id="secudium-count">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">기타</span>
+                            <span class="badge bg-secondary" id="other-count">0</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Collection Success Rate Chart Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="bi bi-percent text-warning"></i> 수집 성공률 추이
+                        </h5>
+                        <div class="text-muted small">
+                            평균 성공률: <span id="avg-success-rate" class="text-success fw-bold">95%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="successRateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
 </div>
 {% endblock %}
@@ -711,7 +797,7 @@ async function refreshCookies(source) {
     }
 }
 
-// Update collection logs
+// Update collection logs with meaningful data
 function updateCollectionLogs(logs) {
     const logContainer = document.getElementById('collection-logs');
     if (!logContainer) return;
@@ -721,38 +807,107 @@ function updateCollectionLogs(logs) {
         return;
     }
     
-    const logsHtml = logs.slice(0, 10).map(log => {
+    const logsHtml = logs.slice(0, 15).map(log => {
+        // 메시지가 이미 포맷된 경우 그대로 사용
+        if (log.message && log.message.includes('|')) {
+            // 이미 포맷된 메시지
+            const timestamp = log.time || new Date(log.timestamp).toLocaleTimeString('ko-KR');
+            const logColor = log.message.includes('✅') ? 'text-success' :
+                           log.message.includes('❌') ? 'text-danger' :
+                           log.message.includes('🔄') ? 'text-info' :
+                           log.message.includes('🟢') ? 'text-primary' :
+                           log.message.includes('🔴') ? 'text-secondary' :
+                           'text-light';
+            
+            return `<div class="${logColor}" style="font-size: 0.85rem; line-height: 1.6;">
+                <span class="text-muted">[${timestamp}]</span> ${log.message}
+            </div>`;
+        }
+        
+        // 기존 형식의 로그 처리
         const timestamp = new Date(log.timestamp).toLocaleString('ko-KR');
         const source = log.source || 'system';
         const action = log.action || '';
+        const details = log.details || {};
         
         let logColor = 'text-light';
         let icon = '›';
+        let status = action;
         
         if (action.includes('completed')) {
             logColor = 'text-success';
-            icon = '✓';
+            icon = '✅';
+            status = '수집 완료';
         } else if (action.includes('started')) {
             logColor = 'text-info';
-            icon = '→';
-        } else if (action.includes('error')) {
+            icon = '🔄';
+            status = '수집 시작';
+        } else if (action.includes('error') || action.includes('failed')) {
             logColor = 'text-danger';
-            icon = '✗';
+            icon = '❌';
+            status = '수집 실패';
         } else if (action.includes('enabled')) {
             logColor = 'text-primary';
-            icon = '●';
+            icon = '🟢';
+            status = '수집 활성화';
         } else if (action.includes('disabled')) {
             logColor = 'text-secondary';
-            icon = '○';
+            icon = '🔴';
+            status = '수집 비활성화';
         }
         
-        const details = log.details ? ` - ${JSON.stringify(log.details)}` : '';
+        // 의미있는 정보 구성
+        let info_parts = [];
         
-        return `<div class="${logColor}">
-            <span class="text-muted">[${timestamp}]</span> 
-            <span>${icon}</span> 
-            <span class="text-warning">[${source.toUpperCase()}]</span> 
-            ${action}${details}
+        // 수집 날짜
+        if (details.start_date) {
+            const end = details.end_date || details.start_date;
+            if (details.start_date === end) {
+                info_parts.push(`📅 ${details.start_date}`);
+            } else {
+                info_parts.push(`📅 ${details.start_date} ~ ${end}`);
+            }
+        }
+        
+        // 수집 개수
+        if (details.ips_collected !== undefined) {
+            info_parts.push(`📊 ${details.ips_collected}개 수집`);
+        } else if (details.ip_count !== undefined) {
+            info_parts.push(`📊 ${details.ip_count}개 수집`);
+        } else if (details.total_ips !== undefined) {
+            info_parts.push(`📊 총 ${details.total_ips}개`);
+        }
+        
+        // 중복 개수
+        if (details.duplicates !== undefined) {
+            info_parts.push(`🔁 중복 ${details.duplicates}개`);
+        } else if (details.duplicate_count !== undefined) {
+            info_parts.push(`🔁 중복 ${details.duplicate_count}개`);
+        } else if (details.new_ips !== undefined && details.total_ips !== undefined) {
+            const dup_count = details.total_ips - details.new_ips;
+            if (dup_count > 0) {
+                info_parts.push(`🔁 중복 ${dup_count}개`);
+            }
+        }
+        
+        // 신규 IP
+        if (details.new_ips !== undefined) {
+            info_parts.push(`✨ 신규 ${details.new_ips}개`);
+        }
+        
+        // 에러 정보
+        if (details.error) {
+            info_parts.push(`⚠️ ${details.error.substring(0, 50)}`);
+        }
+        
+        // 최종 메시지 조합
+        let message = `${icon} [${source.toUpperCase()}] ${status}`;
+        if (info_parts.length > 0) {
+            message += ' | ' + info_parts.join(' | ');
+        }
+        
+        return `<div class="${logColor}" style="font-size: 0.85rem; line-height: 1.6;">
+            <span class="text-muted">[${timestamp}]</span> ${message}
         </div>`;
     }).join('\n');
     
@@ -950,56 +1105,173 @@ function showNotification(message, type = 'info') {
 }
 
 // Chart initialization
-let monthlyChart = null;
+let dailyCollectionChart = null;
+let sourceDistributionChart = null;
+let successRateChart = null;
 
 function initializeCharts() {
     try {
-        const monthlyCtx = document.getElementById('monthlyChart');
-        if (monthlyCtx) {
-            if (monthlyChart) {
-                monthlyChart.destroy();
-            }
-            
-            monthlyChart = new Chart(monthlyCtx, {
-                type: 'line',
-                data: {
-                    labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
-                    datasets: [{
-                        label: '블랙리스트 IP 수',
-                        data: [120, 185, 160, 240, 210, 195],
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        initializeDailyCollectionChart();
+        initializeSourceDistributionChart();
+        initializeSuccessRateChart();
+        loadDailyChart(30); // Load initial data
     } catch (error) {
         console.error('Chart initialization error:', error);
     }
+}
+
+function initializeDailyCollectionChart() {
+    const ctx = document.getElementById('dailyCollectionChart');
+    if (!ctx) return;
+    
+    if (dailyCollectionChart) {
+        dailyCollectionChart.destroy();
+    }
+    
+    dailyCollectionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'REGTECH',
+                data: [],
+                borderColor: 'rgb(54, 162, 235)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                tension: 0.4,
+                fill: false
+            }, {
+                label: 'SECUDIUM',
+                data: [],
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                tension: 0.4,
+                fill: false
+            }, {
+                label: '전체',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
+function initializeSourceDistributionChart() {
+    const ctx = document.getElementById('sourceDistributionChart');
+    if (!ctx) return;
+    
+    if (sourceDistributionChart) {
+        sourceDistributionChart.destroy();
+    }
+    
+    sourceDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['REGTECH', 'SECUDIUM', '기타'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(201, 203, 207, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(201, 203, 207, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+function initializeSuccessRateChart() {
+    const ctx = document.getElementById('successRateChart');
+    if (!ctx) return;
+    
+    if (successRateChart) {
+        successRateChart.destroy();
+    }
+    
+    successRateChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: '성공률 (%)',
+                data: [],
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Initialize charts when Chart.js is loaded
@@ -1307,6 +1579,98 @@ function loadExpirationStats() {
             }
         })
         .catch(error => console.error('Failed to load expiration stats:', error));
+}
+
+// Load daily collection chart data
+async function loadDailyChart(days = 30) {
+    try {
+        // Update active button - find the correct button group
+        const chartHeader = document.querySelector('#dailyCollectionChart').closest('.modern-card').querySelector('.btn-group');
+        if (chartHeader && event?.target) {
+            chartHeader.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        } else {
+            // Fallback: set active based on days parameter
+            const buttons = document.querySelectorAll('.btn-group .btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            if (days === 7) {
+                buttons[0]?.classList.add('active');
+            } else if (days === 30) {
+                buttons[1]?.classList.add('active');
+            } else if (days === 90) {
+                buttons[2]?.classList.add('active');
+            }
+        }
+        
+        // Add loading state
+        const chartContainer = document.querySelector('#dailyCollectionChart').closest('.chart-container');
+        chartContainer?.classList.add('chart-loading');
+        
+        const response = await fetch(`/api/collection/daily-stats?days=${days}`);
+        const data = await response.json();
+        
+        if (data.success && dailyCollectionChart) {
+            const stats = data.daily_stats || [];
+            const labels = stats.map(s => {
+                const date = new Date(s.date);
+                return date.toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'});
+            });
+            
+            const regtechData = stats.map(s => s.sources?.regtech || 0);
+            const secudiumData = stats.map(s => s.sources?.secudium || 0);
+            const totalData = stats.map(s => s.total_collected || 0);
+            
+            // Update chart data
+            dailyCollectionChart.data.labels = labels;
+            dailyCollectionChart.data.datasets[0].data = regtechData;
+            dailyCollectionChart.data.datasets[1].data = secudiumData;
+            dailyCollectionChart.data.datasets[2].data = totalData;
+            dailyCollectionChart.update();
+            
+            // Update source distribution chart
+            if (sourceDistributionChart && data.source_summary) {
+                const summary = data.source_summary;
+                const regtechTotal = summary.regtech || 0;
+                const secudiumTotal = summary.secudium || 0;
+                const otherTotal = summary.public || summary.other || 0;
+                
+                sourceDistributionChart.data.datasets[0].data = [regtechTotal, secudiumTotal, otherTotal];
+                sourceDistributionChart.update();
+                
+                // Update source count badges
+                document.getElementById('regtech-count').textContent = regtechTotal.toLocaleString();
+                document.getElementById('secudium-count').textContent = secudiumTotal.toLocaleString();
+                document.getElementById('other-count').textContent = otherTotal.toLocaleString();
+            }
+            
+            // Update success rate chart
+            if (successRateChart && data.success_rates) {
+                const rates = data.success_rates;
+                const rateLabels = rates.map(r => {
+                    const date = new Date(r.date);
+                    return date.toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'});
+                });
+                const rateData = rates.map(r => r.success_rate);
+                
+                successRateChart.data.labels = rateLabels;
+                successRateChart.data.datasets[0].data = rateData;
+                successRateChart.update();
+                
+                // Update average success rate
+                const avgRate = rateData.reduce((a, b) => a + b, 0) / rateData.length;
+                document.getElementById('avg-success-rate').textContent = Math.round(avgRate) + '%';
+            }
+        } else {
+            console.warn('No daily stats data received or chart not initialized');
+        }
+    } catch (error) {
+        console.error('Failed to load daily chart data:', error);
+        showNotification('차트 데이터 로드 실패: ' + error.message, 'danger');
+    } finally {
+        // Remove loading state
+        const chartContainer = document.querySelector('#dailyCollectionChart')?.closest('.chart-container');
+        chartContainer?.classList.remove('chart-loading');
+    }
 }
 
 // Dashboard initialization moved to dashboard-charts.js
