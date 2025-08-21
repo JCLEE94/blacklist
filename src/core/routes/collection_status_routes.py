@@ -11,6 +11,11 @@ from flask import Blueprint, jsonify, request
 from ..container import get_container
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
+from .helpers import (
+    get_source_collection_stats,
+    get_period_availability_cache,
+    format_chart_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +52,7 @@ def get_collection_status():
             stats = {"total_ips": 0, "active_ips": 0}
 
         # 소스별 수집 현황
-        source_stats = get_source_collection_stats()
+        source_stats = get_source_collection_stats(service)
 
         # 기간별 수집 가능여부 (캐시된 정보)
         period_availability = get_period_availability_cache()
@@ -311,7 +316,7 @@ def get_dashboard_data():
         daily_stats = service.get_daily_collection_stats()[:days]
 
         # 소스별 통계
-        source_stats = get_source_collection_stats()
+        source_stats = get_source_collection_stats(service)
 
         # 시스템 상태
         system_health = service.get_system_health()
@@ -359,149 +364,4 @@ def test_period_collection():
 # Use /api/data/all and /api/export/<format> instead
 
 
-# 헬퍼 함수들
-
-
-def get_source_collection_stats():
-    """소스별 수집 통계"""
-    try:
-        regtech_status = (
-            service.get_regtech_status()
-            if hasattr(service, "get_regtech_status")
-            else {}
-        )
-
-        stats = {
-            "REGTECH": {
-                "name": "REGTECH",
-                "status": regtech_status.get("status", "unknown"),
-                "total_ips": regtech_status.get("total_ips", 0),
-                "last_collection": regtech_status.get("last_collection_time"),
-                "success_rate": calculate_success_rate("REGTECH", 7),
-                "enabled": True,
-            },
-            "SECUDIUM": {
-                "name": "SECUDIUM",
-                "status": "disabled",
-                "total_ips": 0,
-                "last_collection": None,
-                "success_rate": 0,
-                "enabled": False,
-            },
-        }
-
-        return stats
-
-    except Exception as e:
-        logger.error(f"Error getting source stats: {e}")
-        return {}
-
-
-def get_period_availability_cache():
-    """기간별 수집 가능여부 캐시"""
-    try:
-        # 기간별 수집 테스트 결과 (실제로는 캐시에서 조회)
-        availability = {
-            "1일": {"available": False, "ip_count": 0},
-            "1주일": {"available": False, "ip_count": 0},
-            "2주일": {"available": True, "ip_count": 30},
-            "1개월": {"available": True, "ip_count": 930},
-            "3개월": {"available": True, "ip_count": 930},
-            "6개월": {"available": True, "ip_count": 930},
-            "1년": {"available": True, "ip_count": 930},
-        }
-
-        return availability
-
-    except Exception as e:
-        logger.error(f"Error getting period availability: {e}")
-        return {}
-
-
-def format_chart_data(daily_stats):
-    """차트용 데이터 포맷팅"""
-    try:
-        chart_data = {
-            "labels": [],
-            "datasets": [
-                {
-                    "label": "REGTECH",
-                    "data": [],
-                    "borderColor": "#4CAF50",
-                    "backgroundColor": "rgba(76, 175, 80, 0.1)",
-                },
-                {
-                    "label": "SECUDIUM",
-                    "data": [],
-                    "borderColor": "#2196F3",
-                    "backgroundColor": "rgba(33, 150, 243, 0.1)",
-                },
-            ],
-        }
-
-        # 데이터가 없을 경우 최근 7일 기본 데이터 생성
-        if not daily_stats:
-            from datetime import datetime, timedelta
-
-            today = datetime.now()
-            for i in range(6, -1, -1):
-                date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
-                chart_data["labels"].append(date)
-                chart_data["datasets"][0]["data"].append(0)
-                chart_data["datasets"][1]["data"].append(0)
-        else:
-            for stat in daily_stats:
-                chart_data["labels"].append(stat.get("date", ""))
-
-                sources = stat.get("sources", {})
-                regtech_count = sources.get("regtech", 0)
-                secudium_count = sources.get("secudium", 0)
-
-                chart_data["datasets"][0]["data"].append(regtech_count)
-                chart_data["datasets"][1]["data"].append(secudium_count)
-
-        return chart_data
-
-    except Exception as e:
-        logger.error(f"Error formatting chart data: {e}")
-        # 오류 발생 시에도 기본 구조 반환
-        from datetime import datetime, timedelta
-
-        today = datetime.now()
-        default_data = {
-            "labels": [
-                (today - timedelta(days=i)).strftime("%Y-%m-%d")
-                for i in range(6, -1, -1)
-            ],
-            "datasets": [
-                {
-                    "label": "REGTECH",
-                    "data": [0, 0, 0, 0, 0, 0, 0],
-                    "borderColor": "#4CAF50",
-                    "backgroundColor": "rgba(76, 175, 80, 0.1)",
-                },
-                {
-                    "label": "SECUDIUM",
-                    "data": [0, 0, 0, 0, 0, 0, 0],
-                    "borderColor": "#2196F3",
-                    "backgroundColor": "rgba(33, 150, 243, 0.1)",
-                },
-            ],
-        }
-        return default_data
-
-
-def calculate_success_rate(source: str, days: int) -> float:
-    """소스별 성공률 계산"""
-    try:
-        # 실제 구현에서는 로그 테이블에서 조회
-        if source == "REGTECH":
-            return 92.5
-        elif source == "SECUDIUM":
-            return 0.0
-        else:
-            return 0.0
-
-    except Exception as e:
-        logger.error(f"Error calculating success rate: {e}")
-        return 0.0
+# Helper functions moved to helpers/ module for better organization

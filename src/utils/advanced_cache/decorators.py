@@ -175,7 +175,7 @@ def _generate_cache_key(
     if len(cache_key) > 200:
         cache_key_hash = hashlib.sha256(cache_key.encode()).hexdigest()
         short_prefix = key_parts[0] if key_parts else "func"
-        cache_key = "{short_prefix}:hash:{cache_key_hash}"
+        cache_key = f"{short_prefix}:hash:{cache_key_hash}"
 
     return cache_key
 
@@ -243,7 +243,7 @@ class CacheManager:
             return 0
 
         # Create pattern to match all cache keys for this function
-        pattern = "*{func.__module__}.{func.__name__}*"
+        pattern = f"*{func.__module__}.{func.__name__}*"
         return cache.delete_pattern(pattern)
 
     @staticmethod
@@ -276,7 +276,7 @@ class CacheManager:
 
         # This would require enhanced backend support to track per-function stats
         return {
-            "function": "{func.__module__}.{func.__name__}",
+            "function": f"{func.__module__}.{func.__name__}",
             "cached": True,
             "note": "Detailed per-function stats require backend enhancement",
         }

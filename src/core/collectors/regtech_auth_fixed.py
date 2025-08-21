@@ -5,7 +5,6 @@ Based on analysis of the actual login form structure
 """
 
 import logging
-import re
 from typing import Optional
 
 import requests
@@ -241,7 +240,7 @@ class FixedRegtechAuth:
 
         try:
             logout_url = f"{self.base_url}/logout"
-            response = self.session.get(logout_url, timeout=self.timeout, verify=False)
+            self.session.get(logout_url, timeout=self.timeout, verify=False)
 
             logger.info("REGTECH logout completed")
             self.authenticated = False

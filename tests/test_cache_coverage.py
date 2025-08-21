@@ -254,7 +254,13 @@ class TestCacheDecorators:
             set_cache_instance,
         )
 
+        # Use memory-only cache to avoid serialization issues
         cache = EnhancedSmartCache(redis_url=None)
+        cache.clear()  # Clear cache to prevent pollution
+        
+        # Enable pickle trust for testing
+        cache.serialization._trust_pickle = True
+        
         set_cache_instance(cache)
 
         call_count = 0
@@ -265,6 +271,9 @@ class TestCacheDecorators:
             call_count += 1
             return x * 2
 
+        # Clear any existing cache entries
+        cache.clear()
+        
         # First call should execute function
         result1 = expensive_function(5)
         assert result1 == 10
@@ -309,7 +318,7 @@ class TestCacheDecorators:
             from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
             from src.utils.advanced_cache.decorators import cache_invalidate
 
-            cache = EnhancedSmartCache(backend_type="memory")
+            cache = EnhancedSmartCache(redis_url=None)  # Memory backend
 
             # Set a cached value
             cache.set("test_invalidate", "old_value")
@@ -429,7 +438,7 @@ class TestCacheIntegration:
         """Test cache manager with realistic data"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
 
         # Test with blacklist-like data
         blacklist_data = {
@@ -450,7 +459,9 @@ class TestCacheIntegration:
         """Test cache performance with multiple operations"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
+        # Enable pickle trust for testing
+        cache.serialization._trust_pickle = True
 
         # Simulate multiple cache operations
         for i in range(100):
@@ -468,7 +479,7 @@ class TestCacheIntegration:
         """Test cache error handling"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
 
         # Test with None key (should handle gracefully)
         try:
@@ -496,7 +507,7 @@ if __name__ == "__main__":
     try:
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
         assert cache is not None
         print("✅ Cache manager creation: SUCCESS")
     except Exception as e:
@@ -507,7 +518,7 @@ if __name__ == "__main__":
     try:
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
         cache.set("test", "value")
         assert cache.get("test") == "value"
         print("✅ Basic cache operations: SUCCESS")
@@ -532,7 +543,7 @@ if __name__ == "__main__":
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
         from src.utils.advanced_cache.decorators import cached
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
 
         @cached(cache, ttl=300)
         def test_func(x):
@@ -574,7 +585,7 @@ if __name__ == "__main__":
     try:
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
         cache.set("ttl_test", "value", ttl=1)
         assert cache.get("ttl_test") == "value"
         print("✅ TTL functionality: SUCCESS")
@@ -586,7 +597,7 @@ if __name__ == "__main__":
     try:
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
 
-        cache = EnhancedSmartCache(backend_type="memory")
+        cache = EnhancedSmartCache(redis_url=None)  # Memory backend
 
         complex_data = {
             "ip": "192.168.1.1",

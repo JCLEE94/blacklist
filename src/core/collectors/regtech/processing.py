@@ -12,12 +12,13 @@ Expected output: parsed IP data, processed threat intelligence
 """
 
 import logging
-import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from bs4 import BeautifulSoup
+
+from .helpers import IPValidator, PatternMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +27,9 @@ class DataProcessor:
     """Handles processing and parsing of collected data"""
 
     def __init__(self):
-        # IP address regex pattern
-        self.ip_pattern = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
-
-        # Common IP extraction patterns
-        self.extraction_patterns = [
-            r"IP[:\s]+([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})",
-            r"\b([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})\b",
-            r"Address[:\s]+([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})",
-        ]
+        # Initialize helper classes
+        self.ip_validator = IPValidator()
+        self.pattern_matcher = PatternMatcher()
 
     def parse_board_page(self, html_content: str, source: str) -> List[Dict[str, Any]]:
         """Parse HTML content from board pages"""
@@ -46,20 +41,18 @@ class DataProcessor:
             # Extract text content
             text_content = soup.get_text()
 
-            # Find IP addresses using multiple patterns
-            found_ips = set()
-
-            for pattern in self.extraction_patterns:
-                matches = re.findall(pattern, text_content, re.IGNORECASE)
-                found_ips.update(matches)
-
-            # Also try simple IP pattern
-            simple_matches = self.ip_pattern.findall(text_content)
-            found_ips.update(simple_matches)
+            # Find IP addresses using pattern matcher
+            found_ips = self.pattern_matcher.extract_ips_from_text(text_content)
+            
+            # Also try extracting from tables and lists
+            table_ips = self.pattern_matcher.extract_ips_from_html_table(soup)
+            list_ips = self.pattern_matcher.extract_ips_from_lists(soup)
+            found_ips.update(table_ips)
+            found_ips.update(list_ips)
 
             # Process each found IP
             for ip in found_ips:
-                if self._is_valid_ip(ip):
+                if self.ip_validator.is_valid_ip(ip):
                     ip_data = {
                         "ip": ip,
                         "source": source,
@@ -103,7 +96,7 @@ class DataProcessor:
                     ips = self.ip_pattern.findall(cell_str)
 
                     for ip in ips:
-                        if self._is_valid_ip(ip):
+                        if self.ip_validator.is_valid_ip(ip):
                             # Try to extract additional data from the row
                             detection_date = self._extract_date_from_row(row)
                             threat_type = self._extract_threat_type_from_row(row)
@@ -156,7 +149,7 @@ class DataProcessor:
             for item in items:
                 if isinstance(item, str):
                     # Simple string - check if it's an IP
-                    if self._is_valid_ip(item):
+                    if self.ip_validator.is_valid_ip(item):
                         ip_data = {
                             "ip": item,
                             "source": source,
@@ -170,7 +163,7 @@ class DataProcessor:
                 elif isinstance(item, dict):
                     # Dictionary - extract IP and other data
                     ip = self._extract_ip_from_dict(item)
-                    if ip and self._is_valid_ip(ip):
+                    if ip and self.ip_validator.is_valid_ip(ip):
                         ip_data = {
                             "ip": ip,
                             "source": source,
@@ -196,7 +189,7 @@ class DataProcessor:
         for field in ip_fields:
             if field in data and data[field]:
                 ip = str(data[field])
-                if self._is_valid_ip(ip):
+                if self.ip_validator.is_valid_ip(ip):
                     return ip
 
         # Search in all fields
@@ -204,63 +197,12 @@ class DataProcessor:
             if value and isinstance(value, str):
                 ips = self.ip_pattern.findall(value)
                 for ip in ips:
-                    if self._is_valid_ip(ip):
+                    if self.ip_validator.is_valid_ip(ip):
                         return ip
 
         return None
 
-    def _is_valid_ip(self, ip_str: str) -> bool:
-        """Validate IP address format and exclude private/reserved ranges"""
-        try:
-            parts = ip_str.split(".")
-            if len(parts) != 4:
-                return False
-
-            # Check each part is valid number
-            for part in parts:
-                num = int(part)
-                if not 0 <= num <= 255:
-                    return False
-
-            # Exclude private and reserved ranges
-            first_octet = int(parts[0])
-            second_octet = int(parts[1])
-
-            # Private ranges
-            if first_octet == 10:  # 10.0.0.0/8
-                return False
-            if first_octet == 172 and 16 <= second_octet <= 31:  # 172.16.0.0/12
-                return False
-            if first_octet == 192 and second_octet == 168:  # 192.168.0.0/16
-                return False
-
-            # Reserved ranges
-            if first_octet in [
-                0,
-                127,
-                224,
-                225,
-                226,
-                227,
-                228,
-                229,
-                230,
-                231,
-                232,
-                233,
-                234,
-                235,
-                236,
-                237,
-                238,
-                239,
-            ]:
-                return False
-
-            return True
-
-        except (ValueError, IndexError):
-            return False
+    # IP validation moved to IPValidator helper class
 
     def remove_duplicates(self, ips: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Remove duplicate IP entries"""
@@ -366,7 +308,7 @@ class DataProcessor:
                 return False
 
         # Validate IP format
-        if not self._is_valid_ip(ip_data["ip"]):
+        if not self.ip_validator.is_valid_ip(ip_data["ip"]):
             return False
 
         return True
