@@ -5,12 +5,8 @@ Testing DatabaseManager and MigrationManager classes
 """
 import os
 import tempfile
-from datetime import datetime
-from datetime import timedelta
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import call
-from unittest.mock import patch
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 

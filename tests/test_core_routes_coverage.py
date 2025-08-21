@@ -8,15 +8,10 @@ import json
 import os
 import sys
 import tempfile
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Optional
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from flask import Flask

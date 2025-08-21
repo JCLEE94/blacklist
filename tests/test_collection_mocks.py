@@ -7,11 +7,8 @@ Collection Mocks for Testing
 import os
 import tempfile
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, List
+from unittest.mock import Mock, patch
 
 
 def enable_collection_for_tests():

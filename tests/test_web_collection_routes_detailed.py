@@ -7,13 +7,10 @@ import json
 import os
 import tempfile
 import unittest.mock as mock
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from flask import Blueprint
-from flask import Flask
+from flask import Blueprint, Flask
 
 
 @pytest.fixture
@@ -286,7 +283,7 @@ class TestCollectionIntegration:
         response = client.get("/collection/status")
         # 응답 코드가 유효한지 확인 (실제 구현에 따라)
         assert response.status_code in [200, 404, 500]
-        
+
         # 응답이 JSON 형식인지 확인 (가능한 경우)
         if response.status_code == 200:
             try:

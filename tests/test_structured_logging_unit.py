@@ -13,21 +13,20 @@ import tempfile
 import threading
 import time
 import unittest
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 # Test imports
-from src.utils.structured_logging import BufferHandler
-from src.utils.structured_logging import LogManager
-from src.utils.structured_logging import StructuredLogger
-from src.utils.structured_logging import get_logger
-from src.utils.structured_logging import log_manager
+from src.utils.structured_logging import (
+    BufferHandler,
+    LogManager,
+    StructuredLogger,
+    get_logger,
+    log_manager,
+)
 
 
 class TestStructuredLogger:

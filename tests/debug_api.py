@@ -145,9 +145,9 @@ def check_database_directly():
     # Get sample IPs
     cursor.execute(
         """
-        SELECT ip_address, source, category 
-        FROM blacklist_ips 
-        WHERE is_active = 1 
+        SELECT ip_address, source, category
+        FROM blacklist_ips
+        WHERE is_active = 1
         LIMIT 5
     """
     )

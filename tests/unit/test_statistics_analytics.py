@@ -9,7 +9,6 @@ import sqlite3
 import tempfile
 import unittest.mock as mock
 from datetime import datetime
-from datetime import timedelta
 
 import pytest
 
@@ -94,7 +93,7 @@ class TestStatisticsAnalytics:
 
         cursor.executemany(
             """
-            INSERT INTO blacklist_ips 
+            INSERT INTO blacklist_ips
             (ip_address, source, threat_level, first_seen, last_seen, is_active, detection_count)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,

@@ -7,15 +7,10 @@ Focus on app_compact.py, models.py, validators.py, and common utilities
 import os
 import sys
 import tempfile
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Optional
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -674,9 +669,7 @@ if __name__ == "__main__":
     # Test 1: Core modules can be imported
     total_tests += 1
     try:
-        from src.core import constants
-        from src.core import models
-        from src.core import validators
+        from src.core import constants, models, validators
     except ImportError as e:
         all_validation_failures.append(f"Core modules import test failed: {e}")
     except Exception as e:
@@ -685,9 +678,7 @@ if __name__ == "__main__":
     # Test 2: Common utilities can be imported
     total_tests += 1
     try:
-        from src.core.common import config_utils
-        from src.core.common import date_utils
-        from src.core.common import ip_utils
+        from src.core.common import config_utils, date_utils, ip_utils
     except ImportError:
         # Some common utilities might not be available
         total_tests -= 1

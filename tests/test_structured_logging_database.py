@@ -9,11 +9,9 @@ import os
 import sqlite3
 import tempfile
 from collections import deque
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 

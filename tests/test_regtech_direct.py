@@ -6,8 +6,7 @@ REGTECH 직접 수집 테스트 - 실제 데이터
 import os
 import sqlite3
 import sys
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 # 프로젝트 경로 추가
 sys.path.insert(0, "/home/jclee/app/blacklist")
@@ -118,7 +117,7 @@ def create_test_data():
     for ip, source, level, desc, country in test_ips:
         cursor.execute(
             """
-            INSERT OR REPLACE INTO blacklist 
+            INSERT OR REPLACE INTO blacklist
             (ip_address, source, threat_level, description, country, detection_date, is_active)
             VALUES (?, ?, ?, ?, ?, ?, 1)
         """,
@@ -154,8 +153,8 @@ def check_database():
     # 소스별 통계
     cursor.execute(
         """
-        SELECT source, COUNT(*) as cnt 
-        FROM blacklist 
+        SELECT source, COUNT(*) as cnt
+        FROM blacklist
         GROUP BY source
     """
     )

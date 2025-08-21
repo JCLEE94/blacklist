@@ -21,7 +21,7 @@ def check_database():
     cursor.execute(
         """
         SELECT source, COUNT(*), MIN(added_date), MAX(added_date)
-        FROM blacklist_ips 
+        FROM blacklist_ips
         GROUP BY source
     """
     )
@@ -35,8 +35,8 @@ def check_database():
     # Check active IPs
     cursor.execute(
         """
-        SELECT COUNT(*) 
-        FROM blacklist_ips 
+        SELECT COUNT(*)
+        FROM blacklist_ips
         WHERE is_active = 1
     """
     )
@@ -47,7 +47,7 @@ def check_database():
     cursor.execute(
         """
         SELECT ip_address, category, threat_level, added_date
-        FROM blacklist_ips 
+        FROM blacklist_ips
         WHERE source = 'REGTECH' AND is_active = 1
         LIMIT 5
     """

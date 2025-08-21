@@ -121,9 +121,9 @@ def check_database():
         # Show recent IPs
         cursor.execute(
             """
-            SELECT ip_address, source, category, added_date 
-            FROM blacklist_ips 
-            ORDER BY added_date DESC 
+            SELECT ip_address, source, category, added_date
+            FROM blacklist_ips
+            ORDER BY added_date DESC
             LIMIT 5
         """
         )

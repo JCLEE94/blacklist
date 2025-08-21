@@ -152,8 +152,8 @@ class StatusService:
             }
         except ImportError:
             return {"note": "psutil not available - system metrics unavailable"}
-        except Exception as e:
-            return {"error": "System health check failed: {e}"}
+        except Exception:
+            return {"error": "System health check failed"}
 
     def is_collection_enabled(self, source: Optional[str] = None) -> bool:
         """수집 활성화 상태 확인"""

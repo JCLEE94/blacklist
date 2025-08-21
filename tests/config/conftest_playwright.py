@@ -4,9 +4,7 @@ UI 테스트를 위한 브라우저 설정 및 픽스처
 """
 
 import pytest
-from playwright.sync_api import Browser
-from playwright.sync_api import BrowserContext
-from playwright.sync_api import Page
+from playwright.sync_api import Browser, BrowserContext, Page
 
 
 @pytest.fixture(scope="session")

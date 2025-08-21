@@ -7,13 +7,9 @@ Targeting high-value models.py which has 53% coverage but is critical
 import json
 import os
 import sys
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import pytest
 
@@ -283,8 +279,7 @@ class TestDataValidation:
 
     def test_ip_address_validation_concepts(self):
         """Test IP address validation concepts"""
-        from src.core.models import BlacklistEntry
-        from src.core.models import IPAddressType
+        from src.core.models import BlacklistEntry, IPAddressType
 
         # Valid IPv4 addresses
         valid_ipv4_addresses = [
@@ -327,8 +322,7 @@ class TestModelIntegration:
 
     def test_health_status_in_entry(self):
         """Test using HealthStatus with BlacklistEntry concepts"""
-        from src.core.models import BlacklistEntry
-        from src.core.models import HealthStatus
+        from src.core.models import BlacklistEntry, HealthStatus
 
         entry = BlacklistEntry(ip_address="1.1.1.1")
 
@@ -344,8 +338,7 @@ class TestModelIntegration:
 
     def test_ip_type_with_entry(self):
         """Test using IPAddressType with BlacklistEntry"""
-        from src.core.models import BlacklistEntry
-        from src.core.models import IPAddressType
+        from src.core.models import BlacklistEntry, IPAddressType
 
         ipv4_entry = BlacklistEntry(ip_address="192.168.1.1")
 
@@ -394,8 +387,7 @@ if __name__ == "__main__":
     # Test 1: Enums can be imported and used
     total_tests += 1
     try:
-        from src.core.models import HealthStatus
-        from src.core.models import IPAddressType
+        from src.core.models import HealthStatus, IPAddressType
 
         assert HealthStatus.HEALTHY.value == "healthy"
         assert IPAddressType.IPV4.value == "ipv4"
@@ -476,9 +468,7 @@ if __name__ == "__main__":
     # Test 7: Integration between models
     total_tests += 1
     try:
-        from src.core.models import BlacklistEntry
-        from src.core.models import HealthStatus
-        from src.core.models import IPAddressType
+        from src.core.models import BlacklistEntry, HealthStatus, IPAddressType
 
         entry = BlacklistEntry(ip_address="192.168.1.1")
         health = HealthStatus.HEALTHY

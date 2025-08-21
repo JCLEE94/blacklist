@@ -8,13 +8,11 @@ import threading
 import time
 import unittest
 import weakref
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.utils.performance_optimizer import MemoryOptimizer
-from src.utils.performance_optimizer import SmartCache
+from src.utils.performance_optimizer import MemoryOptimizer, SmartCache
 
 
 class TestSmartCache(unittest.TestCase):

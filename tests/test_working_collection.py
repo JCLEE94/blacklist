@@ -167,7 +167,7 @@ def test_direct_database_insert():
             try:
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO blacklist_ips 
+                    INSERT OR REPLACE INTO blacklist_ips
                     (ip_address, source, category, threat_level, description, added_date, is_active)
                     VALUES (?, ?, ?, ?, ?, ?, 1)
                 """,

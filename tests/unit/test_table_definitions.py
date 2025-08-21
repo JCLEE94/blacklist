@@ -5,9 +5,7 @@ Table Definitions 테스트
 import os
 import sqlite3
 import tempfile
-from unittest.mock import Mock
-from unittest.mock import call
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 
@@ -171,7 +169,7 @@ class TestTableDefinitions:
         # 테이블이 생성되었는지 확인
         cursor = temp_db.execute(
             """
-            SELECT name FROM sqlite_master 
+            SELECT name FROM sqlite_master
             WHERE type='table' AND name='blacklist_entries'
         """
         )
@@ -195,7 +193,7 @@ class TestTableDefinitions:
         # 테이블이 생성되었는지 확인
         cursor = temp_db.execute(
             """
-            SELECT name FROM sqlite_master 
+            SELECT name FROM sqlite_master
             WHERE type='table' AND name='collection_logs'
         """
         )
@@ -255,7 +253,7 @@ class TestTableDefinitions:
 
         cursor = temp_db.execute(
             """
-            SELECT name FROM sqlite_master 
+            SELECT name FROM sqlite_master
             WHERE type='table' AND name NOT LIKE 'sqlite_%'
         """
         )

@@ -36,15 +36,17 @@ os.environ.update(
 
 # 모듈화된 픽스처들 import
 try:
-    from .fixtures import MockResponse
-    from .fixtures import does_not_raise
-    from .fixtures import mock_container_system
-    from .fixtures import mock_database_connection
-    from .fixtures import mock_external_services
-    from .fixtures import mock_file_system
-    from .fixtures import mock_flask_app
-    from .fixtures import mock_subprocess
-    from .fixtures import test_database
+    from .fixtures import (
+        MockResponse,
+        does_not_raise,
+        mock_container_system,
+        mock_database_connection,
+        mock_external_services,
+        mock_file_system,
+        mock_flask_app,
+        mock_subprocess,
+        test_database,
+    )
 except ImportError:
     # fixtures 모듈이 없는 경우 기본 픽스처들 정의
     print("⚠️  fixtures 모듈 import 실패 - 기본 픽스처 사용")
@@ -57,8 +59,7 @@ except ImportError:
     @pytest.fixture
     def mock_file_system():
         """기본 파일 시스템 모킹"""
-        from unittest.mock import MagicMock
-        from unittest.mock import patch
+        from unittest.mock import MagicMock, patch
 
         with (
             patch("pathlib.Path.exists", return_value=True),
@@ -97,8 +98,7 @@ except ImportError:
 @pytest.fixture
 def mock_ci_cd_environment():
     """CI/CD 환경 모킹 (GitOps 테스트용)"""
-    from unittest.mock import MagicMock
-    from unittest.mock import patch
+    from unittest.mock import MagicMock, patch
 
     env_vars = {
         "GITHUB_TOKEN": "test-github-token",

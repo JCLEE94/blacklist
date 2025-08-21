@@ -5,8 +5,7 @@ REGTECH 실제 로그인 및 데이터 수집 테스트
 
 import json
 import re
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import requests
 

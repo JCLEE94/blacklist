@@ -9,15 +9,10 @@ import os
 import sys
 import tempfile
 import time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Optional
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -54,7 +49,10 @@ class TestEnhancedSmartCache:
 
         # Test set and get with JSON-serializable data
         test_key = "test_key"
-        test_value = {"data": "test_value", "number": 123}  # Use dict for JSON serialization
+        test_value = {
+            "data": "test_value",
+            "number": 123,
+        }  # Use dict for JSON serialization
 
         manager.set(test_key, test_value)
         retrieved_value = manager.get(test_key)
@@ -251,8 +249,10 @@ class TestCacheDecorators:
     def test_cached_decorator_basic(self):
         """Test basic cache decorator functionality"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
-        from src.utils.advanced_cache.decorators import cache_decorator
-        from src.utils.advanced_cache.decorators import set_cache_instance
+        from src.utils.advanced_cache.decorators import (
+            cache_decorator,
+            set_cache_instance,
+        )
 
         cache = EnhancedSmartCache(redis_url=None)
         set_cache_instance(cache)
@@ -278,8 +278,10 @@ class TestCacheDecorators:
     def test_cached_decorator_different_args(self):
         """Test cache decorator with different arguments"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
-        from src.utils.advanced_cache.decorators import cache_decorator
-        from src.utils.advanced_cache.decorators import set_cache_instance
+        from src.utils.advanced_cache.decorators import (
+            cache_decorator,
+            set_cache_instance,
+        )
 
         cache = EnhancedSmartCache(redis_url=None)
         cache.clear()  # Clear cache to prevent pollution
@@ -332,7 +334,7 @@ class TestCacheFactory:
 
     def test_cache_factory_import(self):
         """Test cache factory can be imported"""
-        from src.utils.advanced_cache.factory import get_smart_cache, get_cache
+        from src.utils.advanced_cache.factory import get_cache, get_smart_cache
 
         assert get_smart_cache is not None
         assert get_cache is not None

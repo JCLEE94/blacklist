@@ -9,12 +9,9 @@ import os
 import sqlite3
 import sys
 import tempfile
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import Mock
-from unittest.mock import call
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 from flask import Flask

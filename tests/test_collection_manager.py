@@ -9,15 +9,10 @@ import json
 import os
 import sys
 import tempfile
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Optional
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import requests
@@ -57,9 +52,11 @@ class TestUnifiedCollectionManager:
 
     def test_unified_collection_manager_register_collector(self):
         """Test collector registration"""
-        from src.core.collectors.unified_collector import BaseCollector
-        from src.core.collectors.unified_collector import CollectionConfig
-        from src.core.collectors.unified_collector import UnifiedCollectionManager
+        from src.core.collectors.unified_collector import (
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         # Create test collector
         class TestCollector(BaseCollector):
@@ -85,9 +82,11 @@ class TestUnifiedCollectionManager:
 
     def test_unified_collection_manager_unregister_collector(self):
         """Test collector unregistration"""
-        from src.core.collectors.unified_collector import BaseCollector
-        from src.core.collectors.unified_collector import CollectionConfig
-        from src.core.collectors.unified_collector import UnifiedCollectionManager
+        from src.core.collectors.unified_collector import (
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property
@@ -112,9 +111,11 @@ class TestUnifiedCollectionManager:
 
     def test_unified_collection_manager_get_status(self):
         """Test get_status method"""
-        from src.core.collectors.unified_collector import BaseCollector
-        from src.core.collectors.unified_collector import CollectionConfig
-        from src.core.collectors.unified_collector import UnifiedCollectionManager
+        from src.core.collectors.unified_collector import (
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property
@@ -159,9 +160,11 @@ class TestUnifiedCollectionManager:
 
     def test_unified_collection_manager_enable_disable_collector(self):
         """Test collector enable/disable"""
-        from src.core.collectors.unified_collector import BaseCollector
-        from src.core.collectors.unified_collector import CollectionConfig
-        from src.core.collectors.unified_collector import UnifiedCollectionManager
+        from src.core.collectors.unified_collector import (
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property
@@ -190,10 +193,12 @@ class TestUnifiedCollectionManager:
     @pytest.mark.asyncio
     async def test_unified_collection_manager_collect_single(self):
         """Test single collector collection"""
-        from src.core.collectors.unified_collector import BaseCollector
-        from src.core.collectors.unified_collector import CollectionConfig
-        from src.core.collectors.unified_collector import CollectionStatus
-        from src.core.collectors.unified_collector import UnifiedCollectionManager
+        from src.core.collectors.unified_collector import (
+            BaseCollector,
+            CollectionConfig,
+            CollectionStatus,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property

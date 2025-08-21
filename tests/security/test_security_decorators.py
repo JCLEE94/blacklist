@@ -4,23 +4,24 @@ Security Decorators Test Module
 
 Tests for security decorators including:
 - require_auth decorator functionality
-- rate_limit decorator functionality 
+- rate_limit decorator functionality
 - input_validation decorator functionality
 - API key and permission decorators
 """
 
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from src.utils.security import SecurityManager
-from src.utils.security import input_validation
-from src.utils.security import rate_limit
-from src.utils.security import require_api_key
-from src.utils.security import require_auth
-from src.utils.security import require_permission
-from src.utils.security import security_check
+from src.utils.security import (
+    SecurityManager,
+    input_validation,
+    rate_limit,
+    require_api_key,
+    require_auth,
+    require_permission,
+    security_check,
+)
 
 
 class TestSecurityDecorators:

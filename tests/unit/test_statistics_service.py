@@ -9,7 +9,6 @@ import sqlite3
 import tempfile
 import unittest.mock as mock
 from datetime import datetime
-from datetime import timedelta
 
 import pytest
 
@@ -136,7 +135,7 @@ class TestStatisticsServiceMixin:
 
         cursor.executemany(
             """
-            INSERT INTO blacklist_entries 
+            INSERT INTO blacklist_entries
             (ip_address, source, is_active, created_at, updated_at, last_seen, reason, country)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,

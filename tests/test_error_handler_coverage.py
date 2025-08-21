@@ -11,12 +11,8 @@ import tempfile
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Optional
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -248,8 +244,7 @@ class TestValidationFunctions:
 
     def test_validate_required_fields_missing(self):
         """Test required fields validation with missing field"""
-        from src.utils.error_handler import ValidationError
-        from src.utils.error_handler import validate_required_fields
+        from src.utils.error_handler import ValidationError, validate_required_fields
 
         data = {"name": "test"}  # Missing email
         required_fields = ["name", "email"]
@@ -280,8 +275,7 @@ class TestValidationFunctions:
 
     def test_validate_ip_format_invalid(self):
         """Test IP format validation with invalid IP"""
-        from src.utils.error_handler import ValidationError
-        from src.utils.error_handler import validate_ip_format
+        from src.utils.error_handler import ValidationError, validate_ip_format
 
         invalid_ips = ["invalid_ip", "999.999.999.999", ""]
 
@@ -308,8 +302,7 @@ class TestValidationFunctions:
 
     def test_validate_and_convert_invalid_conversion(self):
         """Test validate and convert with invalid conversion"""
-        from src.utils.error_handler import ValidationError
-        from src.utils.error_handler import validate_and_convert
+        from src.utils.error_handler import ValidationError, validate_and_convert
 
         try:
             validate_and_convert("invalid_number", int)
@@ -495,8 +488,7 @@ if __name__ == "__main__":
     # Test 1: Error classes can be imported and created
     total_tests += 1
     try:
-        from src.utils.error_handler import BaseError
-        from src.utils.error_handler import ValidationError
+        from src.utils.error_handler import BaseError, ValidationError
 
         error = BaseError("Test error")
         assert isinstance(error, Exception)

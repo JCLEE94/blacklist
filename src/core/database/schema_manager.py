@@ -180,7 +180,7 @@ class DatabaseSchema:
                 # Safe table list - only predefined tables allowed
                 ALLOWED_TABLES = {
                     "blacklist_entries",
-                    "collection_logs", 
+                    "collection_logs",
                     "auth_attempts",
                     "system_status",
                     "cache_entries",
@@ -193,7 +193,7 @@ class DatabaseSchema:
                         # Use parameterized queries where possible, or validate table names
                         if table not in ALLOWED_TABLES:
                             continue  # Skip unsafe table names
-                            
+
                         cursor = conn.execute(f"SELECT COUNT(*) as count FROM {table}")
                         count = cursor.fetchone()["count"]
 
@@ -223,8 +223,6 @@ class DatabaseSchema:
     @classmethod
     def get_instance(cls, db_path: str = None) -> "DatabaseSchema":
         """싱글톤 인스턴스 반환 (호환성)"""
-        global _schema_instance
-
         if not hasattr(cls, "_instance") or (
             db_path and cls._instance.db_path != db_path
         ):
@@ -267,8 +265,7 @@ class DatabaseSchema:
         return schema.migrate_schema()
 
 
-# 전역 스키마 인스턴스 (호환성)
-_schema_instance = None
+# 전역 스키마 인스턴스 (호환성) - removed unused variable
 
 
 def get_database_schema(db_path: str = None) -> DatabaseSchema:

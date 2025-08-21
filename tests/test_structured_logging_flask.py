@@ -6,15 +6,12 @@ Flask request logging setup and API endpoint tests
 
 import json
 import unittest
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from flask import Flask
 
-from src.utils.structured_logging import get_logger
-from src.utils.structured_logging import setup_request_logging
+from src.utils.structured_logging import get_logger, setup_request_logging
 
 
 class TestFlaskIntegration(unittest.TestCase):

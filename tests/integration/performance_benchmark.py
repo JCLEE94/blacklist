@@ -10,10 +10,8 @@ import os
 import statistics
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import as_completed
-from typing import Dict
-from typing import Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, Tuple
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))

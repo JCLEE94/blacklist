@@ -8,8 +8,7 @@ Tests for SecurityHeaders class functionality including:
 - Error handling in header application
 """
 
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 

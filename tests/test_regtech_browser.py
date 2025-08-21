@@ -7,8 +7,7 @@ Selenium 또는 Playwright를 사용한 웹 자동화
 import json
 import os
 import time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 
 def test_with_playwright():

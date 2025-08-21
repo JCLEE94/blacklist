@@ -7,9 +7,7 @@
 
 import json
 import time
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from flask import Flask
@@ -352,8 +350,7 @@ class TestDateEdgeCases:
 
     def test_timezone_handling(self):
         """타임존 처리"""
-        from datetime import datetime
-        from datetime import timezone
+        from datetime import datetime, timezone
 
         # UTC 시간
         utc_time = datetime.now(timezone.utc)

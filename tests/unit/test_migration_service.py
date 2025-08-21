@@ -5,9 +5,7 @@ Migration Service 테스트
 import os
 import sqlite3
 import tempfile
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -235,8 +233,8 @@ class TestMigrationService:
 
         mock_conn.execute.assert_called_once_with(
             """
-            INSERT OR REPLACE INTO metadata 
-            (key, value, value_type, description, category) 
+            INSERT OR REPLACE INTO metadata
+            (key, value, value_type, description, category)
             VALUES (?, ?, ?, ?, ?)
         """,
             ("schema_version", "2.0.0", "string", "데이터베이스 스키마 버전", "system"),

@@ -11,8 +11,7 @@ Tests for SecurityManager class functionality including:
 
 import secrets
 import time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import jwt

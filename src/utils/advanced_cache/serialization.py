@@ -90,7 +90,7 @@ class SerializationManager:
             try:
                 # Add security check - only deserialize if data source is trusted
                 # This should only be used for internally cached data
-                if hasattr(self, '_trust_pickle') and self._trust_pickle:
+                if hasattr(self, "_trust_pickle") and self._trust_pickle:
                     return pickle.loads(data)
                 else:
                     logger.warning("Pickle deserialization skipped for security")

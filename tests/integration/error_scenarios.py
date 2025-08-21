@@ -6,11 +6,9 @@ Extracted from test_error_handling_edge_cases.py for better organization.
 import sqlite3
 import threading
 import time
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from .test_helpers import BaseIntegrationTest
-from .test_helpers import create_mock_service
+from .test_helpers import BaseIntegrationTest, create_mock_service
 
 
 class TestNetworkErrors(BaseIntegrationTest):

@@ -5,9 +5,7 @@ Tests for base config, development, production, and factory configurations
 
 import os
 import tempfile
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -207,8 +205,7 @@ def test_config_constants_integration():
     """Test integration with constants module"""
     try:
         from src.config.base import BaseConfig
-        from src.core.constants import DEFAULT_DATA_DIR
-        from src.core.constants import DEFAULT_PORT
+        from src.core.constants import DEFAULT_DATA_DIR, DEFAULT_PORT
 
         # Test that constants are used correctly
         with patch.dict(os.environ, {}, clear=True):

@@ -5,9 +5,7 @@ UI 테스트 리포터 모듈
 """
 
 import time
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Dict, List, Optional
 
 
 class UITestReporter:

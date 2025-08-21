@@ -120,9 +120,9 @@ def check_database_direct():
     # By source
     cursor.execute(
         """
-        SELECT source, COUNT(*) 
-        FROM blacklist_ips 
-        WHERE is_active = 1 
+        SELECT source, COUNT(*)
+        FROM blacklist_ips
+        WHERE is_active = 1
         GROUP BY source
     """
     )

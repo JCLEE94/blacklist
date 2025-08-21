@@ -43,11 +43,13 @@ class APITestSuite(BaseUITestSuite):
         try:
             response = await self.page.evaluate(
                 f"""
-                fetch('{url}').then(r => ({
-                    status: r.status,
-                    ok: r.ok,
-                    headers: Object.fromEntries(r.headers.entries())
-                }))
+                fetch('{url}').then(r => {{
+                    return {{
+                        status: r.status,
+                        ok: r.ok,
+                        headers: Object.fromEntries(r.headers.entries())
+                    }};
+                }})
             """
             )
 

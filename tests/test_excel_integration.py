@@ -7,8 +7,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from src.core.collectors.regtech_collector import RegtechCollector
 

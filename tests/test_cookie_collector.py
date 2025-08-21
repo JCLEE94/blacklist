@@ -109,7 +109,7 @@ async def save_to_database(collected_data):
             try:
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO blacklist 
+                    INSERT OR REPLACE INTO blacklist
                     (ip_address, source, threat_level, description, detection_date, is_active)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """,
@@ -243,9 +243,9 @@ def check_database_status():
         # 소스별 통계
         cursor.execute(
             """
-            SELECT source, COUNT(*) as cnt 
-            FROM blacklist 
-            GROUP BY source 
+            SELECT source, COUNT(*) as cnt
+            FROM blacklist
+            GROUP BY source
             ORDER BY cnt DESC
         """
         )

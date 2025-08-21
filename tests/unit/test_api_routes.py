@@ -4,13 +4,10 @@ API Routes 테스트
 
 import os
 import tempfile
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from flask import Flask
-from flask import json
+from flask import Flask, json
 
 
 # Mock the routes creation to avoid import errors

@@ -5,17 +5,17 @@ Testing Flask application factory and mixins
 """
 import os
 import tempfile
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from flask import Flask
 
-from src.core.app_compact import CompactFlaskApp
-from src.core.app_compact import create_app
-from src.core.app_compact import create_compact_app
-from src.core.app_compact import get_connection_manager
+from src.core.app_compact import (
+    CompactFlaskApp,
+    create_app,
+    create_compact_app,
+    get_connection_manager,
+)
 
 
 class TestCompactFlaskApp:

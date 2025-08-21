@@ -7,8 +7,7 @@ REGTECH 쿠키 기반 데이터 수집
 import json
 import re
 import time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import requests
 

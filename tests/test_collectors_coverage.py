@@ -9,17 +9,10 @@ import json
 import os
 import sys
 import tempfile
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from unittest.mock import AsyncMock
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, List, Optional
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import requests
@@ -50,8 +43,10 @@ class TestUnifiedCollector:
 
     def test_collection_result_dataclass(self):
         """Test CollectionResult data class functionality"""
-        from src.core.collectors.unified_collector import CollectionResult
-        from src.core.collectors.unified_collector import CollectionStatus
+        from src.core.collectors.unified_collector import (
+            CollectionResult,
+            CollectionStatus,
+        )
 
         # Test basic creation
         result = CollectionResult(
@@ -80,8 +75,10 @@ class TestUnifiedCollector:
 
     def test_unified_collector_status_management(self):
         """Test collector status management"""
-        from src.core.collectors.unified_collector import CollectionStatus
-        from src.core.collectors.unified_collector import UnifiedCollector
+        from src.core.collectors.unified_collector import (
+            CollectionStatus,
+            UnifiedCollector,
+        )
 
         collector = UnifiedCollector()
 
@@ -107,9 +104,11 @@ class TestUnifiedCollector:
 
     def test_unified_collector_get_results(self):
         """Test getting collection results"""
-        from src.core.collectors.unified_collector import CollectionResult
-        from src.core.collectors.unified_collector import CollectionStatus
-        from src.core.collectors.unified_collector import UnifiedCollector
+        from src.core.collectors.unified_collector import (
+            CollectionResult,
+            CollectionStatus,
+            UnifiedCollector,
+        )
 
         collector = UnifiedCollector()
 
@@ -519,8 +518,10 @@ if __name__ == "__main__":
     # Test 1: Unified collector can be instantiated
     total_tests += 1
     try:
-        from src.core.collectors.unified_collector import CollectionStatus
-        from src.core.collectors.unified_collector import UnifiedCollector
+        from src.core.collectors.unified_collector import (
+            CollectionStatus,
+            UnifiedCollector,
+        )
 
         collector = UnifiedCollector()
         assert collector.get_status() == CollectionStatus.IDLE

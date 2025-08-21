@@ -129,9 +129,9 @@ def test_postgresql():
             result = conn.execute(
                 text(
                     """
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' 
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
                 ORDER BY table_name
             """
                 )
@@ -146,12 +146,12 @@ def test_postgresql():
             conn.execute(
                 text(
                     """
-                INSERT INTO metadata (key, value) VALUES 
+                INSERT INTO metadata (key, value) VALUES
                     ('db_version', '2.0'),
                     ('db_type', 'postgresql'),
                     ('initialized_at', CURRENT_TIMESTAMP::text),
                     ('schema_migrated', 'true')
-                ON CONFLICT (key) DO UPDATE SET 
+                ON CONFLICT (key) DO UPDATE SET
                     value = EXCLUDED.value,
                     updated_at = CURRENT_TIMESTAMP
             """

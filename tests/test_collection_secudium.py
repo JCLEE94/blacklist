@@ -4,18 +4,17 @@ Tests for SECUDIUM IP collection functionality, session management, and error ha
 """
 
 import asyncio
-from datetime import datetime
-from datetime import timedelta
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from src.core.collectors.secudium_collector import SecudiumCollector
-from src.core.collectors.unified_collector import CollectionConfig
-from src.core.collectors.unified_collector import CollectionResult
-from src.core.collectors.unified_collector import CollectionStatus
+from src.core.collectors.unified_collector import (
+    CollectionConfig,
+    CollectionResult,
+    CollectionStatus,
+)
 
 
 class TestSecudiumCollector:

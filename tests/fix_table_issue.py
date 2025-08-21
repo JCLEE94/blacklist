@@ -60,11 +60,11 @@ def create_ip_detections_table():
     # Copy data from blacklist_ips to ip_detections
     cursor.execute(
         """
-        INSERT OR IGNORE INTO ip_detections 
+        INSERT OR IGNORE INTO ip_detections
         (ip_address, source, detection_type, threat_level, description, detection_date, is_active)
-        SELECT 
-            ip_address, 
-            source, 
+        SELECT
+            ip_address,
+            source,
             category as detection_type,
             threat_level,
             description,
@@ -88,8 +88,8 @@ def create_ip_detections_table():
     # Show sample
     cursor.execute(
         """
-        SELECT ip_address, source, detection_type, threat_level 
-        FROM ip_detections 
+        SELECT ip_address, source, detection_type, threat_level
+        FROM ip_detections
         LIMIT 5
     """
     )

@@ -80,7 +80,7 @@ def load_json_to_database():
                 # Insert to database
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO blacklist_ips 
+                    INSERT OR REPLACE INTO blacklist_ips
                     (ip_address, source, category, threat_level, description, added_date, is_active)
                     VALUES (?, ?, ?, ?, ?, ?, 1)
                 """,
@@ -114,9 +114,9 @@ def load_json_to_database():
         # Show sample
         cursor.execute(
             """
-            SELECT ip_address, category, threat_level 
-            FROM blacklist_ips 
-            WHERE source = 'REGTECH' 
+            SELECT ip_address, category, threat_level
+            FROM blacklist_ips
+            WHERE source = 'REGTECH'
             LIMIT 5
         """
         )

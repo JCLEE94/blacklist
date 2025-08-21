@@ -6,9 +6,7 @@ Focus on blacklist unified, collectors, database, and services
 import os
 import tempfile
 from datetime import datetime
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 

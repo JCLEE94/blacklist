@@ -6,8 +6,7 @@ REGTECH 실제 로그인 테스트 - 개선된 버전
 import json
 import re
 import time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import requests
 

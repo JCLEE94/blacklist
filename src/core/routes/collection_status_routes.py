@@ -442,6 +442,7 @@ def format_chart_data(daily_stats):
         # 데이터가 없을 경우 최근 7일 기본 데이터 생성
         if not daily_stats:
             from datetime import datetime, timedelta
+
             today = datetime.now()
             for i in range(6, -1, -1):
                 date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
@@ -465,9 +466,13 @@ def format_chart_data(daily_stats):
         logger.error(f"Error formatting chart data: {e}")
         # 오류 발생 시에도 기본 구조 반환
         from datetime import datetime, timedelta
+
         today = datetime.now()
         default_data = {
-            "labels": [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)],
+            "labels": [
+                (today - timedelta(days=i)).strftime("%Y-%m-%d")
+                for i in range(6, -1, -1)
+            ],
             "datasets": [
                 {
                     "label": "REGTECH",

@@ -97,7 +97,7 @@ def check_database_tables():
     print("\n📅 Date Example (수집일 vs 탐지일):")
     cursor.execute(
         """
-        SELECT 
+        SELECT
             ip_address,
             source,
             detection_date,

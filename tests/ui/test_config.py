@@ -4,8 +4,7 @@ UI 테스트 설정 및 기본 구성
 UI 테스트에 필요한 기본 설정, 상수, 뷰포트 구성 등을 제공합니다.
 """
 
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 
 class UITestConfig:

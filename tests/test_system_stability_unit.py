@@ -10,19 +10,15 @@ import sys
 import tempfile
 import threading
 import time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.utils.system_stability import DatabaseStabilityManager
-from src.utils.system_stability import SystemHealth
+from src.utils.system_stability import DatabaseStabilityManager, SystemHealth
 
 
 class TestSystemHealth:

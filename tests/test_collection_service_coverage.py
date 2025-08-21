@@ -3,9 +3,7 @@ Test coverage for collection_service module
 """
 
 import os
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 

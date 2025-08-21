@@ -7,22 +7,22 @@ Tests PerformanceMonitor, decorators, and utility functions.
 
 import threading
 import time
-from datetime import datetime
-from datetime import timedelta
-from unittest.mock import Mock
-from unittest.mock import patch
+from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
 
 import pytest
 
 # Test imports
-from src.utils.performance_optimizer import PerformanceMonitor
-from src.utils.performance_optimizer import batch_process
-from src.utils.performance_optimizer import cached_result
-from src.utils.performance_optimizer import cleanup_performance_data
-from src.utils.performance_optimizer import g_performance_monitor
-from src.utils.performance_optimizer import get_performance_monitor
-from src.utils.performance_optimizer import optimize_database_queries
-from src.utils.performance_optimizer import performance_monitor
+from src.utils.performance_optimizer import (
+    PerformanceMonitor,
+    batch_process,
+    cached_result,
+    cleanup_performance_data,
+    g_performance_monitor,
+    get_performance_monitor,
+    optimize_database_queries,
+    performance_monitor,
+)
 
 
 class TestPerformanceMonitor:

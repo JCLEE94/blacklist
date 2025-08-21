@@ -11,15 +11,10 @@ import os
 import sys
 import tempfile
 import time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import Optional
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from typing import Any, Dict, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -112,8 +107,7 @@ class TestPasswordSecurity:
 
     def test_verify_password_correct(self):
         """Test password verification with correct password"""
-        from src.utils.security import hash_password
-        from src.utils.security import verify_password
+        from src.utils.security import hash_password, verify_password
 
         password = "test_password_123"
         hashed = hash_password(password)
@@ -124,8 +118,7 @@ class TestPasswordSecurity:
 
     def test_verify_password_incorrect(self):
         """Test password verification with incorrect password"""
-        from src.utils.security import hash_password
-        from src.utils.security import verify_password
+        from src.utils.security import hash_password, verify_password
 
         password = "test_password_123"
         wrong_password = "wrong_password"
@@ -182,8 +175,7 @@ class TestJWTSecurity:
 
     def test_jwt_token_round_trip(self):
         """Test JWT token generation and verification round trip"""
-        from src.utils.security import generate_jwt_token
-        from src.utils.security import verify_jwt_token
+        from src.utils.security import generate_jwt_token, verify_jwt_token
 
         payload = {"user_id": "test_user", "exp": int(time.time()) + 3600}
 
@@ -218,8 +210,7 @@ class TestEncryptionSecurity:
 
     def test_encryption_round_trip(self):
         """Test encryption and decryption round trip"""
-        from src.utils.security import decrypt_data
-        from src.utils.security import encrypt_data
+        from src.utils.security import decrypt_data, encrypt_data
 
         original_data = "sensitive_test_data_123"
 
@@ -285,8 +276,7 @@ class TestSessionSecurity:
 
     def test_session_round_trip(self):
         """Test session creation and validation round trip"""
-        from src.utils.security import create_session
-        from src.utils.security import validate_session
+        from src.utils.security import create_session, validate_session
 
         user_id = "test_user_123"
 

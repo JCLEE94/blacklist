@@ -6,8 +6,7 @@ Test database-related components and operations.
 
 import sqlite3
 import tempfile
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 

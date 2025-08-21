@@ -10,29 +10,28 @@ import json
 import secrets
 import time
 import unittest
-from datetime import datetime
-from datetime import timedelta
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
 
 # Test imports
-from src.utils.security import SecurityHeaders
-from src.utils.security import SecurityManager
-from src.utils.security import generate_csrf_token
-from src.utils.security import get_security_manager
-from src.utils.security import input_validation
-from src.utils.security import rate_limit
-from src.utils.security import require_api_key
-from src.utils.security import require_auth
-from src.utils.security import require_permission
-from src.utils.security import sanitize_input
-from src.utils.security import security_check
-from src.utils.security import setup_security
-from src.utils.security import validate_csrf_token
+from src.utils.security import (
+    SecurityHeaders,
+    SecurityManager,
+    generate_csrf_token,
+    get_security_manager,
+    input_validation,
+    rate_limit,
+    require_api_key,
+    require_auth,
+    require_permission,
+    sanitize_input,
+    security_check,
+    setup_security,
+    validate_csrf_token,
+)
 
 
 @pytest.fixture

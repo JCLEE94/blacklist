@@ -6,8 +6,7 @@ REGTECH 실제 데이터 수집 테스트
 import json
 import os
 import sys
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pandas as pd
 import requests

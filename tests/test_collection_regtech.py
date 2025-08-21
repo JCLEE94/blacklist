@@ -5,20 +5,19 @@ Tests for REGTECH IP collection functionality, login, data parsing, and error ha
 
 import asyncio
 import os
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from bs4 import BeautifulSoup
 
 from src.core.collectors.regtech_collector import RegtechCollector
-from src.core.collectors.unified_collector import CollectionConfig
-from src.core.collectors.unified_collector import CollectionResult
-from src.core.collectors.unified_collector import CollectionStatus
+from src.core.collectors.unified_collector import (
+    CollectionConfig,
+    CollectionResult,
+    CollectionStatus,
+)
 
 
 class TestRegtechCollector:

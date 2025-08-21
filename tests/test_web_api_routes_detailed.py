@@ -8,14 +8,10 @@ import os
 import tempfile
 import unittest.mock as mock
 from pathlib import Path
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import mock_open
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
-from flask import Blueprint
-from flask import Flask
+from flask import Blueprint, Flask
 
 
 @pytest.fixture

@@ -6,20 +6,14 @@ Various metrics classes and data validation tests
 
 # Create mock classes for models that don't exist
 from dataclasses import dataclass
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from unittest.mock import patch
 
 import pytest
 
-from src.core.models import HealthStatus
-from src.core.models import MonthData
-from src.core.models import SystemHealth
+from src.core.models import HealthStatus, MonthData, SystemHealth
 
 
 # Mock missing models for testing

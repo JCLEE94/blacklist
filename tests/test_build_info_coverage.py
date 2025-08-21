@@ -4,8 +4,7 @@ Test coverage for build_info module
 
 import json
 from datetime import datetime
-from unittest.mock import mock_open
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 import pytest
 

@@ -6,9 +6,7 @@ Tests unified service factory, statistics service, and collection service
 import os
 import tempfile
 from datetime import datetime
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -52,8 +50,10 @@ class TestUnifiedServiceFactory:
     def test_service_singleton_behavior(self):
         """Test singleton behavior of service factory"""
         try:
-            from src.core.services.unified_service_factory import get_unified_service
-            from src.core.services.unified_service_factory import reset_unified_service
+            from src.core.services.unified_service_factory import (
+                get_unified_service,
+                reset_unified_service,
+            )
 
             # Reset first
             reset_unified_service()

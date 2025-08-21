@@ -187,16 +187,16 @@ class RealtimeTestSuite(BaseUITestSuite):
             () => {
                 // WebSocket 연결 확인
                 const hasWebSocket = window.WebSocket && window.location.protocol.includes('ws');
-                
+
                 // EventSource 확인
                 const hasEventSource = window.EventSource;
-                
+
                 // 페이지에서 실시간 관련 JavaScript 확인
                 const hasRealtimeCode = document.documentElement.innerHTML.includes('setInterval') ||
                                       document.documentElement.innerHTML.includes('setTimeout') ||
                                       document.documentElement.innerHTML.includes('WebSocket') ||
                                       document.documentElement.innerHTML.includes('EventSource');
-                
+
                 return {
                     hasWebSocket,
                     hasEventSource,

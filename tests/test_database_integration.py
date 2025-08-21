@@ -53,10 +53,10 @@ def check_database_status():
         # REGTECH 최신 데이터 확인
         cursor.execute(
             """
-            SELECT ip_address, detection_date, description, created_at 
-            FROM blacklist 
-            WHERE source = 'REGTECH' 
-            ORDER BY created_at DESC 
+            SELECT ip_address, detection_date, description, created_at
+            FROM blacklist
+            WHERE source = 'REGTECH'
+            ORDER BY created_at DESC
             LIMIT 5
         """
         )

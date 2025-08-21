@@ -6,9 +6,7 @@ Focus on testing high-value, uncovered code paths
 import os
 import tempfile
 from datetime import datetime
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -157,8 +155,7 @@ def test_validation_decorators():
 def test_security_utilities():
     """Test security utility functions"""
     try:
-        from src.utils.security import hash_password
-        from src.utils.security import verify_password
+        from src.utils.security import hash_password, verify_password
 
         password = "test_password"
         hashed = hash_password(password)

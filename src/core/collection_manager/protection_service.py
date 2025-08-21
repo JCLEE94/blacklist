@@ -182,7 +182,7 @@ class ProtectionService:
                     cursor.execute(
                         """
                         SELECT EXISTS (
-                            SELECT 1 FROM information_schema.tables 
+                            SELECT 1 FROM information_schema.tables
                             WHERE table_name = 'auth_attempts'
                         )
                     """
