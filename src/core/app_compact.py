@@ -55,7 +55,7 @@ class CompactFlaskApp(
                     return f.read().strip()
         except Exception:
             pass
-        return "1.0.37"  # Default version
+        return "1.1.5"  # Default version
 
     def create_app(self, config_name: Optional[str] = None) -> Flask:
         """Create compact Flask application with modular architecture"""
