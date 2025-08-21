@@ -32,7 +32,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('unified.web_routes.dashboard') }}">
+            <a class="navbar-brand" href="/dashboard">
                 <img src="https://www.nextrade.co.kr/images/main/header_logo_color.svg" 
                      alt="Nextrade" 
                      style="height: 32px; margin-right: 10px;" 
@@ -48,24 +48,24 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'unified.web_routes.dashboard' %}active{% endif %}" 
-                           href="{{ url_for('unified.web_routes.dashboard') }}">
+                           href="/dashboard">
                             <i class="bi bi-house"></i> Home
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'unified.web_routes.blacklist_search' %}active{% endif %}" 
-                           href="{{ url_for('unified.web_routes.blacklist_search') }}">
+                           href="/blacklist-search">
                             <i class="bi bi-search"></i> Search
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'unified.web_routes.statistics' %}active{% endif %}" 
-                           href="{{ url_for('unified.web_routes.statistics') }}">
+                        <a class="nav-link {% if request.path == '/statistics' %}active{% endif %}" 
+                           href="/statistics">
                             <i class="bi bi-graph-up"></i> 통계
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('unified.web_routes.dashboard') }}">
+                        <a class="nav-link" href="/dashboard">
                             <i class="bi bi-speedometer2"></i> 수집 대시보드
                         </a>
                     </li>
@@ -75,12 +75,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('unified.web_routes.unified_control') }}">
+                        <a class="nav-link" href="/unified-control">
                             <i class="bi bi-gear-wide-connected"></i> 통합 관리
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('unified.web_routes.raw_data_page') }}">
+                        <a class="nav-link" href="/raw-data">
                             <i class="bi bi-table"></i> 전체 데이터
                         </a>
                     </li>
@@ -121,10 +121,10 @@
                                 <i class="bi bi-sliders"></i> 설정 관리
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('unified.web_routes.connection_status') }}">
+                            <li><a class="dropdown-item" href="/connection-status">
                                 <i class="bi bi-wifi"></i> 연결 상태
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('unified.web_routes.system_logs') }}">
+                            <li><a class="dropdown-item" href="/system-logs">
                                 <i class="bi bi-journal-text"></i> 시스템 로그
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
