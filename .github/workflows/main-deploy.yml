@@ -392,11 +392,12 @@ jobs:
 
     - name: Create GitHub Release
       if: env.VERSION != ''
+      continue-on-error: true
       run: |
-        echo "🎯 Creating GitHub Release v${{ env.VERSION }}"
+        echo "🎯 Attempting to create GitHub Release v${{ env.VERSION }}"
         
-        # Create release using GitHub CLI
-        gh release create "v${{ env.VERSION }}" \
+        # Try to create release using GitHub CLI - continue if it fails
+        if gh release create "v${{ env.VERSION }}" \
           --title "Release v${{ env.VERSION }}" \
           --notes "🚀 **Blacklist Management System v${{ env.VERSION }}**
 
@@ -423,9 +424,12 @@ jobs:
         - Optimized Docker build pipeline
         - Fixed application entry point paths
         - Enhanced error handling and logging" \
-          --latest
-        
-        echo "✅ GitHub Release v${{ env.VERSION }} created successfully"
+          --latest 2>/dev/null; then
+          echo "✅ GitHub Release v${{ env.VERSION }} created successfully"
+        else
+          echo "⚠️ GitHub Release creation failed - continuing deployment (this is non-critical)"
+          echo "📝 Manual release can be created later with tag v${{ env.VERSION }}"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
