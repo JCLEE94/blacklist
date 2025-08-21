@@ -31,13 +31,12 @@ jobs:
           echo "⚠️ Version manager not found - skipping validation"
         fi
     
-    - name: Bump version
+    - name: Get current version
       id: version
       run: |
-        chmod +x scripts/bump-version.sh
-        ./scripts/bump-version.sh
         echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
         echo "VERSION=$(cat version.txt)" >> $GITHUB_OUTPUT
+        echo "📍 Current version: $(cat version.txt)"
         
     - name: Show version references
       run: |
