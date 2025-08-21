@@ -92,7 +92,7 @@ class TestBuildInfo:
             from src.utils.build_info import load_build_info_from_file
 
             mock_build_data = {
-                "version": "1.0.35",
+                "version": "1.0.37",
                 "build_time": "2025-08-13T23:00:00Z",
                 "git_commit": "abc123def456",
                 "build_env": "production",
@@ -102,7 +102,7 @@ class TestBuildInfo:
                 "builtins.open", mock_open(read_data=json.dumps(mock_build_data))
             ):
                 info = load_build_info_from_file("build.json")
-                assert info["version"] == "1.0.35"
+                assert info["version"] == "1.0.37"
 
         except ImportError:
             pytest.skip("load_build_info_from_file function not found")

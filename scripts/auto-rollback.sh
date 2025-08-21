@@ -183,7 +183,7 @@ detect_rollback_target() {
     fi
     
     # Try previous versions from registry
-    local previous_tags=("v1.0.34" "v1.0.33" "latest-stable" "previous")
+    local previous_tags=("v1.0.37" "v1.0.37" "latest-stable" "previous")
     
     for tag in "${previous_tags[@]}"; do
         local candidate_image="$base_image:$tag"
@@ -452,7 +452,7 @@ Options:
 Examples:
   $0 --check-health              # Health check with auto-rollback if needed
   $0 --force-rollback           # Immediate rollback to stable version
-  $0 --rollback-to registry.jclee.me/blacklist:v1.0.34
+  $0 --rollback-to registry.jclee.me/blacklist:v1.0.37
   $0 --dry-run --force-rollback # Simulate rollback process
   $0 --status                   # Show current system status
 

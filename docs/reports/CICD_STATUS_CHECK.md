@@ -54,7 +54,7 @@ Port: 32542 → 2542
 Health Check: ✅ PASSED
 Service Response: 
   - Status: healthy
-  - Version: 1.0.35
+  - Version: 1.0.37
   - Components: All healthy (blacklist, cache, database)
 ```
 **Status**: ✅ LOCAL SUCCESS

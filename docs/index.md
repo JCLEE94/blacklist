@@ -7,7 +7,7 @@ description: Enterprise Threat Intelligence Platform with Complete Offline Deplo
 # Blacklist Management System Documentation
 
 [![Production](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/Version-1.0.34-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-1.0.37-blue.svg)]()
 [![Coverage](https://img.shields.io/badge/Coverage-95%25-brightgreen.svg)]()
 [![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-blue.svg)]()
 [![Deployment](https://img.shields.io/badge/Deployment-GitOps%20Ready-orange.svg)]()
@@ -16,9 +16,9 @@ description: Enterprise Threat Intelligence Platform with Complete Offline Deplo
 
 ## 🚀 프로젝트 개요
 
-**Blacklist Management System v1.0.34**는 완전 오프라인 배포 지원, 기업급 보안, Prometheus 모니터링을 갖춘 차세대 엔터프라이즈 위협 인텔리전스 플랫폼입니다.
+**Blacklist Management System v1.0.37**는 완전 오프라인 배포 지원, 기업급 보안, Prometheus 모니터링을 갖춘 차세대 엔터프라이즈 위협 인텔리전스 플랫폼입니다.
 
-### 🎯 최신 주요 기능 (v1.0.34)
+### 🎯 최신 주요 기능 (v1.0.37)
 - ✅ **완전 오프라인 배포**: 에어갭 환경 원클릭 설치 (15-30분)
 - ✅ **기업급 보안**: Fernet 암호화 자격증명 관리 + 자동 로테이션
 - ✅ **실시간 모니터링**: 55개 Prometheus 메트릭 + 23개 알림 규칙
@@ -88,7 +88,7 @@ description: Enterprise Threat Intelligence Platform with Complete Offline Deplo
 
 ## 📈 성능 및 메트릭
 
-### 핵심 지표 (v1.0.34)
+### 핵심 지표 (v1.0.37)
 - **API 응답시간**: 7.58ms (평균)
 - **테스트 커버리지**: 95%+
 - **오프라인 패키지**: ~1-2GB
@@ -146,7 +146,7 @@ description: Enterprise Threat Intelligence Platform with Complete Offline Deplo
 
 ---
 
-## 📊 프로젝트 통계 (v1.0.34)
+## 📊 프로젝트 통계 (v1.0.37)
 
 ```
 Total Code Lines:     20,000+
@@ -188,4 +188,4 @@ Uptime Achievement:  99.9%
 
 ---
 
-**최종 업데이트**: 2025-08-13 | **버전**: v1.0.34 | **상태**: Production Ready
+**최종 업데이트**: 2025-08-13 | **버전**: v1.0.37 | **상태**: Production Ready

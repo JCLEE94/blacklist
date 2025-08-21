@@ -10,7 +10,7 @@ Complete guide for deploying Blacklist Management System in air-gapped environme
 
 ## 🎯 Overview
 
-The Blacklist Management System v1.0.34 supports complete offline deployment for air-gapped environments, providing enterprise-grade security and zero external dependencies.
+The Blacklist Management System v1.0.37 supports complete offline deployment for air-gapped environments, providing enterprise-grade security and zero external dependencies.
 
 ### Key Features
 - **Complete Self-Contained**: No internet connection required after package creation
@@ -314,6 +314,6 @@ For additional support:
 
 ---
 
-**Deployment Guide Version**: v1.0.34  
+**Deployment Guide Version**: v1.0.37  
 **Last Updated**: 2025-08-13  
 **Estimated Installation Time**: 15-30 minutes

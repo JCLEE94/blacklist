@@ -184,7 +184,7 @@ def api_docs():
     return jsonify(
         {
             "message": "Blacklist Management API Documentation",
-            "version": "1.0.35",
+            "version": "1.0.37",
             "endpoints": {
                 "health": {
                     "url": "/health",

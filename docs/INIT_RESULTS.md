@@ -38,7 +38,7 @@
 {
   "service": "blacklist",
   "status": "healthy",
-  "version": "1.0.35",
+  "version": "1.0.37",
   "components": {
     "blacklist": "healthy",
     "cache": "healthy", 

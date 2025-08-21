@@ -9,11 +9,11 @@
 | **ArgoCD** | ✅ Healthy | All 3 apps (blacklist, fortinet, safework) synced |
 | **Kubernetes** | ✅ Running | All deployments active (7 pods total) |
 | **Docker Registry** | ✅ Online | registry.jclee.me accessible |
-| **Local Environment** | ✅ Healthy | v1.0.35 running on port 32542 |
+| **Local Environment** | ✅ Healthy | v1.0.37 running on port 32542 |
 | **Health Checks** | ✅ 200 OK | All endpoints responding |
 
 #### ⚠️ Issues Identified
-1. **Version Mismatch**: Production running v1.0.34 instead of v1.0.35
+1. **Version Mismatch**: Production running v1.0.37 instead of v1.0.37
 2. **GitHub Authentication**: PAT token expired, preventing git push
 3. **Prometheus Metrics**: /metrics endpoint returning 404
 4. **Fortinet Service**: Health endpoint unreachable
@@ -169,7 +169,7 @@ fi
 
 1. **Immediate Action** (Today)
    - Fix GitHub authentication
-   - Update production to v1.0.35
+   - Update production to v1.0.37
    - Enable ArgoCD auto-sync
 
 2. **Short Term** (This Week)

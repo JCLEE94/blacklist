@@ -6,7 +6,7 @@ description: Complete API documentation for Blacklist Management System
 
 # API Reference
 
-Complete API documentation for Blacklist Management System v1.0.35 with V2 API, JWT Security, and GitHub Container Registry integration.
+Complete API documentation for Blacklist Management System v1.0.37 with V2 API, JWT Security, and GitHub Container Registry integration.
 
 ## 🚀 Overview
 
@@ -20,7 +20,7 @@ The Blacklist Management System provides a comprehensive REST API for threat int
 - **Current Version**: v2
 - **Legacy Support**: v1 (deprecated)
 
-## 🔐 Authentication (v1.0.35 Enhanced)
+## 🔐 Authentication (v1.0.37 Enhanced)
 
 ### 🆕 API Key Authentication
 Fast authentication for automated systems.
@@ -109,7 +109,7 @@ curl http://localhost:32542/health
 {
   "status": "healthy",
   "timestamp": "2025-08-13T12:00:00Z",
-  "version": "1.0.34"
+  "version": "1.0.37"
 }
 ```
 
@@ -125,7 +125,7 @@ curl http://localhost:32542/api/health
 {
   "status": "healthy",
   "timestamp": "2025-08-13T12:00:00Z",
-  "version": "1.0.34",
+  "version": "1.0.37",
   "components": {
     "database": {
       "status": "healthy",
@@ -541,7 +541,7 @@ X-RateLimit-Reset: 1692345600
 
 ## 📝 API Changelog
 
-### v1.0.35 (Current) - 2025-08-14
+### v1.0.37 (Current) - 2025-08-14
 - **🆕 Complete V2 API Implementation**
   - 6 new analytics endpoints with comprehensive data
   - Real-time sources status monitoring
@@ -561,26 +561,26 @@ X-RateLimit-Reset: 1692345600
   - Enhanced error handling
   - Improved response times
 
-### v1.0.34
+### v1.0.37
 - Added enhanced blacklist endpoint with metadata
 - New Prometheus metrics integration
 - Improved error handling and validation
 - Added credential management endpoints
 - Enhanced health check with component status
 
-### v1.0.33
+### v1.0.37
 - Added real-time monitoring dashboard
 - Improved collection status reporting
 - Enhanced analytics endpoints
 
-### v1.0.32
+### v1.0.37
 - Initial v2 API endpoints
 - JWT authentication implementation
 - FortiGate connector improvements
 
 ---
 
-**API Documentation Version**: v1.0.35  
+**API Documentation Version**: v1.0.37  
 **Last Updated**: 2025-08-14  
 **Portfolio Site**: https://jclee94.github.io/blacklist/  
 **Container Registry**: registry.jclee.me/jclee94/blacklist  

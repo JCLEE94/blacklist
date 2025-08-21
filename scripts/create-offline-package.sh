@@ -12,7 +12,7 @@ NC='\033[0m'
 
 # 패키지 정보
 PACKAGE_NAME="blacklist-internal-deployment"
-VERSION=$(cat ../config/VERSION 2>/dev/null || echo "1.0.35")
+VERSION=$(cat ../config/VERSION 2>/dev/null || echo "1.0.37")
 DATE=$(date +%Y%m%d)
 OUTPUT_DIR="${PACKAGE_NAME}-${VERSION}-${DATE}"
 

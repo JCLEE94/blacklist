@@ -16,7 +16,7 @@ images:
 
 commonLabels:
   app: blacklist
-  version: v1.0.35
+  version: v1.0.37
 
 configMapGenerator:
   - name: blacklist-env

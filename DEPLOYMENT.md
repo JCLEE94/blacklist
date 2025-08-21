@@ -13,7 +13,7 @@ Complete deployment documentation for the Blacklist Management System enterprise
 - **📊 Status**: **FULLY OPERATIONAL**
 - **⚡ Performance**: 50-65ms response times (excellent)
 - **🔒 Security**: JWT + API Key authentication validated
-- **📊 Version**: v1.0.35
+- **📊 Version**: v1.0.37
 - **🗄️ Database**: PostgreSQL with connection pooling
 - **⚡ Cache**: Redis with memory fallback
 - **🐳 Platform**: Docker Compose on production server
@@ -191,7 +191,7 @@ jobs:
 ```bash
 # Basic health check
 curl https://blacklist.jclee.me/health
-# Response: {"status": "healthy", "version": "1.0.35"}
+# Response: {"status": "healthy", "version": "1.0.37"}
 
 # Detailed health check
 curl https://blacklist.jclee.me/api/health
@@ -386,5 +386,5 @@ docker-compose restart
 ---
 
 **Last Updated**: 2025-08-20  
-**System Version**: v1.0.35  
+**System Version**: v1.0.37  
 **Deployment Status**: Production-ready, fully operational

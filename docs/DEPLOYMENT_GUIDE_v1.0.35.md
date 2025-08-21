@@ -1,4 +1,4 @@
-# 🚀 Deployment Guide v1.0.35
+# 🚀 Deployment Guide v1.0.37
 
 > **Updated for GitHub Container Registry, V2 API, and Portfolio Integration**
 
@@ -6,7 +6,7 @@ Complete deployment guide for Blacklist Management System with modern GitOps pip
 
 ---
 
-## 🌟 What's New in v1.0.35
+## 🌟 What's New in v1.0.37
 
 ### 🐳 Private Registry Configuration
 - **Registry**: `registry.jclee.me/blacklist` 
@@ -162,7 +162,7 @@ FLASK_ENV=production
 SECRET_KEY=your-secret-key-here
 JWT_SECRET_KEY=your-jwt-secret-here
 
-# Security System (v1.0.35 New)
+# Security System (v1.0.37 New)
 API_KEY_ENABLED=true
 JWT_ENABLED=true
 DEFAULT_API_KEY=blk_generated-key
@@ -443,6 +443,6 @@ gh run list --limit 5
 
 ---
 
-**Deployment Guide Version**: v1.0.35  
+**Deployment Guide Version**: v1.0.37  
 **Last Updated**: 2025-08-14  
 **Status**: Production Ready ✅

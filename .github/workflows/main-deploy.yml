@@ -23,12 +23,28 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Validate version consistency
+      run: |
+        if [ -f scripts/version-manager.py ]; then
+          python3 scripts/version-manager.py --validate-only --project-root .
+        else
+          echo "⚠️ Version manager not found - skipping validation"
+        fi
+    
     - name: Bump version
       id: version
       run: |
         chmod +x scripts/bump-version.sh
         ./scripts/bump-version.sh
         echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+        echo "VERSION=$(cat version.txt)" >> $GITHUB_OUTPUT
+        
+    - name: Show version references
+      run: |
+        echo "📋 Updated version references:"
+        if [ -f scripts/version-manager.py ]; then
+          python3 scripts/version-manager.py --show-references --project-root . | head -20
+        fi
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -82,6 +98,10 @@ jobs:
           -f "$DOCKERFILE_PATH" \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }} \
+          --build-arg VERSION=${{ env.VERSION }} \
+          --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+          --build-arg VCS_REF=${{ github.sha }} \
           --load \
           .
         
@@ -113,6 +133,7 @@ jobs:
         echo "🚀 Pushing Blacklist main image..."
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}
         
         # Push support images only if they were built
         if docker images | grep -q "${{ env.REDIS_IMAGE_NAME }}"; then
@@ -181,6 +202,37 @@ jobs:
         # Cleanup
         docker stop test-container || true
 
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      if: env.VERSION != ''
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ env.VERSION }}
+        release_name: Release v${{ env.VERSION }}
+        body: |
+          🚀 **Blacklist Management System v${{ env.VERSION }}**
+          
+          **📦 Docker Images:**
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}`
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}`
+          
+          **🔍 Changes:**
+          Automated release with comprehensive version management.
+          
+          **📊 Deployment:**
+          - Live System: https://blacklist.jclee.me/
+          - Health Check: https://blacklist.jclee.me/health
+          - Documentation: https://jclee94.github.io/blacklist/
+          
+          **🔧 Installation:**
+          ```bash
+          docker-compose pull && docker-compose up -d
+          ```
+        draft: false
+        prerelease: false
+
     - name: Cleanup old images
       run: |
         docker image prune -f
@@ -192,8 +244,11 @@ jobs:
 
     - name: Docker Compose Deployment Notification
       run: |
-        echo "🐳 DOCKER COMPOSE 기반 배포 완료"
-        echo "✅ Image pushed to registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "🐳 DOCKER COMPOSE 기반 배포 완료 - v${{ env.VERSION }}"
+        echo "✅ Images pushed to registry:"
+        echo "   • ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "   • ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}"
+        echo "   • ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
         echo "🔄 Watchtower 자동 업데이트: 1시간 내 배포"
         echo ""
         echo "📋 즉시 수동 배포:"
@@ -203,4 +258,5 @@ jobs:
         echo "  docker-compose ps"
         echo "  curl http://localhost:32542/health"
         echo ""
+        echo "🎉 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/v${{ env.VERSION }}"
         echo "🎯 Compose 기반 완전 전환 완료 - K8s 의존성 제거됨"

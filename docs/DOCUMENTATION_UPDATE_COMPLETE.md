@@ -17,7 +17,7 @@ Documentation has been comprehensively updated to reflect the **current live sys
 
 **Key Changes**:
 - Updated to reflect live system at `https://blacklist.jclee.me/`
-- Corrected version to v1.0.35 (current production)
+- Corrected version to v1.0.37 (current production)
 - Updated performance metrics with **validated 50-65ms response times**
 - Added live system access instructions
 - Updated test coverage status (19% current, 95% target)
@@ -93,7 +93,7 @@ Documentation has been comprehensively updated to reflect the **current live sys
   },
   "service": "blacklist-management",
   "status": "healthy",
-  "version": "1.0.35"
+  "version": "1.0.37"
 }
 ```
 
@@ -177,7 +177,7 @@ blacklist/
 ├── CLAUDE.md              # Developer guidance (UPDATED)
 ├── DEPLOYMENT.md          # Production deployment guide (NEW)
 └── docs/
-    ├── DEPLOYMENT_GUIDE_v1.0.35.md
+    ├── DEPLOYMENT_GUIDE_v1.0.37.md
     ├── GITOPS_STATUS_COMPREHENSIVE.md
     └── reports/
         └── DOCUMENTATION_UPDATE_COMPLETE.md (THIS FILE)
@@ -207,7 +207,7 @@ pytest -v --cov=src --cov-report=html
 - [x] **Live system validated** - all endpoints operational
 - [x] **Performance metrics verified** - 50-65ms response times
 - [x] **Security system confirmed** - JWT + API Key working
-- [x] **Version information aligned** - v1.0.35 across all docs
+- [x] **Version information aligned** - v1.0.37 across all docs
 - [x] **GitOps status updated** - 8.5/10 production-ready
 - [x] **Test coverage roadmap** - 19% to 95% improvement plan
 

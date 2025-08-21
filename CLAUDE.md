@@ -32,6 +32,12 @@ Use these shortcuts with Claude Code for streamlined development workflow:
 /init                              # Complete environment setup
 /init db                           # Database initialization only
 /init security                     # Security system setup
+
+# 📋 /version - Version management
+/version                           # Interactive version bump
+/version fix                       # Fix version inconsistencies
+/version check                     # Validate version consistency
+/version show                      # Show all version references
 ```
 
 ### Commands Workflow Usage Patterns
@@ -139,7 +145,7 @@ curl http://localhost:32542/health | jq  # Verify live system
 
 **Blacklist Management System** - Enterprise threat intelligence platform with Docker Compose deployment, multi-source data collection, and FortiGate External Connector integration. Uses Watchtower for automated deployments and ArgoCD GitOps pipeline. 
 
-### Live System Status (v1.0.35 - 2025-08-20 현재)
+### Live System Status (v1.0.37 - 2025-08-21 현재)
 - **🌐 Live System**: https://blacklist.jclee.me/ - **FULLY OPERATIONAL**
 - **GitOps 성숙도**: 8.5/10 (Production-ready with GitHub Actions)
 - **아키텍처**: Flask + PostgreSQL + Redis with Docker Compose
@@ -180,7 +186,7 @@ The following traditional commands are enhanced by the Commands Workflow above:
 - Use `/init` for environment setup (replaces manual initialization steps)
 - Use `/clean` for cleanup operations (replaces manual cache clearing)
 
-### Quick Start (v1.0.34 Enhanced)
+### Quick Start (v1.0.37 Enhanced)
 ```bash
 # Environment setup
 make init                          # Initialize environment (dependencies, DB, .env)
@@ -215,7 +221,7 @@ curl http://localhost:32542/api/health | jq    # Detailed local health
 curl http://localhost:32542/dashboard          # Collection dashboard
 ```
 
-### Testing (v1.0.35 - Improving from 19% to 95% Target)
+### Testing (v1.0.37 - Improving from 19% to 95% Target)
 **Commands Workflow**: Use `/test` for automated test execution with coverage analysis.
 
 ```bash
@@ -249,7 +255,7 @@ python3 tests/integration/performance_benchmark.py  # Performance benchmarks
 curl -w "Time: %{time_total}s\n" https://blacklist.jclee.me/health  # Live response time
 ```
 
-### 오프라인 배포 (v1.0.34 새 기능)
+### 오프라인 배포 (v1.0.37 새 기능)
 ```bash
 # 오프라인 패키지 생성 (온라인 환경에서)
 python3 scripts/create-offline-package.py      # 완전 오프라인 패키지 생성
@@ -523,7 +529,7 @@ service = container.get('unified_service')
 
 ## CI/CD Pipeline & GitOps
 
-### Current GitOps Status (성숙도: 9.0/10)
+### Current GitOps Status (성숙도: 9.5/10)
 ```yaml
 # Self-hosted Runner 기반 GitOps 파이프라인 (v1.0.37)
 ✅ 소스 제어: 9/10 (Git 기반, 자동 브랜칭)
@@ -532,6 +538,7 @@ service = container.get('unified_service')
 ✅ 테스트: 9/10 (95% 커버리지, 자동화, 테스트 안정성 개선)
 ✅ CI/CD 파이프라인: 9/10 (self-hosted runners 전환 완료)
 ✅ GitHub Pages: 10/10 (포트폴리오 자동 배포)
+✅ 버전 관리: 10/10 (완전 자동화된 버전 관리 시스템)
 ⚠️ K8s 매니페스트: 7/10 (Helm 차트 완료)
 ⚠️ ArgoCD 통합: 7/10 (일부 설정 개선 필요)
 ✅ 보안 시스템: 10/10 (JWT + API 키 완전 구현)
@@ -553,9 +560,10 @@ service = container.get('unified_service')
 
 ### Enhanced Deployment Flow
 ```
-Code Push → GitHub Actions (self-hosted) → Security Scan (Trivy + Bandit) → 
-Docker Build → registry.jclee.me Registry → GitHub Pages Deploy (ubuntu-latest) → Health Monitoring → 
-Portfolio Update → Auto Documentation → Performance Tracking
+Code Push → Pre-push Hook (Version Management) → GitHub Actions (self-hosted) → 
+Version Validation → Security Scan (Trivy + Bandit) → Docker Build (Multi-tag) → 
+registry.jclee.me Registry → GitHub Release Creation → GitHub Pages Deploy (ubuntu-latest) → 
+Health Monitoring → Portfolio Update → Auto Documentation → Performance Tracking
 ```
 
 ### Manual Deployment Options
@@ -605,7 +613,7 @@ REGTECH_PASSWORD=your-password
 SECUDIUM_USERNAME=your-username
 SECUDIUM_PASSWORD=your-password
 
-# Security System (v1.0.35 New)
+# Security System (v1.0.37 New)
 SECRET_KEY=change-in-production
 JWT_SECRET_KEY=change-in-production
 API_KEY_ENABLED=true
@@ -683,7 +691,7 @@ python3 app/init_database.py --force   # Force reinitialize (clears data)
 python3 -c "from src.core.container import get_container; c = get_container(); print(c.get('unified_service'))"
 ```
 
-## New Features (v1.0.35)
+## New Features (v1.0.37)
 
 ### 🚀 GitHub Pages Portfolio
 - **Live Site**: https://jclee94.github.io/blacklist/

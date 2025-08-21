@@ -21,7 +21,7 @@ def mock_create_routes():
         return {
             "status": "healthy",
             "timestamp": "2025-08-15T12:00:00Z",
-            "version": "1.0.35",
+            "version": "1.0.37",
         }
 
     @bp.route("/blacklist/active")

@@ -9,7 +9,7 @@ GitOps 파이프라인이 **75% 성숙도**로 운영 중이며, 주요 컴포�
 #### Component Status
 | Service | ArgoCD | K8s | Docker | Health | Version |
 |---------|--------|-----|--------|--------|---------|
-| Blacklist | ✅ Synced | ✅ 1/1 | ✅ Latest | ✅ 200 | ⚠️ v1.0.34 |
+| Blacklist | ✅ Synced | ✅ 1/1 | ✅ Latest | ✅ 200 | ⚠️ v1.0.37 |
 | Fortinet | ✅ Synced | ✅ 3/3 | ✅ Latest | ❌ Unreachable | N/A |
 | Safework | ✅ Synced | ✅ 3/3 | ✅ Latest | ✅ 200 | ✅ Latest |
 
@@ -18,11 +18,11 @@ GitOps 파이프라인이 **75% 성숙도**로 운영 중이며, 주요 컴포�
 #### Strengths
 1. **ArgoCD Integration**: 모든 앱 Synced/Healthy 상태
 2. **Container Orchestration**: 7개 파드 안정적 운영
-3. **Local Development**: v1.0.35 정상 작동
+3. **Local Development**: v1.0.37 정상 작동
 4. **API Endpoints**: V2 API 포함 모든 엔드포인트 응답
 
 #### Weaknesses
-1. **Version Drift**: 프로덕션 v1.0.34 vs 로컬 v1.0.35
+1. **Version Drift**: 프로덕션 v1.0.37 vs 로컬 v1.0.37
 2. **GitHub Auth**: PAT 토큰 만료로 자동 푸시 불가
 3. **Monitoring Gap**: Prometheus 메트릭 엔드포인트 404
 4. **Service Availability**: Fortinet 헬스체크 실패
@@ -35,7 +35,7 @@ GitOps 파이프라인이 **75% 성숙도**로 운영 중이며, 주요 컴포�
 
 ### 🚀 Immediate Actions Required
 1. GitHub PAT 토큰 재발급 및 설정
-2. Production 이미지 v1.0.35로 업데이트
+2. Production 이미지 v1.0.37로 업데이트
 3. Prometheus 메트릭 엔드포인트 수정
 4. Fortinet 서비스 헬스체크 복구
 

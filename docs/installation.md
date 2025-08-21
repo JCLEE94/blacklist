@@ -6,7 +6,7 @@ description: Complete installation guide for all environments
 
 # Installation Guide
 
-Complete installation guide for Blacklist Management System v1.0.34.
+Complete installation guide for Blacklist Management System v1.0.37.
 
 ## 🎯 Installation Options
 
@@ -282,6 +282,6 @@ If you encounter issues:
 
 ---
 
-**Installation Guide Version**: v1.0.34  
+**Installation Guide Version**: v1.0.37  
 **Last Updated**: 2025-08-13  
 **Support**: [GitHub Issues](https://github.com/JCLEE94/blacklist/issues)
