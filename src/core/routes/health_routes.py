@@ -48,7 +48,7 @@ def health_check():
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "service": "blacklist-management",
-            "version": "1.0.37",
+            "version": "1.1.6",
             "components": components,
         }
 
@@ -104,7 +104,7 @@ def detailed_health_check():
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "service": "blacklist-management",
-            "version": "1.0.37",
+            "version": "1.1.6",
             "uptime": health_info.get("uptime", "unknown"),
             "components": detailed_components,
             "metrics": {
@@ -276,7 +276,7 @@ def visual_build_info():
 
         # 템플릿 데이터
         template_data = {
-            "version": "1.0.37",
+            "version": "1.1.6",
             "git_commit": git_commit,
             "git_branch": git_branch,
             "build_date": build_date,

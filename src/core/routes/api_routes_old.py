@@ -348,7 +348,7 @@ def prometheus_metrics():
 
         # 버전 정보 설정
         metrics_instance.set_version_info(
-            "1.0.37", datetime.now().strftime("%Y-%m-%d"), "latest"
+            "1.1.6", datetime.now().strftime("%Y-%m-%d"), "latest"
         )
 
         # Prometheus 형식 응답 생성
