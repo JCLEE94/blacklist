@@ -183,7 +183,7 @@ class TestErrorValidation:
             assert validate_ip_format("10.0.0.1") == True
 
             # Test invalid IPs
-            assert validate_ip_format("256.1.2.0") == False
+            assert validate_ip_format("256.1.2.1") == False
             assert validate_ip_format("not.an.ip") == False
             assert validate_ip_format("") == False
 
@@ -199,7 +199,7 @@ class TestErrorValidation:
                 return all(0 <= int(part) <= 255 for part in parts)
 
             assert validate_ip_format("192.168.1.1") == True
-            assert validate_ip_format("256.1.2.0") == False
+            assert validate_ip_format("256.1.2.1") == False
 
     def test_validate_required_fields(self):
         """Test required fields validation"""
@@ -443,7 +443,7 @@ if __name__ == "__main__":
             return all(0 <= int(part) <= 255 for part in parts)
 
         assert validate_ip_format("192.168.1.1") == True
-        assert validate_ip_format("256.1.2.0") == False
+        assert validate_ip_format("256.1.2.1") == False
         print("✅ Validation functions successful")
     except Exception as e:
         all_validation_failures.append(f"Validation functions: {e}")

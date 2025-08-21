@@ -56,7 +56,7 @@ class TestMigrationManager:
         mock_session = Mock()
         mock_session.__enter__ = Mock(return_value=mock_session)
         mock_session.__exit__ = Mock(return_value=None)
-        mock_session.execute.return_value.scalar.return_value = "1.2.0"
+        mock_session.execute.return_value.scalar.return_value = "1.2.1"
 
         mock_db = Mock(spec=DatabaseManager)
         mock_db.Session.return_value = mock_session
@@ -64,7 +64,7 @@ class TestMigrationManager:
         migration_mgr = MigrationManager(mock_db)
         version = migration_mgr.get_current_version()
 
-        assert version == "1.2.0"
+        assert version == "1.2.1"
 
     def test_get_current_version_no_table(self):
         """Test getting current version when table doesn't exist"""
@@ -119,7 +119,7 @@ class TestMigrationManager:
         up_func1 = Mock()
         up_func2 = Mock()
         migration_mgr.add_migration("1.0.0", up_func1)
-        migration_mgr.add_migration("1.2.0", up_func2)
+        migration_mgr.add_migration("1.2.1", up_func2)
 
         migration_mgr.run_migrations()
 
@@ -150,7 +150,7 @@ class TestMigrationManager:
         up_func1 = Mock()
         up_func2 = Mock()
         migration_mgr.add_migration("1.0.0", up_func1)  # Should not run
-        migration_mgr.add_migration("1.2.0", up_func2)  # Should run
+        migration_mgr.add_migration("1.2.1", up_func2)  # Should run
 
         migration_mgr.run_migrations()
 

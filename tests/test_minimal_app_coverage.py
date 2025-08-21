@@ -108,7 +108,7 @@ class TestBuildInfoContext:
             mode="w", delete=False, suffix=".build_info"
         ) as f:
             f.write("BUILD_TIME='2025-08-21 10:00:00 KST'\n")
-            f.write("VERSION=1.2.0\n")
+            f.write("VERSION=1.2.1\n")
             temp_file = f.name
 
         try:
