@@ -8,7 +8,7 @@ import os
 from flask import Flask
 from flask_cors import CORS
 
-from .collection_routes import register_collection_routes
+from .routes.collection_routes import register_collection_routes
 from .simple_api import register_simple_api
 
 logger = logging.getLogger(__name__)
