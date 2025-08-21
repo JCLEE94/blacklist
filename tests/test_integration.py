@@ -113,7 +113,7 @@ class IntegrationTest:
 
     def test_search_api(self):
         """검색 API 테스트"""
-        test_ip = "1.1.3.1"
+        test_ip = "1.1.4.1"
         response = self.session.get("{self.base_url}/api/search/{test_ip}")
         self.log("Status: {response.status_code}")
         if response.status_code == 200:

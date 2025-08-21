@@ -453,7 +453,7 @@ def test_data_pipeline():
             "confidence": "high",
         },
         {
-            "ip": "1.1.3.1",
+            "ip": "1.1.4.1",
             "source": "TEST",
             "description": "Test IP 2",
             "threat_type": "malware",
