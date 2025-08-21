@@ -31,7 +31,7 @@
 - **Runner**: blacklist-runner-2 (self-hosted)
 
 ### 2. Version Management
-- **Automated bump**: 1.1.9 → 1.1.10
+- **Automated bump**: 1.2.0 → 1.1.10
 - **Files updated**: 26 files with version references
 - **Consistency check**: ✅ All files validated
 

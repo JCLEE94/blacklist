@@ -23,7 +23,7 @@ def deployment_health():
             "status": "healthy",
             "service": "blacklist-management-system",
             "timestamp": datetime.utcnow().isoformat(),
-            "version": os.environ.get("APP_VERSION", "1.1.9"),
+            "version": os.environ.get("APP_VERSION", "1.2.0"),
             "deployment": {
                 "environment": os.environ.get("FLASK_ENV", "production"),
                 "container": True,

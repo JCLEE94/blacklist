@@ -353,7 +353,7 @@ if __name__ == "__main__":
     # Test 1: IP validation
     total_tests += 1
     try:
-        valid_ips = ["8.8.8.8", "1.1.9.1", "208.67.222.222"]
+        valid_ips = ["8.8.8.8", "1.2.0.1", "208.67.222.222"]
         invalid_ips = ["192.168.1.1", "10.0.0.1", "256.256.256.256", "invalid"]
 
         for ip in valid_ips:
@@ -392,7 +392,7 @@ if __name__ == "__main__":
     # Test 3: JSON parsing
     total_tests += 1
     try:
-        test_json = {"ips": ["8.8.8.8", "1.1.9.1"], "count": 2}
+        test_json = {"ips": ["8.8.8.8", "1.2.0.1"], "count": 2}
         parsed_data = processor.parse_json_response(test_json, "test_api")
 
         if len(parsed_data) != 2:
@@ -409,7 +409,7 @@ if __name__ == "__main__":
         test_data = [
             {"ip": "8.8.8.8", "source": "test1"},
             {"ip": "8.8.8.8", "source": "test2"},
-            {"ip": "1.1.9.1", "source": "test1"},
+            {"ip": "1.2.0.1", "source": "test1"},
         ]
         unique_data = processor.remove_duplicates(test_data)
 

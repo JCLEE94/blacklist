@@ -46,14 +46,14 @@ class TestModels:
     def test_blacklist_entry_creation(self):
         """Test BlacklistEntry model creation"""
         entry = BlacklistEntry(
-            ip="1.1.9.1",
+            ip="1.2.0.1",
             source="REGTECH",
             country="US",
             attack_type="Malware",
             detection_date=datetime.now(),
         )
 
-        assert entry.ip == "1.1.9.1"
+        assert entry.ip == "1.2.0.1"
         assert entry.source == "REGTECH"
         assert entry.country == "US"
         assert entry.attack_type == "Malware"
@@ -96,7 +96,7 @@ class TestModels:
 
     def test_model_attribute_access(self):
         """Test model attribute access"""
-        entry = BlacklistEntry(ip="1.1.9.1", source="TEST")
+        entry = BlacklistEntry(ip="1.2.0.1", source="TEST")
 
         # Should be able to access attributes
         assert hasattr(entry, "ip")
@@ -105,10 +105,10 @@ class TestModels:
     def test_model_with_none_values(self):
         """Test models with None values"""
         entry = BlacklistEntry(
-            ip="1.1.9.1", source="TEST", country=None, attack_type=None
+            ip="1.2.0.1", source="TEST", country=None, attack_type=None
         )
 
-        assert entry.ip == "1.1.9.1"
+        assert entry.ip == "1.2.0.1"
         assert entry.country is None
         assert entry.attack_type is None
 
@@ -126,7 +126,7 @@ class TestIntegrationScenarios:
             security_manager = SecurityManager()
 
             # Process some data
-            test_data = [{"ip": "1.1.9.1", "source": "TEST"}]
+            test_data = [{"ip": "1.2.0.1", "source": "TEST"}]
             processed_data = pipeline.clean_ip_data(test_data)
 
             # Validate with security
