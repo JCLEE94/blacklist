@@ -311,7 +311,7 @@ class TestUtilityFunctions(unittest.TestCase):
 
         # Test IP validation
         valid_ips = ["192.168.1.1", "10.0.0.1", "127.0.0.1"]
-        invalid_ips = ["256.1.1.4", "192.168.1", "not.an.ip"]
+        invalid_ips = ["256.1.1.5", "192.168.1", "not.an.ip"]
 
         for ip in valid_ips:
             self.assertTrue(validate_ip_address(ip), f"{ip} should be valid")
