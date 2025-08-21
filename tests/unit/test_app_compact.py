@@ -10,8 +10,12 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from flask import Flask
 
-from src.core.app_compact import (CompactFlaskApp, create_app,
-                                  create_compact_app, get_connection_manager)
+from src.core.app_compact import (
+    CompactFlaskApp,
+    create_app,
+    create_compact_app,
+    get_connection_manager,
+)
 
 
 class TestCompactFlaskApp:

@@ -151,8 +151,7 @@ class CollectionTriggersMixin:
 
                         # PostgreSQL에 저장
                         try:
-                            from src.core.data_storage_fixed import \
-                                FixedDataStorage
+                            from src.core.data_storage_fixed import FixedDataStorage
 
                             storage = FixedDataStorage()
                             storage_result = storage.store_ips(

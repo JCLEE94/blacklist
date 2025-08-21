@@ -14,6 +14,7 @@ Test Coverage Areas:
 """
 
 import os
+
 # Import with proper Python path
 import sys
 import tempfile

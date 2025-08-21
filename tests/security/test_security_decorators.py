@@ -13,9 +13,15 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.utils.security import (SecurityManager, input_validation, rate_limit,
-                                require_api_key, require_auth,
-                                require_permission, security_check)
+from src.utils.security import (
+    SecurityManager,
+    input_validation,
+    rate_limit,
+    require_api_key,
+    require_auth,
+    require_permission,
+    security_check,
+)
 
 
 class TestSecurityDecorators:

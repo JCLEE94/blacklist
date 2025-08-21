@@ -36,10 +36,17 @@ os.environ.update(
 
 # 모듈화된 픽스처들 import
 try:
-    from .fixtures import (MockResponse, does_not_raise, mock_container_system,
-                           mock_database_connection, mock_external_services,
-                           mock_file_system, mock_flask_app, mock_subprocess,
-                           test_database)
+    from .fixtures import (
+        MockResponse,
+        does_not_raise,
+        mock_container_system,
+        mock_database_connection,
+        mock_external_services,
+        mock_file_system,
+        mock_flask_app,
+        mock_subprocess,
+        test_database,
+    )
 except ImportError:
     # fixtures 모듈이 없는 경우 기본 픽스처들 정의
     print("⚠️  fixtures 모듈 import 실패 - 기본 픽스처 사용")

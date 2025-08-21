@@ -9,6 +9,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from .memory_backend import MemoryBackend
+
 # Performance tracking disabled
 from .redis_backend import RedisBackend
 from .serialization import SerializationManager

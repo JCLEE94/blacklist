@@ -476,8 +476,7 @@ class TestSecurityIntegration:
     def test_rate_limiter_security_integration(self):
         """Test rate limiter with other security functions"""
         try:
-            from src.utils.security import (create_rate_limiter,
-                                            validate_api_key)
+            from src.utils.security import create_rate_limiter, validate_api_key
 
             limiter = create_rate_limiter(limit=10, window_seconds=60)
             test_key = f"ak_{secrets.token_urlsafe(32)}"

@@ -21,8 +21,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-from test_utils import (TestBase, is_valid_jwt_format,
-                        validate_response_structure)
+from test_utils import TestBase, is_valid_jwt_format, validate_response_structure
 
 
 class TestAuthenticationRoutes(TestBase):

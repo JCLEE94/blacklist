@@ -7,6 +7,7 @@ This file imports and re-exports tests from modular components for backward comp
 """
 
 from .test_collection_logs_routes import TestCollectionLogsRoutes
+
 # Import all test classes from modular components
 from .test_collection_status_routes import TestCollectionStatusRoutes
 from .test_collection_trigger_routes import TestCollectionTriggerRoutes

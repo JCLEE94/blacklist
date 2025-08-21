@@ -27,8 +27,7 @@ class TestUnifiedCollector:
 
     def test_unified_collector_import(self):
         """Test that unified collector can be imported"""
-        from src.core.collectors.unified_collector import \
-            UnifiedCollectionManager
+        from src.core.collectors.unified_collector import UnifiedCollectionManager
 
         assert UnifiedCollectionManager is not None
 
@@ -44,8 +43,10 @@ class TestUnifiedCollector:
 
     def test_collection_result_dataclass(self):
         """Test CollectionResult data class functionality"""
-        from src.core.collectors.unified_collector import (CollectionResult,
-                                                           CollectionStatus)
+        from src.core.collectors.unified_collector import (
+            CollectionResult,
+            CollectionStatus,
+        )
 
         # Test basic creation
         result = CollectionResult(
@@ -74,8 +75,10 @@ class TestUnifiedCollector:
 
     def test_unified_collector_status_management(self):
         """Test collector status management"""
-        from src.core.collectors.unified_collector import (CollectionStatus,
-                                                           UnifiedCollector)
+        from src.core.collectors.unified_collector import (
+            CollectionStatus,
+            UnifiedCollector,
+        )
 
         collector = UnifiedCollector()
 
@@ -101,9 +104,11 @@ class TestUnifiedCollector:
 
     def test_unified_collector_get_results(self):
         """Test getting collection results"""
-        from src.core.collectors.unified_collector import (CollectionResult,
-                                                           CollectionStatus,
-                                                           UnifiedCollector)
+        from src.core.collectors.unified_collector import (
+            CollectionResult,
+            CollectionStatus,
+            UnifiedCollector,
+        )
 
         collector = UnifiedCollector()
 
@@ -394,29 +399,27 @@ class TestCollectorHelpers:
 
     def test_validation_utils_import(self):
         """Test validation utils can be imported"""
-        from src.core.collectors.helpers.validation_utils import \
-            validate_ip_address
+        from src.core.collectors.helpers.validation_utils import validate_ip_address
 
         assert validate_ip_address is not None
 
     def test_request_utils_import(self):
         """Test request utils can be imported"""
-        from src.core.collectors.helpers.request_utils import \
-            create_session_with_retries
+        from src.core.collectors.helpers.request_utils import (
+            create_session_with_retries,
+        )
 
         assert create_session_with_retries is not None
 
     def test_data_transform_import(self):
         """Test data transform utils can be imported"""
-        from src.core.collectors.helpers.data_transform import \
-            normalize_ip_data
+        from src.core.collectors.helpers.data_transform import normalize_ip_data
 
         assert normalize_ip_data is not None
 
     def test_ip_validation(self):
         """Test IP address validation"""
-        from src.core.collectors.helpers.validation_utils import \
-            validate_ip_address
+        from src.core.collectors.helpers.validation_utils import validate_ip_address
 
         # Test valid IPs
         assert validate_ip_address("192.168.1.1") is True
@@ -430,8 +433,9 @@ class TestCollectorHelpers:
 
     def test_session_creation_with_retries(self):
         """Test session creation with retry logic"""
-        from src.core.collectors.helpers.request_utils import \
-            create_session_with_retries
+        from src.core.collectors.helpers.request_utils import (
+            create_session_with_retries,
+        )
 
         session = create_session_with_retries()
         assert session is not None
@@ -441,8 +445,7 @@ class TestCollectorHelpers:
 
     def test_data_normalization(self):
         """Test data normalization functionality"""
-        from src.core.collectors.helpers.data_transform import \
-            normalize_ip_data
+        from src.core.collectors.helpers.data_transform import normalize_ip_data
 
         raw_data = [
             {"ip": "192.168.1.1", "extra": "data"},
@@ -515,8 +518,10 @@ if __name__ == "__main__":
     # Test 1: Unified collector can be instantiated
     total_tests += 1
     try:
-        from src.core.collectors.unified_collector import (CollectionStatus,
-                                                           UnifiedCollector)
+        from src.core.collectors.unified_collector import (
+            CollectionStatus,
+            UnifiedCollector,
+        )
 
         collector = UnifiedCollector()
         assert collector.get_status() == CollectionStatus.IDLE
@@ -573,8 +578,7 @@ if __name__ == "__main__":
     # Test 6: Helper functions work
     total_tests += 1
     try:
-        from src.core.collectors.helpers.validation_utils import \
-            validate_ip_address
+        from src.core.collectors.helpers.validation_utils import validate_ip_address
 
         assert validate_ip_address("192.168.1.1") is True
         assert validate_ip_address("invalid") is False

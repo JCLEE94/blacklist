@@ -43,8 +43,7 @@ class TestCommonModule:
     def test_common_error_classes(self):
         """Test common error classes"""
         try:
-            from src.common import (BaseError, ConfigurationError,
-                                    ValidationError)
+            from src.common import BaseError, ConfigurationError, ValidationError
 
             # Test that error classes can be instantiated
             base_error = BaseError("Test error")
@@ -79,8 +78,7 @@ class TestCommonModule:
     def test_common_path_utilities(self):
         """Test common path utility functions"""
         try:
-            from src.common import (get_config_dir, get_data_dir,
-                                    get_project_root)
+            from src.common import get_config_dir, get_data_dir, get_project_root
 
             project_root = get_project_root()
             assert isinstance(project_root, str)
@@ -133,8 +131,11 @@ class TestCommonModule:
     def test_common_string_utilities(self):
         """Test string utility functions"""
         try:
-            from src.common import (normalize_whitespace, sanitize_string,
-                                    truncate_string)
+            from src.common import (
+                normalize_whitespace,
+                sanitize_string,
+                truncate_string,
+            )
 
             # Test string sanitization
             sanitized = sanitize_string("<script>alert('xss')</script>")
@@ -157,8 +158,11 @@ class TestCommonModule:
         try:
             from datetime import datetime
 
-            from src.common import (format_datetime, get_current_timestamp,
-                                    parse_datetime)
+            from src.common import (
+                format_datetime,
+                get_current_timestamp,
+                parse_datetime,
+            )
 
             now = datetime.now()
 

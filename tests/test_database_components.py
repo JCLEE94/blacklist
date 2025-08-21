@@ -32,8 +32,7 @@ class TestDatabaseComponents:
     def test_collection_settings_db(self):
         """Test collection settings database"""
         try:
-            from src.core.database.collection_settings import \
-                CollectionSettingsDB
+            from src.core.database.collection_settings import CollectionSettingsDB
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_db:
                 db = CollectionSettingsDB(temp_db.name)
@@ -47,8 +46,7 @@ class TestDatabaseComponents:
     def test_database_operations(self):
         """Test basic database operations"""
         try:
-            from src.core.services.database_operations import \
-                DatabaseOperations
+            from src.core.services.database_operations import DatabaseOperations
 
             ops = DatabaseOperations()
             assert ops is not None

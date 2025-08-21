@@ -18,6 +18,7 @@ Test Coverage Areas:
 
 import json
 import os
+
 # Import the auth blueprint with proper Python path
 import sys
 from unittest.mock import MagicMock, patch
@@ -510,8 +511,14 @@ if __name__ == "__main__":
     # Test 4: Route endpoint functions exist
     total_tests += 1
     try:
-        from src.api.auth_routes import (change_password, get_profile, login,
-                                         logout, refresh_token, verify_token)
+        from src.api.auth_routes import (
+            change_password,
+            get_profile,
+            login,
+            logout,
+            refresh_token,
+            verify_token,
+        )
 
         functions = [
             login,

@@ -26,8 +26,12 @@ class TestErrorHandlerCore:
 
     def test_error_handler_import(self):
         """Test that error handler modules can be imported"""
-        from src.utils.error_handler import (AuthenticationError, BaseError,
-                                             ErrorHandler, ValidationError)
+        from src.utils.error_handler import (
+            AuthenticationError,
+            BaseError,
+            ErrorHandler,
+            ValidationError,
+        )
 
         assert ErrorHandler is not None
         assert BaseError is not None

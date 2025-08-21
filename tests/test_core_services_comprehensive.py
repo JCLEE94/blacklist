@@ -79,8 +79,7 @@ class TestServiceFactories(unittest.TestCase):
     def test_unified_service_factory_import(self):
         """Test unified service factory import"""
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             self.assertTrue(callable(get_unified_service))
         except ImportError as e:
@@ -89,8 +88,7 @@ class TestServiceFactories(unittest.TestCase):
     def test_service_factory_singleton(self):
         """Test service factory singleton behavior"""
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             service1 = get_unified_service()
             service2 = get_unified_service()
@@ -464,8 +462,7 @@ if __name__ == "__main__":
     # Test 2: Service factory validation
     total_tests += 1
     try:
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         service = get_unified_service()
         # Service might be None in test environment, which is acceptable
@@ -480,8 +477,7 @@ if __name__ == "__main__":
     # Test 3: Configuration validation
     total_tests += 1
     try:
-        from src.core.constants import (get_cache_key, is_valid_port,
-                                        is_valid_ttl)
+        from src.core.constants import get_cache_key, is_valid_port, is_valid_ttl
 
         if not is_valid_port(8080) or is_valid_port(-1):
             all_validation_failures.append(

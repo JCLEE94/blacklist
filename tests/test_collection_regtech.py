@@ -13,9 +13,11 @@ import pytest
 from bs4 import BeautifulSoup
 
 from src.core.collectors.regtech_collector import RegtechCollector
-from src.core.collectors.unified_collector import (CollectionConfig,
-                                                   CollectionResult,
-                                                   CollectionStatus)
+from src.core.collectors.unified_collector import (
+    CollectionConfig,
+    CollectionResult,
+    CollectionStatus,
+)
 
 
 class TestRegtechCollector:

@@ -17,8 +17,7 @@ class TestHighImpactServices:
     def test_unified_service_factory(self):
         """Test unified service factory"""
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             with patch(
                 "src.core.services.unified_service_core.UnifiedBlacklistService"
@@ -90,8 +89,9 @@ class TestHighImpactServices:
     def test_cache_manager_advanced(self):
         """Test advanced cache manager functionality"""
         try:
-            from src.utils.advanced_cache.cache_manager import \
-                EnhancedSmartCache as CacheManager
+            from src.utils.advanced_cache.cache_manager import (
+                EnhancedSmartCache as CacheManager,
+            )
 
             cache = CacheManager()
             assert cache is not None

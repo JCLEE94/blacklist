@@ -8,9 +8,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from .test_core_services_mocks import (MockBlacklistManager, MockCacheManager,
-                                       MockCollectionManager,
-                                       MockUnifiedService)
+from .test_core_services_mocks import (
+    MockBlacklistManager,
+    MockCacheManager,
+    MockCollectionManager,
+    MockUnifiedService,
+)
 
 
 class TestCoreServices:

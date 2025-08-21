@@ -16,14 +16,13 @@ import pytest
 
 # Import all the refactored test classes
 try:
-    from test_api_key_security import (TestAPIKeyGeneration,
-                                       TestAPIKeyValidation)
-    from test_jwt_security import (TestJWTTokenGeneration,
-                                   TestJWTTokenValidation)
-    from test_password_security import (TestPasswordHashing,
-                                        TestPasswordVerification)
-    from test_rate_limiter_security import (TestRateLimiterCreation,
-                                            TestRateLimiterFunctionality)
+    from test_api_key_security import TestAPIKeyGeneration, TestAPIKeyValidation
+    from test_jwt_security import TestJWTTokenGeneration, TestJWTTokenValidation
+    from test_password_security import TestPasswordHashing, TestPasswordVerification
+    from test_rate_limiter_security import (
+        TestRateLimiterCreation,
+        TestRateLimiterFunctionality,
+    )
 except ImportError as e:
     pytest.skip(f"Unable to import refactored security test modules: {e}")
 
@@ -48,14 +47,13 @@ if __name__ == "__main__":
     # Test 1: Module imports work
     total_tests += 1
     try:
-        from test_api_key_security import (TestAPIKeyGeneration,
-                                           TestAPIKeyValidation)
-        from test_jwt_security import (TestJWTTokenGeneration,
-                                       TestJWTTokenValidation)
-        from test_password_security import (TestPasswordHashing,
-                                            TestPasswordVerification)
-        from test_rate_limiter_security import (TestRateLimiterCreation,
-                                                TestRateLimiterFunctionality)
+        from test_api_key_security import TestAPIKeyGeneration, TestAPIKeyValidation
+        from test_jwt_security import TestJWTTokenGeneration, TestJWTTokenValidation
+        from test_password_security import TestPasswordHashing, TestPasswordVerification
+        from test_rate_limiter_security import (
+            TestRateLimiterCreation,
+            TestRateLimiterFunctionality,
+        )
 
         # Test passed if no exception
     except Exception as e:

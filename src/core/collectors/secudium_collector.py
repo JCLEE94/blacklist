@@ -56,9 +56,10 @@ class SecudiumCollector(BaseCollector):
             else:
                 # Auth manager에서 설정 로드
                 from ..auth_manager import get_auth_manager
+
                 auth_manager = get_auth_manager()
                 ui_credentials = auth_manager.get_credentials("secudium")
-                
+
                 if ui_credentials:
                     self.username = ui_credentials["username"]
                     self.password = ui_credentials["password"]

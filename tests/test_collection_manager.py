@@ -27,8 +27,7 @@ class TestUnifiedCollectionManager:
 
     def test_unified_collection_manager_initialization(self):
         """Test UnifiedCollectionManager initialization"""
-        from src.core.collectors.unified_collector import \
-            UnifiedCollectionManager
+        from src.core.collectors.unified_collector import UnifiedCollectionManager
 
         with tempfile.TemporaryDirectory() as temp_dir:
             config_path = Path(temp_dir) / "test_config.json"
@@ -41,8 +40,7 @@ class TestUnifiedCollectionManager:
 
     def test_unified_collection_manager_load_default_config(self):
         """Test loading default configuration"""
-        from src.core.collectors.unified_collector import \
-            UnifiedCollectionManager
+        from src.core.collectors.unified_collector import UnifiedCollectionManager
 
         with tempfile.TemporaryDirectory() as temp_dir:
             config_path = Path(temp_dir) / "nonexistent_config.json"
@@ -55,7 +53,10 @@ class TestUnifiedCollectionManager:
     def test_unified_collection_manager_register_collector(self):
         """Test collector registration"""
         from src.core.collectors.unified_collector import (
-            BaseCollector, CollectionConfig, UnifiedCollectionManager)
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         # Create test collector
         class TestCollector(BaseCollector):
@@ -82,7 +83,10 @@ class TestUnifiedCollectionManager:
     def test_unified_collection_manager_unregister_collector(self):
         """Test collector unregistration"""
         from src.core.collectors.unified_collector import (
-            BaseCollector, CollectionConfig, UnifiedCollectionManager)
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property
@@ -108,7 +112,10 @@ class TestUnifiedCollectionManager:
     def test_unified_collection_manager_get_status(self):
         """Test get_status method"""
         from src.core.collectors.unified_collector import (
-            BaseCollector, CollectionConfig, UnifiedCollectionManager)
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property
@@ -137,8 +144,7 @@ class TestUnifiedCollectionManager:
 
     def test_unified_collection_manager_enable_disable_global(self):
         """Test global collection enable/disable"""
-        from src.core.collectors.unified_collector import \
-            UnifiedCollectionManager
+        from src.core.collectors.unified_collector import UnifiedCollectionManager
 
         with tempfile.TemporaryDirectory() as temp_dir:
             config_path = Path(temp_dir) / "test_config.json"
@@ -155,7 +161,10 @@ class TestUnifiedCollectionManager:
     def test_unified_collection_manager_enable_disable_collector(self):
         """Test collector enable/disable"""
         from src.core.collectors.unified_collector import (
-            BaseCollector, CollectionConfig, UnifiedCollectionManager)
+            BaseCollector,
+            CollectionConfig,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property
@@ -185,8 +194,11 @@ class TestUnifiedCollectionManager:
     async def test_unified_collection_manager_collect_single(self):
         """Test single collector collection"""
         from src.core.collectors.unified_collector import (
-            BaseCollector, CollectionConfig, CollectionStatus,
-            UnifiedCollectionManager)
+            BaseCollector,
+            CollectionConfig,
+            CollectionStatus,
+            UnifiedCollectionManager,
+        )
 
         class TestCollector(BaseCollector):
             @property
@@ -214,8 +226,7 @@ class TestUnifiedCollectionManager:
     @pytest.mark.asyncio
     async def test_unified_collection_manager_collect_single_nonexistent(self):
         """Test single collector collection with nonexistent collector"""
-        from src.core.collectors.unified_collector import \
-            UnifiedCollectionManager
+        from src.core.collectors.unified_collector import UnifiedCollectionManager
 
         with tempfile.TemporaryDirectory() as temp_dir:
             config_path = Path(temp_dir) / "test_config.json"

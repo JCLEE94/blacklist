@@ -203,8 +203,7 @@ class TestCollectionRoutes:
 
     def test_collection_trigger_route(self):
         """Test collection trigger route registration"""
-        from src.core.routes.collection_trigger_routes import \
-            collection_trigger_bp
+        from src.core.routes.collection_trigger_routes import collection_trigger_bp
 
         app = Flask(__name__)
         app.register_blueprint(collection_trigger_bp)

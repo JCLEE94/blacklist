@@ -126,8 +126,7 @@ class CompactFlaskApp(
 
             # Initialize system stability monitoring
             try:
-                from ..utils.system_stability import \
-                    initialize_system_stability
+                from ..utils.system_stability import initialize_system_stability
 
                 initialize_system_stability()
                 logger.info("System stability monitoring initialized")

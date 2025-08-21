@@ -11,8 +11,11 @@ from flask import Blueprint, jsonify, request
 from ..container import get_container
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
-from .helpers import (format_chart_data, get_period_availability_cache,
-                      get_source_collection_stats)
+from .helpers import (
+    format_chart_data,
+    get_period_availability_cache,
+    get_source_collection_stats,
+)
 
 logger = logging.getLogger(__name__)
 

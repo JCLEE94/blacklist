@@ -15,10 +15,12 @@ import pytest
 
 # Import all the refactored test classes
 try:
-    from test_collection_integration import (TestCollectionAnalytics,
-                                             TestCollectionDataPipeline,
-                                             TestCollectionErrorHandling,
-                                             TestCollectionPerformance)
+    from test_collection_integration import (
+        TestCollectionAnalytics,
+        TestCollectionDataPipeline,
+        TestCollectionErrorHandling,
+        TestCollectionPerformance,
+    )
     from test_collection_status_api import TestCollectionStatusAPI
     from test_collection_triggers import TestCollectionTriggers
 except ImportError as e:
@@ -44,10 +46,12 @@ if __name__ == "__main__":
     # Test 1: Module imports work
     total_tests += 1
     try:
-        from test_collection_integration import (TestCollectionAnalytics,
-                                                 TestCollectionDataPipeline,
-                                                 TestCollectionErrorHandling,
-                                                 TestCollectionPerformance)
+        from test_collection_integration import (
+            TestCollectionAnalytics,
+            TestCollectionDataPipeline,
+            TestCollectionErrorHandling,
+            TestCollectionPerformance,
+        )
         from test_collection_status_api import TestCollectionStatusAPI
         from test_collection_triggers import TestCollectionTriggers
 

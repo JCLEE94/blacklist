@@ -152,7 +152,8 @@ def track_http_requests(func):
 
 def track_collection_operation(source: str):
     """데이터 수집 작업 추적 데코레이터"""
-    from .mixins.decorators import \
-        track_collection_operation as _track_collection_operation
+    from .mixins.decorators import (
+        track_collection_operation as _track_collection_operation,
+    )
 
     return _track_collection_operation(source)

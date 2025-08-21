@@ -82,8 +82,7 @@ class TestBlacklistUnifiedCoverage:
     def test_blacklist_data_service_import(self):
         """Test data service import"""
         try:
-            from src.core.blacklist_unified.data_service import \
-                BlacklistDataService
+            from src.core.blacklist_unified.data_service import BlacklistDataService
 
             assert BlacklistDataService is not None
         except ImportError:
@@ -101,8 +100,7 @@ class TestBlacklistUnifiedCoverage:
     def test_statistics_service_import(self):
         """Test statistics service import"""
         try:
-            from src.core.blacklist_unified.statistics_service import \
-                StatisticsService
+            from src.core.blacklist_unified.statistics_service import StatisticsService
 
             assert StatisticsService is not None
         except ImportError:
@@ -162,8 +160,9 @@ class TestCollectionManagerCoverage:
     def test_config_service_import(self):
         """Test config service import"""
         try:
-            from src.core.collection_manager.config_service import \
-                CollectionConfigService
+            from src.core.collection_manager.config_service import (
+                CollectionConfigService,
+            )
 
             assert CollectionConfigService is not None
         except ImportError:

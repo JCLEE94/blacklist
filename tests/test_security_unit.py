@@ -16,8 +16,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import modules with fallbacks
 try:
-    from src.utils.security import (SecurityManager, decrypt_data,
-                                    encrypt_data, generate_api_key)
+    from src.utils.security import (
+        SecurityManager,
+        decrypt_data,
+        encrypt_data,
+        generate_api_key,
+    )
 except ImportError:
 
     class SecurityManager:

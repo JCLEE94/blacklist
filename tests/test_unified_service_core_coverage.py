@@ -28,15 +28,13 @@ class TestUnifiedServiceCore:
 
     def test_unified_service_import(self):
         """Test that unified service can be imported"""
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         assert UnifiedBlacklistService is not None
 
     def test_unified_service_initialization(self):
         """Test service initialization and basic properties"""
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         service = UnifiedBlacklistService()
 
@@ -56,12 +54,10 @@ class TestUnifiedServiceCore:
         """Test that service properly inherits from all mixins"""
         from src.core.services.collection_service import CollectionServiceMixin
         from src.core.services.core_operations import CoreOperationsMixin
-        from src.core.services.database_operations import \
-            DatabaseOperationsMixin
+        from src.core.services.database_operations import DatabaseOperationsMixin
         from src.core.services.logging_operations import LoggingOperationsMixin
         from src.core.services.statistics_service import StatisticsServiceMixin
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         service = UnifiedBlacklistService()
 
@@ -74,8 +70,7 @@ class TestUnifiedServiceCore:
 
     def test_service_start_stop_lifecycle(self):
         """Test service lifecycle - start and stop"""
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         with patch.object(
             UnifiedBlacklistService, "initialize_components"
@@ -95,8 +90,7 @@ class TestUnifiedServiceCore:
 
     def test_service_health_check(self):
         """Test service health check functionality"""
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         service = UnifiedBlacklistService()
 
@@ -113,8 +107,7 @@ class TestUnifiedServiceCore:
 
     def test_service_configuration(self):
         """Test service configuration management"""
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         service = UnifiedBlacklistService()
 
@@ -130,8 +123,7 @@ class TestUnifiedServiceCore:
 
     def test_service_component_management(self):
         """Test service component initialization and management"""
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         service = UnifiedBlacklistService()
 
@@ -198,15 +190,13 @@ class TestDatabaseOperationsMixin:
 
     def test_database_operations_mixin_import(self):
         """Test that DatabaseOperationsMixin can be imported"""
-        from src.core.services.database_operations import \
-            DatabaseOperationsMixin
+        from src.core.services.database_operations import DatabaseOperationsMixin
 
         assert DatabaseOperationsMixin is not None
 
     def test_database_operations_initialization(self):
         """Test database operations initialization"""
-        from src.core.services.database_operations import \
-            DatabaseOperationsMixin
+        from src.core.services.database_operations import DatabaseOperationsMixin
 
         class TestService(DatabaseOperationsMixin):
             def __init__(self):
@@ -221,8 +211,7 @@ class TestDatabaseOperationsMixin:
 
     def test_database_operations_blacklist_manager(self):
         """Test blacklist manager access"""
-        from src.core.services.database_operations import \
-            DatabaseOperationsMixin
+        from src.core.services.database_operations import DatabaseOperationsMixin
 
         class TestService(DatabaseOperationsMixin):
             def __init__(self):
@@ -286,15 +275,13 @@ class TestServiceFactory:
 
     def test_service_factory_import(self):
         """Test that service factory can be imported"""
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         assert get_unified_service is not None
 
     def test_service_factory_singleton(self):
         """Test that factory returns singleton instance"""
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         # Get two instances
         service1 = get_unified_service()
@@ -305,10 +292,8 @@ class TestServiceFactory:
 
     def test_service_factory_returns_service(self):
         """Test that factory returns proper service instance"""
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_core import UnifiedBlacklistService
+        from src.core.services.unified_service_factory import get_unified_service
 
         service = get_unified_service()
         assert isinstance(service, UnifiedBlacklistService)
@@ -319,8 +304,7 @@ class TestServiceIntegration:
 
     def test_service_full_initialization(self):
         """Test full service initialization with all components"""
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         service = get_unified_service()
 
@@ -331,8 +315,7 @@ class TestServiceIntegration:
 
     def test_service_component_interaction(self):
         """Test interaction between different service components"""
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         service = get_unified_service()
 
@@ -348,8 +331,7 @@ class TestServiceIntegration:
 
     def test_service_error_handling(self):
         """Test service error handling across components"""
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         service = get_unified_service()
 
@@ -364,8 +346,7 @@ class TestServiceIntegration:
 
     def test_service_async_operations_safety(self):
         """Test that async operations are handled safely"""
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         service = get_unified_service()
 
@@ -392,8 +373,7 @@ if __name__ == "__main__":
     # Test 1: Service can be imported and instantiated
     total_tests += 1
     try:
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         service = UnifiedBlacklistService()
         assert service is not None
@@ -404,8 +384,7 @@ if __name__ == "__main__":
     # Test 2: Service factory works
     total_tests += 1
     try:
-        from src.core.services.unified_service_factory import \
-            get_unified_service
+        from src.core.services.unified_service_factory import get_unified_service
 
         factory_service = get_unified_service()
         assert factory_service is not None
@@ -417,8 +396,7 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         from src.core.services.collection_service import CollectionServiceMixin
-        from src.core.services.unified_service_core import \
-            UnifiedBlacklistService
+        from src.core.services.unified_service_core import UnifiedBlacklistService
 
         service = UnifiedBlacklistService()
         assert isinstance(service, CollectionServiceMixin)

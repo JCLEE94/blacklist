@@ -399,8 +399,7 @@ class TestCollectorFunctionality:
     def test_secudium_collector_methods(self):
         """Test SECUDIUM collector methods"""
         try:
-            from src.core.collectors.secudium_collector import \
-                SecudiumCollector
+            from src.core.collectors.secudium_collector import SecudiumCollector
             from src.core.collectors.unified_collector import CollectionConfig
 
             config = CollectionConfig()
@@ -430,8 +429,7 @@ class TestCollectorFunctionality:
     def test_regtech_simple_collector_import(self):
         """Test REGTECH simple collector import"""
         try:
-            from src.core.regtech_simple_collector import \
-                RegtechSimpleCollector
+            from src.core.regtech_simple_collector import RegtechSimpleCollector
 
             assert RegtechSimpleCollector is not None
 

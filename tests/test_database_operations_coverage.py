@@ -455,8 +455,7 @@ class TestDatabaseCollectionSettings:
     def test_collection_settings_import(self):
         """Test collection settings import"""
         try:
-            from src.core.database.collection_settings import \
-                CollectionSettingsDB
+            from src.core.database.collection_settings import CollectionSettingsDB
 
             assert CollectionSettingsDB is not None
         except ImportError:
@@ -465,8 +464,7 @@ class TestDatabaseCollectionSettings:
     def test_collection_settings_initialization(self):
         """Test collection settings initialization"""
         try:
-            from src.core.database.collection_settings import \
-                CollectionSettingsDB
+            from src.core.database.collection_settings import CollectionSettingsDB
 
             with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
                 db_path = tmp.name
@@ -489,8 +487,7 @@ class TestDatabaseCollectionSettings:
     def test_collection_settings_crud_operations(self):
         """Test collection settings CRUD operations"""
         try:
-            from src.core.database.collection_settings import \
-                CollectionSettingsDB
+            from src.core.database.collection_settings import CollectionSettingsDB
 
             with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
                 db_path = tmp.name
@@ -535,8 +532,7 @@ class TestDatabaseCollectionSettings:
     def test_collection_settings_table_setup(self):
         """Test collection settings table setup"""
         try:
-            from src.core.database.collection_settings import \
-                CollectionSettingsDB
+            from src.core.database.collection_settings import CollectionSettingsDB
 
             with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
                 db_path = tmp.name

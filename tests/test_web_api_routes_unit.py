@@ -17,9 +17,15 @@ from flask import Blueprint, Flask
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.web.api_routes import (api_bp, api_search, api_stats_simple,
-                                get_daily_ips, get_month_details, get_stats,
-                                refresh_data)
+from src.web.api_routes import (
+    api_bp,
+    api_search,
+    api_stats_simple,
+    get_daily_ips,
+    get_month_details,
+    get_stats,
+    refresh_data,
+)
 
 
 class TestApiBlueprint:

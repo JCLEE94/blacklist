@@ -5,9 +5,14 @@
 
 # Import all functionality from the new split modules
 from .system_health import SystemHealth
-from .system_monitors import (DatabaseStabilityManager, SystemMonitor,
-                              create_system_monitor, get_system_monitor,
-                              initialize_system_stability, safe_execute)
+from .system_monitors import (
+    DatabaseStabilityManager,
+    SystemMonitor,
+    create_system_monitor,
+    get_system_monitor,
+    initialize_system_stability,
+    safe_execute,
+)
 
 # Re-export everything for backward compatibility
 __all__ = [

@@ -133,8 +133,7 @@ class TestJWTTokenValidation:
     def test_validate_jwt_token_valid(self):
         """Test JWT token validation with valid token"""
         try:
-            from src.utils.security import (generate_jwt_token,
-                                            validate_jwt_token)
+            from src.utils.security import generate_jwt_token, validate_jwt_token
 
             payload = {"user_id": 789, "username": "validuser"}
             secret = "validation_secret"
@@ -155,8 +154,7 @@ class TestJWTTokenValidation:
     def test_validate_jwt_token_invalid_signature(self):
         """Test JWT token validation with invalid signature"""
         try:
-            from src.utils.security import (generate_jwt_token,
-                                            validate_jwt_token)
+            from src.utils.security import generate_jwt_token, validate_jwt_token
 
             payload = {"user_id": 999}
             correct_secret = "correct_secret"
@@ -175,8 +173,7 @@ class TestJWTTokenValidation:
     def test_validate_jwt_token_expired(self):
         """Test JWT token validation with expired token"""
         try:
-            from src.utils.security import (generate_jwt_token,
-                                            validate_jwt_token)
+            from src.utils.security import generate_jwt_token, validate_jwt_token
 
             payload = {"user_id": 111}
             secret = "expiry_test_secret"

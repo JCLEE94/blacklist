@@ -54,8 +54,7 @@ class TestBlacklistUnified(unittest.TestCase):
     def test_blacklist_unified_import(self):
         """Test blacklist unified manager import"""
         try:
-            from src.core.blacklist_unified.manager import \
-                UnifiedBlacklistManager
+            from src.core.blacklist_unified.manager import UnifiedBlacklistManager
 
             # Test basic instantiation
             manager = UnifiedBlacklistManager()
@@ -177,8 +176,7 @@ class TestCollectors(unittest.TestCase):
     def test_secudium_collector_import(self):
         """Test SECUDIUM collector import"""
         try:
-            from src.core.collectors.secudium_collector import \
-                SECUDIUMCollector
+            from src.core.collectors.secudium_collector import SECUDIUMCollector
 
             collector = SECUDIUMCollector()
             self.assertTrue(hasattr(collector, "collect"))
@@ -308,8 +306,7 @@ class TestServices(unittest.TestCase):
     def test_unified_service_core(self):
         """Test unified service core"""
         try:
-            from src.core.services.unified_service_core import \
-                UnifiedServiceCore
+            from src.core.services.unified_service_core import UnifiedServiceCore
 
             service = UnifiedServiceCore()
             self.assertTrue(hasattr(service, "initialize"))
@@ -319,8 +316,7 @@ class TestServices(unittest.TestCase):
     def test_collection_operations(self):
         """Test collection operations service"""
         try:
-            from src.core.services.collection_operations import \
-                CollectionOperations
+            from src.core.services.collection_operations import CollectionOperations
 
             ops = CollectionOperations()
             self.assertTrue(hasattr(ops, "collect_data"))

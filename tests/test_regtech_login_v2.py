@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timedelta
 
 import requests
+
 # SSL 경고 무시
 import urllib3
 from bs4 import BeautifulSoup

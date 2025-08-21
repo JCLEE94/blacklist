@@ -99,8 +99,7 @@ class TestAuthenticationDecorators(unittest.TestCase):
     def test_auth_decorators_import(self):
         """Test authentication decorators import"""
         try:
-            from src.utils.auth import (require_admin, require_api_key,
-                                        require_auth)
+            from src.utils.auth import require_admin, require_api_key, require_auth
 
             for decorator in [require_auth, require_admin, require_api_key]:
                 self.assertTrue(callable(decorator))

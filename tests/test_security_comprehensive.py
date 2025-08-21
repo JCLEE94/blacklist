@@ -28,9 +28,11 @@ class TestSecurityAuth:
 
     def test_auth_module_import(self):
         """Test that security auth module can be imported"""
-        from src.utils.security.auth import (AuthenticationManager,
-                                             generate_jwt_token,
-                                             verify_jwt_token)
+        from src.utils.security.auth import (
+            AuthenticationManager,
+            generate_jwt_token,
+            verify_jwt_token,
+        )
 
         assert AuthenticationManager is not None
         assert generate_jwt_token is not None
@@ -203,9 +205,11 @@ class TestSecurityValidation:
 
     def test_validation_module_import(self):
         """Test validation module import"""
-        from src.utils.security.validation import (SecurityValidator,
-                                                   sanitize_input,
-                                                   validate_input)
+        from src.utils.security.validation import (
+            SecurityValidator,
+            sanitize_input,
+            validate_input,
+        )
 
         assert SecurityValidator is not None
         assert validate_input is not None
@@ -473,8 +477,7 @@ if __name__ == "__main__":
     # Test 2: JWT token functionality
     total_tests += 1
     try:
-        from src.utils.security.auth import (generate_jwt_token,
-                                             verify_jwt_token)
+        from src.utils.security.auth import generate_jwt_token, verify_jwt_token
 
         payload = {"user_id": 123, "username": "testuser"}
         token = generate_jwt_token(payload, secret_key="test_secret")
@@ -501,8 +504,7 @@ if __name__ == "__main__":
     # Test 4: Input validation
     total_tests += 1
     try:
-        from src.utils.security.validation import (sanitize_input,
-                                                   validate_input)
+        from src.utils.security.validation import sanitize_input, validate_input
 
         assert validate_input("valid_username", "username") == True
         assert validate_input("192.168.1.1", "ip_address") == True

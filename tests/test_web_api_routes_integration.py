@@ -16,8 +16,14 @@ from flask import Flask
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.web.api_routes import (api_bp, api_stats_simple, download_daily_ips,
-                                export_data, get_daily_ips, get_month_details)
+from src.web.api_routes import (
+    api_bp,
+    api_stats_simple,
+    download_daily_ips,
+    export_data,
+    get_daily_ips,
+    get_month_details,
+)
 
 
 class TestGetMonthDetails:

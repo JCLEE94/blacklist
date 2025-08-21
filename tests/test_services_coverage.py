@@ -27,8 +27,7 @@ class TestUnifiedServiceFactory:
         mock_container.return_value = Mock()
 
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             service = get_unified_service()
             assert service is not None
@@ -44,8 +43,7 @@ class TestUnifiedServiceFactory:
         mock_container.return_value = Mock()
 
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             service1 = get_unified_service()
             service2 = get_unified_service()
@@ -140,8 +138,7 @@ class TestCollectionService:
     def test_collection_service_mixin(self):
         """Test collection service mixin"""
         try:
-            from src.core.services.collection_service import \
-                CollectionServiceMixin
+            from src.core.services.collection_service import CollectionServiceMixin
 
             assert CollectionServiceMixin is not None
         except ImportError:
@@ -152,8 +149,7 @@ class TestCollectionService:
     def test_collection_status_methods(self):
         """Test collection status methods"""
         try:
-            from src.core.services.collection_service import \
-                CollectionServiceMixin
+            from src.core.services.collection_service import CollectionServiceMixin
 
             mixin = CollectionServiceMixin()
 
@@ -178,8 +174,7 @@ class TestCollectionService:
     def test_collection_trigger_methods(self):
         """Test collection trigger methods"""
         try:
-            from src.core.services.collection_service import \
-                CollectionServiceMixin
+            from src.core.services.collection_service import CollectionServiceMixin
 
             mixin = CollectionServiceMixin()
 
@@ -212,8 +207,7 @@ class TestStatisticsService:
     def test_statistics_service_mixin(self):
         """Test statistics service mixin"""
         try:
-            from src.core.services.statistics_service import \
-                StatisticsServiceMixin
+            from src.core.services.statistics_service import StatisticsServiceMixin
 
             assert StatisticsServiceMixin is not None
         except ImportError:
@@ -224,8 +218,7 @@ class TestStatisticsService:
     def test_statistics_calculation_methods(self):
         """Test statistics calculation methods"""
         try:
-            from src.core.services.statistics_service import \
-                StatisticsServiceMixin
+            from src.core.services.statistics_service import StatisticsServiceMixin
 
             mixin = StatisticsServiceMixin()
 
@@ -245,8 +238,7 @@ class TestStatisticsService:
     def test_statistics_data_methods(self):
         """Test statistics data methods"""
         try:
-            from src.core.services.statistics_service import \
-                StatisticsServiceMixin
+            from src.core.services.statistics_service import StatisticsServiceMixin
 
             mixin = StatisticsServiceMixin()
 
@@ -273,10 +265,8 @@ class TestServiceIntegration:
         mock_container.return_value = Mock()
 
         try:
-            from src.core.services.collection_service import \
-                CollectionServiceMixin
-            from src.core.services.statistics_service import \
-                StatisticsServiceMixin
+            from src.core.services.collection_service import CollectionServiceMixin
+            from src.core.services.statistics_service import StatisticsServiceMixin
             from src.core.services.unified_service_core import UnifiedService
 
             # Test that service inherits from mixins
@@ -295,8 +285,7 @@ class TestServiceIntegration:
         mock_container.return_value = Mock()
 
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             service = get_unified_service()
 
@@ -336,8 +325,7 @@ class TestServiceIntegrationFlow:
         mock_container.return_value = Mock()
 
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             service = get_unified_service()
 
@@ -365,8 +353,7 @@ class TestServiceIntegrationFlow:
         mock_container.return_value = Mock()
 
         try:
-            from src.core.services.unified_service_factory import \
-                get_unified_service
+            from src.core.services.unified_service_factory import get_unified_service
 
             service = get_unified_service()
 
@@ -419,8 +406,7 @@ class TestServiceConfiguration:
     def test_service_config_structure(self):
         """Test service configuration structure"""
         try:
-            from src.core.services.unified_service_core import \
-                ServiceConfiguration
+            from src.core.services.unified_service_core import ServiceConfiguration
 
             config = ServiceConfiguration()
             assert config is not None

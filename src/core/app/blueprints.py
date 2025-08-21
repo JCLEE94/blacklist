@@ -40,8 +40,7 @@ class BlueprintRegistrationMixin:
 
         # Register collection dashboard routes
         try:
-            from ..routes.collection_dashboard_routes import \
-                collection_dashboard_bp
+            from ..routes.collection_dashboard_routes import collection_dashboard_bp
 
             app.register_blueprint(collection_dashboard_bp)
             logger.info("Collection dashboard routes registered successfully")
@@ -50,8 +49,7 @@ class BlueprintRegistrationMixin:
 
         # Register unified control dashboard (통합 제어 대시보드)
         try:
-            from ..routes.unified_control_routes import \
-                bp as unified_control_bp
+            from ..routes.unified_control_routes import bp as unified_control_bp
 
             app.register_blueprint(unified_control_bp)
             logger.info("Unified control dashboard registered successfully")
@@ -87,8 +85,7 @@ class BlueprintRegistrationMixin:
 
         # Register collection settings routes (UI -> DB 설정)
         try:
-            from ..routes.collection_settings_routes import \
-                bp as collection_settings_bp
+            from ..routes.collection_settings_routes import bp as collection_settings_bp
 
             app.register_blueprint(collection_settings_bp)
             logger.info("Collection settings routes registered successfully")
@@ -106,8 +103,7 @@ class BlueprintRegistrationMixin:
 
         # Register collection visualization routes (API만 유지)
         try:
-            from ..routes.collection_visualization_routes import \
-                bp as collection_viz_bp
+            from ..routes.collection_visualization_routes import bp as collection_viz_bp
 
             app.register_blueprint(collection_viz_bp)
             logger.info("Collection visualization API registered successfully")

@@ -12,8 +12,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from src.utils.structured_logging import (BufferHandler, LogManager,
-                                          StructuredLogger)
+from src.utils.structured_logging import BufferHandler, LogManager, StructuredLogger
 
 
 class TestBufferHandler(unittest.TestCase):
