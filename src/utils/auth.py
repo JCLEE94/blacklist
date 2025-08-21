@@ -15,7 +15,6 @@ from typing import Any, Dict, Optional
 
 import jwt
 
-
 logger = logging.getLogger(__name__)
 
 

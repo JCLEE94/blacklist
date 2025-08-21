@@ -6,6 +6,7 @@ Designed to be under 300 lines following project architecture guidelines.
 """
 
 import asyncio
+import logging
 import threading
 from datetime import datetime, timedelta
 from typing import Optional
@@ -13,6 +14,18 @@ from typing import Optional
 
 class CollectionTriggersMixin:
     """수집 트리거 관리 믹스인"""
+
+    def __init__(self):
+        """Initialize collection triggers mixin"""
+        # Initialize logger if not already present
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger(__name__)
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass
 
     def trigger_collection(self, source: str = "all") -> str:
         """수집 트리거 (비동기 실행)"""
@@ -34,8 +47,7 @@ class CollectionTriggersMixin:
 
                 if source == "all":
                     thread = threading.Thread(
-                        target=run_async_task, 
-                        args=(self.collect_all_data(force=True),)
+                        target=run_async_task, args=(self.collect_all_data(force=True),)
                     )
                     thread.daemon = True
                     thread.start()
@@ -139,7 +151,8 @@ class CollectionTriggersMixin:
 
                         # PostgreSQL에 저장
                         try:
-                            from src.core.data_storage_fixed import FixedDataStorage
+                            from src.core.data_storage_fixed import \
+                                FixedDataStorage
 
                             storage = FixedDataStorage()
                             storage_result = storage.store_ips(
@@ -148,14 +161,16 @@ class CollectionTriggersMixin:
 
                             if storage_result.get("success"):
                                 imported_count = storage_result.get("imported_count", 0)
-                                duplicate_count = storage_result.get("duplicate_count", 0)
+                                duplicate_count = storage_result.get(
+                                    "duplicate_count", 0
+                                )
                                 total_count = len(collected_data)
-                                
+
                                 self.logger.info(
                                     f"✅ {imported_count}개 IP 저장 완료 "
                                     f"(중복 {duplicate_count}개)"
                                 )
-                                
+
                                 # 수집 완료 로그 추가 - 의미있는 데이터 포함
                                 if hasattr(self, "add_collection_log"):
                                     self.add_collection_log(
@@ -168,10 +183,10 @@ class CollectionTriggersMixin:
                                             "new_ips": imported_count,
                                             "duplicates": duplicate_count,
                                             "ips_collected": total_count,
-                                            "timestamp": datetime.now().isoformat()
+                                            "timestamp": datetime.now().isoformat(),
                                         },
                                     )
-                                
+
                                 return {
                                     "success": True,
                                     "message": f"REGTECH 수집 및 저장 완료: {imported_count}개 IP (중복 {duplicate_count}개)",
@@ -205,7 +220,7 @@ class CollectionTriggersMixin:
                                 "start_date": start_date,
                                 "end_date": end_date,
                                 "error": str(collect_e),
-                                "timestamp": datetime.now().isoformat()
+                                "timestamp": datetime.now().isoformat(),
                             },
                         )
                     return {

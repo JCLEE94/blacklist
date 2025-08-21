@@ -5,7 +5,7 @@
 
 import logging
 import os
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
     from ..collectors.secudium_collector import SecudiumCollector
@@ -203,6 +203,24 @@ class CollectorFactory:
         except Exception as e:
             logger.error(f"전체 수집 실패: {e}")
             return {"success": False, "error": str(e)}
+
+    # Test compatibility methods
+    def create_collector(self, collector_type: str):
+        """Create individual collector for testing"""
+        if collector_type.lower() == "regtech":
+            config = CollectionConfig(enabled=True)
+            return RegtechCollector(config)
+        elif collector_type.lower() == "secudium":
+            from .secudium_collector import SecudiumCollector
+
+            config = CollectionConfig(enabled=True)
+            return SecudiumCollector(config)
+        else:
+            raise ValueError(f"Unknown collector type: {collector_type}")
+
+    def get_available_types(self) -> List[str]:
+        """Get list of available collector types"""
+        return ["regtech", "secudium"]
 
 
 # 전역 팩토리 인스턴스

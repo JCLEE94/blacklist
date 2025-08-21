@@ -12,12 +12,10 @@ from pathlib import Path
 
 import pytest
 
-from src.core.database.schema_manager import (
-    DatabaseSchema,
-    get_database_schema,
-    initialize_database,
-    migrate_database,
-)
+from src.core.database.schema_manager import (DatabaseSchema,
+                                              get_database_schema,
+                                              initialize_database,
+                                              migrate_database)
 
 
 class TestDatabaseSchema:

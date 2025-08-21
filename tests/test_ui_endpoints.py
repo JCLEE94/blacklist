@@ -10,7 +10,6 @@ from datetime import datetime
 
 import pytest
 
-
 # Skip this entire test if playwright is not available or if running in CI/CD
 pytest_plugins = ("pytest_asyncio",)
 
@@ -27,11 +26,11 @@ async def test_ui_health_endpoints():
         from playwright.async_api import async_playwright
     except ImportError:
         pytest.skip("Playwright not available")
-        
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
-        
+
         try:
             # Test basic health endpoint
             response = await page.goto(f"{BASE_URL}/health")
@@ -39,14 +38,14 @@ async def test_ui_health_endpoints():
             health_data = await response.json()
             assert health_data["status"] == "healthy"
             assert "version" in health_data
-            
+
             # Test detailed API health
             response = await page.goto(f"{API_BASE}/health")
             assert response.status == 200
             api_health = await response.json()
             assert api_health["status"] == "healthy"
             assert api_health["service"] == "blacklist-management"
-            
+
         finally:
             await browser.close()
 
@@ -60,11 +59,11 @@ async def test_ui_collection_status():
         from playwright.async_api import async_playwright
     except ImportError:
         pytest.skip("Playwright not available")
-        
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
-        
+
         try:
             # Test collection status
             response = await page.goto(f"{API_BASE}/collection/status")
@@ -72,7 +71,7 @@ async def test_ui_collection_status():
             status_data = await response.json()
             assert "collection_enabled" in status_data
             assert "sources" in status_data
-            
+
         finally:
             await browser.close()
 
@@ -86,24 +85,24 @@ async def test_ui_blacklist_endpoints():
         from playwright.async_api import async_playwright
     except ImportError:
         pytest.skip("Playwright not available")
-        
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
-        
+
         try:
             # Test active blacklist IPs
             response = await page.goto(f"{API_BASE}/blacklist/active")
             assert response.status == 200
             active_ips = await response.text()
             assert isinstance(active_ips, str)
-            
+
             # Test FortiGate format endpoint
             response = await page.goto(f"{API_BASE}/fortigate")
             assert response.status == 200
             fortigate_data = await response.text()
             assert isinstance(fortigate_data, str)
-            
+
         finally:
             await browser.close()
 
@@ -118,21 +117,21 @@ async def test_ui_analytics_endpoints():
         from playwright.async_api import async_playwright
     except ImportError:
         pytest.skip("Playwright not available")
-        
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
-        
+
         try:
             # Test trends endpoint (may not have data)
             response = await page.goto(f"{API_BASE}/v2/analytics/trends")
             # Analytics may not be available without data, just check it responds
             assert response.status in [200, 404, 500]  # Accept various responses
-            
+
             # Test sources status
             response = await page.goto(f"{API_BASE}/v2/sources/status")
             assert response.status in [200, 404, 500]  # Accept various responses
-            
+
         finally:
             await browser.close()
 
@@ -153,6 +152,7 @@ if __name__ == "__main__":
             print("All UI tests completed successfully!")
         except Exception as e:
             print(f"❌ Test failed: {e}")
-            
+
     import asyncio
+
     asyncio.run(run_tests())

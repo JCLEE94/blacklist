@@ -11,7 +11,6 @@ import logging
 
 from .collection.collector_routes import collector_bp
 from .collection.config_routes import config_bp
-
 # Import the new modular collection system
 from .collection.main_routes import collection_bp, register_collection_routes
 from .collection.status_routes import status_bp

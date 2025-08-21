@@ -117,7 +117,7 @@ class ErrorHandler:
                 issue_url = report_error_to_github(error, context)
                 if issue_url:
                     logger.info(
-                        "GitHub issue created for error {error_code}: {issue_url}"
+                        f"GitHub issue created for error {error_code}: {issue_url}"
                     )
                     error_log["github_issue"] = issue_url
             except Exception as github_error:
@@ -141,17 +141,17 @@ class ErrorHandler:
         if isinstance(error, BaseError):
             if error.status_code >= 500:
                 logger.error(
-                    "{error_code}: {error.message}",
+                    f"{error_code}: {error.message}",
                     extra={"error_details": error.details, "context": context},
                 )
             else:
                 logger.warning(
-                    "{error_code}: {error.message}",
+                    f"{error_code}: {error.message}",
                     extra={"error_details": error.details, "context": context},
                 )
         else:
             logger.error(
-                "Unexpected error: {error}", exc_info=True, extra={"context": context}
+                f"Unexpected error: {error}", exc_info=True, extra={"context": context}
             )
 
     def get_error_stats(self) -> Dict[str, Any]:

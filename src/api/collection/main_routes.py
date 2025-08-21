@@ -8,7 +8,6 @@ from flask import Blueprint, Flask
 
 from .collector_routes import collector_bp
 from .config_routes import config_bp
-
 # Import all modular route blueprints
 from .status_routes import status_bp
 

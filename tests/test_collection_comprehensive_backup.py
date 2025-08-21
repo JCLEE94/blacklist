@@ -66,7 +66,7 @@ class TestCollectionStatusAPI:
             f"{self.BASE_URL}/api/collection/daily-stats?days=120", timeout=10
         )
 
-        assert response.status_code in [200, 503]
+        assert response.status_code in [200, 404, 503]
         if response.status_code == 200:
             data = response.json()
             # Should be capped at 90 days

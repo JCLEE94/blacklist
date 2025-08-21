@@ -125,7 +125,8 @@ def collect_with_cookies():
             # 데이터베이스 저장
             save_count = 0
             try:
-                from ..managers.blacklist_manager import UnifiedBlacklistManager
+                from ..managers.blacklist_manager import \
+                    UnifiedBlacklistManager
 
                 blacklist_manager = UnifiedBlacklistManager()
 

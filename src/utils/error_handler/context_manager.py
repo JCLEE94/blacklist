@@ -16,7 +16,7 @@ class ErrorContext:
         self,
         operation: str,
         default_return: Any = None,
-        suppress: bool = True,
+        suppress: bool = False,
         log_level: str = "error",
     ):
         """
@@ -39,7 +39,7 @@ class ErrorContext:
         if exc_type is not None:
             self.exception = exc_val
             log_func = getattr(logger, self.log_level, logger.error)
-            log_func("Error during {self.operation}: {exc_val}")
+            log_func(f"Error during {self.operation}: {exc_val}")
 
             if self.suppress:
                 return True  # 예외 억제

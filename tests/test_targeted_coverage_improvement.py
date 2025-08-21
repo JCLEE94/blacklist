@@ -127,7 +127,8 @@ class TestBlacklistCore(unittest.TestCase):
     def test_blacklist_manager(self):
         """Test blacklist manager functionality"""
         try:
-            from src.core.blacklist_unified.manager import UnifiedBlacklistManager
+            from src.core.blacklist_unified.manager import \
+                UnifiedBlacklistManager
 
             manager = UnifiedBlacklistManager()
 
@@ -163,7 +164,8 @@ class TestBlacklistCore(unittest.TestCase):
     def test_statistics_service(self):
         """Test blacklist statistics service"""
         try:
-            from src.core.blacklist_unified.statistics_service import StatisticsService
+            from src.core.blacklist_unified.statistics_service import \
+                StatisticsService
 
             service = StatisticsService()
 
@@ -219,7 +221,8 @@ class TestCollectionSystem(unittest.TestCase):
     def test_protection_service(self):
         """Test collection protection service"""
         try:
-            from src.core.collection_manager.protection_service import ProtectionService
+            from src.core.collection_manager.protection_service import \
+                ProtectionService
 
             service = ProtectionService()
 
@@ -257,7 +260,8 @@ class TestCollectors(unittest.TestCase):
     def test_secudium_collector(self):
         """Test SECUDIUM collector"""
         try:
-            from src.core.collectors.secudium_collector import SECUDIUMCollector
+            from src.core.collectors.secudium_collector import \
+                SECUDIUMCollector
 
             collector = SECUDIUMCollector()
 
@@ -471,7 +475,8 @@ class TestRoutesAndAPI(unittest.TestCase):
     def test_collection_routes(self):
         """Test collection routes"""
         try:
-            from src.core.routes.collection_status_routes import collection_status_bp
+            from src.core.routes.collection_status_routes import \
+                collection_status_bp
 
             # Test blueprint attributes
             self.assertTrue(hasattr(collection_status_bp, "name"))

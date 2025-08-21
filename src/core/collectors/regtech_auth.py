@@ -19,7 +19,13 @@ class RegtechAuth:
     REGTECH 인증 처리 전담 클래스
     """
 
-    def __init__(self, base_url: str, username: str, password: str, timeout: int = 30):
+    def __init__(
+        self,
+        base_url: str = "https://regtech.fsec.or.kr",
+        username: str = "",
+        password: str = "",
+        timeout: int = 30,
+    ):
         self.base_url = base_url
         self.username = username
         self.password = password
@@ -27,6 +33,7 @@ class RegtechAuth:
         self.session = None
         self.cookie_auth_mode = False  # Track if using cookie-based auth
         self.cookie_string = None  # Store cookie string for authentication
+        self.token = None  # For test compatibility
 
     def set_cookie_string(self, cookie_string: str) -> None:
         """Set cookie string for authentication"""
@@ -360,3 +367,17 @@ class RegtechAuth:
             if self.session:
                 self.session.close()
                 self.session = None
+
+    def get_session(self) -> requests.Session:
+        """Get session for test compatibility"""
+        if self.session is None:
+            self.session = self.create_session()
+        return self.session
+
+    def set_token(self, token: str):
+        """Set token for test compatibility"""
+        self.token = token
+
+    def get_token(self) -> str:
+        """Get token for test compatibility"""
+        return self.token or ""

@@ -4,6 +4,7 @@
 통계, 분석, 리포트 등의 통계 전용 기능
 """
 
+import logging
 import sqlite3
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
@@ -15,6 +16,18 @@ class StatisticsServiceMixin:
     통계 및 분석 기능을 제공하는 믹스인 클래스
     UnifiedBlacklistService에서 사용됨
     """
+
+    def __init__(self):
+        """Initialize statistics service mixin"""
+        # Initialize logger if not already present
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger(__name__)
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass
 
     async def get_statistics(self) -> Dict[str, Any]:
         """통합 시스템 통계"""

@@ -14,12 +14,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 # Test imports
-from src.utils.performance_optimizer import (
-    MemoryOptimizer,
-    PerformanceMetrics,
-    QueryOptimizer,
-    SmartCache,
-)
+from src.utils.performance_optimizer import (MemoryOptimizer,
+                                             PerformanceMetrics,
+                                             QueryOptimizer, SmartCache)
 
 
 class TestPerformanceMetrics:

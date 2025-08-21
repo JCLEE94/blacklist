@@ -17,7 +17,8 @@ class TestUnifiedServiceFactory:
     def test_get_unified_service(self):
         """Test get_unified_service function"""
         try:
-            from src.core.services.unified_service_factory import get_unified_service
+            from src.core.services.unified_service_factory import \
+                get_unified_service
 
             service = get_unified_service()
             assert service is not None
@@ -30,7 +31,8 @@ class TestUnifiedServiceFactory:
     def test_reset_unified_service(self):
         """Test reset_unified_service function"""
         try:
-            from src.core.services.unified_service_factory import reset_unified_service
+            from src.core.services.unified_service_factory import \
+                reset_unified_service
 
             reset_unified_service()
             assert True  # Function should complete without error
@@ -40,7 +42,8 @@ class TestUnifiedServiceFactory:
     def test_is_service_initialized(self):
         """Test is_service_initialized function"""
         try:
-            from src.core.services.unified_service_factory import is_service_initialized
+            from src.core.services.unified_service_factory import \
+                is_service_initialized
 
             result = is_service_initialized()
             assert isinstance(result, bool)
@@ -51,9 +54,7 @@ class TestUnifiedServiceFactory:
         """Test singleton behavior of service factory"""
         try:
             from src.core.services.unified_service_factory import (
-                get_unified_service,
-                reset_unified_service,
-            )
+                get_unified_service, reset_unified_service)
 
             # Reset first
             reset_unified_service()
@@ -78,7 +79,8 @@ class TestUnifiedServiceCore:
     def test_unified_blacklist_service_import(self):
         """Test UnifiedBlacklistService import"""
         try:
-            from src.core.services.unified_service_core import UnifiedBlacklistService
+            from src.core.services.unified_service_core import \
+                UnifiedBlacklistService
 
             assert UnifiedBlacklistService is not None
         except ImportError:
@@ -87,7 +89,8 @@ class TestUnifiedServiceCore:
     def test_unified_blacklist_service_initialization(self):
         """Test UnifiedBlacklistService initialization"""
         try:
-            from src.core.services.unified_service_core import UnifiedBlacklistService
+            from src.core.services.unified_service_core import \
+                UnifiedBlacklistService
 
             service = UnifiedBlacklistService()
             assert service is not None
@@ -100,7 +103,8 @@ class TestUnifiedServiceCore:
     def test_service_methods_exist(self):
         """Test that expected service methods exist"""
         try:
-            from src.core.services.unified_service_core import UnifiedBlacklistService
+            from src.core.services.unified_service_core import \
+                UnifiedBlacklistService
 
             # Check for common methods
             methods_to_check = [
@@ -125,7 +129,8 @@ class TestCollectionServiceMixin:
     def test_collection_service_mixin_import(self):
         """Test CollectionServiceMixin import"""
         try:
-            from src.core.services.collection_service import CollectionServiceMixin
+            from src.core.services.collection_service import \
+                CollectionServiceMixin
 
             assert CollectionServiceMixin is not None
         except ImportError:
@@ -134,7 +139,8 @@ class TestCollectionServiceMixin:
     def test_collection_mixin_methods(self):
         """Test collection mixin methods"""
         try:
-            from src.core.services.collection_service import CollectionServiceMixin
+            from src.core.services.collection_service import \
+                CollectionServiceMixin
 
             # Check for expected methods
             expected_methods = [
@@ -155,7 +161,8 @@ class TestCollectionServiceMixin:
     def test_collection_mixin_instantiation(self):
         """Test collection mixin can be instantiated"""
         try:
-            from src.core.services.collection_service import CollectionServiceMixin
+            from src.core.services.collection_service import \
+                CollectionServiceMixin
 
             mixin = CollectionServiceMixin()
             assert mixin is not None
@@ -169,9 +176,7 @@ class TestCollectionServiceMixin:
         """Test service factory integration"""
         try:
             from src.core.services.unified_service_factory import (
-                get_unified_service,
-                reset_unified_service,
-            )
+                get_unified_service, reset_unified_service)
 
             # Reset and create service
             reset_unified_service()

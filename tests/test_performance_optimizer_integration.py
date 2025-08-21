@@ -13,16 +13,13 @@ from unittest.mock import Mock, patch
 import pytest
 
 # Test imports
-from src.utils.performance_optimizer import (
-    PerformanceMonitor,
-    batch_process,
-    cached_result,
-    cleanup_performance_data,
-    g_performance_monitor,
-    get_performance_monitor,
-    optimize_database_queries,
-    performance_monitor,
-)
+from src.utils.performance_optimizer import (PerformanceMonitor, batch_process,
+                                             cached_result,
+                                             cleanup_performance_data,
+                                             g_performance_monitor,
+                                             get_performance_monitor,
+                                             optimize_database_queries,
+                                             performance_monitor)
 
 
 class TestPerformanceMonitor:

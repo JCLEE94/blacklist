@@ -16,10 +16,10 @@ class IPValidator:
 
     def is_valid_ip(self, ip_str: str) -> bool:
         """Validate IP address format and exclude private/reserved ranges.
-        
+
         Args:
             ip_str: IP address string to validate
-            
+
         Returns:
             True if IP is valid and public
         """
@@ -48,9 +48,40 @@ class IPValidator:
 
             # Reserved ranges
             reserved_ranges = [
-                0, 127, 224, 225, 226, 227, 228, 229, 230, 231, 232,
-                233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243,
-                244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255
+                0,
+                127,
+                224,
+                225,
+                226,
+                227,
+                228,
+                229,
+                230,
+                231,
+                232,
+                233,
+                234,
+                235,
+                236,
+                237,
+                238,
+                239,
+                240,
+                241,
+                242,
+                243,
+                244,
+                245,
+                246,
+                247,
+                248,
+                249,
+                250,
+                251,
+                252,
+                253,
+                254,
+                255,
             ]
             if first_octet in reserved_ranges:
                 return False
@@ -62,10 +93,10 @@ class IPValidator:
 
     def extract_valid_ips(self, text: str) -> List[str]:
         """Extract all valid public IP addresses from text.
-        
+
         Args:
             text: Text to search for IP addresses
-            
+
         Returns:
             List of valid public IP addresses
         """
@@ -74,10 +105,10 @@ class IPValidator:
 
     def filter_unique_ips(self, ip_list: List[str]) -> List[str]:
         """Remove duplicate IPs while preserving order.
-        
+
         Args:
             ip_list: List of IP addresses
-            
+
         Returns:
             List of unique IP addresses
         """

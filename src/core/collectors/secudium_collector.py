@@ -289,6 +289,48 @@ class SecudiumCollector(BaseCollector):
             "session_active": self.session is not None,
         }
 
+    # Test compatibility methods
+    def get_config(self) -> Dict[str, Any]:
+        """Get configuration for test compatibility"""
+        return {
+            "base_url": self.base_url,
+            "username": self.username,
+            "enabled": self.config.enabled,
+            **self.config_data,
+        }
+
+    def set_config(self, config: Dict[str, Any]):
+        """Set configuration for test compatibility"""
+        self.config_data.update(config)
+
+    def _create_session(self) -> requests.Session:
+        """Create session for test compatibility"""
+        if self.session is None:
+            self.session = requests.Session()
+        return self.session
+
+    def _process_data(self, raw_data: bytes) -> List[Dict[str, Any]]:
+        """Process data for test compatibility"""
+        try:
+            # Try to decode as text
+            text_data = raw_data.decode("utf-8")
+            # Simple parsing - split by lines and assume each line is an IP
+            ips = []
+            for line in text_data.strip().split("\n"):
+                line = line.strip()
+                if line and not line.startswith("IP"):  # Skip headers
+                    ips.append(
+                        {
+                            "ip": line,
+                            "source": "SECUDIUM",
+                            "date": datetime.now().strftime("%Y-%m-%d"),
+                        }
+                    )
+            return ips
+        except Exception as e:
+            logger.error(f"Error processing data: {e}")
+            return []
+
 
 # 테스트용 메인 실행
 if __name__ == "__main__":

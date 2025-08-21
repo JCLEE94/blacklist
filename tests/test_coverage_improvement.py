@@ -56,12 +56,8 @@ class TestCoreModels:
     def test_constants_module(self):
         """Test constants module"""
         try:
-            from src.core.constants import (
-                API_RATE_LIMITS,
-                DEFAULT_CACHE_TTL,
-                ERROR_MESSAGES,
-                THREAT_LEVELS,
-            )
+            from src.core.constants import (API_RATE_LIMITS, DEFAULT_CACHE_TTL,
+                                            ERROR_MESSAGES, THREAT_LEVELS)
 
             # Test constants are defined
             assert isinstance(DEFAULT_CACHE_TTL, int)
@@ -77,11 +73,8 @@ class TestCoreModels:
     def test_validators_module(self):
         """Test validators module"""
         try:
-            from src.core.validators import (
-                validate_date,
-                validate_ip,
-                validate_threat_level,
-            )
+            from src.core.validators import (validate_date, validate_ip,
+                                             validate_threat_level)
 
             # Test IP validation
             assert validate_ip("192.168.1.1") is True
@@ -109,7 +102,8 @@ class TestUtilityFunctions:
     def test_auth_utilities(self):
         """Test authentication utility functions"""
         try:
-            from src.utils.auth import generate_token, hash_password, verify_password
+            from src.utils.auth import (generate_token, hash_password,
+                                        verify_password)
 
             password = "test_password_123"
 
@@ -133,13 +127,11 @@ class TestUtilityFunctions:
     def test_cache_helpers(self):
         """Test cache helper functions"""
         try:
-            from src.core.common.cache_helpers import (
-                clear_cache,
-                get_cache_key,
-                get_cache_value,
-                is_cache_valid,
-                set_cache_value,
-            )
+            from src.core.common.cache_helpers import (clear_cache,
+                                                       get_cache_key,
+                                                       get_cache_value,
+                                                       is_cache_valid,
+                                                       set_cache_value)
 
             # Test cache key generation
             key = get_cache_key("test", "param1", "param2")
@@ -168,13 +160,10 @@ class TestUtilityFunctions:
     def test_date_utilities(self):
         """Test date utility functions"""
         try:
-            from src.core.common.date_utils import (
-                calculate_days_between,
-                format_date,
-                get_date_range,
-                is_valid_date,
-                parse_date,
-            )
+            from src.core.common.date_utils import (calculate_days_between,
+                                                    format_date,
+                                                    get_date_range,
+                                                    is_valid_date, parse_date)
 
             # Test date parsing
             date_str = "2025-01-01"
@@ -208,14 +197,10 @@ class TestUtilityFunctions:
     def test_ip_utilities(self):
         """Test IP utility functions"""
         try:
-            from src.core.common.ip_utils import (
-                format_ip_range,
-                get_ip_network,
-                is_private_ip,
-                is_public_ip,
-                is_valid_ip,
-                normalize_ip,
-            )
+            from src.core.common.ip_utils import (format_ip_range,
+                                                  get_ip_network,
+                                                  is_private_ip, is_public_ip,
+                                                  is_valid_ip, normalize_ip)
 
             test_ip = "192.168.1.1"
 
@@ -243,14 +228,12 @@ class TestUtilityFunctions:
     def test_file_utilities(self):
         """Test file utility functions"""
         try:
-            from src.core.common.file_utils import (
-                backup_file,
-                ensure_directory,
-                get_file_size,
-                is_file_readable,
-                read_json_file,
-                write_json_file,
-            )
+            from src.core.common.file_utils import (backup_file,
+                                                    ensure_directory,
+                                                    get_file_size,
+                                                    is_file_readable,
+                                                    read_json_file,
+                                                    write_json_file)
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 test_dir = os.path.join(temp_dir, "test_subdir")
@@ -288,12 +271,9 @@ class TestErrorHandling:
     def test_custom_exceptions(self):
         """Test custom exception classes"""
         try:
-            from src.core.exceptions import (
-                AuthenticationError,
-                BlacklistError,
-                CollectionError,
-                ValidationError,
-            )
+            from src.core.exceptions import (AuthenticationError,
+                                             BlacklistError, CollectionError,
+                                             ValidationError)
 
             # Test exception creation and inheritance
             error = BlacklistError("Test error message")
@@ -316,12 +296,9 @@ class TestErrorHandling:
     def test_error_handlers(self):
         """Test error handler functions"""
         try:
-            from src.utils.error_handler import (
-                format_error_response,
-                get_error_details,
-                handle_api_error,
-                log_error,
-            )
+            from src.utils.error_handler import (format_error_response,
+                                                 get_error_details,
+                                                 handle_api_error, log_error)
 
             test_error = ValueError("Test error")
 
@@ -353,7 +330,8 @@ class TestDatabaseOperations:
     def test_database_connection(self):
         """Test database connection utilities"""
         try:
-            from src.core.database import execute_query, get_database_connection
+            from src.core.database import (execute_query,
+                                           get_database_connection)
 
             # Test connection creation (may use SQLite in memory)
             conn = get_database_connection()
@@ -367,10 +345,8 @@ class TestDatabaseOperations:
         """Test database model definitions"""
         try:
             from src.core.database.table_definitions import (
-                create_blacklist_table,
-                create_collection_logs_table,
-                get_table_schema,
-            )
+                create_blacklist_table, create_collection_logs_table,
+                get_table_schema)
 
             # Test table creation SQL
             blacklist_sql = create_blacklist_table()
@@ -393,10 +369,7 @@ class TestDatabaseOperations:
         """Test database migration functionality"""
         try:
             from src.core.database.migration_service import (
-                apply_migration,
-                get_current_version,
-                get_pending_migrations,
-            )
+                apply_migration, get_current_version, get_pending_migrations)
 
             # Test version tracking
             current_version = get_current_version()
@@ -447,7 +420,8 @@ class TestCacheSystem:
     def test_cache_decorators(self):
         """Test cache decorator functionality"""
         try:
-            from src.utils.advanced_cache.decorators import cache_result, cached
+            from src.utils.advanced_cache.decorators import (cache_result,
+                                                             cached)
 
             call_count = 0
 
@@ -476,12 +450,10 @@ class TestSecurityFeatures:
     def test_input_validation(self):
         """Test input validation functions"""
         try:
-            from src.utils.security.validation import (
-                check_sql_injection,
-                check_xss_attack,
-                sanitize_string,
-                validate_input,
-            )
+            from src.utils.security.validation import (check_sql_injection,
+                                                       check_xss_attack,
+                                                       sanitize_string,
+                                                       validate_input)
 
             # Test basic input validation
             valid_input = "normal_string_123"
@@ -508,11 +480,9 @@ class TestSecurityFeatures:
     def test_rate_limiting(self):
         """Test rate limiting functionality"""
         try:
-            from src.utils.security.rate_limiting import (
-                RateLimiter,
-                check_rate_limit,
-                reset_rate_limit,
-            )
+            from src.utils.security.rate_limiting import (RateLimiter,
+                                                          check_rate_limit,
+                                                          reset_rate_limit)
 
             # Test rate limiter creation
             limiter = RateLimiter(limit=5, window=60)  # 5 requests per minute
@@ -540,11 +510,9 @@ class TestCollectionSystem:
     def test_collection_config(self):
         """Test collection configuration"""
         try:
-            from src.core.collectors.config import (
-                get_collection_config,
-                get_source_config,
-                validate_config,
-            )
+            from src.core.collectors.config import (get_collection_config,
+                                                    get_source_config,
+                                                    validate_config)
 
             # Test config retrieval
             config = get_collection_config()
@@ -573,11 +541,8 @@ class TestCollectionSystem:
         """Test data transformation functions"""
         try:
             from src.core.collectors.transformers import (
-                merge_duplicate_ips,
-                normalize_ip_data,
-                transform_regtech_data,
-                validate_collected_data,
-            )
+                merge_duplicate_ips, normalize_ip_data, transform_regtech_data,
+                validate_collected_data)
 
             # Test IP data normalization
             raw_ip_data = [
@@ -613,11 +578,8 @@ class TestPerformanceOptimization:
         """Test database query optimization"""
         try:
             from src.utils.performance_optimizer import (
-                cache_query_result,
-                get_performance_metrics,
-                get_query_plan,
-                optimize_query,
-            )
+                cache_query_result, get_performance_metrics, get_query_plan,
+                optimize_query)
 
             test_query = "SELECT * FROM blacklist WHERE ip_address = ?"
 
@@ -641,12 +603,10 @@ class TestPerformanceOptimization:
     def test_memory_optimization(self):
         """Test memory optimization functions"""
         try:
-            from src.utils.memory.core_optimizer import (
-                clear_unused_objects,
-                get_memory_stats,
-                optimize_memory_usage,
-                profile_memory_usage,
-            )
+            from src.utils.memory.core_optimizer import (clear_unused_objects,
+                                                         get_memory_stats,
+                                                         optimize_memory_usage,
+                                                         profile_memory_usage)
 
             # Test memory optimization
             optimize_memory_usage()
@@ -670,7 +630,8 @@ class TestThreadingAndConcurrency:
     def test_thread_safety(self):
         """Test thread-safe operations"""
         try:
-            from src.core.common.cache_helpers import get_cache_value, set_cache_value
+            from src.core.common.cache_helpers import (get_cache_value,
+                                                       set_cache_value)
 
             results = []
 

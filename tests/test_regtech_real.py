@@ -8,7 +8,6 @@ import re
 from datetime import datetime, timedelta
 
 import requests
-
 # SSL 경고 무시
 import urllib3
 

@@ -33,6 +33,18 @@ class ServiceHealth:
 class CoreOperationsMixin:
     """핵심 시스템 운영 기능을 제공하는 믹스인"""
 
+    def __init__(self):
+        """Initialize core operations mixin"""
+        # Initialize logger if not already present
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger(__name__)
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass
+
     async def start(self) -> None:
         """통합 서비스 시작"""
         self.logger.info("🚀 통합 블랙리스트 서비스 시작...")

@@ -6,36 +6,50 @@ from typing import Any, Callable, Union
 
 from flask import Response, jsonify
 
-from .custom_errors import AuthenticationError, AuthorizationError, ValidationError
+from .custom_errors import (AuthenticationError, AuthorizationError,
+                            ValidationError)
 
 logger = logging.getLogger(__name__)
 
 
 def safe_execute(
-    default_return: Any = None,
+    func: Callable = None,
+    default: Any = None,
     exceptions: tuple = (Exception,),
     log_level: str = "error",
     message: str = "Operation failed",
-) -> Callable:
+) -> Any:
     """
-    안전한 함수 실행 데코레이터
+    안전한 함수 실행 - 함수를 직접 실행하거나 데코레이터로 사용
 
     Args:
-        default_return: 에러 시 반환할 기본값
+        func: 실행할 함수 (직접 호출 시)
+        default: 에러 시 반환할 기본값
         exceptions: 처리할 예외 타입들
         log_level: 로그 레벨 (debug, info, warning, error)
         message: 에러 메시지
     """
 
-    def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
+    def execute_safely(target_func):
+        try:
+            return target_func()
+        except exceptions as e:
+            log_func = getattr(logger, log_level, logger.error)
+            log_func(f"{message} in {target_func.__name__}: {str(e)}")
+            return default
+
+    if func is not None:
+        # 직접 함수 실행
+        return execute_safely(func)
+
+    # 데코레이터로 사용
+    def decorator(target_func: Callable) -> Callable:
+        @functools.wraps(target_func)
         def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except exceptions as e:
-                log_func = getattr(logger, log_level, logger.error)
-                log_func("{message} in {func.__name__}: {str(e)}")
-                return default_return
+            def bound_func():
+                return target_func(*args, **kwargs)
+
+            return execute_safely(bound_func)
 
         return wrapper
 
@@ -107,7 +121,7 @@ def retry_on_error(
                         raise
 
                     logger.warning(
-                        "{func.__name__} 시도 {attempt}/{max_attempts} 실패: {e}"
+                        f"{func.__name__} 시도 {attempt}/{max_attempts} 실패: {e}"
                     )
                     time.sleep(current_delay)
                     current_delay *= backoff
@@ -128,36 +142,43 @@ def retry_on_failure(
     return retry_on_error(max_attempts, delay, backoff, exceptions)
 
 
-def log_performance(operation: str) -> Callable:
+def log_performance(func: Callable = None, *, operation: str = None) -> Callable:
     """
     성능 측정 및 로깅 데코레이터
 
     Args:
-        operation: 작업 이름
+        func: 데코레이트할 함수
+        operation: 작업 이름 (선택사항, 기본값은 함수명)
     """
 
-    def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
+    def decorator(target_func: Callable) -> Callable:
+        @functools.wraps(target_func)
         def wrapper(*args, **kwargs):
             import time
 
+            op_name = operation or target_func.__name__
             start_time = time.time()
 
             try:
-                result = func(*args, **kwargs)
+                result = target_func(*args, **kwargs)
                 elapsed = time.time() - start_time
 
                 if elapsed > 1.0:  # 1초 이상 걸린 작업만 로깅
-                    logger.warning(f"{operation} took {elapsed:.2f}s")
+                    logger.warning(f"{op_name} took {elapsed:.2f}s")
                 else:
-                    logger.debug(f"{operation} completed in {elapsed:.3f}s")
+                    logger.debug(f"{op_name} completed in {elapsed:.3f}s")
 
                 return result
             except Exception as e:
                 elapsed = time.time() - start_time
-                logger.error(f"{operation} failed after {elapsed:.2f}s: {e}")
+                logger.error(f"{op_name} failed after {elapsed:.2f}s: {e}")
                 raise
 
         return wrapper
 
-    return decorator
+    if func is None:
+        # 매개변수와 함께 호출: @log_performance(operation="test")
+        return decorator
+    else:
+        # 매개변수 없이 호출: @log_performance
+        return decorator(func)

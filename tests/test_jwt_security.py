@@ -45,7 +45,7 @@ class TestJWTTokenGeneration:
             assert len(token) > 0
 
             # Should be valid JWT format (3 parts separated by dots)
-            parts = token.split('.')
+            parts = token.split(".")
             assert len(parts) == 3
             assert all(part for part in parts)  # No empty parts
 
@@ -64,7 +64,7 @@ class TestJWTTokenGeneration:
             token = generate_jwt_token(payload, secret, expires_in)
 
             assert isinstance(token, str)
-            parts = token.split('.')
+            parts = token.split(".")
             assert len(parts) == 3
 
         except ImportError:
@@ -114,7 +114,7 @@ class TestJWTTokenGeneration:
             # Empty payload
             token = generate_jwt_token({}, "secret")
             assert isinstance(token, str)
-            assert len(token.split('.')) == 3
+            assert len(token.split(".")) == 3
 
             # None values should raise appropriate errors
             with pytest.raises((ValueError, TypeError)):
@@ -133,7 +133,8 @@ class TestJWTTokenValidation:
     def test_validate_jwt_token_valid(self):
         """Test JWT token validation with valid token"""
         try:
-            from src.utils.security import generate_jwt_token, validate_jwt_token
+            from src.utils.security import (generate_jwt_token,
+                                            validate_jwt_token)
 
             payload = {"user_id": 789, "username": "validuser"}
             secret = "validation_secret"
@@ -154,7 +155,8 @@ class TestJWTTokenValidation:
     def test_validate_jwt_token_invalid_signature(self):
         """Test JWT token validation with invalid signature"""
         try:
-            from src.utils.security import generate_jwt_token, validate_jwt_token
+            from src.utils.security import (generate_jwt_token,
+                                            validate_jwt_token)
 
             payload = {"user_id": 999}
             correct_secret = "correct_secret"
@@ -173,7 +175,8 @@ class TestJWTTokenValidation:
     def test_validate_jwt_token_expired(self):
         """Test JWT token validation with expired token"""
         try:
-            from src.utils.security import generate_jwt_token, validate_jwt_token
+            from src.utils.security import (generate_jwt_token,
+                                            validate_jwt_token)
 
             payload = {"user_id": 111}
             secret = "expiry_test_secret"
@@ -200,7 +203,7 @@ class TestJWTTokenValidation:
                 "malformed",
                 "too.many.parts.here.invalid",
                 "",
-                None
+                None,
             ]
 
             for token in malformed_tokens:
@@ -214,79 +217,89 @@ class TestJWTTokenValidation:
 if __name__ == "__main__":
     # Validation tests
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Test classes instantiation
     total_tests += 1
     try:
         test_gen = TestJWTTokenGeneration()
         test_val = TestJWTTokenValidation()
-        if (hasattr(test_gen, 'test_generate_jwt_token_basic') and 
-            hasattr(test_val, 'test_validate_jwt_token_valid')):
+        if hasattr(test_gen, "test_generate_jwt_token_basic") and hasattr(
+            test_val, "test_validate_jwt_token_valid"
+        ):
             pass  # Test passed
         else:
             all_validation_failures.append("JWT security test classes missing methods")
     except Exception as e:
-        all_validation_failures.append(f"JWT security test classes instantiation failed: {e}")
-    
+        all_validation_failures.append(
+            f"JWT security test classes instantiation failed: {e}"
+        )
+
     # Test 2: JWT format validation helper
     total_tests += 1
     try:
+
         def is_valid_jwt_format(token):
             if not token or not isinstance(token, str):
                 return False
-            parts = token.split('.')
+            parts = token.split(".")
             return len(parts) == 3 and all(part for part in parts)
-        
+
         # Test JWT format validation
         valid_jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.Gfx6VO9tcxwk6xqx9yYzSfebfeakZp5JYIgP_edcw_A"
         invalid_jwt = "invalid.token"
-        
+
         if is_valid_jwt_format(valid_jwt) and not is_valid_jwt_format(invalid_jwt):
             pass  # Test passed
         else:
             all_validation_failures.append("JWT format validation helper failed")
     except Exception as e:
         all_validation_failures.append(f"JWT format validation test failed: {e}")
-    
+
     # Test 3: Test method coverage
     total_tests += 1
     try:
         required_methods = [
-            'test_generate_jwt_token_basic',
-            'test_generate_jwt_token_with_expiration',
-            'test_validate_jwt_token_valid',
-            'test_validate_jwt_token_invalid_signature'
+            "test_generate_jwt_token_basic",
+            "test_generate_jwt_token_with_expiration",
+            "test_validate_jwt_token_valid",
+            "test_validate_jwt_token_invalid_signature",
         ]
-        
+
         test_gen = TestJWTTokenGeneration()
         test_val = TestJWTTokenValidation()
-        
+
         missing_methods = []
         for method in required_methods[:2]:  # Generation methods
             if not hasattr(test_gen, method):
                 missing_methods.append(method)
-        
+
         for method in required_methods[2:]:  # Validation methods
             if not hasattr(test_val, method):
                 missing_methods.append(method)
-        
+
         if not missing_methods:
             pass  # Test passed
         else:
-            all_validation_failures.append(f"Missing JWT test methods: {missing_methods}")
+            all_validation_failures.append(
+                f"Missing JWT test methods: {missing_methods}"
+            )
     except Exception as e:
         all_validation_failures.append(f"JWT method coverage check failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("JWT security test module is validated and ready for use")
         sys.exit(0)

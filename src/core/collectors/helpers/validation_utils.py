@@ -80,3 +80,16 @@ class RegtechValidationUtils:
         if cancel_event and hasattr(cancel_event, "is_set"):
             return cancel_event.is_set()
         return False
+
+
+def validate_ip_address(ip: str) -> bool:
+    """
+    Standalone IP validation function for test compatibility
+    """
+    import ipaddress
+
+    try:
+        ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False

@@ -21,17 +21,11 @@ if project_root not in sys.path:
 def test_constants_module():
     """Test constants module functions and values"""
     try:
-        from src.core.constants import (
-            DEFAULT_CACHE_TTL,
-            ERROR_MESSAGES,
-            SUCCESS_MESSAGES,
-            get_api_endpoint,
-            get_cache_key,
-            get_error_message,
-            get_success_message,
-            is_valid_port,
-            is_valid_ttl,
-        )
+        from src.core.constants import (DEFAULT_CACHE_TTL, ERROR_MESSAGES,
+                                        SUCCESS_MESSAGES, get_api_endpoint,
+                                        get_cache_key, get_error_message,
+                                        get_success_message, is_valid_port,
+                                        is_valid_ttl)
 
         # Test constants exist and have proper types
         assert isinstance(DEFAULT_CACHE_TTL, int)

@@ -14,17 +14,15 @@ class TestCollectionService:
 
     def test_collection_service_import(self):
         """Test that collection service can be imported"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         assert CollectionService is not None
 
     def test_collection_service_initialization(self):
         """Test collection service initialization"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
         assert service is not None
@@ -33,9 +31,8 @@ class TestCollectionService:
 
     def test_collection_service_status_structure(self):
         """Test collection service status structure"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
         status = service.status
@@ -57,9 +54,8 @@ class TestCollectionService:
 
     def test_get_collection_status(self):
         """Test getting collection status"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
         # Mock required dependencies for get_collection_status
@@ -84,9 +80,8 @@ class TestCollectionService:
 
     def test_environment_variables_setup(self):
         """Test environment variables setup"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         with patch.dict(
             os.environ,
@@ -107,9 +102,8 @@ class TestCollectionService:
 
     def test_enable_collection(self):
         """Test enabling collection"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -123,9 +117,8 @@ class TestCollectionService:
 
     def test_disable_collection(self):
         """Test disabling collection"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -139,9 +132,8 @@ class TestCollectionService:
 
     def test_trigger_collection(self):
         """Test triggering collection"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
         # Mock required attributes
@@ -166,9 +158,8 @@ class TestCollectionService:
 
     def test_regtech_collection(self):
         """Test REGTECH specific collection"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -185,9 +176,8 @@ class TestCollectionService:
 
     def test_secudium_collection(self):
         """Test SECUDIUM specific collection"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -204,9 +194,8 @@ class TestCollectionService:
 
     def test_collection_history(self):
         """Test collection history tracking"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -220,9 +209,8 @@ class TestCollectionService:
 
     def test_collection_logs(self):
         """Test collection logs retrieval"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -236,9 +224,8 @@ class TestCollectionService:
 
     def test_source_management(self):
         """Test source enable/disable management"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -253,9 +240,8 @@ class TestCollectionService:
 
     def test_collection_statistics(self):
         """Test collection statistics"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 
@@ -269,9 +255,8 @@ class TestCollectionService:
 
     def test_error_handling(self):
         """Test collection error handling"""
-        from src.core.services.collection_service import (
-            CollectionServiceMixin as CollectionService,
-        )
+        from src.core.services.collection_service import \
+            CollectionServiceMixin as CollectionService
 
         service = CollectionService()
 

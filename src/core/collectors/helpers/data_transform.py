@@ -119,3 +119,24 @@ class RegtechDataTransform:
         # 원래 순서로 복원
         unique_ips.reverse()
         return unique_ips
+
+
+def normalize_ip_data(raw_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Normalize IP data for test compatibility
+    """
+    normalized = []
+    for item in raw_data:
+        normalized_item = {
+            "ip": item.get("ip", ""),
+            "source": item.get("source", "unknown"),
+            "country": item.get("country", "Unknown"),
+            "reason": item.get("reason", "Unknown"),
+            "date": item.get("date", ""),
+        }
+        # Preserve additional fields
+        for key, value in item.items():
+            if key not in normalized_item:
+                normalized_item[key] = value
+        normalized.append(normalized_item)
+    return normalized

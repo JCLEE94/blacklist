@@ -13,14 +13,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.utils.security import (
-    SecurityManager,
-    generate_csrf_token,
-    get_security_manager,
-    sanitize_input,
-    setup_security,
-    validate_csrf_token,
-)
+from src.utils.security import (SecurityManager, generate_csrf_token,
+                                get_security_manager, sanitize_input,
+                                setup_security, validate_csrf_token)
 
 
 class TestSecurityUtilities:

@@ -109,7 +109,8 @@ class TestBlacklistDataService:
     def test_data_service_initialization(self):
         """Test data service initialization"""
         try:
-            from src.core.blacklist_unified.data_service import BlacklistDataService
+            from src.core.blacklist_unified.data_service import \
+                BlacklistDataService
 
             service = BlacklistDataService()
             assert service is not None
@@ -122,7 +123,8 @@ class TestBlacklistDataService:
     def test_data_service_database_operations(self):
         """Test database operations"""
         try:
-            from src.core.blacklist_unified.data_service import BlacklistDataService
+            from src.core.blacklist_unified.data_service import \
+                BlacklistDataService
 
             service = BlacklistDataService()
 
@@ -141,7 +143,8 @@ class TestBlacklistDataService:
     def test_data_service_crud_operations(self):
         """Test CRUD operations"""
         try:
-            from src.core.blacklist_unified.data_service import BlacklistDataService
+            from src.core.blacklist_unified.data_service import \
+                BlacklistDataService
 
             service = BlacklistDataService()
 
@@ -243,7 +246,8 @@ class TestBlacklistStatistics:
     def test_statistics_service_initialization(self):
         """Test statistics service initialization"""
         try:
-            from src.core.blacklist_unified.statistics_service import StatisticsService
+            from src.core.blacklist_unified.statistics_service import \
+                StatisticsService
 
             service = StatisticsService()
             assert service is not None
@@ -256,7 +260,8 @@ class TestBlacklistStatistics:
     def test_statistics_basic_counts(self):
         """Test basic statistics counts"""
         try:
-            from src.core.blacklist_unified.statistics_service import StatisticsService
+            from src.core.blacklist_unified.statistics_service import \
+                StatisticsService
 
             service = StatisticsService()
 
@@ -280,7 +285,8 @@ class TestBlacklistStatistics:
     def test_statistics_trends(self):
         """Test statistics trends"""
         try:
-            from src.core.blacklist_unified.statistics_service import StatisticsService
+            from src.core.blacklist_unified.statistics_service import \
+                StatisticsService
 
             service = StatisticsService()
 
@@ -387,7 +393,8 @@ class TestBlacklistExpirationService:
     def test_expiration_service_initialization(self):
         """Test expiration service initialization"""
         try:
-            from src.core.blacklist_unified.expiration_service import ExpirationService
+            from src.core.blacklist_unified.expiration_service import \
+                ExpirationService
 
             service = ExpirationService()
             assert service is not None
@@ -400,7 +407,8 @@ class TestBlacklistExpirationService:
     def test_expiration_service_cleanup(self):
         """Test expiration cleanup functionality"""
         try:
-            from src.core.blacklist_unified.expiration_service import ExpirationService
+            from src.core.blacklist_unified.expiration_service import \
+                ExpirationService
 
             service = ExpirationService()
 
@@ -420,7 +428,8 @@ class TestBlacklistExpirationService:
     def test_expiration_service_scheduling(self):
         """Test expiration scheduling"""
         try:
-            from src.core.blacklist_unified.expiration_service import ExpirationService
+            from src.core.blacklist_unified.expiration_service import \
+                ExpirationService
 
             service = ExpirationService()
 

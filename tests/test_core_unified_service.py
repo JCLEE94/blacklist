@@ -15,7 +15,8 @@ import pytest
 def test_unified_service_initialization():
     """Test unified service basic initialization"""
     try:
-        from src.core.services.unified_service_core import UnifiedBlacklistService
+        from src.core.services.unified_service_core import \
+            UnifiedBlacklistService
 
         # Create a mock container
         mock_container = Mock()

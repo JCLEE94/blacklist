@@ -19,14 +19,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from src.utils.structured_logging import (
-    BufferHandler,
-    LogManager,
-    StructuredLogger,
-    get_logger,
-    log_manager,
-    setup_request_logging,
-)
+from src.utils.structured_logging import (BufferHandler, LogManager,
+                                          StructuredLogger, get_logger,
+                                          log_manager, setup_request_logging)
 
 
 @pytest.fixture

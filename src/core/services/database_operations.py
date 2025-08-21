@@ -5,6 +5,7 @@
 데이터베이스 초기화, 테이블 관리, 트랜잭션 처리 등 DB 관련 기능을 제공합니다.
 """
 
+import logging
 import os
 import sqlite3
 from datetime import datetime
@@ -13,6 +14,18 @@ from typing import Any, Dict
 
 class DatabaseOperationsMixin:
     """데이터베이스 운영 기능을 제공하는 믹스인"""
+
+    def __init__(self):
+        """Initialize database operations mixin"""
+        # Initialize logger if not already present
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger(__name__)
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass
 
     def initialize_database_tables(self) -> Dict[str, Any]:
         """데이터베이스 테이블 강제 초기화"""

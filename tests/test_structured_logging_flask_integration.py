@@ -14,7 +14,8 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 # Test imports
-from src.utils.structured_logging import get_logger, log_manager, setup_request_logging
+from src.utils.structured_logging import (get_logger, log_manager,
+                                          setup_request_logging)
 
 
 class TestFlaskIntegration:

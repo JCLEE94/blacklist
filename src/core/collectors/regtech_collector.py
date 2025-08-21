@@ -8,7 +8,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -30,7 +30,9 @@ class RegtechCollector(BaseCollector):
     모듈화된 구조로 강화된 에러 핸들링과 복구 메커니즘 포함
     """
 
-    def __init__(self, config: CollectionConfig):
+    def __init__(self, config: Optional[CollectionConfig] = None):
+        if config is None:
+            config = CollectionConfig()
         super().__init__("REGTECH", config)
 
         # 기본 설정
@@ -432,6 +434,37 @@ class RegtechCollector(BaseCollector):
                 "error": str(e),
                 "message": f"REGTECH 수집 중 오류: {e}",
             }
+
+    # Test compatibility methods
+    def get_config(self) -> Dict[str, Any]:
+        """Get configuration for test compatibility"""
+        return {
+            "base_url": self.base_url,
+            "username": self.username,
+            "enabled": self.config.enabled,
+            **self.config_data,
+        }
+
+    def set_config(self, config: Dict[str, Any]):
+        """Set configuration for test compatibility"""
+        self.config_data.update(config)
+
+    def _create_session(self) -> requests.Session:
+        """Create session for test compatibility"""
+        return self.request_utils.create_session()
+
+    def _validate_data(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Validate data for test compatibility"""
+        valid_data = []
+        for item in data:
+            ip = item.get("ip", "")
+            if self.validation_utils.is_valid_ip(ip):
+                valid_data.append(item)
+        return valid_data
+
+    def _handle_error(self, message: str, error: Exception):
+        """Handle error for test compatibility"""
+        self.logger.error(f"{message}: {error}")
 
 
 if __name__ == "__main__":

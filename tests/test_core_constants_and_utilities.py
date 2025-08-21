@@ -21,24 +21,13 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.core.constants import (
-    API_VERSION,
-    DEFAULT_CACHE_TTL,
-    ERROR_MESSAGES,
-    HTTP_STATUS_CODES,
-    IP_PATTERNS,
-    SUCCESS_MESSAGES,
-    SUPPORTED_IP_FORMATS,
-    SYSTEM_NAME,
-    TEST_CONFIG,
-    get_api_endpoint,
-    get_cache_key,
-    get_error_message,
-    get_success_message,
-    get_web_route,
-    is_valid_port,
-    is_valid_ttl,
-)
+from src.core.constants import (API_VERSION, DEFAULT_CACHE_TTL, ERROR_MESSAGES,
+                                HTTP_STATUS_CODES, IP_PATTERNS,
+                                SUCCESS_MESSAGES, SUPPORTED_IP_FORMATS,
+                                SYSTEM_NAME, TEST_CONFIG, get_api_endpoint,
+                                get_cache_key, get_error_message,
+                                get_success_message, get_web_route,
+                                is_valid_port, is_valid_ttl)
 
 
 class TestConstants(unittest.TestCase):
@@ -414,7 +403,8 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         # Import and basic validation
-        from src.core.constants import API_VERSION, DEFAULT_CACHE_TTL, IP_PATTERNS
+        from src.core.constants import (API_VERSION, DEFAULT_CACHE_TTL,
+                                        IP_PATTERNS)
 
         if not API_VERSION or not isinstance(DEFAULT_CACHE_TTL, int) or not IP_PATTERNS:
             all_validation_failures.append(
@@ -469,11 +459,8 @@ if __name__ == "__main__":
     # Test 5: Configuration structure validation
     total_tests += 1
     try:
-        from src.core.constants import (
-            ERROR_MESSAGES,
-            HTTP_STATUS_CODES,
-            SUCCESS_MESSAGES,
-        )
+        from src.core.constants import (ERROR_MESSAGES, HTTP_STATUS_CODES,
+                                        SUCCESS_MESSAGES)
 
         if not HTTP_STATUS_CODES.get("OK") == 200:
             all_validation_failures.append(

@@ -1,10 +1,7 @@
 """Test utilities package"""
 
-from .test_utils import (
-    _create_test_app_with_mock_service,
-    create_simple_mock_container,
-    run_all_tests,
-)
+from .test_utils import (_create_test_app_with_mock_service,
+                         create_simple_mock_container, run_all_tests)
 
 # Import get_container from parent utils module
 try:

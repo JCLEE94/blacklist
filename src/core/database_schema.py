@@ -9,12 +9,8 @@ import logging
 from typing import Any, Dict, Optional
 
 # 새로운 모듈화된 시스템에서 임포트
-from .database import (
-    DatabaseSchema,
-    get_database_schema,
-    initialize_database,
-    migrate_database,
-)
+from .database import (DatabaseSchema, get_database_schema,
+                       initialize_database, migrate_database)
 
 # 로깅 설정
 logger = logging.getLogger(__name__)

@@ -39,26 +39,37 @@ def trigger_regtech_collection():
         start_date = data.get("start_date")
         end_date = data.get("end_date")
         cookies = data.get("cookies")  # 쿠키 파라미터 추가
-        
+
         # 입력 유효성 검사
         if not start_date or not end_date:
-            return jsonify({
-                "success": False,
-                "error": "start_date and end_date are required",
-                "message": "시작일과 종료일을 모두 제공해야 합니다."
-            }), 400
-            
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "start_date and end_date are required",
+                        "message": "시작일과 종료일을 모두 제공해야 합니다.",
+                    }
+                ),
+                400,
+            )
+
         # 날짜 형식 검증 (YYYYMMDD)
         try:
             from datetime import datetime as dt
+
             dt.strptime(start_date, "%Y%m%d")
             dt.strptime(end_date, "%Y%m%d")
         except ValueError:
-            return jsonify({
-                "success": False,
-                "error": "Invalid date format. Use YYYYMMDD",
-                "message": "날짜 형식이 올바르지 않습니다. YYYYMMDD 형식을 사용하세요."
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Invalid date format. Use YYYYMMDD",
+                        "message": "날짜 형식이 올바르지 않습니다. YYYYMMDD 형식을 사용하세요.",
+                    }
+                ),
+                400,
+            )
 
         # 컨테이너에서 progress_tracker 가져오기
         container = get_container()
@@ -70,12 +81,12 @@ def trigger_regtech_collection():
 
         # 로그 추가 - 날짜 정보 포함
         log_details = {
-            "triggered_by": "manual", 
+            "triggered_by": "manual",
             "timestamp": datetime.now().isoformat(),
             "start_date": start_date,
-            "end_date": end_date
+            "end_date": end_date,
         }
-            
+
         service.add_collection_log(
             "regtech",
             "collection_triggered",
@@ -126,27 +137,37 @@ def trigger_regtech_collection():
                 progress_tracker.fail_collection(
                     "regtech", result.get("message", "REGTECH 수집 트리거 실패")
                 )
-            
+
             # Check if collection is disabled - return 503 instead of 500
-            if ("비활성화" in result.get("message", "") or 
-                result.get("collection_enabled") is False):
+            if (
+                "비활성화" in result.get("message", "")
+                or result.get("collection_enabled") is False
+            ):
                 return (
-                    jsonify({
-                        "success": False,
-                        "message": result.get("message", "REGTECH 수집 트리거 실패"),
-                        "error": result.get("error"),
-                        "progress": progress_info,
-                    }),
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": result.get(
+                                "message", "REGTECH 수집 트리거 실패"
+                            ),
+                            "error": result.get("error"),
+                            "progress": progress_info,
+                        }
+                    ),
                     503,  # Service Unavailable
                 )
             else:
                 return (
-                    jsonify({
-                        "success": False,
-                        "message": result.get("message", "REGTECH 수집 트리거 실패"),
-                        "error": result.get("error"),
-                        "progress": progress_info,
-                    }),
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": result.get(
+                                "message", "REGTECH 수집 트리거 실패"
+                            ),
+                            "error": result.get("error"),
+                            "progress": progress_info,
+                        }
+                    ),
                     500,
                 )
 
@@ -168,11 +189,13 @@ def trigger_regtech_collection():
             "regtech", "collection_failed", {"error": str(e), "triggered_by": "manual"}
         )
         return (
-            jsonify({
-                "success": False,
-                "error": str(e),
-                "message": "REGTECH 수집 트리거 중 오류가 발생했습니다.",
-            }),
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "message": "REGTECH 수집 트리거 중 오류가 발생했습니다.",
+                }
+            ),
             500,
         )
 
@@ -192,23 +215,27 @@ def trigger_secudium_collection():
             )
 
         return (
-            jsonify({
-                "success": False,
-                "message": "SECUDIUM 수집은 현재 비활성화되어 있습니다.",
-                "reason": "계정 문제로 인해 일시적으로 사용할 수 없습니다.",
-                "source": "secudium",
-                "disabled": True,
-            }),
+            jsonify(
+                {
+                    "success": False,
+                    "message": "SECUDIUM 수집은 현재 비활성화되어 있습니다.",
+                    "reason": "계정 문제로 인해 일시적으로 사용할 수 없습니다.",
+                    "source": "secudium",
+                    "disabled": True,
+                }
+            ),
             503,
         )  # Service Unavailable
     except Exception as e:
         logger.error(f"SECUDIUM trigger error: {e}")
         return (
-            jsonify({
-                "success": False,
-                "error": str(e),
-                "message": "SECUDIUM 수집 트리거 중 오류가 발생했습니다.",
-            }),
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "message": "SECUDIUM 수집 트리거 중 오류가 발생했습니다.",
+                }
+            ),
             500,
         )
 
@@ -222,10 +249,9 @@ def get_collection_progress(source):
 
         if not progress_tracker:
             return (
-                jsonify({
-                    "success": False, 
-                    "message": "Progress tracker not available"
-                }),
+                jsonify(
+                    {"success": False, "message": "Progress tracker not available"}
+                ),
                 503,
             )
 

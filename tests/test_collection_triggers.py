@@ -17,7 +17,6 @@ import json
 import time
 
 import pytest
-
 from test_utils import TestBase
 
 
@@ -27,10 +26,10 @@ class TestCollectionTriggers(TestBase):
     def test_enable_collection_endpoint(self):
         """Test collection enable endpoint"""
         response = self.make_request("POST", "/api/collection/enable")
-        
+
         # Should succeed, require auth, or indicate not implemented
         assert response.status_code in [200, 201, 401, 404, 501, 503]
-        
+
         if response.status_code in [200, 201]:
             data = response.json()
             # Check for success indicators
@@ -42,9 +41,9 @@ class TestCollectionTriggers(TestBase):
     def test_disable_collection_endpoint(self):
         """Test collection disable endpoint"""
         response = self.make_request("POST", "/api/collection/disable")
-        
+
         assert response.status_code in [200, 201, 401, 404, 501, 503]
-        
+
         if response.status_code in [200, 201]:
             data = response.json()
             success_indicators = ["success", "disabled", "status"]
@@ -55,10 +54,10 @@ class TestCollectionTriggers(TestBase):
     def test_regtech_trigger_endpoint(self):
         """Test REGTECH manual collection trigger"""
         response = self.make_request("POST", "/api/collection/regtech/trigger")
-        
+
         # Should succeed, require auth, or indicate not available
         assert response.status_code in [200, 202, 401, 404, 501, 503]
-        
+
         if response.status_code in [200, 202]:
             data = response.json()
             trigger_indicators = ["triggered", "started", "queued", "success"]
@@ -69,9 +68,9 @@ class TestCollectionTriggers(TestBase):
     def test_secudium_trigger_endpoint(self):
         """Test SECUDIUM manual collection trigger"""
         response = self.make_request("POST", "/api/collection/secudium/trigger")
-        
+
         assert response.status_code in [200, 202, 401, 404, 501, 503]
-        
+
         if response.status_code in [200, 202]:
             data = response.json()
             trigger_indicators = ["triggered", "started", "queued", "success"]
@@ -82,9 +81,9 @@ class TestCollectionTriggers(TestBase):
     def test_manual_collection_trigger(self):
         """Test generic manual collection trigger"""
         response = self.make_request("POST", "/api/collection/trigger")
-        
+
         assert response.status_code in [200, 202, 401, 404, 501, 503]
-        
+
         if response.status_code in [200, 202]:
             data = response.json()
             # Should indicate collection was triggered or queued
@@ -96,17 +95,16 @@ class TestCollectionTriggers(TestBase):
             "source": "regtech",
             "force": True,
             "start_date": "2024-01-01",
-            "end_date": "2024-01-07"
+            "end_date": "2024-01-07",
         }
-        
+
         response = self.make_request(
-            "POST", "/api/collection/trigger",
-            json=trigger_params
+            "POST", "/api/collection/trigger", json=trigger_params
         )
-        
+
         # Should handle parameters appropriately
         assert response.status_code in [200, 202, 400, 401, 404, 422, 501, 503]
-        
+
         if response.status_code in [200, 202]:
             data = response.json()
             assert isinstance(data, dict)
@@ -114,9 +112,9 @@ class TestCollectionTriggers(TestBase):
     def test_collection_stop_endpoint(self):
         """Test collection stop/cancel endpoint"""
         response = self.make_request("POST", "/api/collection/stop")
-        
+
         assert response.status_code in [200, 404, 501, 503]
-        
+
         if response.status_code == 200:
             data = response.json()
             stop_indicators = ["stopped", "cancelled", "success"]
@@ -127,9 +125,9 @@ class TestCollectionTriggers(TestBase):
     def test_collection_restart_endpoint(self):
         """Test collection restart endpoint"""
         response = self.make_request("POST", "/api/collection/restart")
-        
+
         assert response.status_code in [200, 202, 401, 404, 501, 503]
-        
+
         if response.status_code in [200, 202]:
             data = response.json()
             restart_indicators = ["restarted", "success", "triggered"]
@@ -139,17 +137,12 @@ class TestCollectionTriggers(TestBase):
 
     def test_collection_schedule_endpoint(self):
         """Test collection scheduling endpoint"""
-        schedule_data = {
-            "enabled": True,
-            "interval": "daily",
-            "time": "02:00"
-        }
-        
+        schedule_data = {"enabled": True, "interval": "daily", "time": "02:00"}
+
         response = self.make_request(
-            "POST", "/api/collection/schedule",
-            json=schedule_data
+            "POST", "/api/collection/schedule", json=schedule_data
         )
-        
+
         # Scheduling might not be implemented
         assert response.status_code in [200, 201, 400, 401, 404, 422, 501, 503]
 
@@ -170,44 +163,52 @@ class TestCollectionTriggers(TestBase):
 if __name__ == "__main__":
     # Validation tests
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: TestCollectionTriggers instantiation
     total_tests += 1
     try:
         test_triggers = TestCollectionTriggers()
-        if hasattr(test_triggers, 'BASE_URL') and hasattr(test_triggers, 'make_request'):
+        if hasattr(test_triggers, "BASE_URL") and hasattr(
+            test_triggers, "make_request"
+        ):
             pass  # Test passed
         else:
-            all_validation_failures.append("TestCollectionTriggers missing required attributes")
+            all_validation_failures.append(
+                "TestCollectionTriggers missing required attributes"
+            )
     except Exception as e:
-        all_validation_failures.append(f"TestCollectionTriggers instantiation failed: {e}")
-    
+        all_validation_failures.append(
+            f"TestCollectionTriggers instantiation failed: {e}"
+        )
+
     # Test 2: Trigger test methods availability
     total_tests += 1
     try:
         test_triggers = TestCollectionTriggers()
         required_methods = [
-            'test_enable_collection_endpoint',
-            'test_regtech_trigger_endpoint',
-            'test_secudium_trigger_endpoint',
-            'test_manual_collection_trigger'
+            "test_enable_collection_endpoint",
+            "test_regtech_trigger_endpoint",
+            "test_secudium_trigger_endpoint",
+            "test_manual_collection_trigger",
         ]
-        
+
         missing_methods = []
         for method in required_methods:
             if not hasattr(test_triggers, method):
                 missing_methods.append(method)
-        
+
         if not missing_methods:
             pass  # Test passed
         else:
-            all_validation_failures.append(f"Missing collection trigger test methods: {missing_methods}")
+            all_validation_failures.append(
+                f"Missing collection trigger test methods: {missing_methods}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Trigger method check failed: {e}")
-    
+
     # Test 3: Test data structures
     total_tests += 1
     try:
@@ -216,33 +217,35 @@ if __name__ == "__main__":
             "source": "regtech",
             "force": True,
             "start_date": "2024-01-01",
-            "end_date": "2024-01-07"
+            "end_date": "2024-01-07",
         }
-        
-        schedule_data = {
-            "enabled": True,
-            "interval": "daily",
-            "time": "02:00"
-        }
-        
+
+        schedule_data = {"enabled": True, "interval": "daily", "time": "02:00"}
+
         # Validate test data structures
-        if (isinstance(trigger_params, dict) and 
-            isinstance(schedule_data, dict) and
-            "source" in trigger_params and 
-            "enabled" in schedule_data):
+        if (
+            isinstance(trigger_params, dict)
+            and isinstance(schedule_data, dict)
+            and "source" in trigger_params
+            and "enabled" in schedule_data
+        ):
             pass  # Test passed
         else:
             all_validation_failures.append("Invalid test data structures")
     except Exception as e:
         all_validation_failures.append(f"Test data structures validation failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Collection triggers test module is validated and ready for use")
         sys.exit(0)

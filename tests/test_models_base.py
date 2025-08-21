@@ -8,16 +8,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from src.core.models import (
-    APIResponse,
-    BlacklistEntry,
-    CacheEntry,
-    HealthStatus,
-    IPAddressType,
-    MonthData,
-    SystemHealth,
-    ValidationResult,
-)
+from src.core.models import (APIResponse, BlacklistEntry, CacheEntry,
+                             HealthStatus, IPAddressType, MonthData,
+                             SystemHealth, ValidationResult)
 
 
 class TestHealthStatus:

@@ -188,7 +188,8 @@ class TestExceptionsModules(unittest.TestCase):
     def test_config_exceptions_functionality(self):
         """Test config exceptions functionality"""
         try:
-            from src.core.exceptions.config_exceptions import ConfigurationError
+            from src.core.exceptions.config_exceptions import \
+                ConfigurationError
 
             # Test exception creation
             exc = ConfigurationError("Config error")
@@ -350,7 +351,8 @@ class TestAdvancedCacheFunctionality(unittest.TestCase):
     def test_cache_manager_functionality(self):
         """Test cache manager with real operations"""
         try:
-            from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
+            from src.utils.advanced_cache.cache_manager import \
+                EnhancedSmartCache
 
             cache = EnhancedSmartCache()
 

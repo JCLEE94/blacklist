@@ -17,21 +17,12 @@ import jwt
 import pytest
 
 # Test imports
-from src.utils.security import (
-    SecurityHeaders,
-    SecurityManager,
-    generate_csrf_token,
-    get_security_manager,
-    input_validation,
-    rate_limit,
-    require_api_key,
-    require_auth,
-    require_permission,
-    sanitize_input,
-    security_check,
-    setup_security,
-    validate_csrf_token,
-)
+from src.utils.security import (SecurityHeaders, SecurityManager,
+                                generate_csrf_token, get_security_manager,
+                                input_validation, rate_limit, require_api_key,
+                                require_auth, require_permission,
+                                sanitize_input, security_check, setup_security,
+                                validate_csrf_token)
 
 
 @pytest.fixture

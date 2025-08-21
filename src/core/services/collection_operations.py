@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import logging
 from datetime import datetime
 from typing import Any, Dict
 
@@ -13,6 +14,10 @@ class CollectionOperationsMixin:
 
     def __init__(self):
         """Initialize collection operations"""
+        # Initialize logger if not already present
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger(__name__)
+
         self.status = {
             "enabled": False,
             "sources": {
@@ -22,6 +27,13 @@ class CollectionOperationsMixin:
         }
         self.collection_enabled = False
         self.daily_collection_enabled = False
+
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass
 
     async def collect_all_data(self, force: bool = False) -> Dict[str, Any]:
         """모든 소스에서 데이터 수집 (중복 제거 포함)"""

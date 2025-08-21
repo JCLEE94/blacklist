@@ -67,7 +67,7 @@ def api_collection_logs():
             memory_logs = service.get_collection_logs(limit=50)
             for log_entry in memory_logs:
                 details = log_entry.get("details", {})
-                
+
                 # 수집 날짜 포맷
                 timestamp = log_entry.get("timestamp", "")
                 if timestamp:
@@ -81,11 +81,11 @@ def api_collection_logs():
                 else:
                     date_str = "날짜 불명"
                     time_str = ""
-                
+
                 # 의미있는 메시지 생성
                 source = log_entry.get("source", "unknown").upper()
                 action = log_entry.get("action", "")
-                
+
                 # 기본 메시지 구성
                 if "completed" in action:
                     icon = "✅"
@@ -105,10 +105,10 @@ def api_collection_logs():
                 else:
                     icon = "ℹ️"
                     status = action
-                
+
                 # 상세 정보 구성
                 info_parts = []
-                
+
                 # 수집 날짜
                 if details.get("start_date"):
                     start = details["start_date"]
@@ -119,7 +119,7 @@ def api_collection_logs():
                         info_parts.append(f"📅 {start} ~ {end}")
                 else:
                     info_parts.append(f"📅 {date_str}")
-                
+
                 # 수집 개수
                 if details.get("ips_collected") is not None:
                     count = details["ips_collected"]
@@ -130,7 +130,7 @@ def api_collection_logs():
                 elif details.get("total_ips") is not None:
                     count = details["total_ips"]
                     info_parts.append(f"📊 총 {count}개")
-                
+
                 # 중복 개수
                 if details.get("duplicates") is not None:
                     dup_count = details["duplicates"]
@@ -138,28 +138,31 @@ def api_collection_logs():
                 elif details.get("duplicate_count") is not None:
                     dup_count = details["duplicate_count"]
                     info_parts.append(f"🔁 중복 {dup_count}개")
-                elif details.get("new_ips") is not None and details.get("total_ips") is not None:
+                elif (
+                    details.get("new_ips") is not None
+                    and details.get("total_ips") is not None
+                ):
                     # 신규 IP로부터 중복 계산
                     total = details.get("total_ips", 0)
                     new = details.get("new_ips", 0)
                     dup_count = total - new
                     if dup_count > 0:
                         info_parts.append(f"🔁 중복 {dup_count}개")
-                
+
                 # 신규 IP
                 if details.get("new_ips") is not None:
                     new_count = details["new_ips"]
                     info_parts.append(f"✨ 신규 {new_count}개")
-                
+
                 # 에러 정보
                 if details.get("error"):
                     info_parts.append(f"⚠️ {details['error'][:50]}")
-                
+
                 # 최종 메시지 조합
                 message = f"{icon} [{source}] {status}"
                 if info_parts:
                     message += " | " + " | ".join(info_parts)
-                
+
                 formatted_log = {
                     "timestamp": log_entry.get("timestamp"),
                     "source": source,
@@ -167,7 +170,7 @@ def api_collection_logs():
                     "message": message,
                     "date": date_str,
                     "time": time_str,
-                    "details": details
+                    "details": details,
                 }
 
                 logs.append(formatted_log)
@@ -274,13 +277,13 @@ def get_collection_history():
         # URL 파라미터 파싱
         limit = min(int(request.args.get("limit", 50)), 100)  # 최대 100개
         offset = max(int(request.args.get("offset", 0)), 0)
-        
+
         # 최근 로그 조회 (limit + offset)
         total_logs = service.get_collection_logs(limit + offset)
-        
+
         # 페이지네이션 적용
-        paginated_logs = total_logs[offset:offset + limit] if total_logs else []
-        
+        paginated_logs = total_logs[offset : offset + limit] if total_logs else []
+
         # 히스토리 형태로 포맷팅
         history = []
         for log in paginated_logs:
@@ -289,31 +292,50 @@ def get_collection_history():
                 "timestamp": log.get("timestamp"),
                 "source": log.get("source", "unknown").upper(),
                 "action": log.get("action", "unknown"),
-                "status": "success" if "completed" in log.get("action", "") else "running" if "started" in log.get("action", "") else "failed",
+                "status": (
+                    "success"
+                    if "completed" in log.get("action", "")
+                    else "running" if "started" in log.get("action", "") else "failed"
+                ),
                 "duration": None,  # Can't calculate without start/end times
-                "ips_collected": log.get("details", {}).get("ips_collected") or log.get("details", {}).get("ip_count"),
+                "ips_collected": log.get("details", {}).get("ips_collected")
+                or log.get("details", {}).get("ip_count"),
                 "details": log.get("details", {}),
-                "message": log.get("message", "")
+                "message": log.get("message", ""),
             }
             history.append(history_entry)
-        
-        return jsonify({
-            "success": True,
-            "history": history,
-            "pagination": {
-                "limit": limit,
-                "offset": offset,
-                "total": len(total_logs) if total_logs else 0,
-                "has_more": len(total_logs) > (offset + limit) if total_logs else False
-            },
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "history": history,
+                "pagination": {
+                    "limit": limit,
+                    "offset": offset,
+                    "total": len(total_logs) if total_logs else 0,
+                    "has_more": (
+                        len(total_logs) > (offset + limit) if total_logs else False
+                    ),
+                },
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Collection history error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "history": [],
-            "pagination": {"limit": 0, "offset": 0, "total": 0, "has_more": False}
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "history": [],
+                    "pagination": {
+                        "limit": 0,
+                        "offset": 0,
+                        "total": 0,
+                        "has_more": False,
+                    },
+                }
+            ),
+            500,
+        )

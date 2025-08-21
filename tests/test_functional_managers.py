@@ -14,9 +14,8 @@ class TestUnifiedCollector:
     def test_unified_collector_import(self):
         """Test UnifiedCollector import"""
         try:
-            from src.core.collectors.unified_collector import (
-                UnifiedCollectionManager as UnifiedCollector,
-            )
+            from src.core.collectors.unified_collector import \
+                UnifiedCollectionManager as UnifiedCollector
 
             assert UnifiedCollector is not None
         except ImportError:
@@ -25,9 +24,8 @@ class TestUnifiedCollector:
     def test_unified_collector_methods(self):
         """Test unified collector methods"""
         try:
-            from src.core.collectors.unified_collector import (
-                UnifiedCollectionManager as UnifiedCollector,
-            )
+            from src.core.collectors.unified_collector import \
+                UnifiedCollectionManager as UnifiedCollector
 
             # Check for expected methods
             expected_methods = ["collect", "run", "get_status", "__init__"]
@@ -42,9 +40,8 @@ class TestUnifiedCollector:
     def test_unified_collector_instantiation(self):
         """Test unified collector instantiation"""
         try:
-            from src.core.collectors.unified_collector import (
-                UnifiedCollectionManager as UnifiedCollector,
-            )
+            from src.core.collectors.unified_collector import \
+                UnifiedCollectionManager as UnifiedCollector
 
             collector = UnifiedCollector()
             assert collector is not None
@@ -61,9 +58,8 @@ class TestBlacklistManager:
     def test_blacklist_manager_import(self):
         """Test BlacklistManager import"""
         try:
-            from src.core.blacklist_unified.manager import (
-                UnifiedBlacklistManager as BlacklistManager,
-            )
+            from src.core.blacklist_unified.manager import \
+                UnifiedBlacklistManager as BlacklistManager
 
             assert BlacklistManager is not None
         except ImportError:
@@ -72,9 +68,8 @@ class TestBlacklistManager:
     def test_blacklist_manager_methods(self):
         """Test blacklist manager methods"""
         try:
-            from src.core.blacklist_unified.manager import (
-                UnifiedBlacklistManager as BlacklistManager,
-            )
+            from src.core.blacklist_unified.manager import \
+                UnifiedBlacklistManager as BlacklistManager
 
             # Check for expected methods
             expected_methods = [
@@ -96,9 +91,8 @@ class TestBlacklistManager:
     def test_blacklist_manager_instantiation(self):
         """Test blacklist manager instantiation"""
         try:
-            from src.core.blacklist_unified.manager import (
-                UnifiedBlacklistManager as BlacklistManager,
-            )
+            from src.core.blacklist_unified.manager import \
+                UnifiedBlacklistManager as BlacklistManager
 
             manager = BlacklistManager()
             assert manager is not None
@@ -163,9 +157,8 @@ class TestAdvancedCache:
     def test_cache_manager_import(self):
         """Test CacheManager import"""
         try:
-            from src.utils.advanced_cache.cache_manager import (
-                EnhancedSmartCache as CacheManager,
-            )
+            from src.utils.advanced_cache.cache_manager import \
+                EnhancedSmartCache as CacheManager
 
             assert CacheManager is not None
         except ImportError:
@@ -174,9 +167,8 @@ class TestAdvancedCache:
     def test_cache_manager_methods(self):
         """Test cache manager methods"""
         try:
-            from src.utils.advanced_cache.cache_manager import (
-                EnhancedSmartCache as CacheManager,
-            )
+            from src.utils.advanced_cache.cache_manager import \
+                EnhancedSmartCache as CacheManager
 
             # Check for expected methods
             expected_methods = [
@@ -199,9 +191,8 @@ class TestAdvancedCache:
     def test_cache_manager_redis_fallback(self):
         """Test cache manager Redis fallback behavior"""
         try:
-            from src.utils.advanced_cache.cache_manager import (
-                EnhancedSmartCache as CacheManager,
-            )
+            from src.utils.advanced_cache.cache_manager import \
+                EnhancedSmartCache as CacheManager
 
             # Test instantiation with potential Redis fallback
             cache = CacheManager()

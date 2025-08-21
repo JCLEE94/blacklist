@@ -25,10 +25,10 @@ class PatternMatcher:
 
     def extract_ips_from_text(self, text_content: str) -> Set[str]:
         """Extract IP addresses from text using multiple patterns.
-        
+
         Args:
             text_content: Text to search for IP addresses
-            
+
         Returns:
             Set of found IP addresses
         """
@@ -45,20 +45,22 @@ class PatternMatcher:
 
         return found_ips
 
-    def extract_ips_from_html_table(self, soup, table_selectors: List[str] = None) -> Set[str]:
+    def extract_ips_from_html_table(
+        self, soup, table_selectors: List[str] = None
+    ) -> Set[str]:
         """Extract IPs from HTML tables.
-        
+
         Args:
             soup: BeautifulSoup object
             table_selectors: List of CSS selectors for tables
-            
+
         Returns:
             Set of found IP addresses
         """
         found_ips = set()
-        
+
         if not table_selectors:
-            table_selectors = ['table', '.table', '#data-table']
+            table_selectors = ["table", ".table", "#data-table"]
 
         for selector in table_selectors:
             tables = soup.select(selector)
@@ -69,20 +71,22 @@ class PatternMatcher:
 
         return found_ips
 
-    def extract_ips_from_lists(self, soup, list_selectors: List[str] = None) -> Set[str]:
+    def extract_ips_from_lists(
+        self, soup, list_selectors: List[str] = None
+    ) -> Set[str]:
         """Extract IPs from HTML lists.
-        
+
         Args:
             soup: BeautifulSoup object
             list_selectors: List of CSS selectors for lists
-            
+
         Returns:
             Set of found IP addresses
         """
         found_ips = set()
-        
+
         if not list_selectors:
-            list_selectors = ['ul', 'ol', '.ip-list', '.threat-list']
+            list_selectors = ["ul", "ol", ".ip-list", ".threat-list"]
 
         for selector in list_selectors:
             lists = soup.select(selector)

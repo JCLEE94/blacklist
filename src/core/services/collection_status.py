@@ -3,12 +3,25 @@
 상태 조회, 로그 관리, 비밀 날짜 처리 등
 """
 
+import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
 
 class CollectionStatusMixin:
     """수집 상태 관리 믹스인"""
+
+    def __init__(self):
+        """Initialize collection status mixin"""
+        # Initialize logger if not already present
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger(__name__)
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass
 
     def get_collection_status(self) -> Dict[str, Any]:
         """수집 상태 조회"""

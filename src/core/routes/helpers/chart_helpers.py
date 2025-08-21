@@ -5,17 +5,17 @@ Provides chart data transformation for collection dashboard.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
 
 def format_chart_data(daily_stats: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Format daily statistics for chart display.
-    
+
     Args:
         daily_stats: List of daily statistics
-        
+
     Returns:
         Formatted chart data with labels and datasets
     """
@@ -62,15 +62,14 @@ def format_chart_data(daily_stats: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def _generate_default_chart_data() -> Dict[str, Any]:
     """Generate default chart data for last 7 days.
-    
+
     Returns:
         Default chart data structure
     """
     today = datetime.now()
     default_data = {
         "labels": [
-            (today - timedelta(days=i)).strftime("%Y-%m-%d")
-            for i in range(6, -1, -1)
+            (today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)
         ],
         "datasets": [
             {

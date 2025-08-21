@@ -244,7 +244,8 @@ class TestValidationFunctions:
 
     def test_validate_required_fields_missing(self):
         """Test required fields validation with missing field"""
-        from src.utils.error_handler import ValidationError, validate_required_fields
+        from src.utils.error_handler import (ValidationError,
+                                             validate_required_fields)
 
         data = {"name": "test"}  # Missing email
         required_fields = ["name", "email"]
@@ -302,7 +303,8 @@ class TestValidationFunctions:
 
     def test_validate_and_convert_invalid_conversion(self):
         """Test validate and convert with invalid conversion"""
-        from src.utils.error_handler import ValidationError, validate_and_convert
+        from src.utils.error_handler import (ValidationError,
+                                             validate_and_convert)
 
         try:
             validate_and_convert("invalid_number", int)

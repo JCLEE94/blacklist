@@ -164,7 +164,7 @@ class TestPasswordVerification:
 
             password = "TestPassword123"
             hash_value, salt = hash_password(password)
-            
+
             # Tamper with hash
             tampered_hash = hash_value + "tampered"
 
@@ -196,78 +196,88 @@ class TestPasswordVerification:
 if __name__ == "__main__":
     # Validation tests
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Test classes instantiation
     total_tests += 1
     try:
         test_hash = TestPasswordHashing()
         test_verify = TestPasswordVerification()
-        if (hasattr(test_hash, 'test_hash_password_basic') and 
-            hasattr(test_verify, 'test_verify_password_correct')):
+        if hasattr(test_hash, "test_hash_password_basic") and hasattr(
+            test_verify, "test_verify_password_correct"
+        ):
             pass  # Test passed
         else:
-            all_validation_failures.append("Password security test classes missing methods")
+            all_validation_failures.append(
+                "Password security test classes missing methods"
+            )
     except Exception as e:
-        all_validation_failures.append(f"Password security test classes instantiation failed: {e}")
-    
+        all_validation_failures.append(
+            f"Password security test classes instantiation failed: {e}"
+        )
+
     # Test 2: Test method availability
     total_tests += 1
     try:
         test_methods = [
-            'test_hash_password_basic',
-            'test_hash_password_consistency', 
-            'test_verify_password_correct',
-            'test_verify_password_incorrect'
+            "test_hash_password_basic",
+            "test_hash_password_consistency",
+            "test_verify_password_correct",
+            "test_verify_password_incorrect",
         ]
-        
+
         test_hash = TestPasswordHashing()
         test_verify = TestPasswordVerification()
-        
+
         missing_methods = []
         for method in test_methods[:2]:  # Hash methods
             if not hasattr(test_hash, method):
                 missing_methods.append(method)
-        
+
         for method in test_methods[2:]:  # Verify methods
             if not hasattr(test_verify, method):
                 missing_methods.append(method)
-        
+
         if not missing_methods:
             pass  # Test passed
         else:
             all_validation_failures.append(f"Missing test methods: {missing_methods}")
     except Exception as e:
         all_validation_failures.append(f"Test method availability check failed: {e}")
-    
+
     # Test 3: Import handling
     total_tests += 1
     try:
         # Test that import errors are handled gracefully
-        with patch('builtins.__import__') as mock_import:
+        with patch("builtins.__import__") as mock_import:
+
             def side_effect(name, *args, **kwargs):
-                if 'src.utils.security' in name:
+                if "src.utils.security" in name:
                     raise ImportError("Mocked import error")
                 return __import__(name, *args, **kwargs)
-            
+
             mock_import.side_effect = side_effect
-            
+
             # This should not raise an exception, just skip
             test_hash = TestPasswordHashing()
             # The test method should handle ImportError gracefully
             pass  # Test passed
     except Exception as e:
         all_validation_failures.append(f"Import error handling failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Password security test module is validated and ready for use")
         sys.exit(0)

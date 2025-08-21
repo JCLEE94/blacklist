@@ -18,4 +18,11 @@ class CollectionServiceMixin(
     기능은 각각의 별도 모듈로 분산되어 있음
     """
 
-    pass
+    def __init__(self):
+        """Initialize collection service mixin"""
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass

@@ -43,7 +43,7 @@ class DataProcessor:
 
             # Find IP addresses using pattern matcher
             found_ips = self.pattern_matcher.extract_ips_from_text(text_content)
-            
+
             # Also try extracting from tables and lists
             table_ips = self.pattern_matcher.extract_ips_from_html_table(soup)
             list_ips = self.pattern_matcher.extract_ips_from_lists(soup)

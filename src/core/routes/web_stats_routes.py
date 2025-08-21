@@ -25,14 +25,14 @@ def statistics_page():
     """통계 페이지"""
     try:
         from src.core.container import get_container
-        
+
         container = get_container()
         blacklist_mgr = container.get("blacklist_manager")
-        
+
         # Get basic statistics
         active_ips = blacklist_mgr.get_active_ips()
         total_count = len(active_ips) if active_ips else 0
-        
+
         # Basic dashboard data
         dashboard_data = {
             "total_ips": total_count,
@@ -41,16 +41,18 @@ def statistics_page():
             "public_count": 0,
             "collection_enabled": True,
             "health_status": "healthy",
-            "version": "1.1.9"
+            "version": "1.1.9",
         }
-        
-        return jsonify({
-            "success": True,
-            "message": "Statistics page data",
-            "data": dashboard_data,
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Statistics page data",
+                "data": dashboard_data,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Statistics page error: {e}")
         return (
@@ -72,22 +74,22 @@ def collection_daily_stats():
         # Get parameters
         days = min(int(request.args.get("days", 30)), 90)  # 최대 90일
         source_filter = request.args.get("source", "").lower()
-        
+
         # Get database connection
         import os
         import sqlite3
-        
+
         daily_stats = []
         source_stats = {}
         success_rates = []
-        
+
         try:
             # Try SQLite first
             sqlite_db_path = "instance/blacklist.db"
             if os.path.exists(sqlite_db_path):
                 with sqlite3.connect(sqlite_db_path) as conn:
                     cursor = conn.cursor()
-                    
+
                     # Query for daily collection stats from blacklist table
                     cursor.execute(
                         """
@@ -100,11 +102,13 @@ def collection_daily_stats():
                           AND is_active = 1
                         GROUP BY DATE(created_at), LOWER(source)
                         ORDER BY collection_date DESC
-                        """.format(days)
+                        """.format(
+                            days
+                        )
                     )
-                    
+
                     results = cursor.fetchall()
-                    
+
                     # Process results by date
                     date_data = {}
                     for collection_date, source_name, count in results:
@@ -113,39 +117,45 @@ def collection_daily_stats():
                                 "date": collection_date,
                                 "total_collected": 0,
                                 "sources": {},
-                                "success_rate": 100  # Assume success if data exists
+                                "success_rate": 100,  # Assume success if data exists
                             }
-                        
+
                         date_data[collection_date]["total_collected"] += count
                         date_data[collection_date]["sources"][source_name] = count
-                        
+
                         # Track source totals
                         if source_name not in source_stats:
                             source_stats[source_name] = 0
                         source_stats[source_name] += count
-                    
+
                     # Convert to list and sort
                     daily_stats = list(date_data.values())
                     daily_stats.sort(key=lambda x: x["date"])
-                    
+
                     # Generate success rates (mock data for now)
                     for stat in daily_stats:
-                        success_rates.append({
-                            "date": stat["date"],
-                            "success_rate": 95 + (hash(stat["date"]) % 10)  # Mock 95-100% success rate
-                        })
-            
+                        success_rates.append(
+                            {
+                                "date": stat["date"],
+                                "success_rate": 95
+                                + (
+                                    hash(stat["date"]) % 10
+                                ),  # Mock 95-100% success rate
+                            }
+                        )
+
             else:
                 # PostgreSQL fallback
                 import psycopg2
+
                 database_url = os.environ.get(
                     "DATABASE_URL",
                     "postgresql://blacklist_user:blacklist_password_change_me@localhost:32543/blacklist",
                 )
-                
+
                 with psycopg2.connect(database_url) as conn:
                     cursor = conn.cursor()
-                    
+
                     cursor.execute(
                         """
                         SELECT 
@@ -159,100 +169,111 @@ def collection_daily_stats():
                         GROUP BY DATE(created_at), LOWER(source)
                         ORDER BY collection_date DESC
                         """,
-                        (days,)
+                        (days,),
                     )
-                    
+
                     results = cursor.fetchall()
-                    
+
                     # Process results (same logic as SQLite)
                     date_data = {}
                     for collection_date, source_name, count in results:
-                        date_str = collection_date.strftime("%Y-%m-%d") if hasattr(collection_date, 'strftime') else str(collection_date)
-                        
+                        date_str = (
+                            collection_date.strftime("%Y-%m-%d")
+                            if hasattr(collection_date, "strftime")
+                            else str(collection_date)
+                        )
+
                         if date_str not in date_data:
                             date_data[date_str] = {
                                 "date": date_str,
                                 "total_collected": 0,
                                 "sources": {},
-                                "success_rate": 100
+                                "success_rate": 100,
                             }
-                        
+
                         date_data[date_str]["total_collected"] += count
                         date_data[date_str]["sources"][source_name] = count
-                        
+
                         if source_name not in source_stats:
                             source_stats[source_name] = 0
                         source_stats[source_name] += count
-                    
+
                     daily_stats = list(date_data.values())
                     daily_stats.sort(key=lambda x: x["date"])
-                    
+
                     for stat in daily_stats:
-                        success_rates.append({
-                            "date": stat["date"],
-                            "success_rate": 95 + (hash(stat["date"]) % 10)
-                        })
-                        
+                        success_rates.append(
+                            {
+                                "date": stat["date"],
+                                "success_rate": 95 + (hash(stat["date"]) % 10),
+                            }
+                        )
+
         except Exception as db_error:
             logger.error(f"Database query error: {db_error}")
             # Generate mock data if database fails
             from datetime import date, timedelta
-            
+
             for i in range(days):
-                collection_date = (date.today() - timedelta(days=i))
+                collection_date = date.today() - timedelta(days=i)
                 date_str = collection_date.strftime("%Y-%m-%d")
-                
+
                 mock_regtech = 50 + (i % 10) * 5
                 mock_secudium = 20 + (i % 7) * 3
-                
-                daily_stats.append({
-                    "date": date_str,
-                    "total_collected": mock_regtech + mock_secudium,
-                    "sources": {
-                        "regtech": mock_regtech,
-                        "secudium": mock_secudium
-                    },
-                    "success_rate": 95 + (i % 5)
-                })
-                
-                success_rates.append({
-                    "date": date_str,
-                    "success_rate": 95 + (i % 5)
-                })
-            
+
+                daily_stats.append(
+                    {
+                        "date": date_str,
+                        "total_collected": mock_regtech + mock_secudium,
+                        "sources": {"regtech": mock_regtech, "secudium": mock_secudium},
+                        "success_rate": 95 + (i % 5),
+                    }
+                )
+
+                success_rates.append({"date": date_str, "success_rate": 95 + (i % 5)})
+
             source_stats = {"regtech": 1000, "secudium": 500}
             daily_stats.reverse()  # Show oldest first
-        
+
         # Apply source filter if specified
         if source_filter:
             filtered_stats = []
             for stat in daily_stats:
                 filtered_stat = stat.copy()
-                filtered_sources = {k: v for k, v in stat["sources"].items() if source_filter in k}
+                filtered_sources = {
+                    k: v for k, v in stat["sources"].items() if source_filter in k
+                }
                 if filtered_sources:
                     filtered_stat["sources"] = filtered_sources
                     filtered_stat["total_collected"] = sum(filtered_sources.values())
                     filtered_stats.append(filtered_stat)
             daily_stats = filtered_stats
-        
-        return jsonify({
-            "success": True,
-            "daily_stats": daily_stats,
-            "source_summary": source_stats,
-            "success_rates": success_rates,
-            "period": {"days": days},  # Add period field for compatibility
-            "period_days": days,
-            "filtered_by_source": source_filter or None,
-            "total_collections": sum(source_stats.values()),
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "daily_stats": daily_stats,
+                "source_summary": source_stats,
+                "success_rates": success_rates,
+                "period": {"days": days},  # Add period field for compatibility
+                "period_days": days,
+                "filtered_by_source": source_filter or None,
+                "total_collections": sum(source_stats.values()),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Collection daily stats error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "daily_stats": [],
-            "source_summary": {},
-            "success_rates": []
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "daily_stats": [],
+                    "source_summary": {},
+                    "success_rates": [],
+                }
+            ),
+            500,
+        )

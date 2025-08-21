@@ -16,15 +16,17 @@ Test Coverage Areas:
 - Error codes and messages
 """
 
-import pytest
+import os
 import re
 import sys
-import os
+
+import pytest
 
 # Import with proper Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.core.constants import *
+
 
 class TestVersionConstants:
     """Test cases for version and system information constants."""
@@ -34,14 +36,14 @@ class TestVersionConstants:
         assert API_VERSION is not None
         assert isinstance(API_VERSION, str)
         # Should contain version-like pattern (numbers and dots)
-        assert re.match(r'\d+\.\d+\.\d+', API_VERSION)
+        assert re.match(r"\d+\.\d+\.\d+", API_VERSION)
 
     def test_system_name_defined(self):
         """Test system name is properly defined."""
         assert SYSTEM_NAME is not None
         assert isinstance(SYSTEM_NAME, str)
         assert len(SYSTEM_NAME) > 0
-        assert 'Blacklist' in SYSTEM_NAME or 'blacklist' in SYSTEM_NAME.lower()
+        assert "Blacklist" in SYSTEM_NAME or "blacklist" in SYSTEM_NAME.lower()
 
     def test_author_defined(self):
         """Test author information is defined."""
@@ -49,13 +51,14 @@ class TestVersionConstants:
         assert isinstance(AUTHOR, str)
         assert len(AUTHOR) > 0
 
+
 class TestEnvironmentConstants:
     """Test cases for environment configuration constants."""
 
     def test_environment_constants_defined(self):
         """Test all environment constants are properly defined."""
         environments = [ENV_PRODUCTION, ENV_DEVELOPMENT, ENV_TESTING]
-        
+
         for env in environments:
             assert env is not None
             assert isinstance(env, str)
@@ -72,13 +75,14 @@ class TestEnvironmentConstants:
         environments = [ENV_PRODUCTION, ENV_DEVELOPMENT, ENV_TESTING]
         assert len(environments) == len(set(environments))
 
+
 class TestCacheConstants:
     """Test cases for cache configuration constants."""
 
     def test_cache_ttl_constants(self):
         """Test cache TTL constants are properly defined."""
         ttl_constants = [DEFAULT_CACHE_TTL, LONG_CACHE_TTL, SHORT_CACHE_TTL]
-        
+
         for ttl in ttl_constants:
             assert ttl is not None
             assert isinstance(ttl, int)
@@ -95,16 +99,16 @@ class TestCacheConstants:
             CACHE_PREFIX_STATS,
             CACHE_PREFIX_SEARCH,
             CACHE_PREFIX_HEALTH,
-            CACHE_PREFIX_AUTH
+            CACHE_PREFIX_AUTH,
         ]
-        
+
         for prefix in prefixes:
             assert prefix is not None
             assert isinstance(prefix, str)
             assert len(prefix) > 0
             # Should not contain spaces or special characters that could cause issues
-            assert ' ' not in prefix
-            assert prefix.isalnum() or '_' in prefix
+            assert " " not in prefix
+            assert prefix.isalnum() or "_" in prefix
 
     def test_cache_prefix_uniqueness(self):
         """Test all cache prefixes are unique."""
@@ -113,9 +117,10 @@ class TestCacheConstants:
             CACHE_PREFIX_STATS,
             CACHE_PREFIX_SEARCH,
             CACHE_PREFIX_HEALTH,
-            CACHE_PREFIX_AUTH
+            CACHE_PREFIX_AUTH,
         ]
         assert len(prefixes) == len(set(prefixes))
+
 
 class TestDataRetentionConstants:
     """Test cases for data retention configuration."""
@@ -125,9 +130,9 @@ class TestDataRetentionConstants:
         retention_days = [
             DEFAULT_DATA_RETENTION_DAYS,
             MAX_DATA_RETENTION_DAYS,
-            MIN_DATA_RETENTION_DAYS
+            MIN_DATA_RETENTION_DAYS,
         ]
-        
+
         for days in retention_days:
             assert days is not None
             assert isinstance(days, int)
@@ -135,7 +140,11 @@ class TestDataRetentionConstants:
 
     def test_data_retention_ordering(self):
         """Test data retention values are in logical order."""
-        assert MIN_DATA_RETENTION_DAYS <= DEFAULT_DATA_RETENTION_DAYS <= MAX_DATA_RETENTION_DAYS
+        assert (
+            MIN_DATA_RETENTION_DAYS
+            <= DEFAULT_DATA_RETENTION_DAYS
+            <= MAX_DATA_RETENTION_DAYS
+        )
 
     def test_data_retention_reasonable_values(self):
         """Test data retention values are reasonable."""
@@ -145,6 +154,7 @@ class TestDataRetentionConstants:
         assert MAX_DATA_RETENTION_DAYS <= 365 * 5
         # Default should be reasonable for most use cases
         assert 30 <= DEFAULT_DATA_RETENTION_DAYS <= 365
+
 
 class TestIPFormatConstants:
     """Test cases for IP format support constants."""
@@ -158,7 +168,7 @@ class TestIPFormatConstants:
     def test_ip_format_values(self):
         """Test IP format values are as expected."""
         expected_formats = ["ipv4", "ipv6", "cidr_v4", "cidr_v6"]
-        
+
         for expected in expected_formats:
             assert expected in SUPPORTED_IP_FORMATS
 
@@ -187,18 +197,21 @@ class TestIPFormatConstants:
 
     def test_ipv4_pattern_functionality(self):
         """Test IPv4 pattern matches valid IPv4 addresses."""
-        if 'ipv4' in IP_PATTERNS:
-            ipv4_pattern = re.compile(IP_PATTERNS['ipv4'])
-            
+        if "ipv4" in IP_PATTERNS:
+            ipv4_pattern = re.compile(IP_PATTERNS["ipv4"])
+
             # Valid IPv4 addresses
             valid_ips = ["192.168.1.1", "10.0.0.1", "255.255.255.255", "0.0.0.0"]
             for ip in valid_ips:
                 assert ipv4_pattern.match(ip), f"Failed to match valid IPv4: {ip}"
-            
+
             # Invalid IPv4 addresses
             invalid_ips = ["256.1.1.1", "192.168.1", "192.168.1.1.1", "abc.def.ghi.jkl"]
             for ip in invalid_ips:
-                assert not ipv4_pattern.match(ip), f"Incorrectly matched invalid IPv4: {ip}"
+                assert not ipv4_pattern.match(
+                    ip
+                ), f"Incorrectly matched invalid IPv4: {ip}"
+
 
 class TestFeatureFlagsAndErrorCodes:
     """Test cases for feature flags and error codes if they exist."""
@@ -208,6 +221,7 @@ class TestFeatureFlagsAndErrorCodes:
         # This test ensures all constants can be imported without issues
         try:
             import src.core.constants
+
             # If we get here, import was successful
             assert True
         except Exception as e:
@@ -216,11 +230,14 @@ class TestFeatureFlagsAndErrorCodes:
     def test_no_none_constants(self):
         """Test that critical constants are not None."""
         import src.core.constants as constants
-        
+
         # Get all constants that are not private (don't start with _)
-        public_constants = [name for name in dir(constants) 
-                          if not name.startswith('_') and name.isupper()]
-        
+        public_constants = [
+            name
+            for name in dir(constants)
+            if not name.startswith("_") and name.isupper()
+        ]
+
         for const_name in public_constants:
             const_value = getattr(constants, const_name)
             # Allow empty strings but not None for string constants
@@ -231,13 +248,14 @@ class TestFeatureFlagsAndErrorCodes:
             elif isinstance(const_value, (list, dict, tuple)):
                 assert const_value is not None
 
+
 class TestConstantsIntegrity:
     """Test cases for overall constants integrity."""
 
     def test_constants_module_structure(self):
         """Test constants module has expected structure."""
         import src.core.constants as constants
-        
+
         # Should have docstring
         assert constants.__doc__ is not None
         assert len(constants.__doc__) > 0
@@ -247,16 +265,18 @@ class TestConstantsIntegrity:
         # This test ensures constants can be imported independently
         try:
             import src.core.constants
+
             # Should be able to access attributes without issues
             _ = src.core.constants.API_VERSION
             assert True
         except ImportError as e:
             pytest.fail(f"Circular dependency detected: {e}")
 
+
 if __name__ == "__main__":
     # Validation block - test core constants with actual data
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
 
@@ -264,9 +284,13 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         if not isinstance(API_VERSION, str):
-            all_validation_failures.append(f"API Version: Expected string, got {type(API_VERSION)}")
-        elif not re.match(r'\d+\.\d+\.\d+', API_VERSION):
-            all_validation_failures.append(f"API Version: Invalid format: {API_VERSION}")
+            all_validation_failures.append(
+                f"API Version: Expected string, got {type(API_VERSION)}"
+            )
+        elif not re.match(r"\d+\.\d+\.\d+", API_VERSION):
+            all_validation_failures.append(
+                f"API Version: Invalid format: {API_VERSION}"
+            )
     except NameError:
         all_validation_failures.append("API Version: API_VERSION constant not defined")
     except Exception as e:
@@ -279,7 +303,7 @@ if __name__ == "__main__":
         for ttl in ttl_values:
             if not isinstance(ttl, int) or ttl <= 0:
                 all_validation_failures.append(f"Cache TTL: Invalid TTL value: {ttl}")
-        
+
         if not (SHORT_CACHE_TTL < DEFAULT_CACHE_TTL < LONG_CACHE_TTL):
             all_validation_failures.append("Cache TTL: TTL values not in logical order")
     except NameError as e:
@@ -292,14 +316,20 @@ if __name__ == "__main__":
     try:
         env_constants = [ENV_PRODUCTION, ENV_DEVELOPMENT, ENV_TESTING]
         expected_values = ["production", "development", "testing"]
-        
+
         if env_constants != expected_values:
-            all_validation_failures.append(f"Environment constants: Expected {expected_values}, got {env_constants}")
-        
+            all_validation_failures.append(
+                f"Environment constants: Expected {expected_values}, got {env_constants}"
+            )
+
         if len(set(env_constants)) != len(env_constants):
-            all_validation_failures.append("Environment constants: Duplicate values found")
+            all_validation_failures.append(
+                "Environment constants: Duplicate values found"
+            )
     except NameError as e:
-        all_validation_failures.append(f"Environment constants: Constant not defined: {e}")
+        all_validation_failures.append(
+            f"Environment constants: Constant not defined: {e}"
+        )
     except Exception as e:
         all_validation_failures.append(f"Environment constants: Exception raised: {e}")
 
@@ -307,16 +337,22 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         if not isinstance(IP_PATTERNS, dict):
-            all_validation_failures.append(f"IP Patterns: Expected dict, got {type(IP_PATTERNS)}")
+            all_validation_failures.append(
+                f"IP Patterns: Expected dict, got {type(IP_PATTERNS)}"
+            )
         else:
             for format_name, pattern in IP_PATTERNS.items():
                 try:
                     re.compile(pattern)
                 except re.error:
-                    all_validation_failures.append(f"IP Patterns: Invalid regex for {format_name}: {pattern}")
-                
+                    all_validation_failures.append(
+                        f"IP Patterns: Invalid regex for {format_name}: {pattern}"
+                    )
+
                 if not isinstance(pattern, str) or len(pattern) == 0:
-                    all_validation_failures.append(f"IP Patterns: Invalid pattern for {format_name}")
+                    all_validation_failures.append(
+                        f"IP Patterns: Invalid pattern for {format_name}"
+                    )
     except NameError:
         all_validation_failures.append("IP Patterns: IP_PATTERNS constant not defined")
     except Exception as e:
@@ -325,13 +361,25 @@ if __name__ == "__main__":
     # Test 5: Data retention validation
     total_tests += 1
     try:
-        retention_values = [MIN_DATA_RETENTION_DAYS, DEFAULT_DATA_RETENTION_DAYS, MAX_DATA_RETENTION_DAYS]
+        retention_values = [
+            MIN_DATA_RETENTION_DAYS,
+            DEFAULT_DATA_RETENTION_DAYS,
+            MAX_DATA_RETENTION_DAYS,
+        ]
         for days in retention_values:
             if not isinstance(days, int) or days <= 0:
-                all_validation_failures.append(f"Data retention: Invalid retention days: {days}")
-        
-        if not (MIN_DATA_RETENTION_DAYS <= DEFAULT_DATA_RETENTION_DAYS <= MAX_DATA_RETENTION_DAYS):
-            all_validation_failures.append("Data retention: Values not in logical order")
+                all_validation_failures.append(
+                    f"Data retention: Invalid retention days: {days}"
+                )
+
+        if not (
+            MIN_DATA_RETENTION_DAYS
+            <= DEFAULT_DATA_RETENTION_DAYS
+            <= MAX_DATA_RETENTION_DAYS
+        ):
+            all_validation_failures.append(
+                "Data retention: Values not in logical order"
+            )
     except NameError as e:
         all_validation_failures.append(f"Data retention: Constant not defined: {e}")
     except Exception as e:
@@ -339,11 +387,15 @@ if __name__ == "__main__":
 
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("System constants are validated and ready for comprehensive testing")
         sys.exit(0)

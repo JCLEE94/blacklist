@@ -10,11 +10,9 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from src.core.collectors.secudium_collector import SecudiumCollector
-from src.core.collectors.unified_collector import (
-    CollectionConfig,
-    CollectionResult,
-    CollectionStatus,
-)
+from src.core.collectors.unified_collector import (CollectionConfig,
+                                                   CollectionResult,
+                                                   CollectionStatus)
 
 
 class TestSecudiumCollector:

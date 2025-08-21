@@ -21,10 +21,12 @@ collection_routes_bp.register_blueprint(collection_status_bp)
 collection_routes_bp.register_blueprint(collection_trigger_bp)
 collection_routes_bp.register_blueprint(collection_logs_bp)
 
+
 def register_collection_routes(app):
     """Register collection routes with Flask app"""
     app.register_blueprint(collection_routes_bp, url_prefix="/api")
     logger.info("Collection routes registered with app")
+
 
 # Export
 __all__ = ["collection_routes_bp", "register_collection_routes"]

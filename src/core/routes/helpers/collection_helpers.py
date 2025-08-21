@@ -4,17 +4,17 @@ Provides statistics and availability data for collection management.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
 
 def get_source_collection_stats(service) -> Dict[str, Any]:
     """Get collection statistics by source.
-    
+
     Args:
         service: Unified service instance
-        
+
     Returns:
         Dict containing source statistics
     """
@@ -53,7 +53,7 @@ def get_source_collection_stats(service) -> Dict[str, Any]:
 
 def get_period_availability_cache() -> Dict[str, Dict[str, Any]]:
     """Get cached period availability data.
-    
+
     Returns:
         Dict containing availability data for different time periods
     """
@@ -78,11 +78,11 @@ def get_period_availability_cache() -> Dict[str, Dict[str, Any]]:
 
 def calculate_success_rate(source: str, days: int) -> float:
     """Calculate success rate for a source.
-    
+
     Args:
         source: Source name (REGTECH, SECUDIUM)
         days: Number of days to calculate rate for
-        
+
     Returns:
         Success rate as percentage
     """

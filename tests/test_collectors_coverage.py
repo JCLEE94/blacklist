@@ -27,9 +27,10 @@ class TestUnifiedCollector:
 
     def test_unified_collector_import(self):
         """Test that unified collector can be imported"""
-        from src.core.collectors.unified_collector import UnifiedCollector
+        from src.core.collectors.unified_collector import \
+            UnifiedCollectionManager
 
-        assert UnifiedCollector is not None
+        assert UnifiedCollectionManager is not None
 
     def test_collection_status_enum(self):
         """Test CollectionStatus enum values"""
@@ -43,10 +44,8 @@ class TestUnifiedCollector:
 
     def test_collection_result_dataclass(self):
         """Test CollectionResult data class functionality"""
-        from src.core.collectors.unified_collector import (
-            CollectionResult,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (CollectionResult,
+                                                           CollectionStatus)
 
         # Test basic creation
         result = CollectionResult(
@@ -75,10 +74,8 @@ class TestUnifiedCollector:
 
     def test_unified_collector_status_management(self):
         """Test collector status management"""
-        from src.core.collectors.unified_collector import (
-            CollectionStatus,
-            UnifiedCollector,
-        )
+        from src.core.collectors.unified_collector import (CollectionStatus,
+                                                           UnifiedCollector)
 
         collector = UnifiedCollector()
 
@@ -104,11 +101,9 @@ class TestUnifiedCollector:
 
     def test_unified_collector_get_results(self):
         """Test getting collection results"""
-        from src.core.collectors.unified_collector import (
-            CollectionResult,
-            CollectionStatus,
-            UnifiedCollector,
-        )
+        from src.core.collectors.unified_collector import (CollectionResult,
+                                                           CollectionStatus,
+                                                           UnifiedCollector)
 
         collector = UnifiedCollector()
 
@@ -144,7 +139,7 @@ class TestRegtechCollector:
         # Test basic initialization
         assert hasattr(collector, "name")
         assert hasattr(collector, "logger")
-        assert collector.name == "regtech"
+        assert collector.name == "REGTECH"
 
     def test_regtech_collector_config(self):
         """Test REGTECH collector configuration"""
@@ -182,10 +177,10 @@ class TestRegtechCollector:
 
         collector = RegtechCollector()
 
-        # Test data validation
+        # Test data validation (use public IPs)
         valid_data = [
-            {"ip": "192.168.1.1", "source": "regtech"},
-            {"ip": "10.0.0.1", "source": "regtech"},
+            {"ip": "8.8.8.8", "source": "regtech"},
+            {"ip": "1.1.1.1", "source": "regtech"},
         ]
 
         result = collector._validate_data(valid_data)
@@ -227,7 +222,7 @@ class TestSecudiumCollector:
         # Test basic initialization
         assert hasattr(collector, "name")
         assert hasattr(collector, "logger")
-        assert collector.name == "secudium"
+        assert collector.name == "SECUDIUM"
 
     def test_secudium_collector_config(self):
         """Test SECUDIUM collector configuration"""
@@ -355,7 +350,7 @@ class TestCollectorFactory:
         collector = factory.create_collector("regtech")
         assert collector is not None
         assert hasattr(collector, "name")
-        assert collector.name == "regtech"
+        assert collector.name == "REGTECH"
 
     def test_collector_factory_create_secudium(self):
         """Test factory creates SECUDIUM collector"""
@@ -366,7 +361,7 @@ class TestCollectorFactory:
         collector = factory.create_collector("secudium")
         assert collector is not None
         assert hasattr(collector, "name")
-        assert collector.name == "secudium"
+        assert collector.name == "SECUDIUM"
 
     def test_collector_factory_invalid_type(self):
         """Test factory handles invalid collector type"""
@@ -399,27 +394,29 @@ class TestCollectorHelpers:
 
     def test_validation_utils_import(self):
         """Test validation utils can be imported"""
-        from src.core.collectors.helpers.validation_utils import validate_ip_address
+        from src.core.collectors.helpers.validation_utils import \
+            validate_ip_address
 
         assert validate_ip_address is not None
 
     def test_request_utils_import(self):
         """Test request utils can be imported"""
-        from src.core.collectors.helpers.request_utils import (
-            create_session_with_retries,
-        )
+        from src.core.collectors.helpers.request_utils import \
+            create_session_with_retries
 
         assert create_session_with_retries is not None
 
     def test_data_transform_import(self):
         """Test data transform utils can be imported"""
-        from src.core.collectors.helpers.data_transform import normalize_ip_data
+        from src.core.collectors.helpers.data_transform import \
+            normalize_ip_data
 
         assert normalize_ip_data is not None
 
     def test_ip_validation(self):
         """Test IP address validation"""
-        from src.core.collectors.helpers.validation_utils import validate_ip_address
+        from src.core.collectors.helpers.validation_utils import \
+            validate_ip_address
 
         # Test valid IPs
         assert validate_ip_address("192.168.1.1") is True
@@ -433,9 +430,8 @@ class TestCollectorHelpers:
 
     def test_session_creation_with_retries(self):
         """Test session creation with retry logic"""
-        from src.core.collectors.helpers.request_utils import (
-            create_session_with_retries,
-        )
+        from src.core.collectors.helpers.request_utils import \
+            create_session_with_retries
 
         session = create_session_with_retries()
         assert session is not None
@@ -445,7 +441,8 @@ class TestCollectorHelpers:
 
     def test_data_normalization(self):
         """Test data normalization functionality"""
-        from src.core.collectors.helpers.data_transform import normalize_ip_data
+        from src.core.collectors.helpers.data_transform import \
+            normalize_ip_data
 
         raw_data = [
             {"ip": "192.168.1.1", "extra": "data"},
@@ -474,7 +471,7 @@ class TestCollectorIntegration:
         regtech = RegtechCollector()
 
         unified.add_collector(regtech)
-        assert "regtech" in unified._collectors
+        assert "REGTECH" in unified._collectors
 
     def test_unified_collector_with_secudium(self):
         """Test unified collector with SECUDIUM collector"""
@@ -485,7 +482,7 @@ class TestCollectorIntegration:
         secudium = SecudiumCollector()
 
         unified.add_collector(secudium)
-        assert "secudium" in unified._collectors
+        assert "SECUDIUM" in unified._collectors
 
     def test_collector_factory_integration(self):
         """Test collector factory integration with unified collector"""
@@ -518,10 +515,8 @@ if __name__ == "__main__":
     # Test 1: Unified collector can be instantiated
     total_tests += 1
     try:
-        from src.core.collectors.unified_collector import (
-            CollectionStatus,
-            UnifiedCollector,
-        )
+        from src.core.collectors.unified_collector import (CollectionStatus,
+                                                           UnifiedCollector)
 
         collector = UnifiedCollector()
         assert collector.get_status() == CollectionStatus.IDLE
@@ -546,7 +541,7 @@ if __name__ == "__main__":
         from src.core.collectors.regtech_collector import RegtechCollector
 
         regtech = RegtechCollector()
-        assert regtech.name == "regtech"
+        assert regtech.name == "REGTECH"
         print("✅ REGTECH collector creation: SUCCESS")
     except Exception as e:
         all_validation_failures.append(f"REGTECH collector creation: {e}")
@@ -557,7 +552,7 @@ if __name__ == "__main__":
         from src.core.collectors.secudium_collector import SecudiumCollector
 
         secudium = SecudiumCollector()
-        assert secudium.name == "secudium"
+        assert secudium.name == "SECUDIUM"
         print("✅ SECUDIUM collector creation: SUCCESS")
     except Exception as e:
         all_validation_failures.append(f"SECUDIUM collector creation: {e}")
@@ -578,7 +573,8 @@ if __name__ == "__main__":
     # Test 6: Helper functions work
     total_tests += 1
     try:
-        from src.core.collectors.helpers.validation_utils import validate_ip_address
+        from src.core.collectors.helpers.validation_utils import \
+            validate_ip_address
 
         assert validate_ip_address("192.168.1.1") is True
         assert validate_ip_address("invalid") is False
@@ -609,7 +605,7 @@ if __name__ == "__main__":
         regtech = factory.create_collector("regtech")
         unified.add_collector(regtech)
 
-        assert "regtech" in unified._collectors
+        assert "REGTECH" in unified._collectors
         print("✅ Component integration: SUCCESS")
     except Exception as e:
         all_validation_failures.append(f"Component integration: {e}")

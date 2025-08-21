@@ -36,9 +36,10 @@ class TestAPIKeyRoutes(TestBase):
             pytest.skip("Authentication not available")
 
         response = self.make_request(
-            "POST", "/api/keys/create",
+            "POST",
+            "/api/keys/create",
             headers=self.get_auth_headers(tokens["access_token"]),
-            json={"name": "test_key", "description": "Test API key"}
+            json={"name": "test_key", "description": "Test API key"},
         )
 
         # Should succeed or indicate endpoint not implemented
@@ -66,9 +67,10 @@ class TestAPIKeyRoutes(TestBase):
 
         for test_data in test_cases:
             response = self.make_request(
-                "POST", "/api/keys/create",
+                "POST",
+                "/api/keys/create",
                 headers=self.get_auth_headers(tokens["access_token"]),
-                json=test_data
+                json=test_data,
             )
             # Should fail with validation error or indicate not implemented
             assert response.status_code in [400, 404, 422, 501]
@@ -80,8 +82,9 @@ class TestAPIKeyRoutes(TestBase):
             pytest.skip("Authentication not available")
 
         response = self.make_request(
-            "GET", "/api/keys/list",
-            headers=self.get_auth_headers(tokens["access_token"])
+            "GET",
+            "/api/keys/list",
+            headers=self.get_auth_headers(tokens["access_token"]),
         )
 
         # Should succeed or indicate endpoint not implemented
@@ -98,9 +101,10 @@ class TestAPIKeyRoutes(TestBase):
             pytest.skip("Authentication not available")
 
         response = self.make_request(
-            "GET", "/api/keys/list",
+            "GET",
+            "/api/keys/list",
             headers=self.get_auth_headers(tokens["access_token"]),
-            params={"include_inactive": "true"}
+            params={"include_inactive": "true"},
         )
 
         # Should succeed or indicate endpoint not implemented
@@ -114,8 +118,7 @@ class TestAPIKeyRoutes(TestBase):
             pytest.skip("Default API key not configured")
 
         response = self.make_request(
-            "GET", "/api/keys/verify",
-            headers={"X-API-Key": default_key}
+            "GET", "/api/keys/verify", headers={"X-API-Key": default_key}
         )
 
         # Should succeed or indicate endpoint not implemented
@@ -128,8 +131,9 @@ class TestAPIKeyRoutes(TestBase):
             pytest.skip("Authentication not available")
 
         response = self.make_request(
-            "GET", "/api/keys/stats",
-            headers=self.get_auth_headers(tokens["access_token"])
+            "GET",
+            "/api/keys/stats",
+            headers=self.get_auth_headers(tokens["access_token"]),
         )
 
         # Should succeed or indicate endpoint not implemented
@@ -161,58 +165,70 @@ class TestAPIKeyRoutes(TestBase):
 if __name__ == "__main__":
     # Validation tests
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: TestAPIKeyRoutes instantiation
     total_tests += 1
     try:
         test_api_keys = TestAPIKeyRoutes()
-        if hasattr(test_api_keys, 'BASE_URL') and hasattr(test_api_keys, 'test_tokens'):
+        if hasattr(test_api_keys, "BASE_URL") and hasattr(test_api_keys, "test_tokens"):
             pass  # Test passed
         else:
-            all_validation_failures.append("TestAPIKeyRoutes missing required attributes")
+            all_validation_failures.append(
+                "TestAPIKeyRoutes missing required attributes"
+            )
     except Exception as e:
         all_validation_failures.append(f"TestAPIKeyRoutes instantiation failed: {e}")
-    
+
     # Test 2: Inheritance from TestBase
     total_tests += 1
     try:
         test_api_keys = TestAPIKeyRoutes()
-        if (hasattr(test_api_keys, 'login_admin') and 
-            hasattr(test_api_keys, 'get_auth_headers') and 
-            hasattr(test_api_keys, 'make_request')):
+        if (
+            hasattr(test_api_keys, "login_admin")
+            and hasattr(test_api_keys, "get_auth_headers")
+            and hasattr(test_api_keys, "make_request")
+        ):
             pass  # Test passed
         else:
             all_validation_failures.append("TestAPIKeyRoutes missing inherited methods")
     except Exception as e:
         all_validation_failures.append(f"TestBase inheritance failed: {e}")
-    
+
     # Test 3: Method availability check
     total_tests += 1
     try:
         test_api_keys = TestAPIKeyRoutes()
-        methods = ['test_create_api_key_success', 'test_list_api_keys', 'test_validate_api_key_endpoint']
+        methods = [
+            "test_create_api_key_success",
+            "test_list_api_keys",
+            "test_validate_api_key_endpoint",
+        ]
         missing_methods = []
         for method in methods:
             if not hasattr(test_api_keys, method):
                 missing_methods.append(method)
-        
+
         if not missing_methods:
             pass  # Test passed
         else:
             all_validation_failures.append(f"Missing test methods: {missing_methods}")
     except Exception as e:
         all_validation_failures.append(f"Method availability check failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("API key routes test module is validated and ready for use")
         sys.exit(0)

@@ -5,12 +5,25 @@
 수집 로그 관리, 이벤트 기록, 로그 조회 등의 기능을 제공합니다.
 """
 
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 
 
 class LoggingOperationsMixin:
     """로깅 및 모니터링 기능을 제공하는 믹스인"""
+
+    def __init__(self):
+        """Initialize logging operations mixin"""
+        # Initialize logger if not already present
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger(__name__)
+        # Call super() with try/except to handle case where there's no parent
+        try:
+            super().__init__()
+        except TypeError:
+            # If there's no parent class with __init__, that's okay
+            pass
 
     def add_collection_log(
         self, source: str, action: str, details: Optional[Dict] = None

@@ -12,15 +12,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.utils.performance_optimizer import (
-    PerformanceMetrics,
-    PerformanceMonitor,
-    batch_process,
-    cached_result,
-    cleanup_performance_data,
-    g_performance_monitor,
-    performance_monitor,
-)
+from src.utils.performance_optimizer import (PerformanceMetrics,
+                                             PerformanceMonitor, batch_process,
+                                             cached_result,
+                                             cleanup_performance_data,
+                                             g_performance_monitor,
+                                             performance_monitor)
 
 
 class TestPerformanceMonitor(unittest.TestCase):

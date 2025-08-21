@@ -404,7 +404,8 @@ class TestCoreIntegration:
         mock_container.return_value = Mock()
 
         try:
-            from src.core.services.unified_service_factory import get_unified_service
+            from src.core.services.unified_service_factory import \
+                get_unified_service
 
             service = get_unified_service()
             assert service is not None

@@ -102,7 +102,8 @@ class TestRefactoredModules:
         """기존 코드와의 호환성 테스트"""
         try:
             # 기존 api_routes.py에서 임포트하던 함수들이 여전히 접근 가능한지 확인
-            from src.core.routes.api_routes import get_active_blacklist, health_check
+            from src.core.routes.api_routes import (get_active_blacklist,
+                                                    health_check)
 
             assert callable(health_check)
             assert callable(get_active_blacklist)
@@ -118,10 +119,10 @@ class TestCodeQuality:
         """중복 코드가 제거되었는지 테스트"""
         # 분할된 모듈들 간에 중복된 코드가 없는지 확인
         try:
-            from src.core.routes.blacklist_routes import (
-                get_active_blacklist as blacklist_func,
-            )
-            from src.core.routes.health_routes import health_check as health_func
+            from src.core.routes.blacklist_routes import \
+                get_active_blacklist as blacklist_func
+            from src.core.routes.health_routes import \
+                health_check as health_func
 
             # 함수들이 서로 다른 모듈에 있는지 확인
             assert health_func.__module__ != blacklist_func.__module__

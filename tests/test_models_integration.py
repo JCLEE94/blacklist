@@ -8,17 +8,11 @@ import json
 from datetime import datetime, timedelta
 
 import pytest
-
 # Import mock classes from the metrics test file
 from test_models_metrics import ComponentStatus
 
-from src.core.models import (
-    APIResponse,
-    BlacklistEntry,
-    HealthStatus,
-    MonthData,
-    SystemHealth,
-)
+from src.core.models import (APIResponse, BlacklistEntry, HealthStatus,
+                             MonthData, SystemHealth)
 
 
 class TestModelIntegration:

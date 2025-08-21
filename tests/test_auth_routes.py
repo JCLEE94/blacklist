@@ -21,8 +21,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-
-from test_utils import TestBase, validate_response_structure, is_valid_jwt_format
+from test_utils import (TestBase, is_valid_jwt_format,
+                        validate_response_structure)
 
 
 class TestAuthenticationRoutes(TestBase):
@@ -31,10 +31,9 @@ class TestAuthenticationRoutes(TestBase):
     def test_login_success_admin(self):
         """Test successful admin login"""
         username, password = self.get_admin_credentials()
-        
+
         response = self.make_request(
-            "POST", "/api/auth/login",
-            json={"username": username, "password": password}
+            "POST", "/api/auth/login", json={"username": username, "password": password}
         )
 
         assert response.status_code == 200
@@ -60,12 +59,13 @@ class TestAuthenticationRoutes(TestBase):
         credentials = self.get_regtech_credentials()
         if not credentials:
             pytest.skip("REGTECH credentials not configured")
-        
+
         regtech_user, regtech_pass = credentials
 
         response = self.make_request(
-            "POST", "/api/auth/login",
-            json={"username": regtech_user, "password": regtech_pass}
+            "POST",
+            "/api/auth/login",
+            json={"username": regtech_user, "password": regtech_pass},
         )
 
         # Should be successful or indicate user not found
@@ -81,8 +81,9 @@ class TestAuthenticationRoutes(TestBase):
     def test_login_failure_invalid_credentials(self):
         """Test login failure with invalid credentials"""
         response = self.make_request(
-            "POST", "/api/auth/login",
-            json={"username": "invalid_user", "password": "invalid_password"}
+            "POST",
+            "/api/auth/login",
+            json={"username": "invalid_user", "password": "invalid_password"},
         )
 
         assert response.status_code in [400, 401, 422]
@@ -118,16 +119,17 @@ class TestAuthenticationRoutes(TestBase):
             pytest.skip("Refresh token not available")
 
         refresh_token = tokens["refresh_token"]
-        
+
         # Test token refresh
         response = self.make_request(
-            "POST", "/api/auth/refresh",
-            headers={"Authorization": f"Bearer {refresh_token}"}
+            "POST",
+            "/api/auth/refresh",
+            headers={"Authorization": f"Bearer {refresh_token}"},
         )
 
         if response.status_code == 200:
             data = response.json()
-            
+
             # Should contain new access token
             if "access_token" in data:
                 new_token = data["access_token"]
@@ -140,8 +142,9 @@ class TestAuthenticationRoutes(TestBase):
     def test_token_refresh_invalid_token(self):
         """Test token refresh with invalid refresh token"""
         response = self.make_request(
-            "POST", "/api/auth/refresh",
-            headers={"Authorization": "Bearer invalid_refresh_token"}
+            "POST",
+            "/api/auth/refresh",
+            headers={"Authorization": "Bearer invalid_refresh_token"},
         )
 
         # Should fail with authentication error
@@ -154,11 +157,10 @@ class TestAuthenticationRoutes(TestBase):
             pytest.skip("Access token not available")
 
         access_token = tokens["access_token"]
-        
+
         # Test with profile endpoint (requires authentication)
         response = self.make_request(
-            "GET", "/api/auth/profile",
-            headers=self.get_auth_headers(access_token)
+            "GET", "/api/auth/profile", headers=self.get_auth_headers(access_token)
         )
 
         # Should be successful or indicate endpoint not implemented
@@ -172,8 +174,9 @@ class TestAuthenticationRoutes(TestBase):
     def test_token_verification_invalid(self):
         """Test token verification with invalid token"""
         response = self.make_request(
-            "GET", "/api/auth/profile",
-            headers={"Authorization": "Bearer invalid_token"}
+            "GET",
+            "/api/auth/profile",
+            headers={"Authorization": "Bearer invalid_token"},
         )
 
         # Should fail with authentication error
@@ -182,7 +185,7 @@ class TestAuthenticationRoutes(TestBase):
     def test_logout_functionality(self):
         """Test logout functionality"""
         response = self.make_request("POST", "/api/auth/logout")
-        
+
         # Should succeed or indicate endpoint not implemented
         assert response.status_code in [200, 404, 501]
 
@@ -193,10 +196,9 @@ class TestAuthenticationRoutes(TestBase):
             pytest.skip("Access token not available")
 
         access_token = tokens["access_token"]
-        
+
         response = self.make_request(
-            "GET", "/api/auth/profile",
-            headers=self.get_auth_headers(access_token)
+            "GET", "/api/auth/profile", headers=self.get_auth_headers(access_token)
         )
 
         # Should be successful or indicate endpoint not implemented
@@ -206,27 +208,30 @@ class TestAuthenticationRoutes(TestBase):
             data = response.json()
             # Should contain user information
             assert isinstance(data, dict)
-            
+
             # Common profile fields (flexible validation)
             expected_fields = ["username", "user", "id", "email"]
             has_expected_field = any(field in data for field in expected_fields)
             if data:  # Only check if data is not empty
-                assert has_expected_field, f"No expected profile fields found in {list(data.keys())}"
+                assert (
+                    has_expected_field
+                ), f"No expected profile fields found in {list(data.keys())}"
 
     def test_profile_retrieval_unauthenticated(self):
         """Test profile retrieval without authentication"""
         response = self.make_request("GET", "/api/auth/profile")
-        
+
         # Should fail with authentication error or indicate not implemented
         assert response.status_code in [401, 404, 422, 501]
 
     def test_change_password_not_implemented(self):
         """Test change password endpoint (may not be implemented)"""
         response = self.make_request(
-            "POST", "/api/auth/change-password",
-            json={"old_password": "test", "new_password": "newtest"}
+            "POST",
+            "/api/auth/change-password",
+            json={"old_password": "test", "new_password": "newtest"},
         )
-        
+
         # Endpoint might not be implemented
         assert response.status_code in [404, 501, 400, 401]
 
@@ -236,8 +241,7 @@ class TestAuthenticationRoutes(TestBase):
         responses = []
         for i in range(5):
             response = self.make_request(
-                "POST", "/api/auth/login",
-                json={"username": "test", "password": "test"}
+                "POST", "/api/auth/login", json={"username": "test", "password": "test"}
             )
             responses.append(response.status_code)
             time.sleep(0.1)
@@ -250,21 +254,25 @@ class TestAuthenticationRoutes(TestBase):
 if __name__ == "__main__":
     # Validation tests
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: TestAuthenticationRoutes instantiation
     total_tests += 1
     try:
         test_auth = TestAuthenticationRoutes()
-        if hasattr(test_auth, 'BASE_URL') and hasattr(test_auth, 'test_tokens'):
+        if hasattr(test_auth, "BASE_URL") and hasattr(test_auth, "test_tokens"):
             pass  # Test passed
         else:
-            all_validation_failures.append("TestAuthenticationRoutes missing required attributes")
+            all_validation_failures.append(
+                "TestAuthenticationRoutes missing required attributes"
+            )
     except Exception as e:
-        all_validation_failures.append(f"TestAuthenticationRoutes instantiation failed: {e}")
-    
+        all_validation_failures.append(
+            f"TestAuthenticationRoutes instantiation failed: {e}"
+        )
+
     # Test 2: Credential retrieval methods
     total_tests += 1
     try:
@@ -276,26 +284,30 @@ if __name__ == "__main__":
             all_validation_failures.append("Admin credentials method failed")
     except Exception as e:
         all_validation_failures.append(f"Credential retrieval methods failed: {e}")
-    
+
     # Test 3: Request making utility
     total_tests += 1
     try:
         test_auth = TestAuthenticationRoutes()
         # This should work without actually making a request
-        if hasattr(test_auth, 'make_request') and callable(test_auth.make_request):
+        if hasattr(test_auth, "make_request") and callable(test_auth.make_request):
             pass  # Test passed
         else:
             all_validation_failures.append("make_request method not available")
     except Exception as e:
         all_validation_failures.append(f"Request making utility failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Authentication routes test module is validated and ready for use")
         sys.exit(0)

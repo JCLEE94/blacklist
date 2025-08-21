@@ -38,7 +38,7 @@ class TestRateLimiterCreation:
 
             # Should return a callable or rate limiter object
             assert rate_limiter is not None
-            assert callable(rate_limiter) or hasattr(rate_limiter, 'is_allowed')
+            assert callable(rate_limiter) or hasattr(rate_limiter, "is_allowed")
 
         except ImportError:
             pytest.skip("create_rate_limiter function not found")
@@ -50,9 +50,9 @@ class TestRateLimiterCreation:
 
             # Test different configurations
             configs = [
-                {"limit": 5, "window": 60},    # 5 per minute
-                {"limit": 100, "window": 3600}, # 100 per hour
-                {"limit": 1, "window": 1},      # 1 per second
+                {"limit": 5, "window": 60},  # 5 per minute
+                {"limit": 100, "window": 3600},  # 100 per hour
+                {"limit": 1, "window": 1},  # 1 per second
             ]
 
             for config in configs:
@@ -73,9 +73,7 @@ class TestRateLimiterCreation:
             mock_redis.expire.return_value = True
 
             rate_limiter = create_rate_limiter(
-                limit=10, 
-                window=60, 
-                storage_backend=mock_redis
+                limit=10, window=60, storage_backend=mock_redis
             )
 
             assert rate_limiter is not None
@@ -116,13 +114,13 @@ class TestRateLimiterFunctionality:
 
             # Make requests within limit
             for i in range(5):
-                if hasattr(rate_limiter, 'is_allowed'):
+                if hasattr(rate_limiter, "is_allowed"):
                     result = rate_limiter.is_allowed(client_id)
                 elif callable(rate_limiter):
                     result = rate_limiter(client_id)
                 else:
                     result = True  # Fallback for mocked implementation
-                
+
                 assert result is True or result == "allowed"
 
         except ImportError:
@@ -139,23 +137,23 @@ class TestRateLimiterFunctionality:
 
             # Make requests up to limit
             for i in range(2):
-                if hasattr(rate_limiter, 'is_allowed'):
+                if hasattr(rate_limiter, "is_allowed"):
                     result = rate_limiter.is_allowed(client_id)
                 elif callable(rate_limiter):
                     result = rate_limiter(client_id)
                 else:
                     result = True
-                
+
                 assert result is True or result == "allowed"
 
             # Next request should be blocked
-            if hasattr(rate_limiter, 'is_allowed'):
+            if hasattr(rate_limiter, "is_allowed"):
                 blocked_result = rate_limiter.is_allowed(client_id)
             elif callable(rate_limiter):
                 blocked_result = rate_limiter(client_id)
             else:
                 blocked_result = False  # Fallback
-            
+
             assert blocked_result is False or blocked_result == "blocked"
 
         except ImportError:
@@ -172,13 +170,13 @@ class TestRateLimiterFunctionality:
 
             # Both clients should be allowed their first request
             for client in [client1, client2]:
-                if hasattr(rate_limiter, 'is_allowed'):
+                if hasattr(rate_limiter, "is_allowed"):
                     result = rate_limiter.is_allowed(client)
                 elif callable(rate_limiter):
                     result = rate_limiter(client)
                 else:
                     result = True
-                
+
                 assert result is True or result == "allowed"
 
         except ImportError:
@@ -194,26 +192,26 @@ class TestRateLimiterFunctionality:
             client_id = "test_client_reset"
 
             # First request should be allowed
-            if hasattr(rate_limiter, 'is_allowed'):
+            if hasattr(rate_limiter, "is_allowed"):
                 result1 = rate_limiter.is_allowed(client_id)
             elif callable(rate_limiter):
                 result1 = rate_limiter(client_id)
             else:
                 result1 = True
-            
+
             assert result1 is True or result1 == "allowed"
 
             # Wait for window to expire
             time.sleep(1.1)
 
             # Next request should be allowed again
-            if hasattr(rate_limiter, 'is_allowed'):
+            if hasattr(rate_limiter, "is_allowed"):
                 result2 = rate_limiter.is_allowed(client_id)
             elif callable(rate_limiter):
                 result2 = rate_limiter(client_id)
             else:
                 result2 = True
-            
+
             assert result2 is True or result2 == "allowed"
 
         except ImportError:
@@ -229,13 +227,13 @@ class TestRateLimiterFunctionality:
 
             # Each IP should be tracked separately
             for ip in ip_addresses:
-                if hasattr(rate_limiter, 'is_allowed'):
+                if hasattr(rate_limiter, "is_allowed"):
                     result = rate_limiter.is_allowed(ip)
                 elif callable(rate_limiter):
                     result = rate_limiter(ip)
                 else:
                     result = True
-                
+
                 assert result is True or result == "allowed"
 
         except ImportError:
@@ -245,23 +243,26 @@ class TestRateLimiterFunctionality:
 if __name__ == "__main__":
     # Validation tests
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Test classes instantiation
     total_tests += 1
     try:
         test_creation = TestRateLimiterCreation()
         test_func = TestRateLimiterFunctionality()
-        if (hasattr(test_creation, 'test_create_rate_limiter_basic') and 
-            hasattr(test_func, 'test_rate_limiter_allows_within_limit')):
+        if hasattr(test_creation, "test_create_rate_limiter_basic") and hasattr(
+            test_func, "test_rate_limiter_allows_within_limit"
+        ):
             pass  # Test passed
         else:
             all_validation_failures.append("Rate limiter test classes missing methods")
     except Exception as e:
-        all_validation_failures.append(f"Rate limiter test classes instantiation failed: {e}")
-    
+        all_validation_failures.append(
+            f"Rate limiter test classes instantiation failed: {e}"
+        )
+
     # Test 2: Rate limiting logic validation
     total_tests += 1
     try:
@@ -271,70 +272,79 @@ if __name__ == "__main__":
                 self.limit = limit
                 self.window = window
                 self.requests = {}
-            
+
             def is_allowed(self, client_id):
                 now = time.time()
                 if client_id not in self.requests:
                     self.requests[client_id] = []
-                
+
                 # Remove old requests outside window
                 self.requests[client_id] = [
-                    req_time for req_time in self.requests[client_id] 
+                    req_time
+                    for req_time in self.requests[client_id]
                     if now - req_time < self.window
                 ]
-                
+
                 # Check if under limit
                 if len(self.requests[client_id]) < self.limit:
                     self.requests[client_id].append(now)
                     return True
                 return False
-        
+
         # Test the simulation
         limiter = SimpleRateLimiter(2, 1)
         assert limiter.is_allowed("test") is True
-        assert limiter.is_allowed("test") is True  
+        assert limiter.is_allowed("test") is True
         assert limiter.is_allowed("test") is False  # Over limit
-        
+
         # Test passed
     except Exception as e:
         all_validation_failures.append(f"Rate limiting logic validation failed: {e}")
-    
+
     # Test 3: Test method coverage
     total_tests += 1
     try:
         required_methods = [
-            'test_create_rate_limiter_basic',
-            'test_create_rate_limiter_different_limits',
-            'test_rate_limiter_allows_within_limit',
-            'test_rate_limiter_blocks_over_limit'
+            "test_create_rate_limiter_basic",
+            "test_create_rate_limiter_different_limits",
+            "test_rate_limiter_allows_within_limit",
+            "test_rate_limiter_blocks_over_limit",
         ]
-        
+
         test_creation = TestRateLimiterCreation()
         test_func = TestRateLimiterFunctionality()
-        
+
         missing_methods = []
         for method in required_methods[:2]:  # Creation methods
             if not hasattr(test_creation, method):
                 missing_methods.append(method)
-        
+
         for method in required_methods[2:]:  # Functionality methods
             if not hasattr(test_func, method):
                 missing_methods.append(method)
-        
+
         if not missing_methods:
             pass  # Test passed
         else:
-            all_validation_failures.append(f"Missing rate limiter test methods: {missing_methods}")
+            all_validation_failures.append(
+                f"Missing rate limiter test methods: {missing_methods}"
+            )
     except Exception as e:
-        all_validation_failures.append(f"Rate limiter method coverage check failed: {e}")
-    
+        all_validation_failures.append(
+            f"Rate limiter method coverage check failed: {e}"
+        )
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Rate limiter security test module is validated and ready for use")
         sys.exit(0)

@@ -37,10 +37,8 @@ class TestUnifiedCollectorCore:
 
     def test_collection_result_dataclass(self):
         """Test CollectionResult data class functionality"""
-        from src.core.collectors.unified_collector import (
-            CollectionResult,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (CollectionResult,
+                                                           CollectionStatus)
 
         # Test basic creation
         result = CollectionResult(
@@ -54,10 +52,8 @@ class TestUnifiedCollectorCore:
 
     def test_collection_result_duration_calculation(self):
         """Test duration calculation in CollectionResult"""
-        from src.core.collectors.unified_collector import (
-            CollectionResult,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (CollectionResult,
+                                                           CollectionStatus)
 
         start_time = datetime.now()
         end_time = start_time + timedelta(seconds=30)
@@ -74,10 +70,8 @@ class TestUnifiedCollectorCore:
 
     def test_collection_result_success_rate(self):
         """Test success rate calculation in CollectionResult"""
-        from src.core.collectors.unified_collector import (
-            CollectionResult,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (CollectionResult,
+                                                           CollectionStatus)
 
         # Test 100% success rate
         result = CollectionResult(
@@ -103,10 +97,8 @@ class TestUnifiedCollectorCore:
 
     def test_collection_result_to_dict(self):
         """Test CollectionResult.to_dict() method"""
-        from src.core.collectors.unified_collector import (
-            CollectionResult,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (CollectionResult,
+                                                           CollectionStatus)
 
         start_time = datetime.now()
         result = CollectionResult(
@@ -165,10 +157,8 @@ class TestBaseCollectorImplementation:
 
     def test_base_collector_initialization(self):
         """Test BaseCollector initialization"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig)
 
         # Create a concrete implementation for testing
         class TestCollector(BaseCollector):
@@ -190,10 +180,8 @@ class TestBaseCollectorImplementation:
 
     def test_base_collector_cancel_functionality(self):
         """Test BaseCollector cancel functionality"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig)
 
         class TestCollector(BaseCollector):
             @property
@@ -212,10 +200,8 @@ class TestBaseCollectorImplementation:
 
     def test_base_collector_health_check(self):
         """Test BaseCollector health_check method"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig)
 
         class TestCollector(BaseCollector):
             @property
@@ -239,11 +225,9 @@ class TestBaseCollectorImplementation:
     @pytest.mark.asyncio
     async def test_base_collector_collect_disabled(self):
         """Test BaseCollector collect when disabled"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig,
+                                                           CollectionStatus)
 
         class TestCollector(BaseCollector):
             @property
@@ -264,11 +248,9 @@ class TestBaseCollectorImplementation:
     @pytest.mark.asyncio
     async def test_base_collector_collect_already_running(self):
         """Test BaseCollector collect when already running"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig,
+                                                           CollectionStatus)
 
         class TestCollector(BaseCollector):
             @property
@@ -292,11 +274,9 @@ class TestBaseCollectorImplementation:
     @pytest.mark.asyncio
     async def test_base_collector_collect_success(self):
         """Test BaseCollector successful collection"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig,
+                                                           CollectionStatus)
 
         class TestCollector(BaseCollector):
             @property
@@ -320,11 +300,9 @@ class TestBaseCollectorImplementation:
     @pytest.mark.asyncio
     async def test_base_collector_collect_timeout(self):
         """Test BaseCollector collection timeout"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig,
+                                                           CollectionStatus)
 
         class SlowTestCollector(BaseCollector):
             @property
@@ -346,11 +324,9 @@ class TestBaseCollectorImplementation:
     @pytest.mark.asyncio
     async def test_base_collector_collect_with_retries(self):
         """Test BaseCollector collection with retries"""
-        from src.core.collectors.unified_collector import (
-            BaseCollector,
-            CollectionConfig,
-            CollectionStatus,
-        )
+        from src.core.collectors.unified_collector import (BaseCollector,
+                                                           CollectionConfig,
+                                                           CollectionStatus)
 
         class FailingTestCollector(BaseCollector):
             def __init__(self, name, config):

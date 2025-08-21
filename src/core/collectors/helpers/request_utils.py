@@ -155,3 +155,25 @@ class RegtechRequestUtils:
         except Exception as e:
             logger.error(f"IP 추출 중 오류 (페이지 {page + 1}): {e}")
             return []
+
+
+def create_session_with_retries() -> requests.Session:
+    """
+    Create a session with retry configuration for test compatibility
+    """
+    session = requests.Session()
+
+    # Add retry adapter
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+
+    return session

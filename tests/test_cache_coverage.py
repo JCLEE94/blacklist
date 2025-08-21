@@ -249,18 +249,16 @@ class TestCacheDecorators:
     def test_cached_decorator_basic(self):
         """Test basic cache decorator functionality"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
-        from src.utils.advanced_cache.decorators import (
-            cache_decorator,
-            set_cache_instance,
-        )
+        from src.utils.advanced_cache.decorators import (cache_decorator,
+                                                         set_cache_instance)
 
         # Use memory-only cache to avoid serialization issues
         cache = EnhancedSmartCache(redis_url=None)
         cache.clear()  # Clear cache to prevent pollution
-        
+
         # Enable pickle trust for testing
         cache.serialization._trust_pickle = True
-        
+
         set_cache_instance(cache)
 
         call_count = 0
@@ -273,7 +271,7 @@ class TestCacheDecorators:
 
         # Clear any existing cache entries
         cache.clear()
-        
+
         # First call should execute function
         result1 = expensive_function(5)
         assert result1 == 10
@@ -287,10 +285,8 @@ class TestCacheDecorators:
     def test_cached_decorator_different_args(self):
         """Test cache decorator with different arguments"""
         from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
-        from src.utils.advanced_cache.decorators import (
-            cache_decorator,
-            set_cache_instance,
-        )
+        from src.utils.advanced_cache.decorators import (cache_decorator,
+                                                         set_cache_instance)
 
         cache = EnhancedSmartCache(redis_url=None)
         cache.clear()  # Clear cache to prevent pollution
@@ -315,7 +311,8 @@ class TestCacheDecorators:
     def test_cache_invalidation_decorator(self):
         """Test cache invalidation decorator if available"""
         try:
-            from src.utils.advanced_cache.cache_manager import EnhancedSmartCache
+            from src.utils.advanced_cache.cache_manager import \
+                EnhancedSmartCache
             from src.utils.advanced_cache.decorators import cache_invalidate
 
             cache = EnhancedSmartCache(redis_url=None)  # Memory backend
