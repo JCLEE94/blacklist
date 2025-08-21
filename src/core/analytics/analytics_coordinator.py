@@ -62,7 +62,6 @@ class AnalyticsCoordinator(BaseAnalyzer):
         }
 
 
-# Maintain backward compatibility - alias for the original class name
 AdvancedAnalytics = AnalyticsCoordinator
 
 

@@ -11,7 +11,6 @@ from werkzeug.exceptions import HTTPException
 
 from .custom_errors import BaseError
 
-# GitHub 이슈 리포터 import
 try:
     from src.utils.github_issue_reporter import report_error_to_github
 except ImportError:

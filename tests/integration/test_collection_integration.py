@@ -57,7 +57,7 @@ class TestCollectionIntegration:
             mock_collector = MockCollector.return_value
             mock_collector.collect_data.return_value = {
                 "success": True,
-                "data": ["1.1.6.1", "2.2.2.2"],
+                "data": ["1.1.7.1", "2.2.2.2"],
                 "count": 2,
             }
 
@@ -115,12 +115,12 @@ class TestCollectionIntegration:
 
     def test_collection_data_validation(self):
         """Test collection data validation"""
-        test_ips = ["1.1.6.1", "2.2.2.2", "invalid_ip", "3.3.3.3"]
+        test_ips = ["1.1.7.1", "2.2.2.2", "invalid_ip", "3.3.3.3"]
 
         with patch("src.core.container.get_container") as mock_container:
             mock_service = Mock()
             mock_service.validate_ip_data.return_value = [
-                "1.1.6.1",
+                "1.1.7.1",
                 "2.2.2.2",
                 "3.3.3.3",
             ]

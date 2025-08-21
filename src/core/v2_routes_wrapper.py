@@ -51,5 +51,3 @@ __all__ = [
     "health_v2_bp",
 ]
 
-# Preserve the original class name and functionality
-# All imports and usage patterns remain the same

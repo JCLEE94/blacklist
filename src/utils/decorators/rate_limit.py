@@ -6,7 +6,6 @@ import logging
 from functools import wraps
 from typing import Callable, Optional
 
-# from flask import g, request  # 현재 미사용
 
 logger = logging.getLogger(__name__)
 

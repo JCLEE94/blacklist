@@ -23,7 +23,7 @@ def deployment_health():
             "status": "healthy",
             "service": "blacklist-management-system",
             "timestamp": datetime.utcnow().isoformat(),
-            "version": os.environ.get("APP_VERSION", "1.1.6"),
+            "version": os.environ.get("APP_VERSION", "1.1.7"),
             "deployment": {
                 "environment": os.environ.get("FLASK_ENV", "production"),
                 "container": True,
@@ -82,5 +82,4 @@ def deployment_metrics():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# Export the blueprint for import
 __all__ = ["cicd_monitoring_bp"]

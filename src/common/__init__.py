@@ -6,7 +6,6 @@
 
 import logging
 
-# 공통 import 패턴
 from datetime import datetime
 from typing import Any, Dict
 

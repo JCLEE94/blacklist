@@ -56,7 +56,7 @@ def collection_info():
                     "POST /api/collection/cancel-all": "Cancel all collections",
                 },
             },
-            "version": "1.1.6",
+            "version": "1.1.7",
         }
     )
 

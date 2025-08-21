@@ -1,6 +1,5 @@
 """Error handler package - modular structure"""
 
-# Import all classes and functions from submodules for backward compatibility
 from .context_manager import ErrorContext
 from .core_handler import ErrorHandler
 from .custom_errors import (

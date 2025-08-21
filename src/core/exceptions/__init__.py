@@ -1,6 +1,5 @@
 """Exception classes for the blacklist system"""
 
-# Import all exception classes from their respective modules
 from .auth_exceptions import AuthenticationError, AuthorizationError
 from .base_exceptions import BlacklistError
 from .config_exceptions import ConfigurationError, DependencyError
@@ -10,7 +9,6 @@ from .infrastructure_exceptions import CacheError, ConnectionError, DatabaseErro
 from .service_exceptions import MonitoringError, RateLimitError, ServiceUnavailableError
 from .validation_exceptions import ValidationError
 
-# Export all classes for backward compatibility
 __all__ = [
     # Base
     "BlacklistError",

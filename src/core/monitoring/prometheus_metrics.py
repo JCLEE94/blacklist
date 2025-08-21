@@ -16,7 +16,6 @@ from prometheus_client import Gauge, Histogram, Info, generate_latest
 
 from .mixins.collection_metrics import CollectionMetricsMixin
 
-# 믹스인 모듈 import
 from .mixins.system_metrics import SystemMetricsMixin
 
 logger = logging.getLogger(__name__)

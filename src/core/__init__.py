@@ -15,7 +15,6 @@ from .constants import (
     SUPPORTED_IP_FORMATS,
 )
 
-# Import managers directly when needed to avoid circular imports
 from .database import DatabaseSchema as DatabaseManager
 from .exceptions import BlacklistError, CacheError, DatabaseError, ValidationError
 from .models import BlacklistEntry, MonthData, SystemHealth

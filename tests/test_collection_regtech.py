@@ -187,7 +187,7 @@ class TestRegtechCollector:
     def test_ip_address_validation(self):
         """IP 주소 유효성 검사 테스트"""
         # 유효한 IP 주소들
-        valid_ips = ["8.8.8.8", "1.1.6.1", "208.67.222.222"]
+        valid_ips = ["8.8.8.8", "1.1.7.1", "208.67.222.222"]
         invalid_ips = [
             "999.999.999.999",
             "not.an.ip",
@@ -217,7 +217,7 @@ class TestRegtechCollector:
                 "source": "REGTECH",
             },
             {
-                "ip": "1.1.6.1",
+                "ip": "1.1.7.1",
                 "country": "US",
                 "reason": "spam",
                 "date": "2023-12-02",

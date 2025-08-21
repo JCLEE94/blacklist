@@ -24,7 +24,6 @@ settings_bp.register_blueprint(ui_settings_bp)
 
 # Re-export individual route functions for backward compatibility
 
-# Route functions are now imported from modular components
 # All routes are automatically registered via sub-blueprints
 
 

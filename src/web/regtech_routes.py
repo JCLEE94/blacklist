@@ -10,7 +10,6 @@ from collections import defaultdict
 
 from flask import Blueprint, jsonify, render_template, request
 
-# pandas는 선택적으로 import (호환성 문제시 None으로 설정)
 try:
     import pandas as pd
 except ImportError:

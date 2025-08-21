@@ -102,7 +102,6 @@ class CollectionSettingsDB:
         return self.validation_mgr._init_tables()
 
 
-# Export all important classes and functions
 __all__ = [
     "CollectionSettingsDB",
     "ConfigurationManager",

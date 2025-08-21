@@ -12,8 +12,6 @@ Deprecated: This file will be removed in a future version.
 import logging
 
 # Import everything from the new modular security package
-# from .security import *  # Removed to fix linting issues
-# Use specific imports instead when needed
 
 logger = logging.getLogger(__name__)
 

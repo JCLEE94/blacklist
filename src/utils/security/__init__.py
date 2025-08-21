@@ -141,7 +141,6 @@ def get_security_manager(secret_key: str = None, jwt_secret: str = None):
         return SecurityManager("default_secret", "default_jwt_secret")
 
 
-# Export all important classes and functions
 __all__ = [
     "SecurityManager",
     "AuthenticationManager",

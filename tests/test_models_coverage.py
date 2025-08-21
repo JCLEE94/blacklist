@@ -176,7 +176,7 @@ class TestBlacklistEntry:
         """Test BlacklistEntry field modification"""
         from src.core.models import BlacklistEntry
 
-        entry = BlacklistEntry(ip_address="1.1.6.1")
+        entry = BlacklistEntry(ip_address="1.1.7.1")
 
         # Modify fields
         entry.is_active = True
@@ -287,7 +287,7 @@ class TestDataValidation:
             "10.0.0.1",
             "172.16.0.1",
             "8.8.8.8",
-            "1.1.6.1",
+            "1.1.7.1",
         ]
 
         for ip in valid_ipv4_addresses:
@@ -303,7 +303,7 @@ class TestDataValidation:
         threat_levels = ["low", "medium", "high", "critical"]
 
         for level in threat_levels:
-            entry = BlacklistEntry(ip_address="1.1.6.1", threat_level=level)
+            entry = BlacklistEntry(ip_address="1.1.7.1", threat_level=level)
             assert entry.threat_level == level
 
     def test_source_validation(self):
@@ -313,7 +313,7 @@ class TestDataValidation:
         valid_sources = ["regtech", "secudium", "manual", "api", "unknown"]
 
         for source in valid_sources:
-            entry = BlacklistEntry(ip_address="1.1.6.1", source=source)
+            entry = BlacklistEntry(ip_address="1.1.7.1", source=source)
             assert entry.source == source
 
 
@@ -324,7 +324,7 @@ class TestModelIntegration:
         """Test using HealthStatus with BlacklistEntry concepts"""
         from src.core.models import BlacklistEntry, HealthStatus
 
-        entry = BlacklistEntry(ip_address="1.1.6.1")
+        entry = BlacklistEntry(ip_address="1.1.7.1")
 
         # Simulate system health affecting entry status
         system_health = HealthStatus.HEALTHY
@@ -426,7 +426,7 @@ if __name__ == "__main__":
     try:
         from src.core.models import BlacklistEntry
 
-        entry = BlacklistEntry(ip_address="1.1.6.1")
+        entry = BlacklistEntry(ip_address="1.1.7.1")
         assert isinstance(entry.detection_months, list)
         assert isinstance(entry.source_details, dict)
         assert entry.days_until_expiry == 0
@@ -456,7 +456,7 @@ if __name__ == "__main__":
         from src.core.models import BlacklistEntry
 
         entries = [
-            BlacklistEntry(ip_address="1.1.6.1", threat_level="low"),
+            BlacklistEntry(ip_address="1.1.7.1", threat_level="low"),
             BlacklistEntry(ip_address="2.2.2.2", threat_level="high"),
         ]
         high_threat = [e for e in entries if e.threat_level == "high"]

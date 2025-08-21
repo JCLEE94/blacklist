@@ -1,68 +1,102 @@
 #!/usr/bin/env python3
 """
-Unified Control Dashboard - Legacy compatibility wrapper
-Maintains backward compatibility while using the new modular route system
-
-This module now acts as a compatibility layer, delegating to the new
-modular route handlers and templates
+Unified Control Routes - Refactored modular version
+Provides the main dashboard endpoints with template support
 """
 
-from flask import Blueprint
+from datetime import datetime
+
+from flask import Blueprint, jsonify, render_template_string
+
+try:
+    from ..collection_db_collector import DatabaseCollectionSystem
+    from ..database.collection_settings import CollectionSettingsDB
+
+    DB_AVAILABLE = True
+except ImportError:
+    DB_AVAILABLE = False
 
 from .handlers.health_handler import HealthCheckHandler
 from .handlers.status_handler import UnifiedStatusHandler
+
+# Import template content
 from .templates.dashboard_template import get_dashboard_template
 
-# Import the refactored modular system
-from .unified_control_routes_refactored import bp as refactored_bp
+bp = Blueprint("unified_control", __name__)
 
-# Re-export the blueprint for backward compatibility
-bp = refactored_bp
+# Initialize handlers
+status_handler = UnifiedStatusHandler()
+health_handler = HealthCheckHandler()
 
-# Legacy exports for any code that might import these directly
-__all__ = ["bp", "UnifiedStatusHandler", "HealthCheckHandler", "get_dashboard_template"]
+
+@bp.route("/unified-control")
+def unified_control_dashboard():
+    """Unified control dashboard main page"""
+    template = get_dashboard_template()
+    return render_template_string(template)
+
+
+@bp.route("/api/unified/status")
+def get_unified_status():
+    """Get unified system status"""
+    return status_handler.get_status()
+
+
+@bp.route("/api/unified/health")
+def health_check():
+    """Health check endpoint"""
+    return health_handler.check_health()
 
 
 if __name__ == "__main__":
-    # Validation test for legacy compatibility wrapper
+    # Validation test for refactored routes
     import sys
 
-    print("🔄 Testing Unified Control Routes (Legacy Wrapper)...")
+    from flask import Flask
+
+    app = Flask(__name__)
+    app.register_blueprint(bp)
 
     all_validation_failures = []
     total_tests = 0
 
-    # Test 1: Blueprint import
-    total_tests += 1
-    try:
-        if bp is None:
-            all_validation_failures.append("Blueprint: Failed to import blueprint")
-        else:
-            print("  - Blueprint imported successfully")
-    except Exception as e:
-        all_validation_failures.append(f"Blueprint: Exception occurred - {str(e)}")
+    print("🔧 Testing Unified Control Routes (Refactored)...")
 
-    # Test 2: Handler imports
-    total_tests += 1
-    try:
-        handler = UnifiedStatusHandler()
-        if not handler:
-            all_validation_failures.append("Status Handler: Failed to instantiate")
-        else:
-            print("  - Status handler instantiated successfully")
-    except Exception as e:
-        all_validation_failures.append(f"Status Handler: Exception occurred - {str(e)}")
+    with app.test_client() as client:
+        # Test 1: Dashboard route
+        total_tests += 1
+        try:
+            response = client.get("/unified-control")
+            if response.status_code != 200:
+                all_validation_failures.append(
+                    f"Dashboard route: Expected 200, got {response.status_code}"
+                )
+        except Exception as e:
+            all_validation_failures.append(
+                f"Dashboard route: Exception occurred - {str(e)}"
+            )
 
-    # Test 3: Template import
-    total_tests += 1
-    try:
-        template = get_dashboard_template()
-        if not template:
-            all_validation_failures.append("Template: Failed to get template")
-        else:
-            print("  - Dashboard template retrieved successfully")
-    except Exception as e:
-        all_validation_failures.append(f"Template: Exception occurred - {str(e)}")
+        # Test 2: Status API
+        total_tests += 1
+        try:
+            response = client.get("/api/unified/status")
+            if response.status_code != 200:
+                all_validation_failures.append(
+                    f"Status API: Expected 200, got {response.status_code}"
+                )
+        except Exception as e:
+            all_validation_failures.append(f"Status API: Exception occurred - {str(e)}")
+
+        # Test 3: Health check API
+        total_tests += 1
+        try:
+            response = client.get("/api/unified/health")
+            if response.status_code != 200:
+                all_validation_failures.append(
+                    f"Health API: Expected 200, got {response.status_code}"
+                )
+        except Exception as e:
+            all_validation_failures.append(f"Health API: Exception occurred - {str(e)}")
 
     # Final validation result
     if all_validation_failures:
@@ -76,5 +110,5 @@ if __name__ == "__main__":
         print(
             f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
         )
-        print("Unified Control Routes (Legacy Wrapper) is ready for use")
+        print("Unified Control Routes (Refactored) is ready for use")
         sys.exit(0)

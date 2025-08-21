@@ -9,7 +9,6 @@
 """
 
 # 모듈화된 예외 클래스들을 임포트하여 재정의
-# 기존 코드에서 'from src.core.exceptions import ValidationError'가 계속 작동함
 
 try:
     # 모듈화된 구조에서 모든 예외 클래스 임포트

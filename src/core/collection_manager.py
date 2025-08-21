@@ -24,5 +24,3 @@ __all__ = [
     "StatusService",
 ]
 
-# Preserve the original class name and functionality
-# All imports and usage patterns remain the same
