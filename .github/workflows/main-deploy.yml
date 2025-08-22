@@ -484,18 +484,52 @@ jobs:
         echo "✅ CI/CD 파이프라인이 성공적으로 완료되었습니다!"
         echo "========================================================================================"
 
-    - name: Run post-deployment verification
+    - name: Run deployment verification
       run: |
-        echo "🔍 Running post-deployment verification..."
+        echo "🔍 Running comprehensive deployment verification..."
         
-        # Make verification script executable
-        chmod +x scripts/post-deploy-verification.sh
+        # Wait for a moment to allow services to start
+        echo "⏳ Waiting 30s for services to stabilize..."
+        sleep 30
         
-        # Run verification with timeout
-        if timeout 300 bash scripts/post-deploy-verification.sh; then
-          echo "✅ Post-deployment verification passed"
+        # Run deployment verification with timeout
+        if python3 scripts/deployment-verification.py \
+            --url "https://blacklist.jclee.me" \
+            --timeout 300 \
+            --wait \
+            --output "deployment-verification-report.md"; then
+          echo "✅ Deployment verification passed successfully"
+          
+          # Show report summary
+          echo ""
+          echo "📊 Deployment Verification Summary:"
+          echo "==================================="
+          grep -A 10 "## 📊 Summary" deployment-verification-report.md || echo "Report summary not found"
+          echo ""
+          
         else
-          echo "❌ Post-deployment verification failed or timed out"
-          echo "ℹ️ This may be normal if services need more time to start"
-          # Don't fail the entire workflow for verification issues
+          echo "❌ Deployment verification failed"
+          echo "ℹ️ This may indicate issues with the deployment"
+          
+          # Show error details but don't fail the workflow immediately
+          if [ -f "deployment-verification-report.md" ]; then
+            echo ""
+            echo "📋 Error Report:"
+            echo "==============="
+            cat deployment-verification-report.md
+          fi
+          
+          # Continue but mark as warning
+          echo "⚠️ Continuing with warning - manual verification recommended"
         fi
+        
+    - name: Upload deployment reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: deployment-reports-${{ github.sha }}
+        path: |
+          deployment-verification-report.md
+          version-verification.json
+          health-verification.json
+        retention-days: 30

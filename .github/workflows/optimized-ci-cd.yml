@@ -451,22 +451,67 @@ jobs:
               ;;
           esac
 
-      - name: Verify deployment
+      - name: Run deployment verification
         run: |
-          echo "🔍 Verifying deployment..."
-          sleep 30
+          echo "🔍 Running comprehensive deployment verification..."
           
+          # Install required dependencies
+          pip install requests urllib3
+          
+          # Determine target URL based on environment
           case "${{ needs.setup.outputs.environment }}" in
             "production")
-              curl -f https://blacklist.jclee.me/health | jq '.'
+              TARGET_URL="https://blacklist.jclee.me"
               ;;
             "staging")
-              kubectl rollout status deployment/blacklist-staging -n staging --timeout=300s
+              TARGET_URL="https://staging.blacklist.jclee.me"
               ;;
             "development")
-              kubectl rollout status deployment/blacklist-dev -n development --timeout=300s
+              TARGET_URL="https://dev.blacklist.jclee.me"
+              ;;
+            *)
+              TARGET_URL="https://blacklist.jclee.me"
               ;;
           esac
+          
+          echo "🎯 Target URL: $TARGET_URL"
+          
+          # Run comprehensive verification
+          if python3 scripts/deployment-verification.py \
+              --url "$TARGET_URL" \
+              --timeout 300 \
+              --wait \
+              --output "deployment-verification-report.md"; then
+            echo "✅ Deployment verification passed successfully"
+            
+            # Show verification summary
+            echo ""
+            echo "📊 Verification Summary:"
+            echo "======================="
+            grep -A 15 "## 📊 Summary" deployment-verification-report.md || echo "Summary not found"
+            
+          else
+            echo "❌ Deployment verification failed"
+            echo "🔍 Check deployment-verification-report.md for details"
+            
+            # Upload report for debugging
+            if [ -f "deployment-verification-report.md" ]; then
+              cat deployment-verification-report.md
+            fi
+            
+            exit 1
+          fi
+          
+      - name: Upload verification reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-reports-${{ needs.setup.outputs.environment }}-${{ github.run_id }}
+          path: |
+            deployment-verification-report.md
+            version-verification.json
+            health-verification.json
+          retention-days: 30
 
       - name: Update GitHub deployment status
         uses: bobheadxi/deployments@v1
