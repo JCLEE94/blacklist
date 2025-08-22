@@ -23,13 +23,13 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       
-      # Database (PostgreSQL)
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-blacklist_user}:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB:-blacklist}"
+      # Database (PostgreSQL) - Using container network name
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-blacklist_user}:${POSTGRES_PASSWORD:-blacklist_password_change_me}@blacklist-postgresql:5432/${POSTGRES_DB:-blacklist}"
       DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
       DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-40}
       
-      # Cache (Redis)
-      REDIS_URL: redis://redis:6379/0
+      # Cache (Redis) - Using container network name
+      REDIS_URL: redis://blacklist-redis:6379/0
       CACHE_TYPE: redis
       CACHE_DEFAULT_TTL: ${CACHE_DEFAULT_TTL:-300}
       
@@ -156,29 +156,6 @@ services:
       - "com.watchtower.enable=true"
       - "com.watchtower.scope=blacklist"
 
-  # Watchtower for auto-updates
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: blacklist-watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.docker/config.json:/config.json:ro
-    environment:
-      WATCHTOWER_CLEANUP: "true"
-      WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_INTERVAL:-300}
-      WATCHTOWER_SCOPE: blacklist
-      WATCHTOWER_INCLUDE_RESTARTING: "true"
-      WATCHTOWER_ROLLING_RESTART: "true"
-      WATCHTOWER_DEBUG: "true"
-      WATCHTOWER_LOG_LEVEL: "info"
-    command: --scope blacklist --cleanup --interval ${WATCHTOWER_INTERVAL:-300}
-    networks:
-      - blacklist-net
-    profiles:
-      - watchtower
-    labels:
-      - "com.watchtower.scope=blacklist"
 
 # Optimized Named Volumes
 volumes:
