@@ -10,7 +10,9 @@ Sample input: request identifiers, rate limits
 Expected output: rate limit status, blocked IPs
 """
 
-from ..common.imports import jsonify, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import time
 from collections import defaultdict, deque

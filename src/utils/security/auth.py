@@ -11,7 +11,9 @@ Sample input: user credentials, password strings
 Expected output: JWT tokens, password hashes, authentication status
 """
 
-from ..common.imports import jsonify, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import hashlib
 import secrets

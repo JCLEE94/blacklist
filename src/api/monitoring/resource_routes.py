@@ -11,7 +11,7 @@ Expected output: 시스템 리소스 메트릭 및 요약 통계
 try:
     from ...utils.error_recovery import get_resource_monitor
     from ...utils.security import require_auth
-    from ..common.imports import Blueprint, jsonify, logger, request
+    from flask import Blueprint, jsonify, logger, request
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -21,7 +21,9 @@ except ImportError:
     try:
         from utils.error_recovery import get_resource_monitor
         from utils.security import require_auth
-        from common.imports import Blueprint, jsonify, logger, request
+        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
@@ -31,7 +33,8 @@ except ImportError:
         # Basic Flask imports for testing
         try:
             from flask import Blueprint, jsonify, request
-            from loguru import logger
+            import logging
+logger = logging.getLogger(__name__)
         except ImportError:
             Blueprint = Mock()
             jsonify = Mock()

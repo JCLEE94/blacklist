@@ -3,7 +3,9 @@
 수집 상태 조회, 활성화/비활성화 API
 """
 
-from ..common.imports import Blueprint, jsonify, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

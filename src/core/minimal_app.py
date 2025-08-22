@@ -9,7 +9,9 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from .common.imports import Flask, jsonify, logger, request
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 
 def create_minimal_app(config: Dict[str, Any] = None) -> Flask:

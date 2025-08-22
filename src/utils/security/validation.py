@@ -11,7 +11,9 @@ Sample input: user input strings, request headers
 Expected output: validated/sanitized input, security headers
 """
 
-from ..common.imports import jsonify, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import re
 import secrets

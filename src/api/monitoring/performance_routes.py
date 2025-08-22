@@ -16,7 +16,7 @@ try:
     )
     from ...utils.security import rate_limit, require_auth
     from ...utils.system_stability import get_system_monitor
-    from ..common.imports import Blueprint, jsonify, logger
+    from flask import Blueprint, jsonify, logger
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -31,7 +31,9 @@ except ImportError:
         )
         from utils.security import rate_limit, require_auth
         from utils.system_stability import get_system_monitor
-        from common.imports import Blueprint, jsonify, logger
+        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
@@ -45,7 +47,8 @@ except ImportError:
         # Basic Flask imports for testing
         try:
             from flask import Blueprint, jsonify
-            from loguru import logger
+            import logging
+logger = logging.getLogger(__name__)
         except ImportError:
             Blueprint = Mock()
             jsonify = Mock()

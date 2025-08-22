@@ -1,4 +1,6 @@
-from ..common.imports import Blueprint, Flask, jsonify, logger, request
+from flask import Blueprint, Flask, jsonify, request
+import logging
+logger = logging.getLogger(__name__)
 
 # !/usr/bin/env python3
 """

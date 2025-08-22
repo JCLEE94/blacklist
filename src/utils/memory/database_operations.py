@@ -7,7 +7,8 @@
 import sqlite3
 from typing import Any, List
 
-from loguru import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class DatabaseOptimizationMixin:

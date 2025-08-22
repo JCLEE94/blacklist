@@ -19,7 +19,9 @@ try:
         error_bp,
         register_error_handlers
     )
-    from .common.imports import Blueprint
+    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -34,7 +36,9 @@ except ImportError:
             error_bp,
             register_error_handlers
         )
-        from common.imports import Blueprint
+        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock

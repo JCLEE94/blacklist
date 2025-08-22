@@ -13,7 +13,9 @@ Sample input: register_simple_api(flask_app)
 Expected output: Basic API routes registered with /health endpoint
 """
 
-from .common.imports import Flask, jsonify, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

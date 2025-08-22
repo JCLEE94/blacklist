@@ -4,7 +4,9 @@
 Collection Dashboard Routes
 """
 
-from ..common.imports import Blueprint, jsonify, render_template, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import json
 from datetime import datetime

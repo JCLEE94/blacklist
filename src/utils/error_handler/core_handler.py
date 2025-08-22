@@ -1,4 +1,6 @@
-from ..common.imports import jsonify, request, logger
+from flask import jsonify, request
+import logging
+logger = logging.getLogger(__name__)
 
 """Core error handler class"""
 

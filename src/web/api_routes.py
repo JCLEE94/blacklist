@@ -6,7 +6,9 @@ API endpoints for the web interface
 import json
 from pathlib import Path
 
-from ..common.imports import Blueprint, jsonify, request, logger, Dict, Any, datetime
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 

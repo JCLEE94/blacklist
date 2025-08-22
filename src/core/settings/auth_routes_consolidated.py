@@ -13,7 +13,9 @@ Expected output: 동일한 API 엔드포인트들, 모듈식 구조로 구현
 # Conditional imports for standalone execution and package usage
 try:
     from .auth import config_bp, regtech_bp, secudium_bp
-    from ..common.imports import Blueprint
+    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -22,7 +24,9 @@ except ImportError:
     
     try:
         from auth import config_bp, regtech_bp, secudium_bp
-        from common.imports import Blueprint
+        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock

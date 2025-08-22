@@ -4,7 +4,9 @@
 JSON 형식의 구조화된 로그와 중앙 집중형 로깅 관리
 """
 
-from ..common.imports import request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import json
 import os

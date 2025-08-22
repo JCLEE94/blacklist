@@ -6,7 +6,9 @@ Handles collection system status, daily stats, and history
 
 from datetime import datetime, timedelta
 
-from ..common.imports import Blueprint, Flask, jsonify, logger, request
+from flask import Blueprint, Flask, jsonify, request
+import logging
+logger = logging.getLogger(__name__)
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory

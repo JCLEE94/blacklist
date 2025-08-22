@@ -1,4 +1,6 @@
-from ..common.imports import jsonify, logger
+from flask import jsonify
+import logging
+logger = logging.getLogger(__name__)
 
 """Error handling decorators"""
 

@@ -4,7 +4,9 @@ Health Check Handler - Handles health check requests
 Provides system health and readiness status
 """
 
-from ...common.imports import jsonify
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 from typing import Any, Dict

@@ -12,7 +12,9 @@ try:
 except ImportError:
     DB_AVAILABLE = False
 
-from ..common.imports import Blueprint, jsonify, request
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from .collection_settings_html import SETTINGS_UI_HTML
 

@@ -3,7 +3,9 @@
 V2 Health and Performance API Routes
 """
 
-from ..common.imports import Blueprint, jsonify
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

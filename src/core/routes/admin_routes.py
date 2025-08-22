@@ -3,7 +3,9 @@
 데이터베이스 관리, 유지보수, 설정, 디버깅 관련 API
 """
 
-from ..common.imports import Blueprint, jsonify, render_template, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import os
 import sqlite3

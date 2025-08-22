@@ -13,7 +13,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Dict, List
 
-from loguru import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 @dataclass

@@ -4,7 +4,9 @@ Prometheus 메트릭 수집 데코레이터
 HTTP 요청 및 데이터 수집 작업 추적을 위한 데코레이터들을 제공합니다.
 """
 
-from ...common.imports import request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import time
 

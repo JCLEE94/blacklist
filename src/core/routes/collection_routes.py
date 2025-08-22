@@ -5,7 +5,9 @@
 
 
 
-from ..common.imports import Blueprint, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from .collection_logs_routes import collection_logs_bp
 from .collection_status_routes import collection_status_bp

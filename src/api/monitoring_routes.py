@@ -15,7 +15,9 @@ from ..utils.performance_optimizer import (
 )
 from ..utils.security import rate_limit, require_auth
 from ..utils.system_stability import get_system_monitor
-from .common.imports import Blueprint, jsonify, logger, request
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 # 블루프린트 생성
 monitoring_bp = Blueprint("monitoring", __name__, url_prefix="/api/monitoring")

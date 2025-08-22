@@ -6,7 +6,9 @@ API 키 관리 라우트
 
 from ..models.api_key import get_api_key_manager
 from ..utils.security import input_validation, rate_limit, require_auth
-from .common.imports import Blueprint, jsonify, logger, request
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 # 블루프린트 생성
 api_key_bp = Blueprint("api_keys", __name__, url_prefix="/api/keys")

@@ -3,7 +3,9 @@
 설정 UI 렌더링 라우트
 설정 페이지 렌더링 및 관리 대시보드
 """
-from ..common.imports import Blueprint, jsonify, render_template, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

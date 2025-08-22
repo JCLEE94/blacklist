@@ -4,7 +4,9 @@ This module provides web interface endpoints for dashboards, pages, and UI compo
 Includes dashboard rendering, statistics pages, and data visualization endpoints.
 """
 
-from ..common.imports import Blueprint, jsonify, redirect, render_template, url_for, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

@@ -10,7 +10,9 @@ Expected output: Flask 요청/응답 로깅 및 API 엔드포인트 설정
 # Conditional imports for standalone execution and package usage
 try:
     from .log_manager import get_logger
-    from ...common.imports import Blueprint, jsonify, request
+    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -20,7 +22,9 @@ except ImportError:
     try:
         from log_manager import get_logger
         sys.path.append(str(Path(__file__).parent.parent.parent))
-        from common.imports import Blueprint, jsonify, request
+        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock

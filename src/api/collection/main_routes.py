@@ -5,7 +5,7 @@ Provides the main collection_bp that combines all modular route blueprints
 """
 
 
-from ..common.imports import Blueprint, Flask, jsonify
+from flask import Blueprint, Flask, jsonify
 from .collector_routes import collector_bp
 from .config_routes import config_bp
 

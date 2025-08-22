@@ -9,7 +9,9 @@ Expected output: 구조화된 JSON 로그 레코드 저장
 
 # Conditional imports for standalone execution and package usage
 try:
-    from ..common.imports import logger
+    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -17,7 +19,9 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
     
     try:
-        from common.imports import logger
+        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock

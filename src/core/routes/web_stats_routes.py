@@ -4,7 +4,9 @@ This module provides web endpoints for statistics pages, data visualization,
 and analytics APIs separated from main dashboard routes for file size compliance.
 """
 
-from ..common.imports import Blueprint, jsonify, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

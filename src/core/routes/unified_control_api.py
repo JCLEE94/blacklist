@@ -4,7 +4,9 @@
 HTML과 분리된 API 엔드포인트들
 """
 
-from ..common.imports import Blueprint, jsonify
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

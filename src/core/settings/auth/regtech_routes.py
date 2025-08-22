@@ -9,7 +9,9 @@ Expected output: REGTECH 인증 업데이트 및 토큰 관리 결과
 
 # Conditional imports for standalone execution and package usage
 try:
-    from ...common.imports import Blueprint, jsonify, request, logger
+    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
     from ...container import get_container
     from ....config.settings import settings
 except ImportError:
@@ -19,7 +21,9 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent.parent.parent))
     
     try:
-        from common.imports import Blueprint, jsonify, request, logger
+        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
         from core.container import get_container
         from config.settings import settings
     except ImportError:

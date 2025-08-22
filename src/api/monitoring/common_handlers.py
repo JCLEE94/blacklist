@@ -9,7 +9,7 @@ Expected output: 일관된 JSON 에러 응답
 
 # Conditional imports for standalone execution and package usage
 try:
-    from ..common.imports import Blueprint, jsonify
+    from flask import Blueprint, jsonify
 except ImportError:
     # Fallback for standalone execution
     try:

@@ -3,7 +3,9 @@ Web UI dashboard routes for Blacklist Manager
 Main dashboard and overview pages
 """
 
-from .common.imports import Blueprint, flash, redirect, render_template, url_for, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 import json
 from datetime import datetime, timedelta

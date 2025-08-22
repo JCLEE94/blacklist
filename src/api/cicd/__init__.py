@@ -6,7 +6,9 @@ Provides endpoints for monitoring deployment status and CI/CD pipeline health.
 import os
 from datetime import datetime
 
-from ..common.imports import Blueprint, jsonify, logger
+from flask import Blueprint, jsonify
+import logging
+logger = logging.getLogger(__name__)
 
 # Create the CI/CD monitoring blueprint
 cicd_monitoring_bp = Blueprint("cicd_monitoring", __name__, url_prefix="/api/cicd")

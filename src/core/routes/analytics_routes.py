@@ -3,7 +3,9 @@
 시스템 통계, 월별 데이터, 소스별 분포 및 메타데이터 엔드포인트
 """
 
-from ..common.imports import Blueprint, jsonify, request, logger
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 

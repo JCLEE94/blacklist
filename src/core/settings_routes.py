@@ -6,7 +6,9 @@ This module imports and re-exports all modular settings routes
 for backward compatibility and centralized route registration.
 """
 
-from .common.imports import Blueprint
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 from .settings.api_routes import api_settings_bp
 
 # Import modular route blueprints

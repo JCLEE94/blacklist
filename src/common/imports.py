@@ -30,7 +30,8 @@ from flask import (
     request,
     url_for,
 )
-from loguru import logger
+import logging
+logger = logging.getLogger(__name__)
 
 # Project-specific imports (conditional)
 try:

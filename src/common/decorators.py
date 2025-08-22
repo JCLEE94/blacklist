@@ -12,7 +12,9 @@ Expected output: Authenticated request handling with consistent behavior
 import functools
 from typing import Callable
 
-from .common.imports import jsonify, logger, request
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+import logging
+logger = logging.getLogger(__name__)
 
 
 def require_auth(f: Callable) -> Callable:

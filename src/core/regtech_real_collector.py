@@ -12,7 +12,8 @@ from typing import Any, Dict
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-from loguru import logger
+import logging
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
