@@ -80,8 +80,19 @@ docker-build: ## Build Docker image
 
 docker-push: ## Push Docker image to registry
 	@echo "$(GREEN)Pushing Docker image to registry...$(NC)"
-	docker push $(IMAGE_NAME)
-	docker push $(LATEST_IMAGE)
+	./scripts/build-and-push.sh
+
+registry-deploy: ## Direct deploy to registry.jclee.me with Watchtower
+	@echo "$(GREEN)Deploying directly to registry.jclee.me...$(NC)"
+	./scripts/build-and-push.sh
+
+registry-workflow: ## Complete registry.jclee.me deployment workflow
+	@echo "$(GREEN)Running complete registry.jclee.me deployment workflow...$(NC)"
+	./scripts/registry-deploy-workflow.sh
+
+registry-verify: ## Verify registry.jclee.me deployment status
+	@echo "$(GREEN)Verifying registry.jclee.me deployment...$(NC)"
+	./scripts/verify-registry-deployment.sh
 
 # Deployment Commands
 deploy: ## Deploy to Kubernetes using Helm
