@@ -544,6 +544,47 @@ except Exception as e:
         echo "✅ CI/CD 파이프라인이 성공적으로 완료되었습니다!"
         echo "========================================================================================"
 
+    - name: Verify deployment on blacklist.jclee.me
+      run: |
+        echo "🔍 Checking if blacklist.jclee.me updated to v${{ env.VERSION }}..."
+        
+        # Check live site version (wait up to 5 minutes)
+        MAX_ATTEMPTS=10
+        WAIT_TIME=30
+        SUCCESS=false
+        
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "🔄 Attempt $i/$MAX_ATTEMPTS: Checking live site..."
+          
+          # Try to get version from health endpoint
+          LIVE_VERSION=$(curl -s https://blacklist.jclee.me/health 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4 || echo "error")
+          
+          if [ "$LIVE_VERSION" = "${{ env.VERSION }}" ]; then
+            echo "✅ SUCCESS! blacklist.jclee.me is running v${{ env.VERSION }}"
+            SUCCESS=true
+            break
+          elif [ "$LIVE_VERSION" = "error" ]; then
+            echo "❌ Site not responding or error getting version"
+          else
+            echo "⚠️ Version mismatch - Expected: ${{ env.VERSION }}, Found: $LIVE_VERSION"
+          fi
+          
+          if [ $i -lt $MAX_ATTEMPTS ]; then
+            echo "⏳ Waiting ${WAIT_TIME}s before next check..."
+            sleep $WAIT_TIME
+          fi
+        done
+        
+        if [ "$SUCCESS" = true ]; then
+          echo "🎉 Deployment verification PASSED - blacklist.jclee.me is running v${{ env.VERSION }}"
+        else
+          echo "❌ Deployment verification FAILED - blacklist.jclee.me is NOT running v${{ env.VERSION }}"
+          echo "⚠️ This could mean:"
+          echo "   - Watchtower hasn't deployed yet (wait 1 hour)"
+          echo "   - Site is down (502 error)"
+          echo "   - Manual intervention needed"
+        fi
+
     - name: Run deployment verification
       run: |
         echo "🔍 Running comprehensive deployment verification..."
