@@ -1,11 +1,12 @@
-# Blacklist Management System - Optimized Docker Compose
-# Version: v1.0.37
+# Blacklist Management System - Unified Docker Compose
+# Version: v1.0.37 - Comprehensive Environment Support
 # Registry: registry.jclee.me
 # Port Configuration: Docker(32542) | Local(2542)
 
 version: '3.9'
 
 services:
+  # === Core Application ===
   blacklist:
     image: ${REGISTRY_URL:-registry.jclee.me}/blacklist:${IMAGE_TAG:-latest}
     container_name: blacklist
@@ -23,15 +24,19 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       
-      # Database (PostgreSQL) - Using container network name
+      # Database Configuration
       DATABASE_URL: "postgresql://${POSTGRES_USER:-blacklist_user}:${POSTGRES_PASSWORD:-blacklist_password_change_me}@blacklist-postgresql:5432/${POSTGRES_DB:-blacklist}"
       DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
       DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-40}
+      DATABASE_POOL_TIMEOUT: ${DATABASE_POOL_TIMEOUT:-30}
+      DATABASE_POOL_RECYCLE: ${DATABASE_POOL_RECYCLE:-1800}
+      DATABASE_POOL_PRE_PING: ${DATABASE_POOL_PRE_PING:-true}
       
-      # Cache (Redis) - Using container network name
+      # Cache Configuration
       REDIS_URL: redis://blacklist-redis:6379/0
       CACHE_TYPE: redis
       CACHE_DEFAULT_TTL: ${CACHE_DEFAULT_TTL:-300}
+      CACHE_MAX_ENTRIES: ${CACHE_MAX_ENTRIES:-1000}
       
       # Collection Settings
       COLLECTION_ENABLED: ${COLLECTION_ENABLED:-true}
@@ -61,10 +66,13 @@ services:
       # Performance Optimization
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
       GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+      GUNICORN_WORKER_CLASS: ${GUNICORN_WORKER_CLASS:-gthread}
+      GUNICORN_WORKER_CONNECTIONS: ${GUNICORN_WORKER_CONNECTIONS:-1000}
       GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
       GUNICORN_KEEPALIVE: ${GUNICORN_KEEPALIVE:-5}
       GUNICORN_MAX_REQUESTS: ${GUNICORN_MAX_REQUESTS:-1000}
       GUNICORN_MAX_REQUESTS_JITTER: ${GUNICORN_MAX_REQUESTS_JITTER:-50}
+      GUNICORN_PRELOAD_APP: ${GUNICORN_PRELOAD_APP:-false}
       
       # Logging
       LOG_LEVEL: ${LOG_LEVEL:-WARNING}
@@ -89,8 +97,11 @@ services:
       # Python Configuration
       PYTHONPATH: /app
       PYTHONUNBUFFERED: 1
+      PYTHONOPTIMIZE: ${PYTHONOPTIMIZE:-0}
+      PYTHONDONTWRITEBYTECODE: ${PYTHONDONTWRITEBYTECODE:-0}
+      WERKZEUG_RUN_MAIN: ${WERKZEUG_RUN_MAIN:-false}
+      FLASK_SKIP_DOTENV: ${FLASK_SKIP_DOTENV:-0}
     command: ["python3", "-m", "src.core.main"]
-    # depends_on removed - services run independently
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${INTERNAL_PORT:-2542}/health"]
       interval: 30s
@@ -102,12 +113,24 @@ services:
     labels:
       - "com.watchtower.enable=true"
       - "com.watchtower.scope=blacklist"
+      - "performance.cpu.limit=${CPU_LIMIT:-1.0}"
+      - "performance.memory.limit=${MEMORY_LIMIT:-1G}"
+      - "performance.optimized=${PERFORMANCE_OPTIMIZED:-false}"
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: ${CPU_LIMIT:-1.0}
+          memory: ${MEMORY_LIMIT:-1G}
+        reservations:
+          cpus: ${CPU_RESERVATION:-0.5}
+          memory: ${MEMORY_RESERVATION:-512M}
 
+  # === Redis Cache ===
   redis:
     image: ${REGISTRY_URL:-registry.jclee.me}/blacklist-redis:${REDIS_TAG:-latest}
     container_name: blacklist-redis
@@ -119,6 +142,20 @@ services:
     environment:
       REDIS_MAXMEMORY: ${REDIS_MAXMEMORY:-1gb}
       REDIS_MAXMEMORY_POLICY: ${REDIS_MAXMEMORY_POLICY:-allkeys-lru}
+      REDIS_SAVE: ${REDIS_SAVE:-"900 1 300 10 60 10000"}
+      REDIS_APPENDONLY: ${REDIS_APPENDONLY:-yes}
+      REDIS_APPENDFSYNC: ${REDIS_APPENDFSYNC:-everysec}
+      REDIS_TCP_KEEPALIVE: ${REDIS_TCP_KEEPALIVE:-60}
+      REDIS_TIMEOUT: ${REDIS_TIMEOUT:-300}
+    command: >
+      redis-server
+      --maxmemory ${REDIS_MAXMEMORY:-1gb}
+      --maxmemory-policy ${REDIS_MAXMEMORY_POLICY:-allkeys-lru}
+      --appendonly ${REDIS_APPENDONLY:-yes}
+      --appendfsync ${REDIS_APPENDFSYNC:-everysec}
+      --tcp-keepalive ${REDIS_TCP_KEEPALIVE:-60}
+      --timeout ${REDIS_TIMEOUT:-300}
+      --save "${REDIS_SAVE:-900 1 300 10 60 10000}"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -130,7 +167,16 @@ services:
     labels:
       - "com.watchtower.enable=true"
       - "com.watchtower.scope=blacklist"
+    deploy:
+      resources:
+        limits:
+          cpus: ${REDIS_CPU_LIMIT:-1.0}
+          memory: ${REDIS_MEMORY_LIMIT:-1.5G}
+        reservations:
+          cpus: ${REDIS_CPU_RESERVATION:-0.25}
+          memory: ${REDIS_MEMORY_RESERVATION:-256M}
 
+  # === PostgreSQL Database ===
   postgresql:
     image: ${REGISTRY_URL:-registry.jclee.me}/blacklist-postgresql:${POSTGRES_TAG:-latest}
     container_name: blacklist-postgresql
@@ -144,6 +190,35 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-blacklist_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
+      # Performance Settings
+      POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-256MB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-1GB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: ${POSTGRES_CHECKPOINT_COMPLETION_TARGET:-0.9}
+      POSTGRES_WAL_BUFFERS: ${POSTGRES_WAL_BUFFERS:-16MB}
+      POSTGRES_DEFAULT_STATISTICS_TARGET: ${POSTGRES_DEFAULT_STATISTICS_TARGET:-100}
+      POSTGRES_RANDOM_PAGE_COST: ${POSTGRES_RANDOM_PAGE_COST:-1.1}
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: ${POSTGRES_EFFECTIVE_IO_CONCURRENCY:-200}
+      POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-16MB}
+      POSTGRES_MAX_WORKER_PROCESSES: ${POSTGRES_MAX_WORKER_PROCESSES:-4}
+      POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER: ${POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER:-2}
+      POSTGRES_MAX_PARALLEL_WORKERS: ${POSTGRES_MAX_PARALLEL_WORKERS:-4}
+      POSTGRES_MAX_PARALLEL_MAINTENANCE_WORKERS: ${POSTGRES_MAX_PARALLEL_MAINTENANCE_WORKERS:-2}
+    command: >
+      postgres
+      -c shared_buffers=${POSTGRES_SHARED_BUFFERS:-256MB}
+      -c effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-1GB}
+      -c maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
+      -c checkpoint_completion_target=${POSTGRES_CHECKPOINT_COMPLETION_TARGET:-0.9}
+      -c wal_buffers=${POSTGRES_WAL_BUFFERS:-16MB}
+      -c default_statistics_target=${POSTGRES_DEFAULT_STATISTICS_TARGET:-100}
+      -c random_page_cost=${POSTGRES_RANDOM_PAGE_COST:-1.1}
+      -c effective_io_concurrency=${POSTGRES_EFFECTIVE_IO_CONCURRENCY:-200}
+      -c work_mem=${POSTGRES_WORK_MEM:-16MB}
+      -c max_worker_processes=${POSTGRES_MAX_WORKER_PROCESSES:-4}
+      -c max_parallel_workers_per_gather=${POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER:-2}
+      -c max_parallel_workers=${POSTGRES_MAX_PARALLEL_WORKERS:-4}
+      -c max_parallel_maintenance_workers=${POSTGRES_MAX_PARALLEL_MAINTENANCE_WORKERS:-2}
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-blacklist_user}", "-d", "${POSTGRES_DB:-blacklist}"]
       interval: 10s
@@ -155,43 +230,174 @@ services:
     labels:
       - "com.watchtower.enable=true"
       - "com.watchtower.scope=blacklist"
+    deploy:
+      resources:
+        limits:
+          cpus: ${POSTGRES_CPU_LIMIT:-2.0}
+          memory: ${POSTGRES_MEMORY_LIMIT:-2G}
+        reservations:
+          cpus: ${POSTGRES_CPU_RESERVATION:-0.5}
+          memory: ${POSTGRES_MEMORY_RESERVATION:-512M}
 
+  # === Watchtower Auto-Update ===
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: blacklist-watchtower
+    restart: unless-stopped
+    profiles:
+      - watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.docker/config.json:/config.json:ro
+    environment:
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_INTERVAL:-300}
+      WATCHTOWER_SCOPE: blacklist
+      WATCHTOWER_INCLUDE_RESTARTING: "true"
+      WATCHTOWER_ROLLING_RESTART: "true"
+      WATCHTOWER_REMOVE_VOLUMES: "false"
+      WATCHTOWER_REVIVE_STOPPED: "false"
+      WATCHTOWER_NOTIFICATIONS: ${WATCHTOWER_NOTIFICATIONS:-}
+      WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      WATCHTOWER_NOTIFICATION_SLACK_IDENTIFIER: "Blacklist-Watchtower"
+      WATCHTOWER_NOTIFICATION_SLACK_CHANNEL: ${SLACK_CHANNEL:-#alerts}
+      WATCHTOWER_DEBUG: ${WATCHTOWER_DEBUG:-false}
+      WATCHTOWER_LOG_LEVEL: ${WATCHTOWER_LOG_LEVEL:-info}
+      WATCHTOWER_SCHEDULE: ${WATCHTOWER_SCHEDULE:-}
+      REPO_USER: ${REGISTRY_USERNAME:-}
+      REPO_PASS: ${REGISTRY_PASSWORD:-}
+    command: >
+      --scope blacklist
+      --cleanup
+      --interval ${WATCHTOWER_INTERVAL:-300}
+      ${WATCHTOWER_EXTRA_ARGS:-}
+    networks:
+      - blacklist-net
+    labels:
+      - "com.watchtower.scope=blacklist"
+      - "com.watchtower.enable=false"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-# Optimized Named Volumes
+  # === Performance Monitoring (Prometheus) ===
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: blacklist-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-7d}'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - blacklist-net
+    labels:
+      - "com.watchtower.enable=${PROMETHEUS_WATCHTOWER_ENABLED:-false}"
+    deploy:
+      resources:
+        limits:
+          cpus: ${PROMETHEUS_CPU_LIMIT:-1.0}
+          memory: ${PROMETHEUS_MEMORY_LIMIT:-1G}
+        reservations:
+          cpus: ${PROMETHEUS_CPU_RESERVATION:-0.25}
+          memory: ${PROMETHEUS_MEMORY_RESERVATION:-256M}
+
+  # === Visualization (Grafana) ===
+  grafana:
+    image: grafana/grafana:latest
+    container_name: blacklist-grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS:-grafana-clock-panel,grafana-simple-json-datasource}
+    networks:
+      - blacklist-net
+    labels:
+      - "com.watchtower.enable=${GRAFANA_WATCHTOWER_ENABLED:-false}"
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: ${GRAFANA_CPU_LIMIT:-0.5}
+          memory: ${GRAFANA_MEMORY_LIMIT:-512M}
+        reservations:
+          cpus: ${GRAFANA_CPU_RESERVATION:-0.1}
+          memory: ${GRAFANA_MEMORY_RESERVATION:-128M}
+
+# === Volume Configuration ===
 volumes:
   blacklist-data:
     driver: local
     name: blacklist-data
     driver_opts:
-      type: none
-      o: bind
+      type: ${VOLUME_TYPE:-none}
+      o: ${VOLUME_OPTS:-bind}
       device: ${DATA_PATH:-./data/blacklist}
   
   blacklist-logs:
     driver: local
     name: blacklist-logs
     driver_opts:
-      type: none
-      o: bind
+      type: ${VOLUME_TYPE:-none}
+      o: ${VOLUME_OPTS:-bind}
       device: ${LOGS_PATH:-./logs}
   
   redis-data:
     driver: local
     name: blacklist-redis-data
     driver_opts:
-      type: none
-      o: bind
+      type: ${VOLUME_TYPE:-none}
+      o: ${VOLUME_OPTS:-bind}
       device: ${REDIS_DATA_PATH:-./data/redis}
   
   postgresql-data:
     driver: local
     name: blacklist-postgresql-data
     driver_opts:
-      type: none
-      o: bind
+      type: ${VOLUME_TYPE:-none}
+      o: ${VOLUME_OPTS:-bind}
       device: ${POSTGRES_DATA_PATH:-./data/postgresql}
+  
+  prometheus-data:
+    driver: local
+    name: blacklist-prometheus-data
+    driver_opts:
+      type: ${VOLUME_TYPE:-none}
+      o: ${VOLUME_OPTS:-bind}
+      device: ${PROMETHEUS_DATA_PATH:-./data/prometheus}
+  
+  grafana-data:
+    driver: local
+    name: blacklist-grafana-data
+    driver_opts:
+      type: ${VOLUME_TYPE:-none}
+      o: ${VOLUME_OPTS:-bind}
+      device: ${GRAFANA_DATA_PATH:-./data/grafana}
 
-# Optimized Network
+# === Network Configuration ===
 networks:
   blacklist-net:
     driver: bridge
@@ -201,5 +407,5 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.20.0.0/16
-          gateway: 172.20.0.1
+        - subnet: ${NETWORK_SUBNET:-172.20.0.0/16}
+          gateway: ${NETWORK_GATEWAY:-172.20.0.1}
