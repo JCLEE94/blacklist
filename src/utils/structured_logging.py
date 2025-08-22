@@ -6,6 +6,7 @@ JSON 형식의 구조화된 로그와 중앙 집중형 로깅 관리
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+import logging.handlers
 logger = logging.getLogger(__name__)
 
 import json
@@ -101,6 +102,7 @@ class StructuredLogger:
         try:
             # 파일 핸들러 (JSON 로그)
             json_file = self.log_dir / f"{self.name}.json"
+            import logging.handlers
             json_handler = logging.handlers.RotatingFileHandler(
                 json_file, maxBytes=2 * 1024 * 1024, backupCount=3  # 2MB
             )
