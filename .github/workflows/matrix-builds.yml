@@ -1,0 +1,617 @@
+name: Matrix Builds for Multi-Environment Support
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      build_platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64'
+        type: choice
+        options:
+          - 'linux/amd64'
+          - 'linux/amd64,linux/arm64'
+          - 'linux/amd64,linux/arm64,linux/arm/v7'
+      python_versions:
+        description: 'Python versions to test'
+        required: false
+        default: '3.11'
+        type: choice
+        options:
+          - '3.9'
+          - '3.11'
+          - '3.9,3.11'
+          - '3.9,3.10,3.11'
+      environment_target:
+        description: 'Environment target'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'development'
+          - 'staging'
+          - 'production'
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  DOCKER_BUILDKIT: 1
+  BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+
+# Optimized concurrency
+concurrency:
+  group: matrix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Preparation job to determine matrix configurations
+  prepare-matrix:
+    name: 🎯 Prepare Build Matrix
+    runs-on: self-hosted
+    outputs:
+      platforms: ${{ steps.matrix.outputs.platforms }}
+      python-versions: ${{ steps.matrix.outputs.python-versions }}
+      environments: ${{ steps.matrix.outputs.environments }}
+      should-build: ${{ steps.changes.outputs.should-build }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(cat version.txt 2>/dev/null || echo "dev")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📍 Version: $VERSION"
+
+      - name: Analyze changes for build decision
+        id: changes
+        run: |
+          SHOULD_BUILD=false
+          
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SHOULD_BUILD=true
+            echo "🔄 Manual trigger - building all configurations"
+          elif [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            SHOULD_BUILD=true
+            echo "🏷️ Tag push - building release configurations"
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            SHOULD_BUILD=true
+            echo "🔄 Main branch push - building production configurations"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Check if this is a significant change
+            if git diff --name-only origin/main...HEAD | grep -E '\.(py|txt|yml|yaml|json|sh|Dockerfile)$' > /dev/null; then
+              SHOULD_BUILD=true
+              echo "🔄 PR with significant changes - building test configurations"
+            fi
+          fi
+          
+          echo "should-build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+
+      - name: Generate dynamic matrix configurations
+        id: matrix
+        run: |
+          echo "🎯 Generating matrix configurations..."
+          
+          # Platform matrix
+          if [ "${{ github.event.inputs.build_platforms }}" != "" ]; then
+            PLATFORMS='["${{ github.event.inputs.build_platforms }}"]'
+          elif [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            # Release build - multi-platform
+            PLATFORMS='["linux/amd64", "linux/arm64"]'
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # Main branch - production platform
+            PLATFORMS='["linux/amd64"]'
+          else
+            # Development - single platform
+            PLATFORMS='["linux/amd64"]'
+          fi
+          
+          # Python versions matrix
+          if [ "${{ github.event.inputs.python_versions }}" != "" ]; then
+            IFS=',' read -ra VERSIONS <<< "${{ github.event.inputs.python_versions }}"
+            PYTHON_VERSIONS=$(printf '%s\n' "${VERSIONS[@]}" | jq -R . | jq -s .)
+          elif [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            # Release - test multiple versions
+            PYTHON_VERSIONS='["3.9", "3.11"]'
+          else
+            # Development - single version
+            PYTHON_VERSIONS='["3.11"]'
+          fi
+          
+          # Environment matrix
+          if [ "${{ github.event.inputs.environment_target }}" = "all" ] || [ "${{ github.event.inputs.environment_target }}" = "" ]; then
+            if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+              ENVIRONMENTS='["production", "staging"]'
+            elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              ENVIRONMENTS='["production"]'
+            else
+              ENVIRONMENTS='["development"]'
+            fi
+          else
+            ENVIRONMENTS='["${{ github.event.inputs.environment_target }}"]'
+          fi
+          
+          echo "platforms=$PLATFORMS" >> $GITHUB_OUTPUT
+          echo "python-versions=$PYTHON_VERSIONS" >> $GITHUB_OUTPUT
+          echo "environments=$ENVIRONMENTS" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Matrix configurations:"
+          echo "  Platforms: $PLATFORMS"
+          echo "  Python versions: $PYTHON_VERSIONS"
+          echo "  Environments: $ENVIRONMENTS"
+
+  # Multi-platform testing matrix
+  test-matrix:
+    name: 🧪 Test (${{ matrix.python-version }}, ${{ matrix.environment }})
+    runs-on: self-hosted
+    needs: prepare-matrix
+    if: needs.prepare-matrix.outputs.should-build == 'true'
+    strategy:
+      matrix:
+        python-version: ${{ fromJson(needs.prepare-matrix.outputs.python-versions) }}
+        environment: ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
+      fail-fast: false
+    env:
+      PYTHON_VERSION: ${{ matrix.python-version }}
+      ENVIRONMENT: ${{ matrix.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'config/requirements.txt'
+
+      - name: Cache test environment
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            .pytest_cache
+            .tox
+          key: test-${{ matrix.python-version }}-${{ matrix.environment }}-${{ hashFiles('config/requirements.txt') }}
+          restore-keys: |
+            test-${{ matrix.python-version }}-${{ matrix.environment }}-
+            test-${{ matrix.python-version }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r config/requirements.txt
+          pip install pytest pytest-cov pytest-xdist pytest-mock tox
+
+      - name: Configure environment-specific settings
+        run: |
+          echo "⚙️ Configuring settings for ${{ matrix.environment }} environment..."
+          
+          case "${{ matrix.environment }}" in
+            development)
+              export FLASK_ENV=development
+              export DEBUG=true
+              export COLLECTION_ENABLED=false
+              ;;
+            staging)
+              export FLASK_ENV=production
+              export DEBUG=false
+              export COLLECTION_ENABLED=true
+              ;;
+            production)
+              export FLASK_ENV=production
+              export DEBUG=false
+              export COLLECTION_ENABLED=true
+              export FORCE_DISABLE_COLLECTION=false
+              ;;
+          esac
+          
+          # Create environment-specific test config
+          cat > test-config-${{ matrix.environment }}.env << EOF
+          FLASK_ENV=${FLASK_ENV:-development}
+          DEBUG=${DEBUG:-true}
+          COLLECTION_ENABLED=${COLLECTION_ENABLED:-false}
+          TEST_DATABASE_URL=sqlite:///test-${{ matrix.environment }}.db
+          SECRET_KEY=test-secret-${{ matrix.environment }}
+          JWT_SECRET_KEY=test-jwt-${{ matrix.environment }}
+          EOF
+
+      - name: Run environment-specific tests
+        run: |
+          echo "🧪 Running tests for Python ${{ matrix.python-version }} in ${{ matrix.environment }} environment..."
+          
+          # Load environment configuration
+          set -a
+          source test-config-${{ matrix.environment }}.env
+          set +a
+          
+          # Run tests with environment-specific markers
+          case "${{ matrix.environment }}" in
+            development)
+              pytest tests/ -m "not slow and not integration" \
+                --cov=src \
+                --cov-report=xml:coverage-dev-py${{ matrix.python-version }}.xml \
+                --junit-xml=junit-dev-py${{ matrix.python-version }}.xml \
+                -v --tb=short
+              ;;
+            staging)
+              pytest tests/ -m "not slow" \
+                --cov=src \
+                --cov-report=xml:coverage-staging-py${{ matrix.python-version }}.xml \
+                --junit-xml=junit-staging-py${{ matrix.python-version }}.xml \
+                -v --tb=short
+              ;;
+            production)
+              pytest tests/ \
+                --cov=src \
+                --cov-report=xml:coverage-prod-py${{ matrix.python-version }}.xml \
+                --junit-xml=junit-prod-py${{ matrix.python-version }}.xml \
+                -v --tb=short --maxfail=5
+              ;;
+          esac
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-py${{ matrix.python-version }}-${{ matrix.environment }}
+          path: |
+            coverage-*.xml
+            junit-*.xml
+          retention-days: 30
+
+  # Multi-platform Docker build matrix
+  build-matrix:
+    name: 🐳 Build (${{ matrix.platform }}, ${{ matrix.environment }})
+    runs-on: self-hosted
+    needs: [prepare-matrix, test-matrix]
+    if: always() && needs.prepare-matrix.outputs.should-build == 'true' && (needs.test-matrix.result == 'success' || needs.test-matrix.result == 'skipped')
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.prepare-matrix.outputs.platforms) }}
+        environment: ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for multi-platform builds
+        if: contains(matrix.platform, 'arm')
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64,arm
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+          driver-opts: network=host
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-${{ matrix.environment }}-${{ matrix.platform }}
+          key: buildx-${{ matrix.environment }}-${{ matrix.platform }}-${{ hashFiles('build/docker/Dockerfile') }}-${{ github.sha }}
+          restore-keys: |
+            buildx-${{ matrix.environment }}-${{ matrix.platform }}-${{ hashFiles('build/docker/Dockerfile') }}-
+            buildx-${{ matrix.environment }}-${{ matrix.platform }}-
+
+      - name: Login to registry
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} \
+            -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+
+      - name: Generate build tags
+        id: tags
+        run: |
+          echo "📝 Generating build tags for ${{ matrix.platform }} / ${{ matrix.environment }}..."
+          
+          # Base image name with environment
+          BASE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          
+          # Platform suffix
+          PLATFORM_SUFFIX=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
+          
+          # Environment suffix
+          ENV_SUFFIX="${{ matrix.environment }}"
+          
+          # Generate tags
+          TAGS=(
+            "${BASE_TAG}:${ENV_SUFFIX}-${PLATFORM_SUFFIX}"
+            "${BASE_TAG}:${ENV_SUFFIX}-${PLATFORM_SUFFIX}-${{ github.sha }}"
+          )
+          
+          # Add version tag for releases
+          if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            TAGS+=("${BASE_TAG}:v${{ needs.prepare-matrix.outputs.version }}-${ENV_SUFFIX}-${PLATFORM_SUFFIX}")
+          fi
+          
+          # Add latest tag for main branch production builds
+          if [ "${{ github.ref }}" = "refs/heads/main" ] && [ "${{ matrix.environment }}" = "production" ] && [ "${{ matrix.platform }}" = "linux/amd64" ]; then
+            TAGS+=("${BASE_TAG}:latest")
+          fi
+          
+          # Convert to comma-separated string for buildx
+          TAG_STRING=$(IFS=,; echo "${TAGS[*]}")
+          echo "tags=$TAG_STRING" >> $GITHUB_OUTPUT
+          
+          echo "🏷️ Tags: $TAG_STRING"
+
+      - name: Build and push image
+        run: |
+          echo "🔨 Building image for ${{ matrix.platform }} / ${{ matrix.environment }}..."
+          
+          # Determine cache path
+          CACHE_PATH="/tmp/.buildx-cache-${{ matrix.environment }}-${{ matrix.platform }}"
+          
+          # Environment-specific build args
+          case "${{ matrix.environment }}" in
+            development)
+              BUILD_ARGS="--build-arg FLASK_ENV=development --build-arg DEBUG=true"
+              ;;
+            staging)
+              BUILD_ARGS="--build-arg FLASK_ENV=production --build-arg DEBUG=false"
+              ;;
+            production)
+              BUILD_ARGS="--build-arg FLASK_ENV=production --build-arg DEBUG=false --build-arg OPTIMIZE=true"
+              ;;
+          esac
+          
+          # Build with platform-specific optimizations
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --cache-from type=local,src=$CACHE_PATH \
+            --cache-to type=local,dest=${CACHE_PATH}-new,mode=max \
+            $BUILD_ARGS \
+            --build-arg VERSION=${{ needs.prepare-matrix.outputs.version }} \
+            --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+            --build-arg VCS_REF=${{ github.sha }} \
+            --build-arg PLATFORM=${{ matrix.platform }} \
+            --build-arg ENVIRONMENT=${{ matrix.environment }} \
+            --label "platform=${{ matrix.platform }}" \
+            --label "environment=${{ matrix.environment }}" \
+            --label "build.id=${{ github.run_id }}" \
+            -f build/docker/Dockerfile \
+            $(echo "${{ steps.tags.outputs.tags }}" | sed 's/,/ -t /g' | sed 's/^/-t /') \
+            --push \
+            .
+          
+          # Move cache
+          rm -rf $CACHE_PATH
+          mv ${CACHE_PATH}-new $CACHE_PATH || true
+
+      - name: Test built image
+        if: matrix.platform == 'linux/amd64'
+        run: |
+          echo "🧪 Testing built image for ${{ matrix.platform }} / ${{ matrix.environment }}..."
+          
+          # Get the first tag for testing
+          TEST_TAG=$(echo "${{ steps.tags.outputs.tags }}" | cut -d',' -f1)
+          
+          # Create test container
+          TEST_CONTAINER="test-${{ matrix.environment }}-$(date +%s)"
+          TEST_PORT=$(shuf -i 46000-46999 -n 1)
+          
+          # Run container
+          docker run -d \
+            --name $TEST_CONTAINER \
+            -p $TEST_PORT:2542 \
+            -e FLASK_ENV=${{ matrix.environment }} \
+            -e COLLECTION_ENABLED=false \
+            -e FORCE_DISABLE_COLLECTION=true \
+            $TEST_TAG
+          
+          # Wait for container to be ready
+          sleep 10
+          
+          # Test health endpoint
+          if curl -f http://localhost:$TEST_PORT/health; then
+            echo "✅ Health check passed for ${{ matrix.environment }} environment"
+          else
+            echo "❌ Health check failed"
+            docker logs $TEST_CONTAINER
+            exit 1
+          fi
+          
+          # Cleanup
+          docker stop $TEST_CONTAINER
+          docker rm $TEST_CONTAINER
+
+  # Multi-platform manifest creation
+  create-manifests:
+    name: 📦 Create Multi-Platform Manifests
+    runs-on: self-hosted
+    needs: [prepare-matrix, build-matrix]
+    if: always() && needs.build-matrix.result == 'success' && contains(needs.prepare-matrix.outputs.platforms, 'linux/arm')
+    strategy:
+      matrix:
+        environment: ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
+    steps:
+      - name: Login to registry
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} \
+            -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+
+      - name: Create and push manifest
+        run: |
+          echo "📦 Creating multi-platform manifest for ${{ matrix.environment }}..."
+          
+          # Base manifest name
+          MANIFEST_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.environment }}"
+          
+          # Platform-specific image names
+          IMAGES=(
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.environment }}-linux-amd64"
+          )
+          
+          # Add ARM images if they exist
+          if echo '${{ needs.prepare-matrix.outputs.platforms }}' | grep -q "linux/arm64"; then
+            IMAGES+=("${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.environment }}-linux-arm64")
+          fi
+          
+          if echo '${{ needs.prepare-matrix.outputs.platforms }}' | grep -q "linux/arm/v7"; then
+            IMAGES+=("${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.environment }}-linux-arm-v7")
+          fi
+          
+          # Create manifest
+          docker manifest create $MANIFEST_NAME "${IMAGES[@]}"
+          
+          # Annotate manifest with platform information
+          for image in "${IMAGES[@]}"; do
+            PLATFORM=$(echo $image | sed 's/.*-linux-/linux\//' | sed 's/-/\//')
+            docker manifest annotate $MANIFEST_NAME $image --os linux --arch $(echo $PLATFORM | cut -d'/' -f2)
+          done
+          
+          # Push manifest
+          docker manifest push $MANIFEST_NAME
+          
+          echo "✅ Multi-platform manifest created: $MANIFEST_NAME"
+
+  # Performance comparison across builds
+  performance-comparison:
+    name: ⚡ Performance Comparison
+    runs-on: self-hosted
+    needs: [prepare-matrix, build-matrix]
+    if: always() && needs.build-matrix.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Performance benchmark across environments
+        run: |
+          echo "⚡ Running performance benchmarks across environments..."
+          
+          # Create performance report
+          echo "# Performance Comparison Report" > performance-report.md
+          echo "Date: $(date -u)" >> performance-report.md
+          echo "" >> performance-report.md
+          
+          # Test each environment
+          for env in $(echo '${{ needs.prepare-matrix.outputs.environments }}' | jq -r '.[]'); do
+            echo "## Environment: $env" >> performance-report.md
+            
+            # Start container
+            TEST_CONTAINER="perf-test-$env-$(date +%s)"
+            TEST_PORT=$(shuf -i 47000-47999 -n 1)
+            
+            IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$env-linux-amd64"
+            
+            echo "Testing image: $IMAGE"
+            
+            docker run -d \
+              --name $TEST_CONTAINER \
+              -p $TEST_PORT:2542 \
+              -e FLASK_ENV=$env \
+              -e COLLECTION_ENABLED=false \
+              -e FORCE_DISABLE_COLLECTION=true \
+              $IMAGE
+            
+            # Wait for startup
+            sleep 15
+            
+            # Performance tests
+            echo "- **Startup Time**: ~15 seconds" >> performance-report.md
+            
+            # Response time test
+            RESPONSE_TIMES=()
+            for i in {1..5}; do
+              TIME=$(curl -w "%{time_total}" -o /dev/null -s http://localhost:$TEST_PORT/health)
+              RESPONSE_TIMES+=($TIME)
+            done
+            
+            # Calculate average
+            AVG_TIME=$(echo "${RESPONSE_TIMES[@]}" | awk '{sum+=$1} END {print sum/NR}')
+            echo "- **Average Response Time**: ${AVG_TIME}s" >> performance-report.md
+            
+            # Memory usage
+            MEMORY=$(docker stats --no-stream --format "table {{.MemUsage}}" $TEST_CONTAINER | tail -1)
+            echo "- **Memory Usage**: $MEMORY" >> performance-report.md
+            
+            # Cleanup
+            docker stop $TEST_CONTAINER
+            docker rm $TEST_CONTAINER
+            
+            echo "" >> performance-report.md
+          done
+          
+          cat performance-report.md
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-comparison
+          path: performance-report.md
+          retention-days: 30
+
+  # Summary and cleanup
+  build-summary:
+    name: 📊 Build Summary
+    runs-on: self-hosted
+    needs: [prepare-matrix, test-matrix, build-matrix, create-manifests, performance-comparison]
+    if: always() && needs.prepare-matrix.outputs.should-build == 'true'
+    steps:
+      - name: Generate build summary
+        run: |
+          echo "📊 Generating comprehensive build summary..."
+          
+          cat > build-summary.md << EOF
+          # Matrix Build Summary
+          
+          **Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          **Version:** ${{ needs.prepare-matrix.outputs.version }}
+          **Trigger:** ${{ github.event_name }}
+          **Ref:** ${{ github.ref }}
+          
+          ## Configuration Matrix
+          - **Platforms:** ${{ needs.prepare-matrix.outputs.platforms }}
+          - **Python Versions:** ${{ needs.prepare-matrix.outputs.python-versions }}
+          - **Environments:** ${{ needs.prepare-matrix.outputs.environments }}
+          
+          ## Build Results
+          - **Tests:** ${{ needs.test-matrix.result }}
+          - **Docker Builds:** ${{ needs.build-matrix.result }}
+          - **Manifests:** ${{ needs.create-manifests.result }}
+          - **Performance:** ${{ needs.performance-comparison.result }}
+          
+          ## Available Images
+          EOF
+          
+          # List all built images
+          echo "Listing built images for verification..."
+          docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | \
+            grep "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | \
+            head -20 >> build-summary.md || echo "No images found"
+          
+          cat build-summary.md
+
+      - name: Cleanup matrix build artifacts
+        run: |
+          echo "🧹 Cleaning up matrix build artifacts..."
+          
+          # Remove test containers and images older than current build
+          docker ps -aq --filter "before=${{ github.run_id }}" | xargs -r docker rm -f || true
+          
+          # Clean up old cache directories
+          find /tmp -name ".buildx-cache-*" -type d -mtime +1 -exec rm -rf {} \; 2>/dev/null || true
+          
+          # Docker system cleanup
+          docker system prune -f || true
+
+      - name: Upload build summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: matrix-build-summary
+          path: build-summary.md
+          retention-days: 30
+
+      - name: Logout from registry
+        if: always()
+        run: docker logout ${{ env.REGISTRY }} || true

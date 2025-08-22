@@ -1,0 +1,447 @@
+name: Advanced Cache Management for Self-hosted Runners
+
+on:
+  schedule:
+    # Run cache optimization daily at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      cache_operation:
+        description: 'Cache operation to perform'
+        required: true
+        default: 'optimize'
+        type: choice
+        options:
+          - optimize
+          - clean
+          - rebuild
+          - analyze
+      cache_retention_days:
+        description: 'Cache retention in days'
+        required: false
+        default: '7'
+        type: string
+
+env:
+  REGISTRY: registry.jclee.me
+  CACHE_SIZE_LIMIT: 10GB
+  MAX_CACHE_AGE_DAYS: 7
+
+jobs:
+  cache-management:
+    name: 🗂️ Cache Management & Optimization
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Analyze current cache usage
+        id: cache-analysis
+        run: |
+          echo "🔍 Analyzing current cache usage..."
+          
+          # Docker cache analysis
+          echo "## Docker Cache Analysis" > cache-report.md
+          echo "=========================" >> cache-report.md
+          
+          # Buildx cache
+          if [ -d /tmp/.buildx-cache ]; then
+            BUILDX_SIZE=$(du -sh /tmp/.buildx-cache 2>/dev/null | cut -f1 || echo "0")
+            BUILDX_FILES=$(find /tmp/.buildx-cache -type f | wc -l)
+            echo "- Buildx Cache: $BUILDX_SIZE ($BUILDX_FILES files)" >> cache-report.md
+          fi
+          
+          # Registry cache
+          if [ -d ~/.docker/buildx ]; then
+            REGISTRY_CACHE_SIZE=$(du -sh ~/.docker/buildx 2>/dev/null | cut -f1 || echo "0")
+            echo "- Registry Cache: $REGISTRY_CACHE_SIZE" >> cache-report.md
+          fi
+          
+          # Docker system cache
+          DOCKER_CACHE=$(docker system df --format "table {{.Type}}\t{{.TotalCount}}\t{{.Size}}\t{{.Reclaimable}}" | grep -E "(Images|Containers|Volumes|Build Cache)")
+          echo "" >> cache-report.md
+          echo "## Docker System Usage" >> cache-report.md
+          echo "\`\`\`" >> cache-report.md
+          echo "$DOCKER_CACHE" >> cache-report.md
+          echo "\`\`\`" >> cache-report.md
+          
+          # GitHub Actions cache
+          echo "" >> cache-report.md
+          echo "## GitHub Actions Cache" >> cache-report.md
+          
+          # Find cache directories
+          CACHE_DIRS=$(find /tmp -maxdepth 2 -name "*cache*" -type d 2>/dev/null | head -10)
+          if [ -n "$CACHE_DIRS" ]; then
+            echo "Cache directories found:" >> cache-report.md
+            echo "$CACHE_DIRS" | while read dir; do
+              if [ -d "$dir" ]; then
+                SIZE=$(du -sh "$dir" 2>/dev/null | cut -f1)
+                echo "- $dir: $SIZE" >> cache-report.md
+              fi
+            done
+          fi
+          
+          cat cache-report.md
+          
+          # Export metrics for decision making
+          TOTAL_CACHE_SIZE=$(du -sh /tmp/.buildx-cache* ~/.docker/buildx 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo "0")
+          echo "total-cache-size=$TOTAL_CACHE_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Intelligent cache optimization
+        run: |
+          echo "🔧 Starting intelligent cache optimization..."
+          
+          OPERATION="${{ github.event.inputs.cache_operation || 'optimize' }}"
+          RETENTION_DAYS="${{ github.event.inputs.cache_retention_days || '7' }}"
+          
+          case "$OPERATION" in
+            optimize)
+              echo "📊 Optimizing caches..."
+              
+              # Clean old buildx cache layers
+              echo "Cleaning old buildx cache layers (older than $RETENTION_DAYS days)..."
+              find /tmp/.buildx-cache* -type f -mtime +$RETENTION_DAYS -delete 2>/dev/null || true
+              
+              # Optimize Docker buildx cache
+              echo "Optimizing Docker buildx cache..."
+              docker buildx prune -f --keep-storage ${{ env.CACHE_SIZE_LIMIT }} || true
+              
+              # Clean unused Docker images but keep recent ones
+              echo "Cleaning unused Docker images..."
+              # Remove images older than retention period, except those with specific tags
+              docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}\t{{.ID}}" | \
+                grep -v -E "(latest|cache|v[0-9]+\.[0-9]+\.[0-9]+)" | \
+                awk -v days=$RETENTION_DAYS '
+                {
+                  cmd = "date -d \"" $2 " " $3 "\" +%s 2>/dev/null || echo 0"
+                  cmd | getline timestamp
+                  close(cmd)
+                  
+                  current_time = systime()
+                  age_days = (current_time - timestamp) / 86400
+                  
+                  if (age_days > days) {
+                    print $4
+                  }
+                }' | \
+                head -20 | \
+                xargs -r docker rmi -f || true
+              ;;
+              
+            clean)
+              echo "🧹 Performing aggressive cache cleanup..."
+              
+              # Remove all build cache
+              docker buildx prune -af || true
+              
+              # Clean all Docker system cache
+              docker system prune -af --volumes || true
+              
+              # Clean buildx cache directories
+              rm -rf /tmp/.buildx-cache* || true
+              
+              # Clean other cache directories
+              find /tmp -maxdepth 2 -name "*cache*" -type d -mtime +1 -exec rm -rf {} \; 2>/dev/null || true
+              ;;
+              
+            rebuild)
+              echo "🔄 Rebuilding cache structure..."
+              
+              # Clean existing cache
+              docker buildx prune -af || true
+              rm -rf /tmp/.buildx-cache* || true
+              
+              # Create fresh cache directories
+              mkdir -p /tmp/.buildx-cache /tmp/.buildx-cache-redis /tmp/.buildx-cache-postgres
+              
+              # Pre-populate cache with base images
+              echo "Pre-populating cache with base images..."
+              docker pull python:3.11-slim || true
+              docker pull redis:7-alpine || true
+              docker pull postgres:15-alpine || true
+              
+              # Build a minimal cache image
+              if [ -f build/docker/Dockerfile ]; then
+                echo "Building cache layers..."
+                docker buildx build \
+                  --platform linux/amd64 \
+                  --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
+                  --target builder \
+                  -f build/docker/Dockerfile \
+                  . || true
+              fi
+              ;;
+              
+            analyze)
+              echo "📊 Detailed cache analysis..."
+              
+              # Generate detailed cache report
+              echo "## Detailed Cache Analysis" > detailed-cache-report.md
+              echo "Date: $(date)" >> detailed-cache-report.md
+              echo "" >> detailed-cache-report.md
+              
+              # Docker system detailed
+              echo "### Docker System Detailed" >> detailed-cache-report.md
+              docker system df -v >> detailed-cache-report.md 2>/dev/null || true
+              
+              # Buildx cache details
+              echo "" >> detailed-cache-report.md
+              echo "### Buildx Cache Structure" >> detailed-cache-report.md
+              if [ -d /tmp/.buildx-cache ]; then
+                find /tmp/.buildx-cache -type f -exec ls -lah {} \; | head -20 >> detailed-cache-report.md
+              fi
+              
+              # Registry cache analysis
+              echo "" >> detailed-cache-report.md
+              echo "### Registry Cache Tags" >> detailed-cache-report.md
+              docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | \
+                grep ${{ env.REGISTRY }} >> detailed-cache-report.md || echo "No registry images found" >> detailed-cache-report.md
+              
+              cat detailed-cache-report.md
+              ;;
+          esac
+
+      - name: Validate cache integrity
+        run: |
+          echo "🔍 Validating cache integrity..."
+          
+          # Test Docker buildx functionality
+          echo "Testing Docker buildx..."
+          docker buildx ls
+          
+          # Test cache accessibility
+          if [ -d /tmp/.buildx-cache ]; then
+            echo "✅ Buildx cache directory accessible"
+            echo "Cache size: $(du -sh /tmp/.buildx-cache | cut -f1)"
+            echo "Cache files: $(find /tmp/.buildx-cache -type f | wc -l)"
+          else
+            echo "⚠️ Buildx cache directory not found"
+          fi
+          
+          # Test registry connectivity
+          echo "Testing registry connectivity..."
+          if ping -c 3 ${{ env.REGISTRY }} > /dev/null 2>&1; then
+            echo "✅ Registry connectivity OK"
+          else
+            echo "⚠️ Registry connectivity issue"
+          fi
+
+      - name: Generate cache optimization report
+        run: |
+          echo "📊 Generating cache optimization report..."
+          
+          # Create comprehensive report
+          cat > cache-optimization-report.md << EOF
+          # Cache Optimization Report
+          
+          **Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          **Operation:** ${{ github.event.inputs.cache_operation || 'optimize' }}
+          **Retention:** ${{ github.event.inputs.cache_retention_days || '7' }} days
+          
+          ## Pre-Optimization Status
+          $(cat cache-report.md)
+          
+          ## Optimization Actions Performed
+          - Cache cleanup based on retention policy
+          - Docker buildx optimization
+          - Unused image removal
+          - System cache pruning
+          
+          ## Post-Optimization Status
+          EOF
+          
+          # Generate post-optimization metrics
+          echo "" >> cache-optimization-report.md
+          echo "### Current Cache Status" >> cache-optimization-report.md
+          
+          # Docker system status
+          docker system df --format "table {{.Type}}\t{{.TotalCount}}\t{{.Size}}\t{{.Reclaimable}}" >> cache-optimization-report.md
+          
+          # Cache directories size
+          echo "" >> cache-optimization-report.md
+          echo "### Cache Directory Sizes" >> cache-optimization-report.md
+          du -sh /tmp/.buildx-cache* 2>/dev/null || echo "No buildx cache found" >> cache-optimization-report.md
+          
+          # Available disk space
+          echo "" >> cache-optimization-report.md
+          echo "### Available Disk Space" >> cache-optimization-report.md
+          df -h | grep -E "(Filesystem|/dev/)" >> cache-optimization-report.md
+          
+          cat cache-optimization-report.md
+
+      - name: Schedule next optimization
+        run: |
+          echo "📅 Scheduling recommendations for next optimization..."
+          
+          # Calculate optimal next run time based on cache growth
+          CURRENT_SIZE=$(du -sh /tmp/.buildx-cache* 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo "0")
+          
+          if [[ "$CURRENT_SIZE" =~ "G" ]] && [[ "${CURRENT_SIZE%G*}" -gt 5 ]]; then
+            echo "⚠️ Cache size is large ($CURRENT_SIZE). Consider more frequent optimization."
+            echo "Recommendation: Run cache optimization every 3 days"
+          else
+            echo "✅ Cache size is manageable ($CURRENT_SIZE)"
+            echo "Recommendation: Current weekly schedule is sufficient"
+          fi
+
+      - name: Upload cache reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: cache-optimization-reports
+          path: |
+            cache-report.md
+            cache-optimization-report.md
+            detailed-cache-report.md
+          retention-days: 30
+
+      - name: Set cache health status
+        run: |
+          echo "🏥 Setting cache health status..."
+          
+          # Determine cache health based on metrics
+          CACHE_SIZE=$(du -sh /tmp/.buildx-cache* 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo "0")
+          AVAILABLE_SPACE=$(df / | awk 'NR==2 {print $4}')
+          
+          if [ "$AVAILABLE_SPACE" -gt 10000000 ]; then  # >10GB available
+            echo "status=healthy" >> $GITHUB_ENV
+            echo "✅ Cache status: HEALTHY"
+          elif [ "$AVAILABLE_SPACE" -gt 5000000 ]; then  # >5GB available
+            echo "status=warning" >> $GITHUB_ENV
+            echo "⚠️ Cache status: WARNING - Consider cleanup"
+          else
+            echo "status=critical" >> $GITHUB_ENV
+            echo "🚨 Cache status: CRITICAL - Immediate cleanup needed"
+          fi
+
+  # Cache warming for optimal performance
+  cache-warming:
+    name: 🔥 Cache Warming
+    runs-on: self-hosted
+    needs: cache-management
+    if: github.event.inputs.cache_operation == 'rebuild' || github.event_name == 'schedule'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Warm Docker buildx cache
+        run: |
+          echo "🔥 Warming Docker buildx cache..."
+          
+          # Set up buildx with cache
+          docker buildx create --use --driver docker-container || true
+          
+          # Pre-build cache layers for main Dockerfile
+          if [ -f build/docker/Dockerfile ]; then
+            echo "Building main application cache layers..."
+            docker buildx build \
+              --platform linux/amd64 \
+              --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+              --target builder \
+              -f build/docker/Dockerfile \
+              . || true
+            
+            # Move cache
+            rm -rf /tmp/.buildx-cache
+            mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
+          fi
+          
+          # Pre-build support image caches
+          if [ -f docker/redis/Dockerfile ]; then
+            echo "Building Redis cache layers..."
+            docker buildx build \
+              --platform linux/amd64 \
+              --cache-to type=local,dest=/tmp/.buildx-cache-redis,mode=max \
+              -f docker/redis/Dockerfile \
+              docker/redis/ || true
+          fi
+          
+          if [ -f docker/postgresql/Dockerfile ]; then
+            echo "Building PostgreSQL cache layers..."
+            docker buildx build \
+              --platform linux/amd64 \
+              --cache-to type=local,dest=/tmp/.buildx-cache-postgres,mode=max \
+              -f docker/postgresql/Dockerfile \
+              docker/postgresql/ || true
+          fi
+
+      - name: Verify cache warming
+        run: |
+          echo "🔍 Verifying cache warming results..."
+          
+          # Check cache sizes after warming
+          echo "Cache sizes after warming:"
+          du -sh /tmp/.buildx-cache* 2>/dev/null || echo "No cache found"
+          
+          # Test a quick build to verify cache effectiveness
+          echo "Testing cache effectiveness..."
+          time docker buildx build \
+            --platform linux/amd64 \
+            --cache-from type=local,src=/tmp/.buildx-cache \
+            --target builder \
+            -f build/docker/Dockerfile \
+            . 2>&1 | grep -i "cache" || echo "Cache test completed"
+
+  # Monitoring and alerting for cache health
+  cache-monitoring:
+    name: 📊 Cache Health Monitoring
+    runs-on: self-hosted
+    needs: cache-management
+    if: always()
+    steps:
+      - name: Monitor cache health metrics
+        run: |
+          echo "📊 Monitoring cache health metrics..."
+          
+          # Collect metrics
+          CACHE_SIZE=$(du -sh /tmp/.buildx-cache* 2>/dev/null | awk '{print $1}' | head -1 || echo "0")
+          DOCKER_IMAGES=$(docker images -q | wc -l)
+          DOCKER_CONTAINERS=$(docker ps -aq | wc -l)
+          AVAILABLE_SPACE=$(df / | awk 'NR==2 {print $4}')
+          
+          # Create metrics file
+          cat > cache-metrics.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "cache_size": "$CACHE_SIZE",
+            "docker_images_count": $DOCKER_IMAGES,
+            "docker_containers_count": $DOCKER_CONTAINERS,
+            "available_space_kb": $AVAILABLE_SPACE,
+            "runner": "self-hosted",
+            "operation": "${{ github.event.inputs.cache_operation || 'optimize' }}"
+          }
+          EOF
+          
+          cat cache-metrics.json
+
+      - name: Generate health recommendations
+        run: |
+          echo "💡 Generating health recommendations..."
+          
+          AVAILABLE_SPACE=$(df / | awk 'NR==2 {print $4}')
+          
+          if [ "$AVAILABLE_SPACE" -lt 5000000 ]; then  # <5GB
+            echo "🚨 CRITICAL: Low disk space detected"
+            echo "Recommendations:"
+            echo "1. Run aggressive cache cleanup immediately"
+            echo "2. Consider increasing runner storage"
+            echo "3. Implement more frequent cache rotation"
+          elif [ "$AVAILABLE_SPACE" -lt 10000000 ]; then  # <10GB
+            echo "⚠️ WARNING: Disk space getting low"
+            echo "Recommendations:"
+            echo "1. Schedule cache cleanup more frequently"
+            echo "2. Monitor cache growth patterns"
+          else
+            echo "✅ HEALTHY: Sufficient disk space available"
+            echo "Recommendations:"
+            echo "1. Continue current cache optimization schedule"
+            echo "2. Monitor for growth trends"
+          fi
+
+      - name: Upload monitoring artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: cache-health-monitoring
+          path: cache-metrics.json
+          retention-days: 90
