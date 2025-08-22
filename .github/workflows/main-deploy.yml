@@ -260,6 +260,66 @@ jobs:
         
         echo "✅ Build caches updated successfully"
 
+    - name: Verify built image version
+      run: |
+        echo "🔍 Verifying built Docker image version..."
+        
+        # Check version in the built image
+        echo "📦 Checking version in Docker image..."
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }} python -c "
+import sys
+sys.path.append('/app')
+version_file = '/app/version.txt'
+try:
+    with open(version_file, 'r') as f:
+        version = f.read().strip()
+        print(f'Image version: {version}')
+        expected = '${{ env.VERSION }}'
+        if version == expected:
+            print('✅ Version matches: ' + version)
+            sys.exit(0)
+        else:
+            print(f'❌ Version mismatch! Expected: {expected}, Found: {version}')
+            sys.exit(1)
+except Exception as e:
+    print(f'❌ Error checking version: {e}')
+    sys.exit(1)
+        "
+        
+        # Test if container starts and responds
+        echo "🐳 Testing container startup..."
+        TEST_PORT=45679
+        docker run -d --rm --name version-test-container \
+          -p $TEST_PORT:2542 \
+          -e FLASK_ENV=production \
+          -e COLLECTION_ENABLED=false \
+          -e FORCE_DISABLE_COLLECTION=true \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }}
+        
+        # Wait for container to start
+        echo "⏳ Waiting for container to start (max 30s)..."
+        for i in {1..30}; do
+          if curl -sf http://localhost:$TEST_PORT/health 2>/dev/null | grep -q "status"; then
+            echo "✅ Container is responding"
+            
+            # Check version in health endpoint
+            VERSION_IN_HEALTH=$(curl -s http://localhost:$TEST_PORT/health 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+            echo "📋 Version in /health endpoint: $VERSION_IN_HEALTH"
+            
+            if [ "$VERSION_IN_HEALTH" = "${{ env.VERSION }}" ]; then
+              echo "✅ Version verification PASSED: v${{ env.VERSION }}"
+            else
+              echo "⚠️ Version in health endpoint doesn't match (expected: ${{ env.VERSION }}, got: $VERSION_IN_HEALTH)"
+            fi
+            break
+          fi
+          sleep 1
+        done
+        
+        # Cleanup
+        docker stop version-test-container 2>/dev/null || true
+        echo "✅ Image version verification completed"
+
     - name: Test image health
       run: |
         echo "🏥 Testing application image health..."
