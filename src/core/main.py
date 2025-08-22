@@ -263,8 +263,7 @@ def main():
         logger.warning(
             "Production mode - use Gunicorn",
             command=(
-                "gunicorn -w 4 -b 0.0.0.0:{port} "
-                "core.main:create_compact_app()"
+                "gunicorn -w 4 -b 0.0.0.0:{port} " "core.main:create_compact_app()"
             ),
         )
 

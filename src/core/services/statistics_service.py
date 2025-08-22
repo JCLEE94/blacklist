@@ -9,9 +9,9 @@
 
 # 새로운 통합 통계 서비스 임포트
 from .unified_statistics_service import (
-    UnifiedStatisticsService,
     StatisticsServiceMixin as NewStatisticsServiceMixin,
 )
+from .unified_statistics_service import UnifiedStatisticsService
 
 
 # 레거시 호환성을 위한 기존 클래스명 유지

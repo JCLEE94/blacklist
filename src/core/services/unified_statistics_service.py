@@ -14,23 +14,25 @@ from typing import Any, Dict, List
 try:
     from .mixins import (
         DatabaseStatisticsMixin,
-        TrendAnalyticsMixin,
         SourceStatisticsMixin,
         SystemHealthMixin,
+        TrendAnalyticsMixin,
     )
 except ImportError:
     # Fallback for direct execution
-    import sys
     import os
+    import sys
+
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from mixins.database_statistics_mixin import DatabaseStatisticsMixin
-    from mixins.trend_analytics_mixin import TrendAnalyticsMixin
     from mixins.source_statistics_mixin import SourceStatisticsMixin
     from mixins.system_health_mixin import SystemHealthMixin
+    from mixins.trend_analytics_mixin import TrendAnalyticsMixin
 
 try:
     import psycopg2
     import psycopg2.extras
+
     PSYCOPG2_AVAILABLE = True
 except ImportError:
     PSYCOPG2_AVAILABLE = False
@@ -47,7 +49,7 @@ class UnifiedStatisticsService(
     """
     통합 통계 서비스 - PostgreSQL 우선, SQLite 폴백
     Uses multiple mixins for modular functionality following shrimp-rules.md
-    
+
     Mixins provide:
     - DatabaseStatisticsMixin: Core database operations
     - TrendAnalyticsMixin: Time-series analysis
@@ -198,15 +200,15 @@ if __name__ == "__main__":
             "get_source_statistics",  # SourceStatisticsMixin
             "get_system_health",  # SystemHealthMixin
         ]
-        
+
         missing_methods = []
         for method in mixin_methods:
             if not hasattr(service, method):
                 missing_methods.append(method)
-        
+
         if missing_methods:
             all_validation_failures.append(f"Mixin methods missing: {missing_methods}")
-            
+
     except Exception as e:
         all_validation_failures.append(f"Mixin inheritance: Exception {e}")
 

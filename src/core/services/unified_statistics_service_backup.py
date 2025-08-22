@@ -36,14 +36,15 @@ from typing import Any, Dict, List
 
 from .mixins import (
     DatabaseStatisticsMixin,
-    TrendAnalyticsMixin,
     SourceStatisticsMixin,
     SystemHealthMixin,
+    TrendAnalyticsMixin,
 )
 
 try:
     import psycopg2
     import psycopg2.extras
+
     PSYCOPG2_AVAILABLE = True
 except ImportError:
     PSYCOPG2_AVAILABLE = False
@@ -60,7 +61,7 @@ class UnifiedStatisticsService(
     """
     통합 통계 서비스 - PostgreSQL 우선, SQLite 폴백
     Uses multiple mixins for modular functionality following shrimp-rules.md
-    
+
     Mixins provide:
     - DatabaseStatisticsMixin: Core database operations
     - TrendAnalyticsMixin: Time-series analysis
@@ -211,15 +212,15 @@ if __name__ == "__main__":
             "get_source_statistics",  # SourceStatisticsMixin
             "get_system_health",  # SystemHealthMixin
         ]
-        
+
         missing_methods = []
         for method in mixin_methods:
             if not hasattr(service, method):
                 missing_methods.append(method)
-        
+
         if missing_methods:
             all_validation_failures.append(f"Mixin methods missing: {missing_methods}")
-            
+
     except Exception as e:
         all_validation_failures.append(f"Mixin inheritance: Exception {e}")
 

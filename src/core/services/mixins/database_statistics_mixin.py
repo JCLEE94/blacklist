@@ -16,6 +16,7 @@ from typing import Any, Dict
 
 try:
     import psycopg2
+
     PSYCOPG2_AVAILABLE = True
 except ImportError:
     PSYCOPG2_AVAILABLE = False
@@ -28,7 +29,7 @@ class DatabaseStatisticsMixin:
     Database Statistics Mixin - Core database operations for statistics
     Provides PostgreSQL primary, SQLite fallback pattern
     """
-    
+
     def _get_postgresql_statistics(self) -> Dict[str, Any]:
         """PostgreSQL에서 통계 조회"""
         if not PSYCOPG2_AVAILABLE:
@@ -236,18 +237,22 @@ if __name__ == "__main__":
     try:
         required_methods = [
             "_get_postgresql_statistics",
-            "_get_sqlite_statistics", 
+            "_get_sqlite_statistics",
             "_get_default_statistics",
-            "get_statistics"
+            "get_statistics",
         ]
-        mixin_methods = [method for method in dir(DatabaseStatisticsMixin) 
-                        if not method.startswith('__')]
-        
-        missing_methods = [method for method in required_methods 
-                          if method not in mixin_methods]
+        mixin_methods = [
+            method
+            for method in dir(DatabaseStatisticsMixin)
+            if not method.startswith("__")
+        ]
+
+        missing_methods = [
+            method for method in required_methods if method not in mixin_methods
+        ]
         if missing_methods:
             all_validation_failures.append(f"Missing methods: {missing_methods}")
-            
+
     except Exception as e:
         all_validation_failures.append(f"Method validation: Exception {e}")
 

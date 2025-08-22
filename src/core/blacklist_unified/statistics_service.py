@@ -7,12 +7,12 @@ blacklist_unified 모듈용 통계 서비스 클래스
 이 파일은 기존 코드와의 호환성을 위해서만 유지됩니다.
 """
 
-# 새로운 통합 통계 서비스 임포트
-from ..services.unified_statistics_service import UnifiedStatisticsService
+import logging
 from datetime import datetime
 from typing import Any, Dict, List
 
-import logging
+# 새로운 통합 통계 서비스 임포트
+from ..services.unified_statistics_service import UnifiedStatisticsService
 
 logger = logging.getLogger(__name__)
 
