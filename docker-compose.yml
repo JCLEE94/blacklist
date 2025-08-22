@@ -172,9 +172,8 @@ services:
       WATCHTOWER_SCOPE: blacklist
       WATCHTOWER_INCLUDE_RESTARTING: "true"
       WATCHTOWER_ROLLING_RESTART: "true"
-      WATCHTOWER_NOTIFICATIONS: slack
-      WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL: ${SLACK_WEBHOOK_URL}
-      WATCHTOWER_NOTIFICATION_SLACK_IDENTIFIER: "Blacklist-Watchtower"
+      WATCHTOWER_DEBUG: "true"
+      WATCHTOWER_LOG_LEVEL: "info"
     command: --scope blacklist --cleanup --interval ${WATCHTOWER_INTERVAL:-300}
     networks:
       - blacklist-net
