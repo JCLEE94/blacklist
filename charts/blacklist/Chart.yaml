@@ -1,0 +1,26 @@
+apiVersion: v2
+name: blacklist
+description: A CNCF-compliant Helm chart for Blacklist Management System
+type: application
+version: 0.1.0
+appVersion: "1.3.3"
+
+keywords:
+  - blacklist
+  - security
+  - threat-intelligence
+  - cncf
+  - kubernetes
+  - cloud-native
+
+home: https://blacklist.jclee.me
+sources:
+  - https://github.com/jclee94/blacklist
+
+maintainers:
+  - name: JC Lee
+    email: jclee94@example.com
+
+annotations:
+  category: Security
+  licenses: Apache-2.0

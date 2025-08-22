@@ -1,0 +1,443 @@
+name: Matrix Build Pipeline
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly builds on Monday 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Target platforms (comma-separated)'
+        required: false
+        type: string
+        default: 'linux/amd64,linux/arm64'
+      python_versions:
+        description: 'Python versions to test'
+        required: false
+        type: string
+        default: '3.9,3.11,3.12'
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  # Matrix strategy for comprehensive testing
+  matrix-test:
+    name: 🧪 Matrix Tests
+    runs-on: self-hosted
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.11', '3.12']
+        os: [ubuntu-20.04, ubuntu-22.04]
+        test-suite: [unit, integration, api, performance]
+        include:
+          # Special configurations
+          - python-version: '3.11'
+            os: ubuntu-22.04
+            test-suite: security
+            coverage: true
+          - python-version: '3.12'
+            os: ubuntu-22.04
+            test-suite: compatibility
+        exclude:
+          # Exclude slow combinations
+          - python-version: '3.9'
+            test-suite: performance
+          - os: ubuntu-20.04
+            test-suite: integration
+            python-version: '3.12'
+    container:
+      image: python:${{ matrix.python-version }}-slim
+      options: --user root
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: blacklist_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            gcc g++ \
+            libpq-dev \
+            curl \
+            git \
+            make
+
+      - name: Setup Python cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('config/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-python-${{ matrix.python-version }}-
+            ${{ runner.os }}-python-
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r config/requirements.txt
+          pip install pytest pytest-cov pytest-xdist pytest-timeout pytest-benchmark
+
+      - name: Run test suite - ${{ matrix.test-suite }}
+        env:
+          DATABASE_URL: postgresql://test_user:test_pass123@postgres:5432/blacklist_test
+          REDIS_URL: redis://redis:6379/0
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          case "${{ matrix.test-suite }}" in
+            "unit")
+              echo "🧪 Running unit tests..."
+              pytest tests/ -m "unit" -v \
+                --cov=src --cov-report=xml --cov-report=term \
+                --timeout=300 \
+                ${{ matrix.coverage && '--cov-min=80' || '' }}
+              ;;
+            "integration")
+              echo "🔗 Running integration tests..."
+              pytest tests/ -m "integration" -v --timeout=600 -x
+              ;;
+            "api")
+              echo "🌐 Running API tests..."
+              pytest tests/ -m "api" -v --timeout=300
+              ;;
+            "performance")
+              echo "⚡ Running performance tests..."
+              pytest tests/ -m "performance" -v --benchmark-only \
+                --benchmark-sort=mean --benchmark-warmup=on
+              ;;
+            "security")
+              echo "🔒 Running security tests..."
+              pytest tests/ -m "security" -v
+              bandit -r src/ app/ -f json || true
+              safety check || true
+              ;;
+            "compatibility")
+              echo "🔄 Running compatibility tests..."
+              pytest tests/ -v --tb=short
+              python -c "import sys; print(f'Python {sys.version}')"
+              ;;
+          esac
+
+      - name: Upload coverage to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: matrix-tests
+          name: python-${{ matrix.python-version }}-${{ matrix.os }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.test-suite }}
+          path: |
+            pytest-report.xml
+            coverage.xml
+            .coverage
+          retention-days: 7
+
+  # Multi-platform Docker builds
+  multi-platform-build:
+    name: 🐳 Multi-Platform Build
+    runs-on: self-hosted
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+          # - linux/arm/v7  # Uncomment if needed
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for cross-platform builds
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          driver-opts: |
+            network=host
+            image=moby/buildkit:v0.12.0
+          buildkitd-flags: --allow-insecure-entitlement=network.host
+
+      - name: Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Extract platform-specific metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=matrix-{{date 'YYYYMMDD'}}-{{sha}}
+            type=raw,value=${{ matrix.platform }},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.platform=${{ matrix.platform }}
+
+      - name: Build for ${{ matrix.platform }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=buildx-${{ matrix.platform }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.platform }}
+          cache-to: |
+            type=gha,mode=max,scope=buildx-${{ matrix.platform }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.platform }},mode=max
+          build-args: |
+            BUILDPLATFORM=${{ matrix.platform }}
+            TARGETPLATFORM=${{ matrix.platform }}
+          provenance: true
+          sbom: true
+
+  # Performance benchmarking across platforms
+  performance-benchmark:
+    name: ⚡ Performance Benchmark
+    runs-on: self-hosted
+    timeout-minutes: 30
+    needs: multi-platform-build
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+        workload: [light, moderate, heavy]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run platform-specific performance test
+        run: |
+          echo "⚡ Testing performance on ${{ matrix.platform }} with ${{ matrix.workload }} workload"
+          
+          # Pull the platform-specific image
+          PLATFORM_TAG="matrix-$(date +'%Y%m%d')-${{ github.sha }}"
+          docker pull --platform ${{ matrix.platform }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$PLATFORM_TAG
+
+          # Run performance test with specific workload
+          case "${{ matrix.workload }}" in
+            "light")
+              CONCURRENT_USERS=10
+              DURATION=60
+              ;;
+            "moderate")
+              CONCURRENT_USERS=50
+              DURATION=120
+              ;;
+            "heavy")
+              CONCURRENT_USERS=100
+              DURATION=180
+              ;;
+          esac
+
+          # Performance test script
+          docker run --rm --name perf-test-${{ github.run_id }} \
+            --platform ${{ matrix.platform }} \
+            -e CONCURRENT_USERS=$CONCURRENT_USERS \
+            -e TEST_DURATION=$DURATION \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$PLATFORM_TAG \
+            python -c "
+import time
+import concurrent.futures
+import requests
+import os
+
+def make_request():
+    try:
+        response = requests.get('http://localhost:2542/health', timeout=5)
+        return response.elapsed.total_seconds()
+    except:
+        return None
+
+concurrent_users = int(os.getenv('CONCURRENT_USERS', 10))
+duration = int(os.getenv('TEST_DURATION', 60))
+
+print(f'Running {concurrent_users} concurrent users for {duration}s on ${{ matrix.platform }}')
+
+start_time = time.time()
+results = []
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=concurrent_users) as executor:
+    while time.time() - start_time < duration:
+        futures = [executor.submit(make_request) for _ in range(concurrent_users)]
+        batch_results = [f.result() for f in concurrent.futures.as_completed(futures)]
+        results.extend([r for r in batch_results if r is not None])
+        time.sleep(1)
+
+if results:
+    avg_time = sum(results) / len(results)
+    min_time = min(results)
+    max_time = max(results)
+    print(f'Platform: ${{ matrix.platform }}')
+    print(f'Workload: ${{ matrix.workload }}')
+    print(f'Average response time: {avg_time:.3f}s')
+    print(f'Min response time: {min_time:.3f}s')
+    print(f'Max response time: {max_time:.3f}s')
+    print(f'Total requests: {len(results)}')
+else:
+    print('No successful requests recorded')
+            "
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-${{ matrix.platform }}-${{ matrix.workload }}
+          path: performance-results.json
+          retention-days: 30
+
+  # Security scanning across platforms
+  security-matrix:
+    name: 🔒 Security Matrix
+    runs-on: self-hosted
+    timeout-minutes: 20
+    needs: multi-platform-build
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+        scanner: [trivy, grype, syft]
+    steps:
+      - name: Security scan for ${{ matrix.platform }}
+        run: |
+          PLATFORM_TAG="matrix-$(date +'%Y%m%d')-${{ github.sha }}"
+          IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$PLATFORM_TAG"
+          
+          echo "🔒 Running ${{ matrix.scanner }} on ${{ matrix.platform }}"
+          
+          case "${{ matrix.scanner }}" in
+            "trivy")
+              docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy:latest image --platform ${{ matrix.platform }} \
+                --format sarif --output trivy-${{ matrix.platform }}.sarif \
+                $IMAGE_REF
+              ;;
+            "grype")
+              curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+              grype $IMAGE_REF --platform ${{ matrix.platform }} \
+                -o sarif > grype-${{ matrix.platform }}.sarif
+              ;;
+            "syft")
+              curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+              syft $IMAGE_REF --platform ${{ matrix.platform }} \
+                -o spdx-json > syft-${{ matrix.platform }}.spdx.json
+              ;;
+          esac
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-${{ matrix.scanner }}-${{ matrix.platform }}
+          path: |
+            *-${{ matrix.platform }}.sarif
+            *-${{ matrix.platform }}.spdx.json
+          retention-days: 30
+
+  # Consolidation job
+  matrix-summary:
+    name: 📊 Matrix Summary
+    runs-on: self-hosted
+    timeout-minutes: 10
+    needs: [matrix-test, multi-platform-build, performance-benchmark, security-matrix]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate matrix summary
+        run: |
+          echo "# 📊 Matrix Build Summary" > matrix-summary.md
+          echo "" >> matrix-summary.md
+          echo "## 🧪 Test Results" >> matrix-summary.md
+          
+          # Count test results
+          TOTAL_TESTS=0
+          PASSED_TESTS=0
+          
+          for result_dir in test-results-*; do
+            if [ -d "$result_dir" ]; then
+              TOTAL_TESTS=$((TOTAL_TESTS + 1))
+              if [ -f "$result_dir/pytest-report.xml" ]; then
+                PASSED_TESTS=$((PASSED_TESTS + 1))
+              fi
+            fi
+          done
+          
+          echo "- Total test combinations: $TOTAL_TESTS" >> matrix-summary.md
+          echo "- Passed: $PASSED_TESTS" >> matrix-summary.md
+          echo "- Failed: $((TOTAL_TESTS - PASSED_TESTS))" >> matrix-summary.md
+          echo "" >> matrix-summary.md
+          
+          echo "## 🐳 Build Results" >> matrix-summary.md
+          echo "- linux/amd64: ${{ needs.multi-platform-build.result }}" >> matrix-summary.md
+          echo "- linux/arm64: ${{ needs.multi-platform-build.result }}" >> matrix-summary.md
+          echo "" >> matrix-summary.md
+          
+          echo "## ⚡ Performance Results" >> matrix-summary.md
+          echo "- Benchmark Status: ${{ needs.performance-benchmark.result }}" >> matrix-summary.md
+          echo "" >> matrix-summary.md
+          
+          echo "## 🔒 Security Results" >> matrix-summary.md
+          echo "- Security Scan Status: ${{ needs.security-matrix.result }}" >> matrix-summary.md
+          echo "" >> matrix-summary.md
+          
+          echo "Generated at: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> matrix-summary.md
+          
+          cat matrix-summary.md
+
+      - name: Upload matrix summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: matrix-summary
+          path: matrix-summary.md
+          retention-days: 90
+
+      - name: Post summary to PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('matrix-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

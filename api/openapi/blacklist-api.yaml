@@ -1,0 +1,274 @@
+openapi: 3.0.3
+info:
+  title: Blacklist Management System API
+  description: |
+    Enterprise threat intelligence platform with multi-source data collection and FortiGate External Connector integration.
+    
+    ## Features
+    - Multi-source data collection (REGTECH, SECUDIUM)
+    - Real-time IP blacklist management
+    - FortiGate External Connector integration
+    - Advanced analytics and threat intelligence
+    - JWT + API Key dual authentication
+    
+  version: 1.3.3
+  contact:
+    name: DevOps Team
+    email: devops@jclee.me
+    url: https://blacklist.jclee.me
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://blacklist.jclee.me
+    description: Production server
+  - url: http://localhost:32542
+    description: Docker development server
+  - url: http://localhost:2542
+    description: Local development server
+
+security:
+  - JWTAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Kubernetes-compatible health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/blacklist/active:
+    get:
+      summary: Get active IP blacklist
+      description: Returns list of active blacklisted IPs in text format
+      tags:
+        - Blacklist
+      responses:
+        '200':
+          description: Active IP blacklist
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  192.168.1.100
+                  10.0.0.50
+                  172.16.0.25
+
+  /api/fortigate:
+    get:
+      summary: FortiGate External Connector format
+      description: Returns blacklist in FortiGate External Connector compatible format
+      tags:
+        - Integration
+      responses:
+        '200':
+          description: FortiGate connector format
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/v2/analytics/summary:
+    get:
+      summary: Get analytics summary
+      description: Returns comprehensive analytics summary with filtering options
+      tags:
+        - Analytics
+      parameters:
+        - name: period
+          in: query
+          description: Time period for analytics
+          schema:
+            type: string
+            enum: [day, week, month, year]
+            default: week
+      responses:
+        '200':
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummary'
+
+  /api/collection/status:
+    get:
+      summary: Get collection status
+      description: Returns current status of data collection services
+      tags:
+        - Collection
+      responses:
+        '200':
+          description: Collection status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionStatus'
+
+  /api/auth/login:
+    post:
+      summary: User authentication
+      description: Authenticate user and return JWT tokens
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Authentication failed
+
+components:
+  securitySchemes:
+    JWTAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+              example: "connected"
+            redis:
+              type: string
+              example: "connected"
+            collection:
+              type: string
+              example: "active"
+
+    AnalyticsSummary:
+      type: object
+      properties:
+        total_ips:
+          type: integer
+          example: 1250
+        new_ips_today:
+          type: integer
+          example: 45
+        threat_levels:
+          type: object
+          properties:
+            high:
+              type: integer
+              example: 123
+            medium:
+              type: integer
+              example: 456
+            low:
+              type: integer
+              example: 671
+        sources:
+          type: object
+          properties:
+            regtech:
+              type: integer
+              example: 800
+            secudium:
+              type: integer
+              example: 450
+
+    CollectionStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          example: true
+        last_collection:
+          type: string
+          format: date-time
+        sources:
+          type: object
+          properties:
+            regtech:
+              $ref: '#/components/schemas/SourceStatus'
+            secudium:
+              $ref: '#/components/schemas/SourceStatus'
+
+    SourceStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, inactive, error]
+        last_updated:
+          type: string
+          format: date-time
+        records_collected:
+          type: integer
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: "admin"
+        password:
+          type: string
+          example: "password"
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          example: 3600
+
+tags:
+  - name: Health
+    description: Health and status endpoints
+  - name: Blacklist
+    description: IP blacklist management
+  - name: Analytics
+    description: Analytics and reporting
+  - name: Collection
+    description: Data collection management
+  - name: Authentication
+    description: User authentication
+  - name: Integration
+    description: External system integration

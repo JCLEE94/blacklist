@@ -1,0 +1,382 @@
+name: Advanced Caching Strategy
+
+on:
+  workflow_call:
+    inputs:
+      cache-strategy:
+        description: 'Caching strategy to use'
+        required: false
+        type: string
+        default: 'aggressive'
+    outputs:
+      cache-hit:
+        description: 'Whether cache was hit'
+        value: ${{ jobs.cache-setup.outputs.cache-hit }}
+      cache-key:
+        description: 'Generated cache key'
+        value: ${{ jobs.cache-setup.outputs.cache-key }}
+
+  workflow_dispatch:
+    inputs:
+      cleanup-old-caches:
+        description: 'Clean up old caches'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  # Cache configuration
+  CACHE_VERSION: v2
+  MAX_CACHE_SIZE: 2GB
+  CACHE_RETENTION_DAYS: 7
+
+jobs:
+  # Advanced cache setup and management
+  cache-setup:
+    name: 🗂️ Cache Setup
+    runs-on: self-hosted
+    timeout-minutes: 15
+    outputs:
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+      cache-key: ${{ steps.cache-key.outputs.key }}
+      pip-cache-hit: ${{ steps.pip-cache.outputs.cache-hit }}
+      docker-cache-hit: ${{ steps.docker-cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate comprehensive cache key
+        id: cache-key
+        run: |
+          # Create comprehensive cache key based on multiple factors
+          REQUIREMENTS_HASH=$(sha256sum config/requirements.txt config/requirements-dev.txt 2>/dev/null | sha256sum | cut -d' ' -f1)
+          DOCKERFILE_HASH=$(sha256sum docker/Dockerfile 2>/dev/null | sha256sum | cut -d' ' -f1)
+          PYTHON_VERSION=$(python3 --version | sed 's/Python //')
+          OS_VERSION=$(lsb_release -rs 2>/dev/null || echo "unknown")
+          
+          # Composite cache key
+          CACHE_KEY="${{ env.CACHE_VERSION }}-${{ runner.os }}-${OS_VERSION}-python-${PYTHON_VERSION}-${REQUIREMENTS_HASH}-${DOCKERFILE_HASH}"
+          
+          echo "key=$CACHE_KEY" >> $GITHUB_OUTPUT
+          echo "requirements-hash=$REQUIREMENTS_HASH" >> $GITHUB_OUTPUT
+          echo "dockerfile-hash=$DOCKERFILE_HASH" >> $GITHUB_OUTPUT
+          
+          echo "Generated cache key: $CACHE_KEY"
+
+      - name: Setup multi-layer pip cache
+        id: pip-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python*/site-packages
+            /opt/hostedtoolcache/Python
+          key: pip-${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            pip-${{ env.CACHE_VERSION }}-${{ runner.os }}
+            pip-${{ env.CACHE_VERSION }}
+            pip-
+
+      - name: Setup Docker buildx cache
+        id: docker-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            /tmp/.buildx-cache
+            ~/.docker/buildx
+            /var/lib/docker/buildx
+          key: docker-buildx-${{ steps.cache-key.outputs.dockerfile-hash }}
+          restore-keys: |
+            docker-buildx-${{ env.CACHE_VERSION }}
+            docker-buildx-
+
+      - name: Setup Node.js cache (for GitHub Pages)
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            docs/node_modules
+          key: node-${{ runner.os }}-${{ hashFiles('docs/package*.json') }}
+          restore-keys: |
+            node-${{ runner.os }}-
+
+      - name: Setup pytest cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .pytest_cache
+            .coverage
+            htmlcov
+            .tox
+          key: pytest-${{ steps.cache-key.outputs.requirements-hash }}-${{ hashFiles('tests/**/*.py') }}
+          restore-keys: |
+            pytest-${{ steps.cache-key.outputs.requirements-hash }}
+            pytest-
+
+      - name: Cache analysis results
+        uses: actions/cache@v3
+        with:
+          path: |
+            bandit-report.json
+            safety-report.json
+            trivy-results.sarif
+            grype-results.sarif
+          key: security-analysis-${{ github.sha }}
+          restore-keys: |
+            security-analysis-
+
+      - name: Display cache statistics
+        run: |
+          echo "🗂️ Cache Status Summary"
+          echo "======================"
+          echo "Main cache hit: ${{ steps.cache.outputs.cache-hit }}"
+          echo "Pip cache hit: ${{ steps.pip-cache.outputs.cache-hit }}"
+          echo "Docker cache hit: ${{ steps.docker-cache.outputs.cache-hit }}"
+          echo ""
+          echo "Cache key: ${{ steps.cache-key.outputs.key }}"
+          echo ""
+          
+          # Calculate cache sizes if available
+          if [ -d ~/.cache/pip ]; then
+            PIP_SIZE=$(du -sh ~/.cache/pip 2>/dev/null | cut -f1)
+            echo "Pip cache size: $PIP_SIZE"
+          fi
+          
+          if [ -d /tmp/.buildx-cache ]; then
+            DOCKER_SIZE=$(du -sh /tmp/.buildx-cache 2>/dev/null | cut -f1)
+            echo "Docker cache size: $DOCKER_SIZE"
+          fi
+
+  # Intelligent cache warming
+  cache-warming:
+    name: 🔥 Cache Warming
+    runs-on: self-hosted
+    timeout-minutes: 20
+    needs: cache-setup
+    if: needs.cache-setup.outputs.cache-hit != 'true'
+    strategy:
+      matrix:
+        component: [python-deps, docker-layers, security-tools]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Warm ${{ matrix.component }} cache
+        run: |
+          case "${{ matrix.component }}" in
+            "python-deps")
+              echo "🐍 Warming Python dependencies cache..."
+              python3 -m pip install --upgrade pip wheel setuptools
+              pip install -r config/requirements.txt
+              pip install -r config/requirements-dev.txt 2>/dev/null || echo "No dev requirements"
+              
+              # Pre-compile packages
+              python -c "
+import compileall
+import sys
+compileall.compile_dir(sys.path[0], quiet=1)
+"
+              ;;
+            "docker-layers")
+              echo "🐳 Warming Docker build cache..."
+              docker buildx create --use --driver docker-container --name cache-warmer || true
+              
+              # Build base layers for caching
+              docker buildx build \
+                --target base \
+                --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+                -f docker/Dockerfile . || echo "Base layer build failed"
+              
+              # Move cache
+              rm -rf /tmp/.buildx-cache
+              mv /tmp/.buildx-cache-new /tmp/.buildx-cache 2>/dev/null || true
+              ;;
+            "security-tools")
+              echo "🔒 Warming security tools cache..."
+              
+              # Install and cache Trivy
+              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+              trivy --version
+              
+              # Install and cache Grype
+              curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+              grype version
+              
+              # Install and cache Syft
+              curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+              syft version
+              
+              # Pre-download vulnerability databases
+              trivy db --download-only --cache-dir ~/.cache/trivy || true
+              grype db update || true
+              ;;
+          esac
+
+  # Cache optimization analysis
+  cache-analysis:
+    name: 📊 Cache Analysis
+    runs-on: self-hosted
+    timeout-minutes: 10
+    needs: [cache-setup, cache-warming]
+    if: always()
+    steps:
+      - name: Analyze cache effectiveness
+        run: |
+          echo "📊 Cache Effectiveness Analysis"
+          echo "==============================="
+          
+          # Cache hit rates
+          PIP_HIT="${{ needs.cache-setup.outputs.pip-cache-hit }}"
+          DOCKER_HIT="${{ needs.cache-setup.outputs.docker-cache-hit }}"
+          
+          echo "Cache Hit Rates:"
+          echo "- Pip dependencies: $PIP_HIT"
+          echo "- Docker buildx: $DOCKER_HIT"
+          echo ""
+          
+          # Calculate cache efficiency score
+          EFFICIENCY=0
+          [ "$PIP_HIT" = "true" ] && EFFICIENCY=$((EFFICIENCY + 40))
+          [ "$DOCKER_HIT" = "true" ] && EFFICIENCY=$((EFFICIENCY + 40))
+          
+          # Time savings estimation
+          if [ "$PIP_HIT" = "true" ]; then
+            echo "⚡ Estimated time saved (pip): ~3-5 minutes"
+          fi
+          
+          if [ "$DOCKER_HIT" = "true" ]; then
+            echo "⚡ Estimated time saved (docker): ~5-10 minutes"
+          fi
+          
+          echo ""
+          echo "Overall cache efficiency: ${EFFICIENCY}%"
+          
+          # Recommendations
+          echo ""
+          echo "🎯 Optimization Recommendations:"
+          if [ "$PIP_HIT" != "true" ]; then
+            echo "- Consider pinning Python dependency versions"
+            echo "- Review requirements.txt changes frequency"
+          fi
+          
+          if [ "$DOCKER_HIT" != "true" ]; then
+            echo "- Optimize Dockerfile layer ordering"
+            echo "- Use multi-stage builds with stable base layers"
+          fi
+          
+          if [ $EFFICIENCY -lt 50 ]; then
+            echo "- Cache effectiveness below 50% - review caching strategy"
+          fi
+
+      - name: Generate cache metrics
+        run: |
+          echo "📈 Cache Metrics Report" > cache-metrics.json
+          cat << EOF >> cache-metrics.json
+{
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "workflow_run": "${{ github.run_id }}",
+  "cache_hits": {
+    "pip": "${{ needs.cache-setup.outputs.pip-cache-hit }}",
+    "docker": "${{ needs.cache-setup.outputs.docker-cache-hit }}"
+  },
+  "cache_key": "${{ needs.cache-setup.outputs.cache-key }}",
+  "runner_os": "${{ runner.os }}",
+  "cache_sizes": {
+EOF
+          
+          # Add cache sizes if available
+          if [ -d ~/.cache/pip ]; then
+            PIP_SIZE_BYTES=$(du -sb ~/.cache/pip 2>/dev/null | cut -f1)
+            echo "    \"pip_cache_bytes\": $PIP_SIZE_BYTES," >> cache-metrics.json
+          fi
+          
+          if [ -d /tmp/.buildx-cache ]; then
+            DOCKER_SIZE_BYTES=$(du -sb /tmp/.buildx-cache 2>/dev/null | cut -f1)
+            echo "    \"docker_cache_bytes\": $DOCKER_SIZE_BYTES" >> cache-metrics.json
+          fi
+          
+          cat << EOF >> cache-metrics.json
+  }
+}
+EOF
+          
+          echo "Cache metrics saved to cache-metrics.json"
+
+      - name: Upload cache metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: cache-metrics-${{ github.run_id }}
+          path: cache-metrics.json
+          retention-days: 30
+
+  # Cache cleanup (for workflow_dispatch with cleanup flag)
+  cache-cleanup:
+    name: 🧹 Cache Cleanup
+    runs-on: self-hosted
+    timeout-minutes: 10
+    if: github.event.inputs.cleanup-old-caches == 'true'
+    steps:
+      - name: Clean old caches
+        run: |
+          echo "🧹 Cleaning up old caches..."
+          
+          # Clean pip cache
+          pip cache purge || true
+          
+          # Clean Docker cache
+          docker buildx prune -f --keep-storage 1GB || true
+          docker system prune -f --volumes || true
+          
+          # Clean system caches
+          rm -rf ~/.cache/pip/wheels/* || true
+          find ~/.cache -type f -atime +7 -delete 2>/dev/null || true
+          
+          echo "✅ Cache cleanup completed"
+
+      - name: Reset cache storage
+        run: |
+          echo "🔄 Resetting cache storage..."
+          
+          # Remove old buildx cache
+          rm -rf /tmp/.buildx-cache-old || true
+          
+          # Clean temporary files
+          find /tmp -name "*.tmp" -mtime +1 -delete 2>/dev/null || true
+          find /tmp -name "cache-*" -mtime +3 -delete 2>/dev/null || true
+          
+          echo "✅ Cache storage reset completed"
+
+  # Cache warming summary
+  cache-summary:
+    name: 📋 Cache Summary
+    runs-on: self-hosted
+    timeout-minutes: 5
+    needs: [cache-setup, cache-warming, cache-analysis]
+    if: always()
+    steps:
+      - name: Generate final cache summary
+        run: |
+          echo "🗂️ CACHE OPTIMIZATION SUMMARY"
+          echo "============================="
+          echo ""
+          echo "🎯 Results:"
+          echo "- Cache Setup: ${{ needs.cache-setup.result }}"
+          echo "- Cache Warming: ${{ needs.cache-warming.result }}"
+          echo "- Cache Analysis: ${{ needs.cache-analysis.result }}"
+          echo ""
+          echo "📊 Hit Rates:"
+          echo "- Pip Cache: ${{ needs.cache-setup.outputs.pip-cache-hit }}"
+          echo "- Docker Cache: ${{ needs.cache-setup.outputs.docker-cache-hit }}"
+          echo ""
+          echo "🔑 Cache Key: ${{ needs.cache-setup.outputs.cache-key }}"
+          echo ""
+          echo "⏰ Workflow completed at: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          
+          # Calculate overall success
+          if [ "${{ needs.cache-setup.result }}" = "success" ]; then
+            echo "✅ Cache optimization completed successfully!"
+          else
+            echo "❌ Cache optimization encountered issues"
+          fi

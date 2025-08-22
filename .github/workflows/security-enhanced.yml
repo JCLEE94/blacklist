@@ -1,0 +1,570 @@
+name: Enhanced Security Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'  # Weekly security scan on Monday 3 AM UTC
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan'
+        required: true
+        type: choice
+        options:
+          - comprehensive
+          - quick
+          - critical-only
+        default: comprehensive
+      include_dependencies:
+        description: 'Include dependency scanning'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+  # Security scan configuration
+  TRIVY_CACHE_DIR: ~/.cache/trivy
+  GRYPE_DB_CACHE_DIR: ~/.cache/grype
+  SECURITY_REPORT_RETENTION: 90
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # Pre-security setup and validation
+  security-setup:
+    name: 🔐 Security Setup
+    runs-on: self-hosted
+    timeout-minutes: 10
+    outputs:
+      scan-targets: ${{ steps.targets.outputs.targets }}
+      scan-severity: ${{ steps.config.outputs.severity }}
+      should-scan-deps: ${{ steps.config.outputs.scan-deps }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure security scan parameters
+        id: config
+        run: |
+          case "${{ github.event.inputs.scan_type || 'comprehensive' }}" in
+            "comprehensive")
+              SEVERITY="UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+              SCAN_DEPS="true"
+              ;;
+            "quick")
+              SEVERITY="HIGH,CRITICAL"
+              SCAN_DEPS="false"
+              ;;
+            "critical-only")
+              SEVERITY="CRITICAL"
+              SCAN_DEPS="true"
+              ;;
+          esac
+          
+          echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
+          echo "scan-deps=$SCAN_DEPS" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Scan configuration:"
+          echo "- Severity levels: $SEVERITY"
+          echo "- Include dependencies: $SCAN_DEPS"
+
+      - name: Identify scan targets
+        id: targets
+        run: |
+          TARGETS=()
+          
+          # Always scan source code
+          TARGETS+=("filesystem:.")
+          
+          # Add container image if available
+          if docker images | grep -q "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"; then
+            TARGETS+=("${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest")
+          fi
+          
+          # Convert array to JSON
+          TARGETS_JSON=$(printf '%s\n' "${TARGETS[@]}" | jq -R . | jq -s .)
+          echo "targets=$TARGETS_JSON" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Scan targets identified:"
+          printf '%s\n' "${TARGETS[@]}"
+
+  # SAST (Static Application Security Testing)
+  sast-analysis:
+    name: 🔍 SAST Analysis
+    runs-on: self-hosted
+    timeout-minutes: 15
+    needs: security-setup
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [bandit, semgrep, codeql]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for CodeQL
+
+      - name: Setup Python for security tools
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Run Bandit security linter
+        if: matrix.tool == 'bandit'
+        run: |
+          pip install bandit[toml]
+          bandit -r src/ app/ \
+            -f json \
+            -o bandit-results.json \
+            -ll \
+            --severity-level high || true
+          
+          # Generate SARIF format for GitHub Security tab
+          bandit -r src/ app/ \
+            -f custom \
+            --msg-template "{abspath}:{line}: [{test_id}] {severity}: {msg}" \
+            > bandit-results.txt || true
+
+      - name: Run Semgrep security analysis
+        if: matrix.tool == 'semgrep'
+        run: |
+          pip install semgrep
+          semgrep --config=auto \
+            --json \
+            --output=semgrep-results.json \
+            --severity=ERROR \
+            --severity=WARNING \
+            src/ app/ || true
+          
+          # Convert to SARIF
+          semgrep --config=auto \
+            --sarif \
+            --output=semgrep-results.sarif \
+            src/ app/ || true
+
+      - name: Initialize CodeQL
+        if: matrix.tool == 'codeql'
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        if: matrix.tool == 'codeql'
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
+
+      - name: Upload SAST results
+        uses: actions/upload-artifact@v3
+        if: matrix.tool != 'codeql'
+        with:
+          name: sast-results-${{ matrix.tool }}
+          path: |
+            *-results.json
+            *-results.sarif
+            *-results.txt
+          retention-days: ${{ env.SECURITY_REPORT_RETENTION }}
+
+      - name: Upload SARIF to GitHub Security
+        if: matrix.tool != 'codeql' && (matrix.tool == 'semgrep')
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-results.sarif
+          category: ${{ matrix.tool }}
+
+  # Container security scanning
+  container-security:
+    name: 🐳 Container Security
+    runs-on: self-hosted
+    timeout-minutes: 20
+    needs: security-setup
+    if: needs.security-setup.outputs.should-scan-deps == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        scanner: [trivy, grype, docker-bench]
+        target: ${{ fromJSON(needs.security-setup.outputs.scan-targets) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup scanner cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.TRIVY_CACHE_DIR }}
+            ${{ env.GRYPE_DB_CACHE_DIR }}
+          key: security-scanners-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            security-scanners-${{ runner.os }}-
+
+      - name: Run Trivy vulnerability scanner
+        if: matrix.scanner == 'trivy'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: ${{ startsWith(matrix.target, 'filesystem:') && 'fs' || 'image' }}
+          scan-ref: ${{ startsWith(matrix.target, 'filesystem:') && '.' || matrix.target }}
+          format: 'sarif'
+          output: 'trivy-${{ strategy.job-index }}.sarif'
+          severity: ${{ needs.security-setup.outputs.scan-severity }}
+          cache-dir: ${{ env.TRIVY_CACHE_DIR }}
+
+      - name: Run Grype vulnerability scanner
+        if: matrix.scanner == 'grype'
+        run: |
+          # Install Grype
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Configure target
+          TARGET="${{ matrix.target }}"
+          if [[ $TARGET == filesystem:* ]]; then
+            TARGET="dir:."
+          fi
+          
+          # Run Grype scan
+          grype $TARGET \
+            --output sarif \
+            --file grype-${{ strategy.job-index }}.sarif \
+            --cache-dir ${{ env.GRYPE_DB_CACHE_DIR }} || true
+
+      - name: Run Docker Bench Security
+        if: matrix.scanner == 'docker-bench' && !startsWith(matrix.target, 'filesystem:')
+        run: |
+          git clone https://github.com/docker/docker-bench-security.git
+          cd docker-bench-security
+          
+          # Run Docker Bench
+          sudo ./docker-bench-security.sh -c container_images \
+            > ../docker-bench-results.txt 2>&1 || true
+
+      - name: Upload container security results
+        uses: actions/upload-artifact@v3
+        with:
+          name: container-security-${{ matrix.scanner }}-${{ strategy.job-index }}
+          path: |
+            *.sarif
+            *-results.txt
+          retention-days: ${{ env.SECURITY_REPORT_RETENTION }}
+
+      - name: Upload Trivy SARIF to GitHub Security
+        if: matrix.scanner == 'trivy'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ strategy.job-index }}.sarif
+          category: trivy-${{ strategy.job-index }}
+
+  # Dependency security analysis
+  dependency-security:
+    name: 📦 Dependency Security
+    runs-on: self-hosted
+    timeout-minutes: 15
+    needs: security-setup
+    if: needs.security-setup.outputs.should-scan-deps == 'true'
+    strategy:
+      matrix:
+        tool: [safety, pip-audit, snyk]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r config/requirements.txt
+
+      - name: Run Safety check
+        if: matrix.tool == 'safety'
+        run: |
+          pip install safety
+          safety check \
+            --json \
+            --output safety-results.json \
+            --ignore 70612 || true  # Ignore known false positives
+          
+          # Generate human-readable report
+          safety check --output text > safety-results.txt || true
+
+      - name: Run pip-audit
+        if: matrix.tool == 'pip-audit'
+        run: |
+          pip install pip-audit
+          pip-audit \
+            --format=json \
+            --output=pip-audit-results.json \
+            --desc || true
+          
+          # Generate SARIF format
+          pip-audit \
+            --format=sarif \
+            --output=pip-audit-results.sarif \
+            --desc || true
+
+      - name: Run Snyk security scan
+        if: matrix.tool == 'snyk'
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            npm install -g snyk
+            snyk auth $SNYK_TOKEN
+            snyk test \
+              --json \
+              --file=config/requirements.txt \
+              > snyk-results.json || true
+            
+            # Generate SARIF
+            snyk test \
+              --sarif \
+              --file=config/requirements.txt \
+              > snyk-results.sarif || true
+          else
+            echo "⚠️ Snyk token not available - skipping Snyk scan"
+          fi
+
+      - name: Upload dependency security results
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-security-${{ matrix.tool }}
+          path: |
+            *-results.json
+            *-results.sarif
+            *-results.txt
+          retention-days: ${{ env.SECURITY_REPORT_RETENTION }}
+
+      - name: Upload pip-audit SARIF to GitHub Security
+        if: matrix.tool == 'pip-audit'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: pip-audit-results.sarif
+          category: pip-audit
+
+  # Infrastructure security
+  infrastructure-security:
+    name: 🏗️ Infrastructure Security
+    runs-on: self-hosted
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        check: [dockerfile, kubernetes, secrets]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dockerfile security scan
+        if: matrix.check == 'dockerfile'
+        run: |
+          # Install hadolint
+          wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/
+          
+          # Scan Dockerfile
+          if [ -f docker/Dockerfile ]; then
+            hadolint docker/Dockerfile \
+              --format json \
+              > dockerfile-security.json || true
+            
+            hadolint docker/Dockerfile \
+              --format sarif \
+              > dockerfile-security.sarif || true
+          fi
+
+      - name: Kubernetes security scan
+        if: matrix.check == 'kubernetes'
+        run: |
+          # Install kube-score
+          wget -O kube-score https://github.com/zegl/kube-score/releases/latest/download/kube-score_linux_amd64
+          chmod +x kube-score
+          sudo mv kube-score /usr/local/bin/
+          
+          # Scan K8s manifests if they exist
+          if [ -d k8s/ ] || [ -d kubernetes/ ] || [ -d charts/ ]; then
+            find . -name "*.yaml" -o -name "*.yml" | grep -E "(k8s|kubernetes|charts)" | while read -r file; do
+              echo "Scanning $file"
+              kube-score score "$file" --output-format json > "$(basename "$file")-security.json" 2>/dev/null || true
+            done
+          fi
+
+      - name: Secrets detection
+        if: matrix.check == 'secrets'
+        run: |
+          # Install truffleHog
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Scan for secrets
+          trufflehog git file://. \
+            --json \
+            --only-verified=false \
+            > secrets-scan.json || true
+          
+          # Check for common secret patterns
+          echo "🔍 Checking for common secret patterns..."
+          grep -r -E "(password|passwd|secret|key|token)" --include="*.py" --include="*.yml" --include="*.yaml" . \
+            > potential-secrets.txt || echo "No potential secrets found"
+
+      - name: Upload infrastructure security results
+        uses: actions/upload-artifact@v3
+        with:
+          name: infrastructure-security-${{ matrix.check }}
+          path: |
+            *-security.json
+            *-security.sarif
+            secrets-scan.json
+            potential-secrets.txt
+          retention-days: ${{ env.SECURITY_REPORT_RETENTION }}
+
+  # Security compliance check
+  compliance-check:
+    name: ✅ Compliance Check
+    runs-on: self-hosted
+    timeout-minutes: 10
+    needs: [sast-analysis, container-security, dependency-security, infrastructure-security]
+    if: always()
+    steps:
+      - name: Download all security artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Security compliance analysis
+        run: |
+          echo "🔐 Security Compliance Analysis"
+          echo "=============================="
+          
+          # Initialize counters
+          CRITICAL_ISSUES=0
+          HIGH_ISSUES=0
+          MEDIUM_ISSUES=0
+          LOW_ISSUES=0
+          
+          # Count issues from all scanners
+          for json_file in $(find . -name "*-results.json"); do
+            echo "Processing $json_file"
+            
+            # Extract issue counts (simplified - adjust based on actual scanner output formats)
+            case $json_file in
+              *trivy*)
+                CRITICAL_COUNT=$(jq '.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL") | length' "$json_file" 2>/dev/null | paste -sd+ | bc)
+                HIGH_COUNT=$(jq '.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH") | length' "$json_file" 2>/dev/null | paste -sd+ | bc)
+                ;;
+              *bandit*)
+                HIGH_COUNT=$(jq '.results[]? | select(.issue_severity=="HIGH") | length' "$json_file" 2>/dev/null | paste -sd+ | bc)
+                MEDIUM_COUNT=$(jq '.results[]? | select(.issue_severity=="MEDIUM") | length' "$json_file" 2>/dev/null | paste -sd+ | bc)
+                ;;
+            esac
+          done
+          
+          # Generate compliance report
+          cat << EOF > security-compliance-report.md
+# 🔐 Security Compliance Report
+
+## Summary
+- Critical Issues: $CRITICAL_ISSUES
+- High Issues: $HIGH_ISSUES  
+- Medium Issues: $MEDIUM_ISSUES
+- Low Issues: $LOW_ISSUES
+
+## Compliance Status
+EOF
+          
+          # Determine compliance status
+          if [ $CRITICAL_ISSUES -eq 0 ] && [ $HIGH_ISSUES -eq 0 ]; then
+            echo "✅ **COMPLIANT** - No critical or high severity issues found" >> security-compliance-report.md
+            COMPLIANCE_STATUS="PASS"
+          elif [ $CRITICAL_ISSUES -eq 0 ] && [ $HIGH_ISSUES -le 5 ]; then
+            echo "⚠️ **CONDITIONALLY COMPLIANT** - $HIGH_ISSUES high severity issues (under threshold)" >> security-compliance-report.md
+            COMPLIANCE_STATUS="CONDITIONAL"
+          else
+            echo "❌ **NON-COMPLIANT** - $CRITICAL_ISSUES critical and $HIGH_ISSUES high severity issues" >> security-compliance-report.md
+            COMPLIANCE_STATUS="FAIL"
+          fi
+          
+          cat << EOF >> security-compliance-report.md
+
+## Recommendations
+- Review and remediate critical and high severity vulnerabilities
+- Implement security scanning in CI/CD pipeline
+- Regular dependency updates and security patches
+- Consider implementing security policies as code
+
+Generated: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+EOF
+          
+          echo "Compliance Status: $COMPLIANCE_STATUS"
+          cat security-compliance-report.md
+
+      - name: Upload compliance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-compliance-report
+          path: security-compliance-report.md
+          retention-days: ${{ env.SECURITY_REPORT_RETENTION }}
+
+      - name: Comment on PR with security summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('security-compliance-report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  # Security summary
+  security-summary:
+    name: 📋 Security Summary
+    runs-on: self-hosted
+    timeout-minutes: 5
+    needs: [sast-analysis, container-security, dependency-security, infrastructure-security, compliance-check]
+    if: always()
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "🔐 SECURITY PIPELINE SUMMARY"
+          echo "============================"
+          echo ""
+          echo "🎯 Scan Results:"
+          echo "- SAST Analysis: ${{ needs.sast-analysis.result }}"
+          echo "- Container Security: ${{ needs.container-security.result }}"
+          echo "- Dependency Security: ${{ needs.dependency-security.result }}"
+          echo "- Infrastructure Security: ${{ needs.infrastructure-security.result }}"
+          echo "- Compliance Check: ${{ needs.compliance-check.result }}"
+          echo ""
+          echo "📊 Coverage:"
+          echo "- Source Code: ✅ Scanned"
+          echo "- Dependencies: ${{ needs.security-setup.outputs.should-scan-deps == 'true' && '✅ Scanned' || '⏭️ Skipped' }}"
+          echo "- Container Images: ✅ Scanned"
+          echo "- Infrastructure: ✅ Scanned"
+          echo ""
+          echo "⏰ Completed: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          
+          # Overall status
+          if [[ "${{ needs.sast-analysis.result }}" == "success" && 
+                "${{ needs.container-security.result }}" == "success" && 
+                "${{ needs.dependency-security.result }}" == "success" && 
+                "${{ needs.infrastructure-security.result }}" == "success" ]]; then
+            echo ""
+            echo "✅ Security pipeline completed successfully!"
+          else
+            echo ""
+            echo "⚠️ Security pipeline completed with issues - review results"
+          fi

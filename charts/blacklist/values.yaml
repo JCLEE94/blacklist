@@ -1,0 +1,138 @@
+# Default values for blacklist
+# This is a YAML-formatted file.
+
+replicaCount: 1
+
+image:
+  repository: registry.jclee.me/blacklist
+  pullPolicy: IfNotPresent
+  tag: "1.3.3"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 2541
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: blacklist.jclee.me
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: blacklist-tls
+      hosts:
+        - blacklist.jclee.me
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Application configuration
+config:
+  port: 2541
+  logLevel: INFO
+  
+# Database configuration  
+database:
+  type: postgresql
+  host: postgresql
+  port: 5432
+  name: blacklist
+  username: blacklist_user
+  
+# Redis configuration
+redis:
+  enabled: true
+  host: redis
+  port: 6379
+
+# Environment variables
+env:
+  - name: FLASK_ENV
+    value: "production"
+  - name: PORT
+    value: "2541"
+  - name: DATABASE_URL
+    value: "postgresql://blacklist_user:password@postgresql:5432/blacklist"
+  - name: REDIS_URL
+    value: "redis://redis:6379/0"
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# Dependencies
+postgresql:
+  enabled: true
+  auth:
+    username: blacklist_user
+    password: password
+    database: blacklist
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
