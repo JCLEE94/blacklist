@@ -13,21 +13,21 @@ import pytest
 
 
 class TestAppCompactCoverage:
-    """Test app_compact.py module for better coverage"""
+    """Test main.py module for better coverage"""
 
-    def test_import_app_compact(self):
-        """Test importing app_compact module"""
+    def test_import_main(self):
+        """Test importing main module"""
         try:
-            from src.core import app_compact
+            from src.core import main
 
-            assert app_compact is not None
+            assert main is not None
         except ImportError:
-            pytest.skip("app_compact module not available")
+            pytest.skip("main module not available")
 
     def test_app_factory_creation(self):
         """Test app factory creation"""
         try:
-            from src.core.app_compact import create_app
+            from src.core.main import create_app
 
             app = create_app()
             assert app is not None
@@ -42,7 +42,7 @@ class TestAppCompactCoverage:
     def test_compact_flask_app_class(self):
         """Test CompactFlaskApp class"""
         try:
-            from src.core.app_compact import CompactFlaskApp
+            from src.core.main import CompactFlaskApp
 
             app_factory = CompactFlaskApp()
             assert app_factory is not None

@@ -14,7 +14,7 @@ from src.core.app.blueprints import BlueprintRegistrationMixin
 from src.core.app.config import AppConfigurationMixin
 from src.core.app.error_handlers import ErrorHandlerMixin
 from src.core.app.middleware import MiddlewareMixin
-from src.core.app_compact import CompactFlaskApp, get_connection_manager
+from src.core.main import CompactFlaskApp, get_connection_manager
 
 
 class TestCompactFlaskApp:
@@ -43,7 +43,7 @@ class TestCompactFlaskApp:
         assert isinstance(app_factory, BlueprintRegistrationMixin)
         assert isinstance(app_factory, ErrorHandlerMixin)
 
-    @patch("src.core.app_compact.get_container")
+    @patch("src.core.main.get_container")
     def test_create_app_basic(self, mock_container, app_factory, temp_db):
         """Test basic app creation"""
         # Setup mock container
@@ -62,7 +62,7 @@ class TestCompactFlaskApp:
         assert isinstance(app, Flask)
         assert app.config["TESTING"] is True
 
-    @patch("src.core.app_compact.get_container")
+    @patch("src.core.main.get_container")
     def test_create_app_with_config_name(self, mock_container, app_factory, temp_db):
         """Test app creation with specific config"""
         mock_container.return_value = Mock()
@@ -136,7 +136,7 @@ class TestAppIntegration:
     @pytest.fixture
     def app(self):
         """Create test app instance"""
-        with patch("src.core.app_compact.get_container") as mock_container:
+        with patch("src.core.main.get_container") as mock_container:
             mock_container.return_value = Mock()
 
             app_factory = CompactFlaskApp()
@@ -184,7 +184,7 @@ class TestModuleImports:
 
     def test_import_compact_app(self):
         """Test importing main module"""
-        from src.core.app_compact import CompactFlaskApp
+        from src.core.main import CompactFlaskApp
 
         assert CompactFlaskApp is not None
 

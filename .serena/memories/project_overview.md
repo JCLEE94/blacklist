@@ -23,7 +23,7 @@ Enterprise threat intelligence platform with multi-source data collection, autom
 - Containerized deployment with CI/CD
 
 ## Architecture
-- Entry point: `main.py` → `src/core/app_compact.py` → fallback chain
+- Entry point: `main.py` → `src/core/main.py` → fallback chain
 - Dependency injection via `src/core/container.py`
 - Plugin-based IP sources in `src/core/ip_sources/`
 - Unified service layer with comprehensive error handling

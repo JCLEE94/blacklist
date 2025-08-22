@@ -11,7 +11,7 @@ All services are registered in `BlacklistContainer` and managed centrally.
 
 ## Multi-layered Entry Points
 The system has a robust fallback mechanism:
-1. `main.py` → `app_compact.py` (full features)
+1. `main.py` → `main.py` (full features)
 2. Falls back to → `minimal_app.py` (essential features)
 3. Falls back to → Legacy `app.py`
 

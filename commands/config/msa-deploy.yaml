@@ -1,0 +1,259 @@
+name: MSA CI/CD Pipeline (jclee.me Infrastructure)
+
+on:
+  push:
+    branches: [main, master, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master]
+
+env:
+  REGISTRY: ${{ secrets.REGISTRY_URL }}
+  IMAGE_NAME: jclee/.claude
+
+jobs:
+  # 빌드 및 테스트
+  build-and-test:
+    runs-on: self-hosted
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Login to jclee.me Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-,enable={{is_default_branch}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # Helm Chart 배포 (Production)
+  deploy-production:
+    runs-on: self-hosted
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Setup kubectl
+        run: |
+          # k8s.jclee.me 클러스터 설정
+          kubectl config set-cluster jclee-cluster \
+            --server=https://${{ secrets.K8S_DASHBOARD_URL }} \
+            --insecure-skip-tls-verify=true
+          kubectl config set-credentials admin \
+            --username=${{ secrets.K8S_DASHBOARD_USERNAME }} \
+            --password=${{ secrets.K8S_DASHBOARD_PASSWORD }}
+          kubectl config set-context jclee-context \
+            --cluster=jclee-cluster \
+            --user=admin \
+            --namespace=microservices
+          kubectl config use-context jclee-context
+
+      - name: Deploy to Kubernetes via ArgoCD
+        run: |
+          set -e
+          
+          COMMIT_SHA="${{ github.sha }}"
+          BRANCH_NAME="${{ github.ref_name }}"
+          CHART_VERSION="1.0.0-${COMMIT_SHA:0:8}"
+          
+          # 첫 번째 이미지 태그 추출
+          IMAGE_TAG=$(echo "${{ needs.build-and-test.outputs.image-tag }}" | head -n1 | cut -d: -f2)
+          
+          echo "🚀 MSA 배포 시작..."
+          echo "Chart Version: ${CHART_VERSION}"
+          echo "Image Tag: ${IMAGE_TAG}"
+          echo "Namespace: microservices"
+          
+          # Chart 버전 및 이미지 태그 업데이트
+          sed -i "s/^version:.*/version: ${CHART_VERSION}/" ./charts/.claude/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${CHART_VERSION}\"/" ./charts/.claude/Chart.yaml
+          sed -i "s/tag:.*/tag: \"${IMAGE_TAG}\"/" ./charts/.claude/values.yaml
+          
+          # Namespace 생성
+          kubectl create namespace microservices --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Docker Registry Secret 생성
+          kubectl create secret docker-registry jclee-registry-secret \
+            --docker-server=${{ secrets.REGISTRY_URL }} \
+            --docker-username=${{ secrets.REGISTRY_USERNAME }} \
+            --docker-password=${{ secrets.REGISTRY_PASSWORD }} \
+            --namespace=microservices \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Helm Chart 패키징
+          helm package ./charts/.claude --destination ./
+          
+          # ChartMuseum에 업로드
+          CHART_FILE=".claude-${CHART_VERSION}.tgz"
+          
+          echo "📊 Uploading ${CHART_FILE} to ChartMuseum..."
+          
+          HTTP_CODE=$(curl -w "%{http_code}" -s -o /tmp/upload_response.txt \
+            -u ${{ secrets.CHARTMUSEUM_USERNAME }}:${{ secrets.CHARTMUSEUM_PASSWORD }} \
+            --data-binary "@${CHART_FILE}" \
+            ${{ secrets.CHARTMUSEUM_URL }}/api/charts)
+          
+          echo "HTTP Response Code: ${HTTP_CODE}"
+          cat /tmp/upload_response.txt
+          
+          if [ "${HTTP_CODE}" = "201" ] || [ "${HTTP_CODE}" = "409" ]; then
+            echo "✅ Chart 업로드 성공: ${CHART_VERSION}"
+          else
+            echo "❌ Chart 업로드 실패 (HTTP ${HTTP_CODE})"
+            exit 1
+          fi
+          
+          # ArgoCD Application 생성/업데이트
+          echo "🚀 ArgoCD Application 구성..."
+          
+          cat > argocd-application.yaml << EOL
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: .claude-microservices
+            namespace: argocd
+            labels:
+              app: .claude
+              env: microservices
+              infrastructure: jclee.me
+            annotations:
+              argocd.argoproj.io/sync-wave: "1"
+          spec:
+            project: default
+            source:
+              repoURL: ${{ secrets.CHARTMUSEUM_URL }}
+              chart: .claude
+              targetRevision: "${CHART_VERSION}"
+              helm:
+                releaseName: .claude
+                values: |
+                  image:
+                    tag: "${IMAGE_TAG}"
+                  ingress:
+                    hosts:
+                      - host: .claude.jclee.me
+                        paths:
+                          - path: /
+                            pathType: Prefix
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: microservices
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+                allowEmpty: false
+              syncOptions:
+                - CreateNamespace=true
+                - ServerSideApply=true
+                - ApplyOutOfSyncOnly=true
+              retry:
+                limit: 5
+                backoff:
+                  duration: 5s
+                  factor: 2
+                  maxDuration: 3m
+          EOL
+          
+          # ArgoCD 로그인 및 배포
+          echo "🔐 ArgoCD 로그인..."
+          argocd login ${{ secrets.ARGOCD_URL }} \
+            --username ${{ secrets.ARGOCD_USERNAME }} \
+            --password ${{ secrets.ARGOCD_PASSWORD }} \
+            --insecure --grpc-web
+          
+          # Repository 등록 (한번만)
+          argocd repo list | grep -q "${{ secrets.CHARTMUSEUM_URL }}" || \
+            argocd repo add ${{ secrets.CHARTMUSEUM_URL }} --type helm \
+              --username ${{ secrets.CHARTMUSEUM_USERNAME }} \
+              --password ${{ secrets.CHARTMUSEUM_PASSWORD }}
+          
+          # Application 생성/업데이트
+          argocd app create -f argocd-application.yaml --upsert
+          
+          # 동기화 대기
+          echo "⏳ ArgoCD 동기화 대기..."
+          argocd app wait .claude-microservices --timeout 300
+          
+          # 배포 상태 확인
+          echo "📊 배포 상태 확인..."
+          kubectl get pods,svc,ingress -n microservices -l app=.claude
+          
+          echo "🎉 MSA 배포 완료!"
+          echo "🌐 서비스 URL: https://.claude.jclee.me"
+          echo "📊 ArgoCD: https://${{ secrets.ARGOCD_URL }}/applications/.claude-microservices"
+          echo "☸️ Kubernetes: https://${{ secrets.K8S_DASHBOARD_URL }}"
+
+  # 배포 검증
+  verify-deployment:
+    runs-on: self-hosted
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Verify MSA Deployment
+        run: |
+          echo "🔍 MSA 배포 검증 시작..."
+          
+          # Health Check
+          for i in {1..10}; do
+            if curl -f -s https://.claude.jclee.me/health; then
+              echo "✅ Health Check 성공"
+              break
+            else
+              echo "⏳ Health Check 대기 중... ($i/10)"
+              sleep 30
+            fi
+          done
+          
+          # ArgoCD 동기화 상태 확인
+          argocd login ${{ secrets.ARGOCD_URL }} \
+            --username ${{ secrets.ARGOCD_USERNAME }} \
+            --password ${{ secrets.ARGOCD_PASSWORD }} \
+            --insecure --grpc-web
+          
+          argocd app get .claude-microservices
+          
+          echo "🎯 MSA 배포 검증 완료!"

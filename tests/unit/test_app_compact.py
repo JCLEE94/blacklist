@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for src/core/app_compact.py
+Unit tests for src/core/main.py
 Testing Flask application factory and mixins
 """
 import os
@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from flask import Flask
 
-from src.core.app_compact import (
+from src.core.main import (
     CompactFlaskApp,
     create_app,
     create_compact_app,
@@ -28,8 +28,8 @@ class TestCompactFlaskApp:
         config = manager.get_pool_config()
         assert isinstance(config, dict)
 
-    @patch("src.core.app_compact.get_container")
-    @patch("src.core.app_compact.setup_request_logging")
+    @patch("src.core.main.get_container")
+    @patch("src.core.main.setup_request_logging")
     def test_create_app_basic(self, mock_setup_logging, mock_get_container):
         """Test basic app creation"""
         # Mock container
@@ -77,7 +77,7 @@ class TestCompactFlaskApp:
         factory._setup_compression.assert_called_once()
         factory._setup_json_optimization.assert_called_once()
 
-    @patch("src.core.app_compact.get_container")
+    @patch("src.core.main.get_container")
     def test_create_app_with_exception(self, mock_get_container):
         """Test app creation when an exception occurs"""
         # Make container throw an exception
@@ -96,7 +96,7 @@ class TestCompactFlaskApp:
             data = response.get_json()
             assert data["status"] == "error"
 
-    @patch("src.core.app_compact.get_container")
+    @patch("src.core.main.get_container")
     @patch("src.utils.advanced_cache.get_smart_cache")
     @patch("src.utils.security.get_security_manager")
     @patch("src.utils.unified_decorators.initialize_decorators")
@@ -130,7 +130,7 @@ class TestCompactFlaskApp:
         # Verify decorators were initialized
         mock_init_decorators.assert_called_once()
 
-    @patch("src.core.app_compact.get_container")
+    @patch("src.core.main.get_container")
     def test_setup_advanced_features_with_exception(self, mock_get_container):
         """Test advanced features setup with exception handling"""
         mock_container = Mock()
@@ -154,7 +154,7 @@ class TestCompactFlaskApp:
 class TestFactoryFunctions:
     """Test factory functions"""
 
-    @patch("src.core.app_compact.CompactFlaskApp")
+    @patch("src.core.main.CompactFlaskApp")
     def test_create_compact_app(self, mock_factory_class):
         """Test create_compact_app function"""
         mock_factory = Mock()
@@ -168,7 +168,7 @@ class TestFactoryFunctions:
         mock_factory.create_app.assert_called_once_with("testing")
         assert result == mock_app
 
-    @patch("src.core.app_compact.create_compact_app")
+    @patch("src.core.main.create_compact_app")
     def test_create_app(self, mock_create_compact):
         """Test create_app function"""
         mock_app = Mock(spec=Flask)
@@ -183,9 +183,9 @@ class TestFactoryFunctions:
 class TestMainFunction:
     """Test main execution function"""
 
-    @patch("src.core.app_compact.create_compact_app")
+    @patch("src.core.main.create_compact_app")
     @patch("dotenv.load_dotenv")
-    @patch("src.core.app_compact.os.environ.get")
+    @patch("src.core.main.os.environ.get")
     def test_main_with_development_env(
         self, mock_env_get, mock_load_dotenv, mock_create_app
     ):
@@ -203,10 +203,10 @@ class TestMainFunction:
         mock_create_app.return_value = mock_app
 
         # Import and call main (can't directly import due to app.run)
-        from src.core.app_compact import main
+        from src.core.main import main
 
         # Mock Path.exists to avoid file system interaction
-        with patch("src.core.app_compact.Path") as mock_path:
+        with patch("src.core.main.Path") as mock_path:
             mock_path.return_value.parent.parent = Mock()
             mock_env_file = Mock()
             mock_env_file.exists.return_value = True
@@ -219,9 +219,9 @@ class TestMainFunction:
                 main()
                 mock_run.assert_called_once_with(host="0.0.0.0", port=8000, debug=True)
 
-    @patch("src.core.app_compact.create_compact_app")
+    @patch("src.core.main.create_compact_app")
     @patch("dotenv.load_dotenv")
-    @patch("src.core.app_compact.os.environ.get")
+    @patch("src.core.main.os.environ.get")
     def test_main_with_production_env(
         self, mock_env_get, mock_load_dotenv, mock_create_app
     ):
@@ -238,9 +238,9 @@ class TestMainFunction:
         mock_app.run = Mock()
         mock_create_app.return_value = mock_app
 
-        from src.core.app_compact import main
+        from src.core.main import main
 
-        with patch("src.core.app_compact.Path") as mock_path:
+        with patch("src.core.main.Path") as mock_path:
             mock_path.return_value.parent.parent = Mock()
             mock_env_file = Mock()
             mock_env_file.exists.return_value = False
@@ -252,9 +252,9 @@ class TestMainFunction:
                 main()
                 mock_run.assert_called_once_with(host="0.0.0.0", port=2541, debug=False)
 
-    @patch("src.core.app_compact.create_compact_app")
+    @patch("src.core.main.create_compact_app")
     @patch("dotenv.load_dotenv")
-    @patch("src.core.app_compact.os.environ.get")
+    @patch("src.core.main.os.environ.get")
     def test_main_with_failed_app(
         self, mock_env_get, mock_load_dotenv, mock_create_app
     ):
@@ -270,9 +270,9 @@ class TestMainFunction:
         mock_app.run = Mock()
         mock_create_app.return_value = mock_app
 
-        from src.core.app_compact import main
+        from src.core.main import main
 
-        with patch("src.core.app_compact.Path") as mock_path:
+        with patch("src.core.main.Path") as mock_path:
             mock_path.return_value.parent.parent = Mock()
             mock_env_file = Mock()
             mock_env_file.exists.return_value = False
@@ -296,7 +296,7 @@ class TestWSGIApplication:
     def test_wsgi_application_exists(self):
         """Test that WSGI application exists"""
         # The application is created at module import time
-        from src.core.app_compact import application
+        from src.core.main import application
 
         # Should be a Flask app instance
         assert application is not None

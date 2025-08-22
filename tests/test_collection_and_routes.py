@@ -192,7 +192,7 @@ def test_regtech_collector_basic():
 def test_flask_app_factory():
     """Test Flask app factory functionality"""
     try:
-        from src.core.app_compact import CompactFlaskApp, create_compact_app
+        from src.core.main import CompactFlaskApp, create_compact_app
 
         # Test factory class
         factory = CompactFlaskApp()

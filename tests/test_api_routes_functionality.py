@@ -447,10 +447,10 @@ class TestCollectorFunctionality:
 class TestCoreAppModules:
     """Test core app modules"""
 
-    def test_app_compact_imports(self):
-        """Test app_compact module imports"""
+    def test_main_imports(self):
+        """Test main module imports"""
         try:
-            from src.core.app_compact import CompactFlaskApp
+            from src.core.main import CompactFlaskApp
 
             assert CompactFlaskApp is not None
 
@@ -460,7 +460,7 @@ class TestCoreAppModules:
             assert hasattr(app_factory, "create_app")
 
         except ImportError:
-            pytest.skip("app_compact not available")
+            pytest.skip("main not available")
         except Exception:
             assert True
 

@@ -1,0 +1,319 @@
+# Deployment Configuration for Optimized CI/CD Pipeline
+# 배포 최적화를 위한 중앙 집중식 설정
+
+# 전역 설정
+global:
+  registry:
+    url: "registry.jclee.me"
+    namespace: "jclee"
+  
+  argocd:
+    url: "https://argocd.jclee.me"
+    namespace: "argocd"
+    
+  image_tagging:
+    strategy: "branch-commit"  # {branch}-{commit-hash}
+    pattern: "${BRANCH}-${COMMIT_SHORT}"
+    
+  deployment:
+    timeout: 1800  # 30 minutes
+    buffer_time:
+      between_services: 120  # 2 minutes
+      safety_critical: 180   # 3 minutes for safework
+    
+    retry:
+      max_attempts: 3
+      backoff_seconds: 30
+
+# 서비스별 설정
+services:
+  blacklist:
+    priority: 1
+    name: "blacklist"
+    image_name: "jclee/blacklist"
+    argocd_app: "jclee-blacklist"
+    
+    build:
+      platforms: ["linux/amd64"]
+      cache_scope: "blacklist"
+      context: "./services/blacklist"
+      
+    security:
+      scan_levels: ["HIGH", "CRITICAL"]
+      audit_level: "moderate"
+      
+    deployment:
+      health_check:
+        endpoint: "/health"
+        timeout: 600  # 10 minutes
+        retry_count: 30
+        retry_interval: 20
+        
+    monitoring:
+      url: "https://blacklist.jclee.me"
+      endpoints:
+        - "/health"
+        - "/api/blacklist/status"
+
+  fortinet:
+    priority: 2
+    name: "fortinet"
+    image_name: "jclee/fortinet"
+    argocd_app: "jclee-fortinet"
+    
+    dependencies:
+      - service: "blacklist"
+        health_check: "https://blacklist.jclee.me/health"
+        wait_timeout: 300  # 5 minutes
+        
+    build:
+      platforms: ["linux/amd64"]
+      cache_scope: "fortinet"
+      context: "./services/fortinet"
+      
+    security:
+      scan_levels: ["HIGH", "CRITICAL"]
+      audit_level: "moderate"
+      additional_scans:
+        - "network_security"
+        
+    deployment:
+      health_check:
+        endpoint: "/health"
+        timeout: 720  # 12 minutes
+        retry_count: 24
+        retry_interval: 30
+        
+      pre_deployment:
+        dependency_check: true
+        buffer_time: 60
+        
+    monitoring:
+      url: "https://fortinet.jclee.me"
+      endpoints:
+        - "/health"
+        - "/api/fortinet/status"
+        - "/api/fortinet/firewall/status"
+        
+    performance:
+      load_test:
+        enabled: true
+        concurrent_requests: 5
+        
+  safework:
+    priority: 3
+    name: "safework"
+    image_name: "jclee/safework"
+    argocd_app: "jclee-safework"
+    safety_critical: true
+    
+    dependencies:
+      - service: "blacklist"
+        health_check: "https://blacklist.jclee.me/health"
+        wait_timeout: 300
+      - service: "fortinet"
+        health_check: "https://fortinet.jclee.me/health"
+        wait_timeout: 300
+        
+    build:
+      platforms: ["linux/amd64"]
+      cache_scope: "safework"
+      context: "./services/safework"
+      
+    security:
+      scan_levels: ["CRITICAL", "HIGH", "MEDIUM"]  # Enhanced for safety-critical
+      audit_level: "low"  # Stricter audit
+      compliance_required: true
+      
+    deployment:
+      health_check:
+        endpoint: "/health"
+        timeout: 1080  # 18 minutes (enhanced for safety-critical)
+        retry_count: 36
+        retry_interval: 30
+        
+      pre_deployment:
+        dependency_check: true
+        buffer_time: 90
+        safety_validation: true
+        
+      enhanced_monitoring:
+        enabled: true
+        check_interval: 30
+        
+    monitoring:
+      url: "https://safework.jclee.me"
+      endpoints:
+        - "/health"
+        - "/api/safework/status"
+        - "/api/safework/safety/status"
+        - "/api/safework/compliance/check"
+        
+    compliance:
+      endpoints:
+        - "/api/safework/compliance/audit"
+        - "/api/safework/safety/protocols"
+        
+    performance:
+      load_test:
+        enabled: true
+        concurrent_requests: 10
+        stability_check: true
+
+# 워크플로우 설정
+workflows:
+  master_orchestrator:
+    name: "master-deployment.yaml"
+    triggers:
+      - "push:main"
+      - "workflow_dispatch"
+      
+    change_detection:
+      paths:
+        blacklist: ["services/blacklist/**", "k8s/blacklist/**"]
+        fortinet: ["services/fortinet/**", "k8s/fortinet/**"]
+        safework: ["services/safework/**", "k8s/safework/**"]
+        
+  individual_services:
+    blacklist:
+      name: "blacklist-ci-cd.yaml"
+      triggers:
+        - "push:main:services/blacklist/**"
+        - "push:main:k8s/blacklist/**"
+        
+    fortinet:
+      name: "fortinet-ci-cd.yaml"
+      triggers:
+        - "push:main:services/fortinet/**"
+        - "push:main:k8s/fortinet/**"
+        
+    safework:
+      name: "safework-ci-cd.yaml"
+      triggers:
+        - "push:main:services/safework/**"
+        - "push:main:k8s/safework/**"
+
+# 환경별 설정
+environments:
+  production:
+    namespace: "production"
+    replicas:
+      blacklist: 2
+      fortinet: 2
+      safework: 3  # Enhanced for safety-critical
+      
+    resources:
+      blacklist:
+        cpu: "500m"
+        memory: "512Mi"
+      fortinet:
+        cpu: "750m"
+        memory: "1Gi"
+      safework:
+        cpu: "1000m"
+        memory: "1.5Gi"
+        
+    security:
+      network_policies: true
+      pod_security_standards: "restricted"
+      
+  staging:
+    namespace: "staging"
+    replicas:
+      blacklist: 1
+      fortinet: 1
+      safework: 1
+      
+    resources:
+      blacklist:
+        cpu: "250m"
+        memory: "256Mi"
+      fortinet:
+        cpu: "375m"
+        memory: "512Mi"
+      safework:
+        cpu: "500m"
+        memory: "768Mi"
+
+# 알림 설정
+notifications:
+  slack:
+    webhook_secret: "SLACK_WEBHOOK_URL"
+    channels:
+      success: "#deployments"
+      failure: "#alerts"
+      safety_critical: "#safety-alerts"
+      
+  email:
+    enabled: false
+    recipients: []
+    
+# 메트릭 및 모니터링
+metrics:
+  collection:
+    enabled: true
+    interval: "30s"
+    
+  targets:
+    deployment_time: "< 45 minutes"
+    success_rate: "> 95%"
+    response_time: "< 2 seconds"
+    
+  alerts:
+    deployment_failure:
+      threshold: 2
+      window: "1h"
+      
+    response_time:
+      threshold: "5s"
+      window: "5m"
+      
+    safety_critical:
+      any_failure: true
+      immediate_alert: true
+
+# 백업 및 복구
+backup:
+  enabled: true
+  retention: "7d"
+  
+  triggers:
+    - "before_deployment"
+    - "daily_schedule"
+    
+rollback:
+  enabled: true
+  automatic:
+    health_check_failures: 3
+    response_time_threshold: "10s"
+    
+  manual:
+    command: "kubectl rollout undo deployment/{service}"
+
+# 규정 준수
+compliance:
+  safework:
+    required_checks:
+      - "safety_protocols"
+      - "compliance_audit"
+      - "security_validation"
+      
+    documentation:
+      required: true
+      path: "docs/compliance/"
+      
+    approvals:
+      safety_officer: true
+      security_team: true
+
+# 로깅
+logging:
+  level: "INFO"
+  format: "json"
+  
+  retention:
+    days: 30
+    
+  aggregation:
+    enabled: true
+    destination: "elasticsearch.jclee.me"

@@ -283,7 +283,7 @@ def mock_external_services():
 def create_test_app(config_name: str = "testing"):
     """Create Flask app for testing with proper configuration"""
     try:
-        from src.core.app_compact import create_compact_app
+        from src.core.main import create_compact_app
 
         app = create_compact_app(config_name)
         app.config["TESTING"] = True
@@ -296,7 +296,7 @@ def create_test_app(config_name: str = "testing"):
         return app
 
     except ImportError as e:
-        print(f"Warning: Could not import app_compact: {e}")
+        print(f"Warning: Could not import main: {e}")
         # Fallback to minimal app
         from flask import Flask
 

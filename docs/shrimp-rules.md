@@ -184,7 +184,7 @@
 
 ### Code Modifications
 
-- **NEVER modify main.py**: Entry point is stable, use app_compact.py
+- **NEVER modify main.py**: Entry point is stable, use main.py
 - **NEVER change container interface**: Dependency injection pattern is fixed
 - **NEVER bypass error handling**: All exceptions must be properly handled
 - **NEVER hardcode credentials**: Use environment variables or secrets

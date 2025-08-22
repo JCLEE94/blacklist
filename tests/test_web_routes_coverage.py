@@ -135,7 +135,7 @@ def test_main_routes_basic():
 def test_flask_app_with_routes():
     """Test Flask app integration with routes"""
     try:
-        from src.core.app_compact import CompactFlaskApp
+        from src.core.main import CompactFlaskApp
 
         app_factory = CompactFlaskApp()
         # CompactFlaskApp is a factory, not a Flask app directly
@@ -159,7 +159,7 @@ def test_flask_app_with_routes():
     except Exception as e:
         # If there are other issues (missing config, dependencies), just verify
         # factory exists
-        from src.core.app_compact import CompactFlaskApp
+        from src.core.main import CompactFlaskApp
 
         app_factory = CompactFlaskApp()
         assert hasattr(app_factory, "create_app")

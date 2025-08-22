@@ -111,7 +111,7 @@ def test_enhanced_endpoint():
 
     import json
 
-    from src.core.app_compact import create_app
+    from src.core.main import create_app
 
     app = create_app()
 

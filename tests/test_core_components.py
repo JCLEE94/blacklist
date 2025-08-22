@@ -14,10 +14,10 @@ from flask import Flask
 class TestCoreAppComponents:
     """Test core app components with 0% coverage -> 80%+"""
 
-    def test_app_compact_basic_import(self):
-        """Test app_compact basic import and functionality"""
+    def test_main_basic_import(self):
+        """Test main basic import and functionality"""
         try:
-            from src.core.app_compact import CompactFlaskApp
+            from src.core.main import CompactFlaskApp
 
             assert CompactFlaskApp is not None
 

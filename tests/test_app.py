@@ -20,7 +20,7 @@ sys.path.insert(0, str(project_root))
 
 if __name__ == "__main__":
     try:
-        from src.core.app_compact import create_app
+        from src.core.main import create_app
 
         app = create_app()
         print("🚀 애플리케이션 시작")

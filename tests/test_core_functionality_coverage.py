@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Core Functionality Coverage Tests - Targeting key core modules
-Focus on app_compact.py, models.py, validators.py, and common utilities
+Focus on main.py, models.py, validators.py, and common utilities
 """
 
 import os
@@ -507,21 +507,21 @@ class TestCommonUtilities:
 
 
 class TestAppCompactComponents:
-    """Test app_compact functionality - targeting 0% coverage"""
+    """Test main functionality - targeting 0% coverage"""
 
-    def test_app_compact_import(self):
-        """Test app_compact import"""
+    def test_main_import(self):
+        """Test main import"""
         try:
-            from src.core import app_compact
+            from src.core import main
 
-            assert app_compact is not None
+            assert main is not None
         except ImportError:
-            pytest.skip("app_compact not available")
+            pytest.skip("main not available")
 
     def test_compact_flask_app_class(self):
         """Test CompactFlaskApp class"""
         try:
-            from src.core.app_compact import CompactFlaskApp
+            from src.core.main import CompactFlaskApp
 
             # Test class exists and can be imported
             assert CompactFlaskApp is not None
@@ -540,15 +540,15 @@ class TestAppCompactComponents:
     def test_app_mixins(self):
         """Test app mixin classes"""
         try:
-            from src.core import app_compact
+            from src.core import main
 
             # Look for mixin classes
-            attrs = dir(app_compact)
+            attrs = dir(main)
             mixin_classes = [attr for attr in attrs if "Mixin" in attr]
 
             # Test mixin classes
             for mixin_name in mixin_classes:
-                mixin_class = getattr(app_compact, mixin_name)
+                mixin_class = getattr(main, mixin_name)
                 if isinstance(mixin_class, type):
                     assert mixin_class is not None
 
@@ -560,15 +560,15 @@ class TestAppCompactComponents:
                     assert method_count >= 0  # Allow for various implementations
 
         except ImportError:
-            pytest.skip("app_compact mixins not available")
+            pytest.skip("main mixins not available")
 
     def test_app_factory_functions(self):
         """Test app factory functions"""
         try:
-            from src.core import app_compact
+            from src.core import main
 
             # Look for factory functions
-            attrs = dir(app_compact)
+            attrs = dir(main)
             factory_functions = [
                 attr
                 for attr in attrs
@@ -577,30 +577,30 @@ class TestAppCompactComponents:
 
             # Test factory functions
             for func_name in factory_functions:
-                func = getattr(app_compact, func_name)
+                func = getattr(main, func_name)
                 if callable(func):
                     assert func is not None
 
         except ImportError:
-            pytest.skip("app_compact factory functions not available")
+            pytest.skip("main factory functions not available")
 
     def test_app_configuration(self):
         """Test app configuration functionality"""
         try:
-            from src.core import app_compact
+            from src.core import main
 
             # Look for configuration functions
-            attrs = dir(app_compact)
+            attrs = dir(main)
             config_functions = [attr for attr in attrs if "config" in attr.lower()]
 
             # Test configuration functions
             for func_name in config_functions:
-                func = getattr(app_compact, func_name)
+                func = getattr(main, func_name)
                 if callable(func):
                     assert func is not None
 
         except ImportError:
-            pytest.skip("app_compact configuration not available")
+            pytest.skip("main configuration not available")
 
 
 class TestUtilsInit:

@@ -1,4 +1,4 @@
-# Docker Compose 기반 배포 - PostgreSQL + Redis
+# Docker Compose - No Bind Mounts, Only Volumes
 # Private Registry: registry.jclee.me
 version: '3.9'
 
@@ -10,11 +10,9 @@ services:
     ports:
       - "32542:2542"
     volumes:
-      - ./data:/app/instance
-      - ./logs:/app/logs
-      - ./src:/app/src  # Mount source code for development
-      - ./templates:/app/templates  # Mount templates
-      - ./static:/app/static  # Mount static files for CSS/JS
+      # Named volumes only - no bind mounts
+      - blacklist-data:/app/instance
+      - blacklist-logs:/app/logs
     environment:
       FLASK_ENV: production
       PORT: 2542
@@ -58,7 +56,8 @@ services:
     container_name: blacklist-redis
     restart: unless-stopped
     volumes:
-      - ./data/redis:/data
+      # Named volume for Redis data
+      - redis-data:/data
     environment:
       - REDIS_MAXMEMORY=1gb
       - REDIS_MAXMEMORY_POLICY=allkeys-lru
@@ -80,8 +79,8 @@ services:
     ports:
       - "32543:5432"
     volumes:
-      - ./data/postgresql:/var/lib/postgresql/data
-      - ./postgresql-init:/docker-entrypoint-initdb.d/extra
+      # Named volume for PostgreSQL data
+      - postgresql-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: blacklist
       POSTGRES_USER: blacklist_user
@@ -97,6 +96,21 @@ services:
       - blacklist-net
     labels:
       - "com.watchtower.enable=true"
+
+# Named volumes (no bind mounts)
+volumes:
+  blacklist-data:
+    driver: local
+    name: blacklist-data
+  blacklist-logs:
+    driver: local
+    name: blacklist-logs
+  redis-data:
+    driver: local
+    name: blacklist-redis-data
+  postgresql-data:
+    driver: local
+    name: blacklist-postgresql-data
 
 networks:
   blacklist-net:

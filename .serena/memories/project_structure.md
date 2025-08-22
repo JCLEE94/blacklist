@@ -12,7 +12,7 @@ blacklist/
 │
 ├── src/                    # Source code
 │   ├── core/              # Core business logic
-│   │   ├── app_compact.py # Main Flask application
+│   │   ├── main.py # Main Flask application
 │   │   ├── container.py   # Dependency injection container
 │   │   ├── blacklist_unified.py  # Blacklist management
 │   │   ├── database.py    # Database operations
@@ -77,6 +77,6 @@ blacklist/
 ## Key Files
 - `main.py`: Entry point with intelligent fallback to handle various deployment scenarios
 - `src/core/container.py`: Central dependency injection managing all services
-- `src/core/app_compact.py`: Optimized Flask application with full features
+- `src/core/main.py`: Optimized Flask application with full features
 - `src/core/blacklist_unified.py`: Core blacklist management logic
 - `deployment/deploy.sh`: Production deployment to registry.jclee.me

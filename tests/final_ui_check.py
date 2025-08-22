@@ -21,7 +21,7 @@ def test_with_flask_app():
     print("\n🔍 Testing with Flask App Directly...")
 
     try:
-        from src.core.app_compact import create_app
+        from src.core.main import create_app
 
         app = create_app()
 

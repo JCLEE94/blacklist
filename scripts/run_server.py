@@ -16,7 +16,7 @@ os.environ['COLLECTION_ENABLED'] = 'true'
 os.environ['FORCE_DISABLE_COLLECTION'] = 'false'
 os.environ['PORT'] = '2542'
 
-from src.core.app_compact import create_app
+from src.core.main import create_app
 
 if __name__ == "__main__":
     app = create_app()

@@ -264,7 +264,7 @@ def main():
             "Production mode - use Gunicorn",
             command=(
                 "gunicorn -w 4 -b 0.0.0.0:{port} "
-                "core.app_compact:create_compact_app()"
+                "core.main:create_compact_app()"
             ),
         )
 

@@ -39,11 +39,11 @@
 
 ### Modular Structure Pattern
 - **ALWAYS USE MIXINS** for Flask app composition: `AppConfigurationMixin`, `MiddlewareMixin`, `BlueprintRegistrationMixin`, `ErrorHandlerMixin`
-- **FOLLOW MIXIN HIERARCHY** in `src/core/app_compact.py`
+- **FOLLOW MIXIN HIERARCHY** in `src/core/main.py`
 - **NEVER CREATE MONOLITHIC FILES** - break into logical modules
 
 ### Entry Point Chain
-- **PRIMARY**: `main.py` → `src/core/app_compact.py`  
+- **PRIMARY**: `main.py` → `src/core/main.py`  
 - **FALLBACK**: `src/core/minimal_app.py` → legacy routes
 - **NEVER BYPASS** the established entry point chain
 

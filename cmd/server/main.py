@@ -35,7 +35,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from src.core.app_compact import create_app
+    from src.core.main import create_app
     from src.utils.structured_logging import setup_logging
     from src.config.factory import get_config
 except ImportError as e:

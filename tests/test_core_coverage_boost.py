@@ -356,7 +356,7 @@ if __name__ == "__main__":
     # Test 1: Basic imports
     total_tests += 1
     try:
-        from src.core.app_compact import create_app
+        from src.core.main import create_app
 
         app = create_app()
         if not isinstance(app, Flask):

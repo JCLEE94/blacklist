@@ -88,7 +88,7 @@ def test_api_routes():
 
     try:
         # Import Flask app
-        from src.core.app_compact import create_app
+        from src.core.main import create_app
 
         app = create_app()
 

@@ -321,11 +321,11 @@ make clean                         # Remove __pycache__, *.pyc, coverage files
 ### Entry Points & Fallback Chain
 ```
 main.py                             # Main entry point (port 2542)
-  └─> src/core/app_compact.py       # Primary app factory with mixins
+  └─> src/core/main.py       # Primary app factory with mixins
       └─> src/core/minimal_app.py   # Fallback minimal implementation
           └─> legacy routes          # Ultimate fallback
 
-# App factory composition (src/core/app_compact.py):
+# App factory composition (src/core/main.py):
 CompactFlaskApp(
     AppConfigurationMixin,          # Configuration and optimization
     MiddlewareMixin,                # Request/response processing
@@ -765,7 +765,7 @@ class UnifiedService(CollectionServiceMixin, StatisticsServiceMixin):
 from flask import Blueprint
 bp = Blueprint('api', __name__, url_prefix='/api')
 
-# In app_compact.py:
+# In main.py:
 app.register_blueprint(api_routes_bp)
 ```
 

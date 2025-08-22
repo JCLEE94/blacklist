@@ -17,9 +17,9 @@
 ## Architecture Patterns
 
 ### Flask App Composition (MANDATORY PATTERN)
-- **Main App Factory**: `src/core/app_compact.py` uses mixin composition
+- **Main App Factory**: `src/core/main.py` uses mixin composition
 - **Required Mixins**: AppConfigurationMixin, MiddlewareMixin, BlueprintRegistrationMixin, ErrorHandlerMixin
-- **Entry Point Chain**: `main.py` → `app_compact.py` → `minimal_app.py` (fallback)
+- **Entry Point Chain**: `main.py` → `main.py` → `minimal_app.py` (fallback)
 - **Container Pattern**: Always use `get_container()` for dependency injection
 
 ### Route Organization (CRITICAL COORDINATION)
