@@ -5,6 +5,7 @@ GitHub 이슈 자동 생성 서비스
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 import hashlib
@@ -16,7 +17,6 @@ from functools import wraps
 from typing import Any, Dict, Optional
 
 import requests
-
 
 
 class GitHubIssueReporter:
@@ -319,7 +319,7 @@ class GitHubIssueReporter:
 
             # Flask 컨텍스트에서 요청 정보 추출
             try:
-                
+
                 if has_request_context():
                     error_data.update(
                         {

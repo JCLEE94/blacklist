@@ -103,9 +103,9 @@ deploy: ## Deploy to Kubernetes using Helm
 		--set image.repository=$(DOCKER_REGISTRY)/blacklist \
 		--set image.tag=$(VERSION)
 
-deploy-local: ## Deploy locally using Docker Compose
-	@echo "$(GREEN)Deploying locally with Docker Compose...$(NC)"
-	docker-compose -f deployments/docker-compose/docker-compose.yml up -d
+deploy-local: ## Deploy locally using standalone Docker
+	@echo "$(GREEN)Deploying locally with standalone Docker...$(NC)"
+	./start.sh build && ./start.sh start
 
 helm-install: ## Install/upgrade Helm chart
 	@echo "$(GREEN)Installing Helm chart...$(NC)"
@@ -131,24 +131,24 @@ clean: ## Clean build artifacts and caches
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -name "*.pyc" -delete
 
-start: ## Start services using Docker Compose
-	@echo "$(GREEN)Starting services...$(NC)"
+start: ## Start standalone Docker container
+	@echo "$(GREEN)Starting standalone container...$(NC)"
 	./start.sh start
 
-stop: ## Stop services
-	@echo "$(GREEN)Stopping services...$(NC)"
+stop: ## Stop standalone container
+	@echo "$(GREEN)Stopping standalone container...$(NC)"
 	./start.sh stop
 
-restart: ## Restart services
-	@echo "$(GREEN)Restarting services...$(NC)"
+restart: ## Restart standalone container
+	@echo "$(GREEN)Restarting standalone container...$(NC)"
 	./start.sh restart
 
-logs: ## View service logs
-	@echo "$(GREEN)Viewing logs...$(NC)"
+logs: ## View container logs
+	@echo "$(GREEN)Viewing container logs...$(NC)"
 	./start.sh logs
 
-status: ## Check service status
-	@echo "$(GREEN)Checking service status...$(NC)"
+status: ## Check container status
+	@echo "$(GREEN)Checking container status...$(NC)"
 	./start.sh status
 
 # Verification Commands

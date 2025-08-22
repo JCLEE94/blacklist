@@ -14,6 +14,7 @@ from typing import Callable
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 

@@ -5,7 +5,6 @@ Provides the main dashboard endpoints with template support
 """
 
 
-
 try:
     pass
 
@@ -15,6 +14,7 @@ except ImportError:
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .handlers.health_handler import HealthCheckHandler
@@ -53,7 +53,6 @@ if __name__ == "__main__":
     # Validation test for refactored routes
     import sys
 
-    
     app = Flask(__name__)
     app.register_blueprint(bp)
 

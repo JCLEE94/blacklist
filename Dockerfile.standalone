@@ -1,0 +1,272 @@
+# Complete Standalone Blacklist Application Container
+# Zero external dependencies - runs independently with embedded configuration
+# Version: v1.0.37
+# Registry: registry.jclee.me/blacklist:standalone
+
+FROM python:3.11-slim as builder
+
+# Build environment to minimize external calls
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /build
+
+# Copy requirements and download all dependencies
+COPY config/requirements.txt .
+RUN pip wheel --wheel-dir=/wheels -r requirements.txt
+
+# Production stage - completely self-contained
+FROM python:3.11-slim
+
+# Container metadata
+LABEL com.watchtower.enable="true" \
+      com.watchtower.scope="blacklist-standalone" \
+      org.opencontainers.image.title="Blacklist Management System (Standalone)" \
+      org.opencontainers.image.description="Complete standalone blacklist system - no external dependencies" \
+      org.opencontainers.image.version="v1.0.37" \
+      org.opencontainers.image.vendor="JCLee" \
+      standalone.mode="true" \
+      standalone.dependencies="none"
+
+# Environment for complete independence
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    # === Application Configuration ===
+    FLASK_ENV=production \
+    PORT=2542 \
+    DEBUG=false \
+    SECRET_KEY=standalone-secret-key-change-in-production \
+    JWT_SECRET_KEY=standalone-jwt-key-change-in-production \
+    # === Database Configuration (PostgreSQL only) ===
+    DATABASE_URL=postgresql://blacklist_user:password@postgres:5432/blacklist \
+    DATABASE_POOL_SIZE=20 \
+    DATABASE_MAX_OVERFLOW=40 \
+    DATABASE_POOL_TIMEOUT=30 \
+    DATABASE_POOL_RECYCLE=1800 \
+    DATABASE_POOL_PRE_PING=true \
+    # === Cache Configuration (Memory fallback) ===
+    REDIS_URL=redis://localhost:6379/0 \
+    CACHE_TYPE=memory \
+    CACHE_DEFAULT_TTL=300 \
+    CACHE_MAX_ENTRIES=1000 \
+    # === Collection Settings (Safe defaults) ===
+    COLLECTION_ENABLED=false \
+    FORCE_DISABLE_COLLECTION=true \
+    RESTART_PROTECTION=true \
+    AUTO_EXTRACT_COOKIES=false \
+    MAX_AUTH_ATTEMPTS=10 \
+    BLOCK_DURATION_HOURS=24 \
+    # === Authentication ===
+    JWT_ACCESS_TOKEN_EXPIRES=3600 \
+    JWT_REFRESH_TOKEN_EXPIRES=86400 \
+    JWT_ENABLED=true \
+    API_KEY_ENABLED=true \
+    DEFAULT_API_KEY=blk_standalone_default_key_change_me \
+    ADMIN_USERNAME=admin \
+    ADMIN_PASSWORD=standalone_admin_change_me \
+    # === External Services (Disabled for standalone) ===
+    REGTECH_USERNAME= \
+    REGTECH_PASSWORD= \
+    REGTECH_BASE_URL=https://regtech.fsec.or.kr \
+    SECUDIUM_USERNAME= \
+    SECUDIUM_PASSWORD= \
+    SECUDIUM_BASE_URL=https://isap.secudium.co.kr \
+    # === Performance Optimization ===
+    GUNICORN_WORKERS=2 \
+    GUNICORN_THREADS=2 \
+    GUNICORN_WORKER_CLASS=gthread \
+    GUNICORN_WORKER_CONNECTIONS=1000 \
+    GUNICORN_TIMEOUT=60 \
+    GUNICORN_KEEPALIVE=5 \
+    GUNICORN_MAX_REQUESTS=1000 \
+    GUNICORN_MAX_REQUESTS_JITTER=50 \
+    GUNICORN_PRELOAD_APP=false \
+    # === Logging ===
+    LOG_LEVEL=INFO \
+    LOG_FORMAT=json \
+    LOG_FILE=/app/logs/blacklist_standalone.log \
+    # === Monitoring ===
+    PROMETHEUS_ENABLED=true \
+    HEALTH_CHECK_TIMEOUT=30 \
+    HEALTH_CHECK_INTERVAL=60 \
+    # === Feature Flags ===
+    ENABLE_V2_API=true \
+    ENABLE_COOKIE_COLLECTION=false \
+    ENABLE_METRICS=true \
+    # === Security Headers ===
+    SECURITY_HEADERS_ENABLED=true \
+    RATE_LIMIT_ENABLED=true \
+    RATE_LIMIT_API=1000/hour \
+    # === Python Configuration ===
+    PYTHONOPTIMIZE=0 \
+    PYTHONDONTWRITEBYTECODE=0 \
+    WERKZEUG_RUN_MAIN=false \
+    FLASK_SKIP_DOTENV=0
+
+# Install essential system packages only
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get purge -y --auto-remove
+
+# Create non-root user
+RUN groupadd -g 1000 app \
+    && useradd -u 1000 -g app -m -s /bin/bash app \
+    && mkdir -p /app/data /app/logs /app/instance /app/backups /app/scripts \
+    && chown -R app:app /app
+
+WORKDIR /app
+
+# Copy wheels from builder
+COPY --from=builder /wheels /wheels
+
+# Install Python packages from local wheels only
+RUN pip install --no-index --find-links=/wheels --no-cache-dir \
+    flask gunicorn sqlalchemy redis python-dotenv \
+    pandas openpyxl orjson requests cryptography alembic \
+    flask-caching prometheus-client flask-compress beautifulsoup4 \
+    lxml PyJWT psutil python-dateutil PyYAML APScheduler \
+    defusedxml httpx aiohttp fastapi uvicorn numpy psycopg2-binary \
+    && rm -rf /wheels
+
+# Copy application code
+COPY --chown=app:app . .
+
+# Create embedded configuration files
+RUN mkdir -p /app/config/embedded
+
+# Create embedded .env file with all configurations
+RUN echo '# Standalone Configuration - Complete Independence' > /app/config/embedded/.env.standalone && \
+    echo '# Application' >> /app/config/embedded/.env.standalone && \
+    echo 'FLASK_ENV=production' >> /app/config/embedded/.env.standalone && \
+    echo 'PORT=2542' >> /app/config/embedded/.env.standalone && \
+    echo 'DEBUG=false' >> /app/config/embedded/.env.standalone && \
+    echo 'SECRET_KEY=standalone-secret-key-change-in-production' >> /app/config/embedded/.env.standalone && \
+    echo 'JWT_SECRET_KEY=standalone-jwt-key-change-in-production' >> /app/config/embedded/.env.standalone && \
+    echo '' >> /app/config/embedded/.env.standalone && \
+    echo '# Database (PostgreSQL)' >> /app/config/embedded/.env.standalone && \
+    echo 'DATABASE_URL=postgresql://blacklist_user:password@postgres:5432/blacklist' >> /app/config/embedded/.env.standalone && \
+    echo 'DATABASE_POOL_SIZE=20' >> /app/config/embedded/.env.standalone && \
+    echo 'DATABASE_MAX_OVERFLOW=40' >> /app/config/embedded/.env.standalone && \
+    echo '' >> /app/config/embedded/.env.standalone && \
+    echo '# Cache (Memory fallback)' >> /app/config/embedded/.env.standalone && \
+    echo 'CACHE_TYPE=memory' >> /app/config/embedded/.env.standalone && \
+    echo 'CACHE_DEFAULT_TTL=300' >> /app/config/embedded/.env.standalone && \
+    echo 'CACHE_MAX_ENTRIES=1000' >> /app/config/embedded/.env.standalone && \
+    echo '' >> /app/config/embedded/.env.standalone && \
+    echo '# Collection (Disabled for safety)' >> /app/config/embedded/.env.standalone && \
+    echo 'COLLECTION_ENABLED=false' >> /app/config/embedded/.env.standalone && \
+    echo 'FORCE_DISABLE_COLLECTION=true' >> /app/config/embedded/.env.standalone && \
+    echo 'RESTART_PROTECTION=true' >> /app/config/embedded/.env.standalone && \
+    echo '' >> /app/config/embedded/.env.standalone && \
+    echo '# Authentication' >> /app/config/embedded/.env.standalone && \
+    echo 'JWT_ENABLED=true' >> /app/config/embedded/.env.standalone && \
+    echo 'API_KEY_ENABLED=true' >> /app/config/embedded/.env.standalone && \
+    echo 'DEFAULT_API_KEY=blk_standalone_default_key_change_me' >> /app/config/embedded/.env.standalone && \
+    echo 'ADMIN_USERNAME=admin' >> /app/config/embedded/.env.standalone && \
+    echo 'ADMIN_PASSWORD=standalone_admin_change_me' >> /app/config/embedded/.env.standalone && \
+    echo '' >> /app/config/embedded/.env.standalone && \
+    echo '# External APIs (Disabled)' >> /app/config/embedded/.env.standalone && \
+    echo 'REGTECH_USERNAME=' >> /app/config/embedded/.env.standalone && \
+    echo 'REGTECH_PASSWORD=' >> /app/config/embedded/.env.standalone && \
+    echo 'SECUDIUM_USERNAME=' >> /app/config/embedded/.env.standalone && \
+    echo 'SECUDIUM_PASSWORD=' >> /app/config/embedded/.env.standalone && \
+    echo '' >> /app/config/embedded/.env.standalone && \
+    echo '# Performance' >> /app/config/embedded/.env.standalone && \
+    echo 'GUNICORN_WORKERS=2' >> /app/config/embedded/.env.standalone && \
+    echo 'GUNICORN_THREADS=2' >> /app/config/embedded/.env.standalone && \
+    echo 'LOG_LEVEL=INFO' >> /app/config/embedded/.env.standalone
+
+# Copy PostgreSQL initialization script (created separately)
+COPY --chown=app:app scripts/init_postgres_standalone.py /app/scripts/init_postgres.py
+
+# Create startup script using echo
+RUN echo '#!/bin/bash' > /app/scripts/standalone-startup.sh && \
+    echo 'set -e' >> /app/scripts/standalone-startup.sh && \
+    echo '' >> /app/scripts/standalone-startup.sh && \
+    echo 'echo "[$(date)] Starting Blacklist Management System in Standalone Mode"' >> /app/scripts/standalone-startup.sh && \
+    echo '' >> /app/scripts/standalone-startup.sh && \
+    echo '# Load embedded configuration' >> /app/scripts/standalone-startup.sh && \
+    echo 'if [ -f "/app/config/embedded/.env.standalone" ]; then' >> /app/scripts/standalone-startup.sh && \
+    echo '    echo "[$(date)] Loading embedded configuration..."' >> /app/scripts/standalone-startup.sh && \
+    echo '    export $(cat /app/config/embedded/.env.standalone | grep -v "^#" | xargs)' >> /app/scripts/standalone-startup.sh && \
+    echo 'fi' >> /app/scripts/standalone-startup.sh && \
+    echo '' >> /app/scripts/standalone-startup.sh && \
+    echo '# Create required directories' >> /app/scripts/standalone-startup.sh && \
+    echo 'mkdir -p /app/data /app/logs /app/instance /app/temp' >> /app/scripts/standalone-startup.sh && \
+    echo '' >> /app/scripts/standalone-startup.sh && \
+    echo '# Initialize PostgreSQL database' >> /app/scripts/standalone-startup.sh && \
+    echo 'echo "[$(date)] Initializing PostgreSQL database..."' >> /app/scripts/standalone-startup.sh && \
+    echo 'python3 /app/scripts/init_postgres.py' >> /app/scripts/standalone-startup.sh && \
+    echo '' >> /app/scripts/standalone-startup.sh && \
+    echo '# Start application' >> /app/scripts/standalone-startup.sh && \
+    echo 'echo "[$(date)] Starting application on port ${PORT:-2542}"' >> /app/scripts/standalone-startup.sh && \
+    echo 'echo "[$(date)] Database: PostgreSQL"' >> /app/scripts/standalone-startup.sh && \
+    echo 'echo "[$(date)] Cache: Redis or Memory fallback"' >> /app/scripts/standalone-startup.sh && \
+    echo '' >> /app/scripts/standalone-startup.sh && \
+    echo 'if [ "${FLASK_ENV}" = "development" ]; then' >> /app/scripts/standalone-startup.sh && \
+    echo '    echo "[$(date)] Starting in development mode..."' >> /app/scripts/standalone-startup.sh && \
+    echo '    python3 main.py' >> /app/scripts/standalone-startup.sh && \
+    echo 'else' >> /app/scripts/standalone-startup.sh && \
+    echo '    echo "[$(date)] Starting with Gunicorn..."' >> /app/scripts/standalone-startup.sh && \
+    echo '    exec gunicorn --bind 0.0.0.0:${PORT:-2542} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-2} --worker-class ${GUNICORN_WORKER_CLASS:-gthread} --timeout ${GUNICORN_TIMEOUT:-60} --keepalive ${GUNICORN_KEEPALIVE:-5} --max-requests ${GUNICORN_MAX_REQUESTS:-1000} --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-50} --preload --access-logfile /app/logs/access.log --error-logfile /app/logs/error.log --log-level ${LOG_LEVEL:-info} "src.core.main:create_app()"' >> /app/scripts/standalone-startup.sh && \
+    echo 'fi' >> /app/scripts/standalone-startup.sh
+
+# Create health check script using echo
+RUN echo '#!/bin/bash' > /app/scripts/health-check.sh && \
+    echo '# Standalone health check - no external dependencies' >> /app/scripts/health-check.sh && \
+    echo '' >> /app/scripts/health-check.sh && \
+    echo '# Check if application is responding' >> /app/scripts/health-check.sh && \
+    echo 'if curl -sf http://localhost:${PORT:-2542}/health >/dev/null 2>&1; then' >> /app/scripts/health-check.sh && \
+    echo '    echo "Health check: PASSED"' >> /app/scripts/health-check.sh && \
+    echo '    exit 0' >> /app/scripts/health-check.sh && \
+    echo 'else' >> /app/scripts/health-check.sh && \
+    echo '    echo "Health check: FAILED"' >> /app/scripts/health-check.sh && \
+    echo '    exit 1' >> /app/scripts/health-check.sh && \
+    echo 'fi' >> /app/scripts/health-check.sh
+
+# Create all required directories
+RUN mkdir -p \
+    /app/data/by_detection_month \
+    /app/data/by_source \
+    /app/data/blacklist_ips \
+    /app/data/exports \
+    /app/data/logs \
+    /app/data/regtech \
+    /app/data/secudium \
+    /app/temp \
+    /app/backups \
+    && chown -R app:app /app \
+    && chmod -R 755 /app/data /app/logs /app/instance \
+    && chmod +x /app/scripts/*.sh
+
+# Copy version file
+COPY --chown=app:app version.txt /app/version.txt
+
+# Switch to non-root user
+USER app
+
+# Create data volume for persistence
+VOLUME ["/app/data", "/app/logs"]
+
+# Advanced health check for standalone operation
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /app/scripts/health-check.sh || exit 1
+
+# Expose port
+EXPOSE 2542
+
+# Signal handling for graceful shutdown
+STOPSIGNAL SIGTERM
+
+# Use standalone startup script
+CMD ["/app/scripts/standalone-startup.sh"]

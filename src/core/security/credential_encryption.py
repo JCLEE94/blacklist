@@ -105,18 +105,18 @@ class CredentialEncryption:
         except Exception:
             return False
 
-    def rotate_key(self, new_master_key: str) -> 'CredentialEncryption':
+    def rotate_key(self, new_master_key: str) -> "CredentialEncryption":
         """새로운 키로 교체된 암호화 객체 반환"""
         return CredentialEncryption(new_master_key)
 
 
 if __name__ == "__main__":
     import sys
-    
+
     # 실제 데이터로 검증
     all_validation_failures = []
     total_tests = 0
-    
+
     # 테스트 1: 기본 암호화/복호화
     total_tests += 1
     try:
@@ -124,23 +124,27 @@ if __name__ == "__main__":
         test_password = "test_password_123"
         encrypted = encryption.encrypt(test_password)
         decrypted = encryption.decrypt(encrypted)
-        
+
         if decrypted != test_password:
-            all_validation_failures.append(f"기본 암호화: 예상 '{test_password}', 실제 '{decrypted}'")
+            all_validation_failures.append(
+                f"기본 암호화: 예상 '{test_password}', 실제 '{decrypted}'"
+            )
     except Exception as e:
         all_validation_failures.append(f"기본 암호화 오류: {e}")
-    
+
     # 테스트 2: 빈 문자열 처리
     total_tests += 1
     try:
         empty_encrypted = encryption.encrypt("")
         empty_decrypted = encryption.decrypt(empty_encrypted)
-        
+
         if empty_decrypted != "":
-            all_validation_failures.append(f"빈 문자열: 예상 '', 실제 '{empty_decrypted}'")
+            all_validation_failures.append(
+                f"빈 문자열: 예상 '', 실제 '{empty_decrypted}'"
+            )
     except Exception as e:
         all_validation_failures.append(f"빈 문자열 오류: {e}")
-    
+
     # 테스트 3: 사용자 정의 키
     total_tests += 1
     try:
@@ -148,33 +152,41 @@ if __name__ == "__main__":
         test_data = "custom_test_data"
         custom_encrypted = custom_encryption.encrypt(test_data)
         custom_decrypted = custom_encryption.decrypt(custom_encrypted)
-        
+
         if custom_decrypted != test_data:
-            all_validation_failures.append(f"사용자 정의 키: 예상 '{test_data}', 실제 '{custom_decrypted}'")
+            all_validation_failures.append(
+                f"사용자 정의 키: 예상 '{test_data}', 실제 '{custom_decrypted}'"
+            )
     except Exception as e:
         all_validation_failures.append(f"사용자 정의 키 오류: {e}")
-    
+
     # 테스트 4: 암호화 확인
     total_tests += 1
     try:
         encrypted_text = encryption.encrypt("test")
         is_encrypted_result = encryption.is_encrypted(encrypted_text)
         is_plain_result = encryption.is_encrypted("plain_text")
-        
+
         if not is_encrypted_result:
-            all_validation_failures.append("암호화 텍스트를 암호화된 것으로 인식하지 못함")
+            all_validation_failures.append(
+                "암호화 텍스트를 암호화된 것으로 인식하지 못함"
+            )
         if is_plain_result:
             all_validation_failures.append("평문 텍스트를 암호화된 것으로 잘못 인식")
     except Exception as e:
         all_validation_failures.append(f"암호화 확인 오류: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("CredentialEncryption module is validated and ready for use")
         sys.exit(0)

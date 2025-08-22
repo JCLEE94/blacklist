@@ -1,5 +1,6 @@
 from flask import jsonify, request
 import logging
+
 logger = logging.getLogger(__name__)
 
 """Core error handler class"""
@@ -19,8 +20,6 @@ except ImportError:
 
     def report_error_to_github(error, context):
         return None
-
-
 
 
 class ErrorHandler:

@@ -1,5 +1,6 @@
 from flask import jsonify
 import logging
+
 logger = logging.getLogger(__name__)
 
 """Error handling decorators"""
@@ -9,7 +10,6 @@ from typing import Any, Callable, Union
 
 
 from .custom_errors import AuthenticationError, AuthorizationError, ValidationError
-
 
 
 def safe_execute(

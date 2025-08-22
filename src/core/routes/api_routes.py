@@ -4,10 +4,9 @@
 500줄 제한을 준수하도록 리팩토링된 버전
 """
 
-
-
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .blacklist_routes import blacklist_routes_bp
@@ -41,7 +40,7 @@ def register_sub_routes(app):
 def get_all_data():
     """전체 블랙리스트 데이터 조회"""
     try:
-        
+
         from ..container import get_container
 
         container = get_container()
@@ -108,7 +107,6 @@ def export_data(format):
     try:
         import json
 
-        
         from ..container import get_container
 
         container = get_container()

@@ -159,12 +159,12 @@ def test_security_utilities():
 
         password = "test_password"
         hashed_result = hash_password(password)
-        
+
         # hash_password returns (hash, salt) tuple
         assert isinstance(hashed_result, tuple)
         assert len(hashed_result) == 2
         password_hash, salt = hashed_result
-        
+
         assert password_hash != password
         assert len(password_hash) > 20  # Should be a proper hash
         assert len(salt) > 10  # Should have a salt

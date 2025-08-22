@@ -18,8 +18,15 @@ try:
     from .metrics_collector import SystemMetricsCollector, ApplicationMetricsCollector
 except ImportError:
     # 상대 import 실패시 절대 import 시도
-    from monitoring.health_models import HealthMetric, ServiceStatus, convert_health_status
-    from monitoring.metrics_collector import SystemMetricsCollector, ApplicationMetricsCollector
+    from monitoring.health_models import (
+        HealthMetric,
+        ServiceStatus,
+        convert_health_status,
+    )
+    from monitoring.metrics_collector import (
+        SystemMetricsCollector,
+        ApplicationMetricsCollector,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +76,10 @@ class HealthDashboard:
 
             # 오래된 데이터 제거
             self.metrics_history[metric.name] = [
-                m for m in self.metrics_history[metric.name]
-                if datetime.fromisoformat(m['timestamp'].replace('T', ' ')) > cutoff_time
+                m
+                for m in self.metrics_history[metric.name]
+                if datetime.fromisoformat(m["timestamp"].replace("T", " "))
+                > cutoff_time
             ]
 
     def get_dashboard_data(self) -> Dict[str, Any]:
@@ -84,7 +93,7 @@ class HealthDashboard:
 
         # 시스템 업타임
         uptime = datetime.now() - self.start_time
-        uptime_str = str(uptime).split('.')[0]  # 초 단위 제거
+        uptime_str = str(uptime).split(".")[0]  # 초 단위 제거
 
         return {
             "timestamp": datetime.now().isoformat(),
@@ -95,16 +104,15 @@ class HealthDashboard:
                 "healthy": healthy_count,
                 "warning": warning_count,
                 "critical": critical_count,
-                "overall_status": self._get_overall_status(critical_count, warning_count)
+                "overall_status": self._get_overall_status(
+                    critical_count, warning_count
+                ),
             },
             "services": list(self.services.values()),
-            "alerts": self.alerts[-10:]  # 최근 10개 알림만
+            "alerts": self.alerts[-10:],  # 최근 10개 알림만
         }
 
-    def _get_overall_status(
-            self,
-            critical_count: int,
-            warning_count: int) -> str:
+    def _get_overall_status(self, critical_count: int, warning_count: int) -> str:
         """전체 시스템 상태 결정"""
         if critical_count > 0:
             return "critical"
@@ -129,17 +137,17 @@ def get_dashboard(blacklist_manager=None) -> HealthDashboard:
 
 
 # Flask 블루프린트
-dashboard_bp = Blueprint('health_dashboard', __name__)
+dashboard_bp = Blueprint("health_dashboard", __name__)
 
 
-@dashboard_bp.route('/monitoring/dashboard')
+@dashboard_bp.route("/monitoring/dashboard")
 def dashboard_page():
     """대시보드 HTML 페이지"""
     dashboard = get_dashboard()
     data = dashboard.get_dashboard_data()
 
     # 간소화된 HTML 템플릿 (기본 부트스트랩 사용)
-    html_template = '''
+    html_template = """
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -213,24 +221,23 @@ def dashboard_page():
         </div>
     </body>
     </html>
-    '''
+    """
 
     return render_template_string(html_template, data=data)
 
 
-@dashboard_bp.route('/api/health/dashboard')
+@dashboard_bp.route("/api/health/dashboard")
 def health_api():
     """대시보드 JSON API"""
     dashboard = get_dashboard()
     return jsonify(dashboard.get_dashboard_data())
 
 
-@dashboard_bp.route('/api/health/metrics/<metric_name>/history')
+@dashboard_bp.route("/api/health/metrics/<metric_name>/history")
 def metric_history(metric_name):
     """특정 메트릭의 히스토리 조회"""
     dashboard = get_dashboard()
     history = dashboard.metrics_history.get(metric_name, [])
-    return jsonify({
-        "metric_name": metric_name,
-        "history": history[-100:]  # 최근 100개 포인트
-    })
+    return jsonify(
+        {"metric_name": metric_name, "history": history[-100:]}  # 최근 100개 포인트
+    )

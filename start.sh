@@ -1,60 +1,85 @@
 #!/bin/bash
-# Blacklist Management System - Docker Compose Manager
-# Replacement for commands/scripts/start.sh
+# Blacklist Management System - Standalone Docker Manager
+# Direct docker commands only - NO docker-compose
 
 set -e
 
 COMMAND=${1:-help}
+CONTAINER_NAME="blacklist"
+IMAGE_NAME="blacklist:standalone"
+PORT="${PORT:-32542}"
 
 case $COMMAND in
     start)
-        echo "Starting Blacklist services..."
-        docker-compose up -d
-        echo "Services started! Check status with: ./start.sh status"
+        echo "Starting Blacklist container..."
+        docker run -d \
+            --name ${CONTAINER_NAME} \
+            -p ${PORT}:2542 \
+            -v blacklist-data:/app/data \
+            -v blacklist-logs:/app/logs \
+            --restart unless-stopped \
+            ${IMAGE_NAME}
+        echo "Container started! Check status with: ./start.sh status"
         ;;
     stop)
-        echo "Stopping Blacklist services..."
-        docker-compose down
+        echo "Stopping Blacklist container..."
+        docker stop ${CONTAINER_NAME} 2>/dev/null || true
+        docker rm ${CONTAINER_NAME} 2>/dev/null || true
         ;;
     restart)
-        echo "Restarting Blacklist services..."
-        docker-compose restart
+        echo "Restarting Blacklist container..."
+        docker restart ${CONTAINER_NAME}
         ;;
     logs)
         echo "Following logs..."
-        docker-compose logs -f
+        docker logs -f ${CONTAINER_NAME}
         ;;
     status)
-        echo "Service status:"
-        docker-compose ps
+        echo "Container status:"
+        docker ps -a | grep ${CONTAINER_NAME} || echo "Container not found"
         ;;
     update)
-        echo "Updating services..."
-        docker-compose pull
-        docker-compose up -d
+        echo "Updating container..."
+        docker pull ${IMAGE_NAME}
+        docker stop ${CONTAINER_NAME} 2>/dev/null || true
+        docker rm ${CONTAINER_NAME} 2>/dev/null || true
+        docker run -d \
+            --name ${CONTAINER_NAME} \
+            -p ${PORT}:2542 \
+            -v blacklist-data:/app/data \
+            -v blacklist-logs:/app/logs \
+            --restart unless-stopped \
+            ${IMAGE_NAME}
         ;;
     clean)
         echo "Cleaning up resources..."
-        docker-compose down --volumes --remove-orphans
+        docker stop ${CONTAINER_NAME} 2>/dev/null || true
+        docker rm ${CONTAINER_NAME} 2>/dev/null || true
+        docker volume rm blacklist-data blacklist-logs 2>/dev/null || true
         docker system prune -f
         ;;
+    build)
+        echo "Building standalone image..."
+        docker build -f Dockerfile.standalone -t ${IMAGE_NAME} .
+        ;;
     help|*)
-        echo "Blacklist Management System - Docker Compose Manager"
+        echo "Blacklist Management System - Standalone Docker Manager"
         echo "Usage: ./start.sh [command]"
         echo ""
         echo "Commands:"
-        echo "  start    - Start all services"
-        echo "  stop     - Stop all services"
-        echo "  restart  - Restart all services"
-        echo "  logs     - Follow service logs"
-        echo "  status   - Show service status"
-        echo "  update   - Pull latest images and restart"
-        echo "  clean    - Clean up containers and volumes"
+        echo "  start    - Start container"
+        echo "  stop     - Stop container"
+        echo "  restart  - Restart container"
+        echo "  logs     - Follow container logs"
+        echo "  status   - Show container status"
+        echo "  update   - Pull latest image and restart"
+        echo "  clean    - Clean up container and volumes"
+        echo "  build    - Build standalone image"
         echo "  help     - Show this help message"
         echo ""
         echo "Examples:"
-        echo "  ./start.sh start     # Start services"
+        echo "  ./start.sh build     # Build image"
+        echo "  ./start.sh start     # Start container"
         echo "  ./start.sh logs      # Watch logs"
-        echo "  ./start.sh update    # Update to latest"
         ;;
 esac

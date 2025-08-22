@@ -14,13 +14,15 @@ except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent))
-    
+
     try:
         from structured_logger import StructuredLogger
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         StructuredLogger = Mock
 
 from typing import Dict, Any
@@ -45,10 +47,7 @@ class LogManager:
 
     def get_all_stats(self) -> Dict[str, Any]:
         """모든 로거의 통계 조회"""
-        return {
-            name: logger.get_log_stats() 
-            for name, logger in self.loggers.items()
-        }
+        return {name: logger.get_log_stats() for name, logger in self.loggers.items()}
 
     def search_all_logs(self, query: str, limit: int = 100) -> Dict[str, list]:
         """모든 로거에서 로그 검색"""
@@ -77,10 +76,10 @@ if __name__ == "__main__":
     try:
         manager1 = LogManager()
         manager2 = LogManager()
-        
+
         if manager1 is not manager2:
             all_validation_failures.append("Singleton test: Multiple instances created")
-        if not hasattr(manager1, 'loggers'):
+        if not hasattr(manager1, "loggers"):
             all_validation_failures.append("Singleton test: Missing loggers attribute")
     except Exception as e:
         all_validation_failures.append(f"Singleton test: Failed - {e}")
@@ -90,14 +89,18 @@ if __name__ == "__main__":
     try:
         manager = LogManager()
         test_logger = manager.get_logger("test")
-        
+
         if "test" not in manager.loggers:
-            all_validation_failures.append("Logger creation: Logger not stored in manager")
-        
+            all_validation_failures.append(
+                "Logger creation: Logger not stored in manager"
+            )
+
         # Should return same instance on second call
         test_logger2 = manager.get_logger("test")
         if test_logger is not test_logger2:
-            all_validation_failures.append("Logger creation: Different instances returned")
+            all_validation_failures.append(
+                "Logger creation: Different instances returned"
+            )
     except Exception as e:
         all_validation_failures.append(f"Logger creation test: Failed - {e}")
 
@@ -106,7 +109,9 @@ if __name__ == "__main__":
     try:
         global_logger = get_logger("global_test")
         if not callable(get_logger):
-            all_validation_failures.append("Global function test: get_logger not callable")
+            all_validation_failures.append(
+                "Global function test: get_logger not callable"
+            )
     except Exception as e:
         all_validation_failures.append(f"Global function test: Failed - {e}")
 

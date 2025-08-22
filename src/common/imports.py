@@ -31,6 +31,7 @@ from flask import (
     url_for,
 )
 import logging
+
 logger = logging.getLogger(__name__)
 
 # Project-specific imports (conditional)

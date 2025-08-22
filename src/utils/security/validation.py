@@ -13,14 +13,13 @@ Expected output: validated/sanitized input, security headers
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 import re
 import secrets
 from functools import wraps
 from typing import Any, Callable, Dict
-
-
 
 
 class ValidationManager:

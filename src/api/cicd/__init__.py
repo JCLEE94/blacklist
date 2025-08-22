@@ -8,6 +8,7 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify
 import logging
+
 logger = logging.getLogger(__name__)
 
 # Create the CI/CD monitoring blueprint

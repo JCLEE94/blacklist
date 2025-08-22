@@ -3,10 +3,9 @@ Web UI routes for Blacklist Manager - New Modular Version
 Updated to use modular structure instead of a single large file
 """
 
-
-
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .api_routes import api_bp

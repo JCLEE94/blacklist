@@ -17,6 +17,7 @@ except ImportError:
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         Blueprint = Mock()
         jsonify = Mock()
 
@@ -26,7 +27,7 @@ handlers_bp = Blueprint("monitoring_handlers", __name__)
 
 def register_error_handlers(blueprint):
     """블루프린트에 공통 에러 핸들러 등록"""
-    
+
     @blueprint.errorhandler(400)
     def bad_request(error):
         return jsonify({"success": False, "error": "Invalid request data"}), 400
@@ -43,7 +44,10 @@ def register_error_handlers(blueprint):
     def rate_limit_exceeded(error):
         return (
             jsonify(
-                {"success": False, "error": "Rate limit exceeded. Please try again later."}
+                {
+                    "success": False,
+                    "error": "Rate limit exceeded. Please try again later.",
+                }
             ),
             429,
         )
@@ -71,7 +75,9 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         if not callable(register_error_handlers):
-            all_validation_failures.append("Function test: register_error_handlers not callable")
+            all_validation_failures.append(
+                "Function test: register_error_handlers not callable"
+            )
     except Exception as e:
         all_validation_failures.append(f"Function test: Failed - {e}")
 
@@ -82,20 +88,23 @@ if __name__ == "__main__":
         class MockBlueprint:
             def __init__(self):
                 self.error_handlers = {}
-            
+
             def errorhandler(self, code):
                 def decorator(func):
                     self.error_handlers[code] = func
                     return func
+
                 return decorator
-        
+
         mock_bp = MockBlueprint()
         register_error_handlers(mock_bp)
-        
+
         expected_codes = [400, 401, 403, 429, 500]
         for code in expected_codes:
             if code not in mock_bp.error_handlers:
-                all_validation_failures.append(f"Error handler registration: Missing handler for {code}")
+                all_validation_failures.append(
+                    f"Error handler registration: Missing handler for {code}"
+                )
     except Exception as e:
         all_validation_failures.append(f"Error handler registration test: Failed - {e}")
 

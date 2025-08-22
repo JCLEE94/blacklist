@@ -12,14 +12,13 @@ Expected output: rate limit status, blocked IPs
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 import time
 from collections import defaultdict, deque
 from functools import wraps
 from typing import Callable, Dict
-
-
 
 
 class RateLimitManager:

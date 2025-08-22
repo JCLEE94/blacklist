@@ -6,7 +6,7 @@ metadata:
   labels:
     app: blacklist
     component: application
-    version: v1.3.4
+    version: v1.3.6
 spec:
   replicas: 3
   strategy:
@@ -23,7 +23,7 @@ spec:
       labels:
         app: blacklist
         component: application
-        version: v1.3.4
+        version: v1.3.6
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "2542"

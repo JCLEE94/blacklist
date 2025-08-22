@@ -41,7 +41,7 @@ class PipelineStage:
     def run(self) -> bool:
         """Execute stage (default implementation)"""
         logger.info(f"Executing stage: {self.name}")
-        
+
         # Default successful execution
         # Subclasses should override this method for specific functionality
         return True

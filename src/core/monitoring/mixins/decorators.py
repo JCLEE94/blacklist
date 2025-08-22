@@ -6,10 +6,10 @@ HTTP 요청 및 데이터 수집 작업 추적을 위한 데코레이터들을 �
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 import time
-
 
 
 def track_http_requests(func):
@@ -20,7 +20,7 @@ def track_http_requests(func):
 
         try:
             # Flask request context에서 정보 추출
-            
+
             method = request.method
             endpoint = request.endpoint or "unknown"
 
@@ -42,7 +42,7 @@ def track_http_requests(func):
             duration = time.time() - start_time
 
             try:
-                
+
                 method = request.method
                 endpoint = request.endpoint or "unknown"
 

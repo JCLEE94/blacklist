@@ -34,6 +34,7 @@ try:
 except ImportError:
     import sys
     import os
+
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from credential_encryption import CredentialEncryption
     from credential_info import CredentialInfo
@@ -57,12 +58,12 @@ class CredentialManager:
         """
         self.config_file = config_file or "instance/credentials.json"
         self.enable_encryption = enable_encryption
-        
+
         # 구성 요소 초기화
         self.storage = CredentialStorage(self.config_file, enable_encryption)
         self.validator = CredentialValidator()
         self.encryption = CredentialEncryption() if enable_encryption else None
-        
+
         # 자격증명 로드
         self.credentials = self.storage.load_credentials()
 
@@ -215,7 +216,7 @@ class CredentialManager:
         credential = self.get_credential(service)
         if not credential:
             return ["자격증명이 존재하지 않습니다."]
-        
+
         return self.validator.suggest_improvements(service, credential)
 
     def check_strength(self, service: str) -> Dict[str, Any]:
@@ -223,7 +224,7 @@ class CredentialManager:
         credential = self.get_credential(service)
         if not credential:
             return {"error": "자격증명이 존재하지 않습니다."}
-        
+
         return self.validator.check_credential_strength(credential)
 
 
@@ -275,42 +276,40 @@ def setup_default_credentials():
 if __name__ == "__main__":
     import sys
     import tempfile
-    
+
     # 실제 데이터로 검증
     all_validation_failures = []
     total_tests = 0
-    
+
     # 임시 디렉터리 생성
     with tempfile.TemporaryDirectory() as temp_dir:
         test_config_file = f"{temp_dir}/test_credentials.json"
-        
+
         # 테스트 1: 관리자 초기화
         total_tests += 1
         try:
             manager = CredentialManager(test_config_file, enable_encryption=False)
-            if not hasattr(manager, 'storage') or not hasattr(manager, 'validator'):
+            if not hasattr(manager, "storage") or not hasattr(manager, "validator"):
                 all_validation_failures.append("관리자 초기화: 필수 구성 요소 누락")
         except Exception as e:
             all_validation_failures.append(f"관리자 초기화 오류: {e}")
-        
+
         # 테스트 2: 자격증명 추가/조회
         total_tests += 1
         try:
             success = manager.add_credential(
-                service="test_service",
-                username="test_user",
-                password="test_pass"
+                service="test_service", username="test_user", password="test_pass"
             )
-            
+
             if not success:
                 all_validation_failures.append("자격증명 추가 실패")
-            
+
             credential = manager.get_credential("test_service")
             if not credential or credential.username != "test_user":
                 all_validation_failures.append("자격증명 조회 실패")
         except Exception as e:
             all_validation_failures.append(f"자격증명 추가/조회 오류: {e}")
-        
+
         # 테스트 3: 자격증명 검증
         total_tests += 1
         try:
@@ -319,7 +318,7 @@ if __name__ == "__main__":
                 all_validation_failures.append("자격증명 검증 실패")
         except Exception as e:
             all_validation_failures.append(f"자격증명 검증 오류: {e}")
-        
+
         # 테스트 4: 상태 보고서
         total_tests += 1
         try:
@@ -328,7 +327,7 @@ if __name__ == "__main__":
                 all_validation_failures.append("상태 보고서: 자격증명이 없음")
         except Exception as e:
             all_validation_failures.append(f"상태 보고서 오류: {e}")
-        
+
         # 테스트 5: 전역 관리자
         total_tests += 1
         try:
@@ -337,14 +336,18 @@ if __name__ == "__main__":
                 all_validation_failures.append("전역 관리자 타입 오류")
         except Exception as e:
             all_validation_failures.append(f"전역 관리자 오류: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("CredentialManager module is validated and ready for use")
         sys.exit(0)

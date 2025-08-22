@@ -4,6 +4,7 @@ Cache Decorators - Unified caching functionality
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 import hashlib
@@ -12,7 +13,6 @@ from typing import Callable, Optional
 
 
 from .registry import get_registry
-
 
 
 def unified_cache(

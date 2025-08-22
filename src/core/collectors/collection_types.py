@@ -117,12 +117,12 @@ class CollectionResult:
         result["duration"] = self.duration
         result["success_rate"] = self.success_rate
         result["items_per_second"] = self.items_per_second
-        
+
         if self.start_time:
             result["start_time"] = self.start_time.isoformat()
         if self.end_time:
             result["end_time"] = self.end_time.isoformat()
-            
+
         return result
 
     def is_successful(self) -> bool:
@@ -194,20 +194,20 @@ class CollectionStats:
     def update_from_result(self, result: CollectionResult):
         """수집 결과로 통계 업데이트"""
         self.total_collections += 1
-        
+
         if result.status == CollectionStatus.COMPLETED:
             self.successful_collections += 1
         elif result.status == CollectionStatus.FAILED:
             self.failed_collections += 1
         elif result.status == CollectionStatus.CANCELLED:
             self.cancelled_collections += 1
-            
+
         self.total_items_collected += result.collected_count
         self.total_errors += result.error_count
-        
+
         if result.end_time:
             self.last_collection_time = result.end_time
-            
+
         # 평균 계산 업데이트
         self._update_averages(result)
 
@@ -217,14 +217,14 @@ class CollectionStats:
             # 누적 평균 계산
             if result.duration:
                 self.average_duration = (
-                    (self.average_duration * (self.total_collections - 1) + result.duration)
-                    / self.total_collections
-                )
-            
+                    self.average_duration * (self.total_collections - 1)
+                    + result.duration
+                ) / self.total_collections
+
             self.average_success_rate = (
-                (self.average_success_rate * (self.total_collections - 1) + result.success_rate)
-                / self.total_collections
-            )
+                self.average_success_rate * (self.total_collections - 1)
+                + result.success_rate
+            ) / self.total_collections
 
     @property
     def success_rate(self) -> float:
@@ -245,118 +245,127 @@ class CollectionStats:
 if __name__ == "__main__":
     import sys
     from datetime import datetime, timedelta
-    
+
     # 실제 데이터로 검증
     all_validation_failures = []
     total_tests = 0
-    
+
     # 테스트 1: CollectionResult 기본 기능
     total_tests += 1
     try:
         result = CollectionResult(
             source_name="test_source",
             status=CollectionStatus.RUNNING,
-            start_time=datetime.now()
+            start_time=datetime.now(),
         )
-        
+
         result.collected_count = 100
         result.error_count = 5
         result.end_time = datetime.now() + timedelta(seconds=30)
-        
+
         if result.duration is None or result.duration <= 0:
             all_validation_failures.append("CollectionResult duration 계산 오류")
-        
+
         expected_rate = 100 / (100 + 5) * 100  # 95.238...
         if abs(result.success_rate - expected_rate) > 0.01:  # 부동소수점 허용 오차
-            all_validation_failures.append(f"CollectionResult success_rate: 예상 {expected_rate:.2f}, 실제 {result.success_rate:.2f}")
-            
+            all_validation_failures.append(
+                f"CollectionResult success_rate: 예상 {expected_rate:.2f}, 실제 {result.success_rate:.2f}"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"CollectionResult 기본 기능 오류: {e}")
-    
+
     # 테스트 2: CollectionConfig 설정 관리
     total_tests += 1
     try:
         config = CollectionConfig(
-            enabled=True,
-            interval=1800,
-            priority=CollectionPriority.HIGH
+            enabled=True, interval=1800, priority=CollectionPriority.HIGH
         )
-        
+
         config.update_setting("custom_key", "custom_value")
         retrieved_value = config.get_setting("custom_key")
-        
+
         if retrieved_value != "custom_value":
-            all_validation_failures.append(f"CollectionConfig 설정: 예상 'custom_value', 실제 '{retrieved_value}'")
-            
+            all_validation_failures.append(
+                f"CollectionConfig 설정: 예상 'custom_value', 실제 '{retrieved_value}'"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"CollectionConfig 설정 관리 오류: {e}")
-    
+
     # 테스트 3: CollectionStats 통계 업데이트
     total_tests += 1
     try:
         stats = CollectionStats()
-        
+
         # 성공 결과 추가
         success_result = CollectionResult(
             source_name="test",
             status=CollectionStatus.COMPLETED,
             collected_count=50,
             start_time=datetime.now(),
-            end_time=datetime.now() + timedelta(seconds=10)
+            end_time=datetime.now() + timedelta(seconds=10),
         )
-        
+
         stats.update_from_result(success_result)
-        
+
         if stats.total_collections != 1:
-            all_validation_failures.append(f"CollectionStats total_collections: 예상 1, 실제 {stats.total_collections}")
-        
+            all_validation_failures.append(
+                f"CollectionStats total_collections: 예상 1, 실제 {stats.total_collections}"
+            )
+
         if stats.successful_collections != 1:
-            all_validation_failures.append(f"CollectionStats successful_collections: 예상 1, 실제 {stats.successful_collections}")
-            
+            all_validation_failures.append(
+                f"CollectionStats successful_collections: 예상 1, 실제 {stats.successful_collections}"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"CollectionStats 통계 업데이트 오류: {e}")
-    
+
     # 테스트 4: 상태 변환 및 직렬화
     total_tests += 1
     try:
         result_dict = result.to_dict()
-        
+
         if "status" not in result_dict or result_dict["status"] != "running":
             all_validation_failures.append("상태 변환: status 필드 오류")
-        
+
         if "duration" not in result_dict:
             all_validation_failures.append("상태 변환: duration 필드 누락")
-            
+
     except Exception as e:
         all_validation_failures.append(f"상태 변환 오류: {e}")
-    
+
     # 테스트 5: 에러 및 경고 관리
     total_tests += 1
     try:
         test_result = CollectionResult(
-            source_name="error_test",
-            status=CollectionStatus.FAILED
+            source_name="error_test", status=CollectionStatus.FAILED
         )
-        
+
         test_result.add_error("테스트 에러")
         test_result.add_warning("테스트 경고")
-        
+
         if not test_result.has_errors():
             all_validation_failures.append("에러 관리: has_errors() 오류")
-        
+
         if not test_result.has_warnings():
             all_validation_failures.append("경고 관리: has_warnings() 오류")
-            
+
     except Exception as e:
         all_validation_failures.append(f"에러/경고 관리 오류: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Collection types module is validated and ready for use")
         sys.exit(0)

@@ -1,5 +1,6 @@
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 #!/usr/bin/env python3
@@ -7,7 +8,6 @@ logger = logging.getLogger(__name__)
 DB 기반 설정 관리 API 엔드포인트
 대량 설정 업데이트, 개별 설정 관리, 설정 리셋 기능
 """
-
 
 
 api_settings_bp = Blueprint("api_settings", __name__)

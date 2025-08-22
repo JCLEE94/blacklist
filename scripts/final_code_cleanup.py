@@ -21,13 +21,13 @@ class FinalCodeCleanup:
         self.project_root = Path(project_root)
         self.src_path = self.project_root / "src"
         self.cleanup_log = []
-        
+
     def log_action(self, action: str, details: str = ""):
         """Log cleanup actions"""
         log_entry = f"{action}: {details}" if details else action
         self.cleanup_log.append(log_entry)
         print(f"  ✓ {log_entry}")
-    
+
     def remove_dead_files(self) -> int:
         """Remove confirmed dead files"""
         dead_files = [
@@ -37,7 +37,7 @@ class FinalCodeCleanup:
             "src/utils/memory/bulk_processor.py",
             # Only remove files that are definitely unused
         ]
-        
+
         removed_count = 0
         for file_path in dead_files:
             full_path = self.project_root / file_path
@@ -45,13 +45,13 @@ class FinalCodeCleanup:
                 # Create backup before removal
                 backup_path = full_path.with_suffix(f"{full_path.suffix}.backup")
                 shutil.copy2(full_path, backup_path)
-                
+
                 full_path.unlink()
                 removed_count += 1
                 self.log_action("Removed dead file", file_path)
-        
+
         return removed_count
-    
+
     def fix_unused_variables(self) -> int:
         """Fix specific unused variable issues"""
         fixes = {
@@ -66,32 +66,32 @@ class FinalCodeCleanup:
             ],
             "src/utils/cicd_fix_strategies.py": [
                 (r"(\s+)npm_fixes = (.+)\n", r"\1_ = \2  # npm fixes (unused)\n")
-            ]
+            ],
         }
-        
+
         fixed_count = 0
         for file_path, patterns in fixes.items():
             full_path = self.project_root / file_path
             if full_path.exists():
                 try:
-                    with open(full_path, 'r') as f:
+                    with open(full_path, "r") as f:
                         content = f.read()
-                    
+
                     original_content = content
                     for pattern, replacement in patterns:
                         content = re.sub(pattern, replacement, content)
-                    
+
                     if content != original_content:
-                        with open(full_path, 'w') as f:
+                        with open(full_path, "w") as f:
                             f.write(content)
                         fixed_count += 1
                         self.log_action("Fixed unused variables", file_path)
-                        
+
                 except Exception as e:
                     print(f"  ⚠️ Failed to fix {file_path}: {e}")
-        
+
         return fixed_count
-    
+
     def consolidate_cache_backends(self) -> bool:
         """Create unified cache interface"""
         try:
@@ -316,97 +316,99 @@ if __name__ == "__main__":
         print("Unified cache backend is validated and ready for use")
         sys.exit(0)
 '''
-            
-            unified_path = self.src_path / "utils" / "advanced_cache" / "unified_backend.py"
-            with open(unified_path, 'w') as f:
+
+            unified_path = (
+                self.src_path / "utils" / "advanced_cache" / "unified_backend.py"
+            )
+            with open(unified_path, "w") as f:
                 f.write(unified_cache_content)
-            
-            self.log_action("Created unified cache backend", str(unified_path.relative_to(self.project_root)))
+
+            self.log_action(
+                "Created unified cache backend",
+                str(unified_path.relative_to(self.project_root)),
+            )
             return True
-            
+
         except Exception as e:
             print(f"  ⚠️ Failed to create unified cache backend: {e}")
             return False
-    
+
     def create_cncf_structure(self) -> bool:
         """Create CNCF-compliant directory structure"""
         try:
             cncf_dirs = [
-                "api",          # API definitions
-                "cmd",          # Main applications
-                "internal",     # Private application code
-                "pkg",          # Library code for external use
-                "build",        # Packaging and CI
+                "api",  # API definitions
+                "cmd",  # Main applications
+                "internal",  # Private application code
+                "pkg",  # Library code for external use
+                "build",  # Packaging and CI
                 "deployments",  # System and container orchestration
-                "test",         # Additional external test apps and test data
-                "docs",         # Design and user documents
-                "hack",         # Scripts
-                "charts",       # Helm charts
+                "test",  # Additional external test apps and test data
+                "docs",  # Design and user documents
+                "hack",  # Scripts
+                "charts",  # Helm charts
             ]
-            
+
             created_count = 0
             for dir_name in cncf_dirs:
                 dir_path = self.project_root / dir_name
                 if not dir_path.exists():
                     dir_path.mkdir()
-                    
+
                     # Create .gitkeep to ensure directory is tracked
                     gitkeep_path = dir_path / ".gitkeep"
                     gitkeep_path.touch()
-                    
+
                     created_count += 1
                     self.log_action("Created CNCF directory", dir_name)
-            
+
             return created_count > 0
-            
+
         except Exception as e:
             print(f"  ⚠️ Failed to create CNCF structure: {e}")
             return False
-    
+
     def generate_summary(self) -> Dict:
         """Generate cleanup summary"""
-        return {
-            "actions_performed": len(self.cleanup_log),
-            "log": self.cleanup_log
-        }
-    
+        return {"actions_performed": len(self.cleanup_log), "log": self.cleanup_log}
+
     def run_cleanup(self) -> Dict:
         """Run complete cleanup process"""
         print("🧹 FINAL CODE CLEANUP")
         print("=" * 50)
-        
+
         # 1. Remove dead files
         print("\n🗑️ Removing dead files...")
         removed_files = self.remove_dead_files()
-        
+
         # 2. Fix unused variables
         print("\n🔧 Fixing unused variables...")
         fixed_variables = self.fix_unused_variables()
-        
+
         # 3. Consolidate cache backends
         print("\n🔄 Consolidating cache backends...")
         cache_consolidated = self.consolidate_cache_backends()
-        
+
         # 4. Create CNCF structure
         print("\n📁 Creating CNCF-compliant structure...")
         cncf_created = self.create_cncf_structure()
-        
+
         return {
             "removed_files": removed_files,
             "fixed_variables": fixed_variables,
             "cache_consolidated": cache_consolidated,
             "cncf_created": cncf_created,
-            "summary": self.generate_summary()
+            "summary": self.generate_summary(),
         }
 
 
 def main():
     project_root = os.getcwd()
     cleanup = FinalCodeCleanup(project_root)
-    
+
     try:
         results = cleanup.run_cleanup()
-        
+
         print()
         print("✅ CLEANUP SUMMARY")
         print("=" * 50)
@@ -415,7 +417,7 @@ def main():
         print(f"🔄 Cache Consolidated: {'✓' if results['cache_consolidated'] else '✗'}")
         print(f"📁 CNCF Structure: {'✓' if results['cncf_created'] else '✗'}")
         print(f"📋 Total Actions: {results['summary']['actions_performed']}")
-        
+
         print()
         print("🎯 COMPLETED IMPROVEMENTS:")
         print("  - Removed dead/unused files")
@@ -423,17 +425,18 @@ def main():
         print("  - Consolidated duplicate cache backends")
         print("  - Created CNCF-compliant project structure")
         print("  - Enhanced code maintainability")
-        
+
         print()
         print("🔄 NEXT STEPS:")
         print("  - Run tests to verify functionality: python -m pytest")
         print("  - Update imports to use common modules")
         print("  - Review and commit changes")
         print("  - Update documentation")
-        
+
     except Exception as e:
         print(f"❌ Error during cleanup: {e}")
         import traceback
+
         traceback.print_exc()
 
 

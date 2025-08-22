@@ -14,7 +14,7 @@ Expected output: Provides HTML template string for dashboard rendering
 """
 
 # HTML Dashboard Template
-DASHBOARD_TEMPLATE = '''
+DASHBOARD_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -406,26 +406,28 @@ DASHBOARD_TEMPLATE = '''
     </script>
 </body>
 </html>
-'''
+"""
 
 
 if __name__ == "__main__":
     # Validation test for template module
     import sys
-    
+
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Template is a non-empty string
     total_tests += 1
     try:
         if isinstance(DASHBOARD_TEMPLATE, str) and len(DASHBOARD_TEMPLATE) > 1000:
             pass  # Test passed
         else:
-            all_validation_failures.append(f"Invalid dashboard template: {type(DASHBOARD_TEMPLATE)}, length: {len(DASHBOARD_TEMPLATE)}")
+            all_validation_failures.append(
+                f"Invalid dashboard template: {type(DASHBOARD_TEMPLATE)}, length: {len(DASHBOARD_TEMPLATE)}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Dashboard template validation failed: {e}")
-    
+
     # Test 2: Template contains required elements
     total_tests += 1
     try:
@@ -434,28 +436,30 @@ if __name__ == "__main__":
             "<title>Blacklist Deployment Dashboard</title>",
             "socket.io",
             "chart.js",
-            "<canvas id=\"responseTimeChart\"></canvas>",
-            "<canvas id=\"resourceChart\"></canvas>"
+            '<canvas id="responseTimeChart"></canvas>',
+            '<canvas id="resourceChart"></canvas>',
         ]
-        
+
         missing_elements = []
         for element in required_elements:
             if element not in DASHBOARD_TEMPLATE:
                 missing_elements.append(element)
-        
+
         if not missing_elements:
             pass  # Test passed
         else:
-            all_validation_failures.append(f"Missing required template elements: {missing_elements}")
+            all_validation_failures.append(
+                f"Missing required template elements: {missing_elements}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Template element validation failed: {e}")
-    
+
     # Test 3: Template has valid HTML structure
     total_tests += 1
     try:
         # Basic HTML structure validation
         html_tags = ["<html", "<head>", "<body>", "</html>", "</head>", "</body>"]
-        
+
         for tag in html_tags:
             if tag not in DASHBOARD_TEMPLATE:
                 all_validation_failures.append(f"Missing HTML tag: {tag}")
@@ -464,14 +468,18 @@ if __name__ == "__main__":
             pass  # Test passed
     except Exception as e:
         all_validation_failures.append(f"HTML structure validation failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("Dashboard template module is validated and ready for use")
         sys.exit(0)

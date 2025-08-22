@@ -22,7 +22,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Analytics Service", description="블랙리스트 분석 및 통계 전용 마이크로서비스", version="1.0.0"
+    title="Analytics Service",
+    description="블랙리스트 분석 및 통계 전용 마이크로서비스",
+    version="1.0.0",
 )
 
 # CORS 설정

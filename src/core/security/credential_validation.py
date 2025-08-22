@@ -29,6 +29,7 @@ try:
 except ImportError:
     import sys
     import os
+
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from credential_info import CredentialInfo
 
@@ -46,7 +47,9 @@ class CredentialValidator:
             "api": self._validate_api_credential,
         }
 
-    def validate_credential(self, service: str, credential: CredentialInfo) -> Dict[str, Any]:
+    def validate_credential(
+        self, service: str, credential: CredentialInfo
+    ) -> Dict[str, Any]:
         """자격증명 유효성 검증"""
         if not credential:
             return {"valid": False, "error": "자격증명이 없습니다."}
@@ -85,7 +88,9 @@ class CredentialValidator:
 
         return validation_result
 
-    def _validate_regtech_credential(self, credential: CredentialInfo) -> Dict[str, Any]:
+    def _validate_regtech_credential(
+        self, credential: CredentialInfo
+    ) -> Dict[str, Any]:
         """REGTECH 자격증명 유효성 검증"""
         validation = {"warnings": []}
 
@@ -99,35 +104,29 @@ class CredentialValidator:
         else:
             # 사용자 ID 형식 검증
             if len(credential.username) < 3:
-                validation["warnings"].append(
-                    "REGTECH 사용자 ID가 너무 짧습니다."
-                )
+                validation["warnings"].append("REGTECH 사용자 ID가 너무 짧습니다.")
 
         # 패스워드 복잡성 검증
         password = credential.password
         if len(password) < 8:
-            validation["warnings"].append(
-                "REGTECH 패스워드가 너무 짧을 수 있습니다."
-            )
+            validation["warnings"].append("REGTECH 패스워드가 너무 짧을 수 있습니다.")
 
         # 특수 문자 포함 검증
         if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-            validation["warnings"].append(
-                "REGTECH 패스워드에 특수문자가 없습니다."
-            )
+            validation["warnings"].append("REGTECH 패스워드에 특수문자가 없습니다.")
 
         return validation
 
-    def _validate_secudium_credential(self, credential: CredentialInfo) -> Dict[str, Any]:
+    def _validate_secudium_credential(
+        self, credential: CredentialInfo
+    ) -> Dict[str, Any]:
         """SECUDIUM 자격증명 유효성 검증"""
         validation = {"warnings": []}
 
         # 사용자명 형식 검증
         username = credential.username
         if len(username) < 4:
-            validation["warnings"].append(
-                "SECUDIUM 사용자명이 너무 짧습니다."
-            )
+            validation["warnings"].append("SECUDIUM 사용자명이 너무 짧습니다.")
 
         # 한글 포함 검증
         if re.search(r"[\u3131-\u3163\uac00-\ud7a3]", username):
@@ -138,9 +137,7 @@ class CredentialValidator:
         # 패스워드 복잡성 검증
         password = credential.password
         if len(password) < 8:
-            validation["warnings"].append(
-                "SECUDIUM 패스워드가 너무 짧을 수 있습니다."
-            )
+            validation["warnings"].append("SECUDIUM 패스워드가 너무 짧을 수 있습니다.")
 
         # 대소문자 복합 검증
         if not (re.search(r"[a-z]", password) and re.search(r"[A-Z]", password)):
@@ -165,17 +162,15 @@ class CredentialValidator:
         if password.startswith("blk_"):
             # Blacklist API 키 형식
             if len(password) < 20:
-                validation["warnings"].append(
-                    "API 키가 너무 짧습니다."
-                )
+                validation["warnings"].append("API 키가 너무 짧습니다.")
         elif len(password) < 16:
-            validation["warnings"].append(
-                "API 패스워드가 너무 짧습니다."
-            )
+            validation["warnings"].append("API 패스워드가 너무 짧습니다.")
 
         return validation
 
-    def generate_status_report(self, credentials: Dict[str, CredentialInfo]) -> Dict[str, Any]:
+    def generate_status_report(
+        self, credentials: Dict[str, CredentialInfo]
+    ) -> Dict[str, Any]:
         """자격증명 상태 보고서 생성"""
         report = {
             "total_credentials": len(credentials),
@@ -192,7 +187,7 @@ class CredentialValidator:
 
         for service, credential in credentials.items():
             validation_result = self.validate_credential(service, credential)
-            
+
             service_info = {
                 "service": service,
                 "username": credential.username,
@@ -280,71 +275,73 @@ class CredentialValidator:
             "max_score": 100,
         }
 
-    def suggest_improvements(self, service: str, credential: CredentialInfo) -> List[str]:
+    def suggest_improvements(
+        self, service: str, credential: CredentialInfo
+    ) -> List[str]:
         """자격증명 개선 제안"""
         suggestions = []
         validation_result = self.validate_credential(service, credential)
-        
+
         # 검증 오류 개선
         if not validation_result["valid"]:
             suggestions.append(f"오류 해결: {validation_result.get('error', '')}")
-        
+
         # 경고 개선
         for warning in validation_result.get("warnings", []):
             suggestions.append(f"경고 해결: {warning}")
-        
+
         # 강도 개선
         strength = self.check_credential_strength(credential)
         if strength["score"] < 60:
             suggestions.extend([f"강도 개선: {fb}" for fb in strength["feedback"]])
-        
+
         # 만료 가능성 개선
         if credential.expires_soon():
             suggestions.append("자격증명 갱신을 고려하세요.")
-        
+
         return suggestions
 
 
 if __name__ == "__main__":
     import sys
     from datetime import datetime, timedelta
-    
+
     # 실제 데이터로 검증
     all_validation_failures = []
     total_tests = 0
-    
+
     validator = CredentialValidator()
-    
+
     # 테스트 1: REGTECH 자격증명 검증
     total_tests += 1
     try:
         regtech_cred = CredentialInfo(
-            service="regtech",
-            username="test@example.com",
-            password="Test123!@#"
+            service="regtech", username="test@example.com", password="Test123!@#"
         )
         result = validator.validate_credential("regtech", regtech_cred)
-        
+
         if not result["valid"]:
-            all_validation_failures.append(f"REGTECH 검증: 예상 valid=True, 실제 valid={result['valid']}")
+            all_validation_failures.append(
+                f"REGTECH 검증: 예상 valid=True, 실제 valid={result['valid']}"
+            )
     except Exception as e:
         all_validation_failures.append(f"REGTECH 검증 오류: {e}")
-    
+
     # 테스트 2: SECUDIUM 자격증명 검증
     total_tests += 1
     try:
         secudium_cred = CredentialInfo(
-            service="secudium",
-            username="testuser",
-            password="SecurePass1"
+            service="secudium", username="testuser", password="SecurePass1"
         )
         result = validator.validate_credential("secudium", secudium_cred)
-        
+
         if not result["valid"]:
-            all_validation_failures.append(f"SECUDIUM 검증: 예상 valid=True, 실제 valid={result['valid']}")
+            all_validation_failures.append(
+                f"SECUDIUM 검증: 예상 valid=True, 실제 valid={result['valid']}"
+            )
     except Exception as e:
         all_validation_failures.append(f"SECUDIUM 검증 오류: {e}")
-    
+
     # 테스트 3: 만료된 자격증명 검증
     total_tests += 1
     try:
@@ -352,46 +349,51 @@ if __name__ == "__main__":
             service="test",
             username="expired_user",
             password="password",
-            expires_at=datetime.now() - timedelta(days=1)
+            expires_at=datetime.now() - timedelta(days=1),
         )
         result = validator.validate_credential("test", expired_cred)
-        
+
         if result["valid"]:
-            all_validation_failures.append("만료 검증: 만료된 자격증명이 valid=True로 판정됨")
+            all_validation_failures.append(
+                "만료 검증: 만료된 자격증명이 valid=True로 판정됨"
+            )
     except Exception as e:
         all_validation_failures.append(f"만료 검증 오류: {e}")
-    
+
     # 테스트 4: 상태 보고서 생성
     total_tests += 1
     try:
-        credentials = {
-            "regtech": regtech_cred,
-            "secudium": secudium_cred
-        }
+        credentials = {"regtech": regtech_cred, "secudium": secudium_cred}
         report = validator.generate_status_report(credentials)
-        
+
         if report["total_credentials"] != 2:
-            all_validation_failures.append(f"상태 보고서: 예상 total=2, 실제 total={report['total_credentials']}")
+            all_validation_failures.append(
+                f"상태 보고서: 예상 total=2, 실제 total={report['total_credentials']}"
+            )
     except Exception as e:
         all_validation_failures.append(f"상태 보고서 오류: {e}")
-    
+
     # 테스트 5: 자격증명 강도 검사
     total_tests += 1
     try:
         strength = validator.check_credential_strength(regtech_cred)
-        
+
         if "score" not in strength or "level" not in strength:
             all_validation_failures.append("강도 검사: score 또는 level 필드 누락")
     except Exception as e:
         all_validation_failures.append(f"강도 검사 오류: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("CredentialValidator module is validated and ready for use")
         sys.exit(0)

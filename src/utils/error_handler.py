@@ -76,7 +76,7 @@ try:
 
 except ImportError:
     # 모듈화된 구조를 불러올 수 없는 경우 기본 구현 사용
-        from typing import Dict, Optional
+    from typing import Dict, Optional
 
     
     class BaseError(Exception):

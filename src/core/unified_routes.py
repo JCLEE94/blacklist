@@ -4,10 +4,9 @@
 분리된 모듈들에서 블루프린트를 가져와서 등록
 """
 
-
-
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .routes.admin_routes import admin_routes_bp

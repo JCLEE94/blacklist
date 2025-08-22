@@ -17,25 +17,27 @@ try:
         BufferHandler,
         LogManager,
         get_logger,
-        setup_request_logging
+        setup_request_logging,
     )
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent))
-    
+
     try:
         from structured_logs import (
             StructuredLogger,
             BufferHandler,
             LogManager,
             get_logger,
-            setup_request_logging
+            setup_request_logging,
         )
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         StructuredLogger = Mock()
         BufferHandler = Mock()
         LogManager = Mock()
@@ -56,10 +58,18 @@ if __name__ == "__main__":
     # Test 1: Core imports
     total_tests += 1
     try:
-        core_components = [StructuredLogger, BufferHandler, LogManager, get_logger, setup_request_logging]
+        core_components = [
+            StructuredLogger,
+            BufferHandler,
+            LogManager,
+            get_logger,
+            setup_request_logging,
+        ]
         for component in core_components:
             if component is None:
-                all_validation_failures.append(f"Import test: {component.__name__ if hasattr(component, '__name__') else str(component)} not imported")
+                all_validation_failures.append(
+                    f"Import test: {component.__name__ if hasattr(component, '__name__') else str(component)} not imported"
+                )
     except Exception as e:
         all_validation_failures.append(f"Import test: Failed - {e}")
 
@@ -68,13 +78,15 @@ if __name__ == "__main__":
     try:
         # Test that we can get a logger
         test_logger = get_logger("test_consolidated")
-        
+
         # Test basic logging functionality (if not mocked)
-        if hasattr(test_logger, 'info') and callable(test_logger.info):
+        if hasattr(test_logger, "info") and callable(test_logger.info):
             # Logger has expected interface
             pass
-        elif 'Mock' not in str(type(test_logger)):
-            all_validation_failures.append("Logger functionality: Missing expected methods")
+        elif "Mock" not in str(type(test_logger)):
+            all_validation_failures.append(
+                "Logger functionality: Missing expected methods"
+            )
     except Exception as e:
         all_validation_failures.append(f"Logger functionality test: Failed - {e}")
 
@@ -85,12 +97,16 @@ if __name__ == "__main__":
         module_count = 3  # structured_logger, log_manager, flask_integration
         original_size = 486  # lines
         target_max_size = 500  # lines per module (CLAUDE.md requirement)
-        
+
         if module_count >= 3:
-            print(f"✅ Successfully split {original_size}-line file into {module_count} focused modules")
+            print(
+                f"✅ Successfully split {original_size}-line file into {module_count} focused modules"
+            )
             print("✅ Each module now complies with 500-line limit requirement")
         else:
-            all_validation_failures.append("Split validation: Insufficient module split")
+            all_validation_failures.append(
+                "Split validation: Insufficient module split"
+            )
     except Exception as e:
         all_validation_failures.append(f"Split validation: Failed - {e}")
 
@@ -107,5 +123,7 @@ if __name__ == "__main__":
             f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
         )
         print("Consolidated structured logging module is validated and ready for use")
-        print("File structure optimization: 486-line structured_logging.py successfully split into modular structure")
+        print(
+            "File structure optimization: 486-line structured_logging.py successfully split into modular structure"
+        )
         sys.exit(0)

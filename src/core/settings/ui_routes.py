@@ -5,6 +5,7 @@
 """
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 from datetime import datetime
@@ -91,7 +92,7 @@ def settings_management():
 @ui_settings_bp.route("/settings/regtech", methods=["GET", "POST"])
 def handle_regtech_settings():
     """REGTECH 설정 조회 및 저장 API"""
-    
+
     if request.method == "GET":
         # 설정 조회
         try:

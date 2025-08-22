@@ -32,6 +32,7 @@ try:
 except ImportError:
     import sys
     import os
+
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from collection_types import CollectionConfig, CollectionResult, CollectionStatus
 
@@ -46,7 +47,7 @@ class BaseCollector(ABC):
 
     def __init__(self, name: str, config: CollectionConfig):
         """기본 수집기 초기화
-        
+
         Args:
             name: 수집기 이름
             config: 수집 설정
@@ -54,19 +55,19 @@ class BaseCollector(ABC):
         self.name = name
         self.config = config
         self.logger = logging.getLogger(f"{__name__}.{name}")
-        
+
         # 상태 관리
         self._current_result = None
         self._is_running = False
         self._cancel_requested = False
         self._pause_requested = False
-        
+
         # 성능 추적
         self._last_execution_time = None
         self._consecutive_failures = 0
         self._circuit_breaker_open = False
         self._rate_limiter_last_call = 0.0
-        
+
         # 통계
         self._total_executions = 0
         self._successful_executions = 0
@@ -144,11 +145,11 @@ class BaseCollector(ABC):
             current_time = time.time()
             time_since_last_call = current_time - self._rate_limiter_last_call
             min_interval = 1.0 / self.config.rate_limit
-            
+
             if time_since_last_call < min_interval:
                 sleep_time = min_interval - time_since_last_call
                 await asyncio.sleep(sleep_time)
-            
+
             self._rate_limiter_last_call = time.time()
 
     async def _wait_for_resume(self):
@@ -199,7 +200,7 @@ class BaseCollector(ABC):
 
         retries = 0
         collected_data = []
-        
+
         while retries <= self.config.max_retries:
             try:
                 self.logger.info(
@@ -228,7 +229,7 @@ class BaseCollector(ABC):
                 self._current_result.collected_count = len(collected_data)
                 self._current_result.data = collected_data
                 self._current_result.end_time = datetime.now()
-                
+
                 # 성공 통계 업데이트
                 self._successful_executions += 1
                 self._consecutive_failures = 0
@@ -249,7 +250,7 @@ class BaseCollector(ABC):
                 error_msg = f"수집 타임아웃: {self.name} ({self.config.timeout}초)"
                 self.logger.error(error_msg)
                 self._current_result.add_error(error_msg)
-                
+
                 retries += 1
                 if retries <= self.config.max_retries:
                     await asyncio.sleep(self.config.retry_delay)
@@ -260,13 +261,18 @@ class BaseCollector(ABC):
                 self.logger.error(traceback.format_exc())
 
                 self._current_result.add_error(error_msg)
-                
+
                 retries += 1
                 if retries <= self.config.max_retries:
-                    await asyncio.sleep(self.config.retry_delay * (2 ** (retries - 1)))  # 지수 백오프
+                    await asyncio.sleep(
+                        self.config.retry_delay * (2 ** (retries - 1))
+                    )  # 지수 백오프
 
         # 실패 처리
-        if self._current_result.status not in [CollectionStatus.COMPLETED, CollectionStatus.CANCELLED]:
+        if self._current_result.status not in [
+            CollectionStatus.COMPLETED,
+            CollectionStatus.CANCELLED,
+        ]:
             self._current_result.status = CollectionStatus.FAILED
             self._failed_executions += 1
             self._consecutive_failures += 1
@@ -321,99 +327,118 @@ class BaseCollector(ABC):
 
 if __name__ == "__main__":
     import sys
-    
+
     # 실제 데이터로 검증
     all_validation_failures = []
     total_tests = 0
-    
+
     # 테스트용 구체 수집기 구현
     class TestCollector(BaseCollector):
         @property
         def source_type(self) -> str:
             return "test"
-        
+
         async def _collect_data(self) -> List[Any]:
             # 간단한 테스트 데이터 반환
             await asyncio.sleep(0.1)
             return ["item1", "item2", "item3"]
-    
+
     # 테스트 1: 기본 수집기 초기화
     total_tests += 1
     try:
         config = CollectionConfig(enabled=True, timeout=5)
         collector = TestCollector("test_collector", config)
-        
+
         if collector.name != "test_collector":
-            all_validation_failures.append(f"수집기 이름: 예상 'test_collector', 실제 '{collector.name}'")
-        
+            all_validation_failures.append(
+                f"수집기 이름: 예상 'test_collector', 실제 '{collector.name}'"
+            )
+
         if collector.source_type != "test":
-            all_validation_failures.append(f"소스 타입: 예상 'test', 실제 '{collector.source_type}'")
-            
+            all_validation_failures.append(
+                f"소스 타입: 예상 'test', 실제 '{collector.source_type}'"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"기본 수집기 초기화 오류: {e}")
-    
+
     # 테스트 2: 비동기 수집 실행
     total_tests += 1
     try:
+
         async def test_collection():
             result = await collector.collect()
             return result
-        
+
         # 비동기 함수 실행
         result = asyncio.run(test_collection())
-        
+
         if result.status != CollectionStatus.COMPLETED:
-            all_validation_failures.append(f"수집 상태: 예상 COMPLETED, 실제 {result.status}")
-        
+            all_validation_failures.append(
+                f"수집 상태: 예상 COMPLETED, 실제 {result.status}"
+            )
+
         if result.collected_count != 3:
-            all_validation_failures.append(f"수집 개수: 예상 3, 실제 {result.collected_count}")
-            
+            all_validation_failures.append(
+                f"수집 개수: 예상 3, 실제 {result.collected_count}"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"비동기 수집 오류: {e}")
-    
+
     # 테스트 3: 상태 검사
     total_tests += 1
     try:
         if collector.is_running:
-            all_validation_failures.append("상태 검사: 수집 완료 후에도 is_running=True")
-        
+            all_validation_failures.append(
+                "상태 검사: 수집 완료 후에도 is_running=True"
+            )
+
         if not collector.is_healthy:
-            all_validation_failures.append("상태 검사: 정상 수집 후에도 is_healthy=False")
-            
+            all_validation_failures.append(
+                "상태 검사: 정상 수집 후에도 is_healthy=False"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"상태 검사 오류: {e}")
-    
+
     # 테스트 4: 헬스 체크
     total_tests += 1
     try:
         health = collector.health_check()
-        
+
         required_fields = ["name", "type", "enabled", "is_running", "is_healthy"]
         for field in required_fields:
             if field not in health:
                 all_validation_failures.append(f"헬스 체크: {field} 필드 누락")
-                
+
     except Exception as e:
         all_validation_failures.append(f"헬스 체크 오류: {e}")
-    
+
     # 테스트 5: 취소 기능
     total_tests += 1
     try:
         collector.cancel()
-        
+
         if not collector._should_cancel():
-            all_validation_failures.append("취소 기능: cancel() 호출 후에도 _should_cancel()=False")
-            
+            all_validation_failures.append(
+                "취소 기능: cancel() 호출 후에도 _should_cancel()=False"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"취소 기능 오류: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("BaseCollector module is validated and ready for use")
         sys.exit(0)

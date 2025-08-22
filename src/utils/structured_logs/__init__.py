@@ -15,8 +15,8 @@ from .flask_integration import setup_request_logging
 
 __all__ = [
     "StructuredLogger",
-    "BufferHandler", 
+    "BufferHandler",
     "LogManager",
     "get_logger",
-    "setup_request_logging"
+    "setup_request_logging",
 ]

@@ -29,6 +29,7 @@ try:
 except ImportError:
     import sys
     import os
+
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from base_collector import BaseCollector
     from collection_types import CollectionResult, CollectionStatus, CollectionStats
@@ -41,7 +42,7 @@ class CollectionExecutor:
 
     def __init__(self, concurrent_limit: int = 3):
         """수집 실행 엔진 초기화
-        
+
         Args:
             concurrent_limit: 동시 실행 제한 수
         """
@@ -52,16 +53,14 @@ class CollectionExecutor:
         self.logger = logging.getLogger(f"{__name__}.executor")
 
     async def execute_all_collections(
-        self, 
-        collectors: Dict[str, BaseCollector],
-        global_enabled: bool = True
+        self, collectors: Dict[str, BaseCollector], global_enabled: bool = True
     ) -> Dict[str, CollectionResult]:
         """모든 수집기 실행
-        
+
         Args:
             collectors: 수집기 딕셔너리
             global_enabled: 전역 활성화 상태
-            
+
         Returns:
             수집 결과 딕셔너리
         """
@@ -93,7 +92,7 @@ class CollectionExecutor:
 
         # 모든 수집기 병렬 실행
         tasks = [
-            collect_with_semaphore(collector) 
+            collect_with_semaphore(collector)
             for collector in collectors.values()
             if collector.config.enabled
         ]
@@ -111,7 +110,7 @@ class CollectionExecutor:
         # 결과 정리
         collection_results = {}
         active_collectors = [c for c in collectors.values() if c.config.enabled]
-        
+
         for i, result in enumerate(results):
             collector_name = active_collectors[i].name
 
@@ -129,24 +128,24 @@ class CollectionExecutor:
 
         # 전체 수집 상태 로깅
         failed_count = sum(
-            1 for r in collection_results.values() 
+            1
+            for r in collection_results.values()
             if r.status == CollectionStatus.FAILED
         )
-        
+
         self.logger.info(
             f"전체 수집 완료: 성공 {len(collection_results) - failed_count}, 실패 {failed_count}"
         )
         return collection_results
 
     async def execute_single_collection(
-        self, 
-        collector: BaseCollector
+        self, collector: BaseCollector
     ) -> CollectionResult:
         """단일 수집기 실행
-        
+
         Args:
             collector: 실행할 수집기
-            
+
         Returns:
             수집 결과
         """
@@ -169,34 +168,30 @@ class CollectionExecutor:
 
     def _update_statistics(self, collection_results: Dict[str, CollectionResult]):
         """통계 정보 업데이트
-        
+
         Args:
             collection_results: 수집 결과 딕셔너리
         """
         for result in collection_results.values():
             self.collection_history.append(result)
             self.stats.update_from_result(result)
-        
+
         self._trim_history()
 
     def _trim_history(self):
         """히스토리 크기 제한"""
         if len(self.collection_history) > self.max_history_size:
-            self.collection_history = self.collection_history[-self.max_history_size:]
+            self.collection_history = self.collection_history[-self.max_history_size :]
 
     def get_execution_statistics(self) -> Dict[str, Any]:
         """실행 통계 조회
-        
+
         Returns:
             실행 통계 딕셔너리
         """
-        total_items = sum(
-            r.collected_count for r in self.collection_history
-        )
-        total_errors = sum(
-            r.error_count for r in self.collection_history
-        )
-        
+        total_items = sum(r.collected_count for r in self.collection_history)
+        total_errors = sum(r.error_count for r in self.collection_history)
+
         return {
             "total_executions": len(self.collection_history),
             "total_items_collected": total_items,
@@ -212,7 +207,7 @@ class CollectionExecutor:
 
     def _calculate_success_rate_trend(self) -> List[float]:
         """성공률 동향 계산
-        
+
         Returns:
             최근 10개 수집의 성공률 목록
         """
@@ -221,13 +216,14 @@ class CollectionExecutor:
 
     def _calculate_performance_trend(self) -> List[float]:
         """성능 동향 계산 (초당 아이템 수)
-        
+
         Returns:
             최근 10개 수집의 성능 지표 목록
         """
         recent_results = self.collection_history[-10:]
         return [
-            r.items_per_second or 0.0 for r in recent_results
+            r.items_per_second or 0.0
+            for r in recent_results
             if r.items_per_second is not None
         ]
 
@@ -239,10 +235,10 @@ class CollectionExecutor:
 
     def get_recent_results(self, limit: int = 10) -> List[CollectionResult]:
         """최근 수집 결과 조회
-        
+
         Args:
             limit: 조회할 결과 수
-            
+
         Returns:
             최근 수집 결과 목록
         """
@@ -250,100 +246,110 @@ class CollectionExecutor:
 
     def get_failed_results(self, limit: int = 10) -> List[CollectionResult]:
         """실패한 수집 결과 조회
-        
+
         Args:
             limit: 조회할 결과 수
-            
+
         Returns:
             실패한 수집 결과 목록
         """
         failed_results = [
-            r for r in self.collection_history 
-            if r.status == CollectionStatus.FAILED
+            r for r in self.collection_history if r.status == CollectionStatus.FAILED
         ]
         return failed_results[-limit:]
 
     def get_collector_performance(self, collector_name: str) -> Dict[str, Any]:
         """특정 수집기 성능 조회
-        
+
         Args:
             collector_name: 수집기 이름
-            
+
         Returns:
             수집기별 성능 통계
         """
         collector_results = [
-            r for r in self.collection_history 
-            if r.source_name == collector_name
+            r for r in self.collection_history if r.source_name == collector_name
         ]
-        
+
         if not collector_results:
             return {"error": "수집 기록이 없습니다."}
-        
-        successful = [r for r in collector_results if r.status == CollectionStatus.COMPLETED]
-        
+
+        successful = [
+            r for r in collector_results if r.status == CollectionStatus.COMPLETED
+        ]
+
         return {
             "total_executions": len(collector_results),
             "successful_executions": len(successful),
             "success_rate": (len(successful) / len(collector_results)) * 100,
-            "average_items": sum(r.collected_count for r in successful) / len(successful) if successful else 0,
+            "average_items": (
+                sum(r.collected_count for r in successful) / len(successful)
+                if successful
+                else 0
+            ),
             "recent_results": [r.to_dict() for r in collector_results[-5:]],
         }
 
 
 if __name__ == "__main__":
     import sys
-    
+
     # 실제 데이터로 검증
     all_validation_failures = []
     total_tests = 0
-    
+
     # 테스트용 수집기 구현
     try:
         from .collection_types import CollectionConfig
     except ImportError:
         from collection_types import CollectionConfig
-    
+
     class TestCollector(BaseCollector):
         @property
         def source_type(self) -> str:
             return "test"
-        
+
         async def _collect_data(self) -> List[Any]:
             await asyncio.sleep(0.1)
             return ["item1", "item2", "item3"]
-    
+
     # 테스트 1: 실행 엔진 초기화
     total_tests += 1
     try:
         executor = CollectionExecutor(concurrent_limit=2)
-        
+
         if executor.concurrent_limit != 2:
-            all_validation_failures.append(f"실행 엔진 초기화: 예상 limit 2, 실제 {executor.concurrent_limit}")
-            
+            all_validation_failures.append(
+                f"실행 엔진 초기화: 예상 limit 2, 실제 {executor.concurrent_limit}"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"실행 엔진 초기화 오류: {e}")
-    
+
     # 테스트 2: 단일 수집 실행
     total_tests += 1
     try:
         config = CollectionConfig(enabled=True, timeout=5)
         test_collector = TestCollector("test_single", config)
-        
+
         async def test_single_execution():
             return await executor.execute_single_collection(test_collector)
-        
+
         result = asyncio.run(test_single_execution())
-        
+
         if result.status != CollectionStatus.COMPLETED:
-            all_validation_failures.append(f"단일 수집: 예상 COMPLETED, 실제 {result.status}")
-        
+            all_validation_failures.append(
+                f"단일 수집: 예상 COMPLETED, 실제 {result.status}"
+            )
+
         if result.collected_count != 3:
-            all_validation_failures.append(f"단일 수집: 예상 수집 3개, 실제 {result.collected_count}개")
-            
+            all_validation_failures.append(
+                f"단일 수집: 예상 수집 3개, 실제 {result.collected_count}개"
+            )
+
     except Exception as e:
         all_validation_failures.append(f"단일 수집 실행 오류: {e}")
-    
+
     # 테스트 3: 다중 수집 실행
     total_tests += 1
     try:
@@ -351,58 +357,70 @@ if __name__ == "__main__":
             "test1": TestCollector("test1", config),
             "test2": TestCollector("test2", config),
         }
-        
+
         async def test_multiple_execution():
-            return await executor.execute_all_collections(collectors, global_enabled=True)
-        
+            return await executor.execute_all_collections(
+                collectors, global_enabled=True
+            )
+
         results = asyncio.run(test_multiple_execution())
-        
+
         if len(results) != 2:
-            all_validation_failures.append(f"다중 수집: 예상 결과 2개, 실제 {len(results)}개")
-        
+            all_validation_failures.append(
+                f"다중 수집: 예상 결과 2개, 실제 {len(results)}개"
+            )
+
         if "test1" not in results or "test2" not in results:
             all_validation_failures.append("다중 수집: 예상 수집기 결과 누락")
-            
+
     except Exception as e:
         all_validation_failures.append(f"다중 수집 실행 오류: {e}")
-    
+
     # 테스트 4: 통계 조회
     total_tests += 1
     try:
         stats = executor.get_execution_statistics()
-        
-        required_fields = ["total_executions", "total_items_collected", "average_success_rate"]
+
+        required_fields = [
+            "total_executions",
+            "total_items_collected",
+            "average_success_rate",
+        ]
         for field in required_fields:
             if field not in stats:
                 all_validation_failures.append(f"통계 조회: {field} 필드 누락")
-        
+
         if stats["total_executions"] == 0:
             all_validation_failures.append("통계 조회: 실행 기록이 없음")
-            
+
     except Exception as e:
         all_validation_failures.append(f"통계 조회 오류: {e}")
-    
+
     # 테스트 5: 수집기별 성능 조회
     total_tests += 1
     try:
         performance = executor.get_collector_performance("test1")
-        
+
         if "total_executions" not in performance:
             all_validation_failures.append("수집기 성능: total_executions 필드 누락")
-        
+
         if performance.get("total_executions", 0) == 0:
             all_validation_failures.append("수집기 성능: 실행 기록이 없음")
-            
+
     except Exception as e:
         all_validation_failures.append(f"수집기 성능 조회 오류: {e}")
-    
+
     # 최종 검증 결과
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(
+            f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
+        )
         print("CollectionExecutor module is validated and ready for use")
         sys.exit(0)

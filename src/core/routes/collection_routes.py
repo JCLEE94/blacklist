@@ -3,10 +3,9 @@
 분리된 수집 관련 모듈들을 하나로 통합
 """
 
-
-
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .collection_logs_routes import collection_logs_bp

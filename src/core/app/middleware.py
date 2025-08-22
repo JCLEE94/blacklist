@@ -7,6 +7,7 @@ Flask 미들웨어 및 요청/응답 처리
 
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
 logger = logging.getLogger(__name__)
 
 import os

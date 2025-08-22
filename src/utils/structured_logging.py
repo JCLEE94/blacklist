@@ -7,6 +7,7 @@ JSON 형식의 구조화된 로그와 중앙 집중형 로깅 관리
 from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
 import logging.handlers
+
 logger = logging.getLogger(__name__)
 
 import json
@@ -103,6 +104,7 @@ class StructuredLogger:
             # 파일 핸들러 (JSON 로그)
             json_file = self.log_dir / f"{self.name}.json"
             import logging.handlers
+
             json_handler = logging.handlers.RotatingFileHandler(
                 json_file, maxBytes=2 * 1024 * 1024, backupCount=3  # 2MB
             )
@@ -225,17 +227,17 @@ class StructuredLogger:
 
         except Exception as e:
             # DB 저장 실패 시 조용히 무시 (로깅 시스템 자체에서 오류 방지)
-            
+
             logging.getLogger(__name__).debug(f"DB logging failed: {e}")
 
     def enable_db_logging(self, enabled: bool = True):
         """DB 로깅 활성화/비활성화"""
         self.db_enabled = enabled
         if enabled:
-            
+
             logging.getLogger(__name__).info("Structured logging DB storage enabled")
         else:
-            
+
             logging.getLogger(__name__).info("Structured logging DB storage disabled")
 
     def _add_to_buffer(self, record: Dict[str, Any]):
@@ -266,7 +268,7 @@ class StructuredLogger:
 
         # 요청 컨텍스트 추가
         try:
-            
+
             if request:
                 record["context"]["request"] = {
                     "method": request.method,
@@ -432,7 +434,6 @@ def setup_request_logging(app):
     """Flask 요청 로깅 설정"""
     import uuid
 
-    
     logger = get_logger("request")
 
     @app.before_request
