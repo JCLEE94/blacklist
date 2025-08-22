@@ -1,28 +1,30 @@
-# Custom Redis Image for Blacklist System
-# registry.jclee.me/jclee94/blacklist-redis
+# Watchtower-optimized Redis for Blacklist System
 FROM redis:7-alpine
 
-# 메타데이터 라벨
-LABEL maintainer="jclee94@blacklist-system"
-LABEL version="1.0.0"
-LABEL description="Custom Redis for Blacklist IP Management System"
-LABEL com.watchtower.enable="true"
-LABEL com.watchtower.scope="blacklist"
+# Watchtower labels
+LABEL org.opencontainers.image.title="Blacklist Redis Cache" \
+      org.opencontainers.image.description="Redis cache optimized for Watchtower auto-deployment" \
+      org.opencontainers.image.vendor="JCLee" \
+      org.opencontainers.image.version="7-alpine" \
+      com.watchtower.enable="true" \
+      com.watchtower.monitor-only="false" \
+      com.watchtower.stop-signal="SIGTERM"
 
-# Redis 설정 파일 복사
+# Copy custom Redis configuration
 COPY redis.conf /usr/local/etc/redis/redis.conf
-COPY custom-entrypoint.sh /usr/local/bin/
 
-# 권한 설정
-RUN chmod +x /usr/local/bin/custom-entrypoint.sh
+# Create data directory
+RUN mkdir -p /data && chown redis:redis /data
 
-# 헬스체크 개선
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD redis-cli ping || exit 1
+# Health check for Watchtower
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+    CMD redis-cli ping | grep -q PONG || exit 1
 
-# 기본 포트
+# Expose Redis port
 EXPOSE 6379
 
-# 커스텀 entrypoint 사용
-ENTRYPOINT ["/usr/local/bin/custom-entrypoint.sh"]
+# Volume for data persistence
+VOLUME ["/data"]
+
+# Run Redis with custom config
 CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]

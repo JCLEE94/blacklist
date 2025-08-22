@@ -1,42 +1,59 @@
-# Custom PostgreSQL Image for Blacklist System
-# registry.jclee.me/jclee94/blacklist-postgresql
+# Watchtower-optimized PostgreSQL for Blacklist System
 FROM postgres:15-alpine
 
-# 메타데이터 라벨
-LABEL maintainer="jclee94@blacklist-system"
-LABEL version="1.0.0"
-LABEL description="Custom PostgreSQL for Blacklist IP Management System"
-LABEL com.watchtower.enable="true"
-LABEL com.watchtower.scope="blacklist"
+# Watchtower labels
+LABEL org.opencontainers.image.title="Blacklist PostgreSQL Database" \
+      org.opencontainers.image.description="PostgreSQL database optimized for Watchtower auto-deployment" \
+      org.opencontainers.image.vendor="JCLee" \
+      org.opencontainers.image.version="15-alpine" \
+      com.watchtower.enable="true" \
+      com.watchtower.monitor-only="false" \
+      com.watchtower.lifecycle.pre-update="/docker-entrypoint-initdb.d/pre-update.sh" \
+      com.watchtower.lifecycle.post-update="/docker-entrypoint-initdb.d/post-update.sh" \
+      com.watchtower.stop-signal="SIGTERM"
 
-# 필요한 패키지 설치
-RUN apk add --no-cache \
-    curl \
-    bash \
-    postgresql-contrib
+# Environment variables for PostgreSQL
+ENV POSTGRES_DB=blacklist \
+    POSTGRES_USER=blacklist_user \
+    POSTGRES_PASSWORD=blacklist_password_change_me \
+    PGDATA=/var/lib/postgresql/data/pgdata
 
-# 초기화 스크립트 복사
-COPY init-scripts/ /docker-entrypoint-initdb.d/
-COPY custom-entrypoint.sh /usr/local/bin/
-COPY postgresql.conf /etc/postgresql/postgresql.conf
+# Copy initialization scripts
+COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
+COPY schema.sql /docker-entrypoint-initdb.d/02-schema.sql
 
-# 권한 설정
-RUN chmod +x /usr/local/bin/custom-entrypoint.sh
-RUN chmod 644 /etc/postgresql/postgresql.conf
+# Create Watchtower lifecycle scripts
+RUN mkdir -p /docker-entrypoint-initdb.d && \
+    cat > /docker-entrypoint-initdb.d/pre-update.sh << 'EOF'
+#!/bin/bash
+echo "[$(date)] Watchtower pre-update: Creating database backup..."
+pg_dump -U $POSTGRES_USER $POSTGRES_DB > /tmp/backup_$(date +%Y%m%d_%H%M%S).sql
+echo "[$(date)] Database backup complete"
+EOF
 
-# PostgreSQL 설정
-ENV POSTGRES_DB=blacklist
-ENV POSTGRES_USER=blacklist_user
-ENV POSTGRES_PASSWORD=blacklist_password_change_me
-ENV PGDATA=/var/lib/postgresql/data/pgdata
+RUN cat > /docker-entrypoint-initdb.d/post-update.sh << 'EOF'
+#!/bin/bash
+echo "[$(date)] Watchtower post-update: Verifying database..."
+pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+if [ $? -eq 0 ]; then
+    echo "[$(date)] Database is ready after update"
+else
+    echo "[$(date)] Database verification failed"
+    exit 1
+fi
+EOF
 
-# 헬스체크
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+RUN chmod +x /docker-entrypoint-initdb.d/*.sh
+
+# Health check for Watchtower
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
     CMD pg_isready -U $POSTGRES_USER -d $POSTGRES_DB || exit 1
 
-# 포트
+# Expose PostgreSQL port
 EXPOSE 5432
 
-# 커스텀 entrypoint 사용
-ENTRYPOINT ["/usr/local/bin/custom-entrypoint.sh"]
-CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+# Volume for data persistence
+VOLUME ["/var/lib/postgresql/data"]
+
+# Run PostgreSQL
+CMD ["postgres"]
