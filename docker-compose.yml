@@ -90,11 +90,7 @@ services:
       PYTHONPATH: /app
       PYTHONUNBUFFERED: 1
     command: ["python3", "-m", "src.core.main"]
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgresql:
-        condition: service_healthy
+    # depends_on removed - services run independently
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${INTERNAL_PORT:-2542}/health"]
       interval: 30s
@@ -116,6 +112,8 @@ services:
     image: ${REGISTRY_URL:-registry.jclee.me}/blacklist-redis:${REDIS_TAG:-latest}
     container_name: blacklist-redis
     restart: unless-stopped
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-32543}:6379"
     volumes:
       - redis-data:/data
     environment:
@@ -138,7 +136,7 @@ services:
     container_name: blacklist-postgresql
     restart: unless-stopped
     ports:
-      - "${POSTGRES_EXTERNAL_PORT:-32543}:5432"
+      - "${POSTGRES_EXTERNAL_PORT:-32544}:5432"
     volumes:
       - postgresql-data:/var/lib/postgresql/data
     environment:
