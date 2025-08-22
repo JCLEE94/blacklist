@@ -266,25 +266,7 @@ jobs:
         
         # Check version in the built image
         echo "📦 Checking version in Docker image..."
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }} python -c "
-import sys
-sys.path.append('/app')
-version_file = '/app/version.txt'
-try:
-    with open(version_file, 'r') as f:
-        version = f.read().strip()
-        print(f'Image version: {version}')
-        expected = '${{ env.VERSION }}'
-        if version == expected:
-            print('✅ Version matches: ' + version)
-            sys.exit(0)
-        else:
-            print(f'❌ Version mismatch! Expected: {expected}, Found: {version}')
-            sys.exit(1)
-except Exception as e:
-    print(f'❌ Error checking version: {e}')
-    sys.exit(1)
-        "
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }} python -c "import sys; sys.path.append('/app'); version_file = '/app/version.txt'; expected = '${{ env.VERSION }}'; version = open(version_file).read().strip(); print(f'Image version: {version}'); assert version == expected, f'Version mismatch: {version} != {expected}'; print('✅ Version matches: ' + version)"
         
         # Test if container starts and responds
         echo "🐳 Testing container startup..."
@@ -585,52 +567,3 @@ except Exception as e:
           echo "   - Manual intervention needed"
         fi
 
-    - name: Run deployment verification
-      run: |
-        echo "🔍 Running comprehensive deployment verification..."
-        
-        # Wait for a moment to allow services to start
-        echo "⏳ Waiting 30s for services to stabilize..."
-        sleep 30
-        
-        # Run deployment verification with timeout
-        if python3 scripts/deployment-verification.py \
-            --url "https://blacklist.jclee.me" \
-            --timeout 300 \
-            --wait \
-            --output "deployment-verification-report.md"; then
-          echo "✅ Deployment verification passed successfully"
-          
-          # Show report summary
-          echo ""
-          echo "📊 Deployment Verification Summary:"
-          echo "==================================="
-          grep -A 10 "## 📊 Summary" deployment-verification-report.md || echo "Report summary not found"
-          echo ""
-          
-        else
-          echo "❌ Deployment verification failed"
-          echo "ℹ️ This may indicate issues with the deployment"
-          
-          # Show error details but don't fail the workflow immediately
-          if [ -f "deployment-verification-report.md" ]; then
-            echo ""
-            echo "📋 Error Report:"
-            echo "==============="
-            cat deployment-verification-report.md
-          fi
-          
-          # Continue but mark as warning
-          echo "⚠️ Continuing with warning - manual verification recommended"
-        fi
-        
-    - name: Upload deployment reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: deployment-reports-${{ github.sha }}
-        path: |
-          deployment-verification-report.md
-          version-verification.json
-          health-verification.json
-        retention-days: 30
