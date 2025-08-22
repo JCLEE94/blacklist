@@ -27,34 +27,25 @@ RUN pip wheel --wheel-dir=/wheels -r requirements.txt
 # Production stage - minimal base image
 FROM python:3.11-slim
 
-# Watchtower labels for automatic updates
-LABEL org.opencontainers.image.created="${BUILD_DATE}" \
+# Container labels for metadata
+LABEL org.opencontainers.image.created="2025-08-22" \
       org.opencontainers.image.authors="jclee94@gmail.com" \
       org.opencontainers.image.url="https://blacklist.jclee.me" \
       org.opencontainers.image.documentation="https://github.com/JCLEE94/blacklist" \
       org.opencontainers.image.source="https://github.com/JCLEE94/blacklist" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.version="v1.0.37" \
       org.opencontainers.image.vendor="JCLee" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.title="Blacklist Management System" \
-      org.opencontainers.image.description="Enterprise threat intelligence platform with Watchtower auto-deployment" \
-      com.watchtower.enable="true" \
-      com.watchtower.monitor-only="false" \
-      com.watchtower.lifecycle.pre-update="/app/scripts/pre-update.sh" \
-      com.watchtower.lifecycle.post-update="/app/scripts/post-update.sh" \
-      com.watchtower.stop-signal="SIGTERM"
+      org.opencontainers.image.description="Enterprise threat intelligence platform"
 
 # Set environment to prevent external access
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_INDEX=1 \
-    PIP_FIND_LINKS=/wheels \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    FLASK_ENV=production \
-    VERSION=${VERSION:-latest}
+    FLASK_ENV=production
 
 # Install only essential system packages
 RUN apt-get update && apt-get install -y \
@@ -76,12 +67,13 @@ WORKDIR /app
 # Copy wheels from builder (optimized layer caching)
 COPY --from=builder /wheels /wheels
 
-# Install Python packages from local wheels only
+# Install Python packages from local wheels only (from requirements.txt)
 RUN pip install --no-index --find-links=/wheels --no-cache-dir \
     flask gunicorn sqlalchemy psycopg2-binary redis python-dotenv \
-    pandas openpyxl xlrd orjson requests urllib3 certifi \
-    cryptography PyJWT bcrypt click loguru python-dateutil pytz \
-    alembic prometheus-client flask-compress typer rich \
+    pandas openpyxl orjson requests cryptography alembic \
+    flask-caching prometheus-client flask-compress beautifulsoup4 \
+    lxml PyJWT psutil python-dateutil PyYAML APScheduler \
+    defusedxml httpx aiohttp fastapi uvicorn numpy \
     && rm -rf /wheels
 
 # Copy application code with proper ownership
