@@ -1,0 +1,279 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklist-app
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: application
+    version: v1.3.3
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: blacklist
+      component: application
+  template:
+    metadata:
+      labels:
+        app: blacklist
+        component: application
+        version: v1.3.3
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2542"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: blacklist
+        image: registry.jclee.me/blacklist:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2542
+          name: http
+          protocol: TCP
+        env:
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: FLASK_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: PORT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: LOG_LEVEL
+        - name: GUNICORN_WORKERS
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: GUNICORN_WORKERS
+        - name: GUNICORN_THREADS
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: GUNICORN_THREADS
+        - name: GUNICORN_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: GUNICORN_TIMEOUT
+        - name: COLLECTION_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: COLLECTION_ENABLED
+        - name: FORCE_DISABLE_COLLECTION
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: FORCE_DISABLE_COLLECTION
+        - name: MAX_AUTH_ATTEMPTS
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: MAX_AUTH_ATTEMPTS
+        - name: BLOCK_DURATION_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: BLOCK_DURATION_HOURS
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: REDIS_URL
+        - name: API_KEY_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: API_KEY_ENABLED
+        - name: JWT_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: blacklist-config
+              key: JWT_ENABLED
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: SECRET_KEY
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: JWT_SECRET_KEY
+        - name: DEFAULT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: DEFAULT_API_KEY
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: ADMIN_USERNAME
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: ADMIN_PASSWORD
+        - name: REGTECH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: REGTECH_USERNAME
+        - name: REGTECH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: REGTECH_PASSWORD
+        - name: SECUDIUM_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: SECUDIUM_USERNAME
+        - name: SECUDIUM_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blacklist-secrets
+              key: SECUDIUM_PASSWORD
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2542
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 2542
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/instance
+        - name: app-logs
+          mountPath: /app/logs
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: blacklist-app-data-pvc
+      - name: app-logs
+        persistentVolumeClaim:
+          claimName: blacklist-app-logs-pvc
+      imagePullSecrets:
+      - name: registry-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blacklist-app-data-pvc
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: application
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: default
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blacklist-app-logs-pvc
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: application
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blacklist-app-service
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: application
+spec:
+  ports:
+  - port: 80
+    targetPort: 2542
+    name: http
+    protocol: TCP
+  selector:
+    app: blacklist
+    component: application
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blacklist-ingress
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - blacklist.jclee.me
+    secretName: blacklist-tls-secret
+  rules:
+  - host: blacklist.jclee.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blacklist-app-service
+            port:
+              number: 80

@@ -1,0 +1,83 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: blacklist-management-system
+  annotations:
+    config.kubernetes.io/local-config: "true"
+
+# Namespace configuration
+namespace: blacklist
+
+# Common labels applied to all resources
+commonLabels:
+  app: blacklist
+  environment: production
+  managed-by: kustomize
+  version: v1.3.3
+
+# Common annotations applied to all resources
+commonAnnotations:
+  kubernetes.io/managed-by: "Blacklist Management System"
+  deployment.kubernetes.io/revision: "1"
+
+# Resource files to include in deployment
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - registry-secret.yaml
+  - postgresql.yaml
+  - redis.yaml
+  - blacklist-app.yaml
+  - argocd-application.yaml
+
+# Images to be used (for image replacement)
+images:
+  - name: registry.jclee.me/blacklist
+    newTag: v1.3.3
+  - name: registry.jclee.me/blacklist-redis
+    newTag: latest
+  - name: registry.jclee.me/blacklist-postgresql
+    newTag: latest
+
+# ConfigMap generator for additional configuration
+configMapGenerator:
+  - name: deployment-info
+    literals:
+      - deployment.timestamp=$(date -u +%Y%m%d%H%M%S)
+      - deployment.version=v1.3.3
+      - deployment.git-commit=$(git rev-parse --short HEAD)
+      - deployment.build-by=automated-ci-cd
+
+# Secret generator for runtime secrets
+secretGenerator:
+  - name: deployment-secrets
+    literals:
+      - deployment.secret=$(openssl rand -base64 32)
+
+# Patches to apply
+patchesStrategicMerge:
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: blacklist-app
+      namespace: blacklist
+    spec:
+      template:
+        metadata:
+          annotations:
+            deployment.timestamp: $(date -u +%Y%m%d%H%M%S)
+            config.hash: $(kubectl get configmap blacklist-config -o jsonpath='{.metadata.resourceVersion}' || echo "initial")
+
+# Resource ordering for proper deployment sequence
+crds: []
+
+# Inventory settings
+buildMetadata:
+  - managedByLabel
+  - originAnnotations
+
+# Validation options
+validationOptions:
+  disableAll: false

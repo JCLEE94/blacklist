@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blacklist-config
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: config
+data:
+  # Application Configuration
+  FLASK_ENV: "production"
+  PORT: "2542"
+  LOG_LEVEL: "WARNING"
+  
+  # Performance Configuration
+  GUNICORN_WORKERS: "4"
+  GUNICORN_THREADS: "2"
+  GUNICORN_TIMEOUT: "60"
+  
+  # Collection Configuration
+  COLLECTION_ENABLED: "true"
+  FORCE_DISABLE_COLLECTION: "false"
+  MAX_AUTH_ATTEMPTS: "5"
+  BLOCK_DURATION_HOURS: "1"
+  
+  # Database Configuration
+  DATABASE_URL: "postgresql://blacklist_user:blacklist_password_change_me@blacklist-postgresql:5432/blacklist"
+  REDIS_URL: "redis://blacklist-redis:6379/0"
+  
+  # Security Configuration
+  API_KEY_ENABLED: "true"
+  JWT_ENABLED: "true"
+  
+  # PostgreSQL Configuration
+  POSTGRES_DB: "blacklist"
+  POSTGRES_USER: "blacklist_user"
+  
+  # Redis Configuration  
+  REDIS_MAXMEMORY: "1gb"
+  REDIS_MAXMEMORY_POLICY: "allkeys-lru"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blacklist-secrets
+  namespace: blacklist
+  labels:
+    app: blacklist
+    component: secrets
+type: Opaque
+stringData:
+  # Database Secrets
+  POSTGRES_PASSWORD: "blacklist_password_change_me"
+  
+  # Application Secrets (change in production)
+  SECRET_KEY: "change-in-production"
+  JWT_SECRET_KEY: "change-in-production"
+  DEFAULT_API_KEY: "blk_generated-key-here"
+  
+  # Admin Credentials
+  ADMIN_USERNAME: "admin"
+  ADMIN_PASSWORD: "auto-generated-password"
+  
+  # External API Credentials (to be configured)
+  REGTECH_USERNAME: ""
+  REGTECH_PASSWORD: ""
+  SECUDIUM_USERNAME: ""
+  SECUDIUM_PASSWORD: ""

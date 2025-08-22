@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blacklist-management-system
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: blacklist
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: blacklist-management-system
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/JCLEE94/blacklist.git
+    targetRevision: main
+    path: deployments/k8s
+  destination:
+    server: https://k8s.jclee.me
+    namespace: blacklist
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+  info:
+    - name: "Documentation"
+      value: "https://jclee94.github.io/blacklist/"
+    - name: "Live System"
+      value: "https://blacklist.jclee.me/"
+    - name: "Health Check"
+      value: "https://blacklist.jclee.me/health"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: blacklist-project
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: blacklist-project
+    app.kubernetes.io/component: project
+spec:
+  description: "Blacklist Management System Project"
+  sourceRepos:
+    - https://github.com/JCLEE94/blacklist.git
+    - https://charts.jclee.me/*
+    - registry.jclee.me/*
+  destinations:
+    - namespace: blacklist
+      server: https://k8s.jclee.me
+    - namespace: argocd
+      server: https://k8s.jclee.me
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: ""
+      kind: PersistentVolume
+    - group: storage.k8s.io
+      kind: StorageClass
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: "*"
+    - group: networking.k8s.io
+      kind: "*"
+    - group: extensions
+      kind: "*"
+  roles:
+    - name: admin
+      description: "Full access to blacklist project"
+      policies:
+        - p, proj:blacklist-project:admin, applications, *, blacklist-project/*, allow
+        - p, proj:blacklist-project:admin, logs, get, blacklist-project/*, allow
+        - p, proj:blacklist-project:admin, exec, create, blacklist-project/*, allow
+      groups:
+        - blacklist-admins
+    - name: readonly
+      description: "Read-only access to blacklist project"
+      policies:
+        - p, proj:blacklist-project:readonly, applications, get, blacklist-project/*, allow
+        - p, proj:blacklist-project:readonly, logs, get, blacklist-project/*, allow
+      groups:
+        - blacklist-viewers
