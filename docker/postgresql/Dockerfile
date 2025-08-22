@@ -24,24 +24,20 @@ COPY schema.sql /docker-entrypoint-initdb.d/02-schema.sql
 
 # Create Watchtower lifecycle scripts
 RUN mkdir -p /docker-entrypoint-initdb.d && \
-    cat > /docker-entrypoint-initdb.d/pre-update.sh << 'EOF'
-#!/bin/bash
-echo "[$(date)] Watchtower pre-update: Creating database backup..."
-pg_dump -U $POSTGRES_USER $POSTGRES_DB > /tmp/backup_$(date +%Y%m%d_%H%M%S).sql
-echo "[$(date)] Database backup complete"
-EOF
+    echo '#!/bin/bash' > /docker-entrypoint-initdb.d/pre-update.sh && \
+    echo 'echo "[$(date)] Watchtower pre-update: Creating database backup..."' >> /docker-entrypoint-initdb.d/pre-update.sh && \
+    echo 'pg_dump -U $POSTGRES_USER $POSTGRES_DB > /tmp/backup_$(date +%Y%m%d_%H%M%S).sql' >> /docker-entrypoint-initdb.d/pre-update.sh && \
+    echo 'echo "[$(date)] Database backup complete"' >> /docker-entrypoint-initdb.d/pre-update.sh
 
-RUN cat > /docker-entrypoint-initdb.d/post-update.sh << 'EOF'
-#!/bin/bash
-echo "[$(date)] Watchtower post-update: Verifying database..."
-pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
-if [ $? -eq 0 ]; then
-    echo "[$(date)] Database is ready after update"
-else
-    echo "[$(date)] Database verification failed"
-    exit 1
-fi
-EOF
+RUN echo '#!/bin/bash' > /docker-entrypoint-initdb.d/post-update.sh && \
+    echo 'echo "[$(date)] Watchtower post-update: Verifying database..."' >> /docker-entrypoint-initdb.d/post-update.sh && \
+    echo 'pg_isready -U $POSTGRES_USER -d $POSTGRES_DB' >> /docker-entrypoint-initdb.d/post-update.sh && \
+    echo 'if [ $? -eq 0 ]; then' >> /docker-entrypoint-initdb.d/post-update.sh && \
+    echo '    echo "[$(date)] Database is ready after update"' >> /docker-entrypoint-initdb.d/post-update.sh && \
+    echo 'else' >> /docker-entrypoint-initdb.d/post-update.sh && \
+    echo '    echo "[$(date)] Database verification failed"' >> /docker-entrypoint-initdb.d/post-update.sh && \
+    echo '    exit 1' >> /docker-entrypoint-initdb.d/post-update.sh && \
+    echo 'fi' >> /docker-entrypoint-initdb.d/post-update.sh
 
 RUN chmod +x /docker-entrypoint-initdb.d/*.sh
 

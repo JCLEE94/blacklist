@@ -11,7 +11,7 @@ LABEL org.opencontainers.image.title="Blacklist Redis Cache" \
       com.watchtower.stop-signal="SIGTERM"
 
 # Copy custom Redis configuration
-COPY redis.conf /usr/local/etc/redis/redis.conf
+COPY docker/redis/redis.conf /usr/local/etc/redis/redis.conf
 
 # Create data directory
 RUN mkdir -p /data && chown redis:redis /data
