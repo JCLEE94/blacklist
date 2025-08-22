@@ -75,7 +75,8 @@ class TestAPIKeyValidation:
             manager = ValidationManager()
             inactive_key = "blk_" + secrets.token_urlsafe(32)
 
-            # Since this is format validation only, a properly formatted key should pass
+            # Since this is format validation only, a properly formatted key
+            # should pass
             result = manager.validate_api_key(inactive_key)
             assert isinstance(result, bool)
 

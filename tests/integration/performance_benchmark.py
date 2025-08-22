@@ -41,7 +41,8 @@ try:
             """Simulate a request and return (response_time_ms, status_code)"""
             start_time = time.time()
 
-            # Simulate processing time based on endpoint complexity (no actual sleep)
+            # Simulate processing time based on endpoint complexity (no actual
+            # sleep)
             if endpoint == "/api/collection/status":
                 simulated_time = 0.01  # 10ms
                 status_code = 200

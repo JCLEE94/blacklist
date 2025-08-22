@@ -57,7 +57,8 @@ def test_api_response_time_baseline():
             print(f"Average response time: {avg_response_time:.2f}ms")
             print(f"All response times: {[f'{t:.2f}ms' for t in response_times]}")
 
-            # Test against acceptable threshold (should be well under 1000ms for mocked service)
+            # Test against acceptable threshold (should be well under 1000ms
+            # for mocked service)
             assert (
                 avg_response_time < 1000
             ), f"Response time {avg_response_time:.2f}ms exceeds 1000ms threshold"
@@ -197,7 +198,8 @@ def test_memory_usage_efficiency():
         print(f"Memory after 10 services: {current_memory:.2f}MB")
         print(f"Memory increase: {memory_increase:.2f}MB")
 
-        # Memory increase should be reasonable (less than 100MB for 10 services)
+        # Memory increase should be reasonable (less than 100MB for 10
+        # services)
         assert (
             memory_increase < 100
         ), f"Memory increase of {memory_increase:.2f}MB is too high"

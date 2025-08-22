@@ -3,6 +3,7 @@
 모듈화된 테스트 인프라를 통한 간소화된 구성
 """
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -26,7 +27,6 @@ from tests.test_fixtures import (
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
-import sys
 
 sys.path.insert(0, str(project_root))
 

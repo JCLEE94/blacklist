@@ -141,7 +141,7 @@ class RegtechExcelCollector:
                                 "data": collected_ips,
                                 "count": len(collected_ips),
                             }
-                    except:
+                    except BaseException:
                         pass
 
             # Step 5: Excel 파일 파싱
@@ -205,7 +205,7 @@ class RegtechExcelCollector:
                 finally:
                     try:
                         os.unlink(tmp_path)
-                    except:
+                    except BaseException:
                         pass
 
             logger.warning("No data collected")

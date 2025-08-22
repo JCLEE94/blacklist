@@ -157,7 +157,8 @@ def test_flask_app_with_routes():
     except ImportError:
         pytest.skip("CompactFlaskApp not available")
     except Exception as e:
-        # If there are other issues (missing config, dependencies), just verify factory exists
+        # If there are other issues (missing config, dependencies), just verify
+        # factory exists
         from src.core.app_compact import CompactFlaskApp
 
         app_factory = CompactFlaskApp()

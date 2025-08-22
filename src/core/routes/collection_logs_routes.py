@@ -288,7 +288,8 @@ def get_collection_history():
         history = []
         for log in paginated_logs:
             history_entry = {
-                "id": hash(log.get("timestamp", "")),  # Simple ID based on timestamp
+                # Simple ID based on timestamp
+                "id": hash(log.get("timestamp", "")),
                 "timestamp": log.get("timestamp"),
                 "source": log.get("source", "unknown").upper(),
                 "action": log.get("action", "unknown"),

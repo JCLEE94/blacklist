@@ -128,7 +128,7 @@ class RegtechDataProcessor:
                                             "description": f"Blacklisted IP from REGTECH table",
                                         }
                                     )
-            except:
+            except BaseException:
                 pass  # BeautifulSoup 파싱 실패해도 기본 regex 결과 사용
 
             return ips[:100]  # 최대 100개로 제한

@@ -166,7 +166,7 @@ class TestAppIntegration:
                 response = client.get("/health")
                 # Accept any response - endpoint may not exist yet
                 assert response.status_code in [200, 404]
-            except:
+            except BaseException:
                 # If no routes registered yet, that's also valid
                 pass
 

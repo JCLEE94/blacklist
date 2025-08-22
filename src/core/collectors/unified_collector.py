@@ -211,7 +211,7 @@ class BaseCollector(ABC):
                 retries += 1
 
             except Exception as e:
-                error_msg = "수집 오류: {self.name} - {str(e)}"
+                error_msg = f"수집 오류: {self.name} - {str(e)}"
                 self.logger.error(error_msg)
                 self.logger.error(traceback.format_exc())
 

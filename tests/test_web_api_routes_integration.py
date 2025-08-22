@@ -14,8 +14,6 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from flask import Flask
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from src.web.api_routes import (
     api_bp,
     api_stats_simple,
@@ -24,6 +22,8 @@ from src.web.api_routes import (
     get_daily_ips,
     get_month_details,
 )
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 class TestGetMonthDetails:

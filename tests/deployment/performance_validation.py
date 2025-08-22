@@ -228,7 +228,8 @@ class PerformanceValidator:
             "success_rate": success_rate,
             "throughput_rps": throughput_rps,
             "avg_response_time": avg_response_time,
-            "response_times": response_times[:100],  # Store sample for analysis
+            # Store sample for analysis
+            "response_times": response_times[:100],
         }
 
         # Performance assessment

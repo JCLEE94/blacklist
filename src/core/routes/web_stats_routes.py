@@ -93,18 +93,17 @@ def collection_daily_stats():
                     # Query for daily collection stats from blacklist table
                     cursor.execute(
                         """
-                        SELECT 
+                        SELECT
                             DATE(created_at) as collection_date,
                             LOWER(source) as source_name,
                             COUNT(*) as count
-                        FROM blacklist 
-                        WHERE created_at >= datetime('now', '-{} days')
+                        FROM blacklist
+                        WHERE created_at >= datetime('now', ? || ' days')
                           AND is_active = 1
                         GROUP BY DATE(created_at), LOWER(source)
                         ORDER BY collection_date DESC
-                        """.format(
-                            days
-                        )
+                        """,
+                        (f"-{days}",),
                     )
 
                     results = cursor.fetchall()
@@ -158,11 +157,11 @@ def collection_daily_stats():
 
                     cursor.execute(
                         """
-                        SELECT 
+                        SELECT
                             DATE(created_at) as collection_date,
                             LOWER(source) as source_name,
                             COUNT(*) as count
-                        FROM blacklist_entries 
+                        FROM blacklist_entries
                         WHERE created_at >= NOW() - INTERVAL '%s days'
                           AND is_active = true
                           AND (expiry_date IS NULL OR expiry_date > NOW())

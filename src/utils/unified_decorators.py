@@ -5,7 +5,8 @@ This module maintains backward compatibility while delegating to modular
 decorator packages
 """
 
-# Import all decorators from the modularized package to maintain backward compatibility
+# Import all decorators from the modularized package to maintain backward
+# compatibility
 from .decorators import (
     DecoratorRegistry,
     admin_endpoint,

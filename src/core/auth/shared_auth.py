@@ -19,7 +19,7 @@ class SharedAuthHelper:
 
     @staticmethod
     def create_session_with_headers(
-        headers: Optional[Dict[str, str]] = None
+        headers: Optional[Dict[str, str]] = None,
     ) -> requests.Session:
         """공통 헤더를 포함한 세션 생성"""
         session = requests.Session()
@@ -130,9 +130,9 @@ class SharedAuthHelper:
             "password": password,
         }
 
-        # 다양한 username 필드명 시도
-        username_fields = ["username", "user", "userid", "email", "login", "id"]
-        password_fields = ["password", "passwd", "pwd", "pass"]
+        # 다양한 username 필드명 시도 (for future use)
+        # username_fields = ["username", "user", "userid", "email", "login", "id"]
+        # password_fields = ["password", "passwd", "pwd", "pass"]
 
         # CSRF 토큰 추가
         if csrf_token:

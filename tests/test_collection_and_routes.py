@@ -96,7 +96,7 @@ def test_collection_protection():
             try:
                 os.unlink(db_path)
                 os.unlink(config_path)
-            except:
+            except BaseException:
                 pass
 
     except ImportError:
@@ -204,7 +204,7 @@ def test_flask_app_factory():
 
         # Test app configuration
         app.config["TESTING"] = True
-        assert app.config["TESTING"] == True
+        assert app.config["TESTING"]
 
         # Test with app context
         with app.app_context():
@@ -333,7 +333,7 @@ def test_search_service():
             # Create mock cache
             try:
                 cache = EnhancedSmartCache(redis_url=None)  # Use memory fallback
-            except:
+            except BaseException:
                 # Fallback to simple dict-based cache
                 class MockCache:
                     def __init__(self):

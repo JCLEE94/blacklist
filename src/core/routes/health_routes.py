@@ -143,7 +143,7 @@ def visual_build_info():
                 .decode()
                 .strip()
             )
-        except:
+        except BaseException:
             git_commit = "unknown"
 
         try:
@@ -155,7 +155,7 @@ def visual_build_info():
                 .decode()
                 .strip()
             )
-        except:
+        except BaseException:
             git_branch = "unknown"
 
         try:
@@ -166,7 +166,7 @@ def visual_build_info():
                 .decode()
                 .strip()
             )
-        except:
+        except BaseException:
             build_date = datetime.utcnow().isoformat()
 
         # 시스템 상태 정보

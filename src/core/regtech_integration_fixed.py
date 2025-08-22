@@ -330,7 +330,8 @@ if __name__ == "__main__":
     try:
         # Only test if we have credentials
         if os.getenv("REGTECH_USERNAME") and os.getenv("REGTECH_PASSWORD"):
-            # Run actual collection test (will likely get 0 results but should not error)
+            # Run actual collection test (will likely get 0 results but should
+            # not error)
             collection_result = integration.run_collection()
             if not collection_result.get("success"):
                 print(

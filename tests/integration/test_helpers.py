@@ -105,5 +105,5 @@ class BaseIntegrationTest:
         yield db_path
         try:
             os.unlink(db_path)
-        except:
+        except BaseException:
             pass

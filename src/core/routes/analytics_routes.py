@@ -21,7 +21,8 @@ analytics_routes_bp = Blueprint("analytics_routes", __name__)
 def get_expiration_stats():
     """만료 통계 조회"""
     try:
-        # Return empty expiration stats since SQLite doesn't have expiration data
+        # Return empty expiration stats since SQLite doesn't have expiration
+        # data
         return jsonify(
             {
                 "success": True,

@@ -40,7 +40,8 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
             "secudium": Mock(),
         }
 
-        # Add the actual trigger_regtech_collection method from CollectionServiceMixin
+        # Add the actual trigger_regtech_collection method from
+        # CollectionServiceMixin
         def trigger_regtech_collection(start_date=None, end_date=None, force=False):
             if not force and not service.collection_enabled:
                 return {
@@ -116,7 +117,8 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
             start_date="2024-01-01", end_date="2024-01-02"
         )
 
-        # Verify collection was triggered - the method should convert dates to format YYYYMMDD
+        # Verify collection was triggered - the method should convert dates to
+        # format YYYYMMDD
         service._components["regtech"].collect_from_web.assert_called_once_with(
             start_date="20240101", end_date="20240102"  # dates with dashes removed
         )
@@ -142,7 +144,8 @@ class TestCacheDatabaseIntegration(IntegrationTestFixtures):
             # Should get some response even if empty
             assert isinstance(ips, str)
         except Exception as e:
-            # If that fails, just verify the service can handle cache errors gracefully
+            # If that fails, just verify the service can handle cache errors
+            # gracefully
             status = service.get_system_health()
             assert isinstance(status, dict)
 

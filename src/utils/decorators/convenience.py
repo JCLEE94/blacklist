@@ -18,7 +18,8 @@ def api_endpoint(
 
     def decorator(func):
         # Simply return the function without any decoration for now
-        # This prevents Flask endpoint conflicts while maintaining compatibility
+        # This prevents Flask endpoint conflicts while maintaining
+        # compatibility
         return func
 
     return decorator

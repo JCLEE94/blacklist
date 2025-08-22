@@ -128,7 +128,8 @@ class TestCollectionServiceMixin:
 
         result = await service.collect_all_data()
 
-        assert result["success"] is True  # Still success if at least one source works
+        # Still success if at least one source works
+        assert result["success"] is True
         assert result["summary"]["successful_sources"] == 1
         assert result["summary"]["failed_sources"] == 1
         assert result["results"]["regtech"]["success"] is False

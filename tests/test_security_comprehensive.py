@@ -87,7 +87,8 @@ class TestSecurityAuth:
             "testuser", ["admin"], expires_hours=-0.001
         )  # Negative to ensure expiration
 
-        # Verify expired token returns None (no exception in this implementation)
+        # Verify expired token returns None (no exception in this
+        # implementation)
         decoded_payload = auth_mgr.verify_jwt_token(token)
         assert decoded_payload is None
 
@@ -113,7 +114,7 @@ class TestSecurityAuth:
         api_key = auth_manager.generate_api_key(prefix="test")
 
         is_valid = auth_manager.validate_api_key_format(api_key)
-        assert is_valid == True
+        assert is_valid
 
         # Test invalid API key
         invalid_key = "invalid_api_key_123"
@@ -152,7 +153,7 @@ class TestSecurityRateLimiting:
         # First 3 requests should be allowed
         for i in range(3):
             is_allowed = rate_limiter.is_allowed(client_id)
-            assert is_allowed == True
+            assert is_allowed
 
         # 4th request should be denied
         is_denied = rate_limiter.is_allowed(client_id)
@@ -196,7 +197,7 @@ class TestSecurityRateLimiting:
         time.sleep(1.1)
 
         # Should be allowed again
-        assert rate_limiter.is_allowed(client_id) == True
+        assert rate_limiter.is_allowed(client_id)
 
 
 @pytest.mark.unit
@@ -220,9 +221,9 @@ class TestSecurityValidation:
         from src.utils.security.validation import validate_input
 
         # Test valid inputs
-        assert validate_input("valid_username", "username") == True
-        assert validate_input("192.168.1.1", "ip_address") == True
-        assert validate_input("user@example.com", "email") == True
+        assert validate_input("valid_username", "username")
+        assert validate_input("192.168.1.1", "ip_address")
+        assert validate_input("user@example.com", "email")
 
         # Test invalid inputs
         assert validate_input("", "username") == False
@@ -252,7 +253,7 @@ class TestSecurityValidation:
 
         # Test strong password
         strong_password = "StrongPass123!@#"
-        assert validator.validate_password_strength(strong_password) == True
+        assert validator.validate_password_strength(strong_password)
 
         # Test weak passwords
         weak_passwords = [
@@ -279,7 +280,7 @@ class TestSecurityValidation:
 
         # Validate CSRF token
         is_valid = validator.validate_csrf_token(csrf_token)
-        assert is_valid == True
+        assert is_valid
 
         # Test invalid CSRF token
         invalid_token = "invalid_csrf_token_123"
@@ -327,7 +328,7 @@ class TestSecurityEncryption:
 
         # Verify password
         is_valid = auth_manager.verify_password(password, hashed_password)
-        assert is_valid == True
+        assert is_valid
 
         # Test wrong password
         wrong_password = "wrong_password_456"
@@ -348,13 +349,13 @@ class TestSecurityPermissions:
 
             # Test admin role
             admin_user = {"user_id": 1, "role": "admin"}
-            assert auth_manager.has_permission(admin_user, "read_users") == True
-            assert auth_manager.has_permission(admin_user, "write_users") == True
-            assert auth_manager.has_permission(admin_user, "delete_users") == True
+            assert auth_manager.has_permission(admin_user, "read_users")
+            assert auth_manager.has_permission(admin_user, "write_users")
+            assert auth_manager.has_permission(admin_user, "delete_users")
 
             # Test regular user role
             regular_user = {"user_id": 2, "role": "user"}
-            assert auth_manager.has_permission(regular_user, "read_users") == True
+            assert auth_manager.has_permission(regular_user, "read_users")
             assert auth_manager.has_permission(regular_user, "write_users") == False
             assert auth_manager.has_permission(regular_user, "delete_users") == False
 
@@ -494,8 +495,8 @@ if __name__ == "__main__":
         from src.utils.security.rate_limiting import RateLimiter
 
         rate_limiter = RateLimiter(max_requests=2, time_window=60)
-        assert rate_limiter.is_allowed("test_client") == True
-        assert rate_limiter.is_allowed("test_client") == True
+        assert rate_limiter.is_allowed("test_client")
+        assert rate_limiter.is_allowed("test_client")
         assert rate_limiter.is_allowed("test_client") == False
         print("✅ Rate limiting functionality successful")
     except Exception as e:
@@ -506,8 +507,8 @@ if __name__ == "__main__":
     try:
         from src.utils.security.validation import sanitize_input, validate_input
 
-        assert validate_input("valid_username", "username") == True
-        assert validate_input("192.168.1.1", "ip_address") == True
+        assert validate_input("valid_username", "username")
+        assert validate_input("192.168.1.1", "ip_address")
 
         malicious_input = "'; DROP TABLE users; --"
         sanitized = sanitize_input(malicious_input)
@@ -525,7 +526,7 @@ if __name__ == "__main__":
         password = "test_password_123"
 
         hashed = auth_manager.hash_password(password)
-        assert auth_manager.verify_password(password, hashed) == True
+        assert auth_manager.verify_password(password, hashed)
         assert auth_manager.verify_password("wrong_password", hashed) == False
         print("✅ Password hashing successful")
     except Exception as e:

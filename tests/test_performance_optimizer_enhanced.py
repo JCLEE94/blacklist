@@ -131,7 +131,8 @@ class TestCacheManager:
             assert cache_manager is not None
 
         except ImportError:
-            # If CacheManager doesn't exist as separate class, test with optimizer
+            # If CacheManager doesn't exist as separate class, test with
+            # optimizer
             from src.utils.performance_optimizer import PerformanceOptimizer
 
             optimizer = PerformanceOptimizer()

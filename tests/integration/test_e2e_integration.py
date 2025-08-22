@@ -9,11 +9,10 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-
-
 from src.core.app_compact import create_compact_app
 from src.core.container import get_container
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 
 def test_complete_data_flow():
@@ -119,7 +118,7 @@ def test_complete_data_flow():
                     response = client.get("/api/search/{test_ip}")
                     assert response.status_code == 200
                     search_result = response.get_json()
-                    assert search_result["found"] == True
+                    assert search_result["found"]
                     print(f"✅ Search found IP: {test_ip}")
 
                 # 8. 통계 업데이트 확인

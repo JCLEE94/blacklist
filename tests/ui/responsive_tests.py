@@ -64,7 +64,7 @@ class ResponsiveTestSuite(BaseUITestSuite):
             if await mobile_menu.count() > 0:
                 try:
                     await expect(mobile_menu.first).to_be_visible(timeout=2000)
-                except:
+                except BaseException:
                     self.reporter.add_warning("모바일 메뉴가 제대로 표시되지 않음")
 
     async def test_chart_responsive(self):

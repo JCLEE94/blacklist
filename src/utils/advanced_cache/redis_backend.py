@@ -45,7 +45,8 @@ class RedisBackend:
                 )
                 self.redis = redis.Redis(connection_pool=self.connection_pool)
             else:
-                # Default Redis connection - use Docker service name in production
+                # Default Redis connection - use Docker service name in
+                # production
                 import os
 
                 redis_host = os.environ.get(

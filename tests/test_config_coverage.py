@@ -99,7 +99,7 @@ def test_development_config():
         assert config is not None
 
         # Development specific settings
-        assert config.DEBUG == True
+        assert config.DEBUG
         assert config.TESTING == False
 
         # Should inherit from BaseConfig
@@ -141,8 +141,8 @@ def test_testing_config():
         assert config is not None
 
         # Testing specific settings
-        assert config.TESTING == True
-        assert config.DEBUG == True
+        assert config.TESTING
+        assert config.DEBUG
 
         # Should use different database for testing
         assert (
@@ -186,7 +186,7 @@ def test_config_settings_module():
         # Test getting config for different environments
         config = get_config("development")
         assert config is not None
-        assert config.DEBUG == True
+        assert config.DEBUG
 
         config = get_config("production")
         assert config is not None
@@ -194,7 +194,7 @@ def test_config_settings_module():
 
         config = get_config("testing")
         assert config is not None
-        assert config.TESTING == True
+        assert config.TESTING
 
     except ImportError:
         pytest.skip("Settings module not available")
@@ -212,10 +212,12 @@ def test_config_constants_integration():
             config = BaseConfig()
 
             # Should use constants as defaults when env vars not set
-            # PORT might be from current environment, so check if it's a valid port
+            # PORT might be from current environment, so check if it's a valid
+            # port
             assert isinstance(config.PORT, int)
             assert 1 <= config.PORT <= 65535  # Valid port range
-            # DATA_DIR might be set from environment or default, check it's a string
+            # DATA_DIR might be set from environment or default, check it's a
+            # string
             assert isinstance(config.DATA_DIR, str)
             assert len(config.DATA_DIR) > 0
 
@@ -242,7 +244,7 @@ def test_database_configuration():
         # Engine options should be configured
         assert isinstance(config.SQLALCHEMY_ENGINE_OPTIONS, dict)
         assert "pool_pre_ping" in config.SQLALCHEMY_ENGINE_OPTIONS
-        assert config.SQLALCHEMY_ENGINE_OPTIONS["pool_pre_ping"] == True
+        assert config.SQLALCHEMY_ENGINE_OPTIONS["pool_pre_ping"]
 
     except ImportError:
         pytest.skip("Database configuration test not available")
@@ -314,7 +316,8 @@ def test_security_configuration():
         assert config.SECRET_KEY is not None
         assert len(config.SECRET_KEY) > 0
 
-        # Secret key should be set (dev key is acceptable in development/testing)
+        # Secret key should be set (dev key is acceptable in
+        # development/testing)
         assert isinstance(config.SECRET_KEY, str)
 
     except ImportError:
@@ -369,7 +372,7 @@ def test_config_inheritance():
 
         # Test environment-specific overrides
         assert dev_config.DEBUG != prod_config.DEBUG
-        assert test_config.TESTING == True
+        assert test_config.TESTING
 
     except ImportError:
         pytest.skip("Config inheritance test not available")

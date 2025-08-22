@@ -84,7 +84,8 @@ def test_advanced_cache_memory_backend():
         cache.set("expire_key", "expire_value", ttl=0)
         time.sleep(0.01)  # Small delay
         expired_value = cache.get("expire_key")
-        # Value might be None if expired or still there if not enough time passed
+        # Value might be None if expired or still there if not enough time
+        # passed
         assert expired_value is None or expired_value == "expire_value"
 
         # Test cache deletion

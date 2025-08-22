@@ -100,7 +100,8 @@ class SystemMetricsMixin:
                 name="blacklist_cache_operations_total",
                 help_text="캐시 작업 총 수",
                 metric_type="counter",
-                labels=["operation", "result"],  # get/set/delete, hit/miss/error
+                # get/set/delete, hit/miss/error
+                labels=["operation", "result"],
             ),
             MetricDefinition(
                 name="blacklist_cache_size_bytes",
@@ -122,7 +123,8 @@ class SystemMetricsMixin:
                 name="blacklist_disk_usage_bytes",
                 help_text="디스크 사용량 (바이트)",
                 metric_type="gauge",
-                labels=["path", "type"],  # path=/app/instance, type=used/free/total
+                # path=/app/instance, type=used/free/total
+                labels=["path", "type"],
             ),
         ]
 

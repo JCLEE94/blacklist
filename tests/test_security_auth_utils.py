@@ -47,7 +47,8 @@ class TestUtilsAuth:
             auth_functions = [attr for attr in auth_attrs if not attr.startswith("_")]
 
             # Should have some auth functions
-            assert len(auth_functions) >= 0  # Allow for various implementations
+            # Allow for various implementations
+            assert len(auth_functions) >= 0
 
         except ImportError:
             pytest.skip("utils.auth not available")

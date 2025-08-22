@@ -323,7 +323,8 @@ def create_test_data(count: int = 10) -> list:
 
 
 # Type aliases for public interface
-# Legacy aliases removed - use ConfigHelper and EnvironmentManagerHelper directly
+# Legacy aliases removed - use ConfigHelper and EnvironmentManagerHelper
+# directly
 
 # Global test configuration instance
 TEST_CONFIG = get_test_config()

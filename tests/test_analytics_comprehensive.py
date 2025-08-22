@@ -77,7 +77,8 @@ class TestAnalyticsV2API:
         assert response.status_code in [200, 503]
         data = response.json()
 
-        # Check for either "status" or "success" fields based on actual API response format
+        # Check for either "status" or "success" fields based on actual API
+        # response format
         has_success_field = data.get("success") is True
         has_status_field = data.get("status") == "success"
         has_error = "error" in data or "message" in data
@@ -312,7 +313,8 @@ class TestAnalyticsExportFunctionality:
 
         if response.status_code == 200:
             data = response.json()
-            # Report format may not have status field, just check it has report data
+            # Report format may not have status field, just check it has report
+            # data
             assert (
                 "summary" in data
                 or "generated_at" in data

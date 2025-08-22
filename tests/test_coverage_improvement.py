@@ -464,7 +464,8 @@ class TestCacheSystem:
             # Second call should use cache
             result2 = expensive_function("test_param")
             assert result1 == result2
-            # Call count may or may not increase depending on cache implementation
+            # Call count may or may not increase depending on cache
+            # implementation
 
         except ImportError:
             pytest.skip("Cache decorators not available for testing")

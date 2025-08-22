@@ -79,7 +79,7 @@ class TestCollectionService:
         assert isinstance(status, dict)
         assert "collection_enabled" in status
         assert "sources" in status
-        assert status["collection_enabled"] == True
+        assert status["collection_enabled"]
         assert status["daily_collection_enabled"] == False
 
     def test_environment_variables_setup(self):

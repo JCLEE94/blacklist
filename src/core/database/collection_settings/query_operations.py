@@ -141,7 +141,7 @@ class DatabaseQueryOperations:
                             import json
 
                             result["metadata"] = json.loads(row["metadata_json"])
-                        except:
+                        except BaseException:
                             result["metadata"] = {}
                     else:
                         result["metadata"] = {}

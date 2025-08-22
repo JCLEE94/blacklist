@@ -40,9 +40,11 @@ class DatabaseSchema:
             )
             # Handle local instance path
             if self.database_url.startswith("sqlite:///./"):
-                self.db_path = self.database_url[12:]  # Remove 'sqlite:///./' prefix
+                # Remove 'sqlite:///./' prefix
+                self.db_path = self.database_url[12:]
             elif self.database_url.startswith("sqlite:///"):
-                self.db_path = self.database_url[10:]  # Remove 'sqlite:///' prefix
+                # Remove 'sqlite:///' prefix
+                self.db_path = self.database_url[10:]
             else:
                 self.db_path = "instance/blacklist.db"
 
@@ -190,7 +192,8 @@ class DatabaseSchema:
 
                 for table in ALLOWED_TABLES:
                     try:
-                        # Use parameterized queries where possible, or validate table names
+                        # Use parameterized queries where possible, or validate
+                        # table names
                         if table not in ALLOWED_TABLES:
                             continue  # Skip unsafe table names
 

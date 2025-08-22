@@ -34,7 +34,8 @@ class TestCollectionDataPipeline(TestBase):
             "source": "test",
             "data": [
                 {"ip": "192.168.1.1", "threat_level": "high"},
-                {"ip": "invalid_ip", "threat_level": "medium"},  # Should be filtered
+                # Should be filtered
+                {"ip": "invalid_ip", "threat_level": "medium"},
                 {"ip": "10.0.0.1", "threat_level": "low"},
             ],
         }

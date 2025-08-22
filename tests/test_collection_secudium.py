@@ -134,7 +134,8 @@ class TestSecudiumCollector:
 
     def test_data_validation(self):
         """데이터 유효성 검사 테스트"""
-        # Skip this test as _validate_data is not part of the current implementation
+        # Skip this test as _validate_data is not part of the current
+        # implementation
         pass
 
     def test_logging_functionality(self):
@@ -145,7 +146,8 @@ class TestSecudiumCollector:
 
     def test_cleanup_operations(self):
         """정리 작업 테스트"""
-        # Skip this test as _create_session and _cleanup_session are not exposed
+        # Skip this test as _create_session and _cleanup_session are not
+        # exposed
         pass
 
     def test_concurrent_collection_prevention(self):

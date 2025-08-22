@@ -33,7 +33,8 @@ except ImportError as e:
 # For individual test execution, use:
 # pytest tests/test_collection_status_api.py::TestCollectionStatusAPI::test_collection_status_endpoint
 # pytest tests/test_collection_triggers.py::TestCollectionTriggers::test_regtech_trigger_endpoint
-# pytest tests/test_collection_integration.py::TestCollectionDataPipeline::test_data_validation_pipeline
+# pytest
+# tests/test_collection_integration.py::TestCollectionDataPipeline::test_data_validation_pipeline
 
 
 if __name__ == "__main__":

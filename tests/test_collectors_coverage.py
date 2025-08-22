@@ -266,7 +266,8 @@ class TestSecudiumCollector:
             processed_data = collector._process_data(raw_data)
             assert isinstance(processed_data, list)
         except Exception as e:
-            # Processing may fail without proper data format, but shouldn't crash
+            # Processing may fail without proper data format, but shouldn't
+            # crash
             assert "process_data" in str(e) or True
 
 
@@ -320,7 +321,8 @@ class TestRegtechAuth:
             # Should attempt login without crashing
             assert isinstance(result, bool)
         except Exception as e:
-            # May fail due to missing implementation, but should handle gracefully
+            # May fail due to missing implementation, but should handle
+            # gracefully
             assert "login" in str(e) or True
 
     def test_regtech_auth_token_management(self):

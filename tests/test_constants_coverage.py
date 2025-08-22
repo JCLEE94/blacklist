@@ -22,10 +22,10 @@ import sys
 
 import pytest
 
+from src.core.constants import *
+
 # Import with proper Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
-from src.core.constants import *
 
 
 class TestVersionConstants:
@@ -106,7 +106,8 @@ class TestCacheConstants:
             assert prefix is not None
             assert isinstance(prefix, str)
             assert len(prefix) > 0
-            # Should not contain spaces or special characters that could cause issues
+            # Should not contain spaces or special characters that could cause
+            # issues
             assert " " not in prefix
             assert prefix.isalnum() or "_" in prefix
 

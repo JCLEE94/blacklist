@@ -6,12 +6,12 @@ Rust 스타일 인라인 테스트
 import os
 import sys
 
-# 프로젝트 루트 경로 추가
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-
 from flask import Flask
 
 from src.core.unified_routes import unified_bp
+
+# 프로젝트 루트 경로 추가
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 
 def test_health_endpoint_integration():

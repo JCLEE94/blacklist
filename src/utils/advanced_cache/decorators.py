@@ -171,7 +171,8 @@ def _generate_cache_key(
     # Create final key
     cache_key = ":".join(key_parts)
 
-    # Hash if key is too long (Redis has a 512MB key limit, but shorter is better)
+    # Hash if key is too long (Redis has a 512MB key limit, but shorter is
+    # better)
     if len(cache_key) > 200:
         cache_key_hash = hashlib.sha256(cache_key.encode()).hexdigest()
         short_prefix = key_parts[0] if key_parts else "func"
@@ -274,7 +275,8 @@ class CacheManager:
         if not cache or not hasattr(func, "_cache_key_generator"):
             return {"error": "Function not cached or cache unavailable"}
 
-        # This would require enhanced backend support to track per-function stats
+        # This would require enhanced backend support to track per-function
+        # stats
         return {
             "function": f"{func.__module__}.{func.__name__}",
             "cached": True,

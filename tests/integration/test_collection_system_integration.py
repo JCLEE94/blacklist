@@ -9,13 +9,13 @@ import tempfile
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-
 from src.core.collection_manager import CollectionManager
 from src.core.collectors.regtech_collector import (
     RegtechCollector as RegtechSimpleCollector,
 )
 from src.core.unified_service import UnifiedBlacklistService
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 
 def test_collection_manager_initialization():
@@ -40,9 +40,7 @@ def test_collection_manager_initialization():
         os.environ["COLLECTION_ENABLED"] = "true"
         manager2 = CollectionManager(db_path=db_path, config_path=config_path)
 
-        assert (
-            manager2.collection_enabled == True
-        ), "Environment variable should override"
+        assert manager2.collection_enabled, "Environment variable should override"
 
         del os.environ["COLLECTION_ENABLED"]
         print("✅ Environment variable priority test passed")
@@ -51,7 +49,7 @@ def test_collection_manager_initialization():
         manager.enable_collection()
         manager3 = CollectionManager(db_path=db_path, config_path=config_path)
 
-        assert manager3.collection_enabled == True, "Setting should persist"
+        assert manager3.collection_enabled, "Setting should persist"
 
         print("✅ Settings persistence test passed")
 
@@ -70,22 +68,22 @@ def test_collection_enable_disable_cycle():
 
         # 1. 수집 활성화
         result = manager.enable_collection()
-        assert result["success"] == True
-        assert manager.collection_enabled == True
+        assert result["success"]
+        assert manager.collection_enabled
         assert result["action"] == "enabled"
 
         print("✅ Enable collection test passed")
 
         # 2. 중복 활성화 시도
         result = manager.enable_collection()
-        assert result["success"] == True
+        assert result["success"]
         assert result["message"] == "Collection already enabled"
 
         print("✅ Duplicate enable test passed")
 
         # 3. 수집 비활성화
         result = manager.disable_collection()
-        assert result["success"] == True
+        assert result["success"]
         assert manager.collection_enabled == False
         assert result["action"] == "disabled"
 
@@ -93,7 +91,7 @@ def test_collection_enable_disable_cycle():
 
         # 4. 소스별 활성화/비활성화
         manager.enable_source("regtech")
-        assert manager.sources["regtech"]["enabled"] == True
+        assert manager.sources["regtech"]["enabled"]
 
         manager.disable_source("regtech")
         assert manager.sources["regtech"]["enabled"] == False
@@ -332,7 +330,7 @@ def test_unified_service_integration():
             service = UnifiedBlacklistService()
 
             # 1. Test service initialization
-            assert service._running == True, "Service should be running"
+            assert service._running, "Service should be running"
             assert hasattr(
                 service, "blacklist_manager"
             ), "Should have blacklist_manager"

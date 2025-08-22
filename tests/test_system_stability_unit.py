@@ -16,9 +16,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from src.utils.system_stability import DatabaseStabilityManager, SystemHealth
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 class TestSystemHealth:

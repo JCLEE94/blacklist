@@ -42,7 +42,8 @@ class BaseConfig:
     }
 
     # Cache Configuration
-    REDIS_URL = os.environ.get("REDIS_URL", "")  # Don't default to redis URL if not set
+    # Don't default to redis URL if not set
+    REDIS_URL = os.environ.get("REDIS_URL", "")
     CACHE_TYPE = "redis" if REDIS_URL else "simple"
     CACHE_DEFAULT_TIMEOUT = int(os.environ.get("CACHE_DEFAULT_TIMEOUT", 300))
     CACHE_KEY_PREFIX = os.environ.get("CACHE_KEY_PREFIX", "secudium:")

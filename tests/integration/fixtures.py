@@ -35,7 +35,7 @@ class IntegrationTestFixtures:
         # Cleanup
         try:
             os.unlink(db_path)
-        except:
+        except BaseException:
             pass
 
     @pytest.fixture

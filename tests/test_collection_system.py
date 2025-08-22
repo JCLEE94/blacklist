@@ -8,10 +8,10 @@ import os
 import sys
 from datetime import datetime
 
+from src.core.collection_unified import UnifiedCollectionSystem
+
 # Add path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from src.core.collection_unified import UnifiedCollectionSystem
 
 
 def test_collection_system():

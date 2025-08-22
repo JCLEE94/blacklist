@@ -13,7 +13,8 @@ from .test_collection_status_routes import TestCollectionStatusRoutes
 from .test_collection_trigger_routes import TestCollectionTriggerRoutes
 
 
-# For backward compatibility, create a unified test class that includes all tests
+# For backward compatibility, create a unified test class that includes
+# all tests
 class TestCollectionRoutes(
     TestCollectionStatusRoutes, TestCollectionTriggerRoutes, TestCollectionLogsRoutes
 ):

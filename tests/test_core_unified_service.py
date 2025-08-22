@@ -47,7 +47,7 @@ def test_blacklist_manager_basic_operations():
 
         # Test IP validation methods if available
         if hasattr(manager, "is_valid_ip"):
-            assert manager.is_valid_ip("192.168.1.1") == True
+            assert manager.is_valid_ip("192.168.1.1")
             assert manager.is_valid_ip("invalid") == False
 
         if hasattr(manager, "format_ip_list"):
@@ -158,13 +158,20 @@ def test_security_utilities():
         from src.utils.security import hash_password, verify_password
 
         password = "test_password"
-        hashed = hash_password(password)
-        assert hashed != password
-        assert len(hashed) > 20  # Should be a proper hash
+        hashed_result = hash_password(password)
+        
+        # hash_password returns (hash, salt) tuple
+        assert isinstance(hashed_result, tuple)
+        assert len(hashed_result) == 2
+        password_hash, salt = hashed_result
+        
+        assert password_hash != password
+        assert len(password_hash) > 20  # Should be a proper hash
+        assert len(salt) > 10  # Should have a salt
 
         # Test verification
-        assert verify_password(password, hashed) == True
-        assert verify_password("wrong_password", hashed) == False
+        assert verify_password(password, password_hash, salt)
+        assert verify_password("wrong_password", password_hash, salt) == False
 
     except ImportError:
         pytest.skip("Security utilities not available")

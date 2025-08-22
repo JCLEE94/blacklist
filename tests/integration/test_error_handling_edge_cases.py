@@ -50,7 +50,8 @@ class TestErrorHandlingIntegration(BaseIntegrationTest):
 
 
 # Import test classes from specialized modules
-# This ensures all tests are discoverable by pytest while keeping code organized
+# This ensures all tests are discoverable by pytest while keeping code
+# organized
 __all__ = [
     "TestErrorHandlingIntegration",
     "TestNetworkErrors",

@@ -293,8 +293,10 @@ class MockCacheManager:
         }
 
     def flush_expired(self):
-        # Mock implementation - in real cache, this would remove expired entries
-        expired_count = max(0, len(self.cache) - 100)  # Mock: keep only 100 entries
+        # Mock implementation - in real cache, this would remove expired
+        # entries
+        # Mock: keep only 100 entries
+        expired_count = max(0, len(self.cache) - 100)
         if expired_count > 0:
             keys_to_remove = list(self.cache.keys())[:expired_count]
             for key in keys_to_remove:

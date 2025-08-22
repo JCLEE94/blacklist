@@ -35,7 +35,8 @@ class TestCICDPipelineTriggers:
         with open(workflow_path) as f:
             workflow = yaml.safe_load(f)
 
-        # YAML parsing issue: 'on' becomes boolean True, need to read as raw text
+        # YAML parsing issue: 'on' becomes boolean True, need to read as raw
+        # text
         with open(workflow_path, "r") as f:
             workflow_text = f.read()
 

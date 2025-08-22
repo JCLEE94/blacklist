@@ -16,11 +16,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add project root to path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from src.core.constants import (
     API_VERSION,
     DEFAULT_CACHE_TTL,
@@ -39,6 +34,11 @@ from src.core.constants import (
     is_valid_port,
     is_valid_ttl,
 )
+
+# Add project root to path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 
 class TestConstants(unittest.TestCase):

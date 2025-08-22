@@ -131,7 +131,8 @@ class AuthenticationManager:
             ):  # Lowercase convention
                 return False
 
-            # Validate token: 40+ chars, URL-safe characters (no underscores in token part)
+            # Validate token: 40+ chars, URL-safe characters (no underscores in
+            # token part)
             if not (
                 len(token) >= 40 and all(c.isalnum() or c == "-" for c in token)
             ):  # No underscores in token

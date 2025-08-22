@@ -194,7 +194,8 @@ def trigger_source_collection(source_id):
                 403,
             )
 
-        # Trigger collection (placeholder - actual implementation would call collector)
+        # Trigger collection (placeholder - actual implementation would call
+        # collector)
         return jsonify(
             {
                 "status": "triggered",

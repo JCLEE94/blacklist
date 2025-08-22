@@ -6,7 +6,8 @@ Serialization Manager for Advanced Cache
 import gzip
 import json
 import logging
-import pickle
+
+# import pickle - removed for security
 from typing import Any, Dict
 
 try:
@@ -44,7 +45,8 @@ class SerializationManager:
                 else:
                     data = json.dumps(value, ensure_ascii=False).encode("utf-8")
             else:
-                data = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+                # Convert to JSON-serializable format for non-dict/list types
+                data = json.dumps(str(value), ensure_ascii=False).encode("utf-8")
 
             self.stats["serializations"] += 1
 
@@ -64,8 +66,8 @@ class SerializationManager:
 
         except Exception as e:
             logger.error(f"Serialization error for value type {type(value)}: {e}")
-            # Fallback to pickle
-            return pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+            # Fallback to string representation
+            return json.dumps(str(value), ensure_ascii=False).encode("utf-8")
 
     def deserialize(self, data: bytes) -> Any:
         """Deserialize data with decompression support"""
@@ -86,17 +88,11 @@ class SerializationManager:
             except (json.JSONDecodeError, UnicodeDecodeError, orjson.JSONDecodeError):
                 pass
 
-            # Fallback to pickle (only for trusted internal data)
+            # If JSON failed, try to interpret as string
             try:
-                # Add security check - only deserialize if data source is trusted
-                # This should only be used for internally cached data
-                if hasattr(self, "_trust_pickle") and self._trust_pickle:
-                    return pickle.loads(data)
-                else:
-                    logger.warning("Pickle deserialization skipped for security")
-                    return None
-            except (pickle.UnpicklingError, TypeError):
-                logger.warning("Pickle deserialization failed")
+                return data.decode("utf-8")
+            except UnicodeDecodeError:
+                logger.warning("Failed to deserialize data as string")
                 return None
 
         except Exception as e:

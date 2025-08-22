@@ -23,9 +23,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from src.core.minimal_app import create_minimal_app
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 
 class TestMinimalAppFactory:
@@ -191,7 +191,8 @@ class TestBuildInfoContext:
                         for processor in app.template_context_processors[None]:
                             context.update(processor())
 
-                        # Should fall back to default when no valid BUILD_TIME found
+                        # Should fall back to default when no valid BUILD_TIME
+                        # found
                         assert "build_time" in context
                         assert context["build_time"] == "2025-06-18 18:55:33 KST"
         finally:

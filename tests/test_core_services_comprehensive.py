@@ -60,7 +60,8 @@ class TestContainerSystem(unittest.TestCase):
             # Test if container has get method
             self.assertTrue(hasattr(container, "get"))
 
-            # Try to get common services (should handle gracefully if not available)
+            # Try to get common services (should handle gracefully if not
+            # available)
             try:
                 service = container.get("unified_service")
                 if service is not None:
@@ -381,7 +382,8 @@ class TestConfigurationManagement(unittest.TestCase):
 
     def test_configuration_hierarchy(self):
         """Test configuration hierarchy and precedence"""
-        # Test configuration precedence: CLI args > Environment > Config file > Defaults
+        # Test configuration precedence: CLI args > Environment > Config file >
+        # Defaults
         config_sources = [
             {
                 "source": "defaults",

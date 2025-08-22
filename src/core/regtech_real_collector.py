@@ -122,7 +122,7 @@ class RealRegtechCollector:
                     try:
                         text = excel_resp.content.decode("utf-8")
                         logger.debug(f"Response text (first 500 chars): {text[:500]}")
-                    except:
+                    except BaseException:
                         pass
 
             # Step 5: Parse Excel file
@@ -199,7 +199,7 @@ class RealRegtechCollector:
                 # Clean up temp file
                 try:
                     os.unlink(tmp_path)
-                except:
+                except BaseException:
                     pass
 
             except Exception as e:
@@ -212,7 +212,7 @@ class RealRegtechCollector:
                             "Response is HTML, not Excel. May need different approach."
                         )
                         # Could parse HTML table here if needed
-                except:
+                except BaseException:
                     pass
 
             # Step 6: Return results
@@ -242,7 +242,7 @@ class RealRegtechCollector:
             if self.session:
                 try:
                     self.session.close()
-                except:
+                except BaseException:
                     pass
 
 

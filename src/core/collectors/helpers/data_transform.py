@@ -62,7 +62,8 @@ class RegtechDataTransform:
                 "detection_date": detection_date.strftime(
                     "%Y-%m-%d"
                 ),  # 실제 탐지일 유지
-                "collection_date": collection_date.strftime("%Y-%m-%d"),  # 수집일 추가
+                # 수집일 추가
+                "collection_date": collection_date.strftime("%Y-%m-%d"),
                 "expires_at": expires_at.isoformat(),  # 수집일 기준 만료
                 "threat_level": raw_data.get("threat_level", "medium"),
                 "category": raw_data.get("category", "malware"),
@@ -88,7 +89,8 @@ class RegtechDataTransform:
                 "detection_date": fallback_collection.strftime(
                     "%Y-%m-%d"
                 ),  # 에러 시 수집일로 설정
-                "collection_date": fallback_collection.strftime("%Y-%m-%d"),  # 수집일
+                # 수집일
+                "collection_date": fallback_collection.strftime("%Y-%m-%d"),
                 "expires_at": fallback_expires.isoformat(),  # 수집일 기준 만료
             }
 

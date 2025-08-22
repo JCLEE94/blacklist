@@ -99,7 +99,7 @@ def test_with_playwright():
                             link.click()
                             page.wait_for_load_state("networkidle")
                             break
-                    except:
+                    except BaseException:
                         continue
 
                 # 현재 페이지 스크린샷

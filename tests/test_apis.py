@@ -12,13 +12,14 @@ from pathlib import Path
 import pytest
 import requests
 
+from src.config.settings import settings
+
 # 프로젝트 루트 경로 설정
 project_root = Path(__file__).parent.parent
 document_dir = project_root / "document"
 
 # Add project root to path
 sys.path.append(str(project_root))
-from src.config.settings import settings
 
 
 def analyze_postman_collection(json_file):

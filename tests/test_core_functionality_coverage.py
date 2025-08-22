@@ -57,11 +57,11 @@ class TestCoreModels:
                     try:
                         instance = model_class(id=1)
                         assert instance is not None
-                    except:
+                    except BaseException:
                         try:
                             instance = model_class("test_value")
                             assert instance is not None
-                        except:
+                        except BaseException:
                             # Some classes might have complex requirements
                             pass
 

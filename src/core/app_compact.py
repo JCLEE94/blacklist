@@ -60,7 +60,8 @@ class CompactFlaskApp(
     def create_app(self, config_name: Optional[str] = None) -> Flask:
         """Create compact Flask application with modular architecture"""
         try:
-            # Get the project root directory - fix path resolution for container
+            # Get the project root directory - fix path resolution for
+            # container
             current_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.join(
                 current_dir, "..", ".."

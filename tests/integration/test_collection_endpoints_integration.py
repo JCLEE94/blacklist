@@ -70,7 +70,8 @@ class TestCollectionEndpointsIntegration:
     def test_collection_status_handles_service_errors(self, client):
         """Test collection status error handling"""
         # This test needs to simulate an error condition
-        # For now, we'll test that the endpoint handles missing service gracefully
+        # For now, we'll test that the endpoint handles missing service
+        # gracefully
         response = client.get("/api/collection/status")
 
         # The actual service should return 200 with valid data

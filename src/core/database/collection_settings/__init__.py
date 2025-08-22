@@ -12,7 +12,8 @@ from .operations import DatabaseOperations
 from .validation import ValidationManager
 
 
-# For backward compatibility - preserve the original CollectionSettingsDB interface
+# For backward compatibility - preserve the original CollectionSettingsDB
+# interface
 class CollectionSettingsDB:
     """Unified collection settings database - backward compatibility wrapper"""
 

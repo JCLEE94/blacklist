@@ -198,7 +198,7 @@ class TestCollectionResponseFormat:
             try:
                 data = response.get_json()
                 assert isinstance(data, dict)
-            except:
+            except BaseException:
                 pass  # JSON이 아닐 수도 있음
 
     def test_collection_logs_response_format(self, client):

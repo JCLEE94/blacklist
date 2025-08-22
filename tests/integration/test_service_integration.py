@@ -5,6 +5,7 @@ This module imports and re-exports all modular integration tests
 for backward compatibility and centralized test execution.
 """
 
+from .fixtures import IntegrationTestFixtures
 from .test_cache_database_integration import TestCacheDatabaseIntegration
 
 try:
@@ -24,7 +25,6 @@ from .test_service_core import TestServiceCore
 TestServiceLayerIntegration = TestServiceCore
 
 # Import shared fixtures
-from .fixtures import IntegrationTestFixtures
 
 # Make all test classes available at module level
 __all__ = [

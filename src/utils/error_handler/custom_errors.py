@@ -68,7 +68,7 @@ class ExternalServiceError(BaseError):
         message: str,
         service: Optional[str] = None,
         status_code: int = 503,
-        **kwargs
+        **kwargs,
     ):
         self.service = service
         super().__init__(

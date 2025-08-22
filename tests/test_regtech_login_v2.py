@@ -186,7 +186,7 @@ class REGTECHLoginTest:
                             f"   ❌ 로그인 실패: {json_data.get('message', 'Unknown error')}"
                         )
                         return False
-                except:
+                except BaseException:
                     # HTML 응답 분석
                     if "성공" in response.text or "success" in response.text.lower():
                         print("   ✅ 로그인 성공 (HTML)")

@@ -81,7 +81,7 @@ class TestQueryOptimizer:
         """Test QueryOptimizer initialization"""
         assert isinstance(self.optimizer.query_cache, dict)
         assert isinstance(self.optimizer.query_stats, dict)
-        assert isinstance(self.optimizer.cache_lock, threading.Lock)
+        assert isinstance(self.optimizer.cache_lock, type(threading.Lock()))
 
     def test_measure_query_time_context_manager(self):
         """Test query time measurement context manager"""
@@ -156,7 +156,8 @@ class TestQueryOptimizer:
 
         def run_queries():
             for _ in range(10):
-                with patch("time.perf_counter", side_effect=[0.0, 0.01]):  # Mock timing
+                # Mock timing
+                with patch("time.perf_counter", side_effect=[0.0, 0.01]):
                     with self.optimizer.measure_query_time(query_name):
                         pass  # Mock replaces sleep
 
@@ -324,7 +325,10 @@ class TestMemoryOptimizer:
     def test_create_object_pool(self):
         """Test object pool creation"""
         pool_name = "test_pool"
-        factory = lambda: {"initialized": True}
+
+        def factory():
+            return {"initialized": True}
+
         max_size = 5
 
         self.optimizer.create_object_pool(pool_name, factory, max_size)
@@ -339,7 +343,9 @@ class TestMemoryOptimizer:
     def test_get_from_pool_new_object(self):
         """Test getting object from empty pool (creates new)"""
         pool_name = "test_pool"
-        factory = lambda: {"counter": 1}
+
+        def factory():
+            return {"counter": 1}
 
         self.optimizer.create_object_pool(pool_name, factory, 5)
 
@@ -349,7 +355,9 @@ class TestMemoryOptimizer:
     def test_get_from_pool_reused_object(self):
         """Test getting object from pool with available objects"""
         pool_name = "test_pool"
-        factory = lambda: {"reused": True}
+
+        def factory():
+            return {"reused": True}
 
         self.optimizer.create_object_pool(pool_name, factory, 5)
 
@@ -394,7 +402,10 @@ class TestMemoryOptimizer:
     def test_return_to_pool_max_size_limit(self):
         """Test pool max size enforcement"""
         pool_name = "limited_pool"
-        factory = lambda: {"id": id(object())}
+
+        def factory():
+            return {"id": id(object())}
+
         max_size = 2
 
         self.optimizer.create_object_pool(pool_name, factory, max_size)

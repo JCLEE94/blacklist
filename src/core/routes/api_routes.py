@@ -8,17 +8,23 @@ import logging
 
 from flask import Blueprint, jsonify
 
-from .blacklist_routes import blacklist_routes_bp
+from .blacklist_routes import (
+    blacklist_routes_bp,
+    get_active_blacklist,
+    get_enhanced_blacklist,
+    get_fortigate_format,
+)
 
 # 분할된 라우트 모듈들 임포트
-from .health_routes import health_routes_bp
+from .health_routes import health_check, health_routes_bp
 
 logger = logging.getLogger(__name__)
 
 # 메인 API 라우트 블루프린트
 api_routes_bp = Blueprint("api_routes", __name__)
 
-# Register sub-blueprints (health routes moved to unified_routes for root-level access)
+# Register sub-blueprints (health routes moved to unified_routes for
+# root-level access)
 api_routes_bp.register_blueprint(blacklist_routes_bp)
 
 
@@ -33,16 +39,6 @@ def register_sub_routes(app):
     app.register_blueprint(blacklist_routes_bp)
 
     logger.info("Registered all sub-route blueprints")
-
-
-from .blacklist_routes import (
-    get_active_blacklist,
-    get_enhanced_blacklist,
-    get_fortigate_format,
-)
-
-# 레거시 호환성을 위한 임포트 (기존 코드와의 호환성 유지)
-from .health_routes import health_check
 
 
 @api_routes_bp.route("/api/data/all", methods=["GET"])

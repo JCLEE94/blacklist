@@ -235,7 +235,7 @@ class RegtechAuth:
                         logger.warning(
                             f"⚠️ Unknown error code {error_code}: {error_msg}"
                         )
-                except:
+                except BaseException:
                     logger.error(
                         f"❌ User verification failed with status {verify_resp.status_code}"
                     )

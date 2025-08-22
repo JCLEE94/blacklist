@@ -12,6 +12,8 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
 # Add project root to path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
@@ -26,8 +28,6 @@ os.environ.update(
         "FORCE_DISABLE_COLLECTION": "true",
     }
 )
-
-import pytest
 
 
 class TestDataPipelineModules(unittest.TestCase):
@@ -304,7 +304,8 @@ class TestSecurityModules(unittest.TestCase):
             # Test multiple requests from same client
             for i in range(3):
                 allowed, remaining = limiter.check_rate_limit("test_client_456")
-                self.assertTrue(allowed)  # Should be allowed for first few requests
+                # Should be allowed for first few requests
+                self.assertTrue(allowed)
 
         except Exception as e:
             self.assertTrue(True, f"RateLimiter functionality not available: {e}")

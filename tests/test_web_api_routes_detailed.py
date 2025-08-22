@@ -225,7 +225,7 @@ class TestApiIntegration:
             try:
                 data = response.get_json()
                 assert isinstance(data, (dict, list))
-            except:
+            except BaseException:
                 pass  # JSON이 아닐 수도 있음
 
     @patch("src.web.api_routes.get_stats")

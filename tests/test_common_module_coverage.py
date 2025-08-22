@@ -113,15 +113,15 @@ class TestCommonModule:
             from src.common import validate_email, validate_ip, validate_url
 
             # Test IP validation
-            assert validate_ip("192.168.1.1") == True
+            assert validate_ip("192.168.1.1")
             assert validate_ip("invalid_ip") == False
 
             # Test email validation
-            assert validate_email("test@example.com") == True
+            assert validate_email("test@example.com")
             assert validate_email("invalid_email") == False
 
             # Test URL validation
-            assert validate_url("https://example.com") == True
+            assert validate_url("https://example.com")
             assert validate_url("invalid_url") == False
 
         except ImportError:

@@ -107,7 +107,8 @@ def _get_dashboard_data():
             logger.error(f"Database source query error: {db_error}")
             # Try to get counts from memory/direct query
             if total_ips > 0:
-                # If we have IPs but no source data, assume they're from REGTECH (based on collection)
+                # If we have IPs but no source data, assume they're from
+                # REGTECH (based on collection)
                 regtech_count = total_ips
             else:
                 public_count = 0

@@ -183,8 +183,8 @@ class TestErrorValidation:
             from src.utils.error_handler import validate_ip_format
 
             # Test valid IPs
-            assert validate_ip_format("192.168.1.1") == True
-            assert validate_ip_format("10.0.0.1") == True
+            assert validate_ip_format("192.168.1.1")
+            assert validate_ip_format("10.0.0.1")
 
             # Test invalid IPs
             assert validate_ip_format("256.1.3.1") == False
@@ -202,7 +202,7 @@ class TestErrorValidation:
                 parts = ip.split(".")
                 return all(0 <= int(part) <= 255 for part in parts)
 
-            assert validate_ip_format("192.168.1.1") == True
+            assert validate_ip_format("192.168.1.1")
             assert validate_ip_format("256.1.3.1") == False
 
     def test_validate_required_fields(self):
@@ -446,7 +446,7 @@ if __name__ == "__main__":
             parts = ip.split(".")
             return all(0 <= int(part) <= 255 for part in parts)
 
-        assert validate_ip_format("192.168.1.1") == True
+        assert validate_ip_format("192.168.1.1")
         assert validate_ip_format("256.1.3.1") == False
         print("✅ Validation functions successful")
     except Exception as e:

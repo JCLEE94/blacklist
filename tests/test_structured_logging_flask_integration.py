@@ -118,7 +118,8 @@ class TestFlaskIntegration:
         stats_handler = None
         for call in route_calls:
             if "/api/logs/stats" in str(call):
-                stats_handler = call[0][0]  # The decorator returns the function
+                # The decorator returns the function
+                stats_handler = call[0][0]
                 break
 
         # The route decorator should have been called

@@ -65,7 +65,8 @@ class AuthService:
                 cursor = conn.cursor()
 
                 # Use existing auth_attempts table from schema
-                # No need to create table - it should exist from database initialization
+                # No need to create table - it should exist from database
+                # initialization
 
                 # 시도 기록 (use schema column names)
                 cursor.execute(

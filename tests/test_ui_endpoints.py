@@ -125,7 +125,8 @@ async def test_ui_analytics_endpoints():
         try:
             # Test trends endpoint (may not have data)
             response = await page.goto(f"{API_BASE}/v2/analytics/trends")
-            # Analytics may not be available without data, just check it responds
+            # Analytics may not be available without data, just check it
+            # responds
             assert response.status in [200, 404, 500]  # Accept various responses
 
             # Test sources status

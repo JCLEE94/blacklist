@@ -22,13 +22,15 @@ class CollectionMetricsMixin:
                 name="blacklist_entries_total",
                 help_text="블랙리스트 IP 총 수",
                 metric_type="gauge",
-                labels=["source", "status"],  # regtech/secudium, active/inactive
+                # regtech/secudium, active/inactive
+                labels=["source", "status"],
             ),
             MetricDefinition(
                 name="blacklist_collections_total",
                 help_text="데이터 수집 작업 총 수",
                 metric_type="counter",
-                labels=["source", "status"],  # regtech/secudium, success/failure
+                # regtech/secudium, success/failure
+                labels=["source", "status"],
             ),
             MetricDefinition(
                 name="blacklist_collection_duration_seconds",
@@ -47,19 +49,22 @@ class CollectionMetricsMixin:
                 name="blacklist_api_queries_total",
                 help_text="API 쿼리 총 수",
                 metric_type="counter",
-                labels=["endpoint", "result"],  # /api/blacklist/active, success/error
+                # /api/blacklist/active, success/error
+                labels=["endpoint", "result"],
             ),
             MetricDefinition(
                 name="blacklist_threats_detected_total",
                 help_text="탐지된 위협 총 수",
                 metric_type="counter",
-                labels=["threat_level", "source"],  # high/medium/low, regtech/secudium
+                # high/medium/low, regtech/secudium
+                labels=["threat_level", "source"],
             ),
             MetricDefinition(
                 name="blacklist_authentication_attempts_total",
                 help_text="인증 시도 총 수",
                 metric_type="counter",
-                labels=["service", "result"],  # regtech/secudium/api, success/failure
+                # regtech/secudium/api, success/failure
+                labels=["service", "result"],
             ),
             MetricDefinition(
                 name="blacklist_data_freshness_seconds",

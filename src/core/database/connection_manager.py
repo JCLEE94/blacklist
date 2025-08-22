@@ -32,7 +32,8 @@ class ConnectionManager:
     def get_connection(self) -> sqlite3.Connection:
         """데이터베이스 연결 반환"""
 
-        # For in-memory databases, use persistent connection to avoid losing data
+        # For in-memory databases, use persistent connection to avoid losing
+        # data
         if self.db_path == ":memory:":
             if self._memory_connection is None:
                 self._memory_connection = sqlite3.connect(self.db_path)

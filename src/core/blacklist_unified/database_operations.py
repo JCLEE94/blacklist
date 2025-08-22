@@ -175,7 +175,8 @@ class DatabaseOperations:
                 result = []
                 for row in cursor.fetchall():
                     ip_str = row[0]
-                    # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
+                    # Remove CIDR notation if present (e.g., 1.2.3.4/32 ->
+                    # 1.2.3.4)
                     if "/" in ip_str:
                         ip_str = ip_str.split("/")[0]
                     result.append(ip_str)
@@ -207,7 +208,8 @@ class DatabaseOperations:
                         result = []
                         for row in cursor.fetchall():
                             ip_str = row[0]
-                            # Remove CIDR notation if present (e.g., 1.2.3.4/32 -> 1.2.3.4)
+                            # Remove CIDR notation if present (e.g., 1.2.3.4/32
+                            # -> 1.2.3.4)
                             if "/" in ip_str:
                                 ip_str = ip_str.split("/")[0]
                             result.append(ip_str)

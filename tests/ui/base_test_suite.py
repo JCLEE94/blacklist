@@ -66,7 +66,7 @@ class BaseUITestSuite:
                 try:
                     await expect(element.first).to_be_visible(timeout=3000)
                     found_count += 1
-                except:
+                except BaseException:
                     pass
 
         if found_count == 0:
@@ -108,7 +108,7 @@ class BaseUITestSuite:
             try:
                 await expect(loading_indicator.first).to_be_visible(timeout=1000)
                 await expect(loading_indicator.first).to_be_hidden(timeout=5000)
-            except:
+            except BaseException:
                 self.reporter.add_warning("로딩 인디케이터 동작 이상")
 
     async def test_chart_rendering(self, chart_selector: str) -> None:

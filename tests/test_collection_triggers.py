@@ -155,7 +155,8 @@ class TestCollectionTriggers(TestBase):
             responses.append(response.status_code)
             time.sleep(0.1)  # Brief delay
 
-        # Should handle requests appropriately (success, auth required, or rate limited)
+        # Should handle requests appropriately (success, auth required, or rate
+        # limited)
         expected_codes = [200, 202, 401, 404, 429, 501, 503]
         assert all(code in expected_codes for code in responses)
 

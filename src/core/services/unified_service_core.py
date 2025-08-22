@@ -145,8 +145,10 @@ class UnifiedBlacklistService(
 
     # All initialization methods are now provided by CoreOperationsMixin
 
-    # All logging methods are now provided by LoggingOperationsMixin and DatabaseOperationsMixin
+    # All logging methods are now provided by LoggingOperationsMixin and
+    # DatabaseOperationsMixin
 
     # All core operation methods are now provided by CoreOperationsMixin
 
-    # All database operation methods are now provided by DatabaseOperationsMixin
+    # All database operation methods are now provided by
+    # DatabaseOperationsMixin

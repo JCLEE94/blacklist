@@ -67,7 +67,8 @@ class FixedDataStorage:
                             failed_count += 1
                             continue
 
-                        # Prepare data for insertion (matching blacklist_entries schema)
+                        # Prepare data for insertion (matching
+                        # blacklist_entries schema)
                         insert_data = {
                             "ip_address": ip_address,
                             "source": ip_entry.get("source", source),
@@ -129,7 +130,7 @@ class FixedDataStorage:
                         # Force rollback of current transaction if needed
                         try:
                             conn.rollback()
-                        except:
+                        except BaseException:
                             pass
                         continue
 

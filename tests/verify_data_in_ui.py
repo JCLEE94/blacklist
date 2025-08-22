@@ -151,7 +151,7 @@ def check_api_endpoints():
                         print(f"  First 3: {data['blacklist'][:3]}")
                 elif "data" in data:
                     print(f"FortiGate Format: {len(data['data'])} entries")
-            except:
+            except BaseException:
                 lines = text.strip().split("\n")
                 print(f"FortiGate Format: {len(lines)} lines")
         else:

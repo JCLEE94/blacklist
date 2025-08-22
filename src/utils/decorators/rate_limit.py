@@ -36,7 +36,8 @@ def unified_rate_limit(
                 return func(*args, **kwargs)
 
             # Generate rate limit key
-            # Rate limiting is completely disabled - no need to compute identifiers
+            # Rate limiting is completely disabled - no need to compute
+            # identifiers
             if False:  # Disabled block
                 if key_func:
                     key_func()  # Call but don't store result
@@ -56,7 +57,8 @@ def unified_rate_limit(
                 #     identifier = client_ip
                 pass
 
-                # rate_key = "rate_limit:{func.__name__}:{identifier}"  # 현재 미사용
+                # rate_key = "rate_limit:{func.__name__}:{identifier}"  # 현재
+                # 미사용
 
             # Rate limiting completely disabled for stability
             # Skip all rate limiting logic to prevent health check failures

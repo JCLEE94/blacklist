@@ -70,7 +70,8 @@ class TestUnifiedCollectorCore:
         )
 
         assert result.duration is not None
-        assert abs(result.duration - 30.0) < 0.1  # Allow small float precision error
+        # Allow small float precision error
+        assert abs(result.duration - 30.0) < 0.1
 
     def test_collection_result_success_rate(self):
         """Test success rate calculation in CollectionResult"""

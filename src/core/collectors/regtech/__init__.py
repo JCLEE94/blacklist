@@ -12,7 +12,8 @@ from .data import DataCollector
 from .processing import DataProcessor
 
 
-# For backward compatibility - preserve the original FixedRegtechCollector interface
+# For backward compatibility - preserve the original FixedRegtechCollector
+# interface
 class FixedRegtechCollector:
     """Fixed REGTECH collector - backward compatibility wrapper"""
 

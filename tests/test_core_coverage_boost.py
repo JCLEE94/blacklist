@@ -12,6 +12,10 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+import requests
+from flask import Flask
+
 # Add project root to path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
@@ -26,10 +30,6 @@ os.environ.update(
         "FORCE_DISABLE_COLLECTION": "true",
     }
 )
-
-import pytest
-import requests
-from flask import Flask
 
 
 class TestMinimalApp(unittest.TestCase):

@@ -34,7 +34,8 @@ except ImportError as e:
 # pytest tests/test_password_security.py::TestPasswordHashing::test_hash_password_basic
 # pytest tests/test_jwt_security.py::TestJWTTokenGeneration::test_generate_jwt_token_basic
 # pytest tests/test_api_key_security.py::TestAPIKeyValidation::test_validate_api_key_valid
-# pytest tests/test_rate_limiter_security.py::TestRateLimiterCreation::test_create_rate_limiter_basic
+# pytest
+# tests/test_rate_limiter_security.py::TestRateLimiterCreation::test_create_rate_limiter_basic
 
 
 if __name__ == "__main__":

@@ -104,15 +104,14 @@ class RegtechAnalyzer:
                 SELECT DATE(created_at) as date, COUNT(*) as count
                 FROM blacklist_ips
                 WHERE source = 'REGTECH'
-                AND created_at >= datetime('now', '-{} days')
+                AND created_at >= datetime('now', ? || ' days')
                 GROUP BY DATE(created_at)
                 ORDER BY date ASC
-            """.format(
-                days
-            )
+            """
+            query_params = (f"-{days}",)
 
             if pd is not None:
-                df = pd.read_sql_query(query, conn)
+                df = pd.read_sql_query(query, conn, params=query_params)
                 conn.close()
 
                 # 데이터 변환

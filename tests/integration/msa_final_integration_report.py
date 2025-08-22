@@ -25,7 +25,8 @@ class MSAFinalReportGenerator(MSAReportGenerator):
 
     # Methods inherited from MSAReportGenerator
 
-    # run_quick_health_check method renamed to run_health_checks in parent class
+    # run_quick_health_check method renamed to run_health_checks in parent
+    # class
 
     async def test_service_integration(self):
         """Service integration test - simplified wrapper"""

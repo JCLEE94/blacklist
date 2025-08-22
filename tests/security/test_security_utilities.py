@@ -59,7 +59,8 @@ class TestSecurityUtilities:
         token = generate_csrf_token()
 
         assert isinstance(token, str)
-        assert len(token) > 30  # URL-safe base64 token should be reasonably long
+        # URL-safe base64 token should be reasonably long
+        assert len(token) > 30
 
         # Should be different each time
         token2 = generate_csrf_token()

@@ -167,7 +167,10 @@ class TestMemoryOptimizer(unittest.TestCase):
     def test_create_object_pool(self):
         """객체 풀 생성 테스트"""
         pool_name = "test_pool"
-        factory = lambda: {"created": True}
+
+        def factory():
+            return {"created": True}
+
         max_size = 5
 
         self.optimizer.create_object_pool(pool_name, factory, max_size)
@@ -182,7 +185,9 @@ class TestMemoryOptimizer(unittest.TestCase):
     def test_get_from_pool_new_object(self):
         """객체 풀에서 새 객체 획득 테스트"""
         pool_name = "new_object_pool"
-        factory = lambda: {"id": "new_object"}
+
+        def factory():
+            return {"id": "new_object"}
 
         self.optimizer.create_object_pool(pool_name, factory)
         obj = self.optimizer.get_from_pool(pool_name)
@@ -192,7 +197,9 @@ class TestMemoryOptimizer(unittest.TestCase):
     def test_get_from_pool_reused_object(self):
         """객체 풀에서 재사용 객체 획득 테스트"""
         pool_name = "reuse_pool"
-        factory = lambda: {"id": "reused_object"}
+
+        def factory():
+            return {"id": "reused_object"}
 
         self.optimizer.create_object_pool(pool_name, factory)
 
@@ -212,7 +219,9 @@ class TestMemoryOptimizer(unittest.TestCase):
     def test_return_to_pool_success(self):
         """객체 풀에 반환 성공 테스트"""
         pool_name = "return_pool"
-        factory = lambda: {"counter": 0}
+
+        def factory():
+            return {"counter": 0}
 
         self.optimizer.create_object_pool(pool_name, factory, max_size=2)
 
@@ -229,7 +238,9 @@ class TestMemoryOptimizer(unittest.TestCase):
     def test_return_to_pool_max_size_exceeded(self):
         """객체 풀 최대 크기 초과 시 반환 테스트"""
         pool_name = "max_size_pool"
-        factory = lambda: {"counter": 0}
+
+        def factory():
+            return {"counter": 0}
 
         self.optimizer.create_object_pool(pool_name, factory, max_size=1)
 

@@ -49,7 +49,8 @@ class DataService:
         self.db_ops = DatabaseOperations(db_manager)
         self.file_ops = FileOperations(data_dir)
 
-        # SQLite compatibility path (deprecated but kept for backward compatibility)
+        # SQLite compatibility path (deprecated but kept for backward
+        # compatibility)
         self.db_path = os.path.join(data_dir, "blacklist.db")
 
         logger.info(f"DataService initialized with data_dir: {data_dir}")

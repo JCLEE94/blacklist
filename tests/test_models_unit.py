@@ -79,7 +79,7 @@ class TestModels:
 
         assert api_key.key == "test_api_key_123"
         assert api_key.user_id == 1
-        assert api_key.is_active == True
+        assert api_key.is_active
 
     def test_user_creation(self):
         """Test User model creation"""

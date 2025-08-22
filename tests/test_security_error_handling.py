@@ -229,7 +229,8 @@ class TestExceptionModules:
                             assert isinstance(exc_instance, Exception)
                             assert str(exc_instance) == "Test auth error"
                         except Exception:
-                            # Some exceptions might require different parameters
+                            # Some exceptions might require different
+                            # parameters
                             pass
 
         except ImportError:
@@ -267,7 +268,8 @@ class TestExceptionModules:
                             exc_instance = exception_class("Test base error")
                             assert isinstance(exc_instance, Exception)
                         except Exception:
-                            # Some exceptions might require different parameters
+                            # Some exceptions might require different
+                            # parameters
                             pass
 
         except ImportError:

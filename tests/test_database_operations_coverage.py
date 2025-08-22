@@ -157,7 +157,8 @@ class TestDatabaseSchemaManager:
                 tables = cursor.fetchall()
 
                 # Should have created at least one table
-                assert len(tables) >= 0  # Allow for no tables if that's the design
+                # Allow for no tables if that's the design
+                assert len(tables) >= 0
 
                 conn.close()
 
@@ -233,7 +234,8 @@ class TestDatabaseTableDefinitions:
             ]
 
             # Should have some table definitions
-            assert len(table_attrs) >= 0  # Allow for module structure variations
+            # Allow for module structure variations
+            assert len(table_attrs) >= 0
 
         except ImportError:
             pytest.skip("table_definitions not available")

@@ -107,7 +107,8 @@ class TestHealthCheckEndpoints:
                 found_components.extend(matching_components)
 
             # Should have at least some health checks
-            assert len(found_components) >= 0  # Allow for different component names
+            # Allow for different component names
+            assert len(found_components) >= 0
 
     def test_health_check_performance(self):
         """Test health check endpoint performance"""
@@ -355,7 +356,8 @@ class TestPerformanceMonitoring:
                     response_count += 1
 
         # Performance expectations
-        assert success_count >= len(endpoints) * 2  # At least 2/3 should succeed
+        # At least 2/3 should succeed
+        assert success_count >= len(endpoints) * 2
 
         if response_count > 0:
             avg_response_time = total_response_time / response_count

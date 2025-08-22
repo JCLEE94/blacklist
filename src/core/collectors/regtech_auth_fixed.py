@@ -151,7 +151,8 @@ class FixedRegtechAuth:
     def _verify_login_success(self, response: requests.Response) -> bool:
         """Verify login success with multiple indicators"""
 
-        # Method 1: Check URL - successful login should redirect away from login
+        # Method 1: Check URL - successful login should redirect away from
+        # login
         if "/login" not in response.url.lower():
             logger.info("Login success indicator: Redirected away from login page")
             return True
@@ -210,7 +211,8 @@ class FixedRegtechAuth:
             test_urls = [
                 f"{self.base_url}/main",
                 f"{self.base_url}/dashboard",
-                f"{self.base_url}/board/boardList?menuCode=HPHB0620101",  # Blacklist board
+                # Blacklist board
+                f"{self.base_url}/board/boardList?menuCode=HPHB0620101",
             ]
 
             for test_url in test_urls:

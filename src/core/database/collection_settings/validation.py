@@ -169,7 +169,8 @@ class ValidationManager:
         if not key.replace("_", "").replace("-", "").isalnum():
             return "Setting key can only contain letters, numbers, underscores, and hyphens"
 
-        # Value can be any JSON-serializable type, so no specific validation needed
+        # Value can be any JSON-serializable type, so no specific validation
+        # needed
         return None
 
     def encrypt_data(self, data: str) -> str:

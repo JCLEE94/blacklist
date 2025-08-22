@@ -56,12 +56,12 @@ def run_test_module(module_path):
                     if part == "passed" and i > 0:
                         try:
                             passed = int(parts[i - 1])
-                        except:
+                        except BaseException:
                             pass
                     if part == "failed" and i > 0:
                         try:
                             failed = int(parts[i - 1])
-                        except:
+                        except BaseException:
                             pass
 
         # 실패한 경우 stderr도 확인

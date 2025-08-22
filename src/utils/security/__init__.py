@@ -136,7 +136,7 @@ def get_security_manager(secret_key: str = None, jwt_secret: str = None):
         from flask import current_app
 
         return current_app.config.get("SECURITY_MANAGER")
-    except:
+    except BaseException:
         # Fallback to default
         return SecurityManager("default_secret", "default_jwt_secret")
 

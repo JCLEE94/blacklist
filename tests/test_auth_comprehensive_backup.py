@@ -35,7 +35,8 @@ except ImportError as e:
 # pytest tests/test_auth_routes.py::TestAuthenticationRoutes::test_login_success_admin
 # pytest tests/test_api_key_routes.py::TestAPIKeyRoutes::test_create_api_key_success
 # pytest tests/test_security_features.py::TestSecurityFeatures::test_malformed_jwt_token
-# pytest tests/test_performance_reliability.py::TestPerformanceAndReliability::test_concurrent_login_requests
+# pytest
+# tests/test_performance_reliability.py::TestPerformanceAndReliability::test_concurrent_login_requests
 
 
 if __name__ == "__main__":
@@ -704,7 +705,8 @@ class TestPerformanceAndReliability:
             elif result == 429:
                 rate_limited_count += 1
 
-        # At least some should succeed OR be rate limited (both are valid behaviors)
+        # At least some should succeed OR be rate limited (both are valid
+        # behaviors)
         assert success_count > 0 or rate_limited_count > 0
 
     def test_large_payload_handling(self):

@@ -132,14 +132,14 @@ class TestRouteEndpoints:
             from src.web.api_routes import api_bp
 
             app.register_blueprint(api_bp)
-        except:
+        except BaseException:
             pass
 
         try:
             from src.web.collection_routes import collection_bp
 
             app.register_blueprint(collection_bp)
-        except:
+        except BaseException:
             pass
 
         return app
@@ -153,7 +153,7 @@ class TestRouteEndpoints:
                     response = client.get(endpoint)
                     # Accept any response - endpoint may or may not exist
                     assert response.status_code in [200, 404, 500]
-                except:
+                except BaseException:
                     pass
 
     def test_api_endpoints(self, app):
@@ -172,7 +172,7 @@ class TestRouteEndpoints:
                     response = client.get(endpoint)
                     # Accept any response code - testing if route exists
                     assert isinstance(response.status_code, int)
-                except:
+                except BaseException:
                     pass
 
     def test_dashboard_endpoints(self, app):
@@ -184,7 +184,7 @@ class TestRouteEndpoints:
                 try:
                     response = client.get(endpoint)
                     assert isinstance(response.status_code, int)
-                except:
+                except BaseException:
                     pass
 
 

@@ -166,7 +166,8 @@ class TestCoreMemoryOptimizer:
             # First call (before GC) - high memory
             # Second call (after GC) - lower memory
             mock_stats_before = Mock()
-            mock_stats_before.memory_percent = 85.0  # Above threshold (80% * 0.8 = 64%)
+            # Above threshold (80% * 0.8 = 64%)
+            mock_stats_before.memory_percent = 85.0
             mock_stats_before.process_memory_mb = 200.0
 
             mock_stats_after = Mock()

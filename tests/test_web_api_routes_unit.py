@@ -15,8 +15,6 @@ from unittest.mock import MagicMock, Mock, mock_open, patch
 import pytest
 from flask import Blueprint, Flask
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from src.web.api_routes import (
     api_bp,
     api_search,
@@ -26,6 +24,8 @@ from src.web.api_routes import (
     get_stats,
     refresh_data,
 )
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 class TestApiBlueprint:
@@ -44,7 +44,8 @@ class TestApiBlueprint:
         for rule in api_bp.url_map.iter_rules():
             routes.append(rule.rule)
 
-        # Should have routes registered (though URL map might be empty until app registration)
+        # Should have routes registered (though URL map might be empty until
+        # app registration)
         assert api_bp.deferred_functions  # Should have deferred route registrations
 
 

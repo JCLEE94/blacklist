@@ -430,7 +430,8 @@ class TestAnalyticsRoutes:
         """Test that caching decorators are applied correctly"""
         with mock.patch("src.core.v2_routes.analytics_routes.service", mock_v2_service):
             # The unified_cache decorator should be applied to certain endpoints
-            # We can't directly test caching behavior in unit tests, but we can verify the endpoints work
+            # We can't directly test caching behavior in unit tests, but we can
+            # verify the endpoints work
 
             response1 = client.get("/api/v2/analytics/summary")
             response2 = client.get("/api/v2/analytics/threat-levels")

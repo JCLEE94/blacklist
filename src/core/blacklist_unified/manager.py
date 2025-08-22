@@ -235,7 +235,8 @@ class UnifiedBlacklistManager:
         try:
             stats = self.statistics_service.get_statistics()
 
-            # Format for backward compatibility - include source-specific counts
+            # Format for backward compatibility - include source-specific
+            # counts
             return {
                 "total_ips": stats.get("total_ips", 0),
                 "active_ips": stats.get("active_ips", 0),

@@ -68,7 +68,8 @@ class TestEnhancedSmartCache:
 
         # Test with very short TTL
         test_key = "ttl_test_key"
-        test_value = {"data": "ttl_test_value"}  # Use dict for JSON serialization
+        # Use dict for JSON serialization
+        test_value = {"data": "ttl_test_value"}
 
         manager.set(test_key, test_value, ttl=1)  # 1 second TTL
 
@@ -89,7 +90,8 @@ class TestEnhancedSmartCache:
         manager = EnhancedSmartCache(redis_url=None)
 
         test_key = "delete_test_key"
-        test_value = {"data": "delete_test_value"}  # Use dict for JSON serialization
+        # Use dict for JSON serialization
+        test_value = {"data": "delete_test_value"}
 
         # Set value
         manager.set(test_key, test_value)
@@ -106,7 +108,8 @@ class TestEnhancedSmartCache:
         manager = EnhancedSmartCache(redis_url=None)
 
         test_key = "exists_test_key"
-        test_value = {"data": "exists_test_value"}  # Use dict for JSON serialization
+        # Use dict for JSON serialization
+        test_value = {"data": "exists_test_value"}
 
         # Key should not exist initially
         assert not manager.exists(test_key)
@@ -362,7 +365,8 @@ class TestCacheFactory:
         from src.utils.advanced_cache.factory import get_cache
 
         try:
-            cache = get_cache("redis://invalid:6379/0")  # Will fallback to memory
+            # Will fallback to memory
+            cache = get_cache("redis://invalid:6379/0")
             assert cache is not None
             assert hasattr(cache, "get")
             assert hasattr(cache, "set")
