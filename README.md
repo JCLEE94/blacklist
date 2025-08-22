@@ -242,4 +242,4 @@ python3 scripts/create-offline-package.py
 
 ---
 
-**Made with ❤️ by JCLEE** | [Portfolio Demo](https://jclee94.github.io/blacklist/) | [Docker Image](https://registry.jclee.me/blacklist)
+**Made with ❤️ by JCLEE** | [Portfolio Demo](https://jclee94.github.io/blacklist/) | [Docker Image](https://registry.jclee.me/blacklist)# Hook 테스트용 코멘트
