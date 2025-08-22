@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  blacklist:
+    environment:
+      # Fix port configuration
+      PORT: 2542
+      PROD_PORT: 2542
+      PYTHONPATH: /app
+    command: ["python3", "-m", "src.core.main"]
+    # Override healthcheck to match the actual port
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2542/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
