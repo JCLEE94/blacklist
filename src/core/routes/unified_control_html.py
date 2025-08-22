@@ -1,10 +1,11 @@
+from ..common.imports import Blueprint, render_template
+
 #!/usr/bin/env python3
 """
 통합 제어 대시보드 HTML 라우트
 Flask 템플릿을 사용한 최적화된 구조로 리팩토링됨
 """
 
-from flask import Blueprint, render_template
 
 # Blueprint 생성
 unified_dashboard_bp = Blueprint("unified_dashboard", __name__)

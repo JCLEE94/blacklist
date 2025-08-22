@@ -3,16 +3,15 @@
 api_routes.py에서 분할된 블랙리스트 관련 엔드포인트
 """
 
-import logging
+from ..common.imports import Blueprint, jsonify, request, logger
+
 from datetime import datetime
 
-from flask import Blueprint, Response, jsonify
 
 from ..container import get_container
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
 
-logger = logging.getLogger(__name__)
 
 # 블랙리스트 라우트 블루프린트
 blacklist_routes_bp = Blueprint("blacklist_routes", __name__)
@@ -108,8 +107,7 @@ def get_fortigate_format():
 def get_enhanced_blacklist():
     """향상된 블랙리스트 - 메타데이터 포함"""
     try:
-        from flask import request
-
+        
         # Get pagination parameters
         per_page = min(int(request.args.get("per_page", 100)), 1000)
         page = int(request.args.get("page", 1))

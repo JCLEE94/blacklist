@@ -10,15 +10,14 @@ Sample input: request identifiers, rate limits
 Expected output: rate limit status, blocked IPs
 """
 
-import logging
+from ..common.imports import jsonify, request, logger
+
 import time
 from collections import defaultdict, deque
 from functools import wraps
 from typing import Callable, Dict
 
-from flask import jsonify, request
 
-logger = logging.getLogger(__name__)
 
 
 class RateLimitManager:

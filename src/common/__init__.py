@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 공통 모듈 및 유틸리티
 전체 프로젝트에서 사용되는 공통 함수들

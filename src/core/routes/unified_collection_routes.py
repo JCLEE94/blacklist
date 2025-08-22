@@ -4,14 +4,13 @@ Unified collection routes - single endpoint for all collection operations.
 Removes duplicate collection endpoints scattered across the codebase.
 """
 
-import logging
 
-from flask import Blueprint, jsonify, request
+
+from ..common.imports import Blueprint, jsonify, request, logger
 
 from ..auth_manager import get_auth_manager
 from ..container import get_container
 
-logger = logging.getLogger(__name__)
 
 unified_collection_bp = Blueprint(
     "unified_collection", __name__, url_prefix="/api/collection"

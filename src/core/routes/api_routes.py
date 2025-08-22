@@ -4,16 +4,15 @@
 500줄 제한을 준수하도록 리팩토링된 버전
 """
 
-import logging
 
-from flask import Blueprint, jsonify
+
+from ..common.imports import Blueprint, jsonify, request, logger
 
 from .blacklist_routes import blacklist_routes_bp
 
 # 분할된 라우트 모듈들 임포트
 from .health_routes import health_routes_bp
 
-logger = logging.getLogger(__name__)
 
 # 메인 API 라우트 블루프린트
 api_routes_bp = Blueprint("api_routes", __name__)
@@ -40,8 +39,7 @@ def register_sub_routes(app):
 def get_all_data():
     """전체 블랙리스트 데이터 조회"""
     try:
-        from flask import request
-
+        
         from ..container import get_container
 
         container = get_container()
@@ -108,8 +106,7 @@ def export_data(format):
     try:
         import json
 
-        from flask import Response
-
+        
         from ..container import get_container
 
         container = get_container()

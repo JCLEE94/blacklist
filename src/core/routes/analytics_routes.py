@@ -3,15 +3,14 @@
 시스템 통계, 월별 데이터, 소스별 분포 및 메타데이터 엔드포인트
 """
 
-import logging
+from ..common.imports import Blueprint, jsonify, request, logger
+
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
 
-logger = logging.getLogger(__name__)
 
 # 분석 라우트 블루프린트
 analytics_routes_bp = Blueprint("analytics_routes", __name__)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Collection API Module - Modular collection management API
 """

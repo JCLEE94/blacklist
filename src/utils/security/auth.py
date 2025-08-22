@@ -11,17 +11,16 @@ Sample input: user credentials, password strings
 Expected output: JWT tokens, password hashes, authentication status
 """
 
+from ..common.imports import jsonify, request, logger
+
 import hashlib
-import logging
 import secrets
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional
 
 import jwt
-from flask import g, jsonify, request
 
-logger = logging.getLogger(__name__)
 
 
 class AuthenticationManager:

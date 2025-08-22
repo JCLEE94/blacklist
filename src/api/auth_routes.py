@@ -1,17 +1,13 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 인증 관련 라우트 (JWT 토큰 갱신 포함)
 """
 
-import logging
 import os
 from datetime import datetime
 
-from flask import Blueprint, current_app, jsonify, request
-
 from ..utils.security import input_validation, rate_limit
-
-logger = logging.getLogger(__name__)
+from .common.imports import Blueprint, jsonify, logger, request
 
 # 블루프린트 생성
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")

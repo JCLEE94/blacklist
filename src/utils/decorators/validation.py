@@ -2,14 +2,13 @@
 Validation Decorators - Unified input validation functionality
 """
 
-import logging
+from ..common.imports import jsonify, request, logger
+
 from datetime import datetime
 from functools import wraps
 from typing import Dict, Optional
 
-from flask import jsonify, request
 
-logger = logging.getLogger(__name__)
 
 
 def unified_validation(

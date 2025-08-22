@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 수집 진행 상황 추적 및 시각화 모듈
 """

@@ -3,9 +3,10 @@
 수집 시각화 라우트 - 날짜별 수집 현황 시각화
 """
 
+from ..common.imports import Blueprint, jsonify, request
+
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
 
 from ..collection_unified import UnifiedCollectionSystem
 

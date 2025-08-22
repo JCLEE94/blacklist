@@ -13,12 +13,11 @@ Sample input: register_simple_api(flask_app)
 Expected output: Basic API routes registered with /health endpoint
 """
 
-import logging
+from .common.imports import Flask, jsonify, logger
+
 from datetime import datetime
 
-from flask import Flask, jsonify
 
-logger = logging.getLogger(__name__)
 
 
 def register_simple_api(app: Flask):
@@ -74,8 +73,7 @@ if __name__ == "__main__":
     # Test 1: Basic import
     total_tests += 1
     try:
-        from flask import Flask
-
+        
         test_app = Flask(__name__)
         register_simple_api(test_app)
     except Exception as e:

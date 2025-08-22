@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Backward compatibility wrapper for modularized Unified Blacklist Manager
 

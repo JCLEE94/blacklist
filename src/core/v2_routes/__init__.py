@@ -1,7 +1,8 @@
+from ..common.imports import Blueprint
+
 """Modular V2 API Routes package"""
 
 # Main blueprint that combines all sub-blueprints
-from flask import Blueprint
 
 from .analytics_routes import analytics_v2_bp
 from .blacklist_routes import blacklist_v2_bp

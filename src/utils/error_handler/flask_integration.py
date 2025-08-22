@@ -1,6 +1,7 @@
+from ..common.imports import jsonify
+
 """Flask integration for error handling"""
 
-from flask import jsonify
 from werkzeug.exceptions import HTTPException
 
 from .core_handler import ErrorHandler

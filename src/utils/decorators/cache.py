@@ -2,16 +2,15 @@
 Cache Decorators - Unified caching functionality
 """
 
+from ..common.imports import request, logger
+
 import hashlib
-import logging
 from functools import wraps
 from typing import Callable, Optional
 
-from flask import g, request
 
 from .registry import get_registry
 
-logger = logging.getLogger(__name__)
 
 
 def unified_cache(

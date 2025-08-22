@@ -1,14 +1,13 @@
+from ..common.imports import jsonify, logger
+
 """Error handling decorators"""
 
 import functools
-import logging
 from typing import Any, Callable, Union
 
-from flask import Response, jsonify
 
 from .custom_errors import AuthenticationError, AuthorizationError, ValidationError
 
-logger = logging.getLogger(__name__)
 
 
 def safe_execute(

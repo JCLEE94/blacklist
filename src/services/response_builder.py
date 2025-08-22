@@ -5,13 +5,12 @@ Provides standardized response formatting for API endpoints.
 Creates consistent JSON responses with proper HTTP status codes.
 """
 
-import logging
+from .common.imports import jsonify, logger
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from flask import Response, jsonify
 
-logger = logging.getLogger(__name__)
 
 
 class ResponseBuilder:

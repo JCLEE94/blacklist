@@ -3,10 +3,10 @@
 수집 상태 조회, 활성화/비활성화 API
 """
 
-import logging
+from ..common.imports import Blueprint, jsonify, request, logger
+
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
 
 from ..container import get_container
 from ..exceptions import create_error_response
@@ -17,7 +17,6 @@ from .helpers import (
     get_source_collection_stats,
 )
 
-logger = logging.getLogger(__name__)
 
 # 수집 상태 라우트 블루프린트
 collection_status_bp = Blueprint("collection_status", __name__)

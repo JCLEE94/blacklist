@@ -3,9 +3,10 @@ GitHub 이슈 자동 생성 서비스
 애플리케이션 에러 발생 시 자동으로 GitHub 이슈를 생성합니다.
 """
 
+from .common.imports import request, logger
+
 import hashlib
 import json
-import logging
 import os
 import traceback
 from datetime import datetime, timedelta
@@ -14,7 +15,6 @@ from typing import Any, Dict, Optional
 
 import requests
 
-logger = logging.getLogger(__name__)
 
 
 class GitHubIssueReporter:
@@ -317,8 +317,7 @@ class GitHubIssueReporter:
 
             # Flask 컨텍스트에서 요청 정보 추출
             try:
-                from flask import has_request_context, request
-
+                
                 if has_request_context():
                     error_data.update(
                         {

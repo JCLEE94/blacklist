@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 최소 기능 Flask 애플리케이션
 하드웨어 제약 환경이나 비상 상황에서 사용할 최소 기능 앱
@@ -6,13 +6,10 @@
 단순하고 안정적인 기능만 제공하여 테스트 안정성 확보
 """
 
-import logging
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import Flask, jsonify, request
-
-logger = logging.getLogger(__name__)
+from .common.imports import Flask, jsonify, logger, request
 
 
 def create_minimal_app(config: Dict[str, Any] = None) -> Flask:

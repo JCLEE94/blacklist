@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 데이터 처리 및 품질 개선 시스템
 수집된 데이터의 정제, 검증, 저장을 담당

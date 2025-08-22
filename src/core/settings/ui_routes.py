@@ -3,14 +3,13 @@
 설정 UI 렌더링 라우트
 설정 페이지 렌더링 및 관리 대시보드
 """
-import logging
+from ..common.imports import Blueprint, jsonify, render_template, request, logger
+
 from datetime import datetime
 
-from flask import Blueprint, render_template
 
 from ..container import get_container
 
-logger = logging.getLogger(__name__)
 
 ui_settings_bp = Blueprint("ui_settings", __name__)
 
@@ -90,8 +89,7 @@ def settings_management():
 @ui_settings_bp.route("/settings/regtech", methods=["GET", "POST"])
 def handle_regtech_settings():
     """REGTECH 설정 조회 및 저장 API"""
-    from flask import jsonify, request
-
+    
     if request.method == "GET":
         # 설정 조회
         try:

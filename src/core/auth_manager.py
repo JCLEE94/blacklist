@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Authentication manager for storing and retrieving credentials from file.
 Removes dependency on environment variables.

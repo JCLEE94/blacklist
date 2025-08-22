@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
+from ..common.imports import Blueprint, Flask, jsonify, logger, request
+
+# !/usr/bin/env python3
 """
 Collection Configuration Routes - Configuration management
 Handles collection system configuration get and update operations
 """
 
-import logging
-
-from flask import Blueprint, jsonify, request
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory
@@ -16,7 +15,6 @@ try:
 except ImportError:
     COLLECTOR_AVAILABLE = False
 
-logger = logging.getLogger(__name__)
 
 config_bp = Blueprint("collection_config", __name__, url_prefix="/api/collection")
 
@@ -227,8 +225,6 @@ def cancel_all_collections():
 if __name__ == "__main__":
     # Validation test for config routes
     import sys
-
-    from flask import Flask
 
     # Mock modules for testing
     class MockAuth:

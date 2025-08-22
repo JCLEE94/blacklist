@@ -3,15 +3,10 @@
 api_routes.py에서 분할된 헬스체크 관련 엔드포인트
 """
 
-import logging
-from datetime import datetime
-
-from flask import Blueprint, jsonify
+from ...common.imports import Blueprint, jsonify, logger, datetime
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
-
-logger = logging.getLogger(__name__)
 
 # 헬스체크 라우트 블루프린트
 health_routes_bp = Blueprint("health_routes", __name__)

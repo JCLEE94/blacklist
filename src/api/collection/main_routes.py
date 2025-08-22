@@ -1,11 +1,11 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Main Collection Routes - Combined blueprint with all collection endpoints
 Provides the main collection_bp that combines all modular route blueprints
 """
 
-from flask import Blueprint, Flask
 
+from ..common.imports import Blueprint, Flask, jsonify
 from .collector_routes import collector_bp
 from .config_routes import config_bp
 
@@ -30,7 +30,6 @@ def register_collection_routes(app: Flask):
 @collection_bp.route("/info")
 def collection_info():
     """Get information about available collection endpoints"""
-    from flask import jsonify
 
     return jsonify(
         {
@@ -64,8 +63,6 @@ def collection_info():
 if __name__ == "__main__":
     # Validation test for main routes integration
     import sys
-
-    from flask import Flask
 
     app = Flask(__name__)
 

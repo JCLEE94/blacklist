@@ -3,13 +3,12 @@
 쿠키 기반 수집을 위한 API 라우트
 """
 
-import logging
+from ..common.imports import Blueprint, jsonify, request, logger
+
 import os
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
 
-logger = logging.getLogger(__name__)
 
 # Blueprint 생성
 cookie_collection_bp = Blueprint(

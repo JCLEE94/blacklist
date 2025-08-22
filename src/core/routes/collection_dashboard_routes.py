@@ -4,11 +4,11 @@
 Collection Dashboard Routes
 """
 
+from ..common.imports import Blueprint, jsonify, render_template, request, logger
+
 import json
-import logging
 from datetime import datetime
 
-from flask import Blueprint, jsonify, render_template, request
 
 from ..advanced_analytics import AdvancedAnalytics
 from ..collection_dashboard import CollectionDashboard
@@ -21,7 +21,6 @@ except ImportError:
     RegtechCollector = None
     DatabaseCollectionSystem = None
 
-logger = logging.getLogger(__name__)
 
 # Blueprint 생성
 collection_dashboard_bp = Blueprint("collection_dashboard", __name__)

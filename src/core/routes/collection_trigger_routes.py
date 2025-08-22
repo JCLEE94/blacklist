@@ -4,16 +4,15 @@ This module provides API endpoints for triggering data collection from various s
 Supports manual triggers for REGTECH and SECUDIUM data sources with progress tracking.
 """
 
-import logging
+from ..common.imports import Blueprint, jsonify, request, logger
+
 import os
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
 
 from ..container import get_container
 from ..unified_service import get_unified_service
 
-logger = logging.getLogger(__name__)
 
 # 수집 트리거 라우트 블루프린트
 collection_trigger_bp = Blueprint("collection_trigger", __name__)

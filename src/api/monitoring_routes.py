@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 시스템 모니터링 API 라우트
 """
 
-import logging
-
-from flask import Blueprint, jsonify, request
 
 from ..utils.error_recovery import (
     get_error_collector,
@@ -18,8 +15,7 @@ from ..utils.performance_optimizer import (
 )
 from ..utils.security import rate_limit, require_auth
 from ..utils.system_stability import get_system_monitor
-
-logger = logging.getLogger(__name__)
+from .common.imports import Blueprint, jsonify, logger, request
 
 # 블루프린트 생성
 monitoring_bp = Blueprint("monitoring", __name__, url_prefix="/api/monitoring")

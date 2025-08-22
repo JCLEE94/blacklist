@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 통합 수집 시스템 - 중복 제거 및 시각화
 모든 수집 기능을 하나로 통합하고 날짜별 시각화 제공

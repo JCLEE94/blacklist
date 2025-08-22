@@ -4,9 +4,10 @@
 UI에서 수집 소스 설정 및 자격증명을 저장/조회
 """
 
+from ..common.imports import Blueprint, jsonify, request
+
 from pathlib import Path
 
-from flask import Blueprint, jsonify, request
 
 try:
     from ..database.collection_settings import CollectionSettingsDB

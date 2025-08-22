@@ -4,10 +4,11 @@ Unified Status Handler - Handles system status requests
 Provides comprehensive system status information
 """
 
+from ...common.imports import jsonify
+
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import jsonify
 
 try:
     pass

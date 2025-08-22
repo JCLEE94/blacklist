@@ -4,9 +4,10 @@
 HTML과 분리된 API 엔드포인트들
 """
 
+from ..common.imports import Blueprint, jsonify
+
 from datetime import datetime
 
-from flask import Blueprint, jsonify
 
 try:
     from ..collection_db_collector import DatabaseCollectionSystem

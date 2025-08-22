@@ -1,12 +1,12 @@
+from ..common.imports import jsonify, request, logger
+
 """Core error handler class"""
 
 import functools
-import logging
 import traceback
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Union
 
-from flask import current_app, jsonify, request
 from werkzeug.exceptions import HTTPException
 
 from .custom_errors import BaseError
@@ -19,7 +19,6 @@ except ImportError:
         return None
 
 
-logger = logging.getLogger(__name__)
 
 
 class ErrorHandler:

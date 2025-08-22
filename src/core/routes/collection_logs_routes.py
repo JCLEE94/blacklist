@@ -4,16 +4,15 @@ This module provides API endpoints for accessing and managing collection logs.
 Includes real-time logs, collection history, and detailed log retrieval.
 """
 
-import logging
+from ..common.imports import Blueprint, jsonify, request, logger
+
 import os
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
 
-logger = logging.getLogger(__name__)
 
 # 수집 로그 라우트 블루프린트
 collection_logs_bp = Blueprint("collection_logs", __name__)

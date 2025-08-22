@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Common Imports Module
 
@@ -20,7 +20,16 @@ import pandas as pd
 import requests
 
 # Third-party imports
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    Flask,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from loguru import logger
 
 # Project-specific imports (conditional)
@@ -52,6 +61,7 @@ __all__ = [
     # Flask
     "Blueprint",
     "Flask",
+    "flash",
     "jsonify",
     "request",
     "render_template",

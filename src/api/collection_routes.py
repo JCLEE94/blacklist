@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Collection Management API Routes - Legacy compatibility wrapper
 Maintains backward compatibility while using the new modular collection API

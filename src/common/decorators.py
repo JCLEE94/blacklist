@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Common Decorators Module
 
@@ -10,12 +10,9 @@ Expected output: Authenticated request handling with consistent behavior
 """
 
 import functools
-import logging
 from typing import Callable
 
-from flask import jsonify, request
-
-logger = logging.getLogger(__name__)
+from .common.imports import jsonify, logger, request
 
 
 def require_auth(f: Callable) -> Callable:
@@ -278,9 +275,7 @@ if __name__ == "__main__":
     # Final validation result
     if all_validation_failures:
         failed_count = len(all_validation_failures)
-        print(
-            f"❌ VALIDATION FAILED - {failed_count} of {total_tests} tests failed:"
-        )
+        print(f"❌ VALIDATION FAILED - {failed_count} of {total_tests} tests failed:")
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)

@@ -5,7 +5,8 @@ Flask 오류 처리기 관리
 애플리케이션 전체에서 발생하는 다양한 오류들을 처리합니다.
 """
 
-from flask import request
+
+from ..common.imports import request
 
 from src.core.exceptions import BlacklistError, create_error_response, handle_exception
 from src.utils.structured_logging import get_logger

@@ -1,11 +1,10 @@
+from .common.imports import Blueprint, jsonify, logger
+
 """루트 경로 라우트 추가"""
 
-import logging
 
-from flask import Blueprint, jsonify
 
 root_bp = Blueprint("root", __name__)
-logger = logging.getLogger(__name__)
 
 
 @root_bp.route("/")

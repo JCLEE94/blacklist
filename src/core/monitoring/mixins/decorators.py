@@ -4,10 +4,10 @@ Prometheus 메트릭 수집 데코레이터
 HTTP 요청 및 데이터 수집 작업 추적을 위한 데코레이터들을 제공합니다.
 """
 
-import logging
+from ...common.imports import request, logger
+
 import time
 
-logger = logging.getLogger(__name__)
 
 
 def track_http_requests(func):
@@ -18,8 +18,7 @@ def track_http_requests(func):
 
         try:
             # Flask request context에서 정보 추출
-            from flask import request
-
+            
             method = request.method
             endpoint = request.endpoint or "unknown"
 
@@ -41,8 +40,7 @@ def track_http_requests(func):
             duration = time.time() - start_time
 
             try:
-                from flask import request
-
+                
                 method = request.method
                 endpoint = request.endpoint or "unknown"
 

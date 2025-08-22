@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 설정 관리 API 엔드포인트 - Modular Entry Point
 
 This module imports and re-exports all modular settings routes
 for backward compatibility and centralized route registration.
 """
-from flask import Blueprint
 
+from .common.imports import Blueprint
 from .settings.api_routes import api_settings_bp
 
 # Import modular route blueprints

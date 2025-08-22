@@ -4,10 +4,11 @@ Health Check Handler - Handles health check requests
 Provides system health and readiness status
 """
 
+from ...common.imports import jsonify
+
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import jsonify
 
 
 class HealthCheckHandler:

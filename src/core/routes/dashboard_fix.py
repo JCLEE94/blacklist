@@ -1,9 +1,10 @@
+from ..common.imports import Blueprint, render_template
+
 #!/usr/bin/env python3
 """
 Dashboard fix - Working dashboard route with highest priority
 """
 
-from flask import Blueprint, render_template
 
 # Create blueprint with no prefix for highest priority
 dashboard_fix_bp = Blueprint("dashboard_fix", __name__)

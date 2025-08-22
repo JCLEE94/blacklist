@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Complete REGTECH Integration System
 End-to-end solution that handles collection, storage, and API serving

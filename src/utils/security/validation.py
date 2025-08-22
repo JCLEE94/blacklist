@@ -11,15 +11,14 @@ Sample input: user input strings, request headers
 Expected output: validated/sanitized input, security headers
 """
 
-import logging
+from ..common.imports import jsonify, request, logger
+
 import re
 import secrets
 from functools import wraps
 from typing import Any, Callable, Dict
 
-from flask import jsonify, request
 
-logger = logging.getLogger(__name__)
 
 
 class ValidationManager:

@@ -3,15 +3,14 @@
 분리된 수집 관련 모듈들을 하나로 통합
 """
 
-import logging
 
-from flask import Blueprint
+
+from ..common.imports import Blueprint, logger
 
 from .collection_logs_routes import collection_logs_bp
 from .collection_status_routes import collection_status_bp
 from .collection_trigger_routes import collection_trigger_bp
 
-logger = logging.getLogger(__name__)
 
 # 메인 수집 라우트 블루프린트
 collection_routes_bp = Blueprint("collection_routes", __name__)

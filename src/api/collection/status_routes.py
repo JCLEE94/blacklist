@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 Collection Status Routes - Status and statistics endpoints
 Handles collection system status, daily stats, and history
 """
 
-import logging
 from datetime import datetime, timedelta
 
-from flask import Blueprint, jsonify, request
+from ..common.imports import Blueprint, Flask, jsonify, logger, request
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory
@@ -17,7 +16,6 @@ try:
 except ImportError:
     COLLECTOR_AVAILABLE = False
 
-logger = logging.getLogger(__name__)
 
 status_bp = Blueprint("collection_status", __name__, url_prefix="/api/collection")
 
@@ -156,8 +154,6 @@ def get_collection_history():
 if __name__ == "__main__":
     # Validation test for status routes
     import sys
-
-    from flask import Flask
 
     app = Flask(__name__)
     app.register_blueprint(status_bp)

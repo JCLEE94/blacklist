@@ -5,7 +5,6 @@ Provides the main dashboard endpoints with template support
 """
 
 
-from flask import Blueprint, render_template_string
 
 try:
     pass
@@ -13,6 +12,8 @@ try:
     DB_AVAILABLE = True
 except ImportError:
     DB_AVAILABLE = False
+
+from ..common.imports import Blueprint, Flask
 
 from .handlers.health_handler import HealthCheckHandler
 from .handlers.status_handler import UnifiedStatusHandler
@@ -50,8 +51,7 @@ if __name__ == "__main__":
     # Validation test for refactored routes
     import sys
 
-    from flask import Flask
-
+    
     app = Flask(__name__)
     app.register_blueprint(bp)
 

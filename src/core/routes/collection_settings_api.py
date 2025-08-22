@@ -4,7 +4,6 @@
 HTML과 분리된 API 엔드포인트들
 """
 
-from flask import Blueprint, jsonify, request
 
 try:
     from ..database.collection_settings import CollectionSettingsDB
@@ -12,6 +11,8 @@ try:
     DB_AVAILABLE = True
 except ImportError:
     DB_AVAILABLE = False
+
+from ..common.imports import Blueprint, jsonify, request
 
 from .collection_settings_html import SETTINGS_UI_HTML
 

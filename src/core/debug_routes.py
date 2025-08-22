@@ -1,12 +1,9 @@
-#!/usr/bin/env python3
+from .common.imports import Blueprint, jsonify, logger
+
+# !/usr/bin/env python3
 """Debug routes for API testing"""
 
-import logging
 import sqlite3
-
-from flask import Blueprint, jsonify
-
-logger = logging.getLogger(__name__)
 
 debug_bp = Blueprint("debug", __name__, url_prefix="/api/debug")
 

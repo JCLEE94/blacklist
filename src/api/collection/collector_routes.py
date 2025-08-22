@@ -1,13 +1,11 @@
-#!/usr/bin/env python3
+from ..common.imports import Flask, jsonify, logger
+
+# !/usr/bin/env python3
 """
 Collector Management Routes - Individual collector control
 Handles enabling, disabling, triggering, and canceling collectors
 """
 
-import logging
-
-from flask import Blueprint  # removed unused request import
-from flask import jsonify
 
 try:
     from ...core.collectors.collector_factory import get_collector_factory
@@ -17,7 +15,6 @@ try:
 except ImportError:
     COLLECTOR_AVAILABLE = False
 
-logger = logging.getLogger(__name__)
 
 collector_bp = Blueprint(
     "collection_collectors", __name__, url_prefix="/api/collection"
@@ -238,8 +235,6 @@ def cancel_collector(collector_name: str):
 if __name__ == "__main__":
     # Validation test for collector routes
     import sys
-
-    from flask import Flask
 
     # Mock auth and validation for testing
     class MockAuth:

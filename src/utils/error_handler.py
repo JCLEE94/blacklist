@@ -1,3 +1,5 @@
+from .common.imports import jsonify, request, logger
+
 #!/usr/bin/env python3
 """
 통합 에러 핸들링 시스템 - 모듈화된 구조
@@ -72,11 +74,9 @@ try:
 
 except ImportError:
     # 모듈화된 구조를 불러올 수 없는 경우 기본 구현 사용
-    import logging
-    from typing import Dict, Optional
+        from typing import Dict, Optional
 
-    logger = logging.getLogger(__name__)
-
+    
     class BaseError(Exception):
         """기본 에러 클래스 - 폴백 구현"""
 
@@ -126,12 +126,9 @@ except ImportError:
 
     def register_error_handlers(app):
         """Flask 애플리케이션에 에러 핸들러 등록"""
-        import logging
-
-        from flask import jsonify, request
-
-        logger = logging.getLogger(__name__)
-
+        
+        
+        
         @app.errorhandler(400)
         def bad_request(error):
             logger.warning(f"Bad Request: {request.url} - {error}")

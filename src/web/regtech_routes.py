@@ -3,12 +3,13 @@
 REGTECH 데이터 분석 웹 라우트
 """
 
+from .common.imports import Blueprint, jsonify, render_template, request
+
 import json
 import os
 import sqlite3
 from collections import defaultdict
 
-from flask import Blueprint, jsonify, render_template, request
 
 try:
     import pandas as pd

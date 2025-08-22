@@ -9,10 +9,11 @@ This module provides a modular Flask application factory using mixins:
 - BlueprintRegistrationMixin: Route registration
 - ErrorHandlerMixin: Error handling
 """
+from .common.imports import Flask
+
 import os
 from typing import Optional
 
-from flask import Flask
 
 from ..utils.structured_logging import get_logger, setup_request_logging
 from .app.blueprints import BlueprintRegistrationMixin

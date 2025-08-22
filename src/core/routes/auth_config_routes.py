@@ -3,13 +3,12 @@
 Authentication configuration routes for UI-based credential management.
 """
 
-import logging
 
-from flask import Blueprint, jsonify, render_template, request
+
+from ..common.imports import Blueprint, jsonify, render_template, request, logger
 
 from ..auth_manager import get_auth_manager
 
-logger = logging.getLogger(__name__)
 
 auth_config_bp = Blueprint("auth_config", __name__)
 

@@ -3,9 +3,10 @@
 V2 Health and Performance API Routes
 """
 
+from ..common.imports import Blueprint, jsonify
+
 from datetime import datetime
 
-from flask import Blueprint, jsonify
 
 from ...utils.unified_decorators import unified_cache
 from .service import V2APIService

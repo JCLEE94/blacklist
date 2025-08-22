@@ -1,13 +1,12 @@
+from ..common.imports import Blueprint, jsonify, request, logger
+
 #!/usr/bin/env python3
 """
 DB 기반 설정 관리 API 엔드포인트
 대량 설정 업데이트, 개별 설정 관리, 설정 리셋 기능
 """
-import logging
 
-from flask import Blueprint, jsonify, request
 
-logger = logging.getLogger(__name__)
 
 api_settings_bp = Blueprint("api_settings", __name__)
 

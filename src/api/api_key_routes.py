@@ -1,16 +1,12 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 """
 API 키 관리 라우트
 """
 
-import logging
-
-from flask import Blueprint, jsonify, request
 
 from ..models.api_key import get_api_key_manager
 from ..utils.security import input_validation, rate_limit, require_auth
-
-logger = logging.getLogger(__name__)
+from .common.imports import Blueprint, jsonify, logger, request
 
 # 블루프린트 생성
 api_key_bp = Blueprint("api_keys", __name__, url_prefix="/api/keys")
