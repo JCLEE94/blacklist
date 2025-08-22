@@ -1,0 +1,18 @@
+# Redis Dockerfile  
+FROM redis:7-alpine
+
+# Copy Redis configuration
+COPY docker/redis/redis.conf /etc/redis/redis.conf
+
+# Watchtower labels
+LABEL com.watchtower.enable="true"
+
+# Expose port
+EXPOSE 6379
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD redis-cli ping || exit 1
+
+# Run Redis with custom config
+CMD ["redis-server", "/etc/redis/redis.conf"]

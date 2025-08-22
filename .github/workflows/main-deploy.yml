@@ -65,7 +65,9 @@ jobs:
         echo ""
         echo "Checking critical files:"
         echo "- config/requirements.txt: $([ -f config/requirements.txt ] && echo '✅ EXISTS' || echo '❌ MISSING')"
-        echo "- Dockerfile: $([ -f Dockerfile ] && echo '✅ EXISTS' || echo '❌ MISSING')"
+        echo "- Dockerfile.main: $([ -f Dockerfile.main ] && echo '✅ EXISTS' || echo '❌ MISSING')"
+        echo "- Dockerfile.redis: $([ -f Dockerfile.redis ] && echo '✅ EXISTS' || echo '❌ MISSING')"
+        echo "- Dockerfile.postgresql: $([ -f Dockerfile.postgresql ] && echo '✅ EXISTS' || echo '❌ MISSING')"
         echo ""
         if [ -f config/requirements.txt ]; then
           echo "requirements.txt size: $(wc -l < config/requirements.txt) lines"
@@ -115,21 +117,17 @@ jobs:
         
         echo "✅ Successfully logged into registry"
 
-    - name: Build all images from single Dockerfile
+    - name: Build support images
       run: |
-        echo "🔄 Building all images from unified Dockerfile..."
+        echo "🔄 Building support images with dedicated Dockerfiles..."
         
         # Build Redis image
         echo "🔴 Building Redis image..."
         docker buildx build \
           --platform linux/amd64 \
-          --build-arg SERVICE=redis \
-          --build-arg VERSION=${{ env.VERSION }} \
-          --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-          --build-arg VCS_REF=${{ github.sha }} \
           --cache-from type=local,src=/tmp/.buildx-cache-redis \
           --cache-to type=local,dest=/tmp/.buildx-cache-redis-new,mode=max \
-          -f Dockerfile \
+          -f Dockerfile.redis \
           -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest \
           -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:${{ github.sha }} \
           -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:v${{ env.VERSION }} \
@@ -140,13 +138,9 @@ jobs:
         echo "🐘 Building PostgreSQL image..."
         docker buildx build \
           --platform linux/amd64 \
-          --build-arg SERVICE=postgresql \
-          --build-arg VERSION=${{ env.VERSION }} \
-          --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-          --build-arg VCS_REF=${{ github.sha }} \
           --cache-from type=local,src=/tmp/.buildx-cache-postgres \
           --cache-to type=local,dest=/tmp/.buildx-cache-postgres-new,mode=max \
-          -f Dockerfile \
+          -f Dockerfile.postgresql \
           -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest \
           -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:${{ github.sha }} \
           -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:v${{ env.VERSION }} \
@@ -165,16 +159,15 @@ jobs:
           exit 1
         fi
         
-        # Build main application with unified dockerfile
+        # Build main application with dedicated dockerfile
         docker buildx build \
           --platform linux/amd64 \
-          --build-arg SERVICE=main \
           --build-arg VERSION=${{ env.VERSION }} \
           --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
           --build-arg VCS_REF=${{ github.sha }} \
           --cache-from type=local,src=/tmp/.buildx-cache \
           --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-          -f Dockerfile \
+          -f Dockerfile.main \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION }} \
