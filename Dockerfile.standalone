@@ -43,8 +43,8 @@ ENV PIP_NO_CACHE_DIR=1 \
     DEBUG=false \
     SECRET_KEY=standalone-secret-key-change-in-production \
     JWT_SECRET_KEY=standalone-jwt-key-change-in-production \
-    # === Database Configuration (PostgreSQL only) ===
-    DATABASE_URL=postgresql://blacklist_user:password@postgres:5432/blacklist \
+    # === Database Configuration (PostgreSQL) ===
+    DATABASE_URL=postgresql://blacklist_user:blacklist_standalone_password_change_me@blacklist-postgresql:5432/blacklist \
     DATABASE_POOL_SIZE=20 \
     DATABASE_MAX_OVERFLOW=40 \
     DATABASE_POOL_TIMEOUT=30 \
@@ -154,7 +154,7 @@ RUN echo '# Standalone Configuration - Complete Independence' > /app/config/embe
     echo 'JWT_SECRET_KEY=standalone-jwt-key-change-in-production' >> /app/config/embedded/.env.standalone && \
     echo '' >> /app/config/embedded/.env.standalone && \
     echo '# Database (PostgreSQL)' >> /app/config/embedded/.env.standalone && \
-    echo 'DATABASE_URL=postgresql://blacklist_user:password@postgres:5432/blacklist' >> /app/config/embedded/.env.standalone && \
+    echo 'DATABASE_URL=postgresql://blacklist_user:blacklist_standalone_password_change_me@blacklist-postgresql:5432/blacklist' >> /app/config/embedded/.env.standalone && \
     echo 'DATABASE_POOL_SIZE=20' >> /app/config/embedded/.env.standalone && \
     echo 'DATABASE_MAX_OVERFLOW=40' >> /app/config/embedded/.env.standalone && \
     echo '' >> /app/config/embedded/.env.standalone && \
@@ -218,7 +218,7 @@ RUN echo '#!/bin/bash' > /app/scripts/standalone-startup.sh && \
     echo '    python3 main.py' >> /app/scripts/standalone-startup.sh && \
     echo 'else' >> /app/scripts/standalone-startup.sh && \
     echo '    echo "[$(date)] Starting with Gunicorn..."' >> /app/scripts/standalone-startup.sh && \
-    echo '    exec gunicorn --bind 0.0.0.0:${PORT:-2542} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-2} --worker-class ${GUNICORN_WORKER_CLASS:-gthread} --timeout ${GUNICORN_TIMEOUT:-60} --keepalive ${GUNICORN_KEEPALIVE:-5} --max-requests ${GUNICORN_MAX_REQUESTS:-1000} --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-50} --preload --access-logfile /app/logs/access.log --error-logfile /app/logs/error.log --log-level ${LOG_LEVEL:-info} "src.core.main:create_app()"' >> /app/scripts/standalone-startup.sh && \
+    echo '    exec gunicorn --bind 0.0.0.0:${PORT:-2542} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-2} --worker-class ${GUNICORN_WORKER_CLASS:-gthread} --timeout ${GUNICORN_TIMEOUT:-60} --keep-alive ${GUNICORN_KEEPALIVE:-5} --max-requests ${GUNICORN_MAX_REQUESTS:-1000} --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-50} --preload --access-logfile /app/logs/access.log --error-logfile /app/logs/error.log --log-level ${LOG_LEVEL:-info} "src.core.main:create_app()"' >> /app/scripts/standalone-startup.sh && \
     echo 'fi' >> /app/scripts/standalone-startup.sh
 
 # Create health check script using echo
@@ -250,7 +250,7 @@ RUN mkdir -p \
     && chmod +x /app/scripts/*.sh
 
 # Copy version file
-COPY --chown=app:app version.txt /app/version.txt
+COPY --chown=app:app config/version.txt /app/version.txt
 
 # Switch to non-root user
 USER app

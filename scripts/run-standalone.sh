@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 REGISTRY_URL="${REGISTRY_URL:-registry.jclee.me}"
-NETWORK_NAME="blacklist-standalone-net"
+NETWORK_NAME="blacklist-net"
 
 # Color output
 RED='\033[0;31m'
@@ -36,9 +36,9 @@ log_error() {
 }
 
 # Container configuration
-POSTGRES_CONTAINER="blacklist-postgresql-standalone"
-REDIS_CONTAINER="blacklist-redis-standalone"
-APP_CONTAINER="blacklist-app-standalone"
+POSTGRES_CONTAINER="blacklist-postgresql"
+REDIS_CONTAINER="blacklist-redis"
+APP_CONTAINER="blacklist"
 
 # Network configuration
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
@@ -156,7 +156,7 @@ start_postgresql() {
         --network "$NETWORK_NAME" \
         --restart unless-stopped \
         -p "${POSTGRES_PORT}:5432" \
-        -v blacklist-postgresql-standalone-data:/var/lib/postgresql/data \
+        -v blacklist-postgresql-data:/var/lib/postgresql/data \
         -e POSTGRES_DB="$POSTGRES_DB" \
         -e POSTGRES_USER="$POSTGRES_USER" \
         -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
@@ -165,7 +165,7 @@ start_postgresql() {
         -e POSTGRES_MAINTENANCE_WORK_MEM=64MB \
         -e POSTGRES_WORK_MEM=16MB \
         -e POSTGRES_MAX_CONNECTIONS=100 \
-        "$REGISTRY_URL/blacklist-postgresql:standalone"
+        "$REGISTRY_URL/blacklist-postgresql:latest"
     
     log_success "PostgreSQL container started"
     
@@ -193,12 +193,12 @@ start_redis() {
         --network "$NETWORK_NAME" \
         --restart unless-stopped \
         -p "${REDIS_PORT}:6379" \
-        -v blacklist-redis-standalone-data:/data \
+        -v blacklist-redis-data:/data \
         -e REDIS_MAXMEMORY=1gb \
         -e REDIS_MAXMEMORY_POLICY=allkeys-lru \
         -e REDIS_APPENDONLY=yes \
         -e REDIS_APPENDFSYNC=everysec \
-        "$REGISTRY_URL/blacklist-redis:standalone"
+        "$REGISTRY_URL/blacklist-redis:latest"
     
     log_success "Redis container started"
     
@@ -248,8 +248,8 @@ start_application() {
         --network "$NETWORK_NAME" \
         --restart unless-stopped \
         -p "${APP_PORT}:2542" \
-        -v blacklist-app-standalone-data:/app/data \
-        -v blacklist-app-standalone-logs:/app/logs \
+        -v blacklist-app-data:/app/data \
+        -v blacklist-app-logs:/app/logs \
         -e FLASK_ENV=production \
         -e PORT=2542 \
         -e DEBUG=false \
@@ -273,7 +273,7 @@ start_application() {
         -e ENABLE_METRICS=true \
         -e SECURITY_HEADERS_ENABLED=true \
         -e RATE_LIMIT_ENABLED=true \
-        "$REGISTRY_URL/blacklist:standalone"
+        "$REGISTRY_URL/blacklist:latest"
     
     log_success "Application container started"
     
@@ -350,7 +350,7 @@ show_status() {
     
     echo
     log_info "Volume Status:"
-    volumes=("blacklist-postgresql-standalone-data" "blacklist-redis-standalone-data" "blacklist-app-standalone-data" "blacklist-app-standalone-logs")
+    volumes=("blacklist-postgresql-data" "blacklist-redis-data" "blacklist-app-data" "blacklist-app-logs")
     for volume in "${volumes[@]}"; do
         if docker volume inspect "$volume" &> /dev/null; then
             echo -e "${GREEN}✓${NC} Volume $volume exists"
@@ -468,9 +468,9 @@ push_images() {
     log_info "Pushing all standalone images to registry..."
     
     images=(
-        "$REGISTRY_URL/blacklist:standalone"
-        "$REGISTRY_URL/blacklist-postgresql:standalone"
-        "$REGISTRY_URL/blacklist-redis:standalone"
+        "$REGISTRY_URL/blacklist:latest"
+        "$REGISTRY_URL/blacklist-postgresql:latest"
+        "$REGISTRY_URL/blacklist-redis:latest"
     )
     
     for image in "${images[@]}"; do
@@ -486,9 +486,9 @@ pull_images() {
     log_info "Pulling all standalone images from registry..."
     
     images=(
-        "$REGISTRY_URL/blacklist:standalone"
-        "$REGISTRY_URL/blacklist-postgresql:standalone"
-        "$REGISTRY_URL/blacklist-redis:standalone"
+        "$REGISTRY_URL/blacklist:latest"
+        "$REGISTRY_URL/blacklist-postgresql:latest"
+        "$REGISTRY_URL/blacklist-redis:latest"
     )
     
     for image in "${images[@]}"; do
@@ -520,9 +520,9 @@ create_backup() {
     fi
     
     # Backup application data
-    if docker volume inspect blacklist-app-standalone-data &> /dev/null; then
+    if docker volume inspect blacklist-app-data &> /dev/null; then
         log_info "Backing up application data..."
-        docker run --rm -v blacklist-app-standalone-data:/data -v "$backup_dir:/backup" alpine tar -czf /backup/app_data.tar.gz -C /data .
+        docker run --rm -v blacklist-app-data:/data -v "$backup_dir:/backup" alpine tar -czf /backup/app_data.tar.gz -C /data .
     fi
     
     log_success "Backup created at $backup_dir"
@@ -708,7 +708,7 @@ case "$COMMAND" in
         remove_containers
         remove_network
         log_info "Cleaning up volumes (optional)..."
-        log_warning "To remove all data, run: docker volume rm blacklist-postgresql-standalone-data blacklist-redis-standalone-data blacklist-app-standalone-data blacklist-app-standalone-logs"
+        log_warning "To remove all data, run: docker volume rm blacklist-postgresql-data blacklist-redis-data blacklist-app-data blacklist-app-logs"
         log_success "Cleanup completed"
         ;;
         
