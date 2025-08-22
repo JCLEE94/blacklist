@@ -5,7 +5,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker

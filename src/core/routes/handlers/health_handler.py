@@ -53,7 +53,7 @@ class HealthCheckHandler:
 
         # Database health
         try:
-            from ...database.collection_settings import CollectionSettingsDB
+            pass
 
             components["database"] = {
                 "status": "healthy",
@@ -72,7 +72,7 @@ class HealthCheckHandler:
 
         # Collection system health
         try:
-            from ...collection_db_collector import DatabaseCollectionSystem
+            pass
 
             components["collection"] = {
                 "status": "healthy",

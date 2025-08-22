@@ -259,7 +259,7 @@ def security_check(f: Callable) -> Callable:
                 client_ip = client_ip.split(",")[0].strip()
 
             # Basic security checks
-            validator = ValidationManager()
+            ValidationManager()
 
             # Check for basic SQL injection patterns in query parameters
             for param_value in request.args.values():

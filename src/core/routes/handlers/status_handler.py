@@ -10,8 +10,7 @@ from typing import Any, Dict
 from flask import jsonify
 
 try:
-    from ...collection_db_collector import DatabaseCollectionSystem
-    from ...database.collection_settings import CollectionSettingsDB
+    pass
 
     DB_AVAILABLE = True
 except ImportError:

@@ -53,7 +53,7 @@ def export_txt():
         ips = service.get_active_blacklist_entries()
 
         # 헤더 정보 포함한 텍스트 파일
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        _ = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # timestamp (unused)
         header = "# Blacklist Export\n"
         header += "# Generated: {timestamp}\n"
         header += "# Total IPs: {len(ips)}\n"

@@ -55,7 +55,7 @@ class RegTechSource(BaseIPSource):
                 return True, "RegTech 사이트 접근 가능"
             else:
                 return False, "RegTech 사이트 접근 실패: {response.status_code}"
-        except Exception as e:
+        except Exception:
             return False, "RegTech 사이트 연결 오류: {e}"
 
     def collect_ips(self, **kwargs):
@@ -227,7 +227,7 @@ class RegTechSource(BaseIPSource):
                     )
 
                     for month_dir in month_dirs[-3:]:  # 최근 3개월
-                        month_path = os.path.join(data_dir, month_dir)
+                        os.path.join(data_dir, month_dir)
 
                         # IP 파일들 찾기
                         ip_files = glob.glob("{month_path}/*ips*.txt")
@@ -239,7 +239,7 @@ class RegTechSource(BaseIPSource):
                                         ip = line.strip()
                                         if self._is_valid_public_ip(ip):
                                             cached_ips.add(ip)
-                            except Exception as e:
+                            except Exception:
                                 continue
 
             if cached_ips:
@@ -322,7 +322,7 @@ class RegTechSource(BaseIPSource):
 
             return True
 
-        except Exception as e:
+        except Exception:
             return False
 
     def get_source_info(self):

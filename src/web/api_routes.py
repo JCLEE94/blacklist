@@ -230,7 +230,7 @@ def export_data(format):
 
             total = stats.get("total_ips", 0)
             for source, count in stats.get("sources", {}).items():
-                percentage = round((count / total) * 100, 2) if total > 0 else 0
+                round((count / total) * 100, 2) if total > 0 else 0
                 csv_lines.append("{source},{count},{percentage}%")
 
             csv_content = "\n".join(csv_lines)

@@ -194,7 +194,6 @@ class RegtechBrowserAutomation:
 
 if __name__ == "__main__":
     # 브라우저 자동화 테스트
-    import os
     import sys
 
     all_validation_failures = []

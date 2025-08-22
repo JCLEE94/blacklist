@@ -345,7 +345,7 @@ class DataCleaningPipeline:
                 score += 10
             elif days_ago <= 30:
                 score += 5
-        except Exception as e:
+        except Exception:
             pass
 
         return min(max(score, 0), 100)  # 0-100 범위로 제한
@@ -376,9 +376,9 @@ class DataCleaningPipeline:
             )
 
             if result.get("success", False):
-                imported = result.get("imported_count", 0)
-                skipped = result.get("skipped_count", 0)
-                errors = result.get("error_count", 0)
+                result.get("imported_count", 0)
+                result.get("skipped_count", 0)
+                result.get("error_count", 0)
 
                 logger.info(
                     "{source} 벌크 저장 완료: {imported}개 저장, {skipped}개 스킵, {errors}개 오류"

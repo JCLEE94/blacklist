@@ -130,7 +130,7 @@ def enable_collection():
         # 요청에서 clear_data 파라미터 확인
         try:
             data = request.get_json() or {}
-        except Exception as e:
+        except Exception:
             data = {}
         clear_data = data.get("clear_data", False)
 

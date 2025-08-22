@@ -24,7 +24,7 @@ def get_build_info():
                 "BUILD_VERSION": "v2.1-dev",
                 "BUILD_COMMIT": "development",
             }
-    except Exception as e:
+    except Exception:
         return {
             "BUILD_TIME": "Error loading build info",
             "BUILD_VERSION": "v2.1-error",

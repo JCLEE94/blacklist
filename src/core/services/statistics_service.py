@@ -305,7 +305,7 @@ class StatisticsServiceMixin:
                         daily_stats[date_str]["failed"] += 1
 
                     daily_stats[date_str]["sources"].add(log.get("source", "unknown"))
-                except Exception as e:
+                except Exception:
                     continue
 
             # Set을 list로 변환하고 sources를 dict로 변환

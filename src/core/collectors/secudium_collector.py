@@ -5,7 +5,6 @@ SECUDIUM 보안 위협 정보 수집 시스템
 """
 
 import asyncio
-import json
 import logging
 import os
 from datetime import datetime

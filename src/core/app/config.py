@@ -62,7 +62,7 @@ class AppConfigurationMixin:
     def _setup_json_optimization(self, app):
         """JSON 직렬화 최적화"""
         try:
-            import orjson
+            pass
 
             app.json_encoder = None  # Disable default JSON encoder to use orjson
             app.config["JSON_SORT_KEYS"] = False  # orjson handles sorting

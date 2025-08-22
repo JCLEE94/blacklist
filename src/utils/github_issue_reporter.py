@@ -328,7 +328,7 @@ class GitHubIssueReporter:
                             "remote_addr": request.remote_addr,
                         }
                     )
-            except Exception as e:
+            except Exception:
                 pass
 
             return self.create_issue(error_data)

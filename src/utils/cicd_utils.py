@@ -197,7 +197,7 @@ class CICDUtils:
         """수정 보고서 생성"""
         from datetime import datetime
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        _ = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # timestamp (unused)
 
         report = """# CI/CD Auto-Fix Report
 

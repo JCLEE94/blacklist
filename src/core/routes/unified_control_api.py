@@ -35,7 +35,7 @@ def get_unified_status():
 
     try:
         db = CollectionSettingsDB()
-        collector = DatabaseCollectionSystem()
+        DatabaseCollectionSystem()
 
         # 기본 통계
         stats = db.get_collection_statistics()

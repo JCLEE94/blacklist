@@ -8,7 +8,7 @@ import logging
 import os
 import tempfile
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import pandas as pd
 import requests
@@ -40,7 +40,7 @@ class RegtechExcelCollector:
         try:
             # Step 1: 로그인
             logger.info(f"Logging in as {self.username}")
-            login_resp = session.post(
+            _ = session.post(  # login response (unused)
                 f"{self.base_url}/login/loginProcess",
                 data={"loginId": self.username, "loginPw": self.password},
             )

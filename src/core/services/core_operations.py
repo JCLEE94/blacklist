@@ -276,7 +276,7 @@ class CoreOperationsMixin:
                     component_status[name] = component.get_health()
                 else:
                     component_status[name] = "healthy"
-            except Exception as e:
+            except Exception:
                 component_status[name] = "error: {e}"
 
         # 전체 상태 결정
@@ -303,7 +303,7 @@ class CoreOperationsMixin:
                     cached_result = self.cache.get(cache_key)
                     if cached_result:
                         return cached_result
-                except Exception as e:
+                except Exception:
                     pass
 
             # 활성 아이피 조회
@@ -330,7 +330,7 @@ class CoreOperationsMixin:
             if self.cache:
                 try:
                     self.cache.set(cache_key, result, ttl=300)
-                except Exception as e:
+                except Exception:
                     pass
 
             return result

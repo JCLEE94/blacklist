@@ -33,7 +33,7 @@ def trigger_regtech_collection():
                 data = request.get_json() or {}
             else:
                 data = request.form.to_dict() or {}
-        except Exception as e:
+        except Exception:
             data = {}
 
         start_date = data.get("start_date")

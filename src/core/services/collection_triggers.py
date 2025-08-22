@@ -31,9 +31,8 @@ class CollectionTriggersMixin:
         """수집 트리거 (비동기 실행)"""
         try:
             # Check if there's a running event loop
-            loop = None
             try:
-                loop = asyncio.get_running_loop()
+                asyncio.get_running_loop()
             except RuntimeError:
                 # No running loop, create task in new thread
                 def run_async_task(coro):

@@ -5,7 +5,6 @@ REGTECH 인증 및 세션 관리 모듈
 """
 
 import logging
-import os
 from typing import Optional
 
 import requests

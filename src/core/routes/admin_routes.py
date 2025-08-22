@@ -158,7 +158,7 @@ def get_raw_data():
             where_conditions.append("ip LIKE ?")
             params.append("%{ip_search}%")
 
-        where_clause = (
+        _ = (  # where clause (unused)
             " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
         )
 
@@ -276,7 +276,7 @@ def set_ip_expiration(ip):
         # 날짜 형식 파싱
         try:
             expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
-        except Exception as e:
+        except Exception:
             return (
                 jsonify(
                     {

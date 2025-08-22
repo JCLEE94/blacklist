@@ -11,7 +11,7 @@ Expected output: Historical data, statistics, and calendar information
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 class DatabaseQueryOperations:

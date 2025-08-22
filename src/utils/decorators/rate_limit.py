@@ -55,7 +55,6 @@ def unified_rate_limit(
                 #             request.headers.get("X-Forwarded-For").split(",")[0].strip()
                 #         )
                 #     identifier = client_ip
-                pass
 
                 # rate_key = "rate_limit:{func.__name__}:{identifier}"  # 현재
                 # 미사용

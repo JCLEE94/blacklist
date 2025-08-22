@@ -8,15 +8,10 @@ import logging
 
 from flask import Blueprint, jsonify
 
-from .blacklist_routes import (
-    blacklist_routes_bp,
-    get_active_blacklist,
-    get_enhanced_blacklist,
-    get_fortigate_format,
-)
+from .blacklist_routes import blacklist_routes_bp
 
 # 분할된 라우트 모듈들 임포트
-from .health_routes import health_check, health_routes_bp
+from .health_routes import health_routes_bp
 
 logger = logging.getLogger(__name__)
 

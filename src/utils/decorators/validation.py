@@ -34,7 +34,7 @@ def unified_validation(
                     data = request.get_json()
                     if data is None:
                         errors.append("Valid JSON body required")
-                except Exception as e:
+                except Exception:
                     errors.append("Invalid JSON format")
 
             # Validate URL parameters

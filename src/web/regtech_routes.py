@@ -79,7 +79,7 @@ class RegtechAnalyzer:
                         )
                         risk_distribution[risk] += 1
                         region_distribution[region] += 1
-                except Exception as e:
+                except Exception:
                     risk_distribution["low"] += 1
 
             conn.close()
@@ -129,7 +129,7 @@ class RegtechAnalyzer:
 
             return trends
 
-        except Exception as e:
+        except Exception:
             return []
 
     def get_top_ip_ranges(self, limit=20):
@@ -158,7 +158,7 @@ class RegtechAnalyzer:
             conn.close()
             return ranges
 
-        except Exception as e:
+        except Exception:
             return []
 
     def search_ips(self, search_term, limit=100):
@@ -192,7 +192,7 @@ class RegtechAnalyzer:
                 metadata = {}
                 try:
                     metadata = json.loads(row[3]) if row[3] else {}
-                except Exception as e:
+                except Exception:
                     pass
 
                 ip_analysis = metadata.get("ip_analysis", {})
@@ -211,7 +211,7 @@ class RegtechAnalyzer:
             conn.close()
             return results
 
-        except Exception as e:
+        except Exception:
             return []
 
     def get_collection_history(self):
@@ -236,14 +236,14 @@ class RegtechAnalyzer:
                                         "filename": filename,
                                     }
                                 )
-                        except Exception as e:
+                        except Exception:
                             continue
 
             # 시간순 정렬
             history.sort(key=lambda x: x["timestamp"], reverse=True)
             return history[:10]  # 최근 10개
 
-        except Exception as e:
+        except Exception:
             return []
 
 

@@ -81,7 +81,7 @@ class FixStrategyManager:
             # Dockerfile 수정
             dockerfile = utils.get_file_content(project_id, "Dockerfile")
 
-            npm_fixes = [
+            _ = [  # npm fixes (unused)
                 "npm cache clean --force",
                 "npm ci --prefer-offline --no-audit",
             ]

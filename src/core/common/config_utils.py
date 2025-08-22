@@ -63,7 +63,7 @@ class ConfigLoader:
             else:
                 converted_value = value
 
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             raise ValueError("Failed to convert '{key}' to {var_type.__name__}: {e}")
 
         # 선택지 검증
@@ -177,7 +177,7 @@ class ConfigValidator:
                 try:
                     os.makedirs(path, exist_ok=True)
                     logger.info(f"Created directory: {path}")
-                except Exception as e:
+                except Exception:
                     error_msg = message or "Failed to create directory {path}: {e}"
                     self.errors.append(error_msg)
             else:

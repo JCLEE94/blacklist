@@ -6,7 +6,7 @@ UI에서 수집 소스 설정 및 자격증명을 저장/조회
 
 from pathlib import Path
 
-from flask import Blueprint, jsonify, render_template_string, request
+from flask import Blueprint, jsonify, request
 
 try:
     from ..database.collection_settings import CollectionSettingsDB

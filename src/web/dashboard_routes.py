@@ -26,7 +26,7 @@ def get_build_time():
                     if line.startswith("BUILD_TIME="):
                         return line.split("=", 1)[1].strip('"')
         return "2025-06-19 17:56:00 KST"  # Fallback to current build time
-    except Exception as e:
+    except Exception:
         return "2025-06-19 17:56:00 KST"  # Fallback to current build time
 
 
@@ -40,7 +40,7 @@ def get_build_version():
                     if line.startswith("BUILD_VERSION="):
                         return line.split("=", 1)[1].strip('"')
         return "v2.1-202506191756"  # Fallback
-    except Exception as e:
+    except Exception:
         return "v2.1-202506191756"  # Fallback
 
 
@@ -154,7 +154,7 @@ def connection_status():
                     "details": "Status: {health['database']}",
                 }
             )
-        except Exception as e:
+        except Exception:
             connections.append(
                 {
                     "name": "Database",
@@ -179,7 +179,7 @@ def connection_status():
                         "details": "URL: {api['url']}",
                     }
                 )
-            except Exception as e:
+            except Exception:
                 connections.append(
                     {
                         "name": api["name"],

@@ -7,7 +7,6 @@ SQLite 데이터베이스 연결을 최적화하고 관리합니다.
 import logging
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

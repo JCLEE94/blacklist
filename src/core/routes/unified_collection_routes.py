@@ -5,7 +5,6 @@ Removes duplicate collection endpoints scattered across the codebase.
 """
 
 import logging
-from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 

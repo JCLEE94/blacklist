@@ -401,7 +401,7 @@ def log_performance(threshold_ms: float = 1000):
 
                 return result
 
-            except Exception as e:
+            except Exception:
                 duration_ms = (time.time() - start_time) * 1000
                 logger.error(
                     "Function {func.__name__} failed after {duration_ms:.2f}ms: {e}"

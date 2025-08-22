@@ -43,8 +43,8 @@ def cached(cache, ttl=300, key_prefix=""):
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Generate cache key
-            args_str = str(args) if args else ""
-            kwargs_str = str(sorted(kwargs.items())) if kwargs else ""
+            str(args) if args else ""
+            str(sorted(kwargs.items())) if kwargs else ""
             cache_key = "{key_prefix}:{func.__name__}:{hash(args_str + kwargs_str)}"
 
             # Try to get from cache

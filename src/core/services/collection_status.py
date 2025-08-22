@@ -50,7 +50,7 @@ class CollectionStatusMixin:
             try:
                 if hasattr(self, "get_collection_logs"):
                     status["recent_logs"] = self.get_collection_logs(limit=5)
-            except Exception as e:
+            except Exception:
                 status["recent_logs"] = []
 
             # 소스 상태 확인
@@ -101,7 +101,7 @@ class CollectionStatusMixin:
             # 간단한 데이터 존재 확인
             # 실제 구현에서는 데이터베이스 쿼리 필요
             return False  # 임시로 False 반환
-        except Exception as e:
+        except Exception:
             return False
 
     def get_collection_summary(self) -> Dict[str, Any]:

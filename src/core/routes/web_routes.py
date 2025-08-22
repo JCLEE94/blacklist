@@ -7,7 +7,7 @@ Includes dashboard rendering, statistics pages, and data visualization endpoints
 import logging
 from datetime import datetime
 
-from flask import Blueprint, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, redirect, render_template, url_for
 
 from ..unified_service import get_unified_service
 

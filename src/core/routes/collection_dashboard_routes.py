@@ -6,10 +6,9 @@ Collection Dashboard Routes
 
 import json
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from datetime import datetime
 
-from flask import Blueprint, current_app, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request
 
 from ..advanced_analytics import AdvancedAnalytics
 from ..collection_dashboard import CollectionDashboard

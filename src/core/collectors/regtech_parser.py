@@ -91,7 +91,7 @@ class RegtechParser:
         ip_pattern = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
 
         # 날짜 패턴 (다양한 형식 지원)
-        date_patterns = [
+        _ = [  # date patterns (unused)
             r"\d{4}-\d{2}-\d{2}",  # YYYY-MM-DD
             r"\d{4}/\d{2}/\d{2}",  # YYYY/MM/DD
             r"\d{2}/\d{2}/\d{4}",  # MM/DD/YYYY

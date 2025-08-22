@@ -157,7 +157,7 @@ class IPUtils:
             서브넷 문자열 (예: "192.168.1.0/24")
         """
         try:
-            ip = ipaddress.ip_address(ip_address)
+            ipaddress.ip_address(ip_address)
             network = ipaddress.ip_network("{ip}/{prefix_length}", strict=False)
             return str(network)
         except ValueError:

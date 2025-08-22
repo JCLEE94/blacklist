@@ -327,7 +327,7 @@ def _test_database_connection() -> str:
     try:
         health = service.blacklist_manager.get_system_health()
         return "connected" if health.get("status") != "error" else "error"
-    except Exception as e:
+    except Exception:
         return "error"
 
 
@@ -338,7 +338,7 @@ def _test_cache_connection() -> str:
         service.cache.set("health_test", "ok", ttl=10)
         result = service.cache.get("health_test")
         return "connected" if result == "ok" else "error"
-    except Exception as e:
+    except Exception:
         return "error"
 
 
@@ -354,5 +354,5 @@ def _check_data_consistency() -> str:
             return "consistent"
         else:
             return "inconsistent"
-    except Exception as e:
+    except Exception:
         return "error"

@@ -4,13 +4,11 @@ Unified Control Routes - Refactored modular version
 Provides the main dashboard endpoints with template support
 """
 
-from datetime import datetime
 
-from flask import Blueprint, jsonify, render_template_string
+from flask import Blueprint, render_template_string
 
 try:
-    from ..collection_db_collector import DatabaseCollectionSystem
-    from ..database.collection_settings import CollectionSettingsDB
+    pass
 
     DB_AVAILABLE = True
 except ImportError:
