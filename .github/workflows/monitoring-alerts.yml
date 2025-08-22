@@ -2,15 +2,14 @@ name: CI/CD Monitoring & Alerting for Self-hosted Runners
 
 on:
   workflow_run:
-    workflows: ["Enhanced Self-hosted CI/CD Pipeline", "Matrix Builds for Multi-Environment Support", "Advanced Cache Management for Self-hosted Runners"]
+    workflows: ["Auto Deploy to Registry"]
     types:
       - completed
-      - requested
   schedule:
-    # Monitor every 30 minutes during business hours
-    - cron: '*/30 8-18 * * 1-5'
-    # Health check every hour outside business hours
-    - cron: '0 * * * *'
+    # Reduced frequency - Monitor every 4 hours during business hours only
+    - cron: '0 8,12,16 * * 1-5'
+    # Single health check per day outside business hours
+    - cron: '0 20 * * *'
   workflow_dispatch:
     inputs:
       monitoring_scope:

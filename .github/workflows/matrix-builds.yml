@@ -2,10 +2,8 @@ name: Matrix Builds for Multi-Environment Support
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ main ]  # Reduced to main branch only
     tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
     inputs:
       build_platforms:

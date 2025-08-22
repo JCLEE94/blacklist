@@ -2,8 +2,8 @@ name: Advanced Cache Management for Self-hosted Runners
 
 on:
   schedule:
-    # Run cache optimization daily at 02:00 UTC
-    - cron: '0 2 * * *'
+    # Run cache optimization every 3 days at 02:00 UTC
+    - cron: '0 2 */3 * *'
   workflow_dispatch:
     inputs:
       cache_operation:

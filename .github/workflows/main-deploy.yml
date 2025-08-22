@@ -12,9 +12,15 @@ env:
   POSTGRESQL_IMAGE_NAME: blacklist-postgresql
   DOCKER_BUILDKIT: 1
 
+# Prevent concurrent executions
+concurrency:
+  group: main-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: self-hosted
+    timeout-minutes: 60  # Set timeout to prevent hanging
     permissions:
       contents: read
       packages: write

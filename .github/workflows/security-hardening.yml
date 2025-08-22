@@ -2,10 +2,8 @@ name: Security Hardening & Compliance for Self-hosted Runners
 
 on:
   schedule:
-    # Daily security scan at 03:00 UTC
-    - cron: '0 3 * * *'
-    # Weekly comprehensive audit on Sundays
-    - cron: '0 4 * * 0'
+    # Weekly security scan on Sundays at 03:00 UTC
+    - cron: '0 3 * * 0'
   workflow_dispatch:
     inputs:
       scan_type:

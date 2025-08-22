@@ -14,23 +14,24 @@ This directory contains a comprehensive set of GitHub Actions workflows optimize
 
 ## 🚀 Workflow Overview
 
-### Core Workflows
+### Core Workflows (Optimized for Stability)
 
-| Workflow | Purpose | Trigger | Duration |
-|----------|---------|---------|----------|
-| **Enhanced Pipeline** | Main CI/CD with advanced caching | Push to main/develop | 15-25 min |
-| **Matrix Builds** | Multi-platform/environment testing | Push/PR/Tags | 20-35 min |
-| **Cache Management** | Intelligent cache optimization | Daily schedule | 5-10 min |
-| **Monitoring & Alerts** | System health monitoring | Every 30 min | 3-5 min |
-| **Security Hardening** | Security scanning & compliance | Daily schedule | 10-20 min |
+| Workflow | Purpose | Trigger | Duration | Status |
+|----------|---------|---------|----------|--------|
+| **Main Deploy** | Primary deployment pipeline | Push to main | 15-25 min | ✅ Active |
+| **Matrix Builds** | Multi-platform testing | Push to main/Tags | 20-35 min | ✅ Optimized |
+| **Cache Management** | Cache optimization | Every 3 days | 5-10 min | ✅ Reduced |
+| **Monitoring & Alerts** | Health monitoring | 4 times daily | 3-5 min | ✅ Reduced |
+| **Security Hardening** | Security compliance | Weekly | 10-20 min | ✅ Reduced |
+| **GitHub Pages** | Portfolio deployment | Push to main | 2-3 min | ✅ GitHub-hosted |
 
-### Legacy Workflows
+### Disabled/Optimized Workflows
 
-| Workflow | Status | Migration Path |
-|----------|--------|---------------|
-| `main-deploy.yml` | ✅ Active | Enhanced by `enhanced-pipeline.yml` |
-| `optimized-pipeline.yml` | 🔄 Superseded | Use `enhanced-pipeline.yml` |
-| `github-pages.yml` | ✅ Active | Standalone portfolio deployment |
+| Workflow | Status | Reason |
+|----------|--------|--------|
+| `enhanced-pipeline.yml` | 🚫 Disabled | Redundant with main-deploy.yml |
+| `optimized-pipeline.yml` | 🚫 Disabled | Superseded by main-deploy.yml |
+| `github-pages.yml` | ✅ Active | Moved to ubuntu-latest runner |
 | `offline-package.yml` | ✅ Active | Air-gap deployment support |
 
 ## 🎯 Self-hosted Runner Optimizations

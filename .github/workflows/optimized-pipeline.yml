@@ -1,10 +1,9 @@
-name: Optimized CI/CD Pipeline for Self-hosted Runners
+# DISABLED - Superseded by main-deploy.yml
+# This workflow is disabled to reduce runner conflicts
+name: Optimized CI/CD Pipeline (DISABLED)
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+  # All triggers disabled - use main-deploy.yml instead
   workflow_dispatch:
     inputs:
       force_rebuild:

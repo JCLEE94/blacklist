@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build-and-deploy:
     name: 📄 Build and Deploy Portfolio
-    runs-on: self-hosted
+    runs-on: ubuntu-latest  # Use GitHub-hosted runner to reduce self-hosted load
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

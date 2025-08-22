@@ -1,18 +1,9 @@
-name: Enhanced Self-hosted CI/CD Pipeline
+# TEMPORARILY DISABLED - Use main-deploy.yml instead
+# This workflow is disabled to reduce runner load and avoid conflicts
+name: Enhanced Self-hosted CI/CD Pipeline (DISABLED)
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/PULL_REQUEST_TEMPLATE.md'
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
+  # Disabled all triggers - use workflow_dispatch only for testing
   workflow_dispatch:
     inputs:
       force_rebuild:
