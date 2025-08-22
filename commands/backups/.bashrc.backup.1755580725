@@ -1,0 +1,180 @@
+# ~/.bashrc: executed by bash(1) for non-login shells.
+
+# If not running interactively, don't do anything
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+# ========== History Settings ==========
+HISTCONTROL=ignoreboth
+shopt -s histappend
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# ========== Shell Options ==========
+shopt -s checkwinsize
+
+# ========== Korean Locale Settings (통합) ==========
+export LANG=ko_KR.UTF-8
+export LC_ALL=ko_KR.UTF-8
+export LC_CTYPE=ko_KR.UTF-8
+
+# Input method settings (한글 입력)
+export XMODIFIERS=@im=fcitx
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export DefaultIMModule=fcitx
+
+# Fix for terminal Korean input
+stty -ixon  # Disable XON/XOFF flow control
+
+# ========== Environment Variables ==========
+export NVM_DIR="$HOME/.nvm"
+export NODE_OPTIONS="--max-old-space-size=8192"  # Claude Code 메모리 최적화
+
+# PATH 설정 (중복 제거)
+export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+
+# Production URLs
+export PRODUCTION_URL=https://safework.jclee.me
+export PRODUCTION_NODEPORT_URL='http://192.168.49.2:32301'
+
+# ArgoCD Token (통합 - 중복 제거됨)
+
+# ========== Prompt Settings ==========
+# Debian chroot
+if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# Color prompt
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
+
+if [ "$color_prompt" = yes ]; then
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+else
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
+
+# Set terminal title
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+esac
+
+# ========== Aliases ==========
+# Color support
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Custom aliases
+alias claude="/home/jclee/.claude/local/claude"
+alias mosh='~/bin/mosh-wrapper'
+alias load-claude="source /home/jclee/app/tmux/load-claude-aliases.sh"
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+
+# tmux wrapper - ts 사용 강제 (비활성화 - 독립 소켓 지원을 위해)
+# alias tmux='/home/jclee/app/tmux/tmux-wrapper.sh'
+
+# ========== tmux Integration (비활성화 - 독립 소켓 지원을 위해) ==========
+# 기본 tmux 통합 기능을 비활성화하여 ts 스크립트의 독립 소켓이 제대로 작동하도록 함
+# if [ -n "$TMUX" ]; then
+#     # 환경변수 동기화 및 디렉토리 추적 함수
+#     function tmux_update_env() {
+#         eval $(tmux show-environment -s 2>/dev/null)
+#         # 디렉토리 변경 추적
+#         if [ -x /home/jclee/app/tmux/scripts/monitor/update-last-dir.sh ]; then
+#             /home/jclee/app/tmux/scripts/monitor/update-last-dir.sh
+#         fi
+#     }
+#     
+#     # 프롬프트 표시 전에 환경변수 업데이트 및 디렉토리 추적
+#     PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }tmux_update_env"
+#     
+#     # 디렉토리 변경 시 자동으로 마지막 디렉토리 업데이트
+#     function cd() {
+#         builtin cd "$@"
+#         local result=$?
+#         if [ $result -eq 0 ] && [ -x /home/jclee/app/tmux/update-last-dir.sh ]; then
+#             /home/jclee/app/tmux/update-last-dir.sh
+#         fi
+#         return $result
+#     }
+# fi
+
+# ========== Source External Files ==========
+# Load claude_aliases
+if [ -f ~/app/tmux/config/claude_aliases ]; then
+    source ~/app/tmux/config/claude_aliases
+    # tmux 세션에서 확인메시지 (첫 로드시에만)
+    if [ -n "$TMUX" ] && [ -z "$CLAUDE_ALIASES_LOADED" ]; then
+        echo "Claude aliases loaded ✅"
+        export CLAUDE_ALIASES_LOADED=1
+    fi
+fi
+
+# Load ts 자동완성
+[ -f ~/app/tmux/ts-completion.bash ] && source ~/app/tmux/ts-completion.bash
+
+# Load bash_aliases
+[ -f ~/.bash_aliases ] && . ~/.bash_aliases
+
+# Load NVM
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# Load local env
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+
+# Load .env file (프로젝트별)
+if [ -f .env ]; then
+    export $(grep -v '^#' .env 2>/dev/null | xargs)
+    echo "✅ Environment variables loaded from .env"
+fi
+
+# Bash completion
+if ! shopt -oq posix; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
+fi
+
+# Less pipe
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# Claude debug settings
+export CLAUDE_LOG_LEVEL=debug
+export CLAUDE_DEBUG=1
+
+# 중복된 ArgoCD 토큰들 제거됨 - 상단에 통합됨
+
+# ArgoCD 자동 인증
+
+# ArgoCD 인증 설정
+
+# ArgoCD 토큰 자동 갱신 함수
+
+# ArgoCD 명령어 래퍼 (자동 재로그인)
+
+# 별칭 설정
+
+# ArgoCD CLI Alias (영구 API Key 사용)
+export ARGOCD_AUTH_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhcmdvY2QiLCJzdWIiOiJjbGktc2VydmljZTphcGlLZXkiLCJuYmYiOjE3NTU0MTMwMDUsImlhdCI6MTc1NTQxMzAwNSwianRpIjoiNDJlMzU5M2MtMGY4ZS00MWMyLWJhMmYtYjc2MzgzZWI3MzIyIn0.l9SM2sSzOP9mp3CGRPlu5TyUlrkC0U8-TT5qHgMvCMo"
+export ARGOCD_SERVER="argo.jclee.me"

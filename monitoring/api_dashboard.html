@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Response Time Dashboard - Blacklist Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn.primary {
+            background: rgba(40,167,69,0.8);
+            border-color: rgba(40,167,69,1);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-excellent { color: #28a745; }
+        .metric-good { color: #20c997; }
+        .metric-acceptable { color: #ffc107; }
+        .metric-poor { color: #fd7e14; }
+        .metric-critical { color: #dc3545; }
+
+        .endpoints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .endpoint-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .endpoint-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .endpoint-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .endpoint-card:hover::before {
+            width: 8px;
+        }
+
+        .status-excellent::before { background: #28a745; }
+        .status-good::before { background: #20c997; }
+        .status-acceptable::before { background: #ffc107; }
+        .status-poor::before { background: #fd7e14; }
+        .status-critical::before { background: #dc3545; }
+        .status-warning::before { background: #ffc107; }
+
+        .endpoint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .endpoint-path {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-excellent { background: #d4edda; color: #155724; }
+        .status-good { background: #d1ecf1; color: #0c5460; }
+        .status-acceptable { background: #fff3cd; color: #856404; }
+        .status-poor { background: #ffeaa7; color: #6c5700; }
+        .status-critical { background: #f8d7da; color: #721c24; }
+        .status-warning { background: #fff3cd; color: #856404; }
+
+        .endpoint-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            text-align: center;
+        }
+
+        .detail-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .detail-label {
+            color: #666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .endpoint-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .timestamp-info {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .thresholds {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .threshold-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .threshold-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .loading {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+
+        .error {
+            background: rgba(220,53,69,0.1);
+            border: 1px solid rgba(220,53,69,0.3);
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .endpoints-grid { grid-template-columns: 1fr; }
+            .endpoint-details { grid-template-columns: 1fr; gap: 10px; }
+            .thresholds { flex-direction: column; align-items: center; }
+        }
+
+        /* Animation for loading state */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚀 API Response Time Dashboard</h1>
+            <p>Real-time performance monitoring for Blacklist Management System</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn primary" onclick="refreshData()">🔄 Refresh Data</button>
+            <button class="btn" onclick="toggleAutoRefresh()">⏱️ <span id="autoRefreshStatus">Auto Refresh: ON</span></button>
+            <button class="btn" onclick="exportData()">📊 Export Data</button>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value metric-excellent" id="totalEndpoints">-</div>
+                <div class="metric-label">Total Endpoints</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avgResponseTime">-</div>
+                <div class="metric-label">Avg Response (ms)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value metric-good" id="healthyCount">-</div>
+                <div class="metric-label">Healthy</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value metric-critical" id="alertsCount">-</div>
+                <div class="metric-label">Alerts</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="lastUpdateTime">-</div>
+                <div class="metric-label">Last Updated</div>
+            </div>
+        </div>
+
+        <!-- Endpoints Grid -->
+        <div class="endpoints-grid" id="endpointsGrid">
+            <div class="loading pulse">Loading monitoring data...</div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="timestamp-info">
+            <div>
+                <strong>Base URL:</strong> <span id="baseUrl">http://localhost:32542</span> | 
+                <strong>Last Updated:</strong> <span id="lastUpdated">-</span>
+            </div>
+            <div class="thresholds">
+                <div class="threshold-item">
+                    <div class="threshold-dot" style="background: #28a745;"></div>
+                    <span>Excellent ≤50ms</span>
+                </div>
+                <div class="threshold-item">
+                    <div class="threshold-dot" style="background: #20c997;"></div>
+                    <span>Good ≤200ms</span>
+                </div>
+                <div class="threshold-item">
+                    <div class="threshold-dot" style="background: #ffc107;"></div>
+                    <span>Acceptable ≤1000ms</span>
+                </div>
+                <div class="threshold-item">
+                    <div class="threshold-dot" style="background: #fd7e14;"></div>
+                    <span>Poor ≤5000ms</span>
+                </div>
+                <div class="threshold-item">
+                    <div class="threshold-dot" style="background: #dc3545;"></div>
+                    <span>Critical >5000ms</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = window.location.hostname === 'localhost' ? 
+            'http://localhost:32542' : 
+            'https://blacklist.jclee.me';
+        
+        const ENDPOINTS = {
+            '/health': 'Health Check',
+            '/healthz': 'K8s Health Check',
+            '/ready': 'K8s Readiness Check',
+            '/api/health': 'Detailed Health Check',
+            '/api/blacklist/active': 'Active Blacklist IPs',
+            '/api/fortigate': 'FortiGate External Connector',
+            '/api/collection/status': 'Collection Status',
+            '/api/v2/analytics/trends': 'Analytics Trends',
+            '/api/v2/analytics/summary': 'Analytics Summary',
+            '/api/v2/analytics/threat-levels': 'Threat Levels',
+            '/api/v2/analytics/sources': 'Source Analysis',
+            '/api/v2/analytics/geo': 'Geographic Analysis',
+            '/api/v2/sources/status': 'Sources Status',
+            '/api/v2/blacklist/enhanced': 'Enhanced Blacklist'
+        };
+
+        // State
+        let autoRefreshEnabled = true;
+        let autoRefreshInterval;
+        let monitoringData = [];
+
+        // Utility functions
+        function getStatusLevel(responseTime, statusCode) {
+            if (statusCode === 0 || statusCode >= 500) return 'critical';
+            if (statusCode >= 400) return 'warning';
+            if (responseTime <= 50) return 'excellent';
+            if (responseTime <= 200) return 'good';
+            if (responseTime <= 1000) return 'acceptable';
+            if (responseTime <= 5000) return 'poor';
+            return 'critical';
+        }
+
+        function formatResponseTime(ms) {
+            if (ms < 1000) return `${ms}ms`;
+            return `${(ms/1000).toFixed(2)}s`;
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        }
+
+        // Mock function to simulate API monitoring (replace with real API call)
+        async function measureEndpoint(endpoint) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Add timeout
+                    signal: AbortSignal.timeout(30000)
+                });
+                
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                return {
+                    endpoint,
+                    responseTime,
+                    statusCode: response.status,
+                    statusLevel: getStatusLevel(responseTime, response.status),
+                    timestamp: new Date().toISOString(),
+                    description: ENDPOINTS[endpoint] || 'Unknown endpoint'
+                };
+            } catch (error) {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                return {
+                    endpoint,
+                    responseTime: responseTime > 30000 ? 30000 : responseTime,
+                    statusCode: 0,
+                    statusLevel: 'critical',
+                    timestamp: new Date().toISOString(),
+                    description: ENDPOINTS[endpoint] || 'Unknown endpoint',
+                    error: error.message
+                };
+            }
+        }
+
+        // Main monitoring function
+        async function runMonitoring() {
+            const endpointsGrid = document.getElementById('endpointsGrid');
+            endpointsGrid.innerHTML = '<div class="loading pulse">Measuring API response times...</div>';
+            
+            try {
+                const promises = Object.keys(ENDPOINTS).map(endpoint => measureEndpoint(endpoint));
+                monitoringData = await Promise.all(promises);
+                
+                updateMetrics();
+                renderEndpoints();
+                updateTimestamp();
+                
+            } catch (error) {
+                endpointsGrid.innerHTML = `<div class="error">Error running monitoring: ${error.message}</div>`;
+            }
+        }
+
+        // Update metrics display
+        function updateMetrics() {
+            const totalEndpoints = monitoringData.length;
+            const avgResponseTime = Math.round(
+                monitoringData.reduce((sum, item) => sum + item.responseTime, 0) / totalEndpoints
+            );
+            const healthyCount = monitoringData.filter(item => 
+                ['excellent', 'good'].includes(item.statusLevel)
+            ).length;
+            const alertsCount = monitoringData.filter(item => 
+                ['critical', 'poor'].includes(item.statusLevel)
+            ).length;
+
+            document.getElementById('totalEndpoints').textContent = totalEndpoints;
+            document.getElementById('avgResponseTime').textContent = formatResponseTime(avgResponseTime);
+            document.getElementById('avgResponseTime').className = `metric-value metric-${getStatusLevel(avgResponseTime, 200)}`;
+            document.getElementById('healthyCount').textContent = healthyCount;
+            document.getElementById('alertsCount').textContent = alertsCount;
+            document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Render endpoints
+        function renderEndpoints() {
+            const endpointsGrid = document.getElementById('endpointsGrid');
+            
+            const html = monitoringData.map(item => `
+                <div class="endpoint-card status-${item.statusLevel}">
+                    <div class="endpoint-header">
+                        <div class="endpoint-path">${item.endpoint}</div>
+                        <div class="status-badge status-${item.statusLevel}">${item.statusLevel.toUpperCase()}</div>
+                    </div>
+                    <div class="endpoint-description">${item.description}</div>
+                    <div class="endpoint-details">
+                        <div class="detail-item">
+                            <div class="detail-value metric-${item.statusLevel}">${formatResponseTime(item.responseTime)}</div>
+                            <div class="detail-label">Response Time</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-value ${item.statusCode >= 400 ? 'metric-critical' : 'metric-good'}">HTTP ${item.statusCode}</div>
+                            <div class="detail-label">Status Code</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-value">${formatTimestamp(item.timestamp).split(' ')[1]}</div>
+                            <div class="detail-label">Last Checked</div>
+                        </div>
+                    </div>
+                    ${item.error ? `<div class="error">Error: ${item.error}</div>` : ''}
+                </div>
+            `).join('');
+            
+            endpointsGrid.innerHTML = html;
+        }
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleString();
+            document.getElementById('baseUrl').textContent = API_BASE_URL;
+        }
+
+        // Control functions
+        function refreshData() {
+            runMonitoring();
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const statusElement = document.getElementById('autoRefreshStatus');
+            
+            if (autoRefreshEnabled) {
+                statusElement.textContent = 'Auto Refresh: ON';
+                startAutoRefresh();
+            } else {
+                statusElement.textContent = 'Auto Refresh: OFF';
+                clearInterval(autoRefreshInterval);
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(runMonitoring, 300000); // 5 minutes
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(monitoringData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `api-monitoring-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            runMonitoring();
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+            }
+        });
+
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                clearInterval(autoRefreshInterval);
+            } else if (autoRefreshEnabled) {
+                runMonitoring();
+                startAutoRefresh();
+            }
+        });
+    </script>
+</body>
+</html>

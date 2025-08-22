@@ -1,0 +1,22 @@
+[
+  {
+    "content": "데이터베이스 스키마 누락 이슈 해결",
+    "status": "in_progress"
+  },
+  {
+    "content": "✅ init_database.py 파일 찾기 또는 생성",
+    "status": "completed"
+  },
+  {
+    "content": "PostgreSQL 테이블 생성 (blacklist_entries, system_logs)",
+    "status": "in_progress"
+  },
+  {
+    "content": "컨테이너 건강 상태 복구",
+    "status": "pending"
+  },
+  {
+    "content": "배포 파이프라인 검증",
+    "status": "pending"
+  }
+]

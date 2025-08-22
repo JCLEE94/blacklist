@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Check main page access error",
+    "status": "in_progress"
+  },
+  {
+    "content": "Diagnose API proxy issues",
+    "status": "pending"
+  },
+  {
+    "content": "Fix frontend-backend connectivity",
+    "status": "pending"
+  },
+  {
+    "content": "Test main page functionality",
+    "status": "pending"
+  },
+  {
+    "content": "Deploy fixes if needed",
+    "status": "pending"
+  }
+]

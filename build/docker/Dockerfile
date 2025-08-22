@@ -27,8 +27,12 @@ RUN pip wheel --wheel-dir=/wheels -r requirements.txt
 # Production stage - minimal base image
 FROM python:3.11-slim
 
-# Container labels for metadata
-LABEL org.opencontainers.image.created="2025-08-22" \
+# Container labels for metadata and Watchtower
+LABEL com.watchtower.enable="true" \
+      com.watchtower.scope="blacklist" \
+      com.watchtower.monitor.only="false" \
+      com.watchtower.stop-timeout="30s" \
+      org.opencontainers.image.created="2025-08-22" \
       org.opencontainers.image.authors="jclee94@gmail.com" \
       org.opencontainers.image.url="https://blacklist.jclee.me" \
       org.opencontainers.image.documentation="https://github.com/JCLEE94/blacklist" \
