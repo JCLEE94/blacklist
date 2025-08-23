@@ -61,20 +61,18 @@ class StructuredLogger:
 
     def _setup_logger(self) -> logging.Logger:
         """로거 설정"""
-        import logging as logging_module
-
-        logger = logging_module.getLogger(self.name)
+        logger = logging.getLogger(self.name)
 
         # 환경변수에서 로그 레벨 읽기
         log_level = os.getenv("LOG_LEVEL", "INFO").upper()
         if log_level == "DEBUG":
-            level = logging_module.DEBUG
+            level = logging.DEBUG
         elif log_level == "WARNING":
-            level = logging_module.WARNING
+            level = logging.WARNING
         elif log_level == "ERROR":
-            level = logging_module.ERROR
+            level = logging.ERROR
         else:
-            level = logging_module.INFO
+            level = logging.INFO
 
         logger.setLevel(level)
 
@@ -93,11 +91,9 @@ class StructuredLogger:
             )
 
         # 콘솔 핸들러 (모든 환경에서 사용)
-        console_handler = logging_module.StreamHandler(sys.stdout)
+        console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(
-            logging_module.DEBUG
-            if os.getenv("FLASK_ENV") == "development"
-            else logging_module.INFO
+            logging.DEBUG if os.getenv("FLASK_ENV") == "development" else logging.INFO
         )
         console_handler.setFormatter(json_formatter)
         logger.addHandler(console_handler)
@@ -108,19 +104,19 @@ class StructuredLogger:
             # 파일 핸들러 (JSON 로그)
             json_file = self.log_dir / f"{self.name}.json"
 
-            json_handler = logging_module.handlers.RotatingFileHandler(
+            json_handler = logging.handlers.RotatingFileHandler(
                 json_file, maxBytes=2 * 1024 * 1024, backupCount=3  # 2MB
             )
-            json_handler.setLevel(logging_module.INFO)
+            json_handler.setLevel(logging.INFO)
             json_handler.setFormatter(json_formatter)
             logger.addHandler(json_handler)
 
             # 에러 파일 핸들러
             error_file = self.log_dir / f"{self.name}_errors.log"
-            error_handler = logging_module.handlers.RotatingFileHandler(
+            error_handler = logging.handlers.RotatingFileHandler(
                 error_file, maxBytes=1 * 1024 * 1024, backupCount=2  # 1MB
             )
-            error_handler.setLevel(logging_module.ERROR)
+            error_handler.setLevel(logging.ERROR)
             error_handler.setFormatter(json_formatter)
             logger.addHandler(error_handler)
         except PermissionError:
@@ -129,7 +125,7 @@ class StructuredLogger:
 
         # 커스텀 버퍼 핸들러
         buffer_handler = BufferHandler(self)
-        buffer_handler.setLevel(logging_module.DEBUG)
+        buffer_handler.setLevel(logging.DEBUG)
         logger.addHandler(buffer_handler)
 
         return logger
