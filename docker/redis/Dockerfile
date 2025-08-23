@@ -1,81 +1,80 @@
-# Redis with Watchtower optimization and enhanced health monitoring
-# Version: 1.3.4
-# Registry: registry.jclee.me/blacklist-redis
-
+# Redis Standalone Container for Blacklist Service
 FROM redis:7-alpine
 
-# Build metadata for Watchtower
-ARG BUILD_DATE
-ARG VCS_REF
-ARG VERSION
+# Metadata
+LABEL org.opencontainers.image.title="Blacklist Redis" \
+      org.opencontainers.image.description="Redis cache for Blacklist service" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="JCLee"
 
-# Watchtower labels for automatic updates
-LABEL org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.authors="jclee94@gmail.com" \
-      org.opencontainers.image.url="https://blacklist.jclee.me" \
-      org.opencontainers.image.documentation="https://github.com/JCLEE94/blacklist" \
-      org.opencontainers.image.source="https://github.com/JCLEE94/blacklist" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.vendor="JCLee" \
-      org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.title="Blacklist Redis" \
-      org.opencontainers.image.description="Redis cache for Blacklist Management System with Watchtower auto-deployment" \
-      com.watchtower.enable="true" \
-      com.watchtower.monitor-only="false" \
-      com.watchtower.lifecycle.pre-update="/usr/local/bin/pre-update.sh" \
-      com.watchtower.lifecycle.post-update="/usr/local/bin/post-update.sh" \
-      com.watchtower.stop-signal="SIGTERM"
+# Create redis user and directories
+RUN mkdir -p /data /usr/local/etc/redis && \
+    chown redis:redis /data /usr/local/etc/redis
 
-# Create Redis configuration for production - completely self-contained
-RUN mkdir -p /usr/local/etc/redis /data && \
-    echo 'bind 0.0.0.0' > /usr/local/etc/redis/redis.conf && \
-    echo 'port 6379' >> /usr/local/etc/redis/redis.conf && \
-    echo 'tcp-keepalive 60' >> /usr/local/etc/redis/redis.conf && \
-    echo 'timeout 0' >> /usr/local/etc/redis/redis.conf && \
-    echo 'databases 16' >> /usr/local/etc/redis/redis.conf && \
-    echo 'save 900 1' >> /usr/local/etc/redis/redis.conf && \
-    echo 'save 300 10' >> /usr/local/etc/redis/redis.conf && \
-    echo 'save 60 10000' >> /usr/local/etc/redis/redis.conf && \
-    echo 'dir /data' >> /usr/local/etc/redis/redis.conf && \
-    echo 'maxmemory 256mb' >> /usr/local/etc/redis/redis.conf && \
-    echo 'maxmemory-policy allkeys-lru' >> /usr/local/etc/redis/redis.conf && \
-    echo 'appendonly yes' >> /usr/local/etc/redis/redis.conf && \
-    echo 'appendfsync everysec' >> /usr/local/etc/redis/redis.conf && \
-    echo 'protected-mode no' >> /usr/local/etc/redis/redis.conf && \
-    echo 'loglevel notice' >> /usr/local/etc/redis/redis.conf && \
-    echo 'logfile ""' >> /usr/local/etc/redis/redis.conf
+# Create Redis configuration
+RUN cat > /usr/local/etc/redis/redis.conf <<EOF
+# Redis Configuration for Blacklist Service
+bind 0.0.0.0
+protected-mode no
+port 6379
+tcp-backlog 511
+timeout 0
+tcp-keepalive 300
 
-# Create Watchtower lifecycle scripts
-RUN echo '#!/bin/sh' > /usr/local/bin/pre-update.sh && \
-    echo 'echo "[$(date)] Watchtower pre-update: Saving Redis data..."' >> /usr/local/bin/pre-update.sh && \
-    echo 'redis-cli BGSAVE || true' >> /usr/local/bin/pre-update.sh && \
-    echo 'sleep 2' >> /usr/local/bin/pre-update.sh && \
-    echo 'echo "[$(date)] Redis data save completed"' >> /usr/local/bin/pre-update.sh
+# Persistence
+dir /data
+dbfilename dump.rdb
+appendonly yes
+appendfilename "appendonly.aof"
+appendfsync everysec
+no-appendfsync-on-rewrite no
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
 
-RUN echo '#!/bin/sh' > /usr/local/bin/post-update.sh && \
-    echo 'echo "[$(date)] Watchtower post-update: Verifying Redis..."' >> /usr/local/bin/post-update.sh && \
-    echo 'for i in $(seq 1 30); do' >> /usr/local/bin/post-update.sh && \
-    echo '    if redis-cli ping >/dev/null 2>&1; then' >> /usr/local/bin/post-update.sh && \
-    echo '        echo "[$(date)] Redis is ready after update"' >> /usr/local/bin/post-update.sh && \
-    echo '        exit 0' >> /usr/local/bin/post-update.sh && \
-    echo '    fi' >> /usr/local/bin/post-update.sh && \
-    echo '    sleep 2' >> /usr/local/bin/post-update.sh && \
-    echo 'done' >> /usr/local/bin/post-update.sh && \
-    echo 'echo "[$(date)] Redis failed to start after update"' >> /usr/local/bin/post-update.sh && \
-    echo 'exit 1' >> /usr/local/bin/post-update.sh
+# Memory management
+maxmemory 256mb
+maxmemory-policy allkeys-lru
 
-RUN chmod +x /usr/local/bin/*.sh
+# Logging
+loglevel notice
+logfile ""
 
-# Enhanced health check for Watchtower monitoring
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-    CMD redis-cli ping || exit 1
+# Performance
+databases 16
+save 900 1
+save 300 10
+save 60 10000
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
 
-# Signal handling for graceful shutdown
-STOPSIGNAL SIGTERM
+# Client handling
+maxclients 10000
+
+# Lazy freeing
+lazyfree-lazy-eviction no
+lazyfree-lazy-expire no
+lazyfree-lazy-server-del no
+replica-lazy-flush no
+EOF
+
+# Health check script
+RUN echo '#!/bin/sh' > /usr/local/bin/healthcheck.sh && \
+    echo 'redis-cli ping | grep -q PONG' >> /usr/local/bin/healthcheck.sh && \
+    chmod +x /usr/local/bin/healthcheck.sh
 
 # Expose Redis port
 EXPOSE 6379
 
-# Start Redis with custom configuration
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+    CMD /usr/local/bin/healthcheck.sh || exit 1
+
+# Volume for data persistence
+VOLUME ["/data"]
+
+# Switch to redis user
+USER redis
+
+# Run Redis with config
 CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]

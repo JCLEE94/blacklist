@@ -24,7 +24,8 @@ def wait_for_postgres(db_url, max_retries=30):
 def init_postgres_database():
     """Initialize PostgreSQL database with complete schema"""
     db_url = os.environ.get(
-        "DATABASE_URL", "postgresql://blacklist_user:password@postgres:5432/blacklist"
+        "DATABASE_URL",
+        "postgresql://blacklist_user:blacklist_standalone_password_change_me@blacklist-postgresql-standalone:5432/blacklist",
     )
 
     if not wait_for_postgres(db_url):

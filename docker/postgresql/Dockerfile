@@ -1,69 +1,108 @@
-# PostgreSQL with Watchtower optimization and lifecycle management
-# Version: 1.3.4
-# Registry: registry.jclee.me/blacklist-postgresql
-
+# PostgreSQL Standalone Container for Blacklist Service
 FROM postgres:15-alpine
 
-# Build metadata for Watchtower
-ARG BUILD_DATE
-ARG VCS_REF
-ARG VERSION
+# Metadata
+LABEL org.opencontainers.image.title="Blacklist PostgreSQL" \
+      org.opencontainers.image.description="PostgreSQL database for Blacklist service" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="JCLee"
 
-# Watchtower labels for automatic updates
-LABEL org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.authors="jclee94@gmail.com" \
-      org.opencontainers.image.url="https://blacklist.jclee.me" \
-      org.opencontainers.image.documentation="https://github.com/JCLEE94/blacklist" \
-      org.opencontainers.image.source="https://github.com/JCLEE94/blacklist" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.vendor="JCLee" \
-      org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.title="Blacklist PostgreSQL" \
-      org.opencontainers.image.description="PostgreSQL database for Blacklist Management System with Watchtower auto-deployment" \
-      com.watchtower.enable="true" \
-      com.watchtower.monitor-only="false" \
-      com.watchtower.lifecycle.pre-update="/docker-entrypoint-initdb.d/pre-update.sh" \
-      com.watchtower.lifecycle.post-update="/docker-entrypoint-initdb.d/post-update.sh" \
-      com.watchtower.stop-signal="SIGTERM"
-
-# Environment variables for database
+# Environment variables for database setup
 ENV POSTGRES_DB=blacklist \
-    POSTGRES_USER=postgres \
-    POSTGRES_PASSWORD=password \
+    POSTGRES_USER=blacklist \
+    POSTGRES_PASSWORD=blacklist123 \
     PGDATA=/var/lib/postgresql/data/pgdata
 
-# Create lifecycle management scripts
-# Create database initialization script with no external dependencies
-RUN echo '#!/bin/bash' > /docker-entrypoint-initdb.d/init-blacklist.sql && \
-    echo 'CREATE DATABASE IF NOT EXISTS blacklist;' >> /docker-entrypoint-initdb.d/init-blacklist.sql && \
-    echo 'CREATE TABLE IF NOT EXISTS blacklist_ips (id SERIAL PRIMARY KEY, ip VARCHAR(45), source VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);' >> /docker-entrypoint-initdb.d/init-blacklist.sql
+# Create initialization directory
+RUN mkdir -p /docker-entrypoint-initdb.d
 
-RUN echo '#!/bin/bash' > /docker-entrypoint-initdb.d/pre-update.sh && \
-    echo 'echo "[$(date)] Watchtower pre-update: Backing up PostgreSQL data..."' >> /docker-entrypoint-initdb.d/pre-update.sh && \
-    echo 'pg_dumpall -U postgres > /var/lib/postgresql/data/backup-$(date +%Y%m%d-%H%M%S).sql 2>/dev/null || true' >> /docker-entrypoint-initdb.d/pre-update.sh && \
-    echo 'echo "[$(date)] Database backup completed"' >> /docker-entrypoint-initdb.d/pre-update.sh
+# Add initialization script
+COPY --chown=postgres:postgres <<'EOF' /docker-entrypoint-initdb.d/01-init.sql
+-- Create blacklist database and tables
+CREATE TABLE IF NOT EXISTS blacklist_ips (
+    id SERIAL PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL UNIQUE,
+    source VARCHAR(50) NOT NULL,
+    detection_date DATE NOT NULL,
+    threat_level VARCHAR(20) DEFAULT 'MEDIUM',
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    hits INTEGER DEFAULT 1,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-RUN echo '#!/bin/bash' > /docker-entrypoint-initdb.d/post-update.sh && \
-    echo 'echo "[$(date)] Watchtower post-update: Verifying PostgreSQL..."' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo 'for i in {1..30}; do' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo '    if pg_isready -U postgres >/dev/null 2>&1; then' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo '        echo "[$(date)] PostgreSQL is ready after update"' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo '        exit 0' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo '    fi' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo '    sleep 2' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo 'done' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo 'echo "[$(date)] PostgreSQL failed to start after update"' >> /docker-entrypoint-initdb.d/post-update.sh && \
-    echo 'exit 1' >> /docker-entrypoint-initdb.d/post-update.sh
+-- Create indexes for performance
+CREATE INDEX idx_ip_address ON blacklist_ips(ip_address);
+CREATE INDEX idx_source ON blacklist_ips(source);
+CREATE INDEX idx_detection_date ON blacklist_ips(detection_date);
+CREATE INDEX idx_is_active ON blacklist_ips(is_active);
 
-RUN chmod +x /docker-entrypoint-initdb.d/*.sh
+-- Create collections table
+CREATE TABLE IF NOT EXISTS collections (
+    id SERIAL PRIMARY KEY,
+    source VARCHAR(50) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    total_ips INTEGER DEFAULT 0,
+    new_ips INTEGER DEFAULT 0,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-# Enhanced health check for Watchtower monitoring
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD pg_isready -U $POSTGRES_USER -d $POSTGRES_DB || exit 1
+-- Create api_keys table
+CREATE TABLE IF NOT EXISTS api_keys (
+    id SERIAL PRIMARY KEY,
+    key_hash VARCHAR(255) NOT NULL UNIQUE,
+    user_id VARCHAR(100),
+    name VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used TIMESTAMP,
+    is_active BOOLEAN DEFAULT true,
+    expires_at TIMESTAMP
+);
 
-# Signal handling for graceful shutdown
-STOPSIGNAL SIGTERM
+-- Create user_sessions table
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(100) NOT NULL,
+    session_token VARCHAR(255) NOT NULL UNIQUE,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT true
+);
+
+-- Grant permissions
+GRANT ALL PRIVILEGES ON DATABASE blacklist TO blacklist;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO blacklist;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO blacklist;
+
+-- Add sample data for testing
+INSERT INTO blacklist_ips (ip_address, source, detection_date, threat_level) 
+VALUES 
+    ('192.168.1.100', 'MANUAL', CURRENT_DATE, 'HIGH'),
+    ('10.0.0.1', 'MANUAL', CURRENT_DATE, 'MEDIUM')
+ON CONFLICT (ip_address) DO NOTHING;
+EOF
+
+# Health check script
+RUN echo '#!/bin/sh' > /usr/local/bin/healthcheck.sh && \
+    echo 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}' >> /usr/local/bin/healthcheck.sh && \
+    chmod +x /usr/local/bin/healthcheck.sh
 
 # Expose PostgreSQL port
 EXPOSE 5432
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+    CMD /usr/local/bin/healthcheck.sh || exit 1
+
+# Volume for data persistence
+VOLUME ["/var/lib/postgresql/data"]
+
+# Default command
+CMD ["postgres"]
