@@ -18,7 +18,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 CONTAINER_NAME="blacklist-postgresql-standalone"
 IMAGE_NAME="blacklist-postgresql:standalone"
 NETWORK_NAME="blacklist-standalone"
-CONTAINER_IP="172.20.0.10"
+CONTAINER_IP="172.25.0.10"
 
 # Build PostgreSQL image
 build() {
@@ -40,7 +40,7 @@ start() {
     # Create network if it doesn't exist
     if ! docker network ls | grep -q "$NETWORK_NAME"; then
         echo -e "${YELLOW}Creating network $NETWORK_NAME...${NC}"
-        docker network create --subnet=172.20.0.0/16 "$NETWORK_NAME"
+        docker network create --subnet=172.25.0.0/16 "$NETWORK_NAME"
     fi
     
     # Stop and remove existing container

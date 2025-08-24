@@ -35,8 +35,8 @@ set -e
 
 echo "[$(date)] Starting Blacklist Application..."
 
-# Default environment variables
-export DATABASE_URL="${DATABASE_URL:-postgresql://blacklist:blacklist123@blacklist-postgres:5432/blacklist}"
+# Default environment variables (use IP addresses for standalone mode)
+export DATABASE_URL="${DATABASE_URL:-postgresql://blacklist_user:blacklist_password@blacklist-postgres:5432/blacklist}"
 export REDIS_URL="${REDIS_URL:-redis://blacklist-redis:6379/0}"
 export PORT="${PORT:-2542}"
 export FLASK_ENV="${FLASK_ENV:-production}"
@@ -92,22 +92,8 @@ if ! wait_for_service "$REDIS_HOST" "$REDIS_PORT" "Redis"; then
 fi
 
 # Initialize database if needed
-echo "Checking database initialization..."
-python3 -c "
-import os
-import sys
-from sqlalchemy import create_engine, text
-
-try:
-    engine = create_engine(os.environ.get('DATABASE_URL'))
-    with engine.connect() as conn:
-        result = conn.execute(text('SELECT COUNT(*) FROM blacklist_ips'))
-        count = result.scalar()
-        print(f'Database ready with {count} IPs')
-except Exception as e:
-    print(f'Database check failed: {e}')
-    print('Continuing anyway...')
-"
+echo "Initializing database schema..."
+python3 scripts/init_postgres_standalone.py || echo "Database initialization failed, continuing..."
 
 # Create required directories
 mkdir -p /app/data /app/logs /app/instance /app/temp
@@ -141,7 +127,7 @@ RUN chmod +x /app/entrypoint.sh
 USER app
 
 # Environment variables (can be overridden at runtime)
-ENV DATABASE_URL="postgresql://blacklist:blacklist123@blacklist-postgres:5432/blacklist" \
+ENV DATABASE_URL="postgresql://blacklist_user:blacklist_password@blacklist-postgres:5432/blacklist" \
     REDIS_URL="redis://blacklist-redis:6379/0" \
     FLASK_ENV="production" \
     PORT="2542" \

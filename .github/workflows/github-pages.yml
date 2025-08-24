@@ -1,8 +1,12 @@
-name: Deploy Portfolio to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - '.github/workflows/github-pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -15,43 +19,281 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    name: 📄 Build and Deploy Portfolio
-    runs-on: ubuntu-latest  # Use GitHub-hosted runner to reduce self-hosted load
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
+    runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
-    
-    - name: Generate portfolio content
-      run: |
-        chmod +x scripts/generate-portfolio.sh
-        ./scripts/generate-portfolio.sh
-    
+      
     - name: Setup Pages
       uses: actions/configure-pages@v4
-    
+      
+    - name: Create Portfolio Site
+      run: |
+        mkdir -p _site
+        
+        # Create index.html
+        cat > _site/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Blacklist Management System</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    color: white;
+                }
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 2rem;
+                }
+                header {
+                    text-align: center;
+                    padding: 3rem 0;
+                }
+                h1 {
+                    font-size: 3rem;
+                    margin-bottom: 1rem;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                }
+                .subtitle {
+                    font-size: 1.2rem;
+                    opacity: 0.9;
+                }
+                .stats {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 2rem;
+                    margin: 3rem 0;
+                }
+                .stat-card {
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(10px);
+                    padding: 2rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    transition: transform 0.3s;
+                }
+                .stat-card:hover {
+                    transform: translateY(-5px);
+                }
+                .stat-number {
+                    font-size: 2.5rem;
+                    font-weight: bold;
+                    margin-bottom: 0.5rem;
+                }
+                .stat-label {
+                    opacity: 0.9;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    font-size: 0.9rem;
+                }
+                .features {
+                    margin: 3rem 0;
+                }
+                .feature-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 2rem;
+                }
+                .feature {
+                    background: rgba(255, 255, 255, 0.05);
+                    padding: 1.5rem;
+                    border-radius: 10px;
+                    border-left: 4px solid #ffd700;
+                }
+                .feature h3 {
+                    margin-bottom: 1rem;
+                    color: #ffd700;
+                }
+                .buttons {
+                    text-align: center;
+                    margin: 3rem 0;
+                }
+                .btn {
+                    display: inline-block;
+                    padding: 1rem 2rem;
+                    margin: 0 1rem;
+                    background: #ffd700;
+                    color: #333;
+                    text-decoration: none;
+                    border-radius: 50px;
+                    font-weight: bold;
+                    transition: all 0.3s;
+                }
+                .btn:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+                }
+                .btn-secondary {
+                    background: transparent;
+                    border: 2px solid white;
+                    color: white;
+                }
+                footer {
+                    text-align: center;
+                    padding: 2rem 0;
+                    opacity: 0.8;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <header>
+                    <h1>🛡️ Blacklist Management System</h1>
+                    <p class="subtitle">Enterprise-grade Threat Intelligence Platform</p>
+                </header>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">50ms</div>
+                        <div class="stat-label">Response Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">99.9%</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100K+</div>
+                        <div class="stat-label">IPs Tracked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Monitoring</div>
+                    </div>
+                </div>
+                
+                <div class="features">
+                    <h2 style="text-align: center; margin-bottom: 2rem;">Key Features</h2>
+                    <div class="feature-grid">
+                        <div class="feature">
+                            <h3>🚀 High Performance</h3>
+                            <p>PostgreSQL + Redis caching for lightning-fast queries</p>
+                        </div>
+                        <div class="feature">
+                            <h3>🔐 Enterprise Security</h3>
+                            <p>JWT + API Key dual authentication system</p>
+                        </div>
+                        <div class="feature">
+                            <h3>🌐 Multi-Source Collection</h3>
+                            <p>REGTECH, SECUDIUM integration with real-time updates</p>
+                        </div>
+                        <div class="feature">
+                            <h3>🔧 FortiGate Ready</h3>
+                            <p>External Connector compatible format</p>
+                        </div>
+                        <div class="feature">
+                            <h3>📊 Analytics Dashboard</h3>
+                            <p>Real-time statistics and trend analysis</p>
+                        </div>
+                        <div class="feature">
+                            <h3>🐳 Docker Native</h3>
+                            <p>Container-based deployment with auto-scaling</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="buttons">
+                    <a href="https://blacklist.jclee.me" class="btn">Live Demo</a>
+                    <a href="https://github.com/jclee94/blacklist" class="btn btn-secondary">View on GitHub</a>
+                </div>
+                
+                <footer>
+                    <p>© 2025 JCLee. Built with Flask, PostgreSQL, and Redis.</p>
+                </footer>
+            </div>
+            
+            <script>
+                // Animate numbers on load
+                document.addEventListener('DOMContentLoaded', function() {
+                    const numbers = document.querySelectorAll('.stat-number');
+                    numbers.forEach((num, index) => {
+                        setTimeout(() => {
+                            num.style.animation = 'pulse 0.5s';
+                        }, index * 100);
+                    });
+                });
+                
+                // Add pulse animation
+                const style = document.createElement('style');
+                style.textContent = '@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }';
+                document.head.appendChild(style);
+            </script>
+        </body>
+        </html>
+        EOF
+        
+        # Copy additional resources if they exist
+        if [ -d "docs" ]; then
+            cp -r docs/* _site/
+        fi
+        
+        # Create API documentation
+        cat > _site/api.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+            <meta charset="UTF-8">
+            <title>API Documentation - Blacklist System</title>
+            <style>
+                body { font-family: monospace; background: #1a1a1a; color: #0f0; padding: 2rem; }
+                h1 { color: #0f0; border-bottom: 2px solid #0f0; padding-bottom: 0.5rem; }
+                .endpoint { background: #000; padding: 1rem; margin: 1rem 0; border-left: 3px solid #0f0; }
+                .method { color: #ff0; font-weight: bold; }
+                .path { color: #0ff; }
+                pre { background: #000; padding: 1rem; overflow-x: auto; }
+            </style>
+        </head>
+        <body>
+            <h1>API Documentation</h1>
+            
+            <div class="endpoint">
+                <p><span class="method">GET</span> <span class="path">/api/blacklist/active</span></p>
+                <p>Returns active blacklisted IPs</p>
+                <pre>curl https://blacklist.jclee.me/api/blacklist/active</pre>
+            </div>
+            
+            <div class="endpoint">
+                <p><span class="method">GET</span> <span class="path">/api/health</span></p>
+                <p>System health status</p>
+                <pre>curl https://blacklist.jclee.me/api/health</pre>
+            </div>
+            
+            <div class="endpoint">
+                <p><span class="method">GET</span> <span class="path">/api/fortigate</span></p>
+                <p>FortiGate External Connector format</p>
+                <pre>curl https://blacklist.jclee.me/api/fortigate</pre>
+            </div>
+            
+            <div class="endpoint">
+                <p><span class="method">POST</span> <span class="path">/api/collection/trigger</span></p>
+                <p>Trigger manual collection</p>
+                <pre>curl -X POST https://blacklist.jclee.me/api/collection/trigger</pre>
+            </div>
+        </body>
+        </html>
+        EOF
+        
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: './docs'
-    
+        path: ./_site
+        
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
-    
-    - name: Verify deployment
-      run: |
-        echo "✅ Portfolio deployed successfully!"
-        echo "🌐 URL: https://jclee94.github.io/blacklist/"
-        echo ""
-        echo "📋 Portfolio highlights:"
-        echo "  - DevOps & Security Engineer profile"
-        echo "  - Kubernetes & Docker Compose dual deployment"
-        echo "  - GitOps implementation with ArgoCD"
-        echo "  - 95% test coverage"
-        echo "  - Air-gap deployment capability"
-        echo "  - Self-hosted CI/CD runners"

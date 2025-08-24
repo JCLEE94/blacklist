@@ -221,7 +221,7 @@ class CoreOperationsMixin:
         """시스템 통계 조회 (get_system_health의 별칭)"""
         return self.get_system_health()
 
-    def get_active_blacklist_entries(self) -> list[str]:
+    def get_active_blacklist_ips(self) -> list[str]:
         """활성 블랙리스트 IP 목록 조회"""
         try:
             if not self.blacklist_manager:
@@ -307,7 +307,7 @@ class CoreOperationsMixin:
                     pass
 
             # 활성 아이피 조회
-            active_ips = self.get_active_blacklist_entries()
+            active_ips = self.get_active_blacklist_ips()
 
             if format_type == "fortigate":
                 result = self.format_for_fortigate(active_ips)

@@ -3,13 +3,12 @@
 Source Statistics Mixin - Source-specific analysis and statistics
 
 Purpose: Handle source-based statistics (REGTECH, SECUDIUM, etc.)
-Third-party packages: psycopg2 (optional), sqlite3 (stdlib)
+Third-party packages: psycopg2 (required)
 Sample input: No parameters for get_source_statistics()
 Expected output: Dictionary with source names and their detailed statistics
 """
 
 import logging
-import sqlite3
 from typing import Any, Dict
 
 try:
@@ -33,12 +32,8 @@ class SourceStatisticsMixin:
         try:
             if PSYCOPG2_AVAILABLE and self.database_url.startswith("postgresql://"):
                 return self._get_postgresql_source_stats()
-            elif hasattr(self, "sqlite_path") and self.sqlite_path:
-                import os
-
-                if os.path.exists(self.sqlite_path):
-                    return self._get_sqlite_source_stats()
-
+            
+            # PostgreSQL only - no SQLite fallback
             return {}
         except Exception as e:
             logger.error(f"Error getting source statistics: {e}")
@@ -57,7 +52,7 @@ class SourceStatisticsMixin:
                        COUNT(CASE WHEN is_active = true THEN 1 END) as active_count,
                        MIN(created_at) as first_seen,
                        MAX(created_at) as last_seen
-                FROM blacklist_entries
+                FROM blacklist_ips
                 GROUP BY source
                 ORDER BY total_count DESC
                 """
@@ -78,38 +73,7 @@ class SourceStatisticsMixin:
 
             return source_stats
 
-    def _get_sqlite_source_stats(self) -> Dict[str, Any]:
-        """SQLite 소스별 통계"""
-        with sqlite3.connect(self.sqlite_path) as conn:
-            cursor = conn.cursor()
-
-            cursor.execute(
-                """
-                SELECT source,
-                       COUNT(*) as total_count,
-                       COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_count,
-                       MIN(created_at) as first_seen,
-                       MAX(created_at) as last_seen
-                FROM blacklist_entries
-                GROUP BY source
-                ORDER BY total_count DESC
-                """
-            )
-
-            source_stats = {}
-            for source, total, active, first_seen, last_seen in cursor.fetchall():
-                source_stats[source or "unknown"] = {
-                    "total_ips": total,
-                    "active_ips": active,
-                    "inactive_ips": total - active,
-                    "first_collection": first_seen,
-                    "last_collection": last_seen,
-                    "active_percentage": (
-                        round((active / total) * 100, 2) if total > 0 else 0
-                    ),
-                }
-
-            return source_stats
+    # SQLite support removed - PostgreSQL only
 
     def get_source_summary(self) -> Dict[str, Any]:
         """소스별 요약 정보"""
@@ -242,7 +206,6 @@ if __name__ == "__main__":
         required_methods = [
             "get_source_statistics",
             "_get_postgresql_source_stats",
-            "_get_sqlite_source_stats",
             "get_source_summary",
             "get_source_comparison",
         ]
@@ -267,8 +230,8 @@ if __name__ == "__main__":
         # Mock 객체로 테스트
         class MockSourceMixin(SourceStatisticsMixin):
             def __init__(self):
-                self.database_url = "sqlite:///test.db"
-                self.sqlite_path = None  # 파일이 없으므로 빈 딕셔너리 반환
+                self.database_url = "postgresql://test:test@localhost/test"
+                # PostgreSQL only  # 파일이 없으므로 빈 딕셔너리 반환
 
         mock_mixin = MockSourceMixin()
         result = mock_mixin.get_source_statistics()
@@ -286,8 +249,8 @@ if __name__ == "__main__":
 
         class MockSourceMixin(SourceStatisticsMixin):
             def __init__(self):
-                self.database_url = "sqlite:///test.db"
-                self.sqlite_path = None
+                self.database_url = "postgresql://test:test@localhost/test"
+                # PostgreSQL only
 
         mock_mixin = MockSourceMixin()
         result = mock_mixin.get_source_summary()

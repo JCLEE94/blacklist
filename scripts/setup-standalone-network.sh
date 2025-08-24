@@ -14,13 +14,13 @@ NC='\033[0m' # No Color
 
 # Configuration
 NETWORK_NAME="blacklist-standalone"
-SUBNET="172.20.0.0/16"
-GATEWAY="172.20.0.1"
+SUBNET="172.25.0.0/16"
+GATEWAY="172.25.0.1"
 
 # Container IP assignments
-POSTGRES_IP="172.20.0.10"
-REDIS_IP="172.20.0.20"
-APP_IP="172.20.0.30"
+POSTGRES_IP="172.25.0.10"
+REDIS_IP="172.25.0.20"
+APP_IP="172.25.0.30"
 
 echo -e "${BLUE}=== Blacklist Standalone Network Setup ===${NC}"
 echo "Network: $NETWORK_NAME"

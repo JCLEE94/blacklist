@@ -3,13 +3,13 @@
 Trend Analytics Mixin - Time-series data analysis for blacklist trends
 
 Purpose: Handle daily trend data and time-series analysis
-Third-party packages: psycopg2 (optional), sqlite3 (stdlib)
+Third-party packages: psycopg2 (required)
 Sample input: days=7 for weekly trends, days=30 for monthly trends
 Expected output: Dictionary with trend_data array and total_changes count
 """
 
 import logging
-import sqlite3
+# PostgreSQL only - sqlite3 removed
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
@@ -35,12 +35,8 @@ class TrendAnalyticsMixin:
         try:
             if PSYCOPG2_AVAILABLE and self.database_url.startswith("postgresql://"):
                 return self._get_postgresql_trend_data(days)
-            elif hasattr(self, "sqlite_path") and self.sqlite_path:
-                import os
-
-                if os.path.exists(self.sqlite_path):
-                    return self._get_sqlite_trend_data(days)
-
+            
+            # PostgreSQL only - no SQLite fallback
             return {"days": days, "trend_data": [], "total_changes": 0}
         except Exception as e:
             logger.error(f"Error getting trend data: {e}")
@@ -57,7 +53,7 @@ class TrendAnalyticsMixin:
                 SELECT
                     DATE(created_at) as date,
                     COUNT(*) as count
-                FROM blacklist_entries
+                FROM blacklist_ips
                 WHERE created_at >= CURRENT_DATE - INTERVAL '%s days'
                 GROUP BY DATE(created_at)
                 ORDER BY date DESC
@@ -76,32 +72,7 @@ class TrendAnalyticsMixin:
                 "total_changes": sum(item["count"] for item in trend_data),
             }
 
-    def _get_sqlite_trend_data(self, days: int) -> Dict[str, Any]:
-        """SQLite 트렌드 데이터"""
-        with sqlite3.connect(self.sqlite_path) as conn:
-            cursor = conn.cursor()
-            start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-
-            cursor.execute(
-                """
-                SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM blacklist_entries
-                WHERE created_at >= ?
-                GROUP BY DATE(created_at)
-                ORDER BY date DESC
-                """,
-                (start_date,),
-            )
-
-            trend_data = [
-                {"date": row[0], "count": row[1]} for row in cursor.fetchall()
-            ]
-
-            return {
-                "days": days,
-                "trend_data": trend_data,
-                "total_changes": sum(item["count"] for item in trend_data),
-            }
+    # SQLite support removed - PostgreSQL only
 
     def get_weekly_trends(self) -> Dict[str, Any]:
         """주간 트렌드 요약"""
@@ -187,7 +158,6 @@ if __name__ == "__main__":
         required_methods = [
             "get_daily_trend_data",
             "_get_postgresql_trend_data",
-            "_get_sqlite_trend_data",
             "get_weekly_trends",
             "get_monthly_trends",
         ]
@@ -210,8 +180,8 @@ if __name__ == "__main__":
         # Mock 객체로 테스트
         class MockTrendMixin(TrendAnalyticsMixin):
             def __init__(self):
-                self.database_url = "sqlite:///test.db"
-                self.sqlite_path = None  # 파일이 없으므로 기본값 반환
+                self.database_url = "postgresql://test:test@localhost/test"
+                # PostgreSQL only
 
         mock_mixin = MockTrendMixin()
         result = mock_mixin.get_daily_trend_data(7)

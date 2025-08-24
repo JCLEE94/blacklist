@@ -1,9 +1,0 @@
-# Dependabot configuration disabled
-# To re-enable, uncomment the configuration below
-
-# version: 2
-# updates:
-#   - package-ecosystem: "pip"
-#     directory: "/"
-#     schedule:
-#       interval: "weekly"

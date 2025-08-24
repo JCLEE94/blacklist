@@ -107,7 +107,7 @@ class DatabaseManager:
             # 전체 IP 수
             stats["total_ips"] = session.execute(
                 text(
-                    "SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries WHERE is_active = 1"
+                    "SELECT COUNT(DISTINCT ip_address) FROM blacklist_ips WHERE is_active = 1"
                 )
             ).scalar()
 
@@ -116,7 +116,7 @@ class DatabaseManager:
                 text(
                     """
                     SELECT source, COUNT(*) as count
-                    FROM blacklist_entries
+                    FROM blacklist_ips
                     WHERE is_active = 1
                     GROUP BY source
                 """
@@ -131,7 +131,7 @@ class DatabaseManager:
                     SELECT strftime('%Y-%m', created_at) as month,
                            COUNT(DISTINCT ip_address) as unique_ips,
                            COUNT(*) as total_detections
-                    FROM blacklist_entries
+                    FROM blacklist_ips
                     WHERE is_active = 1
                     GROUP BY month
                     ORDER BY month DESC
@@ -169,7 +169,7 @@ class DatabaseManager:
             result = session.execute(
                 text(
                     """
-                    DELETE FROM blacklist_entries
+                    DELETE FROM blacklist_ips
                     WHERE is_active = 0 AND updated_at < :cutoff
                 """
                 ),

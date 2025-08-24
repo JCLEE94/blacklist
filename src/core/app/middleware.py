@@ -5,7 +5,7 @@ Flask 미들웨어 및 요청/응답 처리
 요청 전처리, 응답 후처리, 보안 헤더 등 미들웨어 기능을 제공합니다.
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template, g
 import logging
 
 logger = logging.getLogger(__name__)

@@ -9,8 +9,8 @@ LABEL org.opencontainers.image.title="Blacklist PostgreSQL" \
 
 # Environment variables for database setup
 ENV POSTGRES_DB=blacklist \
-    POSTGRES_USER=blacklist \
-    POSTGRES_PASSWORD=blacklist123 \
+    POSTGRES_USER=blacklist_user \
+    POSTGRES_PASSWORD=blacklist_password \
     PGDATA=/var/lib/postgresql/data/pgdata
 
 # Create initialization directory
@@ -77,9 +77,9 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 );
 
 -- Grant permissions
-GRANT ALL PRIVILEGES ON DATABASE blacklist TO blacklist;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO blacklist;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO blacklist;
+GRANT ALL PRIVILEGES ON DATABASE blacklist TO blacklist_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO blacklist_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO blacklist_user;
 
 -- Add sample data for testing
 INSERT INTO blacklist_ips (ip_address, source, detection_date, threat_level) 

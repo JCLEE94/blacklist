@@ -18,9 +18,9 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 CONTAINER_NAME="blacklist-app-standalone"
 IMAGE_NAME="blacklist-application:standalone"
 NETWORK_NAME="blacklist-standalone"
-CONTAINER_IP="172.20.0.30"
-POSTGRES_IP="172.20.0.10"
-REDIS_IP="172.20.0.20"
+CONTAINER_IP="172.25.0.30"
+POSTGRES_IP="172.25.0.10"
+REDIS_IP="172.25.0.20"
 
 # Build Application image
 build() {
@@ -42,7 +42,7 @@ start() {
     # Create network if it doesn't exist
     if ! docker network ls | grep -q "$NETWORK_NAME"; then
         echo -e "${YELLOW}Creating network $NETWORK_NAME...${NC}"
-        docker network create --subnet=172.20.0.0/16 "$NETWORK_NAME"
+        docker network create --subnet=172.25.0.0/16 "$NETWORK_NAME"
     fi
     
     # Stop and remove existing container
@@ -57,6 +57,10 @@ start() {
         -p 2542:2542 \
         -e DATABASE_URL="postgresql://blacklist_user:blacklist_standalone_password_change_me@$POSTGRES_IP:5432/blacklist" \
         -e REDIS_URL="redis://$REDIS_IP:6379/0" \
+        -e REGTECH_USERNAME="demo" \
+        -e REGTECH_PASSWORD="demo" \
+        -e SECUDIUM_USERNAME="demo" \
+        -e SECUDIUM_PASSWORD="demo" \
         -e FLASK_ENV=production \
         -e PORT=2542 \
         -e COLLECTION_ENABLED=true \

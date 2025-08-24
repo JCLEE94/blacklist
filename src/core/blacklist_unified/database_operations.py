@@ -69,7 +69,7 @@ class DatabaseOperations:
                 # PostgreSQL-specific table creation
                 cursor.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS blacklist_entries (
+                    CREATE TABLE IF NOT EXISTS blacklist_ips (
                         id SERIAL PRIMARY KEY,
                         ip_address INET NOT NULL,
                         source TEXT,
@@ -118,7 +118,7 @@ class DatabaseOperations:
                         # Batch insert with upsert logic
                         cursor.executemany(
                             """
-                            INSERT OR REPLACE INTO blacklist_entries (
+                            INSERT OR REPLACE INTO blacklist_ips (
                                 ip, source, detection_date, collection_date, country,
                                 attack_type, threat_level, is_active,
                                 expires_at, created_at, updated_at
@@ -165,9 +165,8 @@ class DatabaseOperations:
                 cursor.execute(
                     """
                     SELECT DISTINCT ip_address::text
-                    FROM blacklist_entries
+                    FROM blacklist_ips
                     WHERE is_active = true
-                      AND (exp_date IS NULL OR exp_date > CURRENT_DATE::text)
                     ORDER BY ip_address
                     """
                 )
@@ -185,44 +184,8 @@ class DatabaseOperations:
                 return result
 
         except Exception as e:
-            logger.warning(f"PostgreSQL error: {e}, trying SQLite fallback")
-
-            # Fallback to SQLite if PostgreSQL fails
-            try:
-                import sqlite3
-
-                sqlite_db_path = "instance/blacklist.db"
-
-                if os.path.exists(sqlite_db_path):
-                    logger.debug(f"Getting active IPs from SQLite: {sqlite_db_path}")
-                    with sqlite3.connect(sqlite_db_path) as conn:
-                        cursor = conn.cursor()
-                        cursor.execute(
-                            """
-                            SELECT DISTINCT ip_address
-                            FROM blacklist_entries
-                            WHERE is_active = 1
-                            ORDER BY ip_address
-                            """
-                        )
-                        result = []
-                        for row in cursor.fetchall():
-                            ip_str = row[0]
-                            # Remove CIDR notation if present (e.g., 1.2.3.4/32
-                            # -> 1.2.3.4)
-                            if "/" in ip_str:
-                                ip_str = ip_str.split("/")[0]
-                            result.append(ip_str)
-                        logger.info(
-                            f"Found {len(result)} active IPs from SQLite database"
-                        )
-                        return result
-
-            except Exception as sqlite_e:
-                logger.error(f"SQLite fallback also failed: {sqlite_e}")
-
-            # Final fallback to empty list
-            logger.error("All database access attempts failed")
+            # PostgreSQL only - no SQLite fallback
+            logger.error(f"PostgreSQL database access failed: {e}")
             raise DataProcessingError(
                 f"Database error: {e}", operation="get_active_ips"
             )
@@ -239,14 +202,14 @@ class DatabaseOperations:
 
                 # Count records to be cleaned
                 cursor.execute(
-                    "SELECT COUNT(*) FROM blacklist_entries WHERE created_at < %s",
+                    "SELECT COUNT(*) FROM blacklist_ips WHERE created_at < %s",
                     (cutoff_date,),
                 )
                 count = cursor.fetchone()[0]
 
                 # Mark old records as inactive
                 cursor.execute(
-                    "UPDATE blacklist_entries SET is_active = false, updated_at = %s "
+                    "UPDATE blacklist_ips SET is_active = false, updated_at = %s "
                     "WHERE created_at < %s AND is_active = true",
                     (datetime.now(), cutoff_date),
                 )
@@ -274,13 +237,13 @@ class DatabaseOperations:
 
                 # Count records before deletion
                 cursor.execute(
-                    "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true"
+                    "SELECT COUNT(*) FROM blacklist_ips WHERE is_active = true"
                 )
                 cleared_records = cursor.fetchone()[0]
 
                 # Mark all records as inactive instead of deleting
                 cursor.execute(
-                    "UPDATE blacklist_entries SET is_active = false, updated_at = %s "
+                    "UPDATE blacklist_ips SET is_active = false, updated_at = %s "
                     "WHERE is_active = true",
                     (datetime.now(),),
                 )

@@ -3,14 +3,14 @@
 Database Statistics Mixin - PostgreSQL/SQLite common database operations
 
 Purpose: Handle basic statistics queries for both PostgreSQL and SQLite
-Third-party packages: psycopg2 (optional), sqlite3 (stdlib)
+Third-party packages: psycopg2 (required)
 Sample input: Database connection parameters, query filters
 Expected output: Dictionary with statistics (total_ips, active_ips, sources, etc.)
 """
 
 import logging
 import os
-import sqlite3
+# PostgreSQL only - sqlite3 removed
 from datetime import datetime
 from typing import Any, Dict
 
@@ -43,19 +43,19 @@ class DatabaseStatisticsMixin:
 
             # 활성 IP 수
             cursor.execute(
-                "SELECT COUNT(*) FROM blacklist_entries WHERE is_active = true"
+                "SELECT COUNT(*) FROM blacklist_ips WHERE is_active = true"
             )
             active_ips = cursor.fetchone()[0]
 
             # 전체 IP 수
-            cursor.execute("SELECT COUNT(*) FROM blacklist_entries")
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ips")
             total_ips = cursor.fetchone()[0]
 
             # 소스별 통계
             cursor.execute(
                 """
                 SELECT source, COUNT(*) as count
-                FROM blacklist_entries
+                FROM blacklist_ips
                 WHERE is_active = true
                 GROUP BY source
                 """
@@ -67,7 +67,7 @@ class DatabaseStatisticsMixin:
             try:
                 cursor.execute(
                     """
-                    SELECT COUNT(DISTINCT country) FROM blacklist_entries
+                    SELECT COUNT(DISTINCT country) FROM blacklist_ips
                     WHERE is_active = true AND country IS NOT NULL AND country != ''
                     """
                 )
@@ -78,7 +78,7 @@ class DatabaseStatisticsMixin:
 
             # 마지막 업데이트 시간
             cursor.execute(
-                "SELECT MAX(updated_at) FROM blacklist_entries WHERE is_active = true"
+                "SELECT MAX(updated_at) FROM blacklist_ips WHERE is_active = true"
             )
             last_update_raw = cursor.fetchone()[0]
             last_update = (
@@ -112,64 +112,7 @@ class DatabaseStatisticsMixin:
                 except Exception:
                     pass
 
-    def _get_sqlite_statistics(self) -> Dict[str, Any]:
-        """SQLite에서 통계 조회"""
-        conn = None
-        try:
-            conn = sqlite3.connect(self.sqlite_path)
-            cursor = conn.cursor()
-
-            # 활성 IP 수
-            cursor.execute(
-                "SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries WHERE is_active = 1"
-            )
-            active_ips = cursor.fetchone()[0]
-
-            # 전체 IP 수
-            cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM blacklist_entries")
-            total_ips = cursor.fetchone()[0]
-
-            # 소스별 통계
-            cursor.execute(
-                """
-                SELECT LOWER(source) as source_name, COUNT(DISTINCT ip_address) as count
-                FROM blacklist_entries
-                WHERE is_active = 1
-                GROUP BY LOWER(source)
-                """
-            )
-            sources = {row[0] or "unknown": row[1] for row in cursor.fetchall()}
-
-            # 마지막 업데이트 시간
-            cursor.execute(
-                "SELECT MAX(created_at) FROM blacklist_entries WHERE is_active = 1"
-            )
-            last_update_raw = cursor.fetchone()[0]
-            last_update = (
-                last_update_raw if last_update_raw else datetime.now().isoformat()
-            )
-
-            logger.info(
-                f"SQLite stats: {active_ips} active IPs from {len(sources)} sources"
-            )
-
-            return {
-                "total_ips": total_ips,
-                "active_ips": active_ips,
-                "expired_ips": total_ips - active_ips,
-                "unique_countries": 0,  # SQLite doesn't have country data
-                "sources": sources,
-                "last_update": last_update,
-                "database_size": f"{os.path.getsize(self.sqlite_path) / 1024 / 1024:.2f} MB",
-                "status": "healthy" if active_ips > 0 else "warning",
-            }
-
-        except Exception as e:
-            logger.error(f"SQLite error getting statistics: {e}")
-            raise
-        finally:
-            if conn:
-                conn.close()
+    # SQLite support removed - PostgreSQL only
 
     def _get_default_statistics(self) -> Dict[str, Any]:
         """기본 통계값 반환 (데이터베이스 접근 불가시)"""
@@ -188,24 +131,11 @@ class DatabaseStatisticsMixin:
     def get_statistics(self) -> Dict[str, Any]:
         """통합 통계 정보 (PostgreSQL 우선, SQLite 폴백)"""
         try:
-            # Production 환경에서는 PostgreSQL 우선
-            flask_env = os.environ.get("FLASK_ENV", "development")
-
-            if (
-                flask_env == "production"
-                or self.database_url.startswith("postgresql://")
-            ) and PSYCOPG2_AVAILABLE:
+            # PostgreSQL only
+            if PSYCOPG2_AVAILABLE and self.database_url.startswith("postgresql://"):
                 return self._get_postgresql_statistics()
 
-            # SQLite 폴백
-            if os.path.exists(self.sqlite_path):
-                return self._get_sqlite_statistics()
-
-            # 최후의 수단으로 PostgreSQL 시도
-            if PSYCOPG2_AVAILABLE:
-                return self._get_postgresql_statistics()
-
-            # 모든 옵션 실패시 기본값 반환
+            # No SQLite fallback - PostgreSQL only
             return self._get_default_statistics()
 
         except Exception as e:
@@ -237,7 +167,6 @@ if __name__ == "__main__":
     try:
         required_methods = [
             "_get_postgresql_statistics",
-            "_get_sqlite_statistics",
             "_get_default_statistics",
             "get_statistics",
         ]

@@ -73,7 +73,7 @@ def init_postgres_database():
         "CREATE INDEX IF NOT EXISTS idx_blacklist_ips_detection_date ON blacklist_ips(detection_date)"
     )
     cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_blacklist_ips_status ON blacklist_ips(status)"
+        "CREATE INDEX IF NOT EXISTS idx_blacklist_ips_is_active ON blacklist_ips(is_active)"
     )
 
     # Create collection_logs table
@@ -180,10 +180,10 @@ def init_postgres_database():
     cursor.execute(
         """
         INSERT INTO blacklist_ips 
-        (ip_address, source, detection_date, threat_level, status, notes) 
+        (ip_address, source, detection_date, threat_level, is_active) 
         VALUES 
-            ('192.168.1.100', 'SAMPLE', CURRENT_DATE, 'LOW', 'ACTIVE', 'Sample IP for standalone testing'),
-            ('10.0.0.50', 'TEST', CURRENT_DATE, 'MEDIUM', 'ACTIVE', 'Test IP for functionality verification')
+            ('192.168.1.100', 'SAMPLE', CURRENT_DATE, 'LOW', true),
+            ('10.0.0.50', 'TEST', CURRENT_DATE, 'MEDIUM', true)
         ON CONFLICT (ip_address) DO NOTHING
     """
     )

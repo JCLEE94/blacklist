@@ -3,7 +3,7 @@
 api_routes.py에서 분할된 블랙리스트 관련 엔드포인트
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
+from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template, Response
 import logging
 
 logger = logging.getLogger(__name__)
@@ -56,9 +56,8 @@ def get_active_blacklist():
 
     except Exception as e:
         logger.error(f"Failed to get active blacklist: {e}")
-        return create_error_response(
-            "blacklist_fetch_failed", f"Failed to fetch active blacklist: {str(e)}", 500
-        )
+        error_response = create_error_response(e, include_details=True)
+        return jsonify(error_response), 500
 
 
 @blacklist_routes_bp.route("/api/fortigate", methods=["GET"])
@@ -102,7 +101,8 @@ def get_fortigate_format():
         from ..exceptions import BlacklistError
 
         error = BlacklistError(f"Failed to generate FortiGate format: {str(e)}")
-        return create_error_response(error)
+        error_response = create_error_response(error, include_details=True)
+        return jsonify(error_response), 500
 
 
 @blacklist_routes_bp.route("/api/blacklist/enhanced", methods=["GET"])
@@ -175,4 +175,5 @@ def get_enhanced_blacklist():
         from ..exceptions import BlacklistError
 
         error = BlacklistError(f"Failed to get enhanced blacklist: {str(e)}")
-        return create_error_response(error)
+        error_response = create_error_response(error, include_details=True)
+        return jsonify(error_response), 500

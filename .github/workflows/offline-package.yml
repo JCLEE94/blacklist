@@ -1,495 +1,115 @@
-name: Build Complete Offline Package
+name: Create Offline Package
 
 on:
   workflow_dispatch:
     inputs:
-      package_version:
+      version:
         description: 'Package version'
-        required: false
+        required: true
         default: 'latest'
-        type: string
-      target_os:
-        description: 'Target OS'
-        required: false
-        default: 'rhel8'
-        type: choice
-        options:
-          - rhel8
-          - centos8
-          - rocky8
-          - ubuntu20
-  push:
-    tags:
-      - 'offline-*'
-
-env:
-  REGISTRY: registry.jclee.me
-  IMAGE_NAME: blacklist
-  REDIS_IMAGE_NAME: blacklist-redis
-  POSTGRESQL_IMAGE_NAME: blacklist-postgresql
+      include_docker:
+        description: 'Include Docker images'
+        required: true
+        type: boolean
+        default: true
 
 jobs:
-  build-complete-offline-package:
-    name: 📦 Build Complete Offline Package for Air-Gap Environment
+  create-offline-package:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
         
-      - name: Get version
-        id: version
-        run: |
-          if [ "${{ github.event.inputs.package_version }}" != "" ]; then
-            VERSION="${{ github.event.inputs.package_version }}"
-          elif [ "${{ github.ref_type }}" == "tag" ]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-          else
-            VERSION="$(date +%Y%m%d)-${GITHUB_SHA::7}"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📌 Package version: $VERSION"
-          
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-          
-      - name: Login to Registry
-        run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} \
-            -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-            
-      - name: Build and pull all Docker images
-        run: |
-          echo "🐳 Building and pulling all required Docker images..."
-          
-          # Build main application image
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
-                       -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-                       -f docker/Dockerfile .
-          
-          # Build custom Redis image
-          docker build -t ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest \
-                       -f docker/redis/Dockerfile docker/redis/
-          
-          # Build custom PostgreSQL image
-          docker build -t ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest \
-                       -f docker/postgresql/Dockerfile docker/postgresql/
-          
-          # Pull base images that might be needed
-          docker pull python:3.9-slim
-          docker pull python:3.11-alpine
-          docker pull redis:7-alpine
-          docker pull postgres:15-alpine
-          docker pull alpine:latest
-          docker pull busybox:latest
-          
-      - name: Download Python dependencies
-        run: |
-          echo "📦 Downloading all Python dependencies..."
-          mkdir -p offline-package/python-deps
-          
-          # Create requirements file with all dependencies
-          cat > offline-package/requirements-complete.txt << 'EOF'
-          # Core dependencies
-          Flask==2.3.3
-          gunicorn==23.0.0
-          SQLAlchemy==2.0.35
-          psycopg2-binary==2.9.10
-          redis==5.0.1
-          python-dotenv==1.0.0
-          
-          # Data processing
-          pandas==2.0.3
-          openpyxl==3.1.2
-          xlrd==2.0.1
-          orjson==3.10.12
-          
-          # HTTP and networking
-          requests==2.32.3
-          urllib3==2.2.3
-          certifi==2024.12.14
-          charset-normalizer==3.4.1
-          
-          # Security
-          cryptography==42.0.8
-          PyJWT==2.8.0
-          bcrypt==4.2.1
-          
-          # Utilities
-          click==8.1.7
-          loguru==0.7.2
-          python-dateutil==2.9.0
-          pytz==2024.2
-          
-          # Database
-          alembic==1.13.1
-          
-          # Testing (optional but included)
-          pytest==8.3.4
-          pytest-cov==5.0.0
-          
-          # Monitoring
-          prometheus-client==0.21.1
-          flask-compress==1.15
-          
-          # CLI
-          typer==0.15.1
-          rich==13.9.4
-          EOF
-          
-          # Download all packages and their dependencies
-          pip download -r offline-package/requirements-complete.txt \
-                       -d offline-package/python-deps/ \
-                       --platform manylinux2014_x86_64 \
-                       --platform linux_x86_64 \
-                       --platform any \
-                       --python-version 39 \
-                       --only-binary :all:
-          
-          # Also download source distributions as fallback
-          pip download -r offline-package/requirements-complete.txt \
-                       -d offline-package/python-deps/ \
-                       --no-binary :all:
-          
-          # Create index
-          pip install pip2pi
-          dir2pi offline-package/python-deps/
-          
-      - name: Save all Docker images
-        run: |
-          echo "💾 Saving all Docker images..."
-          mkdir -p offline-package/images
-          
-          # Save application images
-          docker save -o offline-package/images/blacklist-app.tar \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-          
-          docker save -o offline-package/images/blacklist-redis.tar \
-            ${{ env.REGISTRY }}/${{ env.REDIS_IMAGE_NAME }}:latest
-          
-          docker save -o offline-package/images/blacklist-postgresql.tar \
-            ${{ env.REGISTRY }}/${{ env.POSTGRESQL_IMAGE_NAME }}:latest
-          
-          # Save base images
-          docker save -o offline-package/images/base-images.tar \
-            python:3.9-slim \
-            python:3.11-alpine \
-            redis:7-alpine \
-            postgres:15-alpine \
-            alpine:latest \
-            busybox:latest
-          
-          # Compress all images
-          echo "🗜️ Compressing Docker images..."
-          gzip -9 offline-package/images/*.tar
-          
-          # Show sizes
-          ls -lh offline-package/images/
-          
-      - name: Prepare complete offline package
-        run: |
-          echo "📋 Preparing complete offline deployment package..."
-          
-          # Copy application code
-          mkdir -p offline-package/app
-          cp -r src/ offline-package/app/
-          cp -r commands/ offline-package/app/
-          cp -r docker/ offline-package/app/
-          cp requirements.txt offline-package/app/
-          
-          # Copy deployment files
-          cp docker-compose.yml offline-package/
-          cp .env.example offline-package/.env
-          cp install.sh offline-package/
-          
-          # Create RHEL8 specific setup script
-          cat > offline-package/setup-rhel8-offline.sh << 'EOF'
-          #!/bin/bash
-          set -e
-          
-          echo "=========================================="
-          echo "   Blacklist Offline Installation"
-          echo "   Target: RHEL 8 Air-Gap Environment"
-          echo "=========================================="
-          echo ""
-          
-          # Check prerequisites
-          echo "📋 Checking prerequisites..."
-          
-          if ! command -v docker &> /dev/null; then
-              echo "❌ Docker is not installed. Please install Docker first."
-              echo "   For offline Docker installation, refer to Docker documentation."
-              exit 1
-          fi
-          
-          if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-              echo "❌ Docker Compose is not installed."
-              echo "   Installing Docker Compose plugin from package..."
-              
-              # Install docker-compose binary if included
-              if [ -f docker-compose-Linux-x86_64 ]; then
-                  sudo cp docker-compose-Linux-x86_64 /usr/local/bin/docker-compose
-                  sudo chmod +x /usr/local/bin/docker-compose
-              fi
-          fi
-          
-          # Load Docker images
-          echo ""
-          echo "📦 Loading Docker images..."
-          echo "This may take several minutes..."
-          
-          for image in images/*.tar.gz; do
-              echo "Loading: $(basename $image)"
-              gunzip -c "$image" | docker load
-          done
-          
-          # Setup Python environment (if needed for management scripts)
-          if [ -d python-deps ]; then
-              echo ""
-              echo "🐍 Setting up Python environment..."
-              
-              # Create virtual environment
-              python3 -m venv venv
-              source venv/bin/activate
-              
-              # Install from local packages
-              pip install --no-index --find-links python-deps/simple/ -r requirements-complete.txt
-          fi
-          
-          # Configure environment
-          echo ""
-          echo "⚙️ Configuring environment..."
-          
-          if [ ! -f .env ]; then
-              echo "Creating .env file from template..."
-              cp .env.example .env
-              
-              # Generate secure keys
-              SECRET_KEY=$(openssl rand -hex 32)
-              JWT_SECRET=$(openssl rand -hex 32)
-              
-              # Update .env with generated keys
-              sed -i "s/SECRET_KEY=.*/SECRET_KEY=$SECRET_KEY/" .env
-              sed -i "s/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=$JWT_SECRET/" .env
-              
-              echo "⚠️  Please edit .env file to add your REGTECH/SECUDIUM credentials"
-          fi
-          
-          # Create necessary directories
-          mkdir -p data logs postgresql-data redis-data backups
-          
-          # Set SELinux contexts (RHEL specific)
-          if command -v semanage &> /dev/null; then
-              echo "Setting SELinux contexts..."
-              sudo semanage fcontext -a -t container_file_t "$(pwd)/data(/.*)?"
-              sudo semanage fcontext -a -t container_file_t "$(pwd)/logs(/.*)?"
-              sudo semanage fcontext -a -t container_file_t "$(pwd)/postgresql-data(/.*)?"
-              sudo semanage fcontext -a -t container_file_t "$(pwd)/redis-data(/.*)?"
-              sudo restorecon -Rv .
-          fi
-          
-          # Configure firewall
-          if command -v firewall-cmd &> /dev/null; then
-              echo "Configuring firewall..."
-              sudo firewall-cmd --add-port=32542/tcp --permanent
-              sudo firewall-cmd --reload
-          fi
-          
-          # Start services
-          echo ""
-          echo "🚀 Starting services..."
-          docker-compose up -d
-          
-          # Wait for services to be ready
-          echo ""
-          echo "⏳ Waiting for services to be ready..."
-          sleep 10
-          
-          # Health check
-          echo ""
-          echo "🏥 Performing health check..."
-          
-          MAX_ATTEMPTS=30
-          ATTEMPT=0
-          
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-              if curl -sf http://localhost:32542/health > /dev/null 2>&1; then
-                  echo "✅ Health check passed!"
-                  break
-              fi
-              ATTEMPT=$((ATTEMPT + 1))
-              echo -n "."
-              sleep 2
-          done
-          
-          if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
-              echo ""
-              echo "⚠️  Health check timeout. Please check logs:"
-              echo "   docker-compose logs"
-          fi
-          
-          # Create systemd service
-          echo ""
-          echo "📝 Creating systemd service..."
-          
-          sudo tee /etc/systemd/system/blacklist.service > /dev/null << SYSD
-          [Unit]
-          Description=Blacklist Management System
-          After=docker.service
-          Requires=docker.service
-          
-          [Service]
-          Type=oneshot
-          RemainAfterExit=yes
-          WorkingDirectory=$(pwd)
-          ExecStart=/usr/local/bin/docker-compose up -d
-          ExecStop=/usr/local/bin/docker-compose down
-          StandardOutput=journal
-          
-          [Install]
-          WantedBy=multi-user.target
-          SYSD
-          
-          sudo systemctl daemon-reload
-          sudo systemctl enable blacklist.service
-          
-          echo ""
-          echo "=========================================="
-          echo "   ✅ Installation Complete!"
-          echo "=========================================="
-          echo ""
-          echo "📍 Access URL: http://$(hostname -I | awk '{print $1}'):32542"
-          echo "📁 Installation path: $(pwd)"
-          echo ""
-          echo "🔧 Management commands:"
-          echo "   docker-compose ps          # Check status"
-          echo "   docker-compose logs -f     # View logs"
-          echo "   docker-compose restart     # Restart services"
-          echo "   ./backup.sh                # Backup data"
-          echo ""
-          echo "⚠️  Don't forget to configure .env file with your credentials!"
-          echo ""
-          EOF
-          
-          chmod +x offline-package/setup-rhel8-offline.sh
-          
-          # Create backup script
-          cat > offline-package/backup.sh << 'EOF'
-          #!/bin/bash
-          BACKUP_DIR="./backups"
-          DATE=$(date +%Y%m%d_%H%M%S)
-          mkdir -p $BACKUP_DIR
-          
-          echo "🔄 Starting backup..."
-          docker exec blacklist-postgresql pg_dump -U blacklist_user blacklist > $BACKUP_DIR/blacklist_$DATE.sql
-          cp .env $BACKUP_DIR/.env_$DATE
-          
-          # Cleanup old backups (keep last 7)
-          find $BACKUP_DIR -name "*.sql" -mtime +7 -delete
-          find $BACKUP_DIR -name ".env_*" -mtime +7 -delete
-          
-          echo "✅ Backup completed: $BACKUP_DIR/blacklist_$DATE.sql"
-          EOF
-          
-          chmod +x offline-package/backup.sh
-          
-          # Download Docker Compose binary for offline installation
-          echo "📥 Downloading Docker Compose binary..."
-          curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" \
-               -o offline-package/docker-compose-Linux-x86_64
-          chmod +x offline-package/docker-compose-Linux-x86_64
-          
-          # Create package info
-          cat > offline-package/PACKAGE_INFO.txt << EOF
-          Blacklist Offline Package
-          Version: ${{ steps.version.outputs.version }}
-          Build Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          Target OS: ${{ github.event.inputs.target_os || 'rhel8' }}
-          
-          Contents:
-          - Docker images (all required)
-          - Python dependencies (offline pip repository)
-          - Docker Compose binary
-          - Application source code
-          - Deployment scripts
-          - Configuration templates
-          
-          Requirements:
-          - RHEL 8 / CentOS 8 / Rocky Linux 8
-          - Docker CE installed
-          - Python 3.9+ (optional, for management scripts)
-          - 4GB RAM minimum
-          - 20GB disk space
-          
-          Installation:
-          1. Extract package: tar xzf blacklist-offline-*.tar.gz
-          2. cd blacklist-offline/
-          3. ./setup-rhel8-offline.sh
-          EOF
-          
-      - name: Create final package
-        run: |
-          echo "📦 Creating final offline package..."
-          
-          # Calculate package size
-          PACKAGE_SIZE=$(du -sh offline-package | cut -f1)
-          echo "Package size: $PACKAGE_SIZE"
-          
-          # Create tarball
-          tar czf blacklist-offline-${{ steps.version.outputs.version }}-complete.tar.gz offline-package/
-          
-          # Create checksum
-          sha256sum blacklist-offline-${{ steps.version.outputs.version }}-complete.tar.gz > \
-                    blacklist-offline-${{ steps.version.outputs.version }}-complete.tar.gz.sha256
-          
-          # Show final package info
-          ls -lh blacklist-offline-*.tar.gz*
-          
-      - name: Upload offline package
-        uses: actions/upload-artifact@v3
-        with:
-          name: blacklist-offline-${{ steps.version.outputs.version }}-complete
-          path: |
-            blacklist-offline-*.tar.gz
-            blacklist-offline-*.tar.gz.sha256
-          retention-days: 30
-          
-      - name: Create release (if tagged)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            blacklist-offline-*.tar.gz
-            blacklist-offline-*.tar.gz.sha256
-          body: |
-            ## 📦 Complete Offline Package for Air-Gap Environment
-            
-            Version: ${{ steps.version.outputs.version }}
-            
-            ### Contents:
-            - All Docker images (application + dependencies)
-            - All Python packages (offline pip repository)
-            - Docker Compose binary
-            - Complete source code
-            - Installation scripts for RHEL 8
-            
-            ### Installation:
-            ```bash
-            # Extract package
-            tar xzf blacklist-offline-${{ steps.version.outputs.version }}-complete.tar.gz
-            
-            # Install
-            cd blacklist-offline/
-            ./setup-rhel8-offline.sh
-            ```
-            
-            ### Requirements:
-            - RHEL 8 / CentOS 8 / Rocky Linux 8
-            - Docker installed (offline Docker installation not included)
-            - 4GB RAM minimum
-            - 20GB disk space
-            
-            ⚠️ This package is designed for completely isolated environments with no internet access.
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install wheel setuptools
+        
+    - name: Download Python packages
+      run: |
+        mkdir -p offline-package/python-packages
+        pip download -r config/requirements.txt -d offline-package/python-packages/
+        
+    - name: Save Docker images
+      if: ${{ inputs.include_docker }}
+      run: |
+        mkdir -p offline-package/docker-images
+        
+        # Build images
+        docker build -f docker/postgresql/Dockerfile -t blacklist-postgres:${{ inputs.version }} .
+        docker build -f docker/redis/Dockerfile -t blacklist-redis:${{ inputs.version }} .
+        docker build -f docker/application/Dockerfile -t blacklist-app:${{ inputs.version }} .
+        
+        # Save images
+        docker save blacklist-postgres:${{ inputs.version }} | gzip > offline-package/docker-images/postgres.tar.gz
+        docker save blacklist-redis:${{ inputs.version }} | gzip > offline-package/docker-images/redis.tar.gz
+        docker save blacklist-app:${{ inputs.version }} | gzip > offline-package/docker-images/app.tar.gz
+        
+    - name: Create installation scripts
+      run: |
+        cat > offline-package/install.sh << 'EOF'
+        #!/bin/bash
+        echo "🚀 Installing Blacklist System (Offline)"
+        
+        # Install Python packages
+        echo "📦 Installing Python packages..."
+        pip install --no-index --find-links python-packages/ -r ../config/requirements.txt
+        
+        # Load Docker images if present
+        if [ -d "docker-images" ]; then
+            echo "🐳 Loading Docker images..."
+            docker load < docker-images/postgres.tar.gz
+            docker load < docker-images/redis.tar.gz
+            docker load < docker-images/app.tar.gz
+        fi
+        
+        echo "✅ Installation complete!"
+        EOF
+        
+        chmod +x offline-package/install.sh
+        
+    - name: Copy application files
+      run: |
+        cp -r src offline-package/
+        cp -r config offline-package/
+        cp -r docker offline-package/
+        cp README.md offline-package/
+        
+    - name: Create package archive
+      run: |
+        tar -czf blacklist-offline-${{ inputs.version }}.tar.gz offline-package/
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: blacklist-offline-${{ inputs.version }}
+        path: blacklist-offline-${{ inputs.version }}.tar.gz
+        retention-days: 30
+        
+    - name: Create release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: offline-${{ inputs.version }}
+        name: Offline Package ${{ inputs.version }}
+        files: blacklist-offline-${{ inputs.version }}.tar.gz
+        body: |
+          ## 🎁 Offline Installation Package
+          
+          Version: ${{ inputs.version }}
+          Docker Images: ${{ inputs.include_docker }}
+          
+          ### Installation
+          ```bash
+          tar -xzf blacklist-offline-${{ inputs.version }}.tar.gz
+          cd offline-package
+          ./install.sh
+          ```
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
