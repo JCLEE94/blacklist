@@ -15,12 +15,12 @@ import os
 from typing import Optional
 
 
-from ..utils.structured_logging import get_logger, setup_request_logging
-from .app.blueprints import BlueprintRegistrationMixin
-from .app.config import AppConfigurationMixin
-from .app.error_handlers import ErrorHandlerMixin
-from .app.middleware import MiddlewareMixin
-from .container import get_container
+from src.utils.structured_logging import get_logger, setup_request_logging
+from src.core.app.blueprints import BlueprintRegistrationMixin
+from src.core.app.config import AppConfigurationMixin
+from src.core.app.error_handlers import ErrorHandlerMixin
+from src.core.app.middleware import MiddlewareMixin
+from src.core.container import get_container
 
 # Use structured logger instead of basic logging
 logger = get_logger(__name__)

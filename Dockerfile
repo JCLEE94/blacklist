@@ -11,8 +11,8 @@ RUN apk add --no-cache \
     libffi-dev \
     postgresql-dev
 
-# Copy dependency files
-COPY requirements.txt ./
+# Copy dependency files - fix path issue
+COPY config/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Stage 2: Runtime
@@ -26,9 +26,9 @@ RUN apk add --no-cache \
     curl \
     && adduser -D appuser
 
-# Copy dependencies from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# Copy dependencies from builder to system-wide location
+COPY --from=builder /root/.local /usr/local
+ENV PATH=/usr/local/bin:$PATH
 
 # Copy application code
 COPY . .
@@ -46,5 +46,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE ${PORT:-2542}
 
+# Set Python path
+ENV PYTHONPATH=/app:$PYTHONPATH
+
 # Run application
-CMD ["python", "-m", "gunicorn", "main:app", "--bind", "0.0.0.0:2542", "--workers", "4", "--timeout", "120"]
+CMD ["python", "main.py"]

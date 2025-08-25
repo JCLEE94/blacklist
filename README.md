@@ -1,8 +1,31 @@
-# 🛡️ Blacklist Management System v1.0.37
+# 🛡️ Blacklist Management System v1.0.38
 
-> **Production-Ready** | **GitOps** | **Enterprise** | **Live System**
+> **Production-Ready** | **GitOps** | **Enterprise** | **Live System** | **CNCF Compliant**
 
 차세대 위협 인텔리전스 플랫폼 - 실시간 대시보드, 자동 수집 시스템, JWT 보안 완비
+
+## 🆕 v1.0.38 주요 변경사항
+
+### 🔐 환경 변수 의존성 제거
+- 모든 환경 변수를 안전한 자격증명 관리 시스템으로 대체
+- 암호화된 자격증명 저장 (`~/.blacklist/credentials.enc`)
+- 마스터 비밀번호 기반 보호
+
+### 🏗️ CNCF 표준 구조 적용
+- Cloud Native 표준 디렉토리 구조 완성
+- `cmd/`, `pkg/`, `internal/`, `api/` 등 표준 디렉토리 생성
+
+### ⚙️ 자격증명 설정 방법
+```bash
+# 1. 자격증명 초기 설정 (대화식)
+python scripts/setup_credentials.py
+
+# 2. 애플리케이션 실행 (자격증명 자동 로드)
+python scripts/run_with_credentials.py
+
+# 3. Docker와 함께 사용
+python scripts/run_with_credentials.py docker-compose up
+```
 
 [![Live System](https://img.shields.io/badge/Live%20System-blacklist.jclee.me-success?style=for-the-badge&logo=server)](https://blacklist.jclee.me/)
 [![Live Demo](https://img.shields.io/badge/Portfolio-jclee94.github.io-blue?style=for-the-badge&logo=github-pages)](https://jclee94.github.io/blacklist/)
