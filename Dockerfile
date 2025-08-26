@@ -19,6 +19,9 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Stage 2: Runtime
 FROM python:3.11-alpine AS runtime
 
+# Watchtower auto-update label
+LABEL com.centurylinklabs.watchtower.enable="true"
+
 WORKDIR /app
 
 # Install runtime dependencies
@@ -84,7 +87,7 @@ ENV MAX_AUTH_ATTEMPTS=5 \
 ENV REGTECH_ENABLED=true \
     REGTECH_USERNAME="" \
     REGTECH_PASSWORD="" \
-    REGTECH_BASE_URL="https://regtech.go.kr" \
+    REGTECH_BASE_URL="https://www.krcert.or.kr" \
     REGTECH_TIMEOUT=30 \
     REGTECH_MAX_RETRIES=3 \
     REGTECH_COLLECTION_DAYS=30 \
