@@ -5,14 +5,17 @@ Removes duplicate collection endpoints scattered across the codebase.
 """
 
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+import sqlite3
+import os
+from datetime import datetime
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
 from ..auth_manager import get_auth_manager
 from ..container import get_container
-
 
 unified_collection_bp = Blueprint(
     "unified_collection", __name__, url_prefix="/api/collection"
@@ -40,13 +43,13 @@ def get_collection_status():
                     "enabled": auth_config["regtech"]["enabled"],
                     "configured": auth_config["regtech"]["password_set"],
                     "username": auth_config["regtech"]["username"],
-                    "last_collection": None,  # TODO: Get from database
+                    "last_collection": _get_last_collection_time("REGTECH"),
                 },
                 "secudium": {
                     "enabled": auth_config["secudium"]["enabled"],
                     "configured": auth_config["secudium"]["password_set"],
                     "username": auth_config["secudium"]["username"],
-                    "last_collection": None,  # TODO: Get from database
+                    "last_collection": _get_last_collection_time("SECUDIUM"),
                 },
             },
             "statistics": {"total_ips": 0, "active_ips": 0, "today_collected": 0},
@@ -206,11 +209,121 @@ def disable_collection():
 def get_collection_history():
     """Get collection history"""
     try:
-        # TODO: Implement history retrieval from database
-        history = {"collections": [], "total": 0}
+        # 실제 데이터베이스에서 히스토리 조회
+        history = _get_collection_history_from_db()
 
         return jsonify(history)
 
     except Exception as e:
         logger.error(f"Failed to get collection history: {e}")
         return jsonify({"error": "Failed to get history", "message": str(e)}), 500
+
+
+def _get_last_collection_time(source: str) -> str:
+    """데이터베이스에서 마지막 수집 시간 조회
+
+    Args:
+        source: 데이터 소스 ('REGTECH' or 'SECUDIUM')
+
+    Returns:
+        ISO 형식의 마지막 수집 시간 또는 None
+    """
+    try:
+        db_path = "instance/blacklist.db"
+        if not os.path.exists(db_path):
+            return None
+
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+
+            # collection_logs 테이블 존재 확인
+            cursor.execute(
+                """
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='collection_logs'
+            """
+            )
+
+            if not cursor.fetchone():
+                return None
+
+            # 마지막 성공한 수집 시간 조회
+            cursor.execute(
+                """
+                SELECT MAX(created_at) FROM collection_logs 
+                WHERE source = ? AND (status = 'success' OR result_count > 0)
+            """,
+                (source,),
+            )
+
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else None
+
+    except Exception as e:
+        logger.warning(f"Error getting last collection time for {source}: {e}")
+        return None
+
+
+def _get_collection_history_from_db(limit: int = 50) -> dict:
+    """데이터베이스에서 수집 히스토리 조회
+
+    Args:
+        limit: 조회할 최대 레코드 수
+
+    Returns:
+        수집 히스토리 딕셔너리
+    """
+    try:
+        db_path = "instance/blacklist.db"
+        if not os.path.exists(db_path):
+            return {"collections": [], "total": 0}
+
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row  # dict-like access
+            cursor = conn.cursor()
+
+            # collection_logs 테이블 존재 확인
+            cursor.execute(
+                """
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='collection_logs'
+            """
+            )
+
+            if not cursor.fetchone():
+                return {"collections": [], "total": 0}
+
+            # 총 레코드 수 조회
+            cursor.execute("SELECT COUNT(*) FROM collection_logs")
+            total = cursor.fetchone()[0]
+
+            # 최근 수집 기록 조회
+            cursor.execute(
+                """
+                SELECT source, status, result_count, created_at, 
+                       duration_seconds, error_message
+                FROM collection_logs 
+                ORDER BY created_at DESC 
+                LIMIT ?
+            """,
+                (limit,),
+            )
+
+            collections = []
+            for row in cursor.fetchall():
+                collections.append(
+                    {
+                        "source": row["source"],
+                        "status": row["status"],
+                        "result_count": row["result_count"] or 0,
+                        "created_at": row["created_at"],
+                        "duration_seconds": row["duration_seconds"] or 0,
+                        "error_message": row["error_message"],
+                    }
+                )
+
+            return {"collections": collections, "total": total, "limit": limit}
+
+    except Exception as e:
+        logger.error(f"Error retrieving collection history: {e}")
+        return {"collections": [], "total": 0, "error": str(e)}

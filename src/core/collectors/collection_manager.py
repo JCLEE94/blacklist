@@ -23,21 +23,30 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# psutil 조건부 임포트 (시스템 메트릭용)
+try:
+    import psutil
+
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    logging.warning("psutil not available - using fallback system metrics")
+
 # 조건부 임포트로 독립 실행 지원
 try:
     from .base_collector import BaseCollector
-    from .collection_types import CollectionResult, CollectionStatus
     from .collection_execution import CollectionExecutor
     from .collection_monitoring import CollectionMonitor
+    from .collection_types import CollectionResult, CollectionStatus
 except ImportError:
-    import sys
     import os
+    import sys
 
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from base_collector import BaseCollector
-    from collection_types import CollectionResult, CollectionStatus
     from collection_execution import CollectionExecutor
     from collection_monitoring import CollectionMonitor
+    from collection_types import CollectionResult, CollectionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -234,8 +243,8 @@ class UnifiedCollectionManager:
         return {
             "active_collections": len(self.get_running_collectors()),
             "total_collections_today": self.stats.total_collections,
-            "memory_usage_mb": 0,  # TODO: psutil로 실제 메모리 사용량 측정
-            "cpu_usage_percent": 0,  # TODO: psutil로 실제 CPU 사용량 측정
+            "memory_usage_mb": self._get_memory_usage(),
+            "cpu_usage_percent": self._get_cpu_usage(),
         }
 
     def enable_global_collection(self):
@@ -345,6 +354,33 @@ class UnifiedCollectionManager:
     def stats(self):
         """Access to statistics for compatibility"""
         return self.executor.stats
+
+    def _get_memory_usage(self) -> float:
+        """실제 메모리 사용량 측정 (MB 단위)"""
+        if not PSUTIL_AVAILABLE:
+            return 0.0
+
+        try:
+            process = psutil.Process()
+            memory_info = process.memory_info()
+            return round(memory_info.rss / (1024 * 1024), 2)  # MB로 변환
+        except Exception as e:
+            self.logger.warning(f"Memory usage measurement failed: {e}")
+            return 0.0
+
+    def _get_cpu_usage(self) -> float:
+        """실제 CPU 사용량 측정 (% 단위)"""
+        if not PSUTIL_AVAILABLE:
+            return 0.0
+
+        try:
+            # 현재 프로세스 CPU 사용률
+            process = psutil.Process()
+            cpu_percent = process.cpu_percent(interval=0.1)
+            return round(cpu_percent, 2)
+        except Exception as e:
+            self.logger.warning(f"CPU usage measurement failed: {e}")
+            return 0.0
 
 
 # Backward compatibility alias for tests
