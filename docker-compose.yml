@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  blacklist:
+    build: .
+    image: registry.jclee.me/blacklist:latest
+    container_name: blacklist
+    ports:
+      - "32542:2542"
+    environment:
+      - PORT=2542
+      - FLASK_ENV=production
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@postgres:5432/blacklist}
+      - REDIS_URL=redis://redis:6379/0
+      - FORCE_DISABLE_COLLECTION=false
+      - COLLECTION_ENABLED=true
+      - RESTART_PROTECTION=false
+      - MAX_AUTH_ATTEMPTS=5
+      - BLOCK_DURATION_HOURS=1
+      - SECRET_KEY=${SECRET_KEY:-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-in-production}
+      - API_KEY_ENABLED=true
+      - JWT_ENABLED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2542/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - blacklist-network
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: blacklist-postgres
+    environment:
+      - POSTGRES_DB=blacklist
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blacklist-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: blacklist-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - blacklist-network
+
+networks:
+  blacklist-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -16,18 +16,25 @@ os.environ.setdefault("FLASK_ENV", "production")
 os.environ.setdefault("PYTHONPATH", str(project_root))
 
 if __name__ == "__main__":
-    # Start with minimal app by default for stability
+    port = int(os.environ.get("PORT", 2542))
+
+    # Try to start with full app, fallback to minimal if needed
     try:
+        from src.core.main import create_app
+
+        app = create_app()
+        print(f"Starting Blacklist Management System (Full Mode) on port {port}")
+        app.run(host="0.0.0.0", port=port, debug=False)
+
+    except ImportError:
         from src.core.minimal_app import create_minimal_app
 
         app = create_minimal_app()
-        port = int(os.environ.get("PORT", 2542))
-
         print(f"Starting Blacklist Management System (Minimal Mode) on port {port}")
         app.run(host="0.0.0.0", port=port, debug=False)
 
     except Exception as e:
-        print(f"Minimal app failed: {e}")
+        print(f"App initialization failed: {e}")
 
         # Last resort: basic Flask app
         from flask import Flask, jsonify
@@ -44,6 +51,5 @@ if __name__ == "__main__":
                 }
             )
 
-        port = int(os.environ.get("PORT", 2542))
         print(f"Starting emergency mode on port {port}")
         app.run(host="0.0.0.0", port=port, debug=False)  # Hook test comment
