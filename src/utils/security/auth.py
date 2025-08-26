@@ -11,8 +11,14 @@ Sample input: user credentials, password strings
 Expected output: JWT tokens, password hashes, authentication status
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import (
+    current_app,
+    g,
+    jsonify,
+    request,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -170,8 +176,8 @@ def require_auth(roles: List[str] = None, api_key_allowed: bool = True):
                 if auth_header and auth_header.startswith("Bearer "):
                     token = auth_header.split(" ")[1]
                     auth_mgr = AuthenticationManager(
-                        secret_key="placeholder",  # Will be injected by app
-                        jwt_secret="placeholder",
+                        secret_key=current_app.config.get("SECRET_KEY", ""),
+                        jwt_secret=current_app.config.get("JWT_SECRET_KEY", ""),
                     )
                     payload = auth_mgr.verify_jwt_token(token)
                     if payload:

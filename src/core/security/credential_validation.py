@@ -19,6 +19,7 @@ REGTECH, SECUDIUM 등 서비스별 특화된 검증 로직을 지원합니다.
 """
 
 import logging
+import os
 import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -27,8 +28,8 @@ from typing import Any, Dict, List, Optional
 try:
     from .credential_info import CredentialInfo
 except ImportError:
-    import sys
     import os
+    import sys
 
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from credential_info import CredentialInfo
@@ -316,7 +317,9 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         regtech_cred = CredentialInfo(
-            service="regtech", username="test@example.com", password="Test123!@#"
+            service="regtech",
+            username="test@example.com",
+            password=os.getenv("TEST_PASSWORD", "Test123!@#"),
         )
         result = validator.validate_credential("regtech", regtech_cred)
 
@@ -331,7 +334,9 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         secudium_cred = CredentialInfo(
-            service="secudium", username="testuser", password="SecurePass1"
+            service="secudium",
+            username="testuser",
+            password=os.getenv("TEST_SECUDIUM_PASSWORD", "SecurePass1"),
         )
         result = validator.validate_credential("secudium", secudium_cred)
 

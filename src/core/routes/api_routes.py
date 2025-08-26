@@ -4,8 +4,15 @@
 500줄 제한을 준수하도록 리팩토링된 버전
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import (
+    Blueprint,
+    Response,
+    jsonify,
+    request,
+    url_for,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +20,6 @@ from .blacklist_routes import blacklist_routes_bp
 
 # 분할된 라우트 모듈들 임포트
 from .health_routes import health_routes_bp
-
 
 # 메인 API 라우트 블루프린트
 api_routes_bp = Blueprint("api_routes", __name__)
