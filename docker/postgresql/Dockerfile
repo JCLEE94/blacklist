@@ -1,12 +1,26 @@
-# PostgreSQL Standalone Container for Blacklist Service
+# PostgreSQL Standalone Container for Blacklist Service - SafeWork 패턴 적용
 FROM postgres:15-alpine
 
-# Metadata
-LABEL org.opencontainers.image.title="Blacklist PostgreSQL" \
-      org.opencontainers.image.description="PostgreSQL database for Blacklist service" \
-      org.opencontainers.image.version="1.0.0" \
-      org.opencontainers.image.vendor="JCLee" \
-      com.centurylinklabs.watchtower.enable="true"
+# Build arguments for version tracking - 동적 버전 패턴
+ARG BUILD_VERSION=$(date +%Y%m%d%H%M)
+ARG BUILD_NUMBER=${GITHUB_RUN_NUMBER:-local}
+ARG COMMIT_SHA=${GITHUB_SHA:-unknown}
+ARG BUILD_TIMESTAMP=$(date -Iseconds)
+
+# Set timezone to Korea (KST)
+RUN apk --no-cache add tzdata && \
+    ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
+    echo "Asia/Seoul" > /etc/timezone
+
+# Environment variables with build metadata
+ENV TZ=Asia/Seoul \
+    BUILD_VERSION=${BUILD_VERSION} \
+    BUILD_NUMBER=${BUILD_NUMBER} \
+    COMMIT_SHA=${COMMIT_SHA}
+
+# Essential labels - Watchtower 활성화 및 모니터링
+LABEL com.centurylinklabs.watchtower.enable="true" \
+      monitoring.health.endpoint="/health"
 
 # Environment variables for database setup from .env migration
 ENV POSTGRES_DB=blacklist \
@@ -17,6 +31,15 @@ ENV POSTGRES_DB=blacklist \
 
 # Create initialization directory
 RUN mkdir -p /docker-entrypoint-initdb.d
+
+# Create version info file with dynamic values
+RUN echo "{\
+  \"version\": \"$(date +%Y%m%d%H%M)\",\
+  \"build_number\": \"local\",\
+  \"commit_sha\": \"unknown\",\
+  \"build_timestamp\": \"$(date -Iseconds)\",\
+  \"postgres_version\": \"15-alpine\"\
+}" > /docker-entrypoint-initdb.d/00-version.json
 
 # Add initialization script
 COPY --chown=postgres:postgres <<'EOF' /docker-entrypoint-initdb.d/01-init.sql

@@ -1,12 +1,26 @@
-# Redis Standalone Container for Blacklist Service
+# Redis Standalone Container for Blacklist Service - SafeWork 패턴 적용
 FROM redis:7-alpine
 
-# Metadata
-LABEL org.opencontainers.image.title="Blacklist Redis" \
-      org.opencontainers.image.description="Redis cache for Blacklist service" \
-      org.opencontainers.image.version="1.0.0" \
-      org.opencontainers.image.vendor="JCLee" \
-      com.centurylinklabs.watchtower.enable="true"
+# Build arguments for version tracking - 동적 버전 패턴
+ARG BUILD_VERSION=$(date +%Y%m%d%H%M)
+ARG BUILD_NUMBER=${GITHUB_RUN_NUMBER:-local}
+ARG COMMIT_SHA=${GITHUB_SHA:-unknown}
+ARG BUILD_TIMESTAMP=$(date -Iseconds)
+
+# Set timezone to Korea (KST)
+RUN apk --no-cache add tzdata && \
+    ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
+    echo "Asia/Seoul" > /etc/timezone
+
+# Environment variables with build metadata
+ENV TZ=Asia/Seoul \
+    BUILD_VERSION=${BUILD_VERSION} \
+    BUILD_NUMBER=${BUILD_NUMBER} \
+    COMMIT_SHA=${COMMIT_SHA}
+
+# Essential labels - Watchtower 활성화 및 모니터링
+LABEL com.centurylinklabs.watchtower.enable="true" \
+      monitoring.health.endpoint="/health"
 
 # Environment variables from .env migration
 ENV REDIS_URL=redis://redis:6379/0
@@ -14,6 +28,15 @@ ENV REDIS_URL=redis://redis:6379/0
 # Create redis user and directories
 RUN mkdir -p /data /usr/local/etc/redis && \
     chown redis:redis /data /usr/local/etc/redis
+
+# Create version info file with dynamic values
+RUN echo "{\
+  \"version\": \"$(date +%Y%m%d%H%M)\",\
+  \"build_number\": \"local\",\
+  \"commit_sha\": \"unknown\",\
+  \"build_timestamp\": \"$(date -Iseconds)\",\
+  \"redis_version\": \"7-alpine\"\
+}" > /data/version.json && chown redis:redis /data/version.json
 
 # Create Redis configuration
 RUN cat > /usr/local/etc/redis/redis.conf <<EOF

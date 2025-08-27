@@ -4,11 +4,11 @@
 # Pin specific Python version for reproducibility
 FROM python:3.11.8-slim-bookworm AS base
 
-# Build arguments for version tracking - SafeWork 동적 버전 패턴
-ARG BUILD_VERSION
-ARG BUILD_NUMBER=local
-ARG COMMIT_SHA=unknown
-ARG BUILD_TIMESTAMP
+# Build arguments for version tracking - 동적 버전 패턴
+ARG BUILD_VERSION=$(date +%Y%m%d%H%M)
+ARG BUILD_NUMBER=${GITHUB_RUN_NUMBER:-local}
+ARG COMMIT_SHA=${GITHUB_SHA:-unknown}
+ARG BUILD_TIMESTAMP=$(date -Iseconds)
 ARG IMAGE_TAG=latest
 
 # Set Python environment variables for optimization (SafeWork 환경변수 패턴)
@@ -96,12 +96,12 @@ RUN if [ -f "gunicorn.conf.py" ]; then cp gunicorn.conf.py ./; fi
 # Compile Python files for faster startup
 RUN python -m compileall -b app/ src/ 2>/dev/null || true
 
-# Create version info file (SafeWork 패턴)
+# Create version info file with dynamic values
 RUN echo "{\
-  \"version\": \"${BUILD_VERSION:-unknown}\",\
-  \"build_number\": \"${BUILD_NUMBER:-local}\",\
-  \"commit_sha\": \"${COMMIT_SHA:-unknown}\",\
-  \"build_timestamp\": \"${BUILD_TIMESTAMP:-$(date -Iseconds)}\",\
+  \"version\": \"$(date +%Y%m%d%H%M)\",\
+  \"build_number\": \"local\",\
+  \"commit_sha\": \"$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\",\
+  \"build_timestamp\": \"$(date -Iseconds)\",\
   \"python_version\": \"$(python --version)\"\
 }" > /app/build_info.json
 
@@ -181,23 +181,9 @@ ENV PYTHONPATH=/app \
 # Switch to non-root user (SafeWork 패턴)
 USER appuser
 
-# Add comprehensive labels (SafeWork 패턴 확장)
-LABEL app="blacklist" \
-      version="${BUILD_VERSION}" \
-      build-number="${BUILD_NUMBER}" \
-      commit-sha="${COMMIT_SHA}" \
-      build-timestamp="${BUILD_TIMESTAMP}" \
-      maintainer="Blacklist Management Team" \
-      com.centurylinklabs.watchtower.enable="true" \
-      org.opencontainers.image.title="Blacklist Management System" \
-      org.opencontainers.image.description="Enterprise threat intelligence platform - SafeWork architecture" \
-      org.opencontainers.image.version="${BUILD_VERSION}" \
-      org.opencontainers.image.created="${BUILD_TIMESTAMP}" \
-      org.opencontainers.image.revision="${COMMIT_SHA}" \
-      org.opencontainers.image.source="https://github.com/JCLEE94/blacklist" \
-      security.scan.enabled="true" \
-      monitoring.health.endpoint="/health" \
-      deployment.strategy="watchtower-auto"
+# Essential labels - 최소한의 필수 라벨만 유지
+LABEL com.centurylinklabs.watchtower.enable="true" \
+      monitoring.health.endpoint="/health"
 
 # Expose port (documentation only)
 EXPOSE 2542
