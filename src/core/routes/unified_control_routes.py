@@ -14,11 +14,7 @@ except ImportError:
 
 import logging
 
-from flask import (
-    Blueprint,
-    Flask,
-    render_template_string,
-)
+from flask import Blueprint, Flask, render_template_string
 
 logger = logging.getLogger(__name__)
 

@@ -16,11 +16,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 try:
-    from src.core.automation.korean_alert_system import (
-        get_korean_alert_system,
-    )
+    from src.core.automation.korean_alert_system import get_korean_alert_system
     from src.utils.structured_logging import get_logger
 except ImportError:
 

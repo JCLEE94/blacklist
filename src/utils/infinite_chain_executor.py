@@ -12,9 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-from .autonomous_chain_monitor import (
-    get_chain_monitor,
-)
+from .autonomous_chain_monitor import get_chain_monitor
 from .structured_logging import get_logger
 
 

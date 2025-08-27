@@ -25,10 +25,7 @@ except ImportError:
     try:
         import logging
 
-        from flask import (
-            Blueprint,
-            jsonify,
-        )
+        from flask import Blueprint, jsonify
 
         from utils.error_recovery import get_health_checker
         from utils.performance_optimizer import get_performance_monitor

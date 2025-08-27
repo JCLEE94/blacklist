@@ -5,11 +5,7 @@
 
 import logging
 
-from flask import (
-    Blueprint,
-    Response,
-    jsonify,
-)
+from flask import Blueprint, Response, jsonify
 
 logger = logging.getLogger(__name__)
 

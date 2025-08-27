@@ -4,11 +4,7 @@ Auth Decorators - Unified authentication functionality
 
 import logging
 
-from flask import (
-    g,
-    jsonify,
-    request,
-)
+from flask import g, jsonify, request
 
 logger = logging.getLogger(__name__)
 

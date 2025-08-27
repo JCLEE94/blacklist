@@ -23,11 +23,7 @@ except ImportError:
     try:
         import logging
 
-        from flask import (
-            Blueprint,
-            jsonify,
-            request,
-        )
+        from flask import Blueprint, jsonify, request
 
         from utils.error_recovery import get_resource_monitor
         from utils.security import require_auth

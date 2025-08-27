@@ -4,10 +4,7 @@ Cache Decorators - Unified caching functionality
 
 import logging
 
-from flask import (
-    g,
-    request,
-)
+from flask import g, request
 
 logger = logging.getLogger(__name__)
 

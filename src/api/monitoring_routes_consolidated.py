@@ -14,9 +14,7 @@ Expected output: 동일한 API 엔드포인트들, 모듈식 구조로 구현
 try:
     import logging
 
-    from flask import (
-        Blueprint,
-    )
+    from flask import Blueprint
 
     from .monitoring import (
         error_bp,
@@ -37,9 +35,7 @@ except ImportError:
     try:
         import logging
 
-        from flask import (
-            Blueprint,
-        )
+        from flask import Blueprint
 
         from monitoring import (
             error_bp,

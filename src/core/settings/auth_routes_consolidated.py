@@ -14,9 +14,7 @@ Expected output: 동일한 API 엔드포인트들, 모듈식 구조로 구현
 try:
     import logging
 
-    from flask import (
-        Blueprint,
-    )
+    from flask import Blueprint
 
     from .auth import config_bp, regtech_bp, secudium_bp
 
@@ -32,9 +30,7 @@ except ImportError:
         import logging
 
         from auth import config_bp, regtech_bp, secudium_bp
-        from flask import (
-            Blueprint,
-        )
+        from flask import Blueprint
 
         logger = logging.getLogger(__name__)
     except ImportError:

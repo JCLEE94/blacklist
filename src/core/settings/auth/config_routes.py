@@ -11,11 +11,7 @@ Expected output: 인증 설정 정보 조회 및 저장 결과
 try:
     import logging
 
-    from flask import (
-        Blueprint,
-        jsonify,
-        request,
-    )
+    from flask import Blueprint, jsonify, request
 
     logger = logging.getLogger(__name__)
     from ....config.settings import settings
@@ -30,11 +26,7 @@ except ImportError:
     try:
         import logging
 
-        from flask import (
-            Blueprint,
-            jsonify,
-            request,
-        )
+        from flask import Blueprint, jsonify, request
 
         logger = logging.getLogger(__name__)
         from config.settings import settings

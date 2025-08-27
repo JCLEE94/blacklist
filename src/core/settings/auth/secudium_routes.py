@@ -11,11 +11,7 @@ Expected output: SECUDIUM 인증 정보 업데이트 결과
 try:
     import logging
 
-    from flask import (
-        Blueprint,
-        jsonify,
-        request,
-    )
+    from flask import Blueprint, jsonify, request
 
     logger = logging.getLogger(__name__)
     from ....config.settings import settings
@@ -30,11 +26,7 @@ except ImportError:
     try:
         import logging
 
-        from flask import (
-            Blueprint,
-            jsonify,
-            request,
-        )
+        from flask import Blueprint, jsonify, request
 
         logger = logging.getLogger(__name__)
         from config.settings import settings

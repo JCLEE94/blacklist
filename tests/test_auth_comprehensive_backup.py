@@ -14,10 +14,10 @@ To run all authentication tests: pytest tests/test_auth_* tests/test_api_key_* t
 
 import os
 import time
-import requests
 
 # Import all test modules for backward compatibility
 import pytest
+import requests
 
 # Import all the refactored test classes
 try:

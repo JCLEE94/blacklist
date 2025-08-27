@@ -7,12 +7,7 @@ import logging
 import os
 from datetime import datetime
 
-from flask import (
-    Blueprint,
-    current_app,
-    jsonify,
-    request,
-)
+from flask import Blueprint, current_app, jsonify, request
 
 from ..utils.security import input_validation, rate_limit
 

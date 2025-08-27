@@ -7,10 +7,7 @@ Flask 미들웨어 및 요청/응답 처리
 
 import logging
 
-from flask import (
-    g,
-    request,
-)
+from flask import g, request
 
 logger = logging.getLogger(__name__)
 

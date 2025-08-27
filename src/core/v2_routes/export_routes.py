@@ -6,12 +6,7 @@ V2 Export API Routes
 
 import logging
 
-from flask import (
-    Blueprint,
-    Response,
-    jsonify,
-    request,
-)
+from flask import Blueprint, Response, jsonify, request
 
 logger = logging.getLogger(__name__)
 

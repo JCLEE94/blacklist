@@ -11,11 +11,7 @@ Expected output: Flask 요청/응답 로깅 및 API 엔드포인트 설정
 try:
     import logging
 
-    from flask import (
-        Blueprint,
-        jsonify,
-        request,
-    )
+    from flask import Blueprint, jsonify, request
 
     from .log_manager import get_logger
 
@@ -33,11 +29,7 @@ except ImportError:
         sys.path.append(str(Path(__file__).parent.parent.parent))
         import logging
 
-        from flask import (
-            Blueprint,
-            jsonify,
-            request,
-        )
+        from flask import Blueprint, jsonify, request
 
         logger = logging.getLogger(__name__)
     except ImportError:

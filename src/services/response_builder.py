@@ -7,10 +7,7 @@ Creates consistent JSON responses with proper HTTP status codes.
 
 import logging
 
-from flask import (
-    Response,
-    jsonify,
-)
+from flask import Response, jsonify
 
 logger = logging.getLogger(__name__)
 

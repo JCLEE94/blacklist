@@ -5,10 +5,7 @@ GitHub 이슈 자동 생성 서비스
 
 import logging
 
-from flask import (
-    has_request_context,
-    request,
-)
+from flask import has_request_context, request
 
 logger = logging.getLogger(__name__)
 

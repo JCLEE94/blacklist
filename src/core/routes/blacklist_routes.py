@@ -5,12 +5,7 @@ api_routes.py에서 분할된 블랙리스트 관련 엔드포인트
 
 import logging
 
-from flask import (
-    Blueprint,
-    Response,
-    jsonify,
-    request,
-)
+from flask import Blueprint, Response, jsonify, request
 
 logger = logging.getLogger(__name__)
 

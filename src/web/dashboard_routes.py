@@ -5,13 +5,7 @@ Main dashboard and overview pages
 
 import logging
 
-from flask import (
-    Blueprint,
-    flash,
-    redirect,
-    render_template,
-    url_for,
-)
+from flask import Blueprint, flash, redirect, render_template, url_for
 
 logger = logging.getLogger(__name__)
 

@@ -28,10 +28,7 @@ except ImportError:
     try:
         import logging
 
-        from flask import (
-            Blueprint,
-            jsonify,
-        )
+        from flask import Blueprint, jsonify
 
         from utils.performance_optimizer import (
             cleanup_performance_data,

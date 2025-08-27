@@ -59,10 +59,6 @@ class TestBase:
 
     BASE_URL = "http://localhost:32542"
 
-    def __init__(self):
-        self.auth_headers = {}
-        self.test_tokens = {}
-
     def setup_method(self):
         """Setup method run before each test"""
         self.auth_headers = {}

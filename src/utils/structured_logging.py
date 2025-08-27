@@ -7,7 +7,6 @@ JSON 형식의 구조화된 로그와 중앙 집중형 로깅 관리
 import logging
 import logging.handlers
 
-
 logger = logging.getLogger(__name__)
 
 import json
