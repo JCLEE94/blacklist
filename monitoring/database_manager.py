@@ -16,7 +16,7 @@ import json
 import logging
 import sqlite3
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 

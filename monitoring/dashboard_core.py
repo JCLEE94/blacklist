@@ -14,12 +14,9 @@ Expected output: Dashboard instance with monitoring capabilities
 """
 
 import logging
-import os
-import sqlite3
 import threading
 import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 from flask import Flask
 from flask_socketio import SocketIO

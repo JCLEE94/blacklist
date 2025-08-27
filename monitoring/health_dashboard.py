@@ -5,11 +5,10 @@
 간소화되고 모듈화된 구조로 재작성되었습니다.
 """
 
-import json
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
-from flask import Blueprint, render_template_string, jsonify, request
+from flask import Blueprint, render_template_string, jsonify
 from dataclasses import asdict
 
 # 모듈화된 컴포넌트 import
