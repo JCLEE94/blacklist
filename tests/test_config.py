@@ -37,9 +37,12 @@ class ConfigManagerHelper:
             "FLASK_ENV": "testing",
             "TESTING": "1",
             "DEBUG": "true",
+            # Base URLs for testing (use Docker port)
+            "BASE_URL": os.getenv("BASE_URL", "http://localhost:32542"),
+            "API_BASE_URL": os.getenv("API_BASE_URL", "http://localhost:32542/api"),
             # Database
-            "DATABASE_URL": "sqlite:///{self.test_db_path}",
-            "TEST_DATABASE_URL": "sqlite:///{self.test_db_path}",
+            "DATABASE_URL": f"sqlite:///{self.test_db_path}",
+            "TEST_DATABASE_URL": f"sqlite:///{self.test_db_path}",
             # Cache
             "CACHE_TYPE": "simple",
             "REDIS_URL": "redis://localhost:6380/0",  # Different port for testing
