@@ -12,7 +12,7 @@ Expected output: Cached value with TTL, automatic backend selection
 import logging
 import threading
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 try:
     import redis

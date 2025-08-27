@@ -6,7 +6,7 @@ UI에서 수집 소스 설정 및 자격증명을 저장/조회
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

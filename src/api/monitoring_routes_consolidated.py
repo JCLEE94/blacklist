@@ -16,12 +16,6 @@ try:
 
     from flask import (
         Blueprint,
-        Flask,
-        jsonify,
-        redirect,
-        render_template,
-        request,
-        url_for,
     )
 
     from .monitoring import (
@@ -45,12 +39,6 @@ except ImportError:
 
         from flask import (
             Blueprint,
-            Flask,
-            jsonify,
-            redirect,
-            render_template,
-            request,
-            url_for,
         )
 
         from monitoring import (

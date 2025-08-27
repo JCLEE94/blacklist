@@ -3,17 +3,15 @@
 
 AI 자동화 플랫폼의 실시간 한국어 알림 및 보고 시스템
 - 계층적 알림 레벨 관리
-- 실시간 진행 상황 보고  
+- 실시간 진행 상황 보고
 - 자동화 단계별 상태 업데이트
 - 사용자 친화적 한국어 메시지
 """
 
-import asyncio
-import json
 import logging
 import queue
 import threading
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional

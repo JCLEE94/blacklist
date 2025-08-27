@@ -25,12 +25,8 @@ except ImportError:
 
         from flask import (
             Blueprint,
-            Flask,
             jsonify,
-            redirect,
-            render_template,
             request,
-            url_for,
         )
 
         from utils.error_recovery import get_resource_monitor
@@ -42,7 +38,12 @@ except ImportError:
         from unittest.mock import Mock
 
         get_resource_monitor = Mock()
-        require_auth = lambda **kwargs: lambda f: f
+
+        def require_auth(**kwargs):
+            def decorator(f):
+                return f
+
+            return decorator
 
         # Basic Flask imports for testing
         try:

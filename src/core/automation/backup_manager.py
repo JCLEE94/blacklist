@@ -7,7 +7,6 @@ AI 자동화 플랫폼의 중요한 변경사항에 대한 자동 백업 생성 
 
 import json
 import logging
-import os
 import shutil
 import sqlite3
 import subprocess
@@ -19,7 +18,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
-    from src.core.services.database_operations import DatabaseOperations
     from src.utils.structured_logging import get_logger
 except ImportError:
 

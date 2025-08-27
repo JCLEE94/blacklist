@@ -6,7 +6,7 @@ HTML과 분리된 API 엔드포인트들
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify
 
 logger = logging.getLogger(__name__)
 

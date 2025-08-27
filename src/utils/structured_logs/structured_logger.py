@@ -11,16 +11,6 @@ Expected output: 구조화된 JSON 로그 레코드 저장
 try:
     import logging
 
-    from flask import (
-        Blueprint,
-        Flask,
-        jsonify,
-        redirect,
-        render_template,
-        request,
-        url_for,
-    )
-
     logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
@@ -31,16 +21,6 @@ except ImportError:
 
     try:
         import logging
-
-        from flask import (
-            Blueprint,
-            Flask,
-            jsonify,
-            redirect,
-            render_template,
-            request,
-            url_for,
-        )
 
         logger = logging.getLogger(__name__)
     except ImportError:

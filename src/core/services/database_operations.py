@@ -122,12 +122,11 @@ class DatabaseOperationsMixin:
     def _ensure_log_table(self):
         """수집 로그 테이블 생성 확인 - PostgreSQL only"""
         # PostgreSQL only - table created during database initialization
-        pass
 
     def _save_log_to_db(self, log_entry: Dict):
         """로그를 데이터베이스에 저장"""
         try:
-            import json
+            pass
 
             # PostgreSQL only - no SQLite support
             return []

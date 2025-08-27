@@ -6,14 +6,8 @@ GitHub 이슈 자동 생성 서비스
 import logging
 
 from flask import (
-    Blueprint,
-    Flask,
     has_request_context,
-    jsonify,
-    redirect,
-    render_template,
     request,
-    url_for,
 )
 
 logger = logging.getLogger(__name__)

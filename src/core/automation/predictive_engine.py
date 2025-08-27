@@ -8,9 +8,7 @@ AI 자동화 플랫폼의 고급 예측 분석 시스템
 - 자동화 실패 위험 예측
 """
 
-import json
 import logging
-import math
 import statistics
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
@@ -18,12 +16,9 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
 
 try:
     from src.core.automation.korean_alert_system import (
-        AlertCategory,
-        AlertPriority,
         get_korean_alert_system,
     )
     from src.utils.structured_logging import get_logger

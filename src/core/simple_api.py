@@ -15,7 +15,7 @@ Expected output: Basic API routes registered with /health endpoint
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify
 
 logger = logging.getLogger(__name__)
 

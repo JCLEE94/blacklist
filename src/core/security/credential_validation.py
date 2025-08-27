@@ -22,7 +22,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # 조건부 임포트로 독립 실행 지원
 try:

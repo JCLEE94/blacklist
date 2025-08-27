@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 
 from flask import (
     Blueprint,
-    Flask,
     flash,
     jsonify,
     redirect,

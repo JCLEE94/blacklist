@@ -8,14 +8,8 @@ Flask 미들웨어 및 요청/응답 처리
 import logging
 
 from flask import (
-    Blueprint,
-    Flask,
     g,
-    jsonify,
-    redirect,
-    render_template,
     request,
-    url_for,
 )
 
 logger = logging.getLogger(__name__)

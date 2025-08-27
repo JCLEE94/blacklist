@@ -8,9 +8,8 @@ Removes duplicate collection endpoints scattered across the codebase.
 import logging
 import os
 import sqlite3
-from datetime import datetime
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

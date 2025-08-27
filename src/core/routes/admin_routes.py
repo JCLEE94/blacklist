@@ -7,13 +7,10 @@ import logging
 
 from flask import (
     Blueprint,
-    Flask,
     current_app,
     jsonify,
-    redirect,
     render_template,
     request,
-    url_for,
 )
 
 logger = logging.getLogger(__name__)

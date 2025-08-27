@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify
 
 logger = logging.getLogger(__name__)
 

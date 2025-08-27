@@ -6,7 +6,7 @@ HTTP 요청 및 데이터 수집 작업 추적을 위한 데코레이터들을 �
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import request
 
 logger = logging.getLogger(__name__)
 

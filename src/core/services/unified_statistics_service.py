@@ -30,8 +30,7 @@ except ImportError:
     from mixins.trend_analytics_mixin import TrendAnalyticsMixin
 
 try:
-    import psycopg2
-    import psycopg2.extras
+    pass
 
     PSYCOPG2_AVAILABLE = True
 except ImportError:

@@ -17,12 +17,7 @@ import logging
 from flask import (
     Blueprint,
     Flask,
-    jsonify,
-    redirect,
-    render_template,
     render_template_string,
-    request,
-    url_for,
 )
 
 logger = logging.getLogger(__name__)

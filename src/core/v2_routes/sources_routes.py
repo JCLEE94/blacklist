@@ -6,7 +6,7 @@ V2 Sources API Routes
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ Includes dashboard rendering, statistics pages, and data visualization endpoints
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, redirect, render_template, url_for
 
 logger = logging.getLogger(__name__)
 

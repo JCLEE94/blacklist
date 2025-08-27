@@ -8,22 +8,19 @@ AI 자동화 플랫폼 v8.3.0 - 자율 모니터링 시스템
 import asyncio
 import json
 import logging
-import os
 import subprocess
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import psutil
 import requests
 
 # 내부 의존성
 try:
-    from src.core.services.database_operations import DatabaseOperations
-    from src.utils.error_handler.core_handler import CoreErrorHandler
     from src.utils.structured_logging import get_logger
 except ImportError:
     import logging

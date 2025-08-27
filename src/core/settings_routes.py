@@ -8,7 +8,7 @@ for backward compatibility and centralized route registration.
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint
 
 logger = logging.getLogger(__name__)
 from .settings.api_routes import api_settings_bp

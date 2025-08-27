@@ -13,12 +13,8 @@ try:
 
     from flask import (
         Blueprint,
-        Flask,
         jsonify,
-        redirect,
-        render_template,
         request,
-        url_for,
     )
 
     from .log_manager import get_logger
@@ -39,12 +35,8 @@ except ImportError:
 
         from flask import (
             Blueprint,
-            Flask,
             jsonify,
-            redirect,
-            render_template,
             request,
-            url_for,
         )
 
         logger = logging.getLogger(__name__)
@@ -58,7 +50,6 @@ except ImportError:
         request = Mock()
 
 import time
-from typing import Any
 
 
 def setup_request_logging(app):

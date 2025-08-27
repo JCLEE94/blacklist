@@ -23,8 +23,6 @@ class StatisticsServiceMixin(NewStatisticsServiceMixin):
     이 클래스는 기존 코드와의 호환성을 위해서만 유지됩니다.
     """
 
-    pass
-
 
 if __name__ == "__main__":
     # 검증 함수 - 레거시 호환성 테스트

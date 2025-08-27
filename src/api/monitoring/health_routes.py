@@ -27,12 +27,7 @@ except ImportError:
 
         from flask import (
             Blueprint,
-            Flask,
             jsonify,
-            redirect,
-            render_template,
-            request,
-            url_for,
         )
 
         from utils.error_recovery import get_health_checker
@@ -47,8 +42,19 @@ except ImportError:
 
         get_health_checker = Mock()
         get_performance_monitor = Mock()
-        rate_limit = lambda **kwargs: lambda f: f
-        require_auth = lambda **kwargs: lambda f: f
+
+        def rate_limit(**kwargs):
+            def decorator(f):
+                return f
+
+            return decorator
+
+        def require_auth(**kwargs):
+            def decorator(f):
+                return f
+
+            return decorator
+
         get_system_monitor = Mock()
 
         # Basic Flask imports for testing

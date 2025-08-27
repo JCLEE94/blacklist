@@ -6,7 +6,7 @@ Authentication configuration routes for UI-based credential management.
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, render_template, request
 
 logger = logging.getLogger(__name__)
 

@@ -4,12 +4,9 @@
 실시간 웹 대시보드를 통한 체인 실행 상태 모니터링 및 한국어 진행 상황 보고
 """
 
-import json
-import os
 from datetime import datetime
-from pathlib import Path
 
-from flask import Blueprint, Flask, jsonify, render_template_string, request
+from flask import Blueprint, Flask, jsonify, render_template_string
 
 from .autonomous_chain_monitor import get_chain_monitor, get_korean_status
 from .structured_logging import get_logger

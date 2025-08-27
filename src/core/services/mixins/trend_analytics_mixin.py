@@ -11,7 +11,6 @@ Expected output: Dictionary with trend_data array and total_changes count
 import logging
 
 # PostgreSQL only - sqlite3 removed
-from datetime import datetime, timedelta
 from typing import Any, Dict
 
 try:

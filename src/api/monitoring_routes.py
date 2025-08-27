@@ -6,7 +6,7 @@
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, request
 
 from ..utils.error_recovery import (
     get_error_collector,

@@ -6,13 +6,11 @@
 
 import logging
 import os
-import sqlite3
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List
 
 try:
-    import psycopg2
-    import psycopg2.extras
+    pass
 
     PSYCOPG2_AVAILABLE = True
 except ImportError:
@@ -42,8 +40,7 @@ from .mixins import (
 )
 
 try:
-    import psycopg2
-    import psycopg2.extras
+    pass
 
     PSYCOPG2_AVAILABLE = True
 except ImportError:

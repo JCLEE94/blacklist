@@ -8,7 +8,7 @@ Flask 오류 처리기 관리
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import request
 
 logger = logging.getLogger(__name__)
 

@@ -6,10 +6,8 @@ RESTful API 엔드포인트를 제공합니다.
 """
 
 import asyncio
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 
 from flask import Blueprint, jsonify, request
 

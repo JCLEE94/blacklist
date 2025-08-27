@@ -13,12 +13,8 @@ try:
 
     from flask import (
         Blueprint,
-        Flask,
         jsonify,
-        redirect,
-        render_template,
         request,
-        url_for,
     )
 
     logger = logging.getLogger(__name__)
@@ -36,12 +32,8 @@ except ImportError:
 
         from flask import (
             Blueprint,
-            Flask,
             jsonify,
-            redirect,
-            render_template,
             request,
-            url_for,
         )
 
         logger = logging.getLogger(__name__)

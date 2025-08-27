@@ -6,7 +6,7 @@ api_routes.py에서 분할된 헬스체크 관련 엔드포인트
 import logging
 from datetime import datetime
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify
 
 logger = logging.getLogger(__name__)
 

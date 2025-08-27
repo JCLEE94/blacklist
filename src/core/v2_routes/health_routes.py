@@ -5,7 +5,7 @@ V2 Health and Performance API Routes
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify
 
 logger = logging.getLogger(__name__)
 

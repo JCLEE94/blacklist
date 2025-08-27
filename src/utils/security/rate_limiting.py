@@ -12,7 +12,7 @@ Expected output: rate limit status, blocked IPs
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import jsonify, request
 
 logger = logging.getLogger(__name__)
 

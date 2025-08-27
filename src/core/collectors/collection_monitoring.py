@@ -19,7 +19,7 @@ try:
     from .base_collector import BaseCollector
     from .collection_monitor_alerts import CollectionAlertManager
     from .collection_monitor_health import CollectionHealthAssessor
-    from .collection_types import CollectionResult, CollectionStats, CollectionStatus
+    from .collection_types import CollectionResult, CollectionStats
 except ImportError:
     import os
     import sys
@@ -28,7 +28,7 @@ except ImportError:
     from base_collector import BaseCollector
     from collection_monitor_alerts import CollectionAlertManager
     from collection_monitor_health import CollectionHealthAssessor
-    from collection_types import CollectionResult, CollectionStats, CollectionStatus
+    from collection_types import CollectionResult, CollectionStats
 
 logger = logging.getLogger(__name__)
 

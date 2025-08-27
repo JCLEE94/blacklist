@@ -7,12 +7,9 @@ import logging
 
 from flask import (
     Blueprint,
-    Flask,
     flash,
-    jsonify,
     redirect,
     render_template,
-    request,
     url_for,
 )
 

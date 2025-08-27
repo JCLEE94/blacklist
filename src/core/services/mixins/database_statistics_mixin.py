@@ -9,7 +9,6 @@ Expected output: Dictionary with statistics (total_ips, active_ips, sources, etc
 """
 
 import logging
-import os
 
 # PostgreSQL only - sqlite3 removed
 from datetime import datetime

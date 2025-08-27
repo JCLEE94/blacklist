@@ -16,12 +16,6 @@ try:
 
     from flask import (
         Blueprint,
-        Flask,
-        jsonify,
-        redirect,
-        render_template,
-        request,
-        url_for,
     )
 
     from .auth import config_bp, regtech_bp, secudium_bp
@@ -40,12 +34,6 @@ except ImportError:
         from auth import config_bp, regtech_bp, secudium_bp
         from flask import (
             Blueprint,
-            Flask,
-            jsonify,
-            redirect,
-            render_template,
-            request,
-            url_for,
         )
 
         logger = logging.getLogger(__name__)

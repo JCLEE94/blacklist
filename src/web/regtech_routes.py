@@ -5,7 +5,7 @@ REGTECH 데이터 분석 웹 라우트
 
 import logging
 
-from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, render_template, request
 
 logger = logging.getLogger(__name__)
 
