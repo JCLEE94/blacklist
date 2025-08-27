@@ -173,6 +173,14 @@ class RegtechCollector(BaseCollector):
 
                 # 성공적으로 수집 완료
                 logger.info(f"REGTECH 수집 완료: {len(collected_ips)}개 IP")
+
+                # 데이터베이스에 저장
+                if collected_ips:
+                    saved_count = self.save_to_database(collected_ips)
+                    logger.info(f"✅ PostgreSQL에 {saved_count}개 IP 저장 완료")
+                else:
+                    logger.warning("⚠️ 저장할 IP 데이터가 없습니다")
+
                 break
 
             except requests.exceptions.ConnectionError as e:
@@ -206,6 +214,102 @@ class RegtechCollector(BaseCollector):
             raise Exception(f"최대 재시도 횟수 ({self.session_retry_limit}) 초과")
 
         return collected_ips
+
+    def save_to_database(self, collected_ips: List[Dict[str, Any]]) -> int:
+        """수집된 IP 데이터를 PostgreSQL에 저장"""
+        if not collected_ips:
+            logger.warning("저장할 IP 데이터가 없습니다")
+            return 0
+
+        try:
+            import psycopg2
+            from datetime import datetime
+
+            # PostgreSQL 연결
+            conn = psycopg2.connect(
+                host="blacklist-postgres",
+                database="blacklist",
+                user="postgres",
+                password="postgres",
+            )
+            cur = conn.cursor()
+
+            # 기존 REGTECH 데이터 정리 (선택사항 - 중복 방지)
+            cur.execute("DELETE FROM blacklist_ips WHERE source = 'REGTECH'")
+            logger.info(f"기존 REGTECH 데이터 {cur.rowcount}개 정리")
+
+            # 새 데이터 일괄 삽입
+            saved_count = 0
+            batch_data = []
+
+            for ip_data in collected_ips:
+                ip = ip_data.get("ip")
+                if not ip:
+                    continue
+
+                # 데이터 준비
+                country = ip_data.get("country", "Unknown")
+                attack_type = ip_data.get("attack_type", "blacklist")
+                detection_date = ip_data.get("detection_date")
+                threat_level = ip_data.get("threat_level", "MEDIUM")
+
+                # 날짜 형식 변환
+                if isinstance(detection_date, str):
+                    try:
+                        if len(detection_date) == 8:  # YYYYMMDD
+                            detection_date = datetime.strptime(
+                                detection_date, "%Y%m%d"
+                            ).date()
+                        else:  # YYYY-MM-DD
+                            detection_date = datetime.strptime(
+                                detection_date, "%Y-%m-%d"
+                            ).date()
+                    except:
+                        detection_date = datetime.now().date()
+                elif not detection_date:
+                    detection_date = datetime.now().date()
+
+                batch_data.append(
+                    (
+                        ip,  # ip_address
+                        "REGTECH",  # source
+                        detection_date,  # detection_date
+                        threat_level,  # threat_level
+                        country,  # country
+                        attack_type,  # attack_type or reason
+                        datetime.now(),  # created_at
+                        datetime.now(),  # updated_at
+                    )
+                )
+
+            # 일괄 삽입
+            if batch_data:
+                cur.executemany(
+                    """
+                    INSERT INTO blacklist_ips 
+                    (ip_address, source, detection_date, threat_level, country, notes, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                    batch_data,
+                )
+
+                saved_count = cur.rowcount
+                conn.commit()
+
+                logger.info(f"✅ PostgreSQL에 {saved_count}개 IP 저장 완료")
+
+            conn.close()
+            return saved_count
+
+        except Exception as e:
+            logger.error(f"❌ 데이터베이스 저장 실패: {e}")
+            if "conn" in locals():
+                try:
+                    conn.rollback()
+                    conn.close()
+                except:
+                    pass
+            return 0
 
     def collect_from_web(
         self, start_date: str = None, end_date: str = None

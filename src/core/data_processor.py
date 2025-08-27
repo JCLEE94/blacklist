@@ -222,7 +222,7 @@ class DataProcessor:
                 try:
                     # 중복 체크
                     cursor.execute(
-                        "SELECT id FROM blacklist_entries WHERE ip_address = ?",
+                        "SELECT id FROM blacklist_ips WHERE ip_address = %s",
                         (entry["ip_address"],),
                     )
 
@@ -230,7 +230,7 @@ class DataProcessor:
                         # 기존 항목 업데이트
                         cursor.execute(
                             """
-                            UPDATE blacklist_entries
+                            UPDATE blacklist_ips
                             SET last_seen = ?, updated_at = ?,
                                 country = ?, reason = ?, threat_level = ?
                             WHERE ip_address = ?
@@ -248,7 +248,7 @@ class DataProcessor:
                         # 새 항목 삽입
                         cursor.execute(
                             """
-                            INSERT INTO blacklist_entries (
+                            INSERT INTO blacklist_ips (
                                 ip_address, source, country, reason, threat_level,
                                 detection_date, collection_date, confidence_level,
                                 is_active, created_at, updated_at
@@ -288,14 +288,14 @@ class DataProcessor:
             cursor = conn.cursor()
 
             # 전체 통계
-            cursor.execute("SELECT COUNT(*) FROM blacklist_entries")
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ips")
             total_ips = cursor.fetchone()[0]
 
             # 소스별 통계
             cursor.execute(
                 """
                 SELECT source, COUNT(*)
-                FROM blacklist_entries
+                FROM blacklist_ips
                 GROUP BY source
             """
             )
@@ -305,7 +305,7 @@ class DataProcessor:
             cursor.execute(
                 """
                 SELECT country, COUNT(*)
-                FROM blacklist_entries
+                FROM blacklist_ips
                 GROUP BY country
                 ORDER BY COUNT(*) DESC
                 LIMIT 10
@@ -317,7 +317,7 @@ class DataProcessor:
             cursor.execute(
                 """
                 SELECT threat_level, COUNT(*)
-                FROM blacklist_entries
+                FROM blacklist_ips
                 GROUP BY threat_level
             """
             )
@@ -327,7 +327,7 @@ class DataProcessor:
             cursor.execute(
                 """
                 SELECT collection_date, COUNT(*)
-                FROM blacklist_entries
+                FROM blacklist_ips
                 GROUP BY collection_date
                 ORDER BY collection_date DESC
                 LIMIT 7

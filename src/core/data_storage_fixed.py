@@ -84,7 +84,7 @@ class FixedDataStorage:
 
                         # First check if IP exists
                         cursor.execute(
-                            "SELECT id FROM blacklist_entries WHERE ip_address = %s",
+                            "SELECT id FROM blacklist_ips WHERE ip_address = %s",
                             (ip_address,),
                         )
                         existing = cursor.fetchone()
