@@ -111,8 +111,31 @@ class ValidationManager:
             ):  # No underscores in token
                 return False
 
-            # TODO: Add database lookup for actual validation
-            return True
+            # Database lookup for API key validation
+            try:
+                from src.core.container import get_container
+
+                container = get_container()
+                auth_manager = container.get("auth_manager")
+
+                if auth_manager:
+                    # Use auth manager to validate API key against database
+                    validation_result = auth_manager.validate_api_key(api_key)
+                    return (
+                        validation_result.get("valid", False)
+                        if validation_result
+                        else False
+                    )
+                else:
+                    # Fallback: basic format validation only
+                    logger.warning(
+                        "Auth manager not available, using format validation only"
+                    )
+                    return True
+            except Exception as e:
+                logger.error(f"Database API key validation failed: {e}")
+                # Fallback to format validation
+                return True
 
         except Exception as e:
             logger.error(f"API key validation error: {e}")

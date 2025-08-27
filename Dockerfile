@@ -53,7 +53,7 @@ RUN apt-get update && \
     tzdata \
     # Git for version info
     git && \
-    # Set timezone (SafeWork 패턴)
+    # Set timezone to Korea (KR)
     ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     echo "Asia/Seoul" > /etc/timezone && \
     # Clean apt cache
@@ -119,7 +119,7 @@ RUN apt-get update && \
     tini \
     tzdata \
     ca-certificates && \
-    # Set timezone (SafeWork 패턴)
+    # Set timezone to Korea (KR)
     ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     echo "Asia/Seoul" > /etc/timezone && \
     # Clean apt cache

@@ -12,6 +12,7 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
+from typing import Dict
 
 # 프로젝트 루트를 Python 경로에 추가
 project_root = Path(__file__).parent.parent
@@ -19,14 +20,14 @@ sys.path.insert(0, str(project_root))
 
 try:
     from src.utils.autonomous_chain_monitor import (
-        initialize_chain_monitoring, 
-        get_chain_monitor, 
+        initialize_chain_monitoring,
+        get_chain_monitor,
         get_korean_status,
-        shutdown_chain_monitoring
+        shutdown_chain_monitoring,
     )
     from src.utils.infinite_chain_executor import (
         get_chain_executor,
-        execute_infinite_workflow_chain
+        execute_infinite_workflow_chain,
     )
     from src.utils.structured_logging import get_logger
 except ImportError as e:
@@ -37,13 +38,13 @@ except ImportError as e:
 
 class InfiniteChainOrchestrator:
     """무한 체인 오케스트레이터 - Step 6 통합 실행"""
-    
+
     def __init__(self):
         self.logger = get_logger("infinite_chain_orchestrator")
         self.start_time = None
         self.monitor = None
         self.executor = None
-        
+
         # 실행 상태
         self.execution_status = {
             "started": False,
@@ -54,71 +55,71 @@ class InfiniteChainOrchestrator:
             "current_chain": None,
             "overall_success_rate": 0.0,
             "start_time": None,
-            "end_time": None
+            "end_time": None,
         }
-    
+
     async def initialize_system(self):
         """시스템 초기화"""
         try:
             print("🔧 무한 체인 시스템 초기화 중...")
-            
+
             # 모니터링 시스템 초기화
             self.monitor = initialize_chain_monitoring()
             self.logger.info("체인 모니터링 시스템 초기화 완료")
-            
+
             # 체인 실행기 초기화
             self.executor = get_chain_executor()
             self.logger.info("체인 실행기 초기화 완료")
-            
+
             print("✅ 시스템 초기화 완료")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"시스템 초기화 실패: {e}", exception=e)
             print(f"❌ 시스템 초기화 실패: {e}")
             return False
-    
+
     async def execute_step_6_infinite_chaining(self):
         """Step 6: Infinite Workflow Chaining 실행"""
         try:
             self.start_time = datetime.now()
             self.execution_status["started"] = True
             self.execution_status["start_time"] = self.start_time.isoformat()
-            
+
             # 시작 메시지
             self._print_startup_banner()
-            
+
             # 시스템 초기화
             if not await self.initialize_system():
                 return False
-            
+
             # 실시간 모니터링 시작
             monitoring_task = asyncio.create_task(self._real_time_monitoring())
-            
+
             # 무한 체인 실행
             self.logger.info("🚀 Step 6: Infinite Workflow Chaining 시작")
             results = await execute_infinite_workflow_chain()
-            
+
             # 모니터링 중지
             monitoring_task.cancel()
-            
+
             # 실행 완료 처리
             await self._process_execution_results(results)
-            
+
             # 최종 한국어 보고서 출력
             self._print_final_korean_report(results)
-            
+
             return results.get("overall_success", False)
-            
+
         except Exception as e:
             self.logger.error(f"Step 6 실행 중 치명적 오류: {e}", exception=e)
             print(f"❌ Step 6 실행 실패: {e}")
             return False
-        
+
         finally:
             # 정리 작업
             await self._cleanup_system()
-    
+
     def _print_startup_banner(self):
         """시작 배너 출력"""
         banner = f"""
@@ -152,81 +153,94 @@ class InfiniteChainOrchestrator:
 
 """
         print(banner)
-    
+
     async def _real_time_monitoring(self):
         """실시간 모니터링 루프"""
         try:
             last_report_time = time.time()
             report_interval = 30  # 30초마다 상태 보고
-            
+
             while True:
                 current_time = time.time()
-                
+
                 # 30초마다 한국어 상태 보고
                 if current_time - last_report_time >= report_interval:
                     await self._print_monitoring_update()
                     last_report_time = current_time
-                
+
                 # 1초마다 모니터링
                 await asyncio.sleep(1)
-                
+
         except asyncio.CancelledError:
             self.logger.info("실시간 모니터링 중지됨")
         except Exception as e:
             self.logger.error(f"실시간 모니터링 오류: {e}", exception=e)
-    
+
     async def _print_monitoring_update(self):
         """모니터링 업데이트 출력"""
         try:
             status = get_korean_status()
-            
-            print("\n" + "="*60)
+
+            print("\n" + "=" * 60)
             print("📊 실시간 모니터링 업데이트")
-            print("="*60)
+            print("=" * 60)
             print(status)
-            print("="*60 + "\n")
-            
+            print("=" * 60 + "\n")
+
             # 시스템 상태도 출력
             if self.monitor:
                 system_status = self.monitor.get_system_status()
                 if system_status["active_chains_count"] > 0:
-                    print(f"🔄 현재 실행 중: {system_status['active_chains_count']}개 체인")
+                    print(
+                        f"🔄 현재 실행 중: {system_status['active_chains_count']}개 체인"
+                    )
                     for chain_id, chain_info in system_status["active_chains"].items():
-                        print(f"  • {chain_info['name']}: {chain_info['progress']:.1f}% ({chain_info['status']})")
+                        print(
+                            f"  • {chain_info['name']}: {chain_info['progress']:.1f}% ({chain_info['status']})"
+                        )
                     print()
-            
+
         except Exception as e:
             self.logger.error(f"모니터링 업데이트 출력 오류: {e}", exception=e)
-    
+
     async def _process_execution_results(self, results: Dict):
         """실행 결과 처리"""
         try:
             self.execution_status["completed"] = True
             self.execution_status["end_time"] = datetime.now().isoformat()
             self.execution_status["success"] = results.get("overall_success", False)
-            self.execution_status["overall_success_rate"] = results.get("overall_success_rate", 0.0)
-            self.execution_status["completed_chains"] = results.get("successful_chains", 0)
-            
+            self.execution_status["overall_success_rate"] = results.get(
+                "overall_success_rate", 0.0
+            )
+            self.execution_status["completed_chains"] = results.get(
+                "successful_chains", 0
+            )
+
             # 실행 결과를 파일로 저장
             results_file = project_root / "step_6_infinite_chain_results.json"
-            with open(results_file, 'w', encoding='utf-8') as f:
-                json.dump({
-                    "execution_status": self.execution_status,
-                    "detailed_results": results,
-                    "timestamp": datetime.now().isoformat()
-                }, f, ensure_ascii=False, indent=2)
-            
+            with open(results_file, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "execution_status": self.execution_status,
+                        "detailed_results": results,
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
+
             self.logger.info(f"실행 결과 저장됨: {results_file}")
-            
+
         except Exception as e:
             self.logger.error(f"실행 결과 처리 오류: {e}", exception=e)
-    
+
     def _print_final_korean_report(self, results: Dict):
         """최종 한국어 보고서 출력"""
         try:
             end_time = datetime.now()
             duration = (end_time - self.start_time).total_seconds()
-            
+
             report = f"""
 
 {'='*80}
@@ -241,36 +255,36 @@ class InfiniteChainOrchestrator:
 
 🔗 개별 체인 결과:
 """
-            
+
             # 개별 체인 결과
-            chain_results = results.get('chain_results', {})
+            chain_results = results.get("chain_results", {})
             chain_names = {
-                'chain_7': 'Code Quality Enhancement',
-                'chain_8': 'Test Coverage Acceleration', 
-                'chain_9': 'Performance Optimization',
-                'chain_10': 'GitOps Pipeline Enhancement',
-                'chain_11': 'System Validation & Final Reporting'
+                "chain_7": "Code Quality Enhancement",
+                "chain_8": "Test Coverage Acceleration",
+                "chain_9": "Performance Optimization",
+                "chain_10": "GitOps Pipeline Enhancement",
+                "chain_11": "System Validation & Final Reporting",
             }
-            
+
             for chain_key, chain_result in chain_results.items():
                 chain_name = chain_names.get(chain_key, chain_key)
-                status = '✅ 성공' if chain_result.get('success', False) else '❌ 실패'
-                success_rate = chain_result.get('success_rate', 0)
-                duration_chain = chain_result.get('duration', 0)
-                
+                status = "✅ 성공" if chain_result.get("success", False) else "❌ 실패"
+                success_rate = chain_result.get("success_rate", 0)
+                duration_chain = chain_result.get("duration", 0)
+
                 report += f"  {status} {chain_name}\n"
                 report += f"    성공률: {success_rate:.1f}% | 실행시간: {duration_chain:.1f}초\n"
-            
+
             # 성능 개선 요약
-            improvements = results.get('performance_improvements', {})
+            improvements = results.get("performance_improvements", {})
             if improvements:
                 report += f"\n🚀 달성된 성능 개선:\n"
                 for metric, improvement in improvements.items():
                     report += f"  • {metric}: {improvement}\n"
-            
+
             # 목표 달성도 분석
-            target_achieved = results.get('overall_success_rate', 0) >= 87.5
-            
+            target_achieved = results.get("overall_success_rate", 0) >= 87.5
+
             report += f"""
 
 🎯 목표 달성도 분석:
@@ -295,39 +309,41 @@ class InfiniteChainOrchestrator:
 
 {'='*80}
 """
-            
+
             if target_achieved:
                 report += "🎊 축하합니다! Step 6: Infinite Workflow Chaining이 성공적으로 완료되었습니다!\n"
                 report += "✨ AI 자동화 플랫폼 v8.3.0의 무한 체인 시스템이 모든 목표를 달성했습니다.\n"
             else:
-                report += "⚠️  Step 6가 부분적으로 완료되었습니다. 추가 최적화가 권장됩니다.\n"
+                report += (
+                    "⚠️  Step 6가 부분적으로 완료되었습니다. 추가 최적화가 권장됩니다.\n"
+                )
                 report += "🔄 자동 복구 시스템이 지속적으로 개선을 시도합니다.\n"
-            
+
             report += f"""
 🕐 완료 시간: {end_time.strftime('%Y-%m-%d %H:%M:%S')}
 📁 상세 결과: step_6_infinite_chain_results.json
 
 {'='*80}
 """
-            
+
             print(report)
-            
+
         except Exception as e:
             self.logger.error(f"최종 보고서 생성 오류: {e}", exception=e)
             print(f"❌ 최종 보고서 생성 실패: {e}")
-    
+
     async def _cleanup_system(self):
         """시스템 정리"""
         try:
             print("🧹 시스템 정리 중...")
-            
+
             # 체인 모니터링 종료
             if self.monitor:
                 shutdown_chain_monitoring()
-            
+
             self.logger.info("시스템 정리 완료")
             print("✅ 시스템 정리 완료")
-            
+
         except Exception as e:
             self.logger.error(f"시스템 정리 오류: {e}", exception=e)
             print(f"⚠️  시스템 정리 중 오류: {e}")
@@ -336,17 +352,17 @@ class InfiniteChainOrchestrator:
 async def main():
     """메인 실행 함수"""
     orchestrator = InfiniteChainOrchestrator()
-    
+
     try:
         success = await orchestrator.execute_step_6_infinite_chaining()
-        
+
         if success:
             print("\n🎉 Step 6: Infinite Workflow Chaining 성공적으로 완료!")
             sys.exit(0)
         else:
             print("\n⚠️  Step 6: Infinite Workflow Chaining 부분 완료")
             sys.exit(1)
-            
+
     except KeyboardInterrupt:
         print("\n🛑 사용자에 의해 실행이 중단되었습니다.")
         sys.exit(130)
@@ -361,12 +377,12 @@ if __name__ == "__main__":
     if sys.version_info < (3, 7):
         print("❌ Python 3.7 이상이 필요합니다.")
         sys.exit(1)
-    
+
     # 프로젝트 루트 확인
     if not (project_root / "src").exists():
         print("❌ 프로젝트 루트 디렉토리에서 실행하세요.")
         sys.exit(1)
-    
+
     # 비동기 실행
     try:
         asyncio.run(main())
