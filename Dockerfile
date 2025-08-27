@@ -160,9 +160,9 @@ ENV PYTHONPATH=/app \
     FLASK_ENV=production \
     FLASK_APP=main.py \
     PORT=2542 \
-    # Database settings (컨테이너 이름 기반)
-    DATABASE_URL=postgresql://postgres:postgres@blacklist-postgres:5432/blacklist \
-    REDIS_URL=redis://blacklist-redis:6379/0 \
+    # Database settings (실제 서버 기반)
+    DATABASE_URL=postgresql://postgres:postgres@localhost:5433/blacklist \
+    REDIS_URL=redis://localhost:6380/0 \
     # Security settings
     SECRET_KEY=change-in-production-please \
     JWT_SECRET_KEY=blacklist-jwt-secret-2024 \
