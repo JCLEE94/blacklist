@@ -227,7 +227,9 @@ class BlueprintRegistrationMixin:
 
         # Register autonomous monitoring system routes
         try:
-            from ...api.monitoring.autonomous_monitoring_routes import autonomous_monitoring_bp
+            from ...api.monitoring.autonomous_monitoring_routes import (
+                autonomous_monitoring_bp,
+            )
 
             app.register_blueprint(autonomous_monitoring_bp)
             logger.info("Autonomous monitoring system routes registered successfully")

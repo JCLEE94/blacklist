@@ -107,15 +107,11 @@ try:
     from .monitoring.health_routes import (
         register_default_health_checks as _register_default_health_checks,
     )
-    from .monitoring.performance_routes import (
-        cleanup_performance_data_endpoint,
-    )
+    from .monitoring.performance_routes import cleanup_performance_data_endpoint
     from .monitoring.performance_routes import (
         generate_performance_recommendations as _generate_performance_recommendations,
     )
-    from .monitoring.performance_routes import (
-        get_performance_metrics,
-    )
+    from .monitoring.performance_routes import get_performance_metrics
     from .monitoring.resource_routes import get_system_metrics
 except ImportError:
     # Fallback imports for standalone execution
@@ -130,15 +126,11 @@ except ImportError:
         from health_routes import (
             register_default_health_checks as _register_default_health_checks,
         )
-        from performance_routes import (
-            cleanup_performance_data_endpoint,
-        )
+        from performance_routes import cleanup_performance_data_endpoint
         from performance_routes import (
             generate_performance_recommendations as _generate_performance_recommendations,
         )
-        from performance_routes import (
-            get_performance_metrics,
-        )
+        from performance_routes import get_performance_metrics
         from resource_routes import get_system_metrics
     except ImportError:
         # Mock imports for testing

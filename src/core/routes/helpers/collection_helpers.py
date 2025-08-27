@@ -4,10 +4,10 @@ Provides statistics and availability data for collection management.
 """
 
 import logging
-from typing import Any, Dict
-from datetime import datetime, timedelta
-import sqlite3
 import os
+import sqlite3
+from datetime import datetime, timedelta
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 

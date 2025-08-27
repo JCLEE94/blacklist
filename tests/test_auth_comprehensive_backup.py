@@ -12,6 +12,10 @@ This module has been refactored into smaller, focused test modules:
 To run all authentication tests: pytest tests/test_auth_* tests/test_api_key_* tests/test_security_* tests/test_performance_*
 """
 
+import os
+import time
+import requests
+
 # Import all test modules for backward compatibility
 import pytest
 
@@ -443,7 +447,7 @@ if __name__ == "__main__":
 class TestAPIKeyRoutes:
     """Test API key management routes with comprehensive coverage"""
 
-    BASE_URL = "http://localhost:32542"
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
 
     @pytest.fixture(autouse=True)
     def setup_test(self):
@@ -587,7 +591,7 @@ class TestAPIKeyRoutes:
 class TestSecurityFeatures:
     """Test security features and edge cases"""
 
-    BASE_URL = "http://localhost:32542"
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
 
     def test_malformed_jwt_token(self):
         """Test handling of malformed JWT tokens"""
@@ -659,7 +663,7 @@ class TestSecurityFeatures:
 class TestPerformanceAndReliability:
     """Test performance and reliability aspects"""
 
-    BASE_URL = "http://localhost:32542"
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
 
     def test_concurrent_login_requests(self):
         """Test handling of concurrent login requests"""

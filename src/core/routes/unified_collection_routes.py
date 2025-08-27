@@ -6,8 +6,8 @@ Removes duplicate collection endpoints scattered across the codebase.
 
 
 import logging
-import sqlite3
 import os
+import sqlite3
 from datetime import datetime
 
 from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for

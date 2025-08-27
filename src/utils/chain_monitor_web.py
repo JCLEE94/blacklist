@@ -7,15 +7,15 @@
 import json
 import os
 from datetime import datetime
-from flask import Blueprint, Flask, jsonify, render_template_string, request
 from pathlib import Path
+
+from flask import Blueprint, Flask, jsonify, render_template_string, request
 
 from .autonomous_chain_monitor import get_chain_monitor, get_korean_status
 from .structured_logging import get_logger
 
-
 # Blueprint 생성
-chain_monitor_bp = Blueprint('chain_monitor', __name__, url_prefix='/chain-monitor')
+chain_monitor_bp = Blueprint("chain_monitor", __name__, url_prefix="/chain-monitor")
 logger = get_logger("chain_monitor_web")
 
 
@@ -422,136 +422,127 @@ DASHBOARD_HTML = """
 """
 
 
-@chain_monitor_bp.route('/')
+@chain_monitor_bp.route("/")
 def dashboard():
     """체인 모니터링 대시보드 메인 페이지"""
     return render_template_string(DASHBOARD_HTML)
 
 
-@chain_monitor_bp.route('/api/system-status')
+@chain_monitor_bp.route("/api/system-status")
 def api_system_status():
     """시스템 상태 API"""
     try:
         monitor = get_chain_monitor()
         status = monitor.get_system_status()
-        
-        return jsonify({
-            "success": True,
-            "timestamp": datetime.now().isoformat(),
-            **status
-        })
-        
+
+        return jsonify(
+            {"success": True, "timestamp": datetime.now().isoformat(), **status}
+        )
+
     except Exception as e:
         logger.error(f"시스템 상태 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
-@chain_monitor_bp.route('/api/korean-report')
+@chain_monitor_bp.route("/api/korean-report")
 def api_korean_report():
     """한국어 진행 상황 보고 API"""
     try:
         report = get_korean_status()
-        
-        return jsonify({
-            "success": True,
-            "report": report,
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {"success": True, "report": report, "timestamp": datetime.now().isoformat()}
+        )
+
     except Exception as e:
         logger.error(f"한국어 보고서 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "report": f"보고서 생성 중 오류 발생: {str(e)}",
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "report": f"보고서 생성 중 오류 발생: {str(e)}",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
-@chain_monitor_bp.route('/api/chain-history')
+@chain_monitor_bp.route("/api/chain-history")
 def api_chain_history():
     """체인 실행 히스토리 API"""
     try:
         monitor = get_chain_monitor()
-        
+
         # 완료된 체인 히스토리 (최근 20개)
         completed_chains = []
         for chain_context in list(monitor.completed_chains):
-            completed_chains.append({
-                "chain_id": chain_context.chain_id,
-                "chain_name": chain_context.chain_name,
-                "status": chain_context.status.value,
-                "success_rate": chain_context.metrics.success_rate,
-                "duration": chain_context.metrics.duration_seconds,
-                "start_time": chain_context.metrics.start_time.isoformat() if chain_context.metrics.start_time else None,
-                "end_time": chain_context.metrics.end_time.isoformat() if chain_context.metrics.end_time else None,
-                "retry_count": chain_context.metrics.retry_count,
-                "korean_message": chain_context.korean_status_message
-            })
-        
-        return jsonify({
-            "success": True,
-            "completed_chains": completed_chains[-20:],  # 최근 20개
-            "timestamp": datetime.now().isoformat()
-        })
-        
+            completed_chains.append(
+                {
+                    "chain_id": chain_context.chain_id,
+                    "chain_name": chain_context.chain_name,
+                    "status": chain_context.status.value,
+                    "success_rate": chain_context.metrics.success_rate,
+                    "duration": chain_context.metrics.duration_seconds,
+                    "start_time": (
+                        chain_context.metrics.start_time.isoformat()
+                        if chain_context.metrics.start_time
+                        else None
+                    ),
+                    "end_time": (
+                        chain_context.metrics.end_time.isoformat()
+                        if chain_context.metrics.end_time
+                        else None
+                    ),
+                    "retry_count": chain_context.metrics.retry_count,
+                    "korean_message": chain_context.korean_status_message,
+                }
+            )
+
+        return jsonify(
+            {
+                "success": True,
+                "completed_chains": completed_chains[-20:],  # 최근 20개
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"체인 히스토리 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
-@chain_monitor_bp.route('/api/chain/<chain_id>')
+@chain_monitor_bp.route("/api/chain/<chain_id>")
 def api_chain_details(chain_id):
     """특정 체인 상세 정보 API"""
     try:
         monitor = get_chain_monitor()
-        
+
         # 활성 체인에서 찾기
         if chain_id in monitor.active_chains:
             context = monitor.active_chains[chain_id]
-            
-            return jsonify({
-                "success": True,
-                "chain": {
-                    "chain_id": context.chain_id,
-                    "chain_name": context.chain_name,
-                    "task_id": context.task_id,
-                    "status": context.status.value,
-                    "priority": context.priority.value,
-                    "progress": context.progress_percentage,
-                    "current_step": context.current_step,
-                    "korean_message": context.korean_status_message,
-                    "error_message": context.error_message,
-                    "metrics": {
-                        "start_time": context.metrics.start_time.isoformat() if context.metrics.start_time else None,
-                        "duration": context.metrics.duration_seconds,
-                        "retry_count": context.metrics.retry_count,
-                        "max_retries": context.metrics.max_retries,
-                        "success_rate": context.metrics.success_rate,
-                        "memory_usage": context.metrics.memory_usage_mb,
-                        "cpu_usage": context.metrics.cpu_usage_percent,
-                        "error_count": context.metrics.error_count,
-                        "warning_count": context.metrics.warning_count
-                    },
-                    "dependencies": context.dependencies
-                },
-                "timestamp": datetime.now().isoformat()
-            })
-        
-        # 완료된 체인에서 찾기
-        for completed_chain in monitor.completed_chains:
-            if completed_chain.chain_id == chain_id:
-                context = completed_chain
-                
-                return jsonify({
+
+            return jsonify(
+                {
                     "success": True,
                     "chain": {
                         "chain_id": context.chain_id,
@@ -560,44 +551,102 @@ def api_chain_details(chain_id):
                         "status": context.status.value,
                         "priority": context.priority.value,
                         "progress": context.progress_percentage,
+                        "current_step": context.current_step,
                         "korean_message": context.korean_status_message,
                         "error_message": context.error_message,
                         "metrics": {
-                            "start_time": context.metrics.start_time.isoformat() if context.metrics.start_time else None,
-                            "end_time": context.metrics.end_time.isoformat() if context.metrics.end_time else None,
+                            "start_time": (
+                                context.metrics.start_time.isoformat()
+                                if context.metrics.start_time
+                                else None
+                            ),
                             "duration": context.metrics.duration_seconds,
                             "retry_count": context.metrics.retry_count,
+                            "max_retries": context.metrics.max_retries,
                             "success_rate": context.metrics.success_rate,
+                            "memory_usage": context.metrics.memory_usage_mb,
+                            "cpu_usage": context.metrics.cpu_usage_percent,
                             "error_count": context.metrics.error_count,
-                            "warning_count": context.metrics.warning_count
+                            "warning_count": context.metrics.warning_count,
                         },
-                        "dependencies": context.dependencies
+                        "dependencies": context.dependencies,
                     },
-                    "timestamp": datetime.now().isoformat()
-                })
-        
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
+        # 완료된 체인에서 찾기
+        for completed_chain in monitor.completed_chains:
+            if completed_chain.chain_id == chain_id:
+                context = completed_chain
+
+                return jsonify(
+                    {
+                        "success": True,
+                        "chain": {
+                            "chain_id": context.chain_id,
+                            "chain_name": context.chain_name,
+                            "task_id": context.task_id,
+                            "status": context.status.value,
+                            "priority": context.priority.value,
+                            "progress": context.progress_percentage,
+                            "korean_message": context.korean_status_message,
+                            "error_message": context.error_message,
+                            "metrics": {
+                                "start_time": (
+                                    context.metrics.start_time.isoformat()
+                                    if context.metrics.start_time
+                                    else None
+                                ),
+                                "end_time": (
+                                    context.metrics.end_time.isoformat()
+                                    if context.metrics.end_time
+                                    else None
+                                ),
+                                "duration": context.metrics.duration_seconds,
+                                "retry_count": context.metrics.retry_count,
+                                "success_rate": context.metrics.success_rate,
+                                "error_count": context.metrics.error_count,
+                                "warning_count": context.metrics.warning_count,
+                            },
+                            "dependencies": context.dependencies,
+                        },
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
+
         # 체인을 찾지 못한 경우
-        return jsonify({
-            "success": False,
-            "error": f"체인 '{chain_id}'를 찾을 수 없습니다",
-            "timestamp": datetime.now().isoformat()
-        }), 404
-        
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": f"체인 '{chain_id}'를 찾을 수 없습니다",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            404,
+        )
+
     except Exception as e:
         logger.error(f"체인 상세 정보 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
-@chain_monitor_bp.route('/api/metrics')
+@chain_monitor_bp.route("/api/metrics")
 def api_metrics():
     """성능 메트릭 API"""
     try:
         monitor = get_chain_monitor()
-        
+
         # 시스템 메트릭
         metrics = {
             "system_metrics": monitor.system_metrics.copy(),
@@ -606,9 +655,9 @@ def api_metrics():
             "monitoring_enabled": monitor.monitoring_enabled,
             "korean_reporting_enabled": monitor.korean_reporting_enabled,
             "auto_recovery_enabled": monitor.auto_recovery_enabled,
-            "max_concurrent_chains": monitor.max_concurrent_chains
+            "max_concurrent_chains": monitor.max_concurrent_chains,
         }
-        
+
         # 체인별 성능 통계
         chain_performance = {}
         for context in monitor.completed_chains:
@@ -619,135 +668,165 @@ def api_metrics():
                     "successes": 0,
                     "total_duration": 0,
                     "avg_duration": 0,
-                    "success_rate": 0
+                    "success_rate": 0,
                 }
-            
+
             stats = chain_performance[chain_name]
             stats["executions"] += 1
             if context.status.value == "success":
                 stats["successes"] += 1
             if context.metrics.duration_seconds:
                 stats["total_duration"] += context.metrics.duration_seconds
-        
+
         # 평균 계산
         for stats in chain_performance.values():
             if stats["executions"] > 0:
                 stats["avg_duration"] = stats["total_duration"] / stats["executions"]
                 stats["success_rate"] = (stats["successes"] / stats["executions"]) * 100
-        
+
         metrics["chain_performance"] = chain_performance
-        
-        return jsonify({
-            "success": True,
-            "metrics": metrics,
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "metrics": metrics,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"메트릭 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
-@chain_monitor_bp.route('/api/control/pause/<chain_id>', methods=['POST'])
+@chain_monitor_bp.route("/api/control/pause/<chain_id>", methods=["POST"])
 def api_pause_chain(chain_id):
     """체인 일시 정지 API"""
     try:
         monitor = get_chain_monitor()
         monitor.pause_chain(chain_id)
-        
-        return jsonify({
-            "success": True,
-            "message": f"체인 '{chain_id}' 일시 정지됨",
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"체인 '{chain_id}' 일시 정지됨",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"체인 일시 정지 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
-@chain_monitor_bp.route('/api/control/resume/<chain_id>', methods=['POST'])
+@chain_monitor_bp.route("/api/control/resume/<chain_id>", methods=["POST"])
 def api_resume_chain(chain_id):
     """체인 재개 API"""
     try:
         monitor = get_chain_monitor()
         monitor.resume_chain(chain_id)
-        
-        return jsonify({
-            "success": True,
-            "message": f"체인 '{chain_id}' 재개됨",
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"체인 '{chain_id}' 재개됨",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"체인 재개 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
-@chain_monitor_bp.route('/api/control/cancel/<chain_id>', methods=['POST'])
+@chain_monitor_bp.route("/api/control/cancel/<chain_id>", methods=["POST"])
 def api_cancel_chain(chain_id):
     """체인 취소 API"""
     try:
         monitor = get_chain_monitor()
         monitor.cancel_chain(chain_id)
-        
-        return jsonify({
-            "success": True,
-            "message": f"체인 '{chain_id}' 취소됨",
-            "timestamp": datetime.now().isoformat()
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"체인 '{chain_id}' 취소됨",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
     except Exception as e:
         logger.error(f"체인 취소 API 오류: {e}", exception=e)
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
 def create_chain_monitor_app():
     """체인 모니터링 전용 Flask 앱 생성"""
     app = Flask(__name__)
     app.register_blueprint(chain_monitor_bp)
-    
+
     # 기본 라우트
-    @app.route('/')
+    @app.route("/")
     def index():
         return chain_monitor_bp.dashboard()
-    
+
     return app
 
 
 if __name__ == "__main__":
     # 단독 실행 시 테스트 서버 시작
     app = create_chain_monitor_app()
-    
+
     # 체인 모니터링 시스템 초기화
     from .autonomous_chain_monitor import initialize_chain_monitoring
+
     monitor = initialize_chain_monitoring()
-    
+
     print("🌐 체인 모니터링 웹 서버 시작")
     print("📍 URL: http://localhost:5555/")
     print("🔄 자동 새로고침: 5초마다")
     print("📊 실시간 모니터링 대시보드 제공")
-    
+
     try:
         app.run(host="0.0.0.0", port=5555, debug=True)
     except KeyboardInterrupt:
         print("\n🛑 웹 서버 중지됨")
     finally:
         from .autonomous_chain_monitor import shutdown_chain_monitoring
+
         shutdown_chain_monitoring()

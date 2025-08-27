@@ -5,6 +5,7 @@ Tests all UI endpoints for data display, collection, and functionality
 
 import asyncio
 import json
+import os
 import time
 from datetime import datetime
 
@@ -13,7 +14,7 @@ import pytest
 # Skip this entire test if playwright is not available or if running in CI/CD
 pytest_plugins = ("pytest_asyncio",)
 
-BASE_URL = "http://localhost:32542"
+BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
 API_BASE = f"{BASE_URL}/api"
 
 

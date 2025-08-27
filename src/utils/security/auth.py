@@ -13,12 +13,7 @@ Expected output: JWT tokens, password hashes, authentication status
 
 import logging
 
-from flask import (
-    current_app,
-    g,
-    jsonify,
-    request,
-)
+from flask import current_app, g, jsonify, request
 
 logger = logging.getLogger(__name__)
 
