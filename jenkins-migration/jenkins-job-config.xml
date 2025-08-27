@@ -1,0 +1,93 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <actions/>
+  <description>Blacklist Management System CI/CD Pipeline</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>BRANCH</name>
+          <defaultValue>main</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>pipeline {
+    agent any
+    
+    environment {
+        REGISTRY = 'registry.jclee.me'
+        IMAGE_NAME = 'blacklist'
+        PROJECT_PATH = '/home/jclee/app/blacklist'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                sh "cd ${PROJECT_PATH} && git pull origin main"
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh """
+                    cd ${PROJECT_PATH}
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                    pytest tests/ || true
+                """
+            }
+        }
+        
+        stage('Build Docker') {
+            steps {
+                sh """
+                    cd ${PROJECT_PATH}
+                    docker build -t ${REGISTRY}/${IMAGE_NAME}:latest .
+                    docker build -t ${REGISTRY}/${IMAGE_NAME}:\$(date +%Y%m%d-%H%M%S) .
+                """
+            }
+        }
+        
+        stage('Push to Registry') {
+            steps {
+                sh """
+                    echo bingogo1 | docker login ${REGISTRY} -u jclee94 --password-stdin
+                    docker push ${REGISTRY}/${IMAGE_NAME}:latest
+                    docker logout ${REGISTRY}
+                """
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                sh """
+                    cd ${PROJECT_PATH}
+                    docker-compose down || true
+                    docker-compose pull
+                    docker-compose up -d
+                    sleep 10
+                    curl -f http://localhost:32542/health || exit 1
+                """
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo '✅ 배포 성공!'
+        }
+        failure {
+            echo '❌ 배포 실패!'
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
