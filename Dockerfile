@@ -1,5 +1,5 @@
-# 🚀 Enterprise Production Dockerfile v9.0.0
-# Multi-stage build optimized for security, performance, and best practices 2024
+# 🚀 Enterprise Production Dockerfile
+# Multi-stage build optimized for security, performance, and best practices 2025
 
 # ================================
 # Build Arguments (for BuildKit)
@@ -8,7 +8,7 @@ ARG PYTHON_VERSION=3.11.9
 ARG ALPINE_VERSION=3.19
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION=9.0.0
+ARG VERSION
 
 # ================================
 # STAGE 1: Dependency Builder
@@ -19,7 +19,7 @@ FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS builder
 ARG BUILDKIT_INLINE_CACHE=1
 
 LABEL stage=builder
-LABEL maintainer="AI Automation Platform v9.0.0"
+LABEL maintainer="AI Automation Platform"
 
 WORKDIR /build
 
@@ -66,7 +66,7 @@ FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS production
 # Re-declare ARGs for this stage
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION=9.0.0
+ARG VERSION
 
 # OCI Image Spec Labels
 LABEL org.opencontainers.image.created=${BUILD_DATE} \
@@ -139,8 +139,7 @@ ENV PYTHONPATH=/app \
     FLASK_ENV=production \
     PORT=2542
 
-# Use BuildKit secrets for sensitive data (runtime override)
-# Example: docker build --secret id=db_password,src=db_password.txt
+# Database configuration (PostgreSQL and Redis external services)
 ENV DATABASE_URL=postgresql://postgres:postgres@blacklist-postgres:5432/blacklist \
     REDIS_URL=redis://blacklist-redis:6379/0
 
