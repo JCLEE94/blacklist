@@ -85,6 +85,7 @@ FROM dependencies AS build
 COPY app/ ./app/
 COPY src/ ./src/
 COPY templates/ ./templates/
+COPY static/ ./static/
 COPY main.py ./
 COPY config/ ./config/
 
@@ -143,6 +144,7 @@ COPY --from=dependencies --chown=appuser:appgroup /usr/local/bin/uvicorn /usr/lo
 COPY --from=build --chown=appuser:appgroup /app/app ./app
 COPY --from=build --chown=appuser:appgroup /app/src ./src
 COPY --from=build --chown=appuser:appgroup /app/templates ./templates
+COPY --from=build --chown=appuser:appgroup /app/static ./static
 COPY --from=build --chown=appuser:appgroup /app/main.py ./main.py
 COPY --from=build --chown=appuser:appgroup /app/build_info.json ./build_info.json
 
