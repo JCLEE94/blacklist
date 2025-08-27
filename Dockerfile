@@ -92,117 +92,35 @@ RUN mkdir -p /app/{instance,logs,temp,data,backups,monitoring} && \
 # PRODUCTION ENVIRONMENT VARIABLES
 # ================================
 
-# Core Application Configuration
+# Core Application Configuration (필수)
 ENV FLASK_ENV=production \
     PYTHONPATH=/app:$PYTHONPATH \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONIOENCODING=utf-8 \
     PORT=2542
 
-# Database and Cache Configuration (Production)
-ENV DATABASE_URL=postgresql://postgres:password@postgres:5432/blacklist \
-    DATABASE_URI=postgresql://postgres:password@postgres:5432/blacklist \
-    DATABASE_POOL_SIZE=20 \
-    DATABASE_MAX_OVERFLOW=5 \
-    DATABASE_POOL_TIMEOUT=30 \
-    REDIS_URL=redis://redis:6379/0 \
-    REDIS_DB=0 \
-    REDIS_PORT=6379 \
-    REDIS_TIMEOUT=5
+# Database Configuration (런타임 오버라이드 가능)
+ENV DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/blacklist.db} \
+    REDIS_URL=${REDIS_URL:-redis://localhost:6379/0}
 
-# Security Environment Variables (All hardcoded)
-ENV SECRET_KEY=jztm3kGAUsxMZRBuU0uVlA0B4BXvIE6xe2KeHfDYsPs \
-    JWT_SECRET_KEY=crmTBlEZ4ozEl6oRbrMuR-o_dDxxW8QcHLOZ1rGM_eU \
-    DEFAULT_API_KEY=blk_3BRg24QnUVaWw8sovs3CGdB6PH27LMEo \
-    ADMIN_PASSWORD=nOwyNq5cqq_M7cLaIZEm3A \
-    JWT_ALGORITHM=HS256 \
-    JWT_ACCESS_TOKEN_EXPIRES=3600 \
-    JWT_EXPIRY_HOURS=24 \
-    JWT_REFRESH_TOKEN_EXPIRES=604800 \
-    API_KEY_ENABLED=true \
-    JWT_ENABLED=true \
-    SESSION_COOKIE_SECURE=true \
-    SESSION_COOKIE_HTTPONLY=true \
-    SESSION_COOKIE_SAMESITE=Lax \
-    ADMIN_USERNAME=admin \
-    ADMIN_EMAIL=admin@blacklist.jclee.me
+# Security (런타임 설정 필수 - 기본값은 개발용)
+ENV SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production} \
+    JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-key-change-in-production}
 
-# Collection System Configuration (Production Ready)
-ENV COLLECTION_ENABLED=true \
-    FORCE_DISABLE_COLLECTION=false \
-    COLLECTION_INTERVAL=3600 \
-    COLLECTION_INTERVAL_HOURS=1 \
-    COLLECTION_MAX_RETRIES=3 \
-    COLLECTION_TIMEOUT=300 \
-    RESTART_PROTECTION=false \
-    COLLECTION_RATE_LIMIT=100
+# Collection System (기본값으로 충분)
+ENV COLLECTION_ENABLED=true
 
-# Security Limits and Rate Limiting
-ENV MAX_AUTH_ATTEMPTS=5 \
-    BLOCK_DURATION_HOURS=1 \
-    RATE_LIMIT_PER_MINUTE=100 \
-    API_RATE_LIMIT=1000 \
-    MAX_REQUEST_SIZE=16777216 \
-    FORCE_HTTPS=true
+# Security Limits (기본값 사용)
 
-# System Resource Limits and Performance
-ENV MAX_MEMORY_MB=1024 \
-    MAX_CPU_PERCENT=80 \
-    MAX_DISK_PERCENT=90 \
-    WORKERS=4 \
-    THREADS=2 \
-    WORKER_CLASS=gevent \
-    WORKER_CONNECTIONS=1000 \
-    MAX_REQUESTS=1000 \
-    MAX_REQUESTS_JITTER=100 \
-    PRELOAD_APP=true \
-    TIMEOUT=30 \
-    KEEPALIVE=2
+# Performance Settings (기본값 충분)
+ENV WORKERS=4 \
+    THREADS=2
 
-# Monitoring and Observability
-ENV ENABLE_METRICS=true \
-    METRICS_PORT=8080 \
-    LOG_LEVEL=INFO \
-    LOG_FORMAT=json \
-    ENABLE_TRACING=true \
-    HEALTH_CHECK_TIMEOUT=10
+# Logging (필수)
+ENV LOG_LEVEL=INFO
 
-# REGTECH Collector Configuration (Production)
-ENV REGTECH_ENABLED=true \
-    REGTECH_USERNAME=your-regtech-username \
-    REGTECH_PASSWORD=your-regtech-password \
-    REGTECH_BASE_URL=https://www.krcert.or.kr \
-    REGTECH_TIMEOUT=30 \
-    REGTECH_MAX_RETRIES=3 \
-    REGTECH_COLLECTION_DAYS=30 \
-    REGTECH_MAX_PAGES=10 \
-    REGTECH_PAGE_SIZE=50 \
-    REGTECH_INTERVAL=3600 \
-    REGTECH_COOKIES=""
+# External Services (런타임에 설정)
 
-# SECUDIUM Collector Configuration (Production)  
-ENV SECUDIUM_USERNAME=your-secudium-username \
-    SECUDIUM_PASSWORD=your-secudium-password \
-    SECUDIUM_BASE_URL=https://www.secudium.com \
-    SECUDIUM_TIMEOUT=30 \
-    SECUDIUM_MAX_RETRIES=3 \
-    SECUDIUM_COLLECTION_DAYS=30 \
-    SECUDIUM_INTERVAL=3600
-
-# Production Feature Flags and A/B Testing
-ENV FEATURE_FLAG_ENABLED=true \
-    AB_TESTING_ENABLED=true \
-    FEATURE_NEW_UI=false \
-    FEATURE_ADVANCED_ANALYTICS=true \
-    FEATURE_AUTO_SCALING=true
-
-# Backup and Recovery Configuration
-ENV BACKUP_ENABLED=true \
-    BACKUP_INTERVAL=86400 \
-    BACKUP_RETENTION_DAYS=30 \
-    AUTO_BACKUP_ON_DEPLOY=true \
-    BACKUP_COMPRESS=true
+# Features (제거 - 불필요)
 
 # ================================
 # SECURITY HARDENING
@@ -235,8 +153,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
 # Expose application port
 EXPOSE ${PORT}
 
-# Expose metrics port for monitoring
-EXPOSE 8080
 
 # ================================
 # STARTUP AND ENTRYPOINT
