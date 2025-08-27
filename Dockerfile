@@ -70,11 +70,10 @@ FROM system-deps AS dependencies
 RUN pip install --upgrade pip setuptools wheel
 
 # Copy dependency files
-COPY requirements.txt ./
+COPY requirements-docker.txt ./requirements.txt
 
 # Install production dependencies with proper caching
 RUN pip install -r requirements.txt && \
-    pip install gunicorn uvicorn && \
     # Remove pip cache
     rm -rf /root/.cache/pip
 

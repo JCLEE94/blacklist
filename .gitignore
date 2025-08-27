@@ -70,3 +70,13 @@ temp/
 # Development setup files (user-specific)
 .project-config
 .tmux-startup.sh.venv/
+
+# Auto-optimized by project cleaner
+# Python
+*.pyc
+*.pyo
+htmlcov*/
+# Database data
+pgdata/
+appendonlydir/
+logs/*.log
