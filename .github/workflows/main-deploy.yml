@@ -222,14 +222,38 @@ jobs:
       always() && 
       needs.detect-changes.outputs.any_changed == 'true' &&
       !contains(needs.*.result, 'failure')
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     
     steps:
+    - name: "🐳 Login to Registry for Deploy"
+      run: |
+        # Login for pulling images during deployment
+        REGISTRY_USER="admin"
+        REGISTRY_PASS="${{ secrets.REGISTRY_PASSWORD }}"
+        
+        if [ -z "$REGISTRY_PASS" ]; then
+          REGISTRY_PASS="bingogo1"
+        fi
+        
+        echo "$REGISTRY_PASS" | docker login ${{ env.REGISTRY }} -u $REGISTRY_USER --password-stdin || {
+          echo "bingogo1" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+        }
+        echo "✅ Registry login successful for deployment"
+    
     - name: "🌐 Ensure Network (SafeWork 패턴)"
       run: |
         # Docker 네트워크 자동 생성 (SafeWork에서 차용)
         docker network create blacklist-net 2>/dev/null || echo "Network exists"
         echo "✅ Network 'blacklist-net' ready"
+    
+    - name: "📦 Pull Latest Image"
+      run: |
+        echo "📦 Pulling latest image from registry..."
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || {
+          echo "❌ Failed to pull image"
+          exit 1
+        }
+        echo "✅ Successfully pulled latest image"
     
     - name: "🛡️ Deploy Blacklist with Version Check"
       run: |
