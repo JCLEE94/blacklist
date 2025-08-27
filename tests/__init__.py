@@ -172,5 +172,5 @@ __all__ = [
     "TestHelpers",
 ]
 
-__version__ = "2.1.0-unified"
+__version__ = "1.0.1411"
 __description__ = "Test suite for Blacklist Manager"

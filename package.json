@@ -1,6 +1,6 @@
 {
   "name": "blacklist-management-system",
-  "version": "1.0.1394",
+  "version": "1.0.1411",
   "description": "Enterprise Threat Intelligence Platform with Real-time Dashboard",
   "main": "main.py",
   "scripts": {
@@ -15,7 +15,7 @@
     "docker:push": "docker push registry.jclee.me/blacklist:latest",
     "docker:run": "docker run -p 32542:2542 registry.jclee.me/blacklist:latest",
     "deploy": "npm run docker:build && npm run docker:push",
-    "version": "python scripts/auto_version_manager.py"
+    "version": "1.0.1411"
   },
   "repository": {
     "type": "git",

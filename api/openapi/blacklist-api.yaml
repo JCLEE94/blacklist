@@ -11,7 +11,7 @@ info:
     - Advanced analytics and threat intelligence
     - JWT + API Key dual authentication
     
-  version: 1.3.3
+  version: 1.0.1411
   contact:
     name: DevOps Team
     email: devops@jclee.me

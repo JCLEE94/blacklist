@@ -3,7 +3,7 @@
 
 # Variables
 DOCKER_REGISTRY ?= registry.jclee.me
-VERSION ?= $(shell cat config/VERSION 2>/dev/null || echo "1.3.3")
+VERSION ?= $(shell cat config/VERSION 2>/dev/null || echo "1.0.1411")
 IMAGE_NAME ?= $(DOCKER_REGISTRY)/blacklist:$(VERSION)
 LATEST_IMAGE ?= $(DOCKER_REGISTRY)/blacklist:latest
 CHART_NAME ?= blacklist

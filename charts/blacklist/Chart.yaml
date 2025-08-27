@@ -2,8 +2,8 @@ apiVersion: v2
 name: blacklist
 description: A CNCF-compliant Helm chart for Blacklist Management System
 type: application
-version: 0.1.0
-appVersion: "1.3.3"
+version: 1.0.1411
+appVersion: "1.0.1411"
 
 keywords:
   - blacklist
