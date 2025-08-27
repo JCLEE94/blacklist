@@ -5,7 +5,8 @@ FROM postgres:15-alpine
 LABEL org.opencontainers.image.title="Blacklist PostgreSQL" \
       org.opencontainers.image.description="PostgreSQL database for Blacklist service" \
       org.opencontainers.image.version="1.0.0" \
-      org.opencontainers.image.vendor="JCLee"
+      org.opencontainers.image.vendor="JCLee" \
+      com.centurylinklabs.watchtower.enable="true"
 
 # Environment variables for database setup from .env migration
 ENV POSTGRES_DB=blacklist \

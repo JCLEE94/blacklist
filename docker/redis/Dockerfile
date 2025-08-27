@@ -5,7 +5,8 @@ FROM redis:7-alpine
 LABEL org.opencontainers.image.title="Blacklist Redis" \
       org.opencontainers.image.description="Redis cache for Blacklist service" \
       org.opencontainers.image.version="1.0.0" \
-      org.opencontainers.image.vendor="JCLee"
+      org.opencontainers.image.vendor="JCLee" \
+      com.centurylinklabs.watchtower.enable="true"
 
 # Environment variables from .env migration
 ENV REDIS_URL=redis://redis:6379/0
