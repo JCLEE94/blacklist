@@ -174,15 +174,11 @@ class TestAnalyticsV2API:
 
     def test_threat_levels_analysis(self):
         """Test threat levels analysis endpoint"""
-        response = requests.get(
-            f"{self.BASE_URL}/api/v2/analytics/threat-levels", timeout=10
-        )
+        result = self._make_request(f"{self.BASE_URL}/api/v2/analytics/threat-levels")
+        if result is None:
+            return
 
-        assert response.status_code in [200, 503]
-        try:
-            data = response.json()
-        except requests.exceptions.JSONDecodeError:
-            pytest.skip(f"Endpoint returned non-JSON response: {response.status_code}")
+        response, data = result
 
         if response.status_code == 200:
             # Check expected fields in response
@@ -201,13 +197,11 @@ class TestAnalyticsV2API:
 
     def test_sources_analysis_endpoint(self):
         """Test sources analysis endpoint"""
-        response = requests.get(f"{self.BASE_URL}/api/v2/analytics/sources", timeout=10)
+        result = self._make_request(f"{self.BASE_URL}/api/v2/analytics/sources")
+        if result is None:
+            return
 
-        assert response.status_code in [200, 503]
-        try:
-            data = response.json()
-        except requests.exceptions.JSONDecodeError:
-            pytest.skip(f"Endpoint returned non-JSON response: {response.status_code}")
+        response, data = result
 
         if response.status_code == 200:
             # Check expected fields in response

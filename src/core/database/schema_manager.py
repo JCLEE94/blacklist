@@ -95,10 +95,6 @@ class DatabaseSchema:
         """통계 정보 반환 (호환성)"""
         return self.get_table_stats()
 
-    def cleanup_old_data(self, days_to_keep: int = 90):
-        """오래된 데이터 정리 (호환성)"""
-        return self.migration_service.cleanup_old_data(days_to_keep)
-
     def backup_database(self, backup_path: str = None):
         """데이터베이스 백업 (호환성)"""
         if "sqlite" in self.database_url.lower():
