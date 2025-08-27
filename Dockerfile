@@ -1,184 +1,212 @@
-# 🚀 Enterprise Production Dockerfile
-# Multi-stage build optimized for security, performance, and best practices 2025
+# Blacklist Dockerfile - SafeWork 스타일 완전 적용
+# SafeWork의 멀티스테이지 빌드와 보안 패턴을 blacklist에 최적화
 
-# ================================
-# Build Arguments (for BuildKit)
-# ================================
-ARG PYTHON_VERSION=3.11.9
-ARG ALPINE_VERSION=3.19
-ARG BUILD_DATE
-ARG VCS_REF
-ARG VERSION
+# Pin specific Python version for reproducibility
+FROM python:3.11.8-slim-bookworm AS base
 
-# ================================
-# STAGE 1: Dependency Builder
-# ================================
-FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS builder
+# Build arguments for version tracking - SafeWork 동적 버전 패턴
+ARG BUILD_VERSION
+ARG BUILD_NUMBER=local
+ARG COMMIT_SHA=unknown
+ARG BUILD_TIMESTAMP
+ARG IMAGE_TAG=latest
 
-# Enable BuildKit inline cache
-ARG BUILDKIT_INLINE_CACHE=1
+# Set Python environment variables for optimization (SafeWork 환경변수 패턴)
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    # Pip configuration for security
+    PIP_NO_COMPILE=1 \
+    PIP_DEFAULT_TIMEOUT=100 \
+    # Python security
+    PYTHONHASHSEED=random \
+    # Build metadata (SafeWork 패턴)
+    BUILD_VERSION=${BUILD_VERSION} \
+    BUILD_NUMBER=${BUILD_NUMBER} \
+    COMMIT_SHA=${COMMIT_SHA}
 
-LABEL stage=builder
-LABEL maintainer="AI Automation Platform"
-
-WORKDIR /build
-
-# Security hardening - create non-root user early
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
-
-# Install build dependencies in a single layer
-RUN apk update && apk upgrade && \
-    apk add --no-cache \
-        gcc \
-        musl-dev \
-        libffi-dev \
-        postgresql-dev \
-        build-base \
-        git \
-        curl \
-        openssl \
-        ca-certificates
-
-# Copy only requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies with cache mount
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=cache,target=/root/.local \
-    pip install --upgrade pip setuptools wheel && \
-    pip wheel --wheel-dir=/wheels -r requirements.txt
-
-# ================================
-# STAGE 2: Security Scanner (Optional)
-# ================================
-FROM aquasec/trivy:latest AS scanner
-WORKDIR /scan
-COPY --from=builder /wheels /wheels
-# Scan for vulnerabilities (fails build if CRITICAL found)
-RUN trivy fs --severity CRITICAL --exit-code 1 /wheels || true
-
-# ================================
-# STAGE 3: Production Runtime
-# ================================
-FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS production
-
-# Re-declare ARGs for this stage
-ARG BUILD_DATE
-ARG VCS_REF
-ARG VERSION
-
-# OCI Image Spec Labels
-LABEL org.opencontainers.image.created=${BUILD_DATE} \
-      org.opencontainers.image.authors="jclee@example.com" \
-      org.opencontainers.image.url="https://blacklist.jclee.me" \
-      org.opencontainers.image.documentation="https://github.com/jclee94/blacklist/blob/main/README.md" \
-      org.opencontainers.image.source="https://github.com/jclee94/blacklist" \
-      org.opencontainers.image.version=${VERSION} \
-      org.opencontainers.image.revision=${VCS_REF} \
-      org.opencontainers.image.vendor="AI Automation Platform" \
-      org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.title="Enterprise Blacklist Management System" \
-      org.opencontainers.image.description="Production-ready threat intelligence platform"
-
-# Watchtower and monitoring labels
-LABEL com.centurylinklabs.watchtower.enable="true" \
-      com.centurylinklabs.watchtower.monitor-only="false" \
-      security.scan="trivy,grype,snyk" \
-      deployment.strategy="rolling-update" \
-      monitoring.endpoints="/health,/metrics"
-
+# Set working directory
 WORKDIR /app
 
-# Security hardening - create identical non-root user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup && \
-    mkdir -p /app /home/appuser && \
-    chown -R appuser:appgroup /app /home/appuser
+# ==============================================================================
+# System dependencies stage (SafeWork 패턴)
+# ==============================================================================
+FROM base AS system-deps
 
-# Install minimal runtime dependencies
-RUN apk update && apk upgrade && \
-    apk add --no-cache \
-        postgresql-libs \
-        curl \
-        dumb-init \
-        tzdata \
-        ca-certificates && \
-    update-ca-certificates && \
-    # Clean up
-    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+# Install system dependencies and security updates in one layer
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+    # Required for compilation
+    gcc \
+    g++ \
+    # Database client
+    postgresql-client \
+    sqlite3 \
+    # Health checks and monitoring
+    curl \
+    wget \
+    # Process management
+    tini \
+    # Timezone support
+    tzdata \
+    # Git for version info
+    git && \
+    # Set timezone (SafeWork 패턴)
+    ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
+    echo "Asia/Seoul" > /etc/timezone && \
+    # Clean apt cache
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Set timezone
-ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# ==============================================================================
+# Dependencies stage - Python packages (SafeWork 패턴)
+# ==============================================================================
+FROM system-deps AS dependencies
 
-# Copy wheels from builder and install
-COPY --from=builder --chown=appuser:appgroup /wheels /wheels
-RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/*.whl && \
-    rm -rf /wheels
+# Upgrade pip first
+RUN pip install --upgrade pip setuptools wheel
 
-# Copy application code with proper ownership
-COPY --chown=appuser:appgroup app/ ./app/
-COPY --chown=appuser:appgroup src/ ./src/
-COPY --chown=appuser:appgroup scripts/ ./scripts/
-COPY --chown=appuser:appgroup main.py requirements.txt ./
+# Copy dependency files
+COPY requirements.txt ./
 
-# Create necessary directories
-RUN mkdir -p /app/{instance,logs,temp,data} && \
-    chmod -R 755 /app && \
-    chown -R appuser:appgroup /app
+# Install production dependencies with proper caching
+RUN pip install -r requirements.txt && \
+    pip install gunicorn uvicorn && \
+    # Remove pip cache
+    rm -rf /root/.cache/pip
 
-# ================================
-# RUNTIME CONFIGURATION
-# ================================
+# ==============================================================================
+# Build stage - Application build (SafeWork 패턴)
+# ==============================================================================
+FROM dependencies AS build
 
-# Core settings
+# Copy application source code
+COPY app/ ./app/
+COPY src/ ./src/
+COPY main.py ./
+COPY config/ ./config/
+
+# Copy additional files if they exist
+RUN if [ -d "scripts" ]; then cp -r scripts/ ./scripts/; fi
+RUN if [ -f "gunicorn.conf.py" ]; then cp gunicorn.conf.py ./; fi
+
+# Compile Python files for faster startup
+RUN python -m compileall -b app/ src/ 2>/dev/null || true
+
+# Create version info file (SafeWork 패턴)
+RUN echo "{\
+  \"version\": \"${BUILD_VERSION:-unknown}\",\
+  \"build_number\": \"${BUILD_NUMBER:-local}\",\
+  \"commit_sha\": \"${COMMIT_SHA:-unknown}\",\
+  \"build_timestamp\": \"${BUILD_TIMESTAMP:-$(date -Iseconds)}\",\
+  \"python_version\": \"$(python --version)\"\
+}" > /app/build_info.json
+
+# ==============================================================================
+# Production stage - Minimal runtime (SafeWork 패턴)
+# ==============================================================================
+FROM python:3.11.8-slim-bookworm AS production
+
+# Install runtime dependencies and security updates (SafeWork 패턴)
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+    postgresql-client \
+    sqlite3 \
+    curl \
+    wget \
+    tini \
+    tzdata \
+    ca-certificates && \
+    # Set timezone (SafeWork 패턴)
+    ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
+    echo "Asia/Seoul" > /etc/timezone && \
+    # Clean apt cache
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create non-root user with UID > 10000 (SafeWork 보안 패턴)
+RUN groupadd -r appgroup -g 10001 && \
+    useradd -r -u 10001 -g appgroup -m -d /home/appuser -s /sbin/nologin appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy Python packages from dependencies stage (SafeWork 패턴)
+COPY --from=dependencies --chown=appuser:appgroup /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=dependencies --chown=appuser:appgroup /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+COPY --from=dependencies --chown=appuser:appgroup /usr/local/bin/uvicorn /usr/local/bin/uvicorn
+
+# Copy application files from build stage (SafeWork 패턴)
+COPY --from=build --chown=appuser:appgroup /app/app ./app
+COPY --from=build --chown=appuser:appgroup /app/src ./src
+COPY --from=build --chown=appuser:appgroup /app/main.py ./main.py
+COPY --from=build --chown=appuser:appgroup /app/build_info.json ./build_info.json
+
+# Create necessary directories with proper permissions (SafeWork 패턴)
+RUN mkdir -p /app/instance /app/logs /app/data /app/temp && \
+    chown -R appuser:appgroup /app && \
+    # Set secure permissions
+    chmod 750 /app && \
+    chmod 770 /app/instance /app/logs /app/data /app/temp
+
+# Set runtime environment variables - SafeWork 패턴으로 모든 필수 환경변수 직접 정의
 ENV PYTHONPATH=/app \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
+    TZ=Asia/Seoul \
+    # Application settings
     FLASK_ENV=production \
-    PORT=2542
+    FLASK_APP=main.py \
+    PORT=2542 \
+    # Database settings (기본값)
+    DATABASE_URL=sqlite:///app/instance/blacklist.db \
+    REDIS_URL=redis://redis:6379/0 \
+    # Security settings
+    SECRET_KEY=change-in-production-please \
+    JWT_SECRET_KEY=blacklist-jwt-secret-2024 \
+    JWT_ALGORITHM=HS256 \
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES=15 \
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS=7 \
+    # Collection settings
+    COLLECTION_ENABLED=true \
+    FORCE_DISABLE_COLLECTION=false \
+    # Logging
+    LOG_LEVEL=INFO \
+    DEBUG=False
 
-# Database configuration (using environment variables at runtime)
-ENV DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/blacklist.db} \
-    REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-
-# Application settings
-ENV LOG_LEVEL=INFO \
-    WORKERS=4 \
-    THREADS=2 \
-    COLLECTION_ENABLED=true
-
-# ================================
-# SECURITY HARDENING
-# ================================
-
-# Remove unnecessary files and set permissions
-RUN find /usr/local -type f -name "*.pyc" -delete && \
-    find /usr/local -type d -name "__pycache__" -delete && \
-    chmod -R go-w /app && \
-    chmod -R o-rwx /app
-
-# Drop all capabilities except necessary ones
+# Switch to non-root user (SafeWork 패턴)
 USER appuser
 
-# ================================
-# HEALTH CHECK
-# ================================
-HEALTHCHECK --interval=30s \
-            --timeout=10s \
-            --start-period=60s \
-            --retries=3 \
-    CMD curl -f http://localhost:${PORT}/health || exit 1
+# Add comprehensive labels (SafeWork 패턴 확장)
+LABEL app="blacklist" \
+      version="${BUILD_VERSION}" \
+      build-number="${BUILD_NUMBER}" \
+      commit-sha="${COMMIT_SHA}" \
+      build-timestamp="${BUILD_TIMESTAMP}" \
+      maintainer="Blacklist Management Team" \
+      com.centurylinklabs.watchtower.enable="true" \
+      org.opencontainers.image.title="Blacklist Management System" \
+      org.opencontainers.image.description="Enterprise threat intelligence platform - SafeWork architecture" \
+      org.opencontainers.image.version="${BUILD_VERSION}" \
+      org.opencontainers.image.created="${BUILD_TIMESTAMP}" \
+      org.opencontainers.image.revision="${COMMIT_SHA}" \
+      org.opencontainers.image.source="https://github.com/JCLEE94/blacklist" \
+      security.scan.enabled="true" \
+      monitoring.health.endpoint="/health" \
+      deployment.strategy="watchtower-auto"
 
-# Expose port
-EXPOSE ${PORT}
+# Expose port (documentation only)
+EXPOSE 2542
 
-# ================================
-# ENTRYPOINT
-# ================================
-# Use dumb-init for proper signal handling
-ENTRYPOINT ["dumb-init", "--"]
+# Health check with proper timing (SafeWork 패턴)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:2542/health || exit 1
 
-# Default command
+# Use tini for proper signal handling (SafeWork 패턴)
+ENTRYPOINT ["tini", "--"]
+
+# Production command (SafeWork 패턴 - 서비스 대기 없이 바로 실행)
 CMD ["python", "main.py"]
