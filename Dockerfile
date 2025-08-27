@@ -99,8 +99,8 @@ ENV FLASK_ENV=production \
     PORT=2542
 
 # Database Configuration (런타임 오버라이드 가능)
-ENV DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/blacklist.db} \
-    REDIS_URL=${REDIS_URL:-redis://localhost:6379/0}
+ENV DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@blacklist-postgres:5432/blacklist} \
+    REDIS_URL=${REDIS_URL:-redis://blacklist-redis:6379/0}
 
 # Security (런타임 설정 필수 - 기본값은 개발용)
 ENV SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production} \
