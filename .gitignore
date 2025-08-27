@@ -69,4 +69,4 @@ temp/
 
 # Development setup files (user-specific)
 .project-config
-.tmux-startup.sh
+.tmux-startup.sh.venv/
