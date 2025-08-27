@@ -26,7 +26,7 @@ if project_root not in sys.path:
 class TestAnalyticsV2API:
     """Test V2 analytics API endpoints with comprehensive coverage"""
 
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:32542")
 
     def _make_request(self, url, timeout=10):
         """Helper method to make HTTP requests with proper error handling"""
@@ -297,7 +297,7 @@ class TestAnalyticsV2API:
 class TestAnalyticsDataProcessing:
     """Test analytics data processing and transformation"""
 
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:32542")
 
     def test_analytics_caching_behavior(self):
         """Test analytics endpoint caching"""
@@ -384,7 +384,7 @@ class TestAnalyticsDataProcessing:
 class TestAnalyticsExportFunctionality:
     """Test analytics export and reporting functionality"""
 
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:32542")
 
     def test_csv_export_endpoint(self):
         """Test CSV export functionality"""
@@ -433,7 +433,7 @@ class TestAnalyticsExportFunctionality:
 class TestAnalyticsErrorHandling:
     """Test analytics error handling and edge cases"""
 
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:32542")
 
     def test_invalid_date_parameters(self):
         """Test handling of invalid date parameters"""
@@ -532,7 +532,7 @@ class TestAnalyticsErrorHandling:
 class TestAnalyticsIntegration:
     """Test analytics integration with other system components"""
 
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:32542")
 
     def test_analytics_health_integration(self):
         """Test analytics components in health checks"""
@@ -593,7 +593,7 @@ class TestAnalyticsIntegration:
 class TestAnalyticsVisualization:
     """Test analytics data for visualization compatibility"""
 
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:2542")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:32542")
 
     def test_trend_data_structure(self):
         """Test trend data structure for chart compatibility"""

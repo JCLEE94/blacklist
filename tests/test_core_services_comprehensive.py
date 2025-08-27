@@ -122,8 +122,8 @@ class TestServiceConfiguration(unittest.TestCase):
     def test_configuration_validation(self):
         """Test configuration validation patterns"""
         # Test port validation
-        valid_ports = [2541, 2542, 8080, 3000]
-        invalid_ports = [-1, 0, 65536, 99999]
+        valid_ports = [2541, 2542, 8080, 3000, 32542]
+        invalid_ports = [-1, 0, 65536, 99999, 32542]
 
         for port in valid_ports:
             self.assertGreaterEqual(port, 1)

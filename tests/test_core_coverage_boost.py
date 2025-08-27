@@ -199,7 +199,7 @@ class TestV2Routes(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment"""
-        self.BASE_URL = "http://localhost:2542"
+        self.BASE_URL = "http://localhost:32542"
 
     def test_v2_service_import(self):
         """Test V2 service can be imported"""
