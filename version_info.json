@@ -4,7 +4,12 @@
   "git_commit_count": 1411,
   "git_commit_hash": "73e3858d",
   "automated": true,
-  "automation_system": "Real Automation System v11.1 with ThinkMCP",
+  "automation_system": "Real Automation System v11.1",
   "watchtower_enabled": true,
-  "cicd_pipeline": "active"
+  "cicd_pipeline": "active",
+  "last_docker_deployment": "2025-08-28T08:20:26.394828",
+  "docker_images_deployed": 3,
+  "docker_images_total": 3,
+  "deployment_success_rate": "100.0%",
+  "registry": "registry.jclee.me"
 }
