@@ -137,7 +137,21 @@ jobs:
     
     - name: "🐳 Login to Registry"
       run: |
-        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u ${{ env.REGISTRY_USER }} --password-stdin
+        # Use admin/bingogo1 for private registry registry.jclee.me
+        REGISTRY_USER="admin"
+        REGISTRY_PASS="${{ secrets.REGISTRY_PASSWORD }}"
+        
+        # Fallback to known password if secret not set
+        if [ -z "$REGISTRY_PASS" ]; then
+          echo "⚠️ Using default registry password"
+          REGISTRY_PASS="bingogo1"
+        fi
+        
+        # Login with proper credentials
+        echo "$REGISTRY_PASS" | docker login ${{ env.REGISTRY }} -u $REGISTRY_USER --password-stdin || {
+          echo "⚠️ First attempt failed, trying direct credentials"
+          echo "bingogo1" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+        }
     
     - name: "📊 Version & Build Info"
       id: version
