@@ -139,9 +139,9 @@ ENV PYTHONPATH=/app \
     FLASK_ENV=production \
     PORT=2542
 
-# Database configuration (PostgreSQL and Redis external services)
-ENV DATABASE_URL=postgresql://postgres:postgres@blacklist-postgres:5432/blacklist \
-    REDIS_URL=redis://blacklist-redis:6379/0
+# Database configuration (using environment variables at runtime)
+ENV DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/blacklist.db} \
+    REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
 
 # Application settings
 ENV LOG_LEVEL=INFO \
