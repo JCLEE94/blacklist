@@ -3,8 +3,9 @@
 REGTECH 데이터 분석 웹 라우트
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,6 @@ import json
 import os
 import sqlite3
 from collections import defaultdict
-
 
 try:
     import pandas as pd

@@ -9,22 +9,44 @@ Expected output: 구조화된 JSON 로그 레코드 저장
 
 # Conditional imports for standalone execution and package usage
 try:
-    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+    import logging
+
+    from flask import (
+        Blueprint,
+        Flask,
+        jsonify,
+        redirect,
+        render_template,
+        request,
+        url_for,
+    )
+
+    logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent.parent))
-    
+
     try:
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+        import logging
+
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
+        logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         logger = Mock()
 
 import json
@@ -40,6 +62,7 @@ from typing import Any, Dict, Optional
 
 try:
     from pythonjsonlogger import jsonlogger
+
     HAS_JSON_LOGGER = True
 except ImportError:
     HAS_JSON_LOGGER = False
@@ -151,9 +174,7 @@ class StructuredLogger:
             cursor.execute(
                 "CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp)"
             )
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level)"
-            )
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level)")
             cursor.execute(
                 "CREATE INDEX IF NOT EXISTS idx_logs_logger_name ON logs(logger_name)"
             )
@@ -174,8 +195,11 @@ class StructuredLogger:
             cursor = self.db_connection.cursor()
 
             # context에서 timestamp, logger_name, level, message 제외하고 저장
-            context = {k: v for k, v in record.items() if k not in 
-                      ["timestamp", "logger_name", "level", "message"]}
+            context = {
+                k: v
+                for k, v in record.items()
+                if k not in ["timestamp", "logger_name", "level", "message"]
+            }
 
             cursor.execute(
                 """
@@ -213,11 +237,7 @@ class StructuredLogger:
             self._save_to_db(record)
 
     def _create_log_record(
-        self,
-        level: str,
-        message: str,
-        exception: Optional[Exception] = None,
-        **context
+        self, level: str, message: str, exception: Optional[Exception] = None, **context
     ) -> Dict[str, Any]:
         """로그 레코드 생성"""
         record = {
@@ -281,7 +301,9 @@ class StructuredLogger:
             logs = list(self.log_buffer)
 
         if level:
-            logs = [log for log in logs if log.get("level", "").lower() == level.lower()]
+            logs = [
+                log for log in logs if log.get("level", "").lower() == level.lower()
+            ]
 
         return logs[-count:]
 
@@ -297,8 +319,11 @@ class StructuredLogger:
     def search_logs(self, query: str, limit: int = 100) -> list:
         """로그 검색"""
         with self.buffer_lock:
-            logs = [log for log in self.log_buffer 
-                   if query.lower() in log.get("message", "").lower()]
+            logs = [
+                log
+                for log in self.log_buffer
+                if query.lower() in log.get("message", "").lower()
+            ]
         return logs[-limit:]
 
 
@@ -326,11 +351,28 @@ class BufferHandler(logging.Handler):
             # 추가 컨텍스트가 있으면 포함
             if hasattr(record, "__dict__"):
                 for key, value in record.__dict__.items():
-                    if key not in ["name", "msg", "args", "levelname", "levelno", 
-                                  "pathname", "filename", "module", "lineno", 
-                                  "funcName", "created", "msecs", "relativeCreated", 
-                                  "thread", "threadName", "processName", "process",
-                                  "exc_info", "exc_text", "stack_info"]:
+                    if key not in [
+                        "name",
+                        "msg",
+                        "args",
+                        "levelname",
+                        "levelno",
+                        "pathname",
+                        "filename",
+                        "module",
+                        "lineno",
+                        "funcName",
+                        "created",
+                        "msecs",
+                        "relativeCreated",
+                        "thread",
+                        "threadName",
+                        "processName",
+                        "process",
+                        "exc_info",
+                        "exc_text",
+                        "stack_info",
+                    ]:
                         log_record[key] = value
 
             self.structured_logger._add_to_buffer(log_record)
@@ -352,7 +394,7 @@ if __name__ == "__main__":
         test_logger = StructuredLogger("test_logger", log_dir="/tmp/test_logs")
         if test_logger.name != "test_logger":
             all_validation_failures.append("Logger creation: Name mismatch")
-        if not hasattr(test_logger, 'log_buffer'):
+        if not hasattr(test_logger, "log_buffer"):
             all_validation_failures.append("Logger creation: Missing log_buffer")
     except Exception as e:
         all_validation_failures.append(f"Logger creation test: Failed - {e}")
@@ -361,11 +403,18 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         test_logger = StructuredLogger("test_logger2", log_dir="/tmp/test_logs")
-        log_methods = [test_logger.debug, test_logger.info, test_logger.warning, 
-                      test_logger.error, test_logger.critical]
+        log_methods = [
+            test_logger.debug,
+            test_logger.info,
+            test_logger.warning,
+            test_logger.error,
+            test_logger.critical,
+        ]
         for method in log_methods:
             if not callable(method):
-                all_validation_failures.append(f"Log methods test: {method.__name__} not callable")
+                all_validation_failures.append(
+                    f"Log methods test: {method.__name__} not callable"
+                )
     except Exception as e:
         all_validation_failures.append(f"Log methods test: Failed - {e}")
 
@@ -374,8 +423,8 @@ if __name__ == "__main__":
     try:
         test_logger = StructuredLogger("test_logger3", log_dir="/tmp/test_logs")
         buffer_handler = BufferHandler(test_logger)
-        
-        if not hasattr(buffer_handler, 'emit'):
+
+        if not hasattr(buffer_handler, "emit"):
             all_validation_failures.append("BufferHandler test: Missing emit method")
         if not callable(buffer_handler.emit):
             all_validation_failures.append("BufferHandler test: emit not callable")

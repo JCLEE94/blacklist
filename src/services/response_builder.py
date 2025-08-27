@@ -5,8 +5,18 @@ Provides standardized response formatting for API endpoints.
 Creates consistent JSON responses with proper HTTP status codes.
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import (
+    Blueprint,
+    Flask,
+    Response,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 logger = logging.getLogger(__name__)
 

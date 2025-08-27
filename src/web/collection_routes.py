@@ -3,12 +3,21 @@ Web collection routes for Blacklist Manager
 Collection control and monitoring pages
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
-logger = logging.getLogger(__name__)
-    Blueprint, flash, jsonify, redirect, render_template, 
-    request, url_for, logger, datetime, timedelta
+from datetime import datetime, timedelta
+
+from flask import (
+    Blueprint,
+    Flask,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
+
+logger = logging.getLogger(__name__)
 
 collection_bp = Blueprint("collection", __name__, url_prefix="")
 

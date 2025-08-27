@@ -17,15 +17,15 @@ Follows CLAUDE.md standards:
 - Exit with code 1 if ANY tests fail
 """
 
-import os
-import sys
-import unittest
-from unittest.mock import patch
-import tempfile
 import json
-from pathlib import Path
+import os
 import sqlite3
+import sys
+import tempfile
+import unittest
 from datetime import datetime, timedelta
+from pathlib import Path
+from unittest.mock import patch
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent
@@ -33,14 +33,14 @@ sys.path.insert(0, str(project_root))
 
 try:
     # Core imports for testing
-    from src.core.models import Base, BlacklistEntry, CollectionSession
-    from src.core.constants import DATABASE_PATH, COLLECTION_ENABLED
-    from src.core.validators import validate_ip, validate_date_format
+    from src.core.constants import COLLECTION_ENABLED, DATABASE_PATH
 
     # Database and service imports
     from src.core.database.connection_manager import ConnectionManager
-    from src.core.database.table_definitions import get_table_definitions
     from src.core.database.schema_manager import DatabaseSchemaManager
+    from src.core.database.table_definitions import get_table_definitions
+    from src.core.models import Base, BlacklistEntry, CollectionSession
+    from src.core.validators import validate_date_format, validate_ip
 
     # Cache and utilities
     from src.utils.advanced_cache.cache_manager import CacheManager
@@ -260,7 +260,7 @@ class TestConstants(unittest.TestCase):
     def test_core_constants_availability(self):
         """Test that core constants are properly defined"""
         try:
-            from src.core.constants import DATABASE_PATH, COLLECTION_ENABLED
+            from src.core.constants import COLLECTION_ENABLED, DATABASE_PATH
 
             # Test DATABASE_PATH
             self.assertIsInstance(

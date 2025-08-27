@@ -22,13 +22,13 @@ Follows CLAUDE.md standards:
 - Exit code 1 if coverage target not met
 """
 
-import os
-import sys
-import subprocess
-import time
-from pathlib import Path
 import json
+import os
+import subprocess
+import sys
+import time
 from datetime import datetime
+from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -36,14 +36,14 @@ sys.path.insert(0, str(project_root))
 
 # Import test modules
 try:
-    from tests.test_comprehensive_coverage_improvement import (
-        run_comprehensive_coverage_tests,
-    )
-    from tests.test_core_modules_comprehensive import run_core_modules_tests
     from tests.test_api_endpoints_coverage import run_api_endpoints_tests
     from tests.test_collection_and_security_coverage import (
         run_collection_and_security_tests,
     )
+    from tests.test_comprehensive_coverage_improvement import (
+        run_comprehensive_coverage_tests,
+    )
+    from tests.test_core_modules_comprehensive import run_core_modules_tests
 except ImportError as e:
     print(f"Warning: Could not import test modules: {e}")
 

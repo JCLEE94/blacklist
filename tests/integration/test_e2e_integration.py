@@ -9,8 +9,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from src.core.main import create_compact_app
 from src.core.container import get_container
+from src.core.main import create_compact_app
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 

@@ -3,18 +3,26 @@
 api_routes.py에서 분할된 블랙리스트 관련 엔드포인트
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template, Response
 import logging
+
+from flask import (
+    Blueprint,
+    Flask,
+    Response,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 logger = logging.getLogger(__name__)
 
 from datetime import datetime
 
-
 from ..container import get_container
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
-
 
 # 블랙리스트 라우트 블루프린트
 blacklist_routes_bp = Blueprint("blacklist_routes", __name__)

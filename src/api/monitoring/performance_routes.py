@@ -9,53 +9,71 @@ Expected output: 상세 성능 메트릭 및 권장사항
 
 # Conditional imports for standalone execution and package usage
 try:
+    from flask import Blueprint, jsonify, logger
+
     from ...utils.performance_optimizer import (
+        cleanup_performance_data,
         get_performance_monitor,
         optimize_database_queries,
-        cleanup_performance_data,
     )
     from ...utils.security import rate_limit, require_auth
     from ...utils.system_stability import get_system_monitor
-    from flask import Blueprint, jsonify, logger
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent.parent.parent))
-    
+
     try:
+        import logging
+
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
         from utils.performance_optimizer import (
+            cleanup_performance_data,
             get_performance_monitor,
             optimize_database_queries,
-            cleanup_performance_data,
         )
         from utils.security import rate_limit, require_auth
         from utils.system_stability import get_system_monitor
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+
+        logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         get_performance_monitor = Mock()
         optimize_database_queries = Mock(return_value=[])
         cleanup_performance_data = Mock()
         rate_limit = lambda **kwargs: lambda f: f
         require_auth = lambda **kwargs: lambda f: f
         get_system_monitor = Mock()
-        
+
         # Basic Flask imports for testing
         try:
-            from flask import Blueprint, jsonify
             import logging
-logger = logging.getLogger(__name__)
+
+            from flask import Blueprint, jsonify
+
+            logger = logging.getLogger(__name__)
         except ImportError:
             Blueprint = Mock()
             jsonify = Mock()
             logger = Mock()
 
 # 블루프린트 생성
-performance_bp = Blueprint("monitoring_performance", __name__, url_prefix="/api/monitoring")
+performance_bp = Blueprint(
+    "monitoring_performance", __name__, url_prefix="/api/monitoring"
+)
 
 
 @performance_bp.route("/performance", methods=["GET"])
@@ -228,25 +246,33 @@ if __name__ == "__main__":
             def __init__(self):
                 self.avg_response_time = 750  # Should trigger warning
                 self.cache_hit_rate = 30  # Should trigger warning
-                
+
         mock_metrics = MockMetrics()
         mock_slow_queries = ["SELECT * FROM table", "UPDATE table SET col=val"]
-        
-        recommendations = generate_performance_recommendations(mock_metrics, mock_slow_queries)
-        
+
+        recommendations = generate_performance_recommendations(
+            mock_metrics, mock_slow_queries
+        )
+
         # Should have at least 3 recommendations (response time, cache, slow queries)
         if len(recommendations) < 3:
-            all_validation_failures.append(f"Performance recommendations: Expected at least 3, got {len(recommendations)}")
-            
+            all_validation_failures.append(
+                f"Performance recommendations: Expected at least 3, got {len(recommendations)}"
+            )
+
         # Check for expected recommendation types
         rec_areas = [rec.get("area") for rec in recommendations]
         expected_areas = ["response_time", "cache", "database"]
         for area in expected_areas:
             if area not in rec_areas:
-                all_validation_failures.append(f"Performance recommendations: Missing {area} recommendation")
-                
+                all_validation_failures.append(
+                    f"Performance recommendations: Missing {area} recommendation"
+                )
+
     except Exception as e:
-        all_validation_failures.append(f"Performance recommendations test: Failed - {e}")
+        all_validation_failures.append(
+            f"Performance recommendations test: Failed - {e}"
+        )
 
     # Test 3: Route functions exist and are callable
     total_tests += 1
@@ -254,7 +280,9 @@ if __name__ == "__main__":
         route_functions = [get_performance_metrics, cleanup_performance_data_endpoint]
         for func in route_functions:
             if not callable(func):
-                all_validation_failures.append(f"Route function test: {func.__name__} not callable")
+                all_validation_failures.append(
+                    f"Route function test: {func.__name__} not callable"
+                )
     except Exception as e:
         all_validation_failures.append(f"Route function test: Failed - {e}")
 

@@ -9,32 +9,48 @@ Expected output: 시스템 리소스 메트릭 및 요약 통계
 
 # Conditional imports for standalone execution and package usage
 try:
+    from flask import Blueprint, jsonify, logger, request
+
     from ...utils.error_recovery import get_resource_monitor
     from ...utils.security import require_auth
-    from flask import Blueprint, jsonify, logger, request
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent.parent.parent))
-    
+
     try:
+        import logging
+
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
         from utils.error_recovery import get_resource_monitor
         from utils.security import require_auth
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+
+        logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         get_resource_monitor = Mock()
         require_auth = lambda **kwargs: lambda f: f
-        
+
         # Basic Flask imports for testing
         try:
-            from flask import Blueprint, jsonify, request
             import logging
-logger = logging.getLogger(__name__)
+
+            from flask import Blueprint, jsonify, request
+
+            logger = logging.getLogger(__name__)
         except ImportError:
             Blueprint = Mock()
             jsonify = Mock()
@@ -91,7 +107,9 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         if not callable(get_system_metrics):
-            all_validation_failures.append("Route function test: get_system_metrics not callable")
+            all_validation_failures.append(
+                "Route function test: get_system_metrics not callable"
+            )
     except Exception as e:
         all_validation_failures.append(f"Route function test: Failed - {e}")
 
@@ -101,11 +119,15 @@ if __name__ == "__main__":
         # This tests the parameter validation logic (hours clamping)
         test_hours_1 = min(int("5"), 24)  # Normal case
         test_hours_2 = min(int("30"), 24)  # Over limit case
-        
+
         if test_hours_1 != 5:
-            all_validation_failures.append("Parameter test: Normal hours handling failed")
+            all_validation_failures.append(
+                "Parameter test: Normal hours handling failed"
+            )
         if test_hours_2 != 24:
-            all_validation_failures.append("Parameter test: Over-limit hours handling failed")
+            all_validation_failures.append(
+                "Parameter test: Over-limit hours handling failed"
+            )
     except Exception as e:
         all_validation_failures.append(f"Parameter test: Failed - {e}")
 

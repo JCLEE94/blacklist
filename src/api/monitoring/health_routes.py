@@ -9,39 +9,55 @@ Expected output: 시스템 전체 상태 및 헬스 체크 결과
 
 # Conditional imports for standalone execution and package usage
 try:
+    from flask import Blueprint, jsonify, logger
+
     from ...utils.error_recovery import get_health_checker
     from ...utils.performance_optimizer import get_performance_monitor
     from ...utils.security import rate_limit, require_auth
     from ...utils.system_stability import get_system_monitor
-    from flask import Blueprint, jsonify, logger
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent.parent.parent))
-    
+
     try:
+        import logging
+
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
         from utils.error_recovery import get_health_checker
         from utils.performance_optimizer import get_performance_monitor
         from utils.security import rate_limit, require_auth
         from utils.system_stability import get_system_monitor
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+
+        logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         get_health_checker = Mock()
         get_performance_monitor = Mock()
         rate_limit = lambda **kwargs: lambda f: f
         require_auth = lambda **kwargs: lambda f: f
         get_system_monitor = Mock()
-        
+
         # Basic Flask imports for testing
         try:
-            from flask import Blueprint, jsonify
             import logging
-logger = logging.getLogger(__name__)
+
+            from flask import Blueprint, jsonify
+
+            logger = logging.getLogger(__name__)
         except ImportError:
             Blueprint = Mock()
             jsonify = Mock()
@@ -293,27 +309,35 @@ if __name__ == "__main__":
         class MockHealthChecker:
             def __init__(self):
                 self.checks = {}
-            
+
             def register_check(self, name, func):
                 self.checks[name] = func
 
         mock_checker = MockHealthChecker()
         register_default_health_checks(mock_checker)
-        
+
         expected_checks = ["database", "cache", "collection", "disk_space"]
         for check_name in expected_checks:
             if check_name not in mock_checker.checks:
-                all_validation_failures.append(f"Health check registration: Missing {check_name}")
+                all_validation_failures.append(
+                    f"Health check registration: Missing {check_name}"
+                )
     except Exception as e:
         all_validation_failures.append(f"Health check registration test: Failed - {e}")
 
     # Test 3: Route functions exist
     total_tests += 1
     try:
-        route_functions = [get_system_health, get_specific_health_check, get_overall_status]
+        route_functions = [
+            get_system_health,
+            get_specific_health_check,
+            get_overall_status,
+        ]
         for func in route_functions:
             if not callable(func):
-                all_validation_failures.append(f"Route function test: {func.__name__} not callable")
+                all_validation_failures.append(
+                    f"Route function test: {func.__name__} not callable"
+                )
     except Exception as e:
         all_validation_failures.append(f"Route function test: Failed - {e}")
 

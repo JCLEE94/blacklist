@@ -32,7 +32,7 @@ class SourceStatisticsMixin:
         try:
             if PSYCOPG2_AVAILABLE and self.database_url.startswith("postgresql://"):
                 return self._get_postgresql_source_stats()
-            
+
             # PostgreSQL only - no SQLite fallback
             return {}
         except Exception as e:

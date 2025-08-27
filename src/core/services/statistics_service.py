@@ -11,7 +11,9 @@
 from .unified_statistics_service import (
     StatisticsServiceMixin as NewStatisticsServiceMixin,
 )
-from .unified_statistics_service import UnifiedStatisticsService
+from .unified_statistics_service import (
+    UnifiedStatisticsService,
+)
 
 
 # 레거시 호환성을 위한 기존 클래스명 유지

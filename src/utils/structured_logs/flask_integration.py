@@ -9,25 +9,49 @@ Expected output: Flask 요청/응답 로깅 및 API 엔드포인트 설정
 
 # Conditional imports for standalone execution and package usage
 try:
+    import logging
+
+    from flask import (
+        Blueprint,
+        Flask,
+        jsonify,
+        redirect,
+        render_template,
+        request,
+        url_for,
+    )
+
     from .log_manager import get_logger
-    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+
+    logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent))
-    
+
     try:
         from log_manager import get_logger
+
         sys.path.append(str(Path(__file__).parent.parent.parent))
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+        import logging
+
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
+        logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         get_logger = Mock()
         Blueprint = Mock()
         jsonify = Mock()
@@ -81,7 +105,7 @@ def setup_request_logging(app):
     def get_log_stats():
         """로그 통계 조회"""
         from .log_manager import LogManager
-        
+
         manager = LogManager()
         stats = manager.get_all_stats()
         return jsonify({"success": True, "stats": stats})
@@ -96,16 +120,18 @@ def setup_request_logging(app):
             return jsonify({"success": False, "error": "검색어가 필요합니다"}), 400
 
         from .log_manager import LogManager
-        
+
         manager = LogManager()
         results = manager.search_all_logs(query, limit)
-        
-        return jsonify({
-            "success": True, 
-            "query": query, 
-            "results": results,
-            "total_loggers": len(results)
-        })
+
+        return jsonify(
+            {
+                "success": True,
+                "query": query,
+                "results": results,
+                "total_loggers": len(results),
+            }
+        )
 
     app.register_blueprint(logging_bp)
 
@@ -120,7 +146,9 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         if not callable(setup_request_logging):
-            all_validation_failures.append("Function test: setup_request_logging not callable")
+            all_validation_failures.append(
+                "Function test: setup_request_logging not callable"
+            )
     except Exception as e:
         all_validation_failures.append(f"Function test: Failed - {e}")
 
@@ -133,29 +161,33 @@ if __name__ == "__main__":
                 self.before_request_funcs = []
                 self.after_request_funcs = []
                 self.blueprints = []
-                
+
             def before_request(self, f):
                 self.before_request_funcs.append(f)
                 return f
-                
+
             def after_request(self, f):
                 self.after_request_funcs.append(f)
                 return f
-                
+
             def register_blueprint(self, bp):
                 self.blueprints.append(bp)
 
         mock_app = MockApp()
         setup_request_logging(mock_app)
-        
+
         # Should have registered before_request and after_request handlers
         if len(mock_app.before_request_funcs) == 0:
-            all_validation_failures.append("Flask integration: No before_request handler registered")
+            all_validation_failures.append(
+                "Flask integration: No before_request handler registered"
+            )
         if len(mock_app.after_request_funcs) == 0:
-            all_validation_failures.append("Flask integration: No after_request handler registered")
+            all_validation_failures.append(
+                "Flask integration: No after_request handler registered"
+            )
         if len(mock_app.blueprints) == 0:
             all_validation_failures.append("Flask integration: No blueprint registered")
-            
+
     except Exception as e:
         all_validation_failures.append(f"Flask integration test: Failed - {e}")
 
@@ -164,7 +196,7 @@ if __name__ == "__main__":
     try:
         # Test that we can access the logger
         test_logger = get_logger("test_request")
-        if not hasattr(test_logger, 'info'):
+        if not hasattr(test_logger, "info"):
             all_validation_failures.append("Logger test: Missing info method")
     except Exception as e:
         all_validation_failures.append(f"Logger test: Failed - {e}")

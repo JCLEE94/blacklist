@@ -6,14 +6,13 @@
 """
 
 import asyncio
+import logging
 import multiprocessing as mp
 import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Dict, List
-
-import logging
 
 logger = logging.getLogger(__name__)
 

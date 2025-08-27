@@ -7,9 +7,11 @@ PostgreSQL 데이터베이스 초기화, 테이블 관리, 트랜잭션 처리 �
 
 import logging
 import os
-import psycopg2
+import sqlite3
 from datetime import datetime
 from typing import Any, Dict
+
+import psycopg2
 
 
 class DatabaseOperationsMixin:
@@ -102,7 +104,11 @@ class DatabaseOperationsMixin:
             return {
                 "success": True,
                 "message": "Database tables initialized successfully",
-                "db_path": self.blacklist_manager.database_url if self.blacklist_manager else "postgresql://",
+                "db_path": (
+                    self.blacklist_manager.database_url
+                    if self.blacklist_manager
+                    else "postgresql://"
+                ),
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
@@ -125,22 +131,6 @@ class DatabaseOperationsMixin:
 
             # PostgreSQL only - no SQLite support
             return []
-            cursor = conn.cursor()
-
-            # Use 'status' field instead of 'action' (which doesn't exist)
-            status = log_entry.get("status") or log_entry.get("action", "unknown")
-            cursor.execute(
-                "INSERT INTO collection_logs (timestamp, source, status, details) VALUES (?, ?, ?, ?)",
-                (
-                    log_entry["timestamp"],
-                    log_entry["source"],
-                    status,
-                    json.dumps(log_entry["details"]),
-                ),
-            )
-
-            conn.commit()
-            conn.close()
 
         except Exception as e:
             self.logger.warning(f"Failed to save log to database: {e}")
@@ -189,10 +179,6 @@ class DatabaseOperationsMixin:
             if self.blacklist_manager and hasattr(self.blacklist_manager, "db_path"):
                 # PostgreSQL only - no SQLite support
                 pass
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM collection_logs")
-                conn.commit()
-                conn.close()
 
             self.logger.info("수집 로그가 클리어되었습니다")
         except Exception as e:

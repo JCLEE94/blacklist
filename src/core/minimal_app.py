@@ -6,11 +6,11 @@
 단순하고 안정적인 기능만 제공하여 테스트 안정성 확보
 """
 
+import logging
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 

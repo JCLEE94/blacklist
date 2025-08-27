@@ -3,9 +3,10 @@
 api_routes.py에서 분할된 헬스체크 관련 엔드포인트
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
 from datetime import datetime
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 

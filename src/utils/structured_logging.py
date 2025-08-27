@@ -4,9 +4,10 @@
 JSON 형식의 구조화된 로그와 중앙 집중형 로깅 관리
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
 import logging.handlers
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +271,7 @@ class StructuredLogger:
 
         # 요청 컨텍스트 추가
         try:
-            from flask import request, g
+            from flask import g, request
 
             if request:
                 record["context"]["request"] = {
@@ -436,6 +437,7 @@ def get_logger(name: str) -> StructuredLogger:
 def setup_request_logging(app):
     """Flask 요청 로깅 설정"""
     import uuid
+
     from flask import g, request
 
     logger = get_logger("request")

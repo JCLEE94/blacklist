@@ -3,8 +3,18 @@ Web UI dashboard routes for Blacklist Manager
 Main dashboard and overview pages
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import (
+    Blueprint,
+    Flask,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +22,6 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict
-
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="")
 

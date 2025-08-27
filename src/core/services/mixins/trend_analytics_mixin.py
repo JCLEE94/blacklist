@@ -9,6 +9,7 @@ Expected output: Dictionary with trend_data array and total_changes count
 """
 
 import logging
+
 # PostgreSQL only - sqlite3 removed
 from datetime import datetime, timedelta
 from typing import Any, Dict
@@ -35,7 +36,7 @@ class TrendAnalyticsMixin:
         try:
             if PSYCOPG2_AVAILABLE and self.database_url.startswith("postgresql://"):
                 return self._get_postgresql_trend_data(days)
-            
+
             # PostgreSQL only - no SQLite fallback
             return {"days": days, "trend_data": [], "total_changes": 0}
         except Exception as e:

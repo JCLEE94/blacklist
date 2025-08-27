@@ -2,14 +2,23 @@
 Auth Decorators - Unified authentication functionality
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import (
+    Blueprint,
+    Flask,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 logger = logging.getLogger(__name__)
 
 from functools import wraps
 from typing import List, Optional
-
 
 from .registry import get_registry
 

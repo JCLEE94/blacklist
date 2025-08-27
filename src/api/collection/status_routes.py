@@ -4,10 +4,10 @@ Collection Status Routes - Status and statistics endpoints
 Handles collection system status, daily stats, and history
 """
 
+import logging
 from datetime import datetime, timedelta
 
 from flask import Blueprint, Flask, jsonify, request
-import logging
 
 logger = logging.getLogger(__name__)
 

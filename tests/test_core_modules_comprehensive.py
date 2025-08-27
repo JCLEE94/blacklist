@@ -13,15 +13,15 @@ Priority modules:
 Real data testing with specific expected results validation.
 """
 
+import json
 import os
-import sys
-import unittest
-import tempfile
 import sqlite3
+import sys
+import tempfile
+import time
+import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-import json
-import time
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -392,7 +392,7 @@ class TestUtilsSecurityAuth(unittest.TestCase):
     def test_auth_utils_basic_functions(self):
         """Test authentication utility functions"""
         try:
-            from src.utils.auth import validate_password, hash_password
+            from src.utils.auth import hash_password, validate_password
 
             # Test password validation
             test_passwords = [

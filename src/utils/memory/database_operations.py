@@ -4,10 +4,9 @@
 대량 데이터베이스 연산을 메모리 효율적으로 처리하는 기능을 제공합니다.
 """
 
+import logging
 import sqlite3
 from typing import Any, List
-
-import logging
 
 logger = logging.getLogger(__name__)
 

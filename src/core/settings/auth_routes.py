@@ -3,8 +3,9 @@
 인증 관련 설정 API 엔드포인트
 REGTECH 및 SECUDIUM 인증 정보 관리
 """
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,6 @@ import jwt
 from src.config.settings import settings
 
 from ..container import get_container
-
 
 auth_settings_bp = Blueprint("auth_settings", __name__)
 

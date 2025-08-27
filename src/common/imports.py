@@ -30,7 +30,6 @@ from flask import (
     request,
     url_for,
 )
-import logging
 
 logger = logging.getLogger(__name__)
 

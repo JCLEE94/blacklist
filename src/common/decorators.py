@@ -10,10 +10,10 @@ Expected output: Authenticated request handling with consistent behavior
 """
 
 import functools
+import logging
 from typing import Callable
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 

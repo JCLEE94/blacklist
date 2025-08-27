@@ -9,26 +9,48 @@ Expected output: REGTECH 인증 업데이트 및 토큰 관리 결과
 
 # Conditional imports for standalone execution and package usage
 try:
-    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
-    from ...container import get_container
+    import logging
+
+    from flask import (
+        Blueprint,
+        Flask,
+        jsonify,
+        redirect,
+        render_template,
+        request,
+        url_for,
+    )
+
+    logger = logging.getLogger(__name__)
     from ....config.settings import settings
+    from ...container import get_container
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-    
+
     try:
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
-        from core.container import get_container
+        import logging
+
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
+        logger = logging.getLogger(__name__)
         from config.settings import settings
+        from core.container import get_container
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         Blueprint = Mock()
         jsonify = Mock()
         request = Mock()
@@ -62,9 +84,12 @@ def update_regtech_auth():
         password = data.get("password", "").strip()
 
         if not username or not password:
-            return jsonify(
-                {"success": False, "error": "사용자명과 비밀번호가 필요합니다"}
-            ), 400
+            return (
+                jsonify(
+                    {"success": False, "error": "사용자명과 비밀번호가 필요합니다"}
+                ),
+                400,
+            )
 
         # DB에 저장
         try:
@@ -261,10 +286,12 @@ if __name__ == "__main__":
         # Test that blueprint was created and has basic attributes
         if regtech_bp is None:
             all_validation_failures.append("Blueprint test: regtech_bp not created")
-        elif hasattr(regtech_bp, 'name') and 'Mock' not in str(type(regtech_bp.name)):
+        elif hasattr(regtech_bp, "name") and "Mock" not in str(type(regtech_bp.name)):
             expected_name = "auth_regtech"
             if regtech_bp.name != expected_name:
-                all_validation_failures.append(f"Blueprint test: Expected name '{expected_name}', got '{regtech_bp.name}'")
+                all_validation_failures.append(
+                    f"Blueprint test: Expected name '{expected_name}', got '{regtech_bp.name}'"
+                )
     except Exception as e:
         all_validation_failures.append(f"Blueprint test: Failed - {e}")
 
@@ -275,11 +302,13 @@ if __name__ == "__main__":
             update_regtech_auth,
             refresh_regtech_token,
             regtech_token_status,
-            test_regtech_collection
+            test_regtech_collection,
         ]
         for func in route_functions:
             if not callable(func):
-                all_validation_failures.append(f"Route function test: {func.__name__} not callable")
+                all_validation_failures.append(
+                    f"Route function test: {func.__name__} not callable"
+                )
     except Exception as e:
         all_validation_failures.append(f"Route function test: Failed - {e}")
 
@@ -288,20 +317,24 @@ if __name__ == "__main__":
     try:
         # Test the validation logic used in update_regtech_auth
         test_data = {"username": "test_user", "password": "test_pass"}
-        
+
         username = test_data.get("username", "").strip()
         password = test_data.get("password", "").strip()
-        
+
         if not username or not password:
-            all_validation_failures.append("Auth validation: Username and password validation failed")
-            
+            all_validation_failures.append(
+                "Auth validation: Username and password validation failed"
+            )
+
         # Test empty data handling
         empty_data = {"username": "", "password": ""}
         empty_username = empty_data.get("username", "").strip()
         empty_password = empty_data.get("password", "").strip()
-        
+
         if empty_username or empty_password:
-            all_validation_failures.append("Auth validation: Empty data validation failed")
+            all_validation_failures.append(
+                "Auth validation: Empty data validation failed"
+            )
     except Exception as e:
         all_validation_failures.append(f"Auth validation test: Failed - {e}")
 

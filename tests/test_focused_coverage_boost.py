@@ -12,16 +12,16 @@ Strategy:
 Real functionality testing with comprehensive module coverage.
 """
 
-import os
-import sys
-import unittest
 import importlib
-import pkgutil
-import tempfile
-import sqlite3
 import json
-from pathlib import Path
+import os
+import pkgutil
+import sqlite3
+import sys
+import tempfile
+import unittest
 from datetime import datetime, timedelta
+from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent

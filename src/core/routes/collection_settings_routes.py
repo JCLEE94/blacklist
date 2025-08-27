@@ -4,13 +4,13 @@
 UI에서 수집 소스 설정 및 자격증명을 저장/조회
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
-
 
 try:
     from ..database.collection_settings import CollectionSettingsDB

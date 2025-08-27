@@ -1,5 +1,6 @@
-from flask import Flask, Blueprint, jsonify
 import logging
+
+from flask import Blueprint, Flask, jsonify
 
 logger = logging.getLogger(__name__)
 

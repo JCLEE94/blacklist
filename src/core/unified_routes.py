@@ -4,8 +4,9 @@
 분리된 모듈들에서 블루프린트를 가져와서 등록
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ from .routes.collection_routes import collection_routes_bp
 from .routes.export_routes import export_routes_bp
 from .routes.health_routes import health_routes_bp
 from .routes.web_routes import web_routes_bp
-
 
 # Main unified blueprint that combines all sub-blueprints
 unified_bp = Blueprint("unified", __name__)

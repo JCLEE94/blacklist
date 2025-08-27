@@ -4,6 +4,7 @@ Real REGTECH Data Collector - Correct Excel Download Implementation
 Based on successful pattern from Docker logs
 """
 
+import logging
 import os
 import tempfile
 from datetime import datetime
@@ -12,7 +13,6 @@ from typing import Any, Dict
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-import logging
 
 logger = logging.getLogger(__name__)
 

@@ -171,6 +171,15 @@ class StatisticsServiceMixin:
             self.logger.error(f"일별 통계 실패: {e}")
             return []
 
+    def get_daily_collection_stats(self, days: int = 30) -> List[Dict[str, Any]]:
+        """일별 수집 통계 - 호환성 래퍼"""
+        try:
+            return self.get_daily_stats(days)
+        except Exception as e:
+            self.logger.error(f"일별 수집 통계 실패: {e}")
+            # 기본값 반환
+            return []
+
 
 if __name__ == "__main__":
     # 검증 함수

@@ -25,14 +25,14 @@ from typing import Any, Dict, List, Optional
 # 조건부 임포트로 독립 실행 지원
 try:
     from .base_collector import BaseCollector
-    from .collection_types import CollectionResult, CollectionStatus, CollectionStats
+    from .collection_types import CollectionResult, CollectionStats, CollectionStatus
 except ImportError:
-    import sys
     import os
+    import sys
 
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from base_collector import BaseCollector
-    from collection_types import CollectionResult, CollectionStatus, CollectionStats
+    from collection_types import CollectionResult, CollectionStats, CollectionStatus
 
 logger = logging.getLogger(__name__)
 

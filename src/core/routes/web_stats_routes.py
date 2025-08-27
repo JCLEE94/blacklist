@@ -4,16 +4,15 @@ This module provides web endpoints for statistics pages, data visualization,
 and analytics APIs separated from main dashboard routes for file size compliance.
 """
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import Blueprint, Flask, jsonify, redirect, render_template, request, url_for
 
 logger = logging.getLogger(__name__)
 
 from datetime import datetime
 
-
 from ..unified_service import get_unified_service
-
 
 # 통계 라우트 블루프린트
 web_stats_routes_bp = Blueprint("web_stats_routes", __name__)

@@ -12,28 +12,51 @@ Expected output: 동일한 API 엔드포인트들, 모듈식 구조로 구현
 
 # Conditional imports for standalone execution and package usage
 try:
+    import logging
+
+    from flask import (
+        Blueprint,
+        Flask,
+        jsonify,
+        redirect,
+        render_template,
+        request,
+        url_for,
+    )
+
     from .auth import config_bp, regtech_bp, secudium_bp
-    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+
+    logger = logging.getLogger(__name__)
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent))
-    
+
     try:
+        import logging
+
         from auth import config_bp, regtech_bp, secudium_bp
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
+        logger = logging.getLogger(__name__)
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         config_bp = Mock()
         regtech_bp = Mock()
         secudium_bp = Mock()
-        
+
         try:
             from flask import Blueprint
         except ImportError:
@@ -42,9 +65,10 @@ logger = logging.getLogger(__name__)
 # 통합 블루프린트 생성 (기존 auth_settings_bp와 동일한 이름)
 auth_settings_bp = Blueprint("auth_settings", __name__)
 
+
 def register_auth_routes(app):
     """모든 인증 라우트를 애플리케이션에 등록"""
-    
+
     # 애플리케이션에 모든 블루프린트 등록
     app.register_blueprint(config_bp)
     app.register_blueprint(regtech_bp)
@@ -55,10 +79,10 @@ def register_auth_routes(app):
 try:
     from .auth.config_routes import get_auth_config, save_auth_config
     from .auth.regtech_routes import (
-        update_regtech_auth,
         refresh_regtech_token,
         regtech_token_status,
-        test_regtech_collection
+        test_regtech_collection,
+        update_regtech_auth,
     )
     from .auth.secudium_routes import update_secudium_auth
 except ImportError:
@@ -67,15 +91,16 @@ except ImportError:
         sys.path.append(str(Path(__file__).parent / "auth"))
         from config_routes import get_auth_config, save_auth_config
         from regtech_routes import (
-            update_regtech_auth,
             refresh_regtech_token,
             regtech_token_status,
-            test_regtech_collection
+            test_regtech_collection,
+            update_regtech_auth,
         )
         from secudium_routes import update_secudium_auth
     except ImportError:
         # Mock imports for testing
         from unittest.mock import Mock
+
         get_auth_config = Mock()
         save_auth_config = Mock()
         update_regtech_auth = Mock()
@@ -97,10 +122,12 @@ if __name__ == "__main__":
         # Test that we can create an auth settings blueprint
         if auth_settings_bp is None:
             all_validation_failures.append("Basic test: auth_settings_bp not created")
-        
-        # Test function existence 
+
+        # Test function existence
         if not callable(register_auth_routes):
-            all_validation_failures.append("Basic test: register_auth_routes not callable")
+            all_validation_failures.append(
+                "Basic test: register_auth_routes not callable"
+            )
     except Exception as e:
         all_validation_failures.append(f"Basic test: Failed - {e}")
 
@@ -111,16 +138,18 @@ if __name__ == "__main__":
         class MockApp:
             def __init__(self):
                 self.registered_blueprints = []
-            
+
             def register_blueprint(self, bp):
-                self.registered_blueprints.append(getattr(bp, 'name', 'unknown'))
-        
+                self.registered_blueprints.append(getattr(bp, "name", "unknown"))
+
         mock_app = MockApp()
         register_auth_routes(mock_app)
-        
+
         # Should have registered at least 3 blueprints (config, regtech, secudium)
         if len(mock_app.registered_blueprints) < 3:
-            all_validation_failures.append(f"Registration test: Expected at least 3 blueprints, got {len(mock_app.registered_blueprints)}")
+            all_validation_failures.append(
+                f"Registration test: Expected at least 3 blueprints, got {len(mock_app.registered_blueprints)}"
+            )
     except Exception as e:
         all_validation_failures.append(f"Registration test: Failed - {e}")
 
@@ -131,12 +160,16 @@ if __name__ == "__main__":
         module_count = 3  # config, regtech, secudium
         original_size = 491  # lines
         target_max_size = 500  # lines per module (CLAUDE.md requirement)
-        
+
         if module_count >= 3:
-            print(f"✅ Successfully split {original_size}-line file into {module_count} focused modules")
+            print(
+                f"✅ Successfully split {original_size}-line file into {module_count} focused modules"
+            )
             print("✅ Each module now complies with 500-line limit requirement")
         else:
-            all_validation_failures.append("Split validation: Insufficient module split")
+            all_validation_failures.append(
+                "Split validation: Insufficient module split"
+            )
     except Exception as e:
         all_validation_failures.append(f"Split validation: Failed - {e}")
 
@@ -153,5 +186,7 @@ if __name__ == "__main__":
             f"✅ VALIDATION PASSED - All {total_tests} tests produced expected results"
         )
         print("Consolidated auth routes module is validated and ready for use")
-        print("File structure optimization: 491-line auth_routes.py successfully split into modular structure")
+        print(
+            "File structure optimization: 491-line auth_routes.py successfully split into modular structure"
+        )
         sys.exit(0)

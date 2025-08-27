@@ -10,6 +10,7 @@ Expected output: Dictionary with statistics (total_ips, active_ips, sources, etc
 
 import logging
 import os
+
 # PostgreSQL only - sqlite3 removed
 from datetime import datetime
 from typing import Any, Dict
@@ -42,9 +43,7 @@ class DatabaseStatisticsMixin:
             cursor = conn.cursor()
 
             # 활성 IP 수
-            cursor.execute(
-                "SELECT COUNT(*) FROM blacklist_ips WHERE is_active = true"
-            )
+            cursor.execute("SELECT COUNT(*) FROM blacklist_ips WHERE is_active = true")
             active_ips = cursor.fetchone()[0]
 
             # 전체 IP 수

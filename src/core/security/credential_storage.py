@@ -30,8 +30,8 @@ try:
     from .credential_encryption import CredentialEncryption
     from .credential_info import CredentialInfo
 except ImportError:
-    import sys
     import os
+    import sys
 
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from credential_encryption import CredentialEncryption

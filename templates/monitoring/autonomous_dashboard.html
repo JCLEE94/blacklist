@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 자율 모니터링 대시보드 - v8.3.0</title>
+    
+    <!-- 외부 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://unpkg.com/axios@1.6.0/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.18);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+        
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h3 i {
+            font-size: 1.2rem;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .metric-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .metric-label {
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        
+        .status-normal { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-critical { background-color: #dc3545; }
+        .status-emergency { background-color: #6f42c1; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .alert-badge {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            grid-column: 1 / -1;
+            height: 400px;
+            position: relative;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        
+        .control-btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .control-btn.danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+        
+        .control-btn.warning {
+            background: linear-gradient(45deg, #feca57, #ff9ff3);
+        }
+        
+        .control-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .alert-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .alert-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .alert-emergency {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        
+        .alert-critical {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        
+        .alert-warning {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+        
+        .alert-timestamp {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .auto-refresh {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .refresh-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .trend-icon {
+            font-size: 1.2rem;
+            margin-left: 8px;
+        }
+        
+        .trend-up { color: #e74c3c; }
+        .trend-down { color: #27ae60; }
+        .trend-stable { color: #3498db; }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        .loading i {
+            margin-right: 10px;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI 자율 모니터링 시스템</h1>
+            <div class="subtitle">v8.3.0 - 실시간 시스템 상태 및 자가 치유 모니터링</div>
+        </div>
+        
+        <!-- 자동 새로고침 표시 -->
+        <div class="auto-refresh">
+            <div class="refresh-indicator"></div>
+            <span>자동 새로고침: 30초</span>
+        </div>
+        
+        <!-- 제어 패널 -->
+        <div class="control-panel">
+            <button class="control-btn" onclick="startMonitoring()">
+                <i class="fas fa-play"></i> 모니터링 시작
+            </button>
+            <button class="control-btn danger" onclick="stopMonitoring()">
+                <i class="fas fa-stop"></i> 모니터링 중지
+            </button>
+            <button class="control-btn" onclick="enableAutoHealing()">
+                <i class="fas fa-magic"></i> 자가 치유 활성화
+            </button>
+            <button class="control-btn warning" onclick="disableAutoHealing()">
+                <i class="fas fa-ban"></i> 자가 치유 비활성화
+            </button>
+            <button class="control-btn" onclick="refreshDashboard()">
+                <i class="fas fa-sync"></i> 새로고침
+            </button>
+        </div>
+        
+        <!-- 대시보드 그리드 -->
+        <div class="dashboard-grid" id="dashboardGrid">
+            <div class="loading">
+                <i class="fas fa-spinner"></i>
+                대시보드 데이터 로딩 중...
+            </div>
+        </div>
+        
+        <!-- 실시간 차트 -->
+        <div class="card chart-container" id="chartContainer" style="display: none;">
+            <h3><i class="fas fa-chart-line"></i> 실시간 메트릭 트렌드</h3>
+            <canvas id="metricsChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let refreshInterval;
+        let metricsChart;
+        let isMonitoringActive = false;
+        
+        // API 기본 설정
+        const API_BASE = '/api/monitoring/autonomous';
+        axios.defaults.timeout = 10000;
+        
+        // 대시보드 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshDashboard();
+            startAutoRefresh();
+            initializeChart();
+        });
+        
+        // 자동 새로고침 시작
+        function startAutoRefresh() {
+            refreshInterval = setInterval(refreshDashboard, 30000); // 30초마다
+        }
+        
+        // 대시보드 새로고침
+        async function refreshDashboard() {
+            try {
+                const response = await axios.get(`${API_BASE}/dashboard`);
+                if (response.data.status === 'success') {
+                    updateDashboard(response.data.data);
+                    updateChart(response.data.data);
+                } else {
+                    showError('대시보드 데이터 로드 실패');
+                }
+            } catch (error) {
+                console.error('Dashboard refresh error:', error);
+                showError('대시보드 연결 실패');
+            }
+        }
+        
+        // 대시보드 업데이트
+        function updateDashboard(data) {
+            const grid = document.getElementById('dashboardGrid');
+            
+            grid.innerHTML = `
+                <!-- 시스템 상태 -->
+                <div class="card">
+                    <h3><i class="fas fa-heartbeat"></i> 시스템 상태</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">모니터링 상태</span>
+                        <span class="metric-value">
+                            ${data.automation_status.monitoring_active ? '🟢 활성' : '🔴 비활성'}
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">자가 치유</span>
+                        <span class="metric-value">
+                            ${data.automation_status.auto_healing_enabled ? '✅ 활성화' : '❌ 비활성화'}
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">전체 위험도</span>
+                        <span class="metric-value">
+                            ${getRiskIcon(data.system_health.overall_status)} ${data.system_health.overall_status.toUpperCase()}
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">마지막 체크</span>
+                        <span class="metric-value">${formatTime(data.system_health.last_check)}</span>
+                    </div>
+                </div>
+                
+                <!-- Git & 테스트 메트릭 -->
+                <div class="card">
+                    <h3><i class="fas fa-code-branch"></i> 개발 메트릭</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Git 변경사항</span>
+                        <span class="metric-value">
+                            ${data.current_metrics.git_changes}개
+                            ${getTrendIcon(data.trends.git_changes)}
+                            <span class="status-indicator ${getStatusClass(data.current_metrics.git_changes, 100)}"></span>
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">테스트 커버리지</span>
+                        <span class="metric-value">
+                            ${data.current_metrics.test_coverage.toFixed(1)}%
+                            ${getTrendIcon(data.trends.test_coverage)}
+                            <span class="status-indicator ${getStatusClass(data.current_metrics.test_coverage, 50, true)}"></span>
+                        </span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${Math.min(data.current_metrics.test_coverage, 100)}%">
+                            ${data.current_metrics.test_coverage.toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 성능 메트릭 -->
+                <div class="card">
+                    <h3><i class="fas fa-tachometer-alt"></i> 성능 메트릭</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">API 응답시간</span>
+                        <span class="metric-value">
+                            ${data.current_metrics.api_response_time.toFixed(1)}ms
+                            ${getTrendIcon(data.trends.api_performance)}
+                            <span class="status-indicator ${getStatusClass(data.current_metrics.api_response_time, 100)}"></span>
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">메모리 사용률</span>
+                        <span class="metric-value">
+                            ${data.current_metrics.memory_usage.toFixed(1)}%
+                            ${getTrendIcon(data.trends.memory_usage)}
+                            <span class="status-indicator ${getStatusClass(data.current_metrics.memory_usage, 70)}"></span>
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">CPU 사용률</span>
+                        <span class="metric-value">
+                            ${data.current_metrics.cpu_usage.toFixed(1)}%
+                            <span class="status-indicator ${getStatusClass(data.current_metrics.cpu_usage, 70)}"></span>
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- 자동화 진행률 -->
+                <div class="card">
+                    <h3><i class="fas fa-robot"></i> 자동화 진행률</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${data.automation_status.progress_percentage}%">
+                            ${data.automation_status.progress_percentage.toFixed(1)}%
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <strong>다음 권장 단계:</strong>
+                        <ul style="margin-top: 8px; padding-left: 20px;">
+                            ${data.automation_status.next_actions.map(action => `<li>${action}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 알림 요약 -->
+                <div class="card">
+                    <h3><i class="fas fa-bell"></i> 알림 현황 (1시간)</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">🚨 긴급</span>
+                        <span class="metric-value">
+                            ${data.alert_summary.emergency}개
+                            ${data.alert_summary.emergency > 0 ? '<span class="alert-badge">주의</span>' : ''}
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">🔴 위험</span>
+                        <span class="metric-value">${data.alert_summary.critical}개</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">⚠️ 경고</span>
+                        <span class="metric-value">${data.alert_summary.warning}개</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">📊 총계</span>
+                        <span class="metric-value"><strong>${data.alert_summary.total_recent}개</strong></span>
+                    </div>
+                </div>
+                
+                <!-- 파일 & 배포 상태 -->
+                <div class="card">
+                    <h3><i class="fas fa-file-code"></i> 파일 & 배포</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">파일 크기 위반</span>
+                        <span class="metric-value">
+                            ${data.current_metrics.file_violations}개
+                            <span class="status-indicator ${data.current_metrics.file_violations > 5 ? 'status-warning' : 'status-normal'}"></span>
+                        </span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">배포 상태</span>
+                        <span class="metric-value">
+                            ${getDeploymentIcon(data.current_metrics.deployment_health)} 
+                            ${data.current_metrics.deployment_health.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            // 차트 컨테이너 표시
+            document.getElementById('chartContainer').style.display = 'block';
+        }
+        
+        // 차트 초기화
+        function initializeChart() {
+            const ctx = document.getElementById('metricsChart').getContext('2d');
+            metricsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Git 변경사항',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'API 응답시간 (ms)',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }, {
+                        label: '테스트 커버리지 (%)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y2'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '시간'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Git 변경사항'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'API 응답시간 (ms)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: false,
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 차트 데이터 업데이트
+        async function updateChart(dashboardData) {
+            try {
+                const historyResponse = await axios.get(`${API_BASE}/metrics/history?hours=2&limit=20`);
+                if (historyResponse.data.status === 'success') {
+                    const history = historyResponse.data.data.history;
+                    
+                    const labels = history.map(h => new Date(h.timestamp).toLocaleTimeString());
+                    const gitChanges = history.map(h => h.git_changes);
+                    const apiTimes = history.map(h => h.api_response_time);
+                    const testCoverage = history.map(h => h.test_coverage);
+                    
+                    metricsChart.data.labels = labels;
+                    metricsChart.data.datasets[0].data = gitChanges;
+                    metricsChart.data.datasets[1].data = apiTimes;
+                    metricsChart.data.datasets[2].data = testCoverage;
+                    
+                    metricsChart.update('none');
+                }
+            } catch (error) {
+                console.error('Chart update error:', error);
+            }
+        }
+        
+        // 제어 함수들
+        async function startMonitoring() {
+            try {
+                const response = await axios.post(`${API_BASE}/control/start`);
+                if (response.data.status === 'success') {
+                    showSuccess('모니터링이 시작되었습니다.');
+                    refreshDashboard();
+                }
+            } catch (error) {
+                showError('모니터링 시작 실패: ' + error.message);
+            }
+        }
+        
+        async function stopMonitoring() {
+            try {
+                const response = await axios.post(`${API_BASE}/control/stop`);
+                if (response.data.status === 'success') {
+                    showSuccess('모니터링이 중지되었습니다.');
+                    refreshDashboard();
+                }
+            } catch (error) {
+                showError('모니터링 중지 실패: ' + error.message);
+            }
+        }
+        
+        async function enableAutoHealing() {
+            try {
+                const response = await axios.post(`${API_BASE}/control/auto-healing/enable`);
+                if (response.data.status === 'success') {
+                    showSuccess('자가 치유가 활성화되었습니다.');
+                    refreshDashboard();
+                }
+            } catch (error) {
+                showError('자가 치유 활성화 실패: ' + error.message);
+            }
+        }
+        
+        async function disableAutoHealing() {
+            try {
+                const response = await axios.post(`${API_BASE}/control/auto-healing/disable`);
+                if (response.data.status === 'success') {
+                    showSuccess('자가 치유가 비활성화되었습니다.');
+                    refreshDashboard();
+                }
+            } catch (error) {
+                showError('자가 치유 비활성화 실패: ' + error.message);
+            }
+        }
+        
+        // 유틸리티 함수들
+        function getTrendIcon(trend) {
+            const icons = {
+                increasing: '<i class="fas fa-arrow-up trend-icon trend-up"></i>',
+                decreasing: '<i class="fas fa-arrow-down trend-icon trend-down"></i>',
+                stable: '<i class="fas fa-arrow-right trend-icon trend-stable"></i>'
+            };
+            return icons[trend] || '';
+        }
+        
+        function getRiskIcon(risk) {
+            const icons = {
+                low: '🟢',
+                medium: '🟡', 
+                high: '🟠',
+                emergency: '🔴'
+            };
+            return icons[risk] || '⚪';
+        }
+        
+        function getDeploymentIcon(status) {
+            const icons = {
+                healthy: '🟢',
+                degraded: '🟡',
+                unavailable: '🔴',
+                unknown: '⚪'
+            };
+            return icons[status] || '⚪';
+        }
+        
+        function getStatusClass(value, threshold, reverse = false) {
+            if (reverse) {
+                // 테스트 커버리지처럼 낮을수록 나쁜 경우
+                if (value >= threshold * 1.5) return 'status-normal';
+                if (value >= threshold) return 'status-warning';
+                return 'status-critical';
+            } else {
+                // 일반적인 메트릭 (높을수록 나쁜 경우)
+                if (value <= threshold * 0.8) return 'status-normal';
+                if (value <= threshold) return 'status-warning';
+                return 'status-critical';
+            }
+        }
+        
+        function formatTime(isoString) {
+            return new Date(isoString).toLocaleTimeString('ko-KR');
+        }
+        
+        function showSuccess(message) {
+            // 간단한 성공 메시지 (실제로는 토스트 라이브러리 사용 권장)
+            alert('✅ ' + message);
+        }
+        
+        function showError(message) {
+            // 간단한 오류 메시지 (실제로는 토스트 라이브러리 사용 권장)
+            alert('❌ ' + message);
+        }
+        
+        // 페이지 종료 시 자동 새로고침 정리
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

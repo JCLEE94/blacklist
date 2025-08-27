@@ -12,8 +12,18 @@ try:
 except ImportError:
     DB_AVAILABLE = False
 
-from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
 import logging
+
+from flask import (
+    Blueprint,
+    Flask,
+    jsonify,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    url_for,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -3,11 +3,11 @@ CI/CD Monitoring and Deployment Routes
 Provides endpoints for monitoring deployment status and CI/CD pipeline health.
 """
 
+import logging
 import os
 from datetime import datetime
 
 from flask import Blueprint, jsonify
-import logging
 
 logger = logging.getLogger(__name__)
 

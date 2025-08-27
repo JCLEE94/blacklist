@@ -32,8 +32,8 @@ try:
     from .credential_storage import CredentialStorage
     from .credential_validation import CredentialValidator
 except ImportError:
-    import sys
     import os
+    import sys
 
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from credential_encryption import CredentialEncryption

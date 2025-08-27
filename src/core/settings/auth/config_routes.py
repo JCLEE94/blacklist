@@ -9,26 +9,48 @@ Expected output: 인증 설정 정보 조회 및 저장 결과
 
 # Conditional imports for standalone execution and package usage
 try:
-    from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
-    from ...container import get_container
+    import logging
+
+    from flask import (
+        Blueprint,
+        Flask,
+        jsonify,
+        redirect,
+        render_template,
+        request,
+        url_for,
+    )
+
+    logger = logging.getLogger(__name__)
     from ....config.settings import settings
+    from ...container import get_container
 except ImportError:
     # Fallback for standalone execution
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-    
+
     try:
-        from flask import Flask, Blueprint, jsonify, request, redirect, url_for, render_template
-import logging
-logger = logging.getLogger(__name__)
-        from core.container import get_container
+        import logging
+
+        from flask import (
+            Blueprint,
+            Flask,
+            jsonify,
+            redirect,
+            render_template,
+            request,
+            url_for,
+        )
+
+        logger = logging.getLogger(__name__)
         from config.settings import settings
+        from core.container import get_container
     except ImportError:
         # Mock imports for testing when dependencies not available
         from unittest.mock import Mock
+
         Blueprint = Mock()
         jsonify = Mock()
         request = Mock()
@@ -105,16 +127,24 @@ def save_auth_config():
         if "regtech" in data:
             regtech_data = data["regtech"]
             if "username" in regtech_data and "password" in regtech_data:
-                settings_manager.set_setting("regtech_username", regtech_data["username"])
-                settings_manager.set_setting("regtech_password", regtech_data["password"])
+                settings_manager.set_setting(
+                    "regtech_username", regtech_data["username"]
+                )
+                settings_manager.set_setting(
+                    "regtech_password", regtech_data["password"]
+                )
                 logger.info("REGTECH 인증 정보가 저장되었습니다")
 
         # SECUDIUM 설정 저장
         if "secudium" in data:
             secudium_data = data["secudium"]
             if "username" in secudium_data and "password" in secudium_data:
-                settings_manager.set_setting("secudium_username", secudium_data["username"])
-                settings_manager.set_setting("secudium_password", secudium_data["password"])
+                settings_manager.set_setting(
+                    "secudium_username", secudium_data["username"]
+                )
+                settings_manager.set_setting(
+                    "secudium_password", secudium_data["password"]
+                )
                 logger.info("SECUDIUM 인증 정보가 저장되었습니다")
 
         # 환경 변수로도 설정 (런타임용)
@@ -140,11 +170,11 @@ def save_auth_config():
             config_data = {
                 "regtech": {
                     "username": data.get("regtech", {}).get("username", ""),
-                    "password": "STORED_IN_ENV"  # 실제 비밀번호는 저장하지 않음
+                    "password": "STORED_IN_ENV",  # 실제 비밀번호는 저장하지 않음
                 },
                 "secudium": {
                     "username": data.get("secudium", {}).get("username", ""),
-                    "password": "STORED_IN_ENV"  # 실제 비밀번호는 저장하지 않음
+                    "password": "STORED_IN_ENV",  # 실제 비밀번호는 저장하지 않음
                 },
                 "updated_at": datetime.now().isoformat(),
             }
@@ -192,10 +222,12 @@ if __name__ == "__main__":
         # Test that blueprint was created and has basic attributes
         if config_bp is None:
             all_validation_failures.append("Blueprint test: config_bp not created")
-        elif hasattr(config_bp, 'name') and 'Mock' not in str(type(config_bp.name)):
+        elif hasattr(config_bp, "name") and "Mock" not in str(type(config_bp.name)):
             expected_name = "auth_config"
             if config_bp.name != expected_name:
-                all_validation_failures.append(f"Blueprint test: Expected name '{expected_name}', got '{config_bp.name}'")
+                all_validation_failures.append(
+                    f"Blueprint test: Expected name '{expected_name}', got '{config_bp.name}'"
+                )
     except Exception as e:
         all_validation_failures.append(f"Blueprint test: Failed - {e}")
 
@@ -205,7 +237,9 @@ if __name__ == "__main__":
         route_functions = [get_auth_config, save_auth_config]
         for func in route_functions:
             if not callable(func):
-                all_validation_failures.append(f"Route function test: {func.__name__} not callable")
+                all_validation_failures.append(
+                    f"Route function test: {func.__name__} not callable"
+                )
     except Exception as e:
         all_validation_failures.append(f"Route function test: Failed - {e}")
 
@@ -215,17 +249,22 @@ if __name__ == "__main__":
         # Test configuration validation logic used in the routes
         test_data = {
             "regtech": {"username": "test_user", "password": "test_pass"},
-            "secudium": {"username": "test_user2", "password": "test_pass2"}
+            "secudium": {"username": "test_user2", "password": "test_pass2"},
         }
-        
+
         # Should contain both regtech and secudium keys
         if "regtech" not in test_data or "secudium" not in test_data:
             all_validation_failures.append("Config validation: Missing required keys")
-            
+
         # Should contain username and password in each section
         for section in ["regtech", "secudium"]:
-            if "username" not in test_data[section] or "password" not in test_data[section]:
-                all_validation_failures.append(f"Config validation: Missing credentials in {section}")
+            if (
+                "username" not in test_data[section]
+                or "password" not in test_data[section]
+            ):
+                all_validation_failures.append(
+                    f"Config validation: Missing credentials in {section}"
+                )
     except Exception as e:
         all_validation_failures.append(f"Config validation test: Failed - {e}")
 

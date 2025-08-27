@@ -14,10 +14,10 @@ Focus on function execution rather than just imports to boost coverage.
 """
 
 import os
-import sys
-import unittest
-import tempfile
 import sqlite3
+import sys
+import tempfile
+import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 

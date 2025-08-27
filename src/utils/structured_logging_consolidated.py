@@ -13,9 +13,9 @@ Expected output: 동일한 로깅 기능들, 모듈식 구조로 구현
 # Conditional imports for standalone execution and package usage
 try:
     from .structured_logs import (
-        StructuredLogger,
         BufferHandler,
         LogManager,
+        StructuredLogger,
         get_logger,
         setup_request_logging,
     )
@@ -28,9 +28,9 @@ except ImportError:
 
     try:
         from structured_logs import (
-            StructuredLogger,
             BufferHandler,
             LogManager,
+            StructuredLogger,
             get_logger,
             setup_request_logging,
         )

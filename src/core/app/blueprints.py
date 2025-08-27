@@ -224,3 +224,16 @@ class BlueprintRegistrationMixin:
                 exception=e,
                 blueprint="cicd_monitoring_bp",
             )
+
+        # Register autonomous monitoring system routes
+        try:
+            from ...api.monitoring.autonomous_monitoring_routes import autonomous_monitoring_bp
+
+            app.register_blueprint(autonomous_monitoring_bp)
+            logger.info("Autonomous monitoring system routes registered successfully")
+        except Exception as e:
+            logger.error(
+                "Failed to register autonomous monitoring routes",
+                exception=e,
+                blueprint="autonomous_monitoring_bp",
+            )
