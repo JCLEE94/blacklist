@@ -658,4 +658,4 @@ if __name__ == "__main__":
 
     app = Flask(__name__)
     register_autonomous_monitoring_routes(app)
-    app.run(debug=True, port=5001)
+    app.run(debug=False, port=5001)  # Security: Never use debug=True in production

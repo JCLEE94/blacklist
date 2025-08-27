@@ -482,9 +482,17 @@ class AutomationBackupManager:
             restore_dir = self.backup_root / restore_path
             restore_dir.mkdir(parents=True, exist_ok=True)
 
-            # 백업 파일 압축 해제
+            # 백업 파일 압축 해제 (보안: 파일 경로 검증)
             with tarfile.open(backup_file, "r:gz") as tar:
-                tar.extractall(restore_dir)
+                # Security: Validate tar members to prevent directory traversal
+                safe_members = []
+                for member in tar.getmembers():
+                    # Ensure the member path doesn't escape the restore directory
+                    if not (
+                        member.name.startswith("..") or member.name.startswith("/")
+                    ):
+                        safe_members.append(member)
+                tar.extractall(restore_dir, members=safe_members)
 
             self.logger.info(f"백업 복원 완료: {backup_id} -> {restore_dir}")
 

@@ -820,7 +820,9 @@ if __name__ == "__main__":
     print("📊 실시간 모니터링 대시보드 제공")
 
     try:
-        app.run(host="0.0.0.0", port=5555, debug=True)
+        app.run(
+            host="0.0.0.0", port=5555, debug=False
+        )  # Security: Never use debug=True in production
     except KeyboardInterrupt:
         print("\n🛑 웹 서버 중지됨")
     finally:
