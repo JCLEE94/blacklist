@@ -158,8 +158,8 @@ jobs:
         output: 'trivy-results.sarif'
         
     - name: 📋 Upload Trivy Results
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      if: always() && hashFiles('trivy-results.sarif') != ''
       with:
         sarif_file: 'trivy-results.sarif'
         
@@ -179,12 +179,97 @@ jobs:
         echo "  - 상세 결과는 Security 탭에서 확인 가능"
 
   # ================================
+  # VERSION MANAGEMENT
+  # ================================
+  version-management:
+    name: 📊 Version Management & Release
+    runs-on: ubuntu-latest
+    needs: [quality-gates, security-scan]
+    if: needs.quality-gates.outputs.should-deploy == 'true'
+    outputs:
+      new-version: ${{ steps.bump-version.outputs.new-version }}
+      version-changed: ${{ steps.bump-version.outputs.version-changed }}
+      
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 📊 Current Version Check
+      id: current-version
+      run: |
+        package_version=$(jq -r '.version' package.json)
+        app_version=$(curl -s http://localhost:2542/api/health | jq -r '.version' || echo "unknown")
+        
+        echo "📦 Package.json 버전: $package_version"
+        echo "🔥 실행중인 앱 버전: $app_version"
+        echo "current-package-version=$package_version" >> $GITHUB_OUTPUT
+        echo "current-app-version=$app_version" >> $GITHUB_OUTPUT
+        
+    - name: 🚀 Auto Version Bump
+      id: bump-version
+      run: |
+        current_version=$(jq -r '.version' package.json)
+        echo "현재 버전: $current_version"
+        
+        # Parse version components
+        IFS='.' read -ra VERSION_PARTS <<< "$current_version"
+        major=${VERSION_PARTS[0]}
+        minor=${VERSION_PARTS[1]}
+        patch=${VERSION_PARTS[2]}
+        
+        # Increment patch version
+        new_patch=$((patch + 1))
+        new_version="$major.$minor.$new_patch"
+        
+        # Update package.json
+        jq ".version = \"$new_version\"" package.json > package.json.tmp
+        mv package.json.tmp package.json
+        
+        echo "새로운 버전: $new_version"
+        echo "new-version=$new_version" >> $GITHUB_OUTPUT
+        echo "version-changed=true" >> $GITHUB_OUTPUT
+        
+        # Commit version bump
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package.json
+        git commit -m "🚀 Version bump to $new_version
+
+        - 자동 버전 증가: $current_version → $new_version
+        - Pipeline 성공으로 인한 자동 릴리즈
+        - Build: ${{ github.sha }}
+        
+        🤖 AI Pipeline v8.3.0에 의해 자동 생성됨"
+        git push
+        
+        # Create release tag
+        git tag -a "v$new_version" -m "🎉 Release v$new_version
+
+        📊 릴리즈 정보:
+        - 버전: $new_version
+        - 커밋: ${{ github.sha }}
+        - 파이프라인: 성공적으로 완료
+        - 테스트 커버리지: ${{ needs.quality-gates.outputs.coverage-result }}%
+        
+        🚀 주요 변경사항:
+        - 품질 검증 통과
+        - 보안 스캔 완료
+        - 자동 배포 준비 완료
+        
+        🤖 AI Pipeline v8.3.0 자동 릴리즈"
+        git push origin "v$new_version"
+        
+        echo "✅ 버전 업데이트 및 태그 생성 완료: v$new_version"
+
+  # ================================
   # BUILD & PUSH WITH OPTIMIZATION
   # ================================
   build-and-push:
     name: 🏗️ Production Build & Push
     runs-on: ubuntu-latest
-    needs: [quality-gates, security-scan]
+    needs: [quality-gates, security-scan, version-management]
     if: needs.quality-gates.outputs.should-deploy == 'true'
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
@@ -193,6 +278,8 @@ jobs:
     steps:
     - name: 📥 Checkout Code
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.sha }}
       
     - name: 🔧 Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -217,6 +304,8 @@ jobs:
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value={{date 'YYYYMMDD-HHmmss'}}-{{sha}}
+          type=raw,value=v${{ needs.version-management.outputs.new-version }}
+          type=raw,value=${{ needs.version-management.outputs.new-version }}
           
     - name: 🏗️ Build and Push Production Image
       id: build
@@ -244,8 +333,8 @@ jobs:
         output: 'container-trivy-results.sarif'
         
     - name: 📋 Upload Container Scan Results
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      if: always() && hashFiles('container-trivy-results.sarif') != ''
       with:
         sarif_file: 'container-trivy-results.sarif'
 
