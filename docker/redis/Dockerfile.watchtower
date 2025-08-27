@@ -1,0 +1,23 @@
+# Redis Dockerfile with Watchtower auto-update
+FROM redis:7-alpine
+
+# Add Watchtower labels for auto-update
+LABEL maintainer="Blacklist Team" \
+      app="blacklist-redis" \
+      version="7.0" \
+      com.centurylinklabs.watchtower.enable="true" \
+      org.opencontainers.image.title="Blacklist Redis Cache" \
+      org.opencontainers.image.description="Redis cache for Blacklist Management System"
+
+# Add custom Redis configuration if needed
+# COPY redis.conf /usr/local/etc/redis/redis.conf
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+  CMD redis-cli ping || exit 1
+
+# Expose Redis port
+EXPOSE 6379
+
+# Run Redis
+CMD [ "redis-server" ]

@@ -1,0 +1,30 @@
+# PostgreSQL Dockerfile with Watchtower auto-update
+FROM postgres:16-alpine
+
+# Add Watchtower labels for auto-update
+LABEL maintainer="Blacklist Team" \
+      app="blacklist-postgres" \
+      version="16.0" \
+      com.centurylinklabs.watchtower.enable="true" \
+      deployment.strategy="watchtower-auto" \
+      org.opencontainers.image.title="Blacklist PostgreSQL Database" \
+      org.opencontainers.image.description="PostgreSQL database for Blacklist Management System" \
+      security.scan.enabled="true"
+
+# Set environment variables
+ENV POSTGRES_DB=blacklist \
+    POSTGRES_USER=postgres \
+    PGDATA=/var/lib/postgresql/data
+
+# Copy initialization scripts if they exist
+# COPY init.sql /docker-entrypoint-initdb.d/
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=5 \
+  CMD pg_isready -U postgres || exit 1
+
+# Expose PostgreSQL port
+EXPOSE 5432
+
+# Volume for data persistence
+VOLUME ["/var/lib/postgresql/data"]
