@@ -158,7 +158,13 @@ jobs:
       run: |
         # SafeWork 스타일 동적 버전 생성
         BUILD_VERSION="v$(date +%Y%m%d)-${{ github.run_number }}"
-        PACKAGE_VERSION=$(cat package.json | grep '"version"' | cut -d'"' -f4 || echo "1.0.0")
+        
+        # Package version from package.json
+        if [ -f package.json ]; then
+          PACKAGE_VERSION=$(grep '"version"' package.json | head -1 | cut -d'"' -f4 || echo "1.0.0")
+        else
+          PACKAGE_VERSION="1.0.0"
+        fi
         
         echo "version=$BUILD_VERSION" >> $GITHUB_OUTPUT
         echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
