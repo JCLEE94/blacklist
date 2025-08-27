@@ -1,4 +1,4 @@
-name: Create Offline Package
+name: 📦 Offline Build | Air-Gap Package
 
 on:
   workflow_dispatch:

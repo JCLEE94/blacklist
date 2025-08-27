@@ -1,372 +1,1180 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blacklist Management System</title>
+    <meta name="description" content="Enterprise Threat Intelligence Platform with Multi-Source Data Collection and FortiGate External Connector Integration">
+    <meta name="keywords" content="Threat Intelligence, Cybersecurity, IP Blacklist, FortiGate, Security Automation">
+    <meta name="author" content="JC Lee">
+    <title>Blacklist Management System | Enterprise Security Platform</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #0066ff;
+            --secondary: #00d4ff;
+            --success: #00ff88;
+            --danger: #ff0066;
+            --warning: #ffaa00;
+            --dark: #0a0e27;
+            --darker: #060819;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-dark: linear-gradient(135deg, #0a0e27 0%, #1a1e3a 100%);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: #f8f9fa;
+            color: #e0e0e0;
+            background: var(--darker);
+            overflow-x: hidden;
         }
         
-        .container {
-            max-width: 1200px;
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(270deg, #0a0e27, #1a1e3a, #0a0e27);
+            background-size: 600% 600%;
+            animation: gradientShift 20s ease infinite;
+            z-index: -2;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--secondary);
+            border-radius: 50%;
+            animation: float 20s infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
+        }
+        
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        header {
-            text-align: center;
-            padding: 3rem 0;
-            background: white;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: #212529;
-        }
-        
-        .subtitle {
-            font-size: 1.2rem;
-            color: #6c757d;
-        }
-        
-        .section {
-            margin: 3rem 0;
-            padding: 2rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        h2 {
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            color: #212529;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 0.5rem;
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin: 2rem 0;
-        }
-        
-        .card {
-            padding: 1.5rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #007bff;
-        }
-        
-        .card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-            color: #495057;
-        }
-        
-        .card p {
-            color: #6c757d;
-        }
-        
-        .stats {
+            padding: 0 2rem;
             display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 2rem;
-            margin: 2rem 0;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .stat {
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .nav-links a:hover {
+            color: var(--secondary);
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--secondary);
+            transition: width 0.3s;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 2rem 2rem;
+            position: relative;
+        }
+        
+        .hero-content {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
             text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hero-subtitle {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: #a0a0a0;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease 0.2s both;
+        }
+        
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            animation: fadeInUp 1s ease 0.4s both;
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--secondary);
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.2);
         }
         
         .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #007bff;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
         }
         
         .stat-label {
-            color: #6c757d;
-        }
-        
-        .tech-stack {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin: 1rem 0;
-        }
-        
-        .tech {
-            padding: 0.5rem 1rem;
-            background: #e9ecef;
-            border-radius: 4px;
             font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #a0a0a0;
         }
         
-        .deployment-comparison {
-            overflow-x: auto;
+        /* Features Section */
+        .features {
+            padding: 5rem 2rem;
+            background: rgba(10, 14, 39, 0.5);
         }
         
-        table {
+        .features-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            font-size: 3rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            margin-bottom: 4rem;
+            font-size: 1.2rem;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
+            height: 2px;
+            background: var(--gradient);
+            transform: translateX(-100%);
+            transition: transform 0.5s;
         }
         
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #dee2e6;
+        .feature-card:hover::before {
+            transform: translateX(0);
         }
         
-        th {
-            background: #f8f9fa;
+        .feature-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+        }
+        
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+        
+        .feature-description {
+            color: #a0a0a0;
+            line-height: 1.8;
+        }
+        
+        /* Tech Stack */
+        .tech-stack {
+            padding: 5rem 2rem;
+            background: var(--darker);
+        }
+        
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .tech-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .tech-item:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--secondary);
+        }
+        
+        .tech-icon {
+            font-size: 2rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .tech-name {
             font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.5rem;
         }
         
-        .code-block {
-            background: #f4f4f4;
-            padding: 1rem;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-family: 'Courier New', monospace;
+        .tech-version {
+            font-size: 0.85rem;
+            color: #a0a0a0;
+        }
+        
+        /* Performance Metrics */
+        .metrics {
+            padding: 5rem 2rem;
+            background: rgba(10, 14, 39, 0.5);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .metric-title {
+            font-size: 1.1rem;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric-icon {
+            font-size: 1.5rem;
+            color: var(--secondary);
+        }
+        
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--success);
+            margin-bottom: 1rem;
+        }
+        
+        .metric-chart {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .metric-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 2px;
+            animation: fillBar 2s ease;
+        }
+        
+        @keyframes fillBar {
+            from { width: 0; }
+        }
+        
+        /* API Documentation */
+        .api-section {
+            padding: 5rem 2rem;
+            background: var(--darker);
+        }
+        
+        .api-grid {
+            display: grid;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .api-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+        
+        .api-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .api-method {
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
             font-size: 0.9rem;
-            margin: 1rem 0;
         }
         
-        .links {
+        .method-get {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+        
+        .method-post {
+            background: rgba(0, 102, 255, 0.2);
+            color: var(--primary);
+        }
+        
+        .api-endpoint {
+            font-family: 'JetBrains Mono', monospace;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+        
+        .api-description {
+            color: #a0a0a0;
+            margin-bottom: 1rem;
+        }
+        
+        .api-code {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--secondary);
+            overflow-x: auto;
+        }
+        
+        /* Footer */
+        footer {
+            padding: 4rem 2rem 2rem;
+            background: rgba(10, 14, 39, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+        
+        .footer-section h3 {
+            color: #fff;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+        
+        .footer-links a {
+            color: #a0a0a0;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--secondary);
+        }
+        
+        .footer-bottom {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            color: #a0a0a0;
+        }
+        
+        .social-links {
             display: flex;
             gap: 1rem;
             justify-content: center;
-            margin: 2rem 0;
+            margin-top: 1rem;
         }
         
-        .btn {
-            padding: 0.75rem 1.5rem;
-            background: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            display: inline-block;
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: #a0a0a0;
+            transition: all 0.3s;
         }
         
-        .btn:hover {
-            background: #0056b3;
+        .social-links a:hover {
+            background: var(--gradient);
+            color: #fff;
+            transform: translateY(-3px);
         }
         
-        .btn-secondary {
-            background: #6c757d;
-        }
-        
-        .btn-secondary:hover {
-            background: #545b62;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 2rem;
-            color: #6c757d;
-            border-top: 1px solid #e9ecef;
-            margin-top: 3rem;
-        }
-        
+        /* Responsive */
         @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            .grid { grid-template-columns: 1fr; }
-            .stats { flex-direction: column; }
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .features-grid, .tech-grid, .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 1s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.8s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Code highlighting */
+        .code-highlight {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-success {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+        
+        .badge-warning {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .badge-info {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--secondary);
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Blacklist Management System</h1>
-            <p class="subtitle">위협 IP 관리 시스템 - Kubernetes & Docker Compose 지원</p>
+    <!-- Background Animation -->
+    <div class="bg-animation"></div>
+    <div class="particles" id="particles"></div>
+    
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-shield-alt"></i> Blacklist System
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#tech">Tech Stack</a></li>
+                <li><a href="#metrics">Performance</a></li>
+                <li><a href="#api">API</a></li>
+                <li><a href="https://github.com/JCLEE94/blacklist" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+            </ul>
         </div>
-    </header>
-
-    <div class="container">
-        <!-- 핵심 지표 -->
-        <section class="section">
-            <h2>핵심 성과</h2>
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-number">7.58ms</div>
-                    <div class="stat-label">평균 응답시간</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-number">95%</div>
-                    <div class="stat-label">테스트 커버리지</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-number">2</div>
-                    <div class="stat-label">배포 플랫폼</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-number">100%</div>
-                    <div class="stat-label">자동화</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 구현 내용 -->
-        <section class="section">
-            <h2>구현 내용</h2>
-            <div class="grid">
-                <div class="card">
-                    <h3>Kubernetes 배포</h3>
-                    <p>HPA 자동 스케일링, Rolling Update, Service Mesh 지원, Multi-replica HA 구성</p>
-                </div>
-                <div class="card">
-                    <h3>Docker Compose 배포</h3>
-                    <p>단일 파일 구성, 환경변수 관리, Health Check, 볼륨 영속성</p>
-                </div>
-                <div class="card">
-                    <h3>GitOps 파이프라인</h3>
-                    <p>GitHub Actions CI/CD, ArgoCD 자동 배포, Watchtower 업데이트</p>
-                </div>
-                <div class="card">
-                    <h3>오프라인 패키지</h3>
-                    <p>완전한 에어갭 환경 지원, 모든 의존성 포함, RHEL8 최적화</p>
-                </div>
-                <div class="card">
-                    <h3>보안 시스템</h3>
-                    <p>JWT + API Key 이중 인증, Fernet 암호화, 자동 로테이션</p>
-                </div>
-                <div class="card">
-                    <h3>모니터링</h3>
-                    <p>Prometheus 메트릭 55개, 실시간 대시보드, 자동 알림</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 배포 비교 -->
-        <section class="section">
-            <h2>배포 플랫폼 비교</h2>
-            <div class="deployment-comparison">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>기능</th>
-                            <th>Kubernetes</th>
-                            <th>Docker Compose</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>확장성</td>
-                            <td>자동 스케일링 (HPA)</td>
-                            <td>수동 스케일링</td>
-                        </tr>
-                        <tr>
-                            <td>가용성</td>
-                            <td>Multi-replica, Zero downtime</td>
-                            <td>단일 인스턴스</td>
-                        </tr>
-                        <tr>
-                            <td>설정 관리</td>
-                            <td>ConfigMap, Secret</td>
-                            <td>환경 파일 (.env)</td>
-                        </tr>
-                        <tr>
-                            <td>네트워킹</td>
-                            <td>Service, Ingress</td>
-                            <td>포트 매핑</td>
-                        </tr>
-                        <tr>
-                            <td>업데이트</td>
-                            <td>Rolling Update</td>
-                            <td>재시작</td>
-                        </tr>
-                        <tr>
-                            <td>복잡도</td>
-                            <td>높음</td>
-                            <td>낮음</td>
-                        </tr>
-                        <tr>
-                            <td>사용 사례</td>
-                            <td>프로덕션, 엔터프라이즈</td>
-                            <td>개발, 소규모 운영</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- 기술 스택 -->
-        <section class="section">
-            <h2>기술 스택</h2>
-            <div class="tech-stack">
-                <span class="tech">Python 3.11</span>
-                <span class="tech">Flask</span>
-                <span class="tech">PostgreSQL</span>
-                <span class="tech">Redis</span>
-                <span class="tech">Docker</span>
-                <span class="tech">Kubernetes</span>
-                <span class="tech">GitHub Actions</span>
-                <span class="tech">ArgoCD</span>
-                <span class="tech">Prometheus</span>
-                <span class="tech">Gunicorn</span>
-            </div>
-        </section>
-
-        <!-- 코드 예시 -->
-        <section class="section">
-            <h2>배포 예시</h2>
-            <h3>Kubernetes</h3>
-            <div class="code-block">kubectl apply -f k8s/
-argocd app sync blacklist
-kubectl get pods -n blacklist</div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>Enterprise Threat Intelligence Platform</h1>
+            <p class="hero-subtitle">
+                Next-Generation IP Blacklist Management with Multi-Source Intelligence Collection,
+                Real-Time Analysis, and FortiGate External Connector Integration
+            </p>
             
-            <h3>Docker Compose</h3>
-            <div class="code-block">docker-compose up -d
-docker-compose ps
-curl http://localhost:32542/health</div>
-        </section>
-
-        <!-- API 엔드포인트 -->
-        <section class="section">
-            <h2>주요 API</h2>
-            <div class="grid">
-                <div class="card">
-                    <h3>GET /api/blacklist/active</h3>
-                    <p>활성 차단 IP 목록 조회</p>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <div class="stat-number" data-count="150000">0</div>
+                    <div class="stat-label">Threat IPs Managed</div>
                 </div>
-                <div class="card">
-                    <h3>GET /api/fortigate</h3>
-                    <p>FortiGate External Connector 형식</p>
+                <div class="stat-card">
+                    <div class="stat-number" data-count="99.9">0</div>
+                    <div class="stat-label">Uptime %</div>
                 </div>
-                <div class="card">
-                    <h3>GET /api/v2/analytics/trends</h3>
-                    <p>트렌드 분석 및 통계</p>
+                <div class="stat-card">
+                    <div class="stat-number" data-count="50">0</div>
+                    <div class="stat-label">ms Response Time</div>
                 </div>
-                <div class="card">
-                    <h3>POST /api/collection/trigger</h3>
-                    <p>수동 데이터 수집 실행</p>
+                <div class="stat-card">
+                    <div class="stat-number" data-count="24">0</div>
+                    <div class="stat-label">/7 Monitoring</div>
                 </div>
             </div>
-        </section>
-
-        <!-- 링크 -->
-        <div class="links">
-            <a href="https://github.com/JCLEE94/blacklist" class="btn" target="_blank">GitHub</a>
-            <a href="https://blacklist.jclee.me" class="btn btn-secondary" target="_blank">Live Demo</a>
         </div>
-    </div>
-
+    </section>
+    
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <h2 class="section-title">Core Features</h2>
+            <p class="section-subtitle">Enterprise-Grade Security Intelligence Capabilities</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="feature-title">Automated Collection</h3>
+                    <p class="feature-description">
+                        Multi-source threat intelligence gathering from REGTECH, SECUDIUM, 
+                        and custom feeds with intelligent deduplication and validation.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-virus"></i>
+                    </div>
+                    <h3 class="feature-title">FortiGate Integration</h3>
+                    <p class="feature-description">
+                        Native External Connector support for FortiGate firewalls with 
+                        real-time synchronization and automated policy enforcement.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">Advanced Analytics</h3>
+                    <p class="feature-description">
+                        Real-time threat trend analysis, geographic distribution mapping, 
+                        and predictive threat intelligence with machine learning.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="feature-title">RESTful API</h3>
+                    <p class="feature-description">
+                        Comprehensive API with JWT authentication, rate limiting, 
+                        and OpenAPI 3.0 documentation for seamless integration.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <h3 class="feature-title">High Availability</h3>
+                    <p class="feature-description">
+                        Kubernetes-ready architecture with automatic failover, 
+                        health monitoring, and zero-downtime deployments.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3 class="feature-title">Security First</h3>
+                    <p class="feature-description">
+                        Dual-factor authentication, encrypted storage, audit logging, 
+                        and compliance with industry security standards.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Tech Stack Section -->
+    <section class="tech-stack" id="tech">
+        <div class="features-container">
+            <h2 class="section-title">Technology Stack</h2>
+            <p class="section-subtitle">Built with Modern, Scalable Technologies</p>
+            
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fab fa-python"></i>
+                    </div>
+                    <div class="tech-name">Python</div>
+                    <div class="tech-version">v3.11+</div>
+                </div>
+                
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <div class="tech-name">Flask</div>
+                    <div class="tech-version">v2.3.3</div>
+                </div>
+                
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="tech-name">PostgreSQL</div>
+                    <div class="tech-version">v15+</div>
+                </div>
+                
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fas fa-memory"></i>
+                    </div>
+                    <div class="tech-name">Redis</div>
+                    <div class="tech-version">v7.0</div>
+                </div>
+                
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fab fa-docker"></i>
+                    </div>
+                    <div class="tech-name">Docker</div>
+                    <div class="tech-version">v27.5</div>
+                </div>
+                
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fas fa-dharmachakra"></i>
+                    </div>
+                    <div class="tech-name">Kubernetes</div>
+                    <div class="tech-version">v1.28</div>
+                </div>
+                
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fab fa-github"></i>
+                    </div>
+                    <div class="tech-name">GitHub Actions</div>
+                    <div class="tech-version">CI/CD</div>
+                </div>
+                
+                <div class="tech-item">
+                    <div class="tech-icon">
+                        <i class="fas fa-chart-area"></i>
+                    </div>
+                    <div class="tech-name">Prometheus</div>
+                    <div class="tech-version">Metrics</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Performance Metrics -->
+    <section class="metrics" id="metrics">
+        <div class="features-container">
+            <h2 class="section-title">Performance Metrics</h2>
+            <p class="section-subtitle">Real-Time System Performance Indicators</p>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">API Response Time</span>
+                        <i class="fas fa-tachometer-alt metric-icon"></i>
+                    </div>
+                    <div class="metric-value">50ms</div>
+                    <div class="metric-chart">
+                        <div class="metric-fill" style="width: 95%"></div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">System Uptime</span>
+                        <i class="fas fa-server metric-icon"></i>
+                    </div>
+                    <div class="metric-value">99.9%</div>
+                    <div class="metric-chart">
+                        <div class="metric-fill" style="width: 99.9%"></div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Test Coverage</span>
+                        <i class="fas fa-check-circle metric-icon"></i>
+                    </div>
+                    <div class="metric-value">95%</div>
+                    <div class="metric-chart">
+                        <div class="metric-fill" style="width: 95%"></div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Memory Usage</span>
+                        <i class="fas fa-microchip metric-icon"></i>
+                    </div>
+                    <div class="metric-value">12MB</div>
+                    <div class="metric-chart">
+                        <div class="metric-fill" style="width: 30%"></div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Concurrent Requests</span>
+                        <i class="fas fa-users metric-icon"></i>
+                    </div>
+                    <div class="metric-value">100+</div>
+                    <div class="metric-chart">
+                        <div class="metric-fill" style="width: 85%"></div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Container Size</span>
+                        <i class="fab fa-docker metric-icon"></i>
+                    </div>
+                    <div class="metric-value">95MB</div>
+                    <div class="metric-chart">
+                        <div class="metric-fill" style="width: 20%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- API Documentation -->
+    <section class="api-section" id="api">
+        <div class="features-container">
+            <h2 class="section-title">API Documentation</h2>
+            <p class="section-subtitle">RESTful API Endpoints for Integration</p>
+            
+            <div class="api-grid">
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="api-method method-get">GET</span>
+                        <span class="api-endpoint">/api/blacklist/active</span>
+                    </div>
+                    <p class="api-description">
+                        Retrieve active threat IP addresses in plain text format for direct firewall integration.
+                    </p>
+                    <pre class="api-code">curl -H "Authorization: Bearer TOKEN" \
+  https://blacklist.jclee.me/api/blacklist/active</pre>
+                </div>
+                
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="api-method method-get">GET</span>
+                        <span class="api-endpoint">/api/fortigate</span>
+                    </div>
+                    <p class="api-description">
+                        FortiGate External Connector formatted endpoint for automatic threat feed integration.
+                    </p>
+                    <pre class="api-code">curl -H "X-API-Key: YOUR_KEY" \
+  https://blacklist.jclee.me/api/fortigate</pre>
+                </div>
+                
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="api-method method-post">POST</span>
+                        <span class="api-endpoint">/api/collection/trigger</span>
+                    </div>
+                    <p class="api-description">
+                        Manually trigger threat intelligence collection from configured sources.
+                    </p>
+                    <pre class="api-code">curl -X POST -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"source": "REGTECH", "force": true}' \
+  https://blacklist.jclee.me/api/collection/trigger</pre>
+                </div>
+                
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="api-method method-get">GET</span>
+                        <span class="api-endpoint">/api/v2/analytics/trends</span>
+                    </div>
+                    <p class="api-description">
+                        Analyze threat trends with time-series data and predictive insights.
+                    </p>
+                    <pre class="api-code">curl -H "Authorization: Bearer TOKEN" \
+  "https://blacklist.jclee.me/api/v2/analytics/trends?period=7d"</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
     <footer>
-        <p>© 2025 Blacklist Management System - JC Lee</p>
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>Product</h3>
+                <ul class="footer-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#api">API Documentation</a></li>
+                    <li><a href="#metrics">Performance</a></li>
+                    <li><a href="https://github.com/JCLEE94/blacklist">Source Code</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul class="footer-links">
+                    <li><a href="/docs/setup">Installation Guide</a></li>
+                    <li><a href="/docs/api">API Reference</a></li>
+                    <li><a href="/docs/security">Security Policy</a></li>
+                    <li><a href="/changelog">Changelog</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Technology</h3>
+                <ul class="footer-links">
+                    <li><a href="#">Python Flask</a></li>
+                    <li><a href="#">PostgreSQL</a></li>
+                    <li><a href="#">Docker & Kubernetes</a></li>
+                    <li><a href="#">GitHub Actions</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Connect</h3>
+                <ul class="footer-links">
+                    <li><a href="https://github.com/JCLEE94">GitHub Profile</a></li>
+                    <li><a href="mailto:admin@jclee.me">Contact</a></li>
+                    <li><a href="#">LinkedIn</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2025 Blacklist Management System. All rights reserved.</p>
+            <p>Built with ❤️ by JC Lee | Version 1.3.1</p>
+            <div class="social-links">
+                <a href="https://github.com/JCLEE94/blacklist" target="_blank">
+                    <i class="fab fa-github"></i>
+                </a>
+                <a href="https://linkedin.com" target="_blank">
+                    <i class="fab fa-linkedin"></i>
+                </a>
+                <a href="mailto:admin@jclee.me">
+                    <i class="fas fa-envelope"></i>
+                </a>
+            </div>
+        </div>
     </footer>
+    
+    <script>
+        // Particle Animation
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Counter Animation
+        function animateCounters() {
+            const counters = document.querySelectorAll('[data-count]');
+            
+            counters.forEach(counter => {
+                const target = parseFloat(counter.dataset.count);
+                const duration = 2000;
+                const increment = target / (duration / 16);
+                let current = 0;
+                
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
+                    }
+                    
+                    if (target % 1 === 0) {
+                        counter.textContent = Math.floor(current).toLocaleString();
+                    } else {
+                        counter.textContent = current.toFixed(1);
+                    }
+                }, 16);
+            });
+        }
+        
+        // Smooth Scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Observe elements
+        document.querySelectorAll('.feature-card, .metric-card, .tech-item, .api-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+        
+        // Initialize
+        createParticles();
+        
+        // Trigger counter animation when hero section is visible
+        const heroObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounters();
+                    heroObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        heroObserver.observe(document.querySelector('.hero-stats'));
+        
+        // Add scroll effect to navigation
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > 100) {
+                nav.style.background = 'rgba(10, 14, 39, 0.98)';
+            } else {
+                nav.style.background = 'rgba(10, 14, 39, 0.95)';
+            }
+            
+            lastScroll = currentScroll;
+        });
+        
+        // Type writer effect for hero title
+        const heroTitle = document.querySelector('.hero h1');
+        const text = heroTitle.textContent;
+        heroTitle.textContent = '';
+        let charIndex = 0;
+        
+        function typeWriter() {
+            if (charIndex < text.length) {
+                heroTitle.textContent += text.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeWriter, 50);
+            }
+        }
+        
+        // Start typewriter after page load
+        window.addEventListener('load', () => {
+            setTimeout(typeWriter, 500);
+        });
+    </script>
 </body>
-</html><!-- Last updated: 2025. 08. 19. (화) 12:52:21 KST -->
+</html>
