@@ -1,6 +1,6 @@
 {
   "name": "blacklist-management-system",
-  "version": "1.0.1393",
+  "version": "1.0.1394",
   "description": "Enterprise Threat Intelligence Platform with Real-time Dashboard",
   "main": "main.py",
   "scripts": {
