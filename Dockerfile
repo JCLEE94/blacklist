@@ -94,7 +94,7 @@ RUN mkdir -p /app/{instance,logs,temp,data,backups,monitoring} && \
 
 # Core Application Configuration (필수)
 ENV FLASK_ENV=production \
-    PYTHONPATH=/app:$PYTHONPATH \
+    PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     PORT=2542
 
