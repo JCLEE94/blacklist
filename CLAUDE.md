@@ -619,7 +619,7 @@ make argocd-status                 # Check ArgoCD app status
 # Application (NOTE: Docker uses port 32542, local dev uses 2542)
 PORT=32542                        # Docker port (docker-compose.yml)
 FLASK_ENV=production
-DATABASE_URL=sqlite:////app/instance/blacklist.db
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/blacklist
 REDIS_URL=redis://redis:6379/0
 
 # Security (docker-compose.yml overrides: collection enabled)

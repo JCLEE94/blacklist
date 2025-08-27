@@ -36,7 +36,8 @@ class DatabaseSchema:
                 self.db_path = "instance/blacklist.db"  # Default for non-sqlite
         else:
             self.database_url = os.environ.get(
-                "DATABASE_URL", "sqlite:///instance/blacklist.db"
+                "DATABASE_URL",
+                "postgresql://postgres:postgres@localhost:5432/blacklist",
             )
             # Handle local instance path
             if self.database_url.startswith("sqlite:///./"):

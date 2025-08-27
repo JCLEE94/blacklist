@@ -44,7 +44,6 @@ RUN apt-get update && \
     g++ \
     # Database client
     postgresql-client \
-    sqlite3 \
     # Health checks and monitoring
     curl \
     wget \
@@ -114,7 +113,6 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     postgresql-client \
-    sqlite3 \
     curl \
     wget \
     tini \
@@ -161,7 +159,7 @@ ENV PYTHONPATH=/app \
     FLASK_APP=main.py \
     PORT=2542 \
     # Database settings (기본값)
-    DATABASE_URL=sqlite:///app/instance/blacklist.db \
+    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/blacklist \
     REDIS_URL=redis://redis:6379/0 \
     # Security settings
     SECRET_KEY=change-in-production-please \
