@@ -311,7 +311,7 @@ docker-compose up -d
 ### 연락처
 - **기술 지원**: qws941@kakao.com
 - **긴급 상황**: GitHub Issues
-- **문서**: https://jclee94.github.io/blacklist/
+- **문서**: https://qws941.github.io/blacklist/
 
 ---
 

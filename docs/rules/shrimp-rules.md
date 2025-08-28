@@ -199,7 +199,7 @@ if isinstance(detection_date_raw, pd.Timestamp):
 ## Docker and Deployment Rules
 
 ### Registry Configuration (REQUIRED)
-- **Primary Registry**: `registry.jclee.me/jclee94/blacklist:latest`
+- **Primary Registry**: `registry.jclee.me/qws941/blacklist:latest`
 - **Build Command**: `make docker-build && make docker-push`
 - **Update Command**: `docker-compose pull && docker-compose up -d`
 

@@ -180,7 +180,7 @@ docs/
 2. Select "Deploy from a branch"
 3. Choose "main" branch and "/docs" folder
 4. Save configuration
-5. Site will be available at: `https://jclee94.github.io/blacklist/`
+5. Site will be available at: `https://qws941.github.io/blacklist/`
 
 ## 📊 Project Statistics
 

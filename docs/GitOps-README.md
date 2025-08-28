@@ -37,7 +37,7 @@ blacklist/
 
 ### 3. 🐳 Docker 이미지 빌드 & 푸시
 - **멀티 플랫폼**: linux/amd64, linux/arm64
-- **레지스트리**: registry.jclee.me/jclee94/blacklist
+- **레지스트리**: registry.jclee.me/qws941/blacklist
 - **캐싱 최적화**: GitHub Actions 캐시 활용
 - **보안 스캔**: Trivy를 통한 취약점 검사
 

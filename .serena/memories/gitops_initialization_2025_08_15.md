@@ -30,7 +30,7 @@
 
 ### 🔧 수정 사항
 - Helm values.yaml: 이미지 저장소 경로 수정
-  - 이전: registry.jclee.me/jclee94/blacklist
+  - 이전: registry.jclee.me/qws941/blacklist
   - 수정: registry.jclee.me/blacklist
 
 ### 📋 GitOps 파이프라인 현재 상태

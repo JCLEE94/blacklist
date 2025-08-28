@@ -12,7 +12,7 @@ if [[ ! -d "docs" ]]; then
 fi
 
 # GitHub Pages 설정 확인
-PAGES_URL="https://jclee94.github.io/blacklist/"
+PAGES_URL="https://qws941.github.io/blacklist/"
 echo "🌐 배포 대상: $PAGES_URL"
 
 # 문서 업데이트

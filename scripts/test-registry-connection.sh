@@ -50,12 +50,12 @@ fi
 
 # Test image pull (if blacklist image exists)
 echo "🐳 Testing image pull..."
-if docker pull registry.jclee.me/jclee94/blacklist:latest > /dev/null 2>&1; then
+if docker pull registry.jclee.me/qws941/blacklist:latest > /dev/null 2>&1; then
     echo -e "${GREEN}✅ Image pull successful${NC}"
     
     # Get image info
-    IMAGE_ID=$(docker images --format "table {{.ID}}" registry.jclee.me/jclee94/blacklist:latest | tail -n 1)
-    IMAGE_SIZE=$(docker images --format "table {{.Size}}" registry.jclee.me/jclee94/blacklist:latest | tail -n 1)
+    IMAGE_ID=$(docker images --format "table {{.ID}}" registry.jclee.me/qws941/blacklist:latest | tail -n 1)
+    IMAGE_SIZE=$(docker images --format "table {{.Size}}" registry.jclee.me/qws941/blacklist:latest | tail -n 1)
     echo -e "${GREEN}📦 Image ID: $IMAGE_ID${NC}"
     echo -e "${GREEN}📏 Image Size: $IMAGE_SIZE${NC}"
 else

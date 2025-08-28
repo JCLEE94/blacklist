@@ -15,11 +15,11 @@ keywords:
 
 home: https://blacklist.jclee.me
 sources:
-  - https://github.com/jclee94/blacklist
+  - https://github.com/qws941/blacklist
 
 maintainers:
   - name: JC Lee
-    email: jclee94@example.com
+    email: qws941@example.com
 
 annotations:
   category: Security

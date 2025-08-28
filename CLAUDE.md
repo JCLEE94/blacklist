@@ -166,7 +166,7 @@ curl http://localhost:32542/health | jq  # Verify live system
 - **Gunicorn** WSGI server with optimized worker configuration
 - **pytest** testing framework (19% coverage, improving to 95%)
 - **JWT + API Key** dual authentication system (validated)
-- **GitHub Pages** portfolio at https://jclee94.github.io/blacklist/
+- **GitHub Pages** portfolio at https://qws941.github.io/blacklist/
 - **GitOps** automated deployment with GitHub Actions
 - **Real-time monitoring** with health checks and performance tracking
 
@@ -716,7 +716,7 @@ python3 -c "from src.core.container import get_container; c = get_container(); p
 ## New Features (v1.0.37)
 
 ### 🚀 GitHub Pages Portfolio
-- **Live Site**: https://jclee94.github.io/blacklist/
+- **Live Site**: https://qws941.github.io/blacklist/
 - **Modern Design**: Dark theme with gradient animations
 - **Interactive Elements**: Counter animations, responsive charts
 - **Complete Documentation**: API reference, architecture diagrams

@@ -17,7 +17,7 @@ version: '3.8'
 
 services:
   blacklist:
-    image: registry.jclee.me/jclee94/blacklist:emergency
+    image: registry.jclee.me/qws941/blacklist:emergency
     container_name: blacklist-local
     restart: unless-stopped
     ports:
@@ -60,7 +60,7 @@ fi
 # 6. Registry 로그인 테스트 (선택적)
 echo ""
 echo "🔐 Registry 접근 테스트:"
-if docker pull registry.jclee.me/jclee94/blacklist:latest 2>/dev/null; then
+if docker pull registry.jclee.me/qws941/blacklist:latest 2>/dev/null; then
     echo "✅ Registry 접근 가능"
 else
     echo "❌ Registry 접근 불가 - 인증 필요"
@@ -69,7 +69,7 @@ fi
 echo ""
 echo "🎯 결과 요약:"
 echo "- 로컬 서비스: $(curl -s http://localhost:2541/health >/dev/null 2>&1 && echo '정상' || echo '비정상')"
-echo "- Registry: $(docker pull registry.jclee.me/jclee94/blacklist:latest >/dev/null 2>&1 && echo '접근가능' || echo '접근불가')"
+echo "- Registry: $(docker pull registry.jclee.me/qws941/blacklist:latest >/dev/null 2>&1 && echo '접근가능' || echo '접근불가')"
 echo ""
 echo "💡 다음 단계:"
 echo "1. 로컬 테스트: http://localhost:2541"

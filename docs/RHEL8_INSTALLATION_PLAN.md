@@ -151,7 +151,7 @@ sudo iptables-save > /etc/iptables/rules.v4
 #### 1. 오프라인 패키지 설치 (권장)
 ```bash
 # 패키지 다운로드 (인터넷 연결된 시스템에서)
-wget https://github.com/jclee94/blacklist/releases/latest/download/blacklist-rhel8-package.tar.gz
+wget https://github.com/qws941/blacklist/releases/latest/download/blacklist-rhel8-package.tar.gz
 
 # 패키지 복사 (사내망으로)
 scp blacklist-rhel8-package.tar.gz user@rhel8-server:/tmp/
@@ -167,7 +167,7 @@ sudo ./install-rhel8.sh
 ```bash
 # Git 저장소 클론
 cd /opt
-sudo git clone https://github.com/jclee94/blacklist.git
+sudo git clone https://github.com/qws941/blacklist.git
 sudo chown -R $USER:$USER /opt/blacklist
 cd /opt/blacklist
 

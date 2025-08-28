@@ -54,7 +54,7 @@ argocd app create "$APP_NAME" \
     --path "$HELM_PATH" \
     --dest-server https://kubernetes.default.svc \
     --dest-namespace "$APP_NAMESPACE" \
-    --helm-set image.repository=registry.jclee.me/jclee94/blacklist \
+    --helm-set image.repository=registry.jclee.me/qws941/blacklist \
     --helm-set image.tag=latest \
     --helm-set image.pullPolicy=Always \
     --values values.yaml \

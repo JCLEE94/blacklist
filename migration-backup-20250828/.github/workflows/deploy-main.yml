@@ -1,0 +1,338 @@
+name: 🚀 프로덕션 배포 파이프라인 | qws941/blacklist
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/deploy-pages.yml'
+      - '.github/BRANCH_STRATEGY.md'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deploy even if version matches'
+        required: false
+        default: false
+        type: boolean
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+env:
+  REGISTRY: registry.jclee.me
+  IMAGE_NAME: blacklist
+
+jobs:
+  # ========================================
+  # 변경 감지 및 버전 생성
+  # ========================================
+  prepare:
+    name: "🔍 변경 감지 & 동적 버전 생성"
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.changes.outputs.should_deploy }}
+      version: ${{ steps.version.outputs.version }}
+      git_hash: ${{ steps.version.outputs.git_hash }}
+      git_count: ${{ steps.version.outputs.git_count }}
+      build_version: ${{ steps.version.outputs.build_version }}
+      changed_files: ${{ steps.changes.outputs.changed_files }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2  # 변경 감지용
+        
+    - name: "🔍 스마트 변경 감지"
+      id: changes
+      run: |
+        echo "🔍 변경사항 분석 중..."
+        
+        SHOULD_DEPLOY=false
+        FORCE_DEPLOY="${{ inputs.force_deploy }}"
+        
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$FORCE_DEPLOY" = "true" ]; then
+          echo "🔨 강제 배포 요청"
+          SHOULD_DEPLOY=true
+          CHANGED_FILES="Manual trigger"
+        else
+          # 변경된 파일 확인
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          
+          if echo "$CHANGED_FILES" | grep -qE "\.(py|yml|yaml|txt|json)$|^Dockerfile|^main\.py"; then
+            echo "✅ 애플리케이션 파일 변경 감지"
+            SHOULD_DEPLOY=true
+          else
+            echo "ℹ️ 배포 불필요한 변경사항"
+            SHOULD_DEPLOY=false
+          fi
+        fi
+        
+        echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+        echo "changed_files=${CHANGED_FILES//$'\n'/ }" >> $GITHUB_OUTPUT
+        
+        echo "📊 결과: 배포 필요 = $SHOULD_DEPLOY"
+        echo "📝 변경 파일: $CHANGED_FILES"
+
+    - name: "📦 동적 버전 생성"  
+      id: version
+      if: steps.changes.outputs.should_deploy == 'true'
+      run: |
+        echo "📦 동적 버전 생성 중..."
+        
+        # Git 정보
+        GIT_COUNT=$(git rev-list --count HEAD)
+        GIT_HASH=$(git rev-parse --short HEAD)
+        GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        
+        # 동적 버전: 1.0.커밋수.해시
+        DYNAMIC_VERSION="1.0.${GIT_COUNT}.${GIT_HASH}"
+        
+        # 빌드 버전
+        BUILD_VERSION="v$(date +%Y%m%d)-${{ github.run_number }}"
+        
+        echo "version=$DYNAMIC_VERSION" >> $GITHUB_OUTPUT
+        echo "git_hash=$GIT_HASH" >> $GITHUB_OUTPUT  
+        echo "git_count=$GIT_COUNT" >> $GITHUB_OUTPUT
+        echo "build_version=$BUILD_VERSION" >> $GITHUB_OUTPUT
+        
+        echo "📦 동적 버전: $DYNAMIC_VERSION"
+        echo "🏗️ 빌드 버전: $BUILD_VERSION"
+
+  # ========================================
+  # Docker 이미지 빌드
+  # ========================================
+  build:
+    name: "🐳 Docker 빌드 & 레지스트리 푸시"
+    needs: prepare
+    if: needs.prepare.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: "🐳 레지스트리 로그인"
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+    
+    - name: "🏗️ 이미지 빌드 & 푸시"
+      run: |
+        VERSION="${{ needs.prepare.outputs.version }}"
+        BUILD_VERSION="${{ needs.prepare.outputs.build_version }}"
+        
+        echo "🛡️ Blacklist 시스템 빌드 중..."
+        echo "📦 버전: $VERSION"
+        
+        # 효율적인 멀티 태그 빌드
+        docker build \
+          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION \
+          -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$BUILD_VERSION \
+          --build-arg DYNAMIC_VERSION=$VERSION \
+          --build-arg BUILD_VERSION=$BUILD_VERSION \
+          --build-arg BUILD_NUMBER=${{ github.run_number }} \
+          --build-arg COMMIT_SHA=${{ github.sha }} \
+          --build-arg COMMIT_COUNT=${{ needs.prepare.outputs.git_count }} \
+          --build-arg GIT_HASH=${{ needs.prepare.outputs.git_hash }} \
+          --build-arg GITHUB_ACTIONS=true \
+          --build-arg FLASK_ENV=production \
+          --label "version=$VERSION" \
+          --label "build=$BUILD_VERSION" \
+          .
+        
+        echo "📤 레지스트리 푸시..."
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
+        
+        echo "✅ 빌드 완료: $VERSION"
+
+  # ========================================
+  # 프로덕션 배포
+  # ========================================
+  deploy:
+    name: "🚀 프로덕션 배포 & 헬스체크"
+    needs: [prepare, build]
+    if: needs.prepare.outputs.should_deploy == 'true'
+    runs-on: self-hosted
+    
+    steps:
+    - name: "🔄 스마트 배포 실행"
+      run: |
+        echo "🚀 프로덕션 배포 시작..."
+        NEW_VERSION="${{ needs.prepare.outputs.version }}"
+        
+        # 레지스트리 로그인
+        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+        
+        # 최신 이미지 풀
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+        # 현재 버전 확인
+        CURRENT_VERSION="none"
+        if docker exec blacklist curl -s http://localhost:2542/api/version 2>/dev/null | grep -o '"version":"[^"]*"' >/dev/null 2>&1; then
+          CURRENT_VERSION=$(docker exec blacklist curl -s http://localhost:2542/api/version 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+        fi
+        
+        echo "📊 현재: $CURRENT_VERSION → 새 버전: $NEW_VERSION"
+        
+        # 배포 결정
+        FORCE_DEPLOY="${{ inputs.force_deploy }}"
+        if [ "$CURRENT_VERSION" != "$NEW_VERSION" ] || [ "$FORCE_DEPLOY" = "true" ]; then
+          echo "🔄 버전 업데이트 실행..."
+          
+          # 무중단 재배포
+          docker stop blacklist 2>/dev/null || true
+          docker rm blacklist 2>/dev/null || true
+          
+          # 최적화된 컨테이너 실행
+          docker run -d \
+            --name blacklist \
+            --restart unless-stopped \
+            --network bridge \
+            -p 32542:2542 \
+            -v blacklist-data:/app/instance \
+            -v blacklist-logs:/app/logs \
+            --memory=1g \
+            --cpus=1.0 \
+            -e FLASK_ENV=production \
+            -e DATABASE_URL=sqlite:///app/instance/blacklist.db \
+            -e PYTHONUNBUFFERED=1 \
+            --health-cmd="curl -f http://localhost:2542/health || exit 1" \
+            --health-interval=30s \
+            --health-retries=3 \
+            --health-start-period=40s \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          echo "✅ 배포 완료: $NEW_VERSION"
+        else
+          echo "⏭️ 동일한 버전, 배포 스킵"
+        fi
+
+    - name: "🏥 포괄적 헬스체크"
+      run: |
+        echo "🏥 시스템 상태 검증..."
+        
+        # 컨테이너 시작 대기
+        sleep 20
+        
+        # 1. 컨테이너 상태 확인
+        if ! docker ps --format "{{.Names}}" | grep -q "^blacklist$"; then
+          echo "❌ 컨테이너 실행 실패"
+          exit 1
+        fi
+        
+        # 2. 애플리케이션 헬스체크
+        for i in {1..10}; do
+          echo "🔍 헬스체크 시도 $i/10..."
+          if docker exec blacklist curl -f http://localhost:2542/health >/dev/null 2>&1; then
+            echo "✅ 내부 헬스체크 통과"
+            break
+          elif [ $i -eq 10 ]; then
+            echo "❌ 내부 헬스체크 실패"
+            docker logs blacklist --tail 20
+            exit 1
+          fi
+          sleep 5
+        done
+        
+        # 3. 외부 접근 테스트 
+        for i in {1..5}; do
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://blacklist.jclee.me/health || echo "000")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ 외부 접근 정상"
+            break
+          elif [ $i -eq 5 ]; then
+            echo "⚠️ 외부 접근 이슈 (HTTP $HTTP_CODE)"
+          fi
+          sleep 10
+        done
+        
+        # 4. 버전 확인
+        DEPLOYED_VERSION=$(curl -s https://blacklist.jclee.me/api/version | grep -o '"version":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+        echo "📦 배포된 버전: $DEPLOYED_VERSION"
+        
+        echo "🎉 배포 및 검증 완료!"
+
+  # ========================================
+  # 배포 결과 요약
+  # ========================================  
+  summary:
+    name: "📊 배포 요약 리포트"
+    needs: [prepare, build, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: "📊 결과 요약 생성"
+      run: |
+        echo "# 🛡️ Blacklist 시스템 배포 리포트" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 📦 버전 정보" >> $GITHUB_STEP_SUMMARY
+        echo "- **동적 버전:** ${{ needs.prepare.outputs.version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **빌드 버전:** ${{ needs.prepare.outputs.build_version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY  
+        echo "- **Git 해시:** ${{ needs.prepare.outputs.git_hash || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **커밋 수:** ${{ needs.prepare.outputs.git_count || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 🚀 배포 상태" >> $GITHUB_STEP_SUMMARY
+        echo "| 단계 | 상태 | 결과 |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|------|------|" >> $GITHUB_STEP_SUMMARY
+        
+        # 변경 감지 결과
+        if [ "${{ needs.prepare.outputs.should_deploy }}" = "true" ]; then
+          echo "| 🔍 변경 감지 | ✅ | 배포 필요 |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 🔍 변경 감지 | ⏭️ | 배포 불필요 |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # 빌드 결과
+        if [ "${{ needs.build.result }}" = "success" ]; then
+          echo "| 🐳 이미지 빌드 | ✅ | 성공 |" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.prepare.outputs.should_deploy }}" = "true" ]; then
+          echo "| 🐳 이미지 빌드 | ❌ | 실패 |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 🐳 이미지 빌드 | ⏭️ | 스킵 |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # 배포 결과  
+        if [ "${{ needs.deploy.result }}" = "success" ]; then
+          echo "| 🚀 프로덕션 배포 | ✅ | 성공 |" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.prepare.outputs.should_deploy }}" = "true" ]; then
+          echo "| 🚀 프로덕션 배포 | ❌ | 실패 |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 🚀 프로덕션 배포 | ⏭️ | 스킵 |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 🌐 시스템 접속" >> $GITHUB_STEP_SUMMARY
+        echo "- **🌐 라이브 시스템:** https://blacklist.jclee.me/" >> $GITHUB_STEP_SUMMARY
+        echo "- **📊 대시보드:** https://blacklist.jclee.me/dashboard" >> $GITHUB_STEP_SUMMARY
+        echo "- **💚 헬스체크:** https://blacklist.jclee.me/health" >> $GITHUB_STEP_SUMMARY
+        echo "- **📦 버전 정보:** https://blacklist.jclee.me/api/version" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 📝 변경사항" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "${{ needs.prepare.outputs.changed_files || 'No changes detected' }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        
+        # 최종 상태
+        if [ "${{ needs.deploy.result }}" = "success" ]; then
+          echo "## 🎉 배포 성공!" >> $GITHUB_STEP_SUMMARY
+          echo "시스템이 성공적으로 업데이트되었습니다." >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.prepare.outputs.should_deploy }}" = "false" ]; then
+          echo "## ⏭️ 배포 스킵" >> $GITHUB_STEP_SUMMARY
+          echo "변경사항이 없어 배포를 건너뛰었습니다." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ⚠️ 배포 이슈" >> $GITHUB_STEP_SUMMARY
+          echo "배포 과정에서 문제가 발생했습니다. 로그를 확인하세요." >> $GITHUB_STEP_SUMMARY
+        fi

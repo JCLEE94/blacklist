@@ -75,7 +75,7 @@
 - ✅ **offline-package.yml** - 오프라인 패키지 생성
 
 ### 컨테이너 레지스트리
-- **Primary**: `registry.jclee.me/jclee94/blacklist:latest`
+- **Primary**: `registry.jclee.me/qws941/blacklist:latest`
 - **Backup**: `ghcr.io/jclee94/blacklist:latest` 
 - **상태**: 이미지 준비됨, 자격증명 설정 필요
 
@@ -83,7 +83,7 @@
 ```yaml
 services:
   blacklist:
-    image: registry.jclee.me/jclee94/blacklist:latest
+    image: registry.jclee.me/qws941/blacklist:latest
     ports: ["32542:8541"]
 ```
 

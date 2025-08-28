@@ -19,7 +19,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a wel
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/jclee94/blacklist.git
+   git clone https://github.com/qws941/blacklist.git
    cd blacklist
    ```
 

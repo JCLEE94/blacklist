@@ -554,7 +554,7 @@ X-RateLimit-Reset: 1692345600
   - Migration from registry.jclee.me to registry.jclee.me
   - Enhanced CI/CD pipeline with ubuntu-latest
 - **🎨 GitHub Pages Portfolio**
-  - Live portfolio site: https://jclee94.github.io/blacklist/
+  - Live portfolio site: https://qws941.github.io/blacklist/
   - Modern design with performance metrics
 - **⚡ Performance Enhancements**
   - Unified caching decorators
@@ -582,6 +582,6 @@ X-RateLimit-Reset: 1692345600
 
 **API Documentation Version**: v1.0.37  
 **Last Updated**: 2025-08-14  
-**Portfolio Site**: https://jclee94.github.io/blacklist/  
-**Container Registry**: registry.jclee.me/jclee94/blacklist  
+**Portfolio Site**: https://qws941.github.io/blacklist/  
+**Container Registry**: registry.jclee.me/qws941/blacklist  
 **OpenAPI Specification**: Available at `/api/docs` (when enabled)

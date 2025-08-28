@@ -1,0 +1,169 @@
+# Blacklist Management System - Docker Compose
+# KST Timezone Configuration with Multi-service Architecture
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service with KST timezone
+  postgres:
+    image: postgres:15-alpine
+    container_name: blacklist-postgres-compose
+    environment:
+      POSTGRES_DB: blacklist
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # KST Timezone Configuration
+      TZ: Asia/Seoul
+      PGTZ: Asia/Seoul
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgresql/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache Service with KST timezone  
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    environment:
+      # KST Timezone Configuration
+      TZ: Asia/Seoul
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Main Blacklist Application with comprehensive KST configuration
+  blacklist:
+    image: registry.jclee.me/blacklist:latest
+    container_name: blacklist
+    environment:
+      # KST Timezone Environment Variables (Primary Configuration)
+      TZ: Asia/Seoul
+      TIMEZONE: Asia/Seoul
+      LC_TIME: ko_KR.UTF-8
+      
+      # Application Configuration
+      FLASK_ENV: production
+      FLASK_APP: main.py
+      PORT: 2542
+      
+      # Database Configuration with KST awareness
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/blacklist
+      DATABASE_TIMEZONE: Asia/Seoul
+      
+      # Redis Configuration with KST awareness  
+      REDIS_URL: redis://redis:6379/0
+      CACHE_TIMEZONE: Asia/Seoul
+      
+      # Security Configuration
+      SECRET_KEY: ${SECRET_KEY:-change-in-production-please}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-blacklist-jwt-secret-2024}
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: 7
+      
+      # Collection Configuration with KST timestamps
+      COLLECTION_ENABLED: true
+      FORCE_DISABLE_COLLECTION: false
+      COLLECTION_TIMEZONE: Asia/Seoul
+      
+      # External API Credentials (from .env file)
+      REGTECH_USERNAME: ${REGTECH_USERNAME}
+      REGTECH_PASSWORD: ${REGTECH_PASSWORD}
+      SECUDIUM_USERNAME: ${SECUDIUM_USERNAME}
+      SECUDIUM_PASSWORD: ${SECUDIUM_PASSWORD}
+      
+      # Logging Configuration with KST timestamps
+      LOG_LEVEL: INFO
+      LOG_TIMEZONE: Asia/Seoul
+      DEBUG: false
+      
+      # Performance & Monitoring with KST timestamps
+      METRICS_TIMEZONE: Asia/Seoul
+      HEALTH_CHECK_TIMEZONE: Asia/Seoul
+      
+      # Python Configuration for KST timezone support
+      PYTHONUNBUFFERED: 1
+      PYTHONDONTWRITEBYTECODE: 1
+      
+      # Additional KST Configuration
+      SCHEDULER_TIMEZONE: Asia/Seoul
+      DEFAULT_TIMEZONE: Asia/Seoul
+      API_RESPONSE_TIMEZONE: Asia/Seoul
+      
+    ports:
+      - "32542:2542"
+    volumes:
+      - blacklist_data:/app/instance
+      - ./data:/app/data:rw
+      - /etc/localtime:/etc/localtime:ro  # Host timezone sync
+    networks:
+      - blacklist-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2542/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # Watchtower for automatic updates (KST timezone aware)
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    environment:
+      # KST Timezone for Watchtower logs and scheduling
+      TZ: Asia/Seoul
+      WATCHTOWER_CLEANUP: true
+      WATCHTOWER_INCLUDE_STOPPED: true
+      WATCHTOWER_SCHEDULE: "0 2 * * *"  # 2 AM KST daily
+      WATCHTOWER_NOTIFICATIONS: json
+      WATCHTOWER_NOTIFICATION_URL: ${WATCHTOWER_WEBHOOK_URL:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - blacklist-network
+    restart: unless-stopped
+    command: --label-enable --interval 3600  # Check every hour
+
+# Networks
+networks:
+  blacklist-network:
+    external: true
+    name: blacklist-network
+
+# Persistent volumes
+volumes:
+  postgres_data:
+    driver: local
+    name: blacklist_postgres_data
+  redis_data:
+    driver: local
+    name: blacklist_redis_data
+  blacklist_data:
+    driver: local
+    name: blacklist_app_data

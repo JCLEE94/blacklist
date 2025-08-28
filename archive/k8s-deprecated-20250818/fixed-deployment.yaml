@@ -22,7 +22,7 @@ spec:
       containers:
       - name: blacklist
         # 로컬 이미지 사용 (이미 존재함)
-        image: registry.jclee.me/jclee94/blacklist:latest
+        image: registry.jclee.me/qws941/blacklist:latest
         imagePullPolicy: IfNotPresent  # 로컬 이미지 우선 사용
         ports:
         - containerPort: 2542

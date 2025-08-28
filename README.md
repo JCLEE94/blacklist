@@ -49,7 +49,7 @@ python scripts/run_with_credentials.py docker-compose up
 ```
 
 [![Live System](https://img.shields.io/badge/Live%20System-blacklist.jclee.me-success?style=for-the-badge&logo=server)](https://blacklist.jclee.me/)
-[![Live Demo](https://img.shields.io/badge/Portfolio-jclee94.github.io-blue?style=for-the-badge&logo=github-pages)](https://jclee94.github.io/blacklist/)
+[![Live Demo](https://img.shields.io/badge/Portfolio-qws941.github.io-blue?style=for-the-badge&logo=github-pages)](https://qws941.github.io/blacklist/)
 [![Docker](https://img.shields.io/badge/Docker-registry.jclee.me-2496ED?style=for-the-badge&logo=docker)](https://registry.jclee.me)
 [![GitOps](https://img.shields.io/badge/GitOps-8.5%2F10-success?style=for-the-badge)](https://github.com/JCLEE94/blacklist/actions)
 
@@ -65,7 +65,7 @@ curl https://blacklist.jclee.me/api/blacklist/active
 open https://blacklist.jclee.me/dashboard
 
 # Portfolio Site
-open https://jclee94.github.io/blacklist/
+open https://qws941.github.io/blacklist/
 ```
 
 ### 🐳 Local Development
@@ -84,7 +84,7 @@ python3 scripts/init_security.py
 ## 📊 Live System Status (v1.0.37)
 
 - **🌐 Live URL**: [`blacklist.jclee.me`](https://blacklist.jclee.me/) - **OPERATIONAL**
-- **📊 Portfolio**: [`jclee94.github.io/blacklist`](https://jclee94.github.io/blacklist/) (GitHub Pages)
+- **📊 Portfolio**: [`qws941.github.io/blacklist`](https://qws941.github.io/blacklist/) (GitHub Pages)
 - **🐳 Container**: `registry.jclee.me/blacklist:latest` (Private Registry)
 - **🏗️ Architecture**: Flask + PostgreSQL + Redis + JWT Authentication
 - **📡 Collection**: REGTECH/SECUDIUM Automated + Real-time Dashboard
@@ -202,7 +202,7 @@ curl https://blacklist.jclee.me/api/collection/status | jq
 - **Security**: JWT + API Key authentication working
 
 ### 🎨 Portfolio Website
-- **Demo Site**: https://jclee94.github.io/blacklist/
+- **Demo Site**: https://qws941.github.io/blacklist/
 - Modern dark theme with responsive design
 - Interactive performance metrics charts
 - Complete API documentation and architecture diagrams
@@ -286,4 +286,4 @@ python3 scripts/create-offline-package.py
 
 ---
 
-**Made with ❤️ by JCLEE** | [Portfolio Demo](https://jclee94.github.io/blacklist/) | [Docker Image](https://registry.jclee.me/blacklist)# Hook 테스트용 코멘트
+**Made with ❤️ by JCLEE** | [Portfolio Demo](https://qws941.github.io/blacklist/) | [Docker Image](https://registry.jclee.me/blacklist)# Hook 테스트용 코멘트

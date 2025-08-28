@@ -1,6 +1,6 @@
 #!/bin/bash
 # Redis 커스텀 이미지 빌드 및 푸시 스크립트
-# registry.jclee.me/jclee94/blacklist-redis
+# registry.jclee.me/qws941/blacklist-redis
 
 set -e
 

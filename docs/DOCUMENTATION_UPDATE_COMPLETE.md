@@ -167,7 +167,7 @@ Documentation has been comprehensively updated to reflect the **current live sys
 
 ### Live System
 - **Production URL**: https://blacklist.jclee.me/
-- **Portfolio Demo**: https://jclee94.github.io/blacklist/
+- **Portfolio Demo**: https://qws941.github.io/blacklist/
 - **Container Registry**: registry.jclee.me/blacklist:latest
 
 ### Documentation Structure

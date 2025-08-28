@@ -86,7 +86,7 @@ helm-chart/blacklist/
 2. **Test Suite** → Python 3.9/3.11 matrix, pytest with coverage
 3. **Security Scan** → Trivy filesystem scan, Bandit SAST analysis
 4. **Docker Build** → Multi-stage build, security scanning, multi-arch
-5. **Registry Push** → `registry.jclee.me/jclee94/blacklist:latest`
+5. **Registry Push** → `registry.jclee.me/qws941/blacklist:latest`
 6. **Helm Package** → Chart build, version increment, push to OCI registry
 7. **ArgoCD Trigger** → API call to force application sync
 8. **K8s Deploy** → Rolling update with health checks
@@ -219,11 +219,11 @@ curl -k -X POST -H "Authorization: Bearer $ARGOCD_TOKEN" \
 docker login registry.jclee.me -u admin -p bingogo1
 
 # Check image exists
-curl -s https://registry.jclee.me/v2/jclee94/blacklist/tags/list | jq
+curl -s https://registry.jclee.me/v2/qws941/blacklist/tags/list | jq
 
 # Manual image pull/push
-docker pull registry.jclee.me/jclee94/blacklist:latest
-docker push registry.jclee.me/jclee94/blacklist:latest
+docker pull registry.jclee.me/qws941/blacklist:latest
+docker push registry.jclee.me/qws941/blacklist:latest
 ```
 
 #### 4. Kubernetes Deployment Issues

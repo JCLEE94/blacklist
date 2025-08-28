@@ -100,7 +100,7 @@ Jenkins 관리 → 플러그인 관리에서 다음 플러그인 설치:
 3. 타입: "Pipeline" 선택
 4. Pipeline 섹션에서 "Pipeline script from SCM" 선택
 5. SCM: Git
-6. Repository URL: `https://github.com/jclee94/blacklist.git`
+6. Repository URL: `https://github.com/qws941/blacklist.git`
 7. Script Path: `Jenkinsfile`
 
 #### 옵션 B: Job Template 사용

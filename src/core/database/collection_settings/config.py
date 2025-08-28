@@ -134,18 +134,17 @@ class ConfigurationManager:
     def save_credentials(self, source_name: str, username: str, password: str) -> bool:
         """Save encrypted credentials for a source"""
         try:
-            # Encrypt credentials
-            credentials = json.dumps({"username": username, "password": password})
-            credentials_encrypted = self.cipher.encrypt(credentials.encode()).decode()
+            # Encrypt password
+            password_encrypted = self.cipher.encrypt(password.encode()).decode()
 
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
                     INSERT OR REPLACE INTO collection_credentials
-                    (source_name, credentials_encrypted, updated_at)
-                    VALUES (?, ?, ?)
+                    (source_name, username, password_encrypted, updated_at)
+                    VALUES (?, ?, ?, ?)
                 """,
-                    (source_name, credentials_encrypted, datetime.now()),
+                    (source_name, username, password_encrypted, datetime.now()),
                 )
                 conn.commit()
 
@@ -162,19 +161,19 @@ class ConfigurationManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
                     """
-                    SELECT credentials_encrypted FROM collection_credentials
+                    SELECT username, password_encrypted FROM collection_credentials
                     WHERE source_name = ?
                 """,
                     (source_name,),
                 )
                 row = cursor.fetchone()
 
-                if row and row["credentials_encrypted"]:
-                    # Decrypt credentials
-                    credentials_decrypted = self.cipher.decrypt(
-                        row["credentials_encrypted"].encode()
+                if row and row["username"] and row["password_encrypted"]:
+                    # Decrypt password
+                    password_decrypted = self.cipher.decrypt(
+                        row["password_encrypted"].encode()
                     ).decode()
-                    return json.loads(credentials_decrypted)
+                    return {"username": row["username"], "password": password_decrypted}
 
             return None
 

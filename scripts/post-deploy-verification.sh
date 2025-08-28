@@ -216,7 +216,7 @@ main() {
     echo "🔗 Useful Links:"
     echo "Production: $PROD_URL"
     echo "Local: http://localhost:$LOCAL_PORT (if running)"
-    echo "Portfolio: https://jclee94.github.io/blacklist/"
+    echo "Portfolio: https://qws941.github.io/blacklist/"
     echo "========================================"
     
     exit $overall_status

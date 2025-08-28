@@ -281,7 +281,7 @@ python3 scripts/version-manager.py --show-references | grep "filename"
 ### Live System
 - **Production URL**: https://blacklist.jclee.me/
 - **Health Check**: https://blacklist.jclee.me/health
-- **Portfolio**: https://jclee94.github.io/blacklist/
+- **Portfolio**: https://qws941.github.io/blacklist/
 
 ### GitHub Integration
 - **Actions**: Automated CI/CD with version management

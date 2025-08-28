@@ -36,7 +36,7 @@ spec:
   revisionHistoryLimit: 10
   info:
     - name: "Documentation"
-      value: "https://jclee94.github.io/blacklist/"
+      value: "https://qws941.github.io/blacklist/"
     - name: "Live System"
       value: "https://blacklist.jclee.me/"
     - name: "Health Check"

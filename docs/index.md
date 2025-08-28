@@ -135,7 +135,7 @@ description: Enterprise Threat Intelligence Platform with Complete Offline Deplo
 
 ### 프로젝트 링크
 - **GitHub Repository**: [JCLEE94/blacklist](https://github.com/JCLEE94/blacklist)
-- **Documentation**: [jclee94.github.io/blacklist](https://jclee94.github.io/blacklist/)
+- **Documentation**: [qws941.github.io/blacklist](https://qws941.github.io/blacklist/)
 - **Issue Tracker**: [GitHub Issues](https://github.com/JCLEE94/blacklist/issues)
 
 ### 핵심 역량
