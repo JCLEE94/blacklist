@@ -185,19 +185,19 @@ SIMPLE_PANEL_HTML = """
                 <h2>🔐 인증정보 관리</h2>
                 <div class="form-group">
                     <label>REGTECH 사용자명:</label>
-                    <input type="text" id="regtech-username" value="nextrade">
+                    <input type="text" id="regtech-username" placeholder="사용자명을 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>REGTECH 비밀번호:</label>
-                    <input type="password" id="regtech-password" value="Sprtmxm1@3">
+                    <input type="password" id="regtech-password" placeholder="비밀번호를 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>SECUDIUM 사용자명:</label>
-                    <input type="text" id="secudium-username" value="nextrade">
+                    <input type="text" id="secudium-username" placeholder="사용자명을 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>SECUDIUM 비밀번호:</label>
-                    <input type="password" id="secudium-password" value="Sprtmxm1@3">
+                    <input type="password" id="secudium-password" placeholder="비밀번호를 입력하세요">
                 </div>
                 <button onclick="saveCredentials()" class="btn btn-primary">💾 인증정보 저장</button>
                 <button onclick="testAllConnections()" class="btn btn-success">🔧 연결 테스트</button>
@@ -452,10 +452,34 @@ SIMPLE_PANEL_HTML = """
                 });
         }
 
+        function loadCredentials() {
+            // 보안상 자격증명은 사용자가 직접 입력해야 합니다
+            // 실제 환경에서는 암호화된 저장소에서 안전하게 로드
+            fetch('/collection-panel/api/load-credentials')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 보안을 위해 사용자명만 표시, 비밀번호는 표시하지 않음
+                        if (data.credentials.regtech_username) {
+                            document.getElementById('regtech-username').value = data.credentials.regtech_username;
+                        }
+                        if (data.credentials.secudium_username) {
+                            document.getElementById('secudium-username').value = data.credentials.secudium_username;
+                        }
+                        // 비밀번호는 보안상 표시하지 않음
+                        showStatus('인증정보 로드 완료 (보안상 비밀번호는 표시되지 않음)', 'info');
+                    }
+                })
+                .catch(error => {
+                    showStatus('인증정보 로드 실패: ' + error, 'error');
+                });
+        }
+
         // 페이지 로드시 초기 데이터 로드
         document.addEventListener('DOMContentLoaded', function() {
             initChart();  // 차트 초기화
             refreshData();
+            loadCredentials();  // 안전한 방법으로 자격증명 로드
             
             // 30초마다 자동 새로고침
             setInterval(refreshData, 30000);
@@ -487,6 +511,57 @@ def panel_status():
             ],
         }
     )
+
+
+@simple_collection_bp.route("/api/load-credentials")
+def load_credentials():
+    """UI에서 자격증명 로드 (보안상 사용자명만 반환)"""
+    try:
+        import psycopg2
+
+        conn = psycopg2.connect(
+            host="blacklist-postgres",
+            database="blacklist",
+            user="postgres",
+            password="postgres",
+        )
+        cur = conn.cursor()
+
+        # 자격증명 조회 (비밀번호는 보안상 반환하지 않음)
+        cur.execute(
+            """
+            SELECT service_name, username 
+            FROM collection_credentials 
+            WHERE is_active = true
+        """
+        )
+
+        credentials = {}
+        for row in cur.fetchall():
+            service_name = row[0].lower()
+            username = row[1]
+            credentials[f"{service_name}_username"] = username
+            # 비밀번호는 보안상 반환하지 않음
+
+        conn.close()
+
+        return jsonify(
+            {
+                "success": True,
+                "credentials": credentials,
+                "message": "보안상 비밀번호는 표시되지 않습니다",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"자격증명 로드 실패: {e}")
+        return jsonify(
+            {
+                "success": False,
+                "credentials": {},
+                "error": "자격증명을 로드할 수 없습니다",
+            }
+        )
 
 
 @simple_collection_bp.route("/api/save-credentials", methods=["POST"])
