@@ -483,9 +483,9 @@ class TestAPIKeyManagement(unittest.TestCase):
 
         # Test valid keys
         valid_keys = [
-            "blk_1234567890abcdef1234567890abcdef",
-            "blk_0000000000000000000000000000000",
-            "blk_ffffffffffffffffffffffffffffffff",
+            "blk_1234567890abcdef1234567890abcdef",  # 32 hex chars = 36 total
+            "blk_00000000000000000000000000000000",  # 32 hex chars = 36 total
+            "blk_ffffffffffffffffffffffffffffffff",  # 32 hex chars = 36 total
         ]
 
         for key in valid_keys:
