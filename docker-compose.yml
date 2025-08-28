@@ -7,6 +7,8 @@ services:
   postgres:
     image: registry.jclee.me/blacklist-postgres:latest
     container_name: blacklist-postgres
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       POSTGRES_DB: blacklist
       POSTGRES_USER: postgres
@@ -15,7 +17,7 @@ services:
       TZ: Asia/Seoul
       PGTZ: Asia/Seoul
     ports:
-      - "5434:5432"
+      - "32543:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -31,11 +33,13 @@ services:
   redis:
     image: registry.jclee.me/blacklist-redis:latest
     container_name: blacklist-redis
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       # KST Timezone Configuration
       TZ: Asia/Seoul
     ports:
-      - "6379:6379"
+      - "32544:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -52,6 +56,8 @@ services:
   blacklist:
     image: registry.jclee.me/blacklist:latest
     container_name: blacklist-app
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       # KST Timezone Environment Variables (Primary Configuration)
       TZ: Asia/Seoul

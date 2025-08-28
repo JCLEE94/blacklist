@@ -38,7 +38,7 @@ def get_db_connection():
             logger.info("Connecting using local development settings")
             conn = psycopg2.connect(
                 host="localhost",
-                port=5434,  # External PostgreSQL port
+                port=32543,  # External PostgreSQL port
                 database="blacklist",
                 user="postgres",
                 password="postgres",
