@@ -11,8 +11,17 @@ from flask import Response, jsonify
 
 logger = logging.getLogger(__name__)
 
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
+
+try:
+    from ..utils.timezone_utils import get_kst_now, format_iso_kst
+except ImportError:
+    # Fallback for direct module execution
+    import sys
+    import os
+
+    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+    from utils.timezone_utils import get_kst_now, format_iso_kst
 
 
 class ResponseBuilder:
@@ -35,7 +44,7 @@ class ResponseBuilder:
         Returns:
             Flask Response object with 200 status
         """
-        response_data = {"success": True, "timestamp": datetime.now().isoformat()}
+        response_data = {"success": True, "timestamp": format_iso_kst()}
 
         if data is not None:
             response_data["data"] = data
@@ -70,7 +79,7 @@ class ResponseBuilder:
         response_data = {
             "success": False,
             "error": message,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": format_iso_kst(),
         }
 
         if error_code:
@@ -98,7 +107,7 @@ class ResponseBuilder:
         response_data = {
             "success": False,
             "error": message,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": format_iso_kst(),
         }
 
         if error_id:
@@ -118,7 +127,7 @@ class ResponseBuilder:
         Returns:
             Flask Response object with 400 status
         """
-        response_data = {"success": False, "timestamp": datetime.now().isoformat()}
+        response_data = {"success": False, "timestamp": format_iso_kst()}
 
         if isinstance(message, dict):
             response_data["error"] = message.get("message", "Validation failed")
@@ -145,7 +154,7 @@ class ResponseBuilder:
         response_data = {
             "success": False,
             "error": message,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": format_iso_kst(),
         }
 
         return jsonify(response_data), 401
@@ -164,7 +173,7 @@ class ResponseBuilder:
         response_data = {
             "success": False,
             "error": "{resource} not found",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": format_iso_kst(),
         }
 
         return jsonify(response_data), 404
@@ -183,7 +192,7 @@ class ResponseBuilder:
         response_data = {
             "success": False,
             "error": "Rate limit exceeded",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": format_iso_kst(),
         }
 
         if retry_after:
@@ -226,7 +235,7 @@ class ResponseBuilder:
             "entries": entries,
             "metadata": {
                 "total_count": len(ips),
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": format_iso_kst(),
                 "format": "fortigate_external_connector",
                 **(metadata or {}),
             },
@@ -266,7 +275,7 @@ class ResponseBuilder:
                     ),
                 },
             },
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": format_iso_kst(),
         }
 
         if metadata:
@@ -291,7 +300,7 @@ class ResponseBuilder:
                 "success": True,
                 "export_data": data,
                 "format": format_type,
-                "exported_at": datetime.now().isoformat(),
+                "exported_at": format_iso_kst(),
             }
             return jsonify(response_data), 200
 
@@ -307,7 +316,7 @@ class ResponseBuilder:
                     content,
                     mimetype="text/plain",
                     headers={
-                        "Content-Disposition": 'attachment; filename=export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+                        "Content-Disposition": 'attachment; filename=export_{get_kst_now().strftime("%Y%m%d_%H%M%S")}.txt'
                     },
                 ),
                 200,
@@ -319,7 +328,7 @@ class ResponseBuilder:
                 "success": True,
                 "export_data": data,
                 "format": format_type,
-                "exported_at": datetime.now().isoformat(),
+                "exported_at": format_iso_kst(),
                 "note": "Format {format_type} not specifically supported, returned as JSON",
             }
             return jsonify(response_data), 200
