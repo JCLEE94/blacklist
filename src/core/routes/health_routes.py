@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
+from ..utils.version_utils import get_dynamic_version
 
 # 헬스체크 라우트 블루프린트
 health_routes_bp = Blueprint("health_routes", __name__)
@@ -48,7 +49,7 @@ def health_check():
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "service": "blacklist-management",
-            "version": "1.3.1",
+            "version": get_dynamic_version(),
             "components": components,
         }
 
@@ -104,7 +105,7 @@ def detailed_health_check():
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "service": "blacklist-management",
-            "version": "1.3.1",
+            "version": get_dynamic_version(),
             "uptime": health_info.get("uptime", "unknown"),
             "components": detailed_components,
             "metrics": {
@@ -276,7 +277,7 @@ def visual_build_info():
 
         # 템플릿 데이터
         template_data = {
-            "version": "1.3.1",
+            "version": get_dynamic_version(),
             "git_commit": git_commit,
             "git_branch": git_branch,
             "build_date": build_date,

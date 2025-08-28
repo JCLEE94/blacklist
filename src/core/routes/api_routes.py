@@ -14,6 +14,7 @@ from .blacklist_routes import blacklist_routes_bp
 
 # 분할된 라우트 모듈들 임포트
 from .health_routes import health_routes_bp
+from ..utils.version_utils import get_dynamic_version
 
 # 메인 API 라우트 블루프린트
 api_routes_bp = Blueprint("api_routes", __name__)
@@ -171,7 +172,7 @@ def api_docs():
     return jsonify(
         {
             "message": "Blacklist Management API Documentation",
-            "version": "1.3.1",
+            "version": get_dynamic_version(),
             "endpoints": {
                 "health": {
                     "url": "/health",
