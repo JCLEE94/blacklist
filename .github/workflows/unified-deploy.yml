@@ -303,16 +303,14 @@ jobs:
         # 레지스트리 로그인
         echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
         
-        # Docker Compose로 전체 스택 업데이트
+        # 도커 이미지 업데이트만 실행
         cd /home/jclee/app/blacklist || exit 1
         
-        # 최신 이미지 풀
+        echo "🐳 도커 이미지 업데이트 중..."
         docker-compose pull
+        docker-compose up -d
         
-        # 서비스 재시작
-        docker-compose up -d --remove-orphans
-        
-        echo "✅ Docker Compose 배포 완료: $NEW_VERSION"
+        echo "✅ 도커 이미지 업데이트 완료: $NEW_VERSION"
 
     - name: "🏥 헬스체크 & 검증"
       run: |
@@ -342,7 +340,7 @@ jobs:
           sleep 10
         done
         
-        # 3. 각 서비스 상태 확인
+        # 3. 서비스 상태 확인
         echo "📊 서비스 상태:"
         docker-compose ps
         
