@@ -1,0 +1,32 @@
+# CODEOWNERS for Blacklist Management System
+# These owners will be the default owners for everything in the repo
+
+# Global owners
+* @qws941 @JCLEE94
+
+# Docker and Infrastructure
+/docker/ @qws941
+/docker-compose*.yml @qws941
+/Dockerfile @qws941
+/.github/workflows/ @qws941
+
+# Application Core
+/app/ @JCLEE94
+/src/ @JCLEE94
+
+# Database
+/docker/postgresql/ @qws941
+/scripts/*database* @qws941
+
+# Security
+/config/security.json @qws941
+/scripts/*security* @qws941
+/src/core/auth/ @qws941
+
+# Tests
+/tests/ @JCLEE94
+/pytest.ini @JCLEE94
+
+# Documentation
+*.md @qws941 @JCLEE94
+/docs/ @qws941
