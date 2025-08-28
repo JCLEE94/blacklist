@@ -43,7 +43,9 @@ class TestRegtechCollector:
         if "REGTECH_PASSWORD" in os.environ:
             del os.environ["REGTECH_PASSWORD"]
 
-    @patch("src.core.collectors.regtech_collector.RegtechCollector._robust_login")
+    @patch(
+        "src.core.collectors.regtech_collector_auth.RegtechCollectorAuth.robust_login"
+    )
     @patch("requests.Session")
     def test_login_success(self, mock_session_class, mock_robust_login):
         """로그인 성공 테스트"""
@@ -67,7 +69,9 @@ class TestRegtechCollector:
             "cancelled",
         ]  # 수집 완료 또는 취소됨
 
-    @patch("src.core.collectors.regtech_collector.RegtechCollector._robust_login")
+    @patch(
+        "src.core.collectors.regtech_collector_auth.RegtechCollectorAuth.robust_login"
+    )
     @patch("requests.Session")
     def test_login_failure(self, mock_session_class, mock_robust_login):
         """로그인 실패 테스트"""
@@ -111,9 +115,13 @@ class TestRegtechCollector:
 
         # 실제 collect 메서드 테스트 (비동기)
         async def run_test():
-            with patch.object(self.collector, "_robust_login", return_value=True):
+            with patch.object(
+                self.collector.auth_module, "robust_login", return_value=True
+            ):
                 with patch.object(
-                    self.collector, "_robust_collect_ips", return_value=fake_ip_data
+                    self.collector.data_module,
+                    "robust_collect_ips",
+                    return_value=fake_ip_data,
                 ):
                     result = await self.collector.collect()
                     return result
@@ -176,8 +184,10 @@ class TestRegtechCollector:
             {"ip": "192.168.1.1", "country": "KR", "reason": "malware"},  # 중복
         ]
 
-        # 중복 제거는 data_transform helper에서 처리됨
-        result = self.collector.data_transform.remove_duplicates(duplicate_data)
+        # 중복 제거는 data_module의 data_transform helper에서 처리됨
+        result = self.collector.data_module.data_transform.remove_duplicates(
+            duplicate_data
+        )
 
         # 중복이 제거되었는지 확인
         ip_addresses = [item["ip"] for item in result]
@@ -196,13 +206,17 @@ class TestRegtechCollector:
         ]  # 사설 IP는 제외
 
         for ip in valid_ips:
-            assert self.collector.validation_utils.is_valid_ip(ip) is True
+            assert self.collector.auth_module.validation_utils.is_valid_ip(ip) is True
 
         for ip in invalid_ips:
-            assert self.collector.validation_utils.is_valid_ip(ip) is False
+            assert self.collector.auth_module.validation_utils.is_valid_ip(ip) is False
 
-    @patch("src.core.collectors.regtech_collector.RegtechCollector._robust_login")
-    @patch("src.core.collectors.regtech_collector.RegtechCollector._robust_collect_ips")
+    @patch(
+        "src.core.collectors.regtech_collector_auth.RegtechCollectorAuth.robust_login"
+    )
+    @patch(
+        "src.core.collectors.regtech_collector_data.RegtechCollectorData.robust_collect_ips"
+    )
     def test_full_collection_process(self, mock_collect_ips, mock_login):
         """전체 수집 프로세스 테스트"""
         # Mock 설정
@@ -285,8 +299,8 @@ class TestRegtechCollector:
             mock_session = Mock()
             mock_session_class.return_value = mock_session
 
-            # 세션 생성 테스트
-            session = self.collector.request_utils.create_session()
+            # 세션 생성 테스트 (auth_module을 통해 접근)
+            session = self.collector.auth_module.create_session()
             assert session is not None
 
     def test_date_range_handling(self):
