@@ -5,7 +5,10 @@ version: '3.8'
 services:
   # PostgreSQL Database Service with KST timezone
   postgres:
-    image: postgres:15-alpine
+    build:
+      context: ./docker/postgresql
+      dockerfile: Dockerfile
+    image: registry.jclee.me/blacklist-postgres:latest
     container_name: blacklist-postgres-compose
     environment:
       POSTGRES_DB: blacklist

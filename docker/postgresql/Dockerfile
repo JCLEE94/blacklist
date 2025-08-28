@@ -32,6 +32,9 @@ ENV POSTGRES_DB=blacklist \
 # Create initialization directory
 RUN mkdir -p /docker-entrypoint-initdb.d
 
+# Copy all initialization scripts
+COPY init-scripts/*.sql /docker-entrypoint-initdb.d/
+
 # Create version info file with dynamic values
 RUN echo "{\
   \"version\": \"$(date +%Y%m%d%H%M)\",\
@@ -41,8 +44,8 @@ RUN echo "{\
   \"postgres_version\": \"15-alpine\"\
 }" > /docker-entrypoint-initdb.d/00-version.json
 
-# Add initialization script
-COPY --chown=postgres:postgres <<'EOF' /docker-entrypoint-initdb.d/01-init.sql
+# Add additional initialization script (kept for compatibility)
+COPY --chown=postgres:postgres <<'EOF' /docker-entrypoint-initdb.d/99-compat.sql
 -- Create blacklist database and tables
 CREATE TABLE IF NOT EXISTS blacklist_ips (
     id SERIAL PRIMARY KEY,
