@@ -48,4 +48,4 @@ validators==0.22.0
 
 # Performance optimization
 gevent==23.9.1
-greenlet==3.0.1
+greenlet==3.2.4
