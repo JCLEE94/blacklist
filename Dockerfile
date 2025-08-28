@@ -157,26 +157,39 @@ RUN mkdir -p /app/instance /app/logs /app/data /app/temp && \
 
 # Set runtime environment variables - SafeWork 패턴으로 모든 필수 환경변수 직접 정의
 ENV PYTHONPATH=/app \
+    # KST Timezone Configuration (Comprehensive)
     TZ=Asia/Seoul \
+    TIMEZONE=Asia/Seoul \
+    LC_TIME=ko_KR.UTF-8 \
+    DEFAULT_TIMEZONE=Asia/Seoul \
+    SCHEDULER_TIMEZONE=Asia/Seoul \
     # Application settings
     FLASK_ENV=production \
     FLASK_APP=main.py \
     PORT=2542 \
-    # Database settings (실제 서버 기반)
+    # Database settings (실제 서버 기반) with KST timezone awareness
     DATABASE_URL=postgresql://postgres:postgres@localhost:5433/blacklist \
+    DATABASE_TIMEZONE=Asia/Seoul \
     REDIS_URL=redis://localhost:6380/0 \
+    CACHE_TIMEZONE=Asia/Seoul \
     # Security settings
     SECRET_KEY=change-in-production-please \
     JWT_SECRET_KEY=blacklist-jwt-secret-2024 \
     JWT_ALGORITHM=HS256 \
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES=15 \
     JWT_REFRESH_TOKEN_EXPIRE_DAYS=7 \
-    # Collection settings
+    # Collection settings with KST timestamps
     COLLECTION_ENABLED=true \
     FORCE_DISABLE_COLLECTION=false \
-    # Logging
+    COLLECTION_TIMEZONE=Asia/Seoul \
+    # Logging with KST timestamps
     LOG_LEVEL=INFO \
-    DEBUG=False
+    LOG_TIMEZONE=Asia/Seoul \
+    DEBUG=False \
+    # API Response and Monitoring with KST
+    API_RESPONSE_TIMEZONE=Asia/Seoul \
+    METRICS_TIMEZONE=Asia/Seoul \
+    HEALTH_CHECK_TIMEZONE=Asia/Seoul
 
 # Switch to non-root user (SafeWork 패턴)
 USER appuser
