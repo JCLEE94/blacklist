@@ -18,6 +18,7 @@ from .routes.export_routes import export_routes_bp
 from .routes.health_routes import health_routes_bp
 from .routes.web_routes import web_routes_bp
 from .routes.recent_detections import recent_detections_bp
+from .routes.settings_routes import settings_routes_bp
 
 # Main unified blueprint that combines all sub-blueprints
 unified_bp = Blueprint("unified", __name__)
@@ -33,6 +34,7 @@ unified_bp.register_blueprint(analytics_routes_bp)
 unified_bp.register_blueprint(collection_routes_bp)
 unified_bp.register_blueprint(admin_routes_bp)
 unified_bp.register_blueprint(recent_detections_bp)
+unified_bp.register_blueprint(settings_routes_bp)
 
 # Test utilities moved to tests/utils/test_utils.py
 # Import them directly from the test package when needed
