@@ -53,25 +53,14 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'unified.web_routes.blacklist_search' %}active{% endif %}" 
+                        <a class="nav-link {% if request.endpoint == 'unified.web_routes.blacklist_search' or request.path == '/raw-data' %}active{% endif %}" 
                            href="/blacklist-search">
                             <i class="bi bi-search"></i> 검색
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/analytics' %}active{% endif %}" 
-                           href="/analytics">
-                            <i class="bi bi-graph-up-arrow"></i> 분석
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="/unified-control">
                             <i class="bi bi-gear-wide-connected"></i> 통합 관리
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/raw-data">
-                            <i class="bi bi-table"></i> 전체 데이터
                         </a>
                     </li>
                     <li class="nav-item dropdown">
