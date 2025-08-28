@@ -1,4 +1,4 @@
-name: 🚀 메인 배포 파이프라인 | Production Deploy
+name: 🚀 프로덕션 배포 파이프라인 | qws941/blacklist
 
 on:
   push:
@@ -7,6 +7,10 @@ on:
       - '**.md'
       - 'docs/**'
       - '.github/workflows/deploy-pages.yml'
+      - '.github/BRANCH_STRATEGY.md'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       force_deploy:
@@ -14,6 +18,14 @@ on:
         required: false
         default: false
         type: boolean
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
 
 env:
   REGISTRY: registry.jclee.me
