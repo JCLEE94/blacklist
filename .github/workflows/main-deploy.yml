@@ -295,29 +295,54 @@ jobs:
     runs-on: self-hosted
     
     steps:
-    - name: "📦 이미지 푸시 완료 확인"
+    - name: "📦 동적 버전 관리 & 표시"
       run: |
-        echo "✅ 이미지 푸시 완료"
+        echo "🔍 동적 버전 관리 시스템 실행..."
+        
+        # 동적 버전 정보 수집
         NEW_VERSION="${{ needs.prepare.outputs.version }}"
-        echo "📦 푸시된 버전: $NEW_VERSION"
-
-    - name: "🔍 버전 체크"
-      run: |
-        echo "🔍 배포된 버전 확인 중..."
-        NEW_VERSION="${{ needs.prepare.outputs.version }}"
+        GIT_HASH="${{ needs.prepare.outputs.git_hash }}"
+        GIT_COUNT="${{ needs.prepare.outputs.git_count }}"
+        BUILD_DATE="${{ needs.prepare.outputs.build_date }}"
+        
+        echo "==============================================="
+        echo "🚀 동적 버전 관리 시스템"
+        echo "==============================================="
+        echo "📦 새 버전: $NEW_VERSION"
+        echo "🔖 Git Hash: $GIT_HASH"
+        echo "📊 총 커밋 수: $GIT_COUNT"
+        echo "📅 빌드 날짜: $BUILD_DATE"
+        echo "==============================================="
         
         # 현재 실행 중인 서비스 버전 확인
         CURRENT_VERSION=$(curl -s http://localhost:32542/health | jq -r '.version' 2>/dev/null || echo "unknown")
-        echo "📦 현재 실행 중인 버전: $CURRENT_VERSION"
-        echo "📦 새로 빌드된 버전: $NEW_VERSION"
+        echo "📋 현재 실행 중인 버전: $CURRENT_VERSION"
         
-        # 이미지가 레지스트리에 정상 푸시되었는지 확인
-        echo "🐳 레지스트리 이미지 확인..."
-        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
-        if docker pull ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:$NEW_VERSION; then
-          echo "✅ 이미지 푸시 성공 확인"
+        # 버전 비교 및 업그레이드 상태 표시
+        if [ "$CURRENT_VERSION" != "$NEW_VERSION" ] && [ "$CURRENT_VERSION" != "unknown" ]; then
+          echo "🔄 버전 업그레이드: $CURRENT_VERSION → $NEW_VERSION"
+        elif [ "$CURRENT_VERSION" = "unknown" ]; then
+          echo "🆕 새로운 배포: 버전 $NEW_VERSION"
         else
-          echo "❌ 이미지 푸시 실패"
+          echo "♻️ 재배포: 동일 버전 $NEW_VERSION"
+        fi
+
+    - name: "🐳 레지스트리 이미지 확인"
+      run: |
+        NEW_VERSION="${{ needs.prepare.outputs.version }}"
+        
+        echo "🐳 레지스트리 이미지 검증 중..."
+        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+        
+        if docker pull ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:$NEW_VERSION; then
+          echo "✅ 이미지 $NEW_VERSION 레지스트리에서 확인됨"
+          
+          # 이미지 정보 상세 표시
+          IMAGE_SIZE=$(docker images --format "table {{.Size}}" ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:$NEW_VERSION | tail -n1)
+          echo "📊 이미지 크기: $IMAGE_SIZE"
+          echo "🏷️ 이미지 태그: ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:$NEW_VERSION"
+        else
+          echo "❌ 이미지 $NEW_VERSION 레지스트리에서 찾을 수 없음"
           exit 1
         fi
 
@@ -336,11 +361,21 @@ jobs:
         echo "# 🛡️ 통합 배포 파이프라인 리포트" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        echo "## 📦 버전 정보" >> $GITHUB_STEP_SUMMARY
-        echo "- **동적 버전:** ${{ needs.prepare.outputs.version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **빌드 날짜:** ${{ needs.prepare.outputs.build_date || 'N/A' }}" >> $GITHUB_STEP_SUMMARY  
-        echo "- **Git 해시:** ${{ needs.prepare.outputs.git_hash || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **총 커밋:** ${{ needs.prepare.outputs.git_count || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "## 🚀 동적 버전 관리 정보" >> $GITHUB_STEP_SUMMARY
+        echo "| 항목 | 값 | 설명 |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|----|----- |" >> $GITHUB_STEP_SUMMARY
+        echo "| 📦 동적 버전 | \`${{ needs.prepare.outputs.version || 'N/A' }}\` | 자동 생성된 의미론적 버전 |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔖 Git Hash | \`${{ needs.prepare.outputs.git_hash || 'N/A' }}\` | 커밋 해시 (단축) |" >> $GITHUB_STEP_SUMMARY
+        echo "| 📊 총 커밋 수 | \`${{ needs.prepare.outputs.git_count || 'N/A' }}\` | 누적 커밋 카운트 |" >> $GITHUB_STEP_SUMMARY
+        echo "| 📅 빌드 날짜 | \`${{ needs.prepare.outputs.build_date || 'N/A' }}\` | 빌드 수행 날짜 |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🏷️ 이미지 태그 | \`registry.jclee.me/blacklist:${{ needs.prepare.outputs.version || 'latest' }}\` | 컨테이너 이미지 태그 |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 🔄 버전 관리 규칙" >> $GITHUB_STEP_SUMMARY
+        echo "- **형식:** \`1.3.{커밋수}.{해시}\` - 의미론적 버전 체계" >> $GITHUB_STEP_SUMMARY
+        echo "- **자동 증가:** Git 커밋 수에 따라 자동 증가" >> $GITHUB_STEP_SUMMARY
+        echo "- **고유성:** Git 해시로 고유성 보장" >> $GITHUB_STEP_SUMMARY
+        echo "- **추적 가능:** 모든 배포 버전 추적 가능" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         echo "## 🏗️ 이미지 빌드 상태" >> $GITHUB_STEP_SUMMARY
