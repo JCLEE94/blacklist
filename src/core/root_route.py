@@ -1,6 +1,6 @@
 import logging
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, redirect
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,12 @@ def calculate_source_distribution(stats):
             "secudium": {"count": 0, "percentage": 0},
             "public": {"count": 0, "percentage": 0},
         }
+
+
+@root_bp.route("/dashboard")
+def dashboard():
+    """대시보드 - 수집 관리 패널로 리디렉션"""
+    return redirect("/collection-panel/")
 
 
 @root_bp.route("/api")

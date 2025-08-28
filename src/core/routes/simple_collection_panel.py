@@ -140,7 +140,12 @@ SIMPLE_PANEL_HTML = """
             .grid-2 { grid-template-columns: 1fr; }
             .collection-controls { flex-direction: column; }
         }
+        #chartContainer {
+            height: 400px;
+            margin: 20px 0;
+        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -165,6 +170,13 @@ SIMPLE_PANEL_HTML = """
                     <div class="stat-number" id="system-status">정상</div>
                     <div class="stat-label">시스템 상태</div>
                 </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📈 수집 트렌드 차트</h2>
+            <div id="chartContainer">
+                <canvas id="collectionChart"></canvas>
             </div>
         </div>
         
@@ -237,6 +249,58 @@ SIMPLE_PANEL_HTML = """
             setTimeout(() => statusDiv.textContent = '', 5000);
         }
 
+        let collectionChart = null;
+
+        function initChart() {
+            const ctx = document.getElementById('collectionChart').getContext('2d');
+            collectionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'REGTECH',
+                            data: [],
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'SECUDIUM',
+                            data: [],
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(chartData) {
+            if (collectionChart && chartData) {
+                collectionChart.data.labels = chartData.labels || [];
+                collectionChart.data.datasets[0].data = chartData.datasets[0].data || [];
+                collectionChart.data.datasets[1].data = chartData.datasets[1].data || [];
+                collectionChart.update();
+            }
+        }
+
         function refreshData() {
             showStatus('데이터를 새로고침하는 중...', 'info');
             
@@ -257,6 +321,18 @@ SIMPLE_PANEL_HTML = """
                 })
                 .catch(error => {
                     showStatus('데이터 로드 실패: ' + error, 'error');
+                });
+
+            // 차트 데이터 로드
+            fetch('/api/collection/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.daily_collection && data.daily_collection.chart_data) {
+                        updateChart(data.daily_collection.chart_data);
+                    }
+                })
+                .catch(error => {
+                    console.error('차트 데이터 로드 실패:', error);
                 });
         }
 
@@ -378,6 +454,7 @@ SIMPLE_PANEL_HTML = """
 
         // 페이지 로드시 초기 데이터 로드
         document.addEventListener('DOMContentLoaded', function() {
+            initChart();  // 차트 초기화
             refreshData();
             
             // 30초마다 자동 새로고침
