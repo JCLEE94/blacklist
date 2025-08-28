@@ -532,12 +532,12 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted mb-2" style="font-size: 0.875rem;">시스템 상태</p>
-                            <h2 class="fw-bold mb-0" style="color: #4ade80;">정상</h2>
-                            <small style="color: #6b7280;">모든 서비스 작동중</small>
+                            <p class="text-muted mb-2" style="font-size: 0.875rem;">시스템 업타임</p>
+                            <h2 class="fw-bold mb-0 text-gradient" id="system-uptime">-</h2>
+                            <small style="color: #6b7280;" id="uptime-status">시작 시간 확인중</small>
                         </div>
-                        <div class="icon-box success">
-                            <i class="bi bi-check-circle-fill"></i>
+                        <div class="icon-box warning" id="uptime-icon">
+                            <i class="bi bi-clock-fill"></i>
                         </div>
                     </div>
                 </div>
@@ -690,6 +690,48 @@ function updateCurrentTime() {
         second: '2-digit' 
     });
     document.getElementById('current-time').textContent = timeStr;
+}
+
+// 업타임 정보 업데이트
+async function updateUptime() {
+    try {
+        const response = await fetch('/api/uptime');
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+                const appUptime = result.data.application;
+                
+                // 업타임 표시 업데이트
+                document.getElementById('system-uptime').textContent = appUptime.uptime_formatted;
+                
+                // 시작 시간 표시 업데이트
+                document.getElementById('uptime-status').textContent = 
+                    `시작: ${appUptime.started_at}`;
+                
+                // 업타임에 따른 아이콘과 색상 변경
+                const uptimeIcon = document.getElementById('uptime-icon');
+                const uptimeSeconds = appUptime.uptime_seconds;
+                
+                if (uptimeSeconds < 60) {
+                    // 1분 미만 - 시작 중
+                    uptimeIcon.className = 'icon-box warning';
+                } else if (uptimeSeconds < 3600) {
+                    // 1시간 미만 - 실행 중
+                    uptimeIcon.className = 'icon-box primary';
+                } else if (uptimeSeconds < 86400) {
+                    // 1일 미만 - 안정적
+                    uptimeIcon.className = 'icon-box success';
+                } else {
+                    // 1일 이상 - 성숙한
+                    uptimeIcon.className = 'icon-box success';
+                }
+            }
+        }
+    } catch (error) {
+        console.log('Uptime update error:', error);
+        document.getElementById('system-uptime').textContent = '오류';
+        document.getElementById('uptime-status').textContent = '업타임 정보 불러올 수 없음';
+    }
 }
 
 // 수집 상태 토글 렌더링
@@ -1073,6 +1115,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 현재 시간 업데이트
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
+    
+    // 업타임 정보 업데이트
+    updateUptime();
+    setInterval(updateUptime, 10000); // 10초마다 업데이트
     
     // 데이터 로드
     loadSystemStatus();

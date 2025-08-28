@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 from ..exceptions import create_error_response
 from ..unified_service import get_unified_service
 from ..utils.version_utils import get_dynamic_version
+from ..utils.uptime_tracker import (
+    get_uptime_detailed,
+    get_uptime_formatted,
+    get_system_uptime_info,
+)
 
 # 헬스체크 라우트 블루프린트
 health_routes_bp = Blueprint("health_routes", __name__)
@@ -45,11 +50,17 @@ def health_check():
             else "degraded"
         )
 
+        # 업타임 정보 추가
+        uptime_info = get_uptime_detailed()
+
         response_data = {
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "service": "blacklist-management",
             "version": get_dynamic_version(),
+            "uptime": uptime_info["uptime_formatted"],
+            "uptime_seconds": uptime_info["uptime_seconds"],
+            "started_at": uptime_info["started_at"],
             "components": components,
         }
 
@@ -101,12 +112,16 @@ def detailed_health_check():
                 overall_status = "degraded"
                 break
 
+        # 상세 업타임 및 시스템 정보
+        system_uptime_info = get_system_uptime_info()
+
         response_data = {
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "service": "blacklist-management",
             "version": get_dynamic_version(),
-            "uptime": health_info.get("uptime", "unknown"),
+            "uptime": system_uptime_info["application"],
+            "system": system_uptime_info["system"],
             "components": detailed_components,
             "metrics": {
                 "total_ips": health_info.get("total_ips", 0),
@@ -298,3 +313,22 @@ def visual_build_info():
     except Exception as e:
         logger.error(f"Build info error: {e}")
         return f"<h1>Build Info Error</h1><p>{str(e)}</p>", 500
+
+
+@health_routes_bp.route("/api/uptime", methods=["GET"])
+def uptime_info():
+    """실시간 업타임 정보 API"""
+    try:
+        uptime_data = get_system_uptime_info()
+
+        return jsonify(
+            {
+                "success": True,
+                "data": uptime_data,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Uptime info error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
