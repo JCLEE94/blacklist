@@ -139,9 +139,7 @@ if __name__ == "__main__":
         empty_decrypted = encryption.decrypt(empty_encrypted)
 
         if empty_decrypted != "":
-            all_validation_failures.append(
-                f"빈 문자열: 예상 '', 실제 '{empty_decrypted}'"
-            )
+            all_validation_failures.append(f"빈 문자열: 예상 '', 실제 '{empty_decrypted}'")
     except Exception as e:
         all_validation_failures.append(f"빈 문자열 오류: {e}")
 
@@ -168,9 +166,7 @@ if __name__ == "__main__":
         is_plain_result = encryption.is_encrypted("plain_text")
 
         if not is_encrypted_result:
-            all_validation_failures.append(
-                "암호화 텍스트를 암호화된 것으로 인식하지 못함"
-            )
+            all_validation_failures.append("암호화 텍스트를 암호화된 것으로 인식하지 못함")
         if is_plain_result:
             all_validation_failures.append("평문 텍스트를 암호화된 것으로 잘못 인식")
     except Exception as e:

@@ -65,9 +65,7 @@ def test_integrated_cookie_system():
 
         # 컬렉터 생성
         collector = RegtechCollector(config)
-        print(
-            f"   ✅ Collector 초기화 완료 (자동추출: {collector.auto_extract_cookies})"
-        )
+        print(f"   ✅ Collector 초기화 완료 (자동추출: {collector.auto_extract_cookies})")
         print(f"   쿠키 모드: {collector.cookie_auth_mode}")
 
         print("\n2️⃣ 자동 쿠키 추출 테스트...")
@@ -180,9 +178,7 @@ def test_integrated_cookie_system():
                     if result.get("success"):
                         print("   ✅ API 통합 수집 성공")
                     else:
-                        print(
-                            f"   ❌ API 수집 실패: {result.get('error', 'Unknown error')}"
-                        )
+                        print(f"   ❌ API 수집 실패: {result.get('error', 'Unknown error')}")
                 else:
                     print(f"   ❌ API 호출 실패: {api_response.text}")
             else:

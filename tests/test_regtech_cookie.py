@@ -133,9 +133,7 @@ class REGTECHCookieCollector:
 
                     # Excel 파일 체크
                     if "excel" in content_type or "spreadsheet" in content_type:
-                        print(
-                            f"      📥 Excel 파일 다운로드 ({len(response.content)} bytes)"
-                        )
+                        print(f"      📥 Excel 파일 다운로드 ({len(response.content)} bytes)")
 
                         filename = f"regtech_blacklist_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                         with open(filename, "wb") as f:

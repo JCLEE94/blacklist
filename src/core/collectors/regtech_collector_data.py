@@ -184,9 +184,7 @@ class RegtechCollectorData:
                 all_ips.extend(page_ips)
                 consecutive_errors = 0  # 성공 시 에러 카운트 리셋
 
-                logger.info(
-                    f"페이지 {page + 1}: {len(page_ips)}개 수집 (총 {len(all_ips)}개)"
-                )
+                logger.info(f"페이지 {page + 1}: {len(page_ips)}개 수집 (총 {len(all_ips)}개)")
                 page += 1
 
             except requests.exceptions.RequestException as e:

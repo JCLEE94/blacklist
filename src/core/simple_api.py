@@ -75,7 +75,6 @@ if __name__ == "__main__":
     # Test 1: Basic import
     total_tests += 1
     try:
-
         test_app = Flask(__name__)
         register_simple_api(test_app)
     except Exception as e:

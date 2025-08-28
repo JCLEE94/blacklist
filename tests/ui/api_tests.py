@@ -26,9 +26,7 @@ class APITestSuite(BaseUITestSuite):
             success_rate = await self.calculate_success_rate(endpoint_results)
 
             if success_rate < 80:
-                self.reporter.add_error(
-                    f"API 엔드포인트 성공률 낮음: {success_rate:.1f}%"
-                )
+                self.reporter.add_error(f"API 엔드포인트 성공률 낮음: {success_rate:.1f}%")
 
             return {"endpoint_results": endpoint_results, "success_rate": success_rate}
 

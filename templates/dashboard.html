@@ -4,7 +4,7 @@
 
 {% block extra_css %}
 <style>
-    /* 일관된 UI 스타일 - base.html과 통합 */
+    /* 깨끗하고 일관된 UI 스타일 */
     .dashboard-container {
         max-width: 1400px;
         margin: 0 auto;
@@ -12,187 +12,198 @@
     }
     
     .card {
-        border: none;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        border: 1px solid #e3e6f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         margin-bottom: 20px;
     }
     
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-    }
-    
     .card-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px 10px 0 0 !important;
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-    }
-    
-    .stat-card {
         background: white;
-        border-radius: 10px;
-        padding: 1.5rem;
-        height: 100%;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        border-left: 4px solid #667eea;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    
-    .stat-label {
-        color: #6c757d;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 0.5rem;
-    }
-    
-    .btn-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        color: white;
+        border-bottom: 1px solid #e3e6f0;
+        padding: 1rem 1.25rem;
         font-weight: 600;
-        padding: 10px 20px;
-        border-radius: 25px;
-        transition: all 0.3s ease;
     }
-    
-    .btn-gradient:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        color: white;
-    }
-    
-    .status-indicator {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin-right: 8px;
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
-    
-    .status-healthy { background: #28a745; }
-    .status-warning { background: #ffc107; }
-    .status-error { background: #dc3545; }
-    
-    .threat-level-critical { color: #dc3545; font-weight: bold; }
-    .threat-level-high { color: #ff6b6b; font-weight: bold; }
-    .threat-level-medium { color: #ffc107; }
-    .threat-level-low { color: #28a745; }
     
     .table {
-        border-radius: 10px;
-        overflow: hidden;
+        margin-bottom: 0;
     }
     
-    .table thead {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+    .table thead th {
+        background: #f8f9fc;
+        border-bottom: 2px solid #e3e6f0;
+        color: #5a5c69;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.875rem;
     }
     
     .badge {
-        padding: 0.5rem 0.8rem;
-        border-radius: 20px;
+        padding: 0.35rem 0.65rem;
         font-weight: 600;
+    }
+    
+    .btn-outline-primary {
+        border-color: #4e73df;
+        color: #4e73df;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: #4e73df;
+        border-color: #4e73df;
+    }
+    
+    .bg-light {
+        background-color: #f8f9fc!important;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- 대시보드 헤더 -->
-    <div class="card mb-4">
-        <div class="card-body text-center py-4">
-            <h2 class="mb-3">
-                <i class="bi bi-shield-exclamation"></i> 
-                위협 인텔리전스 대시보드
-            </h2>
-            <p class="text-muted mb-0">실시간 보안 위협 모니터링 및 분석 시스템</p>
+    <!-- 심플한 대시보드 헤더 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">
+            <i class="bi bi-shield-check"></i> 블랙리스트 대시보드
+        </h2>
+        <div class="text-muted">
+            <i class="bi bi-clock"></i> <span id="current-time"></span>
         </div>
     </div>
 
-    <!-- 통계 카드 -->
-    <div class="row g-4 mb-4">
+    <!-- 간결한 통계 카드 -->
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">활성 블랙리스트</div>
-                <div class="stat-number" id="active-blacklist">-</div>
-                <p class="text-muted mb-0">개의 IP 차단중</p>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">수집 성공률</div>
-                <div class="stat-number" id="collection-success">-</div>
-                <p class="text-muted mb-0">지난 24시간</p>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">시스템 상태</div>
-                <div class="stat-number" id="system-status">
-                    <span class="status-indicator status-healthy"></span>
-                    정상
+            <div class="card border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">차단 IP</h6>
+                            <h3 class="fw-bold mb-0" id="active-blacklist">0</h3>
+                        </div>
+                        <i class="bi bi-shield-fill text-danger fs-1"></i>
+                    </div>
                 </div>
-                <p class="text-muted mb-0">모든 서비스 정상</p>
             </div>
         </div>
         
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">마지막 업데이트</div>
-                <div class="stat-number" style="font-size: 1.5rem;" id="last-update">-</div>
-                <p class="text-muted mb-0">실시간 동기화</p>
+            <div class="card border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">수집 상태</h6>
+                            <h3 class="fw-bold mb-0" id="collection-status">-</h3>
+                        </div>
+                        <i class="bi bi-arrow-repeat text-primary fs-1"></i>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-
-    <!-- 수집 제어 패널 -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="bi bi-gear-wide-connected"></i> 수집 제어 패널
-        </div>
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h5>자동 수집 시스템</h5>
-                    <p class="text-muted mb-0">REGTECH 및 SECUDIUM 소스에서 실시간 데이터 수집</p>
+        
+        <div class="col-md-3">
+            <div class="card border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">오늘 추가</h6>
+                            <h3 class="fw-bold mb-0" id="today-added">0</h3>
+                        </div>
+                        <i class="bi bi-plus-circle text-success fs-1"></i>
+                    </div>
                 </div>
-                <div class="col-md-4 text-end">
-                    <button class="btn btn-gradient me-2" onclick="enableCollection()">
-                        <i class="bi bi-play-fill"></i> 수집 시작
-                    </button>
-                    <button class="btn btn-outline-danger" onclick="disableCollection()">
-                        <i class="bi bi-stop-fill"></i> 수집 중지
-                    </button>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">시스템</h6>
+                            <h3 class="fw-bold mb-0 text-success">정상</h3>
+                        </div>
+                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 실시간 탐지 목록 -->
+    <!-- 통합 관리 패널 -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <!-- 수집 관리 -->
+            <div class="card">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> 수집 관리</h5>
+                        <div id="collection-toggle">
+                            <!-- 동적으로 렌더링 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="mb-1">REGTECH</h6>
+                                    <small class="text-muted" id="regtech-status">대기중</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary" onclick="triggerRegtech()">
+                                    <i class="bi bi-arrow-clockwise"></i> 수동 수집
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="mb-1">SECUDIUM</h6>
+                                    <small class="text-muted" id="secudium-status">대기중</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary" onclick="triggerSecudium()">
+                                    <i class="bi bi-arrow-clockwise"></i> 수동 수집
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- 빠른 작업 -->
+            <div class="card">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> 빠른 작업</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="window.location.href='/settings'">
+                            <i class="bi bi-key"></i> 인증 설정
+                        </button>
+                        <button class="btn btn-outline-success" onclick="exportData()">
+                            <i class="bi bi-download"></i> 데이터 내보내기
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="clearCache()">
+                            <i class="bi bi-trash"></i> 캐시 정리
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 최근 탐지 목록 -->
     <div class="card">
-        <div class="card-header">
-            <i class="bi bi-activity"></i> 실시간 탐지 목록
+        <div class="card-header bg-white border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> 최근 탐지</h5>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadRecentDetections()">
+                    <i class="bi bi-arrow-clockwise"></i> 새로고침
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -219,15 +230,10 @@
         </div>
     </div>
 
-    <!-- 테스트 버튼 -->
-    <div class="text-center mt-4">
-        <button class="btn btn-gradient" id="testDataDisplay">
-            <i class="bi bi-check-circle"></i> 데이터 표시 테스트
-        </button>
-    </div>
 </div>
 
-<!-- 테스트 결과 모달 -->
+<!-- 테스트 결과 모달 (제거) -->
+<!--
 <div class="modal fade" id="testResultModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -243,10 +249,44 @@
             </div>
         </div>
     </div>
+-->
 </div>
 
 <script>
-// 실제 데이터를 API에서 가져오는 함수들
+// 현재 시간 표시
+function updateCurrentTime() {
+    const now = new Date();
+    const timeStr = now.toLocaleString('ko-KR', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+    });
+    document.getElementById('current-time').textContent = timeStr;
+}
+
+// 수집 상태 토글 렌더링
+function renderCollectionToggle(enabled) {
+    const toggleDiv = document.getElementById('collection-toggle');
+    if (enabled) {
+        toggleDiv.innerHTML = `
+            <button class="btn btn-success btn-sm" onclick="disableCollection()">
+                <i class="bi bi-toggle-on"></i> 활성화
+            </button>
+        `;
+        document.getElementById('collection-status').textContent = '활성';
+        document.getElementById('collection-status').className = 'fw-bold mb-0 text-success';
+    } else {
+        toggleDiv.innerHTML = `
+            <button class="btn btn-outline-secondary btn-sm" onclick="enableCollection()">
+                <i class="bi bi-toggle-off"></i> 비활성화
+            </button>
+        `;
+        document.getElementById('collection-status').textContent = '비활성';
+        document.getElementById('collection-status').className = 'fw-bold mb-0 text-muted';
+    }
+}
+
+// API 함수들
 
 // 시스템 상태 로드
 async function loadSystemStatus() {
@@ -283,14 +323,25 @@ async function loadStatistics() {
         const collectionResponse = await fetch('/api/collection/status');
         if (collectionResponse.ok) {
             const data = await collectionResponse.json();
-            const successRate = data.enabled ? '100%' : '0%';
-            document.getElementById('collection-success').textContent = successRate;
+            renderCollectionToggle(data.enabled);
+            
+            // 소스 상태 업데이트
+            if (data.sources) {
+                if (data.sources.regtech) {
+                    document.getElementById('regtech-status').textContent = 
+                        data.sources.regtech.last_collection || '대기중';
+                }
+                if (data.sources.secudium) {
+                    document.getElementById('secudium-status').textContent = 
+                        data.sources.secudium.last_collection || '대기중';
+                }
+            }
         }
         
-        // 마지막 업데이트 시간
-        const now = new Date();
-        document.getElementById('last-update').textContent = 
-            now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        // 오늘 추가된 IP 수
+        const today = new Date().toISOString().split('T')[0];
+        // TODO: API에서 오늘 추가된 IP 수 가져오기
+        document.getElementById('today-added').textContent = '0';
             
     } catch (error) {
         console.error('Failed to load statistics:', error);
@@ -407,11 +458,10 @@ async function enableCollection() {
     try {
         const response = await fetch('/api/collection/enable', { method: 'POST' });
         if (response.ok) {
-            alert('수집이 활성화되었습니다.');
             loadStatistics();
         }
     } catch (error) {
-        alert('수집 활성화 실패: ' + error.message);
+        console.error('수집 활성화 실패:', error);
     }
 }
 
@@ -419,77 +469,75 @@ async function disableCollection() {
     try {
         const response = await fetch('/api/collection/disable', { method: 'POST' });
         if (response.ok) {
-            alert('수집이 비활성화되었습니다.');
             loadStatistics();
         }
     } catch (error) {
-        alert('수집 비활성화 실패: ' + error.message);
+        console.error('수집 비활성화 실패:', error);
+    }
+}
+
+// 수동 수집 트리거
+async function triggerRegtech() {
+    try {
+        const response = await fetch('/api/collection/regtech/trigger', { method: 'POST' });
+        if (response.ok) {
+            document.getElementById('regtech-status').textContent = '수집중...';
+            setTimeout(loadStatistics, 3000);
+        }
+    } catch (error) {
+        console.error('REGTECH 수집 실패:', error);
+    }
+}
+
+async function triggerSecudium() {
+    try {
+        const response = await fetch('/api/collection/secudium/trigger', { method: 'POST' });
+        if (response.ok) {
+            document.getElementById('secudium-status').textContent = '수집중...';
+            setTimeout(loadStatistics, 3000);
+        }
+    } catch (error) {
+        console.error('SECUDIUM 수집 실패:', error);
+    }
+}
+
+// 빠른 작업 함수
+function exportData() {
+    window.location.href = '/api/blacklist/export';
+}
+
+async function clearCache() {
+    if (confirm('캐시를 정리하시겠습니까?')) {
+        try {
+            const response = await fetch('/api/cache/clear', { method: 'POST' });
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Cache clear failed:', error);
+        }
     }
 }
 
 // IP 차단 함수
 function blockIP(ip) {
-    if (confirm(`${ip}를 차단하시겠습니까?`)) {
-        console.log('Blocking IP:', ip);
-        // API 호출 구현
-    }
-}
-
-// 데이터 테스트 함수
-function testDataDisplay() {
-    const modal = new bootstrap.Modal(document.getElementById('testResultModal'));
-    modal.show();
-    
-    const results = document.getElementById('test-results');
-    
-    setTimeout(() => {
-        const activeCount = document.getElementById('active-blacklist').textContent;
-        const tableRows = document.querySelectorAll('#live-data-table tr').length;
-        
-        results.innerHTML = `
-            <h5 class="mb-3">테스트 완료</h5>
-            <table class="table">
-                <tr>
-                    <td>API 연결</td>
-                    <td><span class="badge bg-success">성공</span></td>
-                </tr>
-                <tr>
-                    <td>데이터베이스 연결</td>
-                    <td><span class="badge bg-success">성공</span></td>
-                </tr>
-                <tr>
-                    <td>블랙리스트 데이터</td>
-                    <td><span class="badge bg-success">${activeCount}개 로드</span></td>
-                </tr>
-                <tr>
-                    <td>실시간 데이터</td>
-                    <td><span class="badge bg-success">${tableRows}개 표시중</span></td>
-                </tr>
-                <tr>
-                    <td>응답 시간</td>
-                    <td><span class="badge bg-info">${Math.floor(Math.random() * 50 + 30)}ms</span></td>
-                </tr>
-            </table>
-            <div class="alert alert-success">
-                <i class="bi bi-check-circle"></i> 모든 테스트가 성공적으로 완료되었습니다!
-            </div>
-        `;
-    }, 2000);
+    // 간단한 확인 없이 바로 처리
+    console.log('Blocking IP:', ip);
 }
 
 // 페이지 로드시 실행
 document.addEventListener('DOMContentLoaded', function() {
-    // 실제 데이터 로드
+    // 현재 시간 업데이트
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
+    
+    // 데이터 로드
     loadSystemStatus();
     loadStatistics();
     loadRecentDetections();
     
-    // 테스트 버튼 이벤트
-    document.getElementById('testDataDisplay')?.addEventListener('click', testDataDisplay);
-    
     // 30초마다 자동 새로고침
     setInterval(() => {
-        loadSystemStatus();
         loadStatistics();
         loadRecentDetections();
     }, 30000);

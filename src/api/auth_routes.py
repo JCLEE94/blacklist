@@ -70,9 +70,7 @@ def login():
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
             return (
-                jsonify(
-                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
-                ),
+                jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}),
                 500,
             )
 
@@ -121,9 +119,7 @@ def refresh_token():
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
             return (
-                jsonify(
-                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
-                ),
+                jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}),
                 500,
             )
 
@@ -143,9 +139,7 @@ def refresh_token():
         # 리프레시 토큰인지 확인
         if "refresh" not in payload.get("roles", []):
             return (
-                jsonify(
-                    {"success": False, "error": "유효하지 않은 리프레시 토큰입니다"}
-                ),
+                jsonify({"success": False, "error": "유효하지 않은 리프레시 토큰입니다"}),
                 401,
             )
 
@@ -221,9 +215,7 @@ def logout():
     except Exception as e:
         logger.error(f"로그아웃 처리 실패: {e}")
         return (
-            jsonify(
-                {"success": False, "error": "로그아웃 처리 중 오류가 발생했습니다"}
-            ),
+            jsonify({"success": False, "error": "로그아웃 처리 중 오류가 발생했습니다"}),
             500,
         )
 
@@ -239,9 +231,7 @@ def verify_token():
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
             return (
-                jsonify(
-                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
-                ),
+                jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}),
                 500,
             )
 
@@ -304,9 +294,7 @@ def change_password():
     except Exception as e:
         logger.error(f"비밀번호 변경 실패: {e}")
         return (
-            jsonify(
-                {"success": False, "error": "비밀번호 변경 중 오류가 발생했습니다"}
-            ),
+            jsonify({"success": False, "error": "비밀번호 변경 중 오류가 발생했습니다"}),
             500,
         )
 
@@ -325,9 +313,7 @@ def get_profile():
         security_manager = getattr(current_app, "security_manager", None)
         if not security_manager:
             return (
-                jsonify(
-                    {"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}
-                ),
+                jsonify({"success": False, "error": "보안 시스템이 초기화되지 않았습니다"}),
                 500,
             )
 

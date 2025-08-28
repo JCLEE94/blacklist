@@ -67,7 +67,6 @@ except ImportError:
             patch("pathlib.Path.is_dir", return_value=True),
             patch("builtins.open", create=True) as mock_open,
         ):
-
             mock_open.return_value.__enter__.return_value.read.return_value = (
                 "test content"
             )

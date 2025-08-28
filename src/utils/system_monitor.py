@@ -58,15 +58,11 @@ class SystemMonitor:
             if disk.percent > 80:
                 warnings.append(f"높은 디스크 사용률: {disk.percent:.1f}%")
             if db_health["status"] != "healthy":
-                warnings.append(
-                    f"데이터베이스 상태 이상: {db_health.get('error', 'Unknown')}"
-                )
+                warnings.append(f"데이터베이스 상태 이상: {db_health.get('error', 'Unknown')}")
             # Get actual cache status
             cache_health = self._check_cache_status()
             if cache_health["status"] != "healthy":
-                warnings.append(
-                    f"캐시 상태 이상: {cache_health.get('error', 'Unknown')}"
-                )
+                warnings.append(f"캐시 상태 이상: {cache_health.get('error', 'Unknown')}")
             return SystemHealth(
                 cpu_percent=cpu_percent,
                 memory_percent=memory.percent,

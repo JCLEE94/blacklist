@@ -147,9 +147,7 @@ class CollectionAlertManager:
                 if alert.get("collector") != collector_name
             ]
             deleted_count = original_count - len(self._alerts)
-            self.logger.info(
-                f"수집기 '{collector_name}'의 경고 {deleted_count}개가 삭제되었습니다."
-            )
+            self.logger.info(f"수집기 '{collector_name}'의 경고 {deleted_count}개가 삭제되었습니다.")
 
     def clear_old_alerts(self, max_age_hours: int = 24):
         """오래된 경고 정리
@@ -203,6 +201,5 @@ class CollectionAlertManager:
             self._alerts = self._alerts[-self._max_alerts :]
 
         self.logger.info(
-            f"경고 보관 정책 업데이트: 최대 {max_alerts}개, "
-            f"활성 기간 {active_duration_hours}시간"
+            f"경고 보관 정책 업데이트: 최대 {max_alerts}개, " f"활성 기간 {active_duration_hours}시간"
         )

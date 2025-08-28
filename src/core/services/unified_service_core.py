@@ -120,9 +120,7 @@ class UnifiedBlacklistService(
                 from ..collectors.regtech_collector import RegtechCollector
 
                 if self.config.get("regtech_enabled"):
-                    self._components["regtech"] = RegtechCollector(
-                        None
-                    )  # DB config 사용
+                    self._components["regtech"] = RegtechCollector(None)  # DB config 사용
                     self.logger.info("✅ REGTECH 수집기 동기 초기화 완료 (DB 통합)")
             except Exception as e:
                 self.logger.warning(f"REGTECH 수집기 초기화 실패: {e}")

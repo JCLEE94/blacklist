@@ -423,9 +423,7 @@ if __name__ == "__main__":
             required_components = ["collectors", "executor", "monitor"]
             for component in required_components:
                 if not hasattr(manager, component):
-                    all_validation_failures.append(
-                        f"관리자 초기화: {component} 구성 요소 누락"
-                    )
+                    all_validation_failures.append(f"관리자 초기화: {component} 구성 요소 누락")
 
         except Exception as e:
             all_validation_failures.append(f"관리자 초기화 오류: {e}")
@@ -468,9 +466,7 @@ if __name__ == "__main__":
             required_sections = ["global_status", "system_health", "alerts"]
             for section in required_sections:
                 if section not in status:
-                    all_validation_failures.append(
-                        f"모니터링 위임: {section} 섹션 누락"
-                    )
+                    all_validation_failures.append(f"모니터링 위임: {section} 섹션 누락")
 
         except Exception as e:
             all_validation_failures.append(f"모니터링 위임 오류: {e}")

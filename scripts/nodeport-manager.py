@@ -114,12 +114,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="NodePort 할당 관리자")
-    parser.add_argument(
-        "--allocate", action="store_true", help="새로운 NodePort를 할당합니다"
-    )
-    parser.add_argument(
-        "--show", action="store_true", help="현재 할당된 NodePort를 표시합니다"
-    )
+    parser.add_argument("--allocate", action="store_true", help="새로운 NodePort를 할당합니다")
+    parser.add_argument("--show", action="store_true", help="현재 할당된 NodePort를 표시합니다")
     parser.add_argument("--project-root", type=str, help="프로젝트 루트 디렉토리 경로")
 
     args = parser.parse_args()

@@ -70,9 +70,7 @@ class BaseUITestSuite:
                     pass
 
         if found_count == 0:
-            self.reporter.add_warning(
-                f"{section_name} 섹션에서 필수 요소를 찾을 수 없음"
-            )
+            self.reporter.add_warning(f"{section_name} 섹션에서 필수 요소를 찾을 수 없음")
 
         return found_count
 

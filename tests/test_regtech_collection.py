@@ -47,9 +47,9 @@ class REGTECHCollector:
                     print("✅ 로그인 성공")
                     # 토큰 저장
                     if "token" in result:
-                        self.session.headers["Authorization"] = (
-                            f"Bearer {result['token']}"
-                        )
+                        self.session.headers[
+                            "Authorization"
+                        ] = f"Bearer {result['token']}"
                     return True
                 else:
                     print(f"❌ 로그인 실패: {result.get('message')}")

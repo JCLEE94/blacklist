@@ -88,9 +88,7 @@ def add_source():
             config = json.loads(config_str) if config_str else {}
         except json.JSONDecodeError:
             return (
-                jsonify(
-                    {"success": False, "error": "설정 JSON 형식이 올바르지 않습니다"}
-                ),
+                jsonify({"success": False, "error": "설정 JSON 형식이 올바르지 않습니다"}),
                 400,
             )
 

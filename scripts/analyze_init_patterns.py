@@ -142,9 +142,7 @@ def generate_report(analysis_results: Dict[str, any]) -> str:
     # 전체 통계
     report_lines.append("📈 전체 통계:")
     report_lines.append(f"  - 전체 Python 파일: {analysis_results['total_files']}개")
-    report_lines.append(
-        f"  - 패턴이 발견된 파일: {analysis_results['files_with_patterns']}개"
-    )
+    report_lines.append(f"  - 패턴이 발견된 파일: {analysis_results['files_with_patterns']}개")
     report_lines.append(
         f"  - 분석 비율: {analysis_results['files_with_patterns']/analysis_results['total_files']*100:.1f}%"
     )
@@ -191,9 +189,7 @@ def generate_report(analysis_results: Dict[str, any]) -> str:
     timestamp_pattern_count = analysis_results["category_frequency"].get("timestamp", 0)
 
     if db_pattern_count > 10:
-        report_lines.append(
-            f"  ✅ DatabaseMixin 도입 권장 (현재 {db_pattern_count}개 중복)"
-        )
+        report_lines.append(f"  ✅ DatabaseMixin 도입 권장 (현재 {db_pattern_count}개 중복)")
 
     if service_pattern_count > 15:
         report_lines.append(
@@ -206,9 +202,7 @@ def generate_report(analysis_results: Dict[str, any]) -> str:
         )
 
     if len(high_duplicate_files) > 0:
-        report_lines.append(
-            f"  ✅ {len(high_duplicate_files)}개 파일이 중복 리팩토링 대상"
-        )
+        report_lines.append(f"  ✅ {len(high_duplicate_files)}개 파일이 중복 리팩토링 대상")
 
     report_lines.append("")
     report_lines.append("=" * 80)

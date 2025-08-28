@@ -356,9 +356,7 @@ class TestServiceIntegration:
             assert isinstance(result, str)
         except Exception as e:
             # Should handle async operations gracefully
-            assert "수집 시작 중 오류 발생" in str(
-                e
-            ) or "no running event loop" not in str(e)
+            assert "수집 시작 중 오류 발생" in str(e) or "no running event loop" not in str(e)
 
 
 if __name__ == "__main__":

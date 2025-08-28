@@ -137,9 +137,9 @@ class FeatureFlagManager:
         self.db_path = "feature_flags/flags_database.db"
         self.config_cache: Dict[str, FeatureFlag] = {}
         self.experiments_cache: Dict[str, ABTestExperiment] = {}
-        self.user_assignments: Dict[str, Dict[str, str]] = (
-            {}
-        )  # user_id -> {experiment_id: variant_id}
+        self.user_assignments: Dict[
+            str, Dict[str, str]
+        ] = {}  # user_id -> {experiment_id: variant_id}
 
         # 기본 사용자 세그먼트
         self.user_segments = {
@@ -794,9 +794,7 @@ class FeatureFlagManager:
         metric_korean = metric_info.get("korean_name", metric_name)
         unit = metric_info.get("unit", "")
 
-        significance_text = (
-            "통계적으로 유의함" if is_significant else "통계적으로 유의하지 않음"
-        )
+        significance_text = "통계적으로 유의함" if is_significant else "통계적으로 유의하지 않음"
 
         if abs(lift_percentage) < 1:
             lift_text = "변화 없음"

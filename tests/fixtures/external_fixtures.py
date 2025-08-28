@@ -30,7 +30,6 @@ class MockResponse:
 def mock_external_services():
     """외부 API 서비스 모킹"""
     with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
-
         # REGTECH API 응답
         mock_get.return_value = MockResponse(
             json_data={"status": "success", "data": []}, status_code=200
@@ -65,7 +64,6 @@ def mock_file_system():
         patch("pathlib.Path.is_dir", return_value=True),
         patch("builtins.open", create=True) as mock_open,
     ):
-
         # 파일 내용 모킹
         mock_open.return_value.__enter__.return_value.read.return_value = "test content"
         mock_open.return_value.__enter__.return_value.readlines.return_value = [

@@ -426,9 +426,7 @@ class TestMigrationService:
 
         # 성공 로그 확인
         success_calls = [
-            call
-            for call in mock_logger.info.call_args_list
-            if "마이그레이션 완료" in str(call)
+            call for call in mock_logger.info.call_args_list if "마이그레이션 완료" in str(call)
         ]
         assert len(success_calls) > 0
 

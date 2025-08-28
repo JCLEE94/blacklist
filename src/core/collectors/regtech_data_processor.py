@@ -344,9 +344,7 @@ if __name__ == "__main__":
         ]
         validated_data = processor.validate_and_transform_data(test_data)
         if len(validated_data) != 1:  # 유효한 IP 하나만 남아야 함
-            all_validation_failures.append(
-                f"데이터 변환 실패: {len(validated_data)} != 1"
-            )
+            all_validation_failures.append(f"데이터 변환 실패: {len(validated_data)} != 1")
     except Exception as e:
         all_validation_failures.append(f"데이터 변환 테스트 실패: {e}")
 

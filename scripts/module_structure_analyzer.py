@@ -222,8 +222,7 @@ class ModuleAnalyzer:
 
         if issues["large_files"]:
             recommendations.append(
-                f"📏 {len(issues['large_files'])}개의 큰 파일이 발견되었습니다. "
-                "기능별로 분할을 고려하세요."
+                f"📏 {len(issues['large_files'])}개의 큰 파일이 발견되었습니다. " "기능별로 분할을 고려하세요."
             )
 
         if issues["complex_files"]:

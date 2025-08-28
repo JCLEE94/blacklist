@@ -170,13 +170,13 @@ class ValidationManager:
                     min_length = rules.get("min_length", 0)
                     max_length = rules.get("max_length", 1000)
                     if len(value) < min_length:
-                        errors[field] = (
-                            f"{field} must be at least {min_length} characters"
-                        )
+                        errors[
+                            field
+                        ] = f"{field} must be at least {min_length} characters"
                     elif len(value) > max_length:
-                        errors[field] = (
-                            f"{field} must be at most {max_length} characters"
-                        )
+                        errors[
+                            field
+                        ] = f"{field} must be at most {max_length} characters"
 
                 # Check custom validator
                 validator = rules.get("validator")

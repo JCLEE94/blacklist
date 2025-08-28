@@ -65,9 +65,7 @@ def update_secudium_auth():
 
         if not username or not password:
             return (
-                jsonify(
-                    {"success": False, "error": "사용자명과 비밀번호가 필요합니다"}
-                ),
+                jsonify({"success": False, "error": "사용자명과 비밀번호가 필요합니다"}),
                 400,
             )
 

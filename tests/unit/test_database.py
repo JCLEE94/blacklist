@@ -296,7 +296,6 @@ class TestDatabaseManager:
             patch("os.path.exists", return_value=True),
             patch("os.path.getsize", return_value=1024),
         ):
-
             db = DatabaseManager("sqlite:///test.db")
             stats = db.get_statistics()
 

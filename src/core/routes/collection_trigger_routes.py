@@ -148,9 +148,7 @@ def trigger_regtech_collection():
                     jsonify(
                         {
                             "success": False,
-                            "message": result.get(
-                                "message", "REGTECH 수집 트리거 실패"
-                            ),
+                            "message": result.get("message", "REGTECH 수집 트리거 실패"),
                             "error": result.get("error"),
                             "progress": progress_info,
                         }
@@ -162,9 +160,7 @@ def trigger_regtech_collection():
                     jsonify(
                         {
                             "success": False,
-                            "message": result.get(
-                                "message", "REGTECH 수집 트리거 실패"
-                            ),
+                            "message": result.get("message", "REGTECH 수집 트리거 실패"),
                             "error": result.get("error"),
                             "progress": progress_info,
                         }
@@ -211,9 +207,7 @@ def trigger_secudium_collection():
 
         # SECUDIUM은 현재 계정 문제로 비활성화됨
         if progress_tracker:
-            progress_tracker.fail_collection(
-                "secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다."
-            )
+            progress_tracker.fail_collection("secudium", "SECUDIUM 수집은 현재 비활성화되어 있습니다.")
 
         return (
             jsonify(

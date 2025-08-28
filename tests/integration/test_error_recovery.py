@@ -34,9 +34,9 @@ class TestServiceErrorRecovery(IntegrationTestFixtures):
                 raise Exception("Temporary cache error")
             return None
 
-        mock_container.get("blacklist_manager").get_all_ips.side_effect = (
-            blacklist_get_all
-        )
+        mock_container.get(
+            "blacklist_manager"
+        ).get_all_ips.side_effect = blacklist_get_all
         mock_container.get("cache_manager").get.side_effect = cache_get
 
         with patch(

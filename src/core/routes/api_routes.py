@@ -40,7 +40,6 @@ def register_sub_routes(app):
 def get_all_data():
     """전체 블랙리스트 데이터 조회"""
     try:
-
         from ..container import get_container
 
         container = get_container()

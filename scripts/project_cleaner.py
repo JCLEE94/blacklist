@@ -248,9 +248,7 @@ class ProjectCleaner:
             with open(package_json_path, "w", encoding="utf-8") as f:
                 json.dump(package_data, f, indent=2, ensure_ascii=False)
 
-            print(
-                f"  ✅ 스크립트 최적화: {original_count}개 → {len(optimized_scripts)}개"
-            )
+            print(f"  ✅ 스크립트 최적화: {original_count}개 → {len(optimized_scripts)}개")
             self.fixes_applied.append(
                 f"Optimized package.json scripts: {original_count} → {len(optimized_scripts)}"
             )

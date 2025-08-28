@@ -99,9 +99,7 @@ class CredentialValidator:
         if "@" in credential.username:
             email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
             if not re.match(email_pattern, credential.username):
-                validation["warnings"].append(
-                    "REGTECH 이메일 형식이 올바르지 않을 수 있습니다."
-                )
+                validation["warnings"].append("REGTECH 이메일 형식이 올바르지 않을 수 있습니다.")
         else:
             # 사용자 ID 형식 검증
             if len(credential.username) < 3:
@@ -131,9 +129,7 @@ class CredentialValidator:
 
         # 한글 포함 검증
         if re.search(r"[\u3131-\u3163\uac00-\ud7a3]", username):
-            validation["warnings"].append(
-                "SECUDIUM 사용자명에 한글이 포함되어 있습니다."
-            )
+            validation["warnings"].append("SECUDIUM 사용자명에 한글이 포함되어 있습니다.")
 
         # 패스워드 복잡성 검증
         password = credential.password
@@ -142,15 +138,11 @@ class CredentialValidator:
 
         # 대소문자 복합 검증
         if not (re.search(r"[a-z]", password) and re.search(r"[A-Z]", password)):
-            validation["warnings"].append(
-                "SECUDIUM 패스워드에 대소문자가 복합되어 있지 않습니다."
-            )
+            validation["warnings"].append("SECUDIUM 패스워드에 대소문자가 복합되어 있지 않습니다.")
 
         # 숫자 포함 검증
         if not re.search(r"\d", password):
-            validation["warnings"].append(
-                "SECUDIUM 패스워드에 숫자가 포함되어 있지 않습니다."
-            )
+            validation["warnings"].append("SECUDIUM 패스워드에 숫자가 포함되어 있지 않습니다.")
 
         return validation
 
@@ -359,9 +351,7 @@ if __name__ == "__main__":
         result = validator.validate_credential("test", expired_cred)
 
         if result["valid"]:
-            all_validation_failures.append(
-                "만료 검증: 만료된 자격증명이 valid=True로 판정됨"
-            )
+            all_validation_failures.append("만료 검증: 만료된 자격증명이 valid=True로 판정됨")
     except Exception as e:
         all_validation_failures.append(f"만료 검증 오류: {e}")
 

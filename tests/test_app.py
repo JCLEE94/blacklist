@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 
 # 환경변수 설정
-os.environ["DATABASE_URL"] = (
-    "postgresql://blacklist_user:blacklist_password_change_me@localhost:5432/blacklist"
-)
+os.environ[
+    "DATABASE_URL"
+] = "postgresql://blacklist_user:blacklist_password_change_me@localhost:5432/blacklist"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 os.environ["FLASK_ENV"] = "development"
 os.environ["PORT"] = "5000"

@@ -186,9 +186,7 @@ def main():
         return
 
     # Confirm changes
-    confirm = (
-        input(f"\n🎯 Apply {total_changes} version fixes? (y/N): ").strip().lower()
-    )
+    confirm = input(f"\n🎯 Apply {total_changes} version fixes? (y/N): ").strip().lower()
     if confirm != "y":
         print("❌ Version fixes cancelled")
         return

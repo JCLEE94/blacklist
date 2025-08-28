@@ -285,9 +285,7 @@ if __name__ == "__main__":
             loaded_credentials = storage.load_credentials()
 
             if "test_service" not in loaded_credentials:
-                all_validation_failures.append(
-                    "자격증명 저장/로드: test_service가 로드되지 않음"
-                )
+                all_validation_failures.append("자격증명 저장/로드: test_service가 로드되지 않음")
             elif loaded_credentials["test_service"].username != "test_user":
                 all_validation_failures.append("자격증명 데이터 불일치")
         except Exception as e:
@@ -298,9 +296,7 @@ if __name__ == "__main__":
         try:
             file_info = storage.get_file_info()
             if not file_info["exists"]:
-                all_validation_failures.append(
-                    "파일 정보: 자격증명 파일이 존재하지 않음"
-                )
+                all_validation_failures.append("파일 정보: 자격증명 파일이 존재하지 않음")
         except Exception as e:
             all_validation_failures.append(f"파일 정보 오류: {e}")
 

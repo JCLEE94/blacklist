@@ -38,7 +38,6 @@ class TestBuildInfo:
                     ),
                 ),
             ):
-
                 info = get_build_info()
                 assert isinstance(info, dict)
 

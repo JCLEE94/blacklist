@@ -266,22 +266,16 @@ class DatabaseMigrationV2:
                 "total_rows": total_rows,
             }
 
-            print(
-                f"  ✓ 데이터 마이그레이션 완료: {migrated_tables}개 테이블, {total_rows}행"
-            )
+            print(f"  ✓ 데이터 마이그레이션 완료: {migrated_tables}개 테이블, {total_rows}행")
             return migration_success
 
         except ImportError:
-            logger.error(
-                "psycopg2 패키지가 설치되지 않았습니다. pip install psycopg2-binary"
-            )
+            logger.error("psycopg2 패키지가 설치되지 않았습니다. pip install psycopg2-binary")
             self.migration_report["issues"].append("psycopg2 패키지 필요")
             return False
         except Exception as e:
             logger.error(f"데이터 마이그레이션 실패: {e}")
-            self.migration_report["issues"].append(
-                f"데이터 마이그레이션 오류: {str(e)}"
-            )
+            self.migration_report["issues"].append(f"데이터 마이그레이션 오류: {str(e)}")
             return False
 
     def validate_migration(self) -> bool:

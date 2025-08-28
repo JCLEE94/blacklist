@@ -237,9 +237,7 @@ if __name__ == "__main__":
 
         alerts = monitor.alert_manager.get_active_alerts()
         if len(alerts) != 1:
-            all_validation_failures.append(
-                f"경고 시스템: 예상 경고 1개, 실제 {len(alerts)}개"
-            )
+            all_validation_failures.append(f"경고 시스템: 예상 경고 1개, 실제 {len(alerts)}개")
 
         if alerts and alerts[0]["message"] != "테스트 경고":
             all_validation_failures.append("경고 시스템: 경고 메시지 불일치")

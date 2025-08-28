@@ -109,7 +109,6 @@ def get_fortigate_format():
 def get_enhanced_blacklist():
     """향상된 블랙리스트 - 메타데이터 포함"""
     try:
-
         # Get pagination parameters
         per_page = min(int(request.args.get("per_page", 100)), 1000)
         page = int(request.args.get("page", 1))

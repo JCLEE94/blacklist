@@ -277,9 +277,7 @@ class InfiniteChainExecutor:
 
             results["success"] = success
             results["korean_message"] = (
-                "코드 품질 향상 체인 완료"
-                if success
-                else "코드 품질 향상 체인 부분 실패"
+                "코드 품질 향상 체인 완료" if success else "코드 품질 향상 체인 부분 실패"
             )
 
             return results
@@ -479,9 +477,7 @@ class InfiniteChainExecutor:
 
             results["success"] = success
             results["korean_message"] = (
-                "시스템 검증 완료 - 모든 목표 달성"
-                if success
-                else "시스템 검증 완료 - 일부 목표 미달성"
+                "시스템 검증 완료 - 모든 목표 달성" if success else "시스템 검증 완료 - 일부 목표 미달성"
             )
 
             return results
@@ -553,9 +549,7 @@ class InfiniteChainExecutor:
                 "success": True,
                 "formatting_applied": formatting_needed,
                 "korean_message": (
-                    "코드 포맷팅 적용 완료"
-                    if formatting_needed
-                    else "코드 포맷팅 이미 적용됨"
+                    "코드 포맷팅 적용 완료" if formatting_needed else "코드 포맷팅 이미 적용됨"
                 ),
             }
 
@@ -692,9 +686,7 @@ class InfiniteChainExecutor:
                 "success": True,
                 "all_tests_passed": all_tests_passed,
                 "test_output": result.stdout[-500:] if result.stdout else "",
-                "korean_message": (
-                    "모든 테스트 통과" if all_tests_passed else "일부 테스트 실패"
-                ),
+                "korean_message": ("모든 테스트 통과" if all_tests_passed else "일부 테스트 실패"),
             }
 
         except Exception as e:
@@ -956,9 +948,7 @@ class InfiniteChainExecutor:
         report.append(
             f"  • 성공한 체인: {final_results['successful_chains']}/{final_results['total_chains']}개"
         )
-        report.append(
-            f"  • 평균 체인 성공률: {final_results['avg_chain_success_rate']:.1f}%"
-        )
+        report.append(f"  • 평균 체인 성공률: {final_results['avg_chain_success_rate']:.1f}%")
         report.append(f"  • 총 실행 시간: {final_results['total_duration']:.1f}초")
         report.append("")
 
@@ -970,9 +960,7 @@ class InfiniteChainExecutor:
             duration = result.get("duration", 0)
 
             report.append(f"  {status} {chain_def.name}")
-            report.append(
-                f"       성공률: {success_rate:.1f}% | 실행시간: {duration:.1f}초"
-            )
+            report.append(f"       성공률: {success_rate:.1f}% | 실행시간: {duration:.1f}초")
 
             if "korean_message" in result.get("details", {}):
                 report.append(f"       상세: {result['details']['korean_message']}")
@@ -985,13 +973,9 @@ class InfiniteChainExecutor:
 
         if final_results["overall_success"]:
             report.append("🎉 축하합니다! 모든 자동화 목표를 성공적으로 달성했습니다.")
-            report.append(
-                "✨ AI 자동화 플랫폼 v8.3.0 Step 6: Infinite Workflow Chaining 완료"
-            )
+            report.append("✨ AI 자동화 플랫폼 v8.3.0 Step 6: Infinite Workflow Chaining 완료")
         else:
-            report.append(
-                "⚠️  일부 목표가 달성되지 않았습니다. 추가 최적화가 필요합니다."
-            )
+            report.append("⚠️  일부 목표가 달성되지 않았습니다. 추가 최적화가 필요합니다.")
             report.append("🔄 자동 복구 및 재시도 메커니즘을 통해 개선을 계속합니다.")
 
         return "\n".join(report)

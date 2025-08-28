@@ -297,7 +297,9 @@ def get_collection_history():
                 "status": (
                     "success"
                     if "completed" in log.get("action", "")
-                    else "running" if "started" in log.get("action", "") else "failed"
+                    else "running"
+                    if "started" in log.get("action", "")
+                    else "failed"
                 ),
                 "duration": None,  # Can't calculate without start/end times
                 "ips_collected": log.get("details", {}).get("ips_collected")

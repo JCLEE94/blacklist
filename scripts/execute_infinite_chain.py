@@ -191,9 +191,7 @@ class InfiniteChainOrchestrator:
             if self.monitor:
                 system_status = self.monitor.get_system_status()
                 if system_status["active_chains_count"] > 0:
-                    print(
-                        f"🔄 현재 실행 중: {system_status['active_chains_count']}개 체인"
-                    )
+                    print(f"🔄 현재 실행 중: {system_status['active_chains_count']}개 체인")
                     for chain_id, chain_info in system_status["active_chains"].items():
                         print(
                             f"  • {chain_info['name']}: {chain_info['progress']:.1f}% ({chain_info['status']})"
@@ -273,7 +271,9 @@ class InfiniteChainOrchestrator:
                 duration_chain = chain_result.get("duration", 0)
 
                 report += f"  {status} {chain_name}\n"
-                report += f"    성공률: {success_rate:.1f}% | 실행시간: {duration_chain:.1f}초\n"
+                report += (
+                    f"    성공률: {success_rate:.1f}% | 실행시간: {duration_chain:.1f}초\n"
+                )
 
             # 성능 개선 요약
             improvements = results.get("performance_improvements", {})
@@ -311,12 +311,12 @@ class InfiniteChainOrchestrator:
 """
 
             if target_achieved:
-                report += "🎊 축하합니다! Step 6: Infinite Workflow Chaining이 성공적으로 완료되었습니다!\n"
+                report += (
+                    "🎊 축하합니다! Step 6: Infinite Workflow Chaining이 성공적으로 완료되었습니다!\n"
+                )
                 report += "✨ AI 자동화 플랫폼 v8.3.0의 무한 체인 시스템이 모든 목표를 달성했습니다.\n"
             else:
-                report += (
-                    "⚠️  Step 6가 부분적으로 완료되었습니다. 추가 최적화가 권장됩니다.\n"
-                )
+                report += "⚠️  Step 6가 부분적으로 완료되었습니다. 추가 최적화가 권장됩니다.\n"
                 report += "🔄 자동 복구 시스템이 지속적으로 개선을 시도합니다.\n"
 
             report += f"""

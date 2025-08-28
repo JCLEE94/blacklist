@@ -35,9 +35,7 @@ def validate_job_dependencies(workflow):
 
         for dep in needs:
             if dep not in jobs:
-                errors.append(
-                    f"Job '{job_name}'이 존재하지 않는 job '{dep}'에 의존합니다"
-                )
+                errors.append(f"Job '{job_name}'이 존재하지 않는 job '{dep}'에 의존합니다")
             else:
                 dep_graph[dep].append(job_name)
 

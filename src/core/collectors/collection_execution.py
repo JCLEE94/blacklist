@@ -338,9 +338,7 @@ if __name__ == "__main__":
         result = asyncio.run(test_single_execution())
 
         if result.status != CollectionStatus.COMPLETED:
-            all_validation_failures.append(
-                f"단일 수집: 예상 COMPLETED, 실제 {result.status}"
-            )
+            all_validation_failures.append(f"단일 수집: 예상 COMPLETED, 실제 {result.status}")
 
         if result.collected_count != 3:
             all_validation_failures.append(
@@ -366,9 +364,7 @@ if __name__ == "__main__":
         results = asyncio.run(test_multiple_execution())
 
         if len(results) != 2:
-            all_validation_failures.append(
-                f"다중 수집: 예상 결과 2개, 실제 {len(results)}개"
-            )
+            all_validation_failures.append(f"다중 수집: 예상 결과 2개, 실제 {len(results)}개")
 
         if "test1" not in results or "test2" not in results:
             all_validation_failures.append("다중 수집: 예상 수집기 결과 누락")

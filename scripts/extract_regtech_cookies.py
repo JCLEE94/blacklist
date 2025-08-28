@@ -18,9 +18,7 @@ def extract_cookies_with_playwright():
 
         with sync_playwright() as p:
             # 브라우저 실행
-            browser = p.chromium.launch(
-                headless=False
-            )  # headless=False로 브라우저 화면 보기
+            browser = p.chromium.launch(headless=False)  # headless=False로 브라우저 화면 보기
             context = browser.new_context()
             page = context.new_page()
 

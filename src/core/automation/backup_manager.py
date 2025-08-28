@@ -294,9 +294,7 @@ class AutomationBackupManager:
                             self.logger.info(f"데이터베이스 백업 추가: {db_file}")
 
                         except Exception as e:
-                            self.logger.warning(
-                                f"데이터베이스 검증 실패: {db_file} - {e}"
-                            )
+                            self.logger.warning(f"데이터베이스 검증 실패: {db_file} - {e}")
 
             shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -386,9 +384,7 @@ class AutomationBackupManager:
                         if path.is_dir():
                             # 파일 개수 계산 (디렉토리용)
                             file_count = len(list(path.rglob("*")))
-                            self.logger.info(
-                                f"디렉토리 백업: {path} ({file_count}개 파일)"
-                            )
+                            self.logger.info(f"디렉토리 백업: {path} ({file_count}개 파일)")
                         else:
                             self.logger.info(f"파일 백업: {path}")
 
@@ -545,9 +541,7 @@ class AutomationBackupManager:
             elif backup_record.backup_type == BackupType.CONFIG_BACKUP:
                 success = self._rollback_config_files(backup_id, target_paths)
             else:
-                self.logger.warning(
-                    f"롤백이 지원되지 않는 백업 유형: {backup_record.backup_type}"
-                )
+                self.logger.warning(f"롤백이 지원되지 않는 백업 유형: {backup_record.backup_type}")
                 success = False
 
             if success:
@@ -579,9 +573,7 @@ class AutomationBackupManager:
             self.logger.info(f"변경사항:\n{git_data.get('git_status', 'None')}")
 
             # 자동 롤백은 위험하므로 정보만 제공
-            self.logger.warning(
-                "Git 자동 롤백은 지원하지 않습니다. 수동으로 처리해주세요."
-            )
+            self.logger.warning("Git 자동 롤백은 지원하지 않습니다. 수동으로 처리해주세요.")
 
             return True
 

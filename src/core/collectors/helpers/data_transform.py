@@ -45,9 +45,7 @@ class RegtechDataTransform:
             except (ValueError, TypeError) as e:
                 # 파싱 실패 시 현재 날짜 사용
                 detection_date = datetime.now()
-                logger.warning(
-                    f"날짜 파싱 실패, 현재 날짜 사용: {detection_date_str}, 오류: {e}"
-                )
+                logger.warning(f"날짜 파싱 실패, 현재 날짜 사용: {detection_date_str}, 오류: {e}")
 
             # 수집일 기준 3개월 후 만료 설정 (탐지일 아님)
             collection_date = datetime.now()  # 실제 수집한 날짜
@@ -59,9 +57,7 @@ class RegtechDataTransform:
                 "country": raw_data.get("country", "Unknown"),
                 "reason": raw_data.get("reason", "Unknown threat"),
                 "source": "REGTECH",
-                "detection_date": detection_date.strftime(
-                    "%Y-%m-%d"
-                ),  # 실제 탐지일 유지
+                "detection_date": detection_date.strftime("%Y-%m-%d"),  # 실제 탐지일 유지
                 # 수집일 추가
                 "collection_date": collection_date.strftime("%Y-%m-%d"),
                 "expires_at": expires_at.isoformat(),  # 수집일 기준 만료

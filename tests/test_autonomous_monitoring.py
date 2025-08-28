@@ -42,9 +42,7 @@ try:
         RiskLevel,
     )
 except ImportError as e:
-    pytest.skip(
-        f"모니터링 시스템 모듈을 찾을 수 없습니다: {e}", allow_module_level=True
-    )
+    pytest.skip(f"모니터링 시스템 모듈을 찾을 수 없습니다: {e}", allow_module_level=True)
 
 
 class TestAutonomousMonitor:
@@ -358,9 +356,7 @@ class TestKoreanAlertSystem:
         assert alert_id is not None
 
         # 100% 완료
-        alert_id = alert_system.send_progress_update(
-            "테스트 작업", 100.0, details="작업 완료"
-        )
+        alert_id = alert_system.send_progress_update("테스트 작업", 100.0, details="작업 완료")
 
         assert alert_id is not None
 

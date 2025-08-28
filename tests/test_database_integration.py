@@ -207,9 +207,7 @@ def check_cookie_system():
 
 def main():
     """메인 테스트 실행"""
-    print(
-        f"⏰ 데이터베이스 통합 테스트 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    )
+    print(f"⏰ 데이터베이스 통합 테스트 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     results = []
 

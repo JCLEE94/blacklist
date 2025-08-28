@@ -55,9 +55,7 @@ class DeploymentVerificationTester:
             else:
                 print(f"❌ FAILED ({duration:.1f}s)")
                 print(f"📤 Expected: {'success' if expect_success else 'failure'}")
-                print(
-                    f"📤 Actual: {'success' if result.returncode == 0 else 'failure'}"
-                )
+                print(f"📤 Actual: {'success' if result.returncode == 0 else 'failure'}")
                 if result.stderr:
                     print(f"🚨 Error: {result.stderr[:200]}...")
 

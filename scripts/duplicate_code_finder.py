@@ -157,9 +157,9 @@ class DuplicateCodeFinder:
                     "function_names": sorted([f[0] for f in functions]),
                 }
 
-                file_signatures[str(file_path.relative_to(self.project_root))] = (
-                    signature
-                )
+                file_signatures[
+                    str(file_path.relative_to(self.project_root))
+                ] = signature
 
             except Exception as e:
                 print(f"Error analyzing {file_path}: {e}")

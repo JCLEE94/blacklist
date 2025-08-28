@@ -320,7 +320,6 @@ class GitHubIssueReporter:
 
             # Flask 컨텍스트에서 요청 정보 추출
             try:
-
                 if has_request_context():
                     error_data.update(
                         {

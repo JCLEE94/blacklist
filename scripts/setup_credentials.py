@@ -163,9 +163,7 @@ class CredentialManager:
     def load_credentials(self) -> Dict[str, Any]:
         """저장된 자격증명 로드"""
         if not self.encrypted_file.exists():
-            print(
-                "⚠️  자격증명 파일이 없습니다. setup_credentials.py를 먼저 실행하세요."
-            )
+            print("⚠️  자격증명 파일이 없습니다. setup_credentials.py를 먼저 실행하세요.")
             return {}
 
         password = getpass("🔑 마스터 비밀번호: ")
@@ -177,21 +175,21 @@ class CredentialManager:
 
         # Database (PostgreSQL only)
         db = credentials["database"]
-        env_vars["DATABASE_URL"] = (
-            f"postgresql://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db['name']}"
-        )
+        env_vars[
+            "DATABASE_URL"
+        ] = f"postgresql://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db['name']}"
 
         # Redis
         if "redis" in credentials:
             redis = credentials["redis"]
             if redis.get("password"):
-                env_vars["REDIS_URL"] = (
-                    f"redis://:{redis['password']}@{redis['host']}:{redis['port']}/{redis['db']}"
-                )
+                env_vars[
+                    "REDIS_URL"
+                ] = f"redis://:{redis['password']}@{redis['host']}:{redis['port']}/{redis['db']}"
             else:
-                env_vars["REDIS_URL"] = (
-                    f"redis://{redis['host']}:{redis['port']}/{redis['db']}"
-                )
+                env_vars[
+                    "REDIS_URL"
+                ] = f"redis://{redis['host']}:{redis['port']}/{redis['db']}"
 
         # Collection APIs
         if "regtech" in credentials:

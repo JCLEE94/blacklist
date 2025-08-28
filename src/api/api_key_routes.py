@@ -135,9 +135,7 @@ def revoke_api_key(key_id: str):
 
         if success:
             logger.info(f"API 키 비활성화: {api_key.name} (ID: {key_id})")
-            return jsonify(
-                {"success": True, "message": "API 키가 성공적으로 비활성화되었습니다"}
-            )
+            return jsonify({"success": True, "message": "API 키가 성공적으로 비활성화되었습니다"})
         else:
             return (
                 jsonify({"success": False, "error": "API 키 비활성화에 실패했습니다"}),
@@ -147,9 +145,7 @@ def revoke_api_key(key_id: str):
     except Exception as e:
         logger.error(f"API 키 비활성화 실패: {e}")
         return (
-            jsonify(
-                {"success": False, "error": "API 키 비활성화 중 오류가 발생했습니다"}
-            ),
+            jsonify({"success": False, "error": "API 키 비활성화 중 오류가 발생했습니다"}),
             500,
         )
 
@@ -174,9 +170,7 @@ def delete_api_key(key_id: str):
 
         if success:
             logger.info(f"API 키 삭제: {api_key.name} (ID: {key_id})")
-            return jsonify(
-                {"success": True, "message": "API 키가 성공적으로 삭제되었습니다"}
-            )
+            return jsonify({"success": True, "message": "API 키가 성공적으로 삭제되었습니다"})
         else:
             return (
                 jsonify({"success": False, "error": "API 키 삭제에 실패했습니다"}),

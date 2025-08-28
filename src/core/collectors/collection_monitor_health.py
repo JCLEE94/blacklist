@@ -100,9 +100,7 @@ class CollectionHealthAssessor:
         # 이슈 수집
         issues = []
         if health_ratio < 0.5:
-            issues.append(
-                f"건강하지 않은 수집기가 많습니다 ({healthy_count}/{total_count})"
-            )
+            issues.append(f"건강하지 않은 수집기가 많습니다 ({healthy_count}/{total_count})")
 
         if recent_success_rate < self._performance_thresholds["min_success_rate"]:
             issues.append(f"최근 성공률이 낮습니다 ({recent_success_rate:.1f}%)")
@@ -222,9 +220,7 @@ class CollectionHealthAssessor:
                 and r.duration > self._performance_thresholds["max_duration"]
             ]
             if slow_collections:
-                recommendations.append(
-                    "일부 수집이 느립니다. 타임아웃 설정을 확인하세요."
-                )
+                recommendations.append("일부 수집이 느립니다. 타임아웃 설정을 확인하세요.")
 
         if not recommendations:
             recommendations.append("현재 시스템이 정상적으로 운영되고 있습니다.")

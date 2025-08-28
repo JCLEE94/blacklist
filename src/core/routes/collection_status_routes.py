@@ -84,9 +84,7 @@ def get_collection_status():
                     "today": today_stats.get("count", 0) if today_stats else 0,
                     # 최근 7일
                     "recent_days": daily_stats[:7] if daily_stats else [],
-                    "chart_data": format_chart_data(
-                        daily_stats[:30]
-                    ),  # 차트용 30일 데이터
+                    "chart_data": format_chart_data(daily_stats[:30]),  # 차트용 30일 데이터
                 },
                 "sources": collection_status.get("sources", {}),
                 "source_stats": source_stats,

@@ -625,7 +625,6 @@ class ProductionSLAEnforcer:
 
         for breach_id, breach in self.active_breaches.items():
             if breach.metric_type == metric_type and not breach.resolved:
-
                 breach.resolved = True
                 breach.end_time = datetime.now()
                 breach.duration_seconds = int(

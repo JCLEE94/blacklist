@@ -235,9 +235,7 @@ class BaseCollector(ABC):
                 self._consecutive_failures = 0
                 self._last_execution_time = datetime.now()
 
-                self.logger.info(
-                    f"수집 완료: {self.name} - {len(collected_data)}개 수집"
-                )
+                self.logger.info(f"수집 완료: {self.name} - {len(collected_data)}개 수집")
                 break
 
             except asyncio.TimeoutError:
@@ -374,14 +372,10 @@ if __name__ == "__main__":
         result = asyncio.run(test_collection())
 
         if result.status != CollectionStatus.COMPLETED:
-            all_validation_failures.append(
-                f"수집 상태: 예상 COMPLETED, 실제 {result.status}"
-            )
+            all_validation_failures.append(f"수집 상태: 예상 COMPLETED, 실제 {result.status}")
 
         if result.collected_count != 3:
-            all_validation_failures.append(
-                f"수집 개수: 예상 3, 실제 {result.collected_count}"
-            )
+            all_validation_failures.append(f"수집 개수: 예상 3, 실제 {result.collected_count}")
 
     except Exception as e:
         all_validation_failures.append(f"비동기 수집 오류: {e}")
@@ -390,14 +384,10 @@ if __name__ == "__main__":
     total_tests += 1
     try:
         if collector.is_running:
-            all_validation_failures.append(
-                "상태 검사: 수집 완료 후에도 is_running=True"
-            )
+            all_validation_failures.append("상태 검사: 수집 완료 후에도 is_running=True")
 
         if not collector.is_healthy:
-            all_validation_failures.append(
-                "상태 검사: 정상 수집 후에도 is_healthy=False"
-            )
+            all_validation_failures.append("상태 검사: 정상 수집 후에도 is_healthy=False")
 
     except Exception as e:
         all_validation_failures.append(f"상태 검사 오류: {e}")

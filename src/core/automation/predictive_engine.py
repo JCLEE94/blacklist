@@ -857,9 +857,7 @@ class PredictiveEngine:
 
         # 일반 권장사항
         if not recommendations:
-            recommendations.extend(
-                ["✅ 시스템 상태 양호 - 현재 수준 유지", "📊 지속적인 모니터링 권장"]
-            )
+            recommendations.extend(["✅ 시스템 상태 양호 - 현재 수준 유지", "📊 지속적인 모니터링 권장"])
 
         return recommendations
 

@@ -126,9 +126,9 @@ class ValidationManager:
         # Validate name format (alphanumeric, underscore, hyphen only)
         name = config.get("name", "")
         if name and not all(c.isalnum() or c in "_-" for c in name):
-            errors["name"] = (
-                "Name can only contain letters, numbers, underscores, and hyphens"
-            )
+            errors[
+                "name"
+            ] = "Name can only contain letters, numbers, underscores, and hyphens"
 
         # Validate URL format (basic check)
         base_url = config.get("base_url", "")

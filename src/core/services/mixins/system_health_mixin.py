@@ -242,7 +242,9 @@ class SystemHealthMixin:
                     else (
                         "warning"
                         if any(a["level"] == "warning" for a in alerts)
-                        else "info" if alerts else "healthy"
+                        else "info"
+                        if alerts
+                        else "healthy"
                     )
                 ),
             }

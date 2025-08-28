@@ -349,7 +349,6 @@ class TestCollectionManagerCoverage:
                 patch("os.path.exists", return_value=True),
                 patch("builtins.open", mock_open=True),
             ):
-
                 service = ProtectionService()
                 assert service is not None
 
@@ -478,7 +477,6 @@ class TestAppConfigurationCoverage:
                 patch("flask_compress.Compress"),
                 patch("pytz.timezone"),
             ):
-
                 # These should not raise exceptions
                 mixin._setup_cors(app)
                 mixin._setup_compression(app)

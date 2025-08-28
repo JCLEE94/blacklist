@@ -614,9 +614,7 @@ class ProductionMonitor:
 
     async def _trigger_emergency_response(self, breach_summary: Dict[str, Any]):
         """긴급 대응 트리거"""
-        logger.critical(
-            f"🚨 긴급 대응 시작: {breach_summary['critical_breaches']}건 심각한 위반"
-        )
+        logger.critical(f"🚨 긴급 대응 시작: {breach_summary['critical_breaches']}건 심각한 위반")
 
         await self._send_alert(
             AlertLevel.EMERGENCY,

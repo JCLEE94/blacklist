@@ -43,7 +43,6 @@ def track_http_requests(func):
             duration = time.time() - start_time
 
             try:
-
                 method = request.method
                 endpoint = request.endpoint or "unknown"
 

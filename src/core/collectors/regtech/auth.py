@@ -255,9 +255,7 @@ if __name__ == "__main__":
         success_response = MockResponse(
             "로그아웃 button", "https://regtech.fsec.or.kr/main"
         )
-        failure_response = MockResponse(
-            "로그인 실패", "https://regtech.fsec.or.kr/login"
-        )
+        failure_response = MockResponse("로그인 실패", "https://regtech.fsec.or.kr/login")
 
         if not auth_mgr.check_login_success(success_response):
             all_validation_failures.append(

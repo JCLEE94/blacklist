@@ -50,9 +50,7 @@ class CollectionTestSuite(BaseUITestSuite):
             "button:has-text('수동 수집')",
         ]
 
-        visible_buttons = await self.check_multiple_elements(
-            control_buttons, "수집 제어"
-        )
+        visible_buttons = await self.check_multiple_elements(control_buttons, "수집 제어")
 
         if visible_buttons == 0:
             self.reporter.add_warning("수집 제어 버튼이 발견되지 않음")

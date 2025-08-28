@@ -320,9 +320,7 @@ class CoverageImprovement:
 
         # Recommendations
         if not target_met:
-            print(
-                f"\n💡 Recommendations for reaching {self.target_coverage}% coverage:"
-            )
+            print(f"\n💡 Recommendations for reaching {self.target_coverage}% coverage:")
             print(f"   1. Add more unit tests for core modules (focus on src/core/)")
             print(f"   2. Increase integration test coverage")
             print(f"   3. Add edge case and error handling tests")

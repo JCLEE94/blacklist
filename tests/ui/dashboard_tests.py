@@ -75,9 +75,7 @@ class DashboardTestSuite(BaseUITestSuite):
                 selectors.get("threat_level_chart", ".threat-level-chart"),
             ]
 
-            found_charts = await self.check_multiple_elements(
-                chart_selectors, "통계 차트"
-            )
+            found_charts = await self.check_multiple_elements(chart_selectors, "통계 차트")
 
             # 필터 기능 테스트
             await self.test_filter_functionality()

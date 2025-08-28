@@ -280,15 +280,14 @@ class RegtechAuth:
                 # URL 체크 - 메인 페이지로 리다이렉트되었는지 확인
                 if "/main/main" in login_resp.url or "main" in login_resp.url:
                     # 페이지 내용에서 로그인 성공 지표 확인
-                    if (
-                        "logout" in login_resp.text.lower()
-                        or "로그아웃" in login_resp.text
-                    ):
+                    if "logout" in login_resp.text.lower() or "로그아웃" in login_resp.text:
                         logger.info("✅ REGTECH login successful!")
                         self.session = session
                         return True
                     else:
-                        logger.warning("⚠️ Redirected to main but logout link not found")
+                        logger.warning(
+                            "⚠️ Redirected to main but logout link not found"
+                        )
 
                 # 로그인 실패 메시지 확인
                 if (

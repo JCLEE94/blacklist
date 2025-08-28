@@ -639,9 +639,7 @@ class AutonomousMonitor:
         if alerts:
             report += f"⚠️ 활성 알림 ({len(alerts)}개):\n"
             for alert in alerts:
-                status = (
-                    "✅ 자동 수정됨" if alert.auto_fix_success else "❌ 수동 개입 필요"
-                )
+                status = "✅ 자동 수정됨" if alert.auto_fix_success else "❌ 수동 개입 필요"
                 report += f"  • {alert.message} - {status}\n"
         else:
             report += "✅ 알림 없음 - 시스템 정상\n"
@@ -662,9 +660,7 @@ class AutonomousMonitor:
 
             risk_emoji = {"low": "🟢", "medium": "🟡", "high": "🟠", "emergency": "🔴"}
             risk_level = predictions.get("risk_level", "low")
-            report += (
-                f"  • 전체 위험도: {risk_emoji.get(risk_level, '🟢')} {risk_level}\n"
-            )
+            report += f"  • 전체 위험도: {risk_emoji.get(risk_level, '🟢')} {risk_level}\n"
 
         # 자동화 진행률
         progress = self._calculate_automation_progress(snapshot)

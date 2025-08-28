@@ -596,14 +596,10 @@ class AutonomousChainMonitor:
 
         report.append("=== 자율적 워크플로우 체인 실행 현황 ===")
         report.append(f"📊 전체 통계:")
-        report.append(
-            f"  • 실행된 체인: {self.system_metrics['total_chains_executed']}개"
-        )
+        report.append(f"  • 실행된 체인: {self.system_metrics['total_chains_executed']}개")
         report.append(f"  • 성공한 체인: {self.system_metrics['successful_chains']}개")
         report.append(f"  • 실패한 체인: {self.system_metrics['failed_chains']}개")
-        report.append(
-            f"  • 평균 성공률: {self.system_metrics['average_success_rate']:.1f}%"
-        )
+        report.append(f"  • 평균 성공률: {self.system_metrics['average_success_rate']:.1f}%")
         report.append("")
 
         if self.active_chains:

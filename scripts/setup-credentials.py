@@ -67,9 +67,7 @@ class CredentialSetup:
 
         print("\n어떤 서비스의 자격증명을 설정하시겠습니까?")
         for i, (service_id, info) in enumerate(self.services.items(), 1):
-            status = (
-                "✅ 설정됨" if self.manager.get_credential(service_id) else "❌ 미설정"
-            )
+            status = "✅ 설정됨" if self.manager.get_credential(service_id) else "❌ 미설정"
             print(f"{i}. {info['name']} - {info['description']} ({status})")
 
         print("0. 모든 서비스 설정")
@@ -117,9 +115,7 @@ class CredentialSetup:
         existing = self.manager.get_credential(service_id)
         if existing:
             print(f"기존 사용자명: {existing.username}")
-            update = (
-                input("기존 자격증명을 업데이트하시겠습니까? (y/N): ").strip().lower()
-            )
+            update = input("기존 자격증명을 업데이트하시겠습니까? (y/N): ").strip().lower()
             if update != "y":
                 return
 
@@ -136,9 +132,7 @@ class CredentialSetup:
             return
 
         # 만료일 설정 (선택사항)
-        expire_choice = (
-            input("자격증명 만료일을 설정하시겠습니까? (y/N): ").strip().lower()
-        )
+        expire_choice = input("자격증명 만료일을 설정하시겠습니까? (y/N): ").strip().lower()
         expires_at = None
 
         if expire_choice == "y":
@@ -250,7 +244,9 @@ class CredentialSetup:
                     status += " (⚠️ 곧 만료)"
 
                 if credential.last_used:
-                    details += f", 마지막 사용: {credential.last_used.strftime('%Y-%m-%d %H:%M')}"
+                    details += (
+                        f", 마지막 사용: {credential.last_used.strftime('%Y-%m-%d %H:%M')}"
+                    )
 
                 print(f"  {info['name']}: {status} - {details}")
             else:
@@ -353,19 +349,11 @@ def main():
         """,
     )
 
-    parser.add_argument(
-        "--batch", metavar="CONFIG_FILE", help="배치 모드로 설정 파일에서 자격증명 로드"
-    )
-    parser.add_argument(
-        "--validate", action="store_true", help="기존 자격증명 검증만 수행"
-    )
+    parser.add_argument("--batch", metavar="CONFIG_FILE", help="배치 모드로 설정 파일에서 자격증명 로드")
+    parser.add_argument("--validate", action="store_true", help="기존 자격증명 검증만 수행")
     parser.add_argument("--status", action="store_true", help="현재 상태만 표시")
-    parser.add_argument(
-        "--export-template", action="store_true", help="환경변수 템플릿 파일 생성"
-    )
-    parser.add_argument(
-        "--create-template", action="store_true", help="설정 파일 템플릿 생성"
-    )
+    parser.add_argument("--export-template", action="store_true", help="환경변수 템플릿 파일 생성")
+    parser.add_argument("--create-template", action="store_true", help="설정 파일 템플릿 생성")
 
     args = parser.parse_args()
 

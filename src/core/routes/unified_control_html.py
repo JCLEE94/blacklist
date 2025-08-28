@@ -43,6 +43,4 @@ def get_unified_dashboard_html():
 
 
 # 레거시 변수명 유지 (기존 코드와의 호환성)
-UNIFIED_DASHBOARD_HTML = (
-    "<!-- HTML은 이제 templates/unified_dashboard.html에 있습니다 -->"
-)
+UNIFIED_DASHBOARD_HTML = "<!-- HTML은 이제 templates/unified_dashboard.html에 있습니다 -->"

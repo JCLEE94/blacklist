@@ -292,9 +292,7 @@ class KoreanAlertSystem:
 
         if status == "완료":
             priority = AlertPriority.SUCCESS
-            message = (
-                f"Step {step_number}: {step_name}이(가) 성공적으로 완료되었습니다."
-            )
+            message = f"Step {step_number}: {step_name}이(가) 성공적으로 완료되었습니다."
         elif status == "실패":
             priority = AlertPriority.CRITICAL
             message = f"Step {step_number}: {step_name} 실행에 실패했습니다."
@@ -391,9 +389,7 @@ class KoreanAlertSystem:
         if status == "성공":
             priority = AlertPriority.SUCCESS
             title = f"{icon} Git {operation.upper()} 완료"
-            message = (
-                f"{files_count}개 파일에 대한 Git {operation} 작업이 성공했습니다."
-            )
+            message = f"{files_count}개 파일에 대한 Git {operation} 작업이 성공했습니다."
         elif status == "실패":
             priority = AlertPriority.CRITICAL
             title = f"{icon} Git {operation.upper()} 실패"
@@ -433,9 +429,7 @@ class KoreanAlertSystem:
             status = "개선 필요"
 
         title = f"{icon} 테스트 커버리지 {status}"
-        message = (
-            f"현재 커버리지: {current_coverage:.1f}% (목표: {target_coverage:.1f}%)"
-        )
+        message = f"현재 커버리지: {current_coverage:.1f}% (목표: {target_coverage:.1f}%)"
 
         details = f"현재: {current_coverage:.1f}%\n목표: {target_coverage:.1f}%"
         if change_delta is not None:

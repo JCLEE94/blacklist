@@ -231,15 +231,11 @@ class ArgoAuthManager:
 
         # 상태 표시
         status_emoji = "✅" if report["overall_status"] else "❌"
-        print(
-            f"{status_emoji} 전체 상태: {'정상' if report['overall_status'] else '문제 있음'}"
-        )
+        print(f"{status_emoji} 전체 상태: {'정상' if report['overall_status'] else '문제 있음'}")
 
         # 세부 상태
         cli_emoji = "✅" if report["cli_installed"] else "❌"
-        print(
-            f"  {cli_emoji} CLI 설치: {'완료' if report['cli_installed'] else '필요'}"
-        )
+        print(f"  {cli_emoji} CLI 설치: {'완료' if report['cli_installed'] else '필요'}")
 
         conn_emoji = "✅" if report["server_connectivity"] else "❌"
         print(
@@ -251,9 +247,7 @@ class ArgoAuthManager:
 
         # 프로젝트 애플리케이션
         if report["project_applications"]:
-            print(
-                f"\n📱 프로젝트 애플리케이션 ({len(report['project_applications'])}개):"
-            )
+            print(f"\n📱 프로젝트 애플리케이션 ({len(report['project_applications'])}개):")
             for app in report["project_applications"]:
                 sync_emoji = "✅" if app["sync_status"] == "Synced" else "⚠️"
                 health_emoji = "✅" if app["health_status"] == "Healthy" else "⚠️"
@@ -277,12 +271,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="ArgoCD 인증 관리자")
-    parser.add_argument(
-        "--verify", action="store_true", help="인증 상태를 확인하고 보고서를 생성합니다"
-    )
-    parser.add_argument(
-        "--show", action="store_true", help="저장된 보고서를 표시합니다"
-    )
+    parser.add_argument("--verify", action="store_true", help="인증 상태를 확인하고 보고서를 생성합니다")
+    parser.add_argument("--show", action="store_true", help="저장된 보고서를 표시합니다")
     parser.add_argument("--project-root", type=str, help="프로젝트 루트 디렉토리 경로")
 
     args = parser.parse_args()

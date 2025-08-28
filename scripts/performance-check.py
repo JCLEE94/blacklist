@@ -144,9 +144,7 @@ def main():
     if resources["disk"] > 80:
         score -= 10
 
-    performance_level = (
-        "우수" if score >= 80 else "양호" if score >= 60 else "개선 필요"
-    )
+    performance_level = "우수" if score >= 80 else "양호" if score >= 60 else "개선 필요"
     print(f"🎯 전체 성능 점수: {score}/100 ({performance_level})")
 
     return score
