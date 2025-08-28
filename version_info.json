@@ -11,5 +11,5 @@
   "docker_images_deployed": 3,
   "docker_images_total": 3,
   "deployment_success_rate": "100.0%",
-  "registry": "registry.jclee.me/qws941"
+  "registry": "registry.jclee.me/blacklist"
 }

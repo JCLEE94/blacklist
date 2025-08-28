@@ -1,4 +1,4 @@
-name: 🚀 프로덕션 배포 파이프라인 | qws941/blacklist
+name: 🚀 프로덕션 배포 파이프라인 | blacklist
 
 on:
   push:
