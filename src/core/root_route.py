@@ -12,7 +12,13 @@ root_bp = Blueprint("root", __name__)
 
 @root_bp.route("/")
 def index():
-    """루트 경로 - 시스템 상태"""
+    """루트 경로 - 대시보드로 리다이렉트"""
+    return redirect("/dashboard")
+
+
+@root_bp.route("/api/system")
+def system_status():
+    """시스템 상태 API"""
     return jsonify(
         {
             "message": "🛡️ Blacklist Management System",
