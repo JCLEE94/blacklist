@@ -87,17 +87,28 @@ def calculate_source_distribution(stats):
 
 @root_bp.route("/dashboard")
 def dashboard():
-    """대시보드 - 통합 수집 관리 패널 직접 표시"""
-    try:
-        # collection_panel의 HTML을 직접 반환
-        from src.core.routes.simple_collection_panel import SIMPLE_PANEL_HTML
-        from flask import render_template_string
+    """대시보드 - 메인 대시보드 표시"""
+    from flask import render_template
 
-        return render_template_string(SIMPLE_PANEL_HTML)
+    try:
+        # 우리가 만든 dashboard.html 표시
+        return render_template("dashboard.html")
     except Exception as e:
         logger.error(f"대시보드 로드 실패: {e}")
-        # 실패시 리다이렉트
-        return redirect("/collection-panel/")
+        # 실패시 기본 HTML 반환
+        return (
+            f"""
+        <html>
+        <head><title>Dashboard Error</title></head>
+        <body>
+            <h1>Dashboard temporarily unavailable</h1>
+            <p>Error: {str(e)}</p>
+            <p><a href="/health">Health Check</a></p>
+        </body>
+        </html>
+        """,
+            500,
+        )
 
 
 @root_bp.route("/api")
