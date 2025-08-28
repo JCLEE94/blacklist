@@ -81,8 +81,17 @@ def calculate_source_distribution(stats):
 
 @root_bp.route("/dashboard")
 def dashboard():
-    """대시보드 - 수집 관리 패널로 리디렉션"""
-    return redirect("/collection-panel/")
+    """대시보드 - 통합 수집 관리 패널 직접 표시"""
+    try:
+        # collection_panel의 HTML을 직접 반환
+        from src.core.routes.simple_collection_panel import SIMPLE_PANEL_HTML
+        from flask import render_template_string
+
+        return render_template_string(SIMPLE_PANEL_HTML)
+    except Exception as e:
+        logger.error(f"대시보드 로드 실패: {e}")
+        # 실패시 리다이렉트
+        return redirect("/collection-panel/")
 
 
 @root_bp.route("/api")

@@ -45,17 +45,14 @@ class CompactFlaskApp(
     """Modular Flask application factory using mixins"""
 
     def _get_version(self) -> str:
-        """Get version from version.txt file or default"""
+        """Get version from dynamic version manager"""
         try:
-            version_file = os.path.join(
-                os.path.dirname(__file__), "..", "..", "version.txt"
-            )
-            if os.path.exists(version_file):
-                with open(version_file, "r") as f:
-                    return f.read().strip()
-        except Exception:
-            pass
-        return "1.3.1"  # Default version
+            from src.core.utils.version_manager import get_version
+
+            return get_version()
+        except Exception as e:
+            logger.warning(f"동적 버전 로드 실패, 기본값 사용: {e}")
+            return "1.3.1"  # Default fallback version
 
     def create_app(self, config_name: Optional[str] = None) -> Flask:
         """Create compact Flask application with modular architecture"""

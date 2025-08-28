@@ -5,11 +5,15 @@
 FROM python:3.11.8-slim-bookworm AS base
 
 # Build arguments for version tracking - 동적 버전 패턴
-ARG BUILD_VERSION=$(date +%Y%m%d%H%M)
-ARG BUILD_NUMBER=${GITHUB_RUN_NUMBER:-local}
-ARG COMMIT_SHA=${GITHUB_SHA:-unknown}
-ARG BUILD_TIMESTAMP=$(date -Iseconds)
-ARG IMAGE_TAG=latest
+ARG DYNAMIC_VERSION=1.0.local
+ARG BUILD_VERSION=local
+ARG BUILD_NUMBER=local
+ARG COMMIT_SHA=unknown
+ARG COMMIT_COUNT=0
+ARG GIT_HASH=unknown
+ARG BUILD_TIMESTAMP=unknown
+ARG GITHUB_ACTIONS=false
+ARG FLASK_ENV=production
 
 # Set Python environment variables for optimization (SafeWork 환경변수 패턴)
 ENV PYTHONUNBUFFERED=1 \
@@ -23,9 +27,12 @@ ENV PYTHONUNBUFFERED=1 \
     # Python security
     PYTHONHASHSEED=random \
     # Build metadata (SafeWork 패턴)
+    DYNAMIC_VERSION=${DYNAMIC_VERSION} \
     BUILD_VERSION=${BUILD_VERSION} \
     BUILD_NUMBER=${BUILD_NUMBER} \
-    COMMIT_SHA=${COMMIT_SHA}
+    COMMIT_SHA=${COMMIT_SHA} \
+    COMMIT_COUNT=${COMMIT_COUNT} \
+    GIT_HASH=${GIT_HASH}
 
 # Set working directory
 WORKDIR /app
@@ -96,12 +103,28 @@ RUN if [ -f "gunicorn.conf.py" ]; then cp gunicorn.conf.py ./; fi
 # Compile Python files for faster startup
 RUN python -m compileall -b app/ src/ 2>/dev/null || true
 
-# Create version info file with dynamic values
+# Pass build arguments to build stage
+ARG DYNAMIC_VERSION
+ARG BUILD_VERSION
+ARG BUILD_NUMBER
+ARG COMMIT_SHA
+ARG COMMIT_COUNT
+ARG GIT_HASH
+ARG BUILD_TIMESTAMP
+ARG GITHUB_ACTIONS
+ARG FLASK_ENV
+
+# Create version info file with dynamic values from build arguments
 RUN echo "{\
-  \"version\": \"$(date +%Y%m%d%H%M)\",\
-  \"build_number\": \"local\",\
-  \"commit_sha\": \"$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\",\
-  \"build_timestamp\": \"$(date -Iseconds)\",\
+  \"version\": \"${DYNAMIC_VERSION}\",\
+  \"build_version\": \"${BUILD_VERSION}\",\
+  \"build_number\": \"${BUILD_NUMBER}\",\
+  \"commit_sha\": \"${COMMIT_SHA}\",\
+  \"commit_count\": \"${COMMIT_COUNT}\",\
+  \"git_hash\": \"${GIT_HASH}\",\
+  \"build_timestamp\": \"${BUILD_TIMESTAMP}\",\
+  \"github_actions\": \"${GITHUB_ACTIONS}\",\
+  \"flask_env\": \"${FLASK_ENV}\",\
   \"python_version\": \"$(python --version)\"\
 }" > /app/build_info.json
 

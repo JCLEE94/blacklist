@@ -36,6 +36,15 @@ class BlueprintRegistrationMixin:
         except Exception as e:
             logger.error(f"Failed to register simple collection management: {e}")
 
+        # Register version management routes (동적 버전 관리)
+        try:
+            from ..routes.version_routes import version_bp
+
+            app.register_blueprint(version_bp)
+            logger.info("📦 Version management routes registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register version routes: {e}")
+
     def _register_v2_blueprints(self, app, container):
         """V2 API 블루프린트 등록 - 필수 기능만 유지"""
         try:

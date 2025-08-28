@@ -16,7 +16,7 @@ from pathlib import Path
 
 class DatabaseMigration:
     """데이터베이스 마이그레이션 및 통합 관리"""
-    
+
     def __init__(self):
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.backup_dir = Path(f"db_backup_{self.timestamp}")
@@ -27,44 +27,38 @@ class DatabaseMigration:
                     "instance/blacklist.db",
                     "instance/blacklist_dev.db",
                     "data/blacklist.db",
-                    "config/data/blacklist.db"
+                    "config/data/blacklist.db",
                 ],
                 "target": "instance/blacklist.db",
-                "keep_largest": True
+                "keep_largest": True,
             },
             "api_keys": {
-                "sources": [
-                    "instance/api_keys.db",
-                    "data/api_keys.db"
-                ],
+                "sources": ["instance/api_keys.db", "data/api_keys.db"],
                 "target": "instance/api_keys.db",
-                "keep_latest": True
+                "keep_latest": True,
             },
             "monitoring": {
                 "sources": [
                     "monitoring/deployment_monitoring.db",
-                    "data_backup/deployment_monitoring.db"
+                    "data_backup/deployment_monitoring.db",
                 ],
                 "target": "instance/monitoring.db",
-                "keep_latest": True
+                "keep_latest": True,
             },
             "collection": {
-                "sources": [
-                    "data/collection_config.db",
-                    "instance/secudium.db"
-                ],
+                "sources": ["data/collection_config.db", "instance/secudium.db"],
                 "target": "instance/collection.db",
-                "merge": True
-            }
+                "merge": True,
+            },
         }
-        
+
     def backup_databases(self):
         """모든 데이터베이스 백업"""
         print(f"📦 데이터베이스 백업 중... ({self.backup_dir})")
-        
+
         # 백업 디렉토리 생성
         self.backup_dir.mkdir(exist_ok=True)
-        
+
         backed_up = []
         for db_type, config in self.db_mapping.items():
             for source in config["sources"]:
@@ -77,69 +71,75 @@ class DatabaseMigration:
                         print(f"  ✓ {source} → {backup_path}")
                     except Exception as e:
                         print(f"  ✗ {source} 백업 실패: {e}")
-                        
+
         print(f"  총 {len(backed_up)}개 DB 백업 완료")
         return backed_up
-    
+
     def analyze_databases(self):
         """데이터베이스 분석 및 상태 확인"""
         print("\n📊 데이터베이스 분석 중...")
-        
+
         analysis = {}
         for db_type, config in self.db_mapping.items():
             analysis[db_type] = {
                 "files": [],
                 "total_size": 0,
                 "table_count": {},
-                "row_count": {}
+                "row_count": {},
             }
-            
+
             for source in config["sources"]:
                 if os.path.exists(source):
                     size = os.path.getsize(source)
                     analysis[db_type]["total_size"] += size
-                    
+
                     # SQLite 연결하여 테이블 정보 수집
                     try:
                         conn = sqlite3.connect(source)
                         cursor = conn.cursor()
-                        
+
                         # 테이블 목록 조회
-                        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                        cursor.execute(
+                            "SELECT name FROM sqlite_master WHERE type='table'"
+                        )
                         tables = cursor.fetchall()
-                        
+
                         table_info = {}
                         for table in tables:
                             table_name = table[0]
                             cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
                             count = cursor.fetchone()[0]
                             table_info[table_name] = count
-                            
+
                         conn.close()
-                        
-                        analysis[db_type]["files"].append({
-                            "path": source,
-                            "size": size,
-                            "tables": table_info,
-                            "modified": datetime.fromtimestamp(os.path.getmtime(source))
-                        })
-                        
+
+                        analysis[db_type]["files"].append(
+                            {
+                                "path": source,
+                                "size": size,
+                                "tables": table_info,
+                                "modified": datetime.fromtimestamp(
+                                    os.path.getmtime(source)
+                                ),
+                            }
+                        )
+
                     except Exception as e:
                         print(f"  ⚠️ {source} 분석 실패: {e}")
-                        
+
         return analysis
-    
+
     def consolidate_databases(self, analysis):
         """데이터베이스 통합"""
         print("\n🔄 데이터베이스 통합 중...")
-        
+
         # target 디렉토리 확인
         self.target_dir.mkdir(exist_ok=True)
-        
+
         consolidated = []
         for db_type, config in self.db_mapping.items():
             target = Path(config["target"])
-            
+
             if config.get("keep_largest"):
                 # 가장 큰 파일 선택
                 largest = None
@@ -148,12 +148,12 @@ class DatabaseMigration:
                     if file_info["size"] > largest_size:
                         largest = file_info["path"]
                         largest_size = file_info["size"]
-                
+
                 if largest and largest != str(target):
                     print(f"  📂 {db_type}: {largest} → {target}")
                     shutil.copy2(largest, target)
                     consolidated.append(str(target))
-                    
+
             elif config.get("keep_latest"):
                 # 가장 최근 파일 선택
                 latest = None
@@ -162,27 +162,27 @@ class DatabaseMigration:
                     if file_info["modified"] > latest_time:
                         latest = file_info["path"]
                         latest_time = file_info["modified"]
-                
+
                 if latest and latest != str(target):
                     print(f"  📂 {db_type}: {latest} → {target}")
                     shutil.copy2(latest, target)
                     consolidated.append(str(target))
-                    
+
             elif config.get("merge"):
                 # 여러 DB 병합 (간단한 구현)
                 print(f"  🔀 {db_type}: 병합 작업 필요 (수동 처리 권장)")
-                
+
         print(f"  ✓ {len(consolidated)}개 DB 통합 완료")
         return consolidated
-    
+
     def cleanup_old_databases(self, keep_backups=True):
         """이전 데이터베이스 파일 정리"""
         print("\n🗑️ 이전 데이터베이스 정리 중...")
-        
+
         removed = []
         for db_type, config in self.db_mapping.items():
             target = Path(config["target"])
-            
+
             for source in config["sources"]:
                 source_path = Path(source)
                 # target과 다른 파일들만 삭제
@@ -194,55 +194,56 @@ class DatabaseMigration:
                             print(f"  ✓ {source_path} 삭제")
                     except Exception as e:
                         print(f"  ✗ {source_path} 삭제 실패: {e}")
-                        
+
         # 빈 데이터베이스 파일 정리
         empty_db = Path("data/database.db")
         if empty_db.exists() and os.path.getsize(empty_db) == 0:
             os.remove(empty_db)
             removed.append(str(empty_db))
             print(f"  ✓ {empty_db} (빈 파일) 삭제")
-            
+
         print(f"  총 {len(removed)}개 이전 DB 파일 삭제")
         return removed
-    
+
     def update_environment_config(self):
         """환경 설정 파일 업데이트"""
         print("\n⚙️ 환경 설정 업데이트 중...")
-        
+
         env_files = [".env", ".env.test", "commands/config/.env.unified"]
         updates = {
             "DATABASE_PATH": "instance/blacklist.db",
             "API_KEYS_DB": "instance/api_keys.db",
             "MONITORING_DB": "instance/monitoring.db",
-            "COLLECTION_DB": "instance/collection.db"
+            "COLLECTION_DB": "instance/collection.db",
         }
-        
+
         updated_files = []
         for env_file in env_files:
             if os.path.exists(env_file):
                 try:
-                    with open(env_file, 'r') as f:
+                    with open(env_file, "r") as f:
                         content = f.read()
-                    
+
                     # DB 경로 업데이트
                     for key, value in updates.items():
                         if key in content:
                             old_pattern = f"{key}=.*"
                             new_line = f"{key}={value}"
                             import re
+
                             content = re.sub(old_pattern, new_line, content)
-                    
-                    with open(env_file, 'w') as f:
+
+                    with open(env_file, "w") as f:
                         f.write(content)
-                    
+
                     updated_files.append(env_file)
                     print(f"  ✓ {env_file} 업데이트 완료")
-                    
+
                 except Exception as e:
                     print(f"  ✗ {env_file} 업데이트 실패: {e}")
-                    
+
         return updated_files
-    
+
     def generate_report(self, analysis, consolidated, removed):
         """마이그레이션 보고서 생성"""
         report = f"""# 📊 데이터베이스 마이그레이션 보고서
@@ -257,13 +258,13 @@ class DatabaseMigration:
             report += f"\n#### {db_type.upper()}\n"
             report += f"- 파일 수: {len(info['files'])}개\n"
             report += f"- 총 크기: {info['total_size'] / 1024:.1f}KB\n"
-            
-            for file_info in info['files']:
+
+            for file_info in info["files"]:
                 report += f"  - {file_info['path']}: {file_info['size']/1024:.1f}KB\n"
-                if file_info.get('tables'):
-                    for table, count in file_info['tables'].items():
+                if file_info.get("tables"):
+                    for table, count in file_info["tables"].items():
                         report += f"    • {table}: {count} rows\n"
-        
+
         report += f"""
 ## ✅ 통합 결과
 
@@ -303,37 +304,37 @@ instance/
 ---
 *Real Automation System v11.1에 의해 자동 생성*
 """
-        
+
         with open("db_migration_report.md", "w") as f:
             f.write(report)
-        
+
         print("\n📄 보고서 생성 완료: db_migration_report.md")
         return report
-    
+
     def execute(self):
         """전체 마이그레이션 실행"""
         print("=" * 50)
         print("🚀 데이터베이스 마이그레이션 시작")
         print("=" * 50)
-        
+
         # 1. 백업
         backed_up = self.backup_databases()
-        
+
         # 2. 분석
         analysis = self.analyze_databases()
-        
+
         # 3. 통합
         consolidated = self.consolidate_databases(analysis)
-        
+
         # 4. 정리
         removed = self.cleanup_old_databases()
-        
+
         # 5. 환경 설정 업데이트
         updated_configs = self.update_environment_config()
-        
+
         # 6. 보고서 생성
         self.generate_report(analysis, consolidated, removed)
-        
+
         print("\n" + "=" * 50)
         print("✅ 데이터베이스 마이그레이션 완료!")
         print("=" * 50)
