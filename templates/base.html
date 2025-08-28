@@ -49,29 +49,19 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'unified.web_routes.dashboard' %}active{% endif %}" 
                            href="/dashboard">
-                            <i class="bi bi-house"></i> Home
+                            <i class="bi bi-speedometer2"></i> 대시보드
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'unified.web_routes.blacklist_search' %}active{% endif %}" 
                            href="/blacklist-search">
-                            <i class="bi bi-search"></i> Search
+                            <i class="bi bi-search"></i> 검색
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/statistics' %}active{% endif %}" 
-                           href="/statistics">
-                            <i class="bi bi-graph-up"></i> 통계
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard">
-                            <i class="bi bi-speedometer2"></i> 수집 대시보드
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/analytics">
-                            <i class="bi bi-graph-up-arrow"></i> 고급 분석
+                        <a class="nav-link {% if request.path == '/analytics' %}active{% endif %}" 
+                           href="/analytics">
+                            <i class="bi bi-graph-up-arrow"></i> 분석
                         </a>
                     </li>
                     <li class="nav-item">
@@ -82,11 +72,6 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/raw-data">
                             <i class="bi bi-table"></i> 전체 데이터
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/cicd/deployment">
-                            <i class="bi bi-rocket-takeoff"></i> CI/CD 배포
                         </a>
                     </li>
                     <li class="nav-item dropdown">
