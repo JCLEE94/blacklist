@@ -2,7 +2,7 @@
 # SafeWork의 멀티스테이지 빌드와 보안 패턴을 blacklist에 최적화
 
 # Pin specific Python version for reproducibility
-FROM python:3.11.8-slim-bookworm AS base
+FROM python:3.13.7-slim-bookworm AS base
 
 # Build arguments for version tracking - 동적 버전 패턴
 ARG DYNAMIC_VERSION=1.0.local
@@ -131,7 +131,7 @@ RUN echo "{\
 # ==============================================================================
 # Production stage - Minimal runtime (SafeWork 패턴)
 # ==============================================================================
-FROM python:3.11.8-slim-bookworm AS production
+FROM python:3.13.7-slim-bookworm AS production
 
 # Install runtime dependencies and security updates (SafeWork 패턴)
 RUN apt-get update && \
