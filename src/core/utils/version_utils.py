@@ -14,14 +14,31 @@ logger = logging.getLogger(__name__)
 @lru_cache(maxsize=1)
 def get_dynamic_version():
     """
-    Git 정보를 기반으로 동적 버전 생성
-    형식: 1.3.{커밋수}.{해시}
+    빌드 정보에서 동적 버전 생성
+    우선순위: build_info.json > Git 직접 조회 > 기본값
 
     Returns:
         str: 동적 버전 문자열
     """
     try:
-        # 프로젝트 루트 디렉토리 찾기
+        # 1. 먼저 build_info.json에서 빌드 시점에 생성된 버전 정보 확인
+        import json
+
+        build_info_path = "/app/build_info.json"
+        if os.path.exists(build_info_path):
+            try:
+                with open(build_info_path, "r") as f:
+                    build_info = json.load(f)
+                    version = build_info.get("version", "").strip()
+                    if version and version != "local":
+                        logger.info(
+                            f"Using build-time version from build_info.json: {version}"
+                        )
+                        return version
+            except Exception as e:
+                logger.warning(f"Failed to read build_info.json: {e}")
+
+        # 2. Git 직접 조회 (개발 환경)
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = current_dir
 
@@ -62,7 +79,7 @@ def get_dynamic_version():
         # 동적 버전 생성: 1.3.{커밋수}.{해시}
         dynamic_version = f"1.3.{git_count}.{git_hash}"
 
-        logger.info(f"Generated dynamic version: {dynamic_version}")
+        logger.info(f"Generated dynamic version from Git: {dynamic_version}")
         return dynamic_version
 
     except Exception as e:
