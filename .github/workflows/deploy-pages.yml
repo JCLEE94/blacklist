@@ -660,7 +660,7 @@ jobs:
         echo "✅ 포트폴리오 빌드 완료"
 
     - name: "📤 Pages 아티팩트 업로드"
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         path: '_site'
 
