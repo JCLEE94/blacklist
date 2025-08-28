@@ -1,0 +1,435 @@
+name: 🚀 통합 배포 파이프라인 | Dynamic Version & Multi-Image
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/deploy-pages.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deploy all services'
+        required: false
+        default: false
+        type: boolean
+      target_images:
+        description: 'Target images to build (all, blacklist, postgres, redis)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - blacklist
+        - postgres
+        - redis
+
+env:
+  REGISTRY: registry.jclee.me
+  BASE_NAME: blacklist
+
+jobs:
+  # ========================================
+  # 동적 버전 생성 및 변경 감지
+  # ========================================
+  prepare:
+    name: "🔍 버전 생성 & 변경 감지"
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.changes.outputs.should_deploy }}
+      version: ${{ steps.version.outputs.version }}
+      git_hash: ${{ steps.version.outputs.git_hash }}
+      git_count: ${{ steps.version.outputs.git_count }}
+      build_date: ${{ steps.version.outputs.build_date }}
+      build_blacklist: ${{ steps.changes.outputs.build_blacklist }}
+      build_postgres: ${{ steps.changes.outputs.build_postgres }}
+      build_redis: ${{ steps.changes.outputs.build_redis }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: "🔍 스마트 변경 감지"
+      id: changes
+      run: |
+        echo "🔍 변경사항 분석 중..."
+        
+        SHOULD_DEPLOY=false
+        BUILD_BLACKLIST=false
+        BUILD_POSTGRES=false 
+        BUILD_REDIS=false
+        FORCE_DEPLOY="${{ inputs.force_deploy }}"
+        TARGET_IMAGES="${{ inputs.target_images }}"
+        
+        # 강제 배포 처리
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$FORCE_DEPLOY" = "true" ]; then
+          echo "🔨 강제 배포 요청"
+          SHOULD_DEPLOY=true
+          if [ "$TARGET_IMAGES" = "all" ] || [ "$TARGET_IMAGES" = "blacklist" ]; then
+            BUILD_BLACKLIST=true
+          fi
+          if [ "$TARGET_IMAGES" = "all" ] || [ "$TARGET_IMAGES" = "postgres" ]; then
+            BUILD_POSTGRES=true
+          fi
+          if [ "$TARGET_IMAGES" = "all" ] || [ "$TARGET_IMAGES" = "redis" ]; then
+            BUILD_REDIS=true
+          fi
+        else
+          # 파일 변경 감지
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          
+          # 메인 애플리케이션 변경
+          if echo "$CHANGED_FILES" | grep -qE "\.(py|txt|json)$|^Dockerfile|^main\.py|^src/|^app/|^templates/|^static/"; then
+            echo "✅ 메인 애플리케이션 변경 감지"
+            BUILD_BLACKLIST=true
+            SHOULD_DEPLOY=true
+          fi
+          
+          # PostgreSQL 변경
+          if echo "$CHANGED_FILES" | grep -qE "^docker/postgresql/|postgresql"; then
+            echo "✅ PostgreSQL 설정 변경 감지"
+            BUILD_POSTGRES=true
+            SHOULD_DEPLOY=true
+          fi
+          
+          # Redis 변경
+          if echo "$CHANGED_FILES" | grep -qE "^docker/redis/|redis"; then
+            echo "✅ Redis 설정 변경 감지"
+            BUILD_REDIS=true
+            SHOULD_DEPLOY=true
+          fi
+          
+          # CI/CD 파일 변경
+          if echo "$CHANGED_FILES" | grep -qE "\.yml$|\.yaml$"; then
+            echo "✅ CI/CD 설정 변경 감지"
+            BUILD_BLACKLIST=true
+            SHOULD_DEPLOY=true
+          fi
+        fi
+        
+        echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+        echo "build_blacklist=$BUILD_BLACKLIST" >> $GITHUB_OUTPUT
+        echo "build_postgres=$BUILD_POSTGRES" >> $GITHUB_OUTPUT
+        echo "build_redis=$BUILD_REDIS" >> $GITHUB_OUTPUT
+        
+        echo "📊 결과 - 배포: $SHOULD_DEPLOY | Blacklist: $BUILD_BLACKLIST | PostgreSQL: $BUILD_POSTGRES | Redis: $BUILD_REDIS"
+
+    - name: "📦 동적 버전 생성"  
+      id: version
+      run: |
+        echo "📦 동적 버전 생성 중..."
+        
+        # Git 정보
+        GIT_COUNT=$(git rev-list --count HEAD)
+        GIT_HASH=$(git rev-parse --short HEAD)
+        GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        BUILD_DATE=$(date +%Y%m%d)
+        
+        # 의미론적 버전: Major.Minor.Patch.Build
+        SEMANTIC_VERSION="1.3.${GIT_COUNT}.${GIT_HASH}"
+        
+        echo "version=$SEMANTIC_VERSION" >> $GITHUB_OUTPUT
+        echo "git_hash=$GIT_HASH" >> $GITHUB_OUTPUT  
+        echo "git_count=$GIT_COUNT" >> $GITHUB_OUTPUT
+        echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+        
+        echo "📦 동적 버전: $SEMANTIC_VERSION"
+        echo "🏗️ 빌드 날짜: $BUILD_DATE"
+        echo "📊 총 커밋: $GIT_COUNT"
+
+  # ========================================
+  # Blacklist 애플리케이션 이미지 빌드
+  # ========================================
+  build-blacklist:
+    name: "🛡️ Blacklist 이미지 빌드"
+    needs: prepare
+    if: needs.prepare.outputs.build_blacklist == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: "🐳 레지스트리 로그인"
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+    
+    - name: "🏗️ Blacklist 이미지 빌드 & 푸시"
+      run: |
+        VERSION="${{ needs.prepare.outputs.version }}"
+        BUILD_DATE="${{ needs.prepare.outputs.build_date }}"
+        GIT_COUNT="${{ needs.prepare.outputs.git_count }}"
+        GIT_HASH="${{ needs.prepare.outputs.git_hash }}"
+        
+        echo "🛡️ Blacklist 애플리케이션 빌드..."
+        echo "📦 버전: $VERSION"
+        
+        docker build \
+          -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:latest \
+          -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:$VERSION \
+          -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:v$BUILD_DATE \
+          --build-arg DYNAMIC_VERSION=$VERSION \
+          --build-arg BUILD_DATE=$BUILD_DATE \
+          --build-arg BUILD_NUMBER=${{ github.run_number }} \
+          --build-arg COMMIT_SHA=${{ github.sha }} \
+          --build-arg COMMIT_COUNT=$GIT_COUNT \
+          --build-arg GIT_HASH=$GIT_HASH \
+          --build-arg GITHUB_ACTIONS=true \
+          --build-arg FLASK_ENV=production \
+          --label "org.opencontainers.image.version=$VERSION" \
+          --label "org.opencontainers.image.revision=${{ github.sha }}" \
+          --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --label "org.opencontainers.image.source=${{ github.repositoryUrl }}" \
+          .
+        
+        echo "📤 레지스트리 푸시..."
+        docker push ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:latest
+        docker push ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:$VERSION
+        docker push ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:v$BUILD_DATE
+        
+        echo "✅ Blacklist 빌드 완료: $VERSION"
+
+  # ========================================
+  # PostgreSQL 이미지 빌드
+  # ========================================
+  build-postgres:
+    name: "🐘 PostgreSQL 이미지 빌드"
+    needs: prepare
+    if: needs.prepare.outputs.build_postgres == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: "🐳 레지스트리 로그인"
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+    
+    - name: "🏗️ PostgreSQL 이미지 빌드 & 푸시"
+      run: |
+        VERSION="${{ needs.prepare.outputs.version }}"
+        BUILD_DATE="${{ needs.prepare.outputs.build_date }}"
+        
+        echo "🐘 PostgreSQL 이미지 빌드..."
+        echo "📦 버전: $VERSION"
+        
+        if [ ! -d "docker/postgresql" ]; then
+          echo "⚠️ PostgreSQL 디렉토리 없음, 기본 PostgreSQL 이미지로 태그"
+          docker pull postgres:15-alpine
+          docker tag postgres:15-alpine ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-postgres:latest
+          docker tag postgres:15-alpine ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-postgres:$VERSION
+        else
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-postgres:latest \
+            -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-postgres:$VERSION \
+            -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-postgres:v$BUILD_DATE \
+            --label "org.opencontainers.image.version=$VERSION" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            ./docker/postgresql
+        fi
+        
+        echo "📤 레지스트리 푸시..."
+        docker push ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-postgres:latest
+        docker push ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-postgres:$VERSION
+        
+        echo "✅ PostgreSQL 빌드 완료: $VERSION"
+
+  # ========================================
+  # Redis 이미지 빌드
+  # ========================================
+  build-redis:
+    name: "⚡ Redis 이미지 빌드"
+    needs: prepare
+    if: needs.prepare.outputs.build_redis == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: "🐳 레지스트리 로그인"
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+    
+    - name: "🏗️ Redis 이미지 빌드 & 푸시"
+      run: |
+        VERSION="${{ needs.prepare.outputs.version }}"
+        BUILD_DATE="${{ needs.prepare.outputs.build_date }}"
+        
+        echo "⚡ Redis 이미지 빌드..."
+        echo "📦 버전: $VERSION"
+        
+        if [ ! -d "docker/redis" ]; then
+          echo "⚠️ Redis 디렉토리 없음, 기본 Redis 이미지로 태그"
+          docker pull redis:7-alpine
+          docker tag redis:7-alpine ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-redis:latest
+          docker tag redis:7-alpine ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-redis:$VERSION
+        else
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-redis:latest \
+            -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-redis:$VERSION \
+            -t ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-redis:v$BUILD_DATE \
+            --label "org.opencontainers.image.version=$VERSION" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            ./docker/redis
+        fi
+        
+        echo "📤 레지스트리 푸시..."
+        docker push ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-redis:latest
+        docker push ${{ env.REGISTRY }}/${{ env.BASE_NAME }}-redis:$VERSION
+        
+        echo "✅ Redis 빌드 완료: $VERSION"
+
+  # ========================================
+  # 프로덕션 배포
+  # ========================================
+  deploy:
+    name: "🚀 프로덕션 배포"
+    needs: [prepare, build-blacklist]
+    if: needs.prepare.outputs.should_deploy == 'true'
+    runs-on: self-hosted
+    
+    steps:
+    - name: "🔄 Docker Compose 배포"
+      run: |
+        echo "🚀 프로덕션 배포 시작..."
+        NEW_VERSION="${{ needs.prepare.outputs.version }}"
+        
+        # 레지스트리 로그인
+        echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
+        
+        # Docker Compose로 전체 스택 업데이트
+        cd /home/app/blacklist || exit 1
+        
+        # 최신 이미지 풀
+        docker-compose pull
+        
+        # 서비스 재시작
+        docker-compose up -d --remove-orphans
+        
+        echo "✅ Docker Compose 배포 완료: $NEW_VERSION"
+
+    - name: "🏥 헬스체크 & 검증"
+      run: |
+        echo "🏥 시스템 상태 검증..."
+        
+        # 서비스 시작 대기
+        sleep 30
+        
+        # 1. 컨테이너 상태 확인
+        if ! docker ps --format "{{.Names}}" | grep -q "blacklist-app"; then
+          echo "❌ Blacklist 컨테이너 실행 실패"
+          docker-compose logs blacklist
+          exit 1
+        fi
+        
+        # 2. 내부 헬스체크
+        for i in {1..10}; do
+          echo "🔍 헬스체크 시도 $i/10..."
+          if curl -f http://localhost:32542/health >/dev/null 2>&1; then
+            echo "✅ 내부 헬스체크 통과"
+            break
+          elif [ $i -eq 10 ]; then
+            echo "❌ 내부 헬스체크 실패"
+            docker-compose logs blacklist --tail 20
+            exit 1
+          fi
+          sleep 10
+        done
+        
+        # 3. 각 서비스 상태 확인
+        echo "📊 서비스 상태:"
+        docker-compose ps
+        
+        # 4. API 테스트
+        echo "🧪 API 기능 테스트..."
+        API_STATUS=$(curl -s http://localhost:32542/api/blacklist/active | head -1)
+        echo "API 응답 샘플: $API_STATUS"
+        
+        # 5. 버전 확인
+        DEPLOYED_VERSION=$(curl -s http://localhost:32542/health | jq -r '.version' 2>/dev/null || echo "unknown")
+        echo "📦 배포된 버전: $DEPLOYED_VERSION"
+        
+        echo "🎉 배포 및 검증 완료!"
+
+  # ========================================
+  # 배포 요약 리포트
+  # ========================================  
+  summary:
+    name: "📊 배포 요약"
+    needs: [prepare, build-blacklist, build-postgres, build-redis, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: "📊 결과 요약"
+      run: |
+        echo "# 🛡️ 통합 배포 파이프라인 리포트" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 📦 버전 정보" >> $GITHUB_STEP_SUMMARY
+        echo "- **동적 버전:** ${{ needs.prepare.outputs.version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **빌드 날짜:** ${{ needs.prepare.outputs.build_date || 'N/A' }}" >> $GITHUB_STEP_SUMMARY  
+        echo "- **Git 해시:** ${{ needs.prepare.outputs.git_hash || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **총 커밋:** ${{ needs.prepare.outputs.git_count || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 🏗️ 이미지 빌드 상태" >> $GITHUB_STEP_SUMMARY
+        echo "| 이미지 | 빌드 여부 | 상태 |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-----------|------|" >> $GITHUB_STEP_SUMMARY
+        
+        # Blacklist 빌드 상태
+        if [ "${{ needs.prepare.outputs.build_blacklist }}" = "true" ]; then
+          if [ "${{ needs.build-blacklist.result }}" = "success" ]; then
+            echo "| 🛡️ Blacklist | ✅ | 빌드 성공 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🛡️ Blacklist | ❌ | 빌드 실패 |" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "| 🛡️ Blacklist | ⏭️ | 스킵됨 |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # PostgreSQL 빌드 상태
+        if [ "${{ needs.prepare.outputs.build_postgres }}" = "true" ]; then
+          if [ "${{ needs.build-postgres.result }}" = "success" ]; then
+            echo "| 🐘 PostgreSQL | ✅ | 빌드 성공 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🐘 PostgreSQL | ❌ | 빌드 실패 |" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "| 🐘 PostgreSQL | ⏭️ | 스킵됨 |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Redis 빌드 상태
+        if [ "${{ needs.prepare.outputs.build_redis }}" = "true" ]; then
+          if [ "${{ needs.build-redis.result }}" = "success" ]; then
+            echo "| ⚡ Redis | ✅ | 빌드 성공 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| ⚡ Redis | ❌ | 빌드 실패 |" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "| ⚡ Redis | ⏭️ | 스킵됨 |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 🚀 배포 상태" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ needs.deploy.result }}" = "success" ]; then
+          echo "✅ **배포 성공** - 모든 서비스가 정상적으로 배포되었습니다." >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.prepare.outputs.should_deploy }}" = "true" ]; then
+          echo "❌ **배포 실패** - 배포 중 문제가 발생했습니다." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⏭️ **배포 스킵** - 변경사항이 없어 배포를 건너뛰었습니다." >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 🌐 시스템 접속" >> $GITHUB_STEP_SUMMARY
+        echo "- **🌐 라이브 시스템:** https://blacklist.jclee.me/" >> $GITHUB_STEP_SUMMARY
+        echo "- **📊 대시보드:** https://blacklist.jclee.me/dashboard" >> $GITHUB_STEP_SUMMARY
+        echo "- **💚 헬스체크:** https://blacklist.jclee.me/health" >> $GITHUB_STEP_SUMMARY
+        echo "- **🛡️ 설정 관리:** https://blacklist.jclee.me/settings" >> $GITHUB_STEP_SUMMARY
