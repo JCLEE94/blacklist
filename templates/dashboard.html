@@ -324,6 +324,59 @@
         background: rgba(102, 126, 234, 0.5);
     }
     
+    /* 통합 제어 패널 스타일링 */
+    #unified-control-panel {
+        animation: slideIn 0.3s ease-out;
+        border-left: 4px solid rgba(102, 126, 234, 0.5);
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* 버튼 그룹 스타일 개선 */
+    .btn-group .btn {
+        border-color: rgba(74, 95, 138, 0.3);
+        transition: all 0.2s ease;
+    }
+    
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* 폼 컨트롤 다크 테마 */
+    .form-control, .form-select {
+        background-color: rgba(26, 31, 58, 0.8);
+        border: 1px solid rgba(74, 95, 138, 0.3);
+        color: #e0e0e0;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: rgba(26, 31, 58, 0.9);
+        border-color: rgba(102, 126, 234, 0.5);
+        color: #e0e0e0;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .form-label {
+        color: #b0b0b0;
+        font-weight: 500;
+    }
+    
+    /* 알림 스타일 */
+    .alert {
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
     /* Responsive Design */
     @media (max-width: 768px) {
         .dashboard-container {
@@ -339,20 +392,85 @@
             height: 50px;
             font-size: 1.5rem;
         }
+        
+        .btn-group {
+            flex-direction: column;
+        }
+        
+        .btn-group .btn {
+            border-radius: 0.375rem !important;
+            margin-bottom: 0.25rem;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- Premium Dashboard Header -->
+    <!-- Premium Dashboard Header with Unified Control -->
     <div class="d-flex justify-content-between align-items-center mb-5">
         <h2 class="fw-bold mb-0">
-            <span class="text-gradient">위협 인텔리전스</span>
+            <span class="text-gradient">통합 관리</span>
             <span style="color: #e0e0e0;">대시보드</span>
         </h2>
-        <div style="color: #a0a0a0;">
-            <i class="bi bi-clock"></i> <span id="current-time"></span>
+        <div class="d-flex align-items-center gap-3">
+            <div style="color: #a0a0a0;">
+                <i class="bi bi-clock"></i> <span id="current-time"></span>
+            </div>
+            <!-- 통합 제어 버튼 그룹 -->
+            <div class="btn-group" role="group">
+                <button class="btn btn-sm btn-outline-light" onclick="toggleUnifiedControl()" title="통합 제어 패널">
+                    <i class="bi bi-gear"></i> 제어
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="triggerCollection()" title="수동 수집 실행">
+                    <i class="bi bi-download"></i> 수집
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 통합 제어 패널 (토글) -->
+    <div id="unified-control-panel" class="card mb-4" style="display: none;">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-sliders"></i> 통합 제어 패널</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- 수집 기간 설정 -->
+                <div class="col-md-4">
+                    <label class="form-label">시작일</label>
+                    <input type="date" class="form-control" id="collection-start-date">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">종료일</label>
+                    <input type="date" class="form-control" id="collection-end-date">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">소스 선택</label>
+                    <select class="form-select" id="collection-source">
+                        <option value="all">전체 소스</option>
+                        <option value="regtech">REGTECH만</option>
+                        <option value="secudium">SECUDIUM만</option>
+                    </select>
+                </div>
+                <!-- 제어 버튼들 -->
+                <div class="col-12">
+                    <div class="btn-group w-100" role="group">
+                        <button class="btn btn-success" onclick="startCollection()">
+                            <i class="bi bi-play"></i> 수집 시작
+                        </button>
+                        <button class="btn btn-warning" onclick="stopCollection()">
+                            <i class="bi bi-pause"></i> 수집 중지
+                        </button>
+                        <button class="btn btn-info" onclick="resetCollection()">
+                            <i class="bi bi-arrow-clockwise"></i> 초기화
+                        </button>
+                        <button class="btn btn-danger" onclick="clearData()">
+                            <i class="bi bi-trash"></i> 데이터 삭제
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -832,6 +950,122 @@ async function clearCache() {
 function blockIP(ip) {
     // 간단한 확인 없이 바로 처리
     console.log('Blocking IP:', ip);
+}
+
+// 통합 제어 함수들
+function toggleUnifiedControl() {
+    const panel = document.getElementById('unified-control-panel');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        // 기본 날짜 설정 (오늘)
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('collection-start-date').value = today;
+        document.getElementById('collection-end-date').value = today;
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+async function triggerCollection() {
+    const source = document.getElementById('collection-source')?.value || 'all';
+    const startDate = document.getElementById('collection-start-date')?.value;
+    const endDate = document.getElementById('collection-end-date')?.value;
+    
+    // 빠른 수집 실행 (기간 미지정시 오늘)
+    try {
+        const response = await fetch('/api/collection/regtech/trigger', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                start_date: startDate, 
+                end_date: endDate,
+                source: source 
+            })
+        });
+        
+        if (response.ok) {
+            showNotification('수집이 시작되었습니다', 'success');
+            setTimeout(loadStatistics, 3000);
+        }
+    } catch (error) {
+        console.error('Collection trigger failed:', error);
+        showNotification('수집 실행에 실패했습니다', 'error');
+    }
+}
+
+async function startCollection() {
+    try {
+        const response = await fetch('/api/collection/enable', { method: 'POST' });
+        if (response.ok) {
+            showNotification('수집이 활성화되었습니다', 'success');
+            loadStatistics();
+        }
+    } catch (error) {
+        console.error('Collection start failed:', error);
+        showNotification('수집 시작에 실패했습니다', 'error');
+    }
+}
+
+async function stopCollection() {
+    try {
+        const response = await fetch('/api/collection/disable', { method: 'POST' });
+        if (response.ok) {
+            showNotification('수집이 중지되었습니다', 'warning');
+            loadStatistics();
+        }
+    } catch (error) {
+        console.error('Collection stop failed:', error);
+        showNotification('수집 중지에 실패했습니다', 'error');
+    }
+}
+
+async function resetCollection() {
+    if (confirm('수집 시스템을 초기화하시겠습니까?')) {
+        try {
+            await fetch('/api/collection/disable', { method: 'POST' });
+            await fetch('/api/collection/enable', { method: 'POST' });
+            showNotification('수집 시스템이 초기화되었습니다', 'info');
+            loadStatistics();
+        } catch (error) {
+            console.error('Collection reset failed:', error);
+            showNotification('초기화에 실패했습니다', 'error');
+        }
+    }
+}
+
+async function clearData() {
+    if (confirm('모든 수집 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        try {
+            const response = await fetch('/api/admin/clear-data', { method: 'POST' });
+            if (response.ok) {
+                showNotification('데이터가 삭제되었습니다', 'warning');
+                loadStatistics();
+            }
+        } catch (error) {
+            console.error('Data clear failed:', error);
+            showNotification('데이터 삭제에 실패했습니다', 'error');
+        }
+    }
+}
+
+// 알림 표시 함수
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 100px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 3초 후 자동 제거
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
 }
 
 // 페이지 로드시 실행
