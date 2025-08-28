@@ -15,26 +15,36 @@ recent_detections_bp = Blueprint("recent_detections", __name__)
 def get_db_connection():
     """Get PostgreSQL database connection."""
     try:
-        # Docker environment
-        if os.getenv("FLASK_ENV") == "production" or os.path.exists("/.dockerenv"):
+        # Try DATABASE_URL first (Docker Compose environment)
+        database_url = os.getenv("DATABASE_URL")
+
+        if database_url:
+            # Parse DATABASE_URL for psycopg2 connection
+            logger.info(f"Connecting using DATABASE_URL")
+            conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+        elif os.getenv("FLASK_ENV") == "production" or os.path.exists("/.dockerenv"):
+            # Fallback to individual parameters for Docker
+            logger.info("Connecting using Docker environment settings")
             conn = psycopg2.connect(
-                host="postgres",  # Docker service name (corrected from postgresql)
+                host="postgres",  # Docker service name
                 port=5432,
-                database=os.getenv("POSTGRES_DB", "blacklist"),
-                user=os.getenv("POSTGRES_USER", "postgres"),
-                password=os.getenv("POSTGRES_PASSWORD", "postgres"),
-                cursor_factory=RealDictCursor,
-            )
-        else:
-            # Local development
-            conn = psycopg2.connect(
-                host="localhost",
-                port=5434,  # External PostgreSQL port (corrected from 32544)
                 database="blacklist",
                 user="postgres",
                 password="postgres",
                 cursor_factory=RealDictCursor,
             )
+        else:
+            # Local development
+            logger.info("Connecting using local development settings")
+            conn = psycopg2.connect(
+                host="localhost",
+                port=5434,  # External PostgreSQL port
+                database="blacklist",
+                user="postgres",
+                password="postgres",
+                cursor_factory=RealDictCursor,
+            )
+        logger.info("PostgreSQL connection successful")
         return conn
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
@@ -52,36 +62,40 @@ def get_recent_detections():
 
         cursor = conn.cursor()
 
-        # Query recent blacklist entries
+        # Query recent blacklist entries (use correct column names)
         query = """
             SELECT 
-                ip_address,
-                threat_level,
-                source,
-                detected_at,
+                ip_address::text as ip_address,
+                COALESCE(threat_level, 'HIGH') as threat_level,
+                COALESCE(source, 'SYSTEM') as source,
+                COALESCE(detection_date, created_at::date) as detected_at,
                 description,
-                category
+                country as category
             FROM blacklist_entries
-            WHERE detected_at >= NOW() - INTERVAL '7 days'
-            ORDER BY detected_at DESC
+            WHERE created_at >= NOW() - INTERVAL '7 days'
+               OR detection_date >= CURRENT_DATE - INTERVAL '7 days'
+            ORDER BY created_at DESC
             LIMIT 20
         """
 
+        logger.info(f"Executing query for recent detections")
         cursor.execute(query)
         rows = cursor.fetchall()
+        logger.info(f"Found {len(rows) if rows else 0} recent detections")
 
         if not rows:
-            # Try simpler query
+            # Try even simpler query to get any data
             query = """
                 SELECT 
-                    ip_address,
+                    ip_address::text as ip_address,
                     'HIGH' as threat_level,
                     COALESCE(source, 'SYSTEM') as source,
-                    COALESCE(created_at, NOW()) as detected_at
+                    CURRENT_TIMESTAMP as detected_at
                 FROM blacklist_entries
-                ORDER BY created_at DESC
+                ORDER BY id DESC
                 LIMIT 20
             """
+            logger.info("No recent data, trying to get any data")
             cursor.execute(query)
             rows = cursor.fetchall()
 
