@@ -18,7 +18,7 @@ def get_db_connection():
         # Docker environment
         if os.getenv("FLASK_ENV") == "production" or os.path.exists("/.dockerenv"):
             conn = psycopg2.connect(
-                host="postgresql",  # Docker service name
+                host="postgres",  # Docker service name (corrected from postgresql)
                 port=5432,
                 database=os.getenv("POSTGRES_DB", "blacklist"),
                 user=os.getenv("POSTGRES_USER", "postgres"),
@@ -29,7 +29,7 @@ def get_db_connection():
             # Local development
             conn = psycopg2.connect(
                 host="localhost",
-                port=32544,  # External PostgreSQL port
+                port=5434,  # External PostgreSQL port (corrected from 32544)
                 database="blacklist",
                 user="postgres",
                 password="postgres",
