@@ -31,6 +31,20 @@ CREATE TABLE IF NOT EXISTS blacklist_entries (
     is_active BOOLEAN DEFAULT true
 );
 
+-- Blacklist IPs table (required for application)
+CREATE TABLE IF NOT EXISTS blacklist_ips (
+    id SERIAL PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL,
+    source VARCHAR(50) NOT NULL,
+    threat_level VARCHAR(20) DEFAULT 'medium',
+    notes TEXT,
+    country VARCHAR(100),
+    detection_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true
+);
+
 -- System metadata
 CREATE TABLE IF NOT EXISTS metadata (
     key VARCHAR(100) PRIMARY KEY,
@@ -134,6 +148,11 @@ CREATE INDEX IF NOT EXISTS idx_blacklist_source ON blacklist (source);
 CREATE INDEX IF NOT EXISTS idx_blacklist_date ON blacklist (detection_date);
 CREATE INDEX IF NOT EXISTS idx_blacklist_active ON blacklist (is_active);
 CREATE INDEX IF NOT EXISTS idx_blacklist_created ON blacklist (created_at);
+
+-- Indexes for blacklist_ips table
+CREATE INDEX IF NOT EXISTS idx_blacklist_ips_ip ON blacklist_ips (ip_address);
+CREATE INDEX IF NOT EXISTS idx_blacklist_ips_source ON blacklist_ips (source);
+CREATE INDEX IF NOT EXISTS idx_blacklist_ips_active ON blacklist_ips (is_active);
 
 CREATE INDEX IF NOT EXISTS idx_collection_logs_source ON collection_logs (source);
 CREATE INDEX IF NOT EXISTS idx_collection_logs_timestamp ON collection_logs (timestamp);
