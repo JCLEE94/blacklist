@@ -6,7 +6,7 @@ services:
   # PostgreSQL Database Service with KST timezone
   postgres:
     image: postgres:15-alpine
-    container_name: postgres
+    container_name: blacklist-postgres-compose
     environment:
       POSTGRES_DB: blacklist
       POSTGRES_USER: postgres
@@ -15,7 +15,7 @@ services:
       TZ: Asia/Seoul
       PGTZ: Asia/Seoul
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgresql/init-scripts:/docker-entrypoint-initdb.d
@@ -153,7 +153,7 @@ services:
 # Networks
 networks:
   blacklist-network:
-    driver: bridge
+    external: true
     name: blacklist-network
 
 # Persistent volumes
