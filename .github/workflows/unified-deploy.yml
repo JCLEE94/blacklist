@@ -295,65 +295,31 @@ jobs:
     runs-on: self-hosted
     
     steps:
-    - name: "🔄 Docker Compose 배포"
+    - name: "📦 이미지 푸시 완료 확인"
       run: |
-        echo "🚀 프로덕션 배포 시작..."
+        echo "✅ 이미지 푸시 완료"
+        NEW_VERSION="${{ needs.prepare.outputs.version }}"
+        echo "📦 푸시된 버전: $NEW_VERSION"
+
+    - name: "🔍 버전 체크"
+      run: |
+        echo "🔍 배포된 버전 확인 중..."
         NEW_VERSION="${{ needs.prepare.outputs.version }}"
         
-        # 레지스트리 로그인
+        # 현재 실행 중인 서비스 버전 확인
+        CURRENT_VERSION=$(curl -s http://localhost:32542/health | jq -r '.version' 2>/dev/null || echo "unknown")
+        echo "📦 현재 실행 중인 버전: $CURRENT_VERSION"
+        echo "📦 새로 빌드된 버전: $NEW_VERSION"
+        
+        # 이미지가 레지스트리에 정상 푸시되었는지 확인
+        echo "🐳 레지스트리 이미지 확인..."
         echo "${{ secrets.REGISTRY_PASSWORD || 'bingogo1' }}" | docker login ${{ env.REGISTRY }} -u admin --password-stdin
-        
-        # 도커 이미지 업데이트만 실행
-        cd /home/jclee/app/blacklist || exit 1
-        
-        echo "🐳 도커 이미지 업데이트 중..."
-        docker-compose pull
-        docker-compose up -d
-        
-        echo "✅ 도커 이미지 업데이트 완료: $NEW_VERSION"
-
-    - name: "🏥 헬스체크 & 검증"
-      run: |
-        echo "🏥 시스템 상태 검증..."
-        
-        # 서비스 시작 대기
-        sleep 30
-        
-        # 1. 컨테이너 상태 확인
-        if ! docker ps --format "{{.Names}}" | grep -q "blacklist-app"; then
-          echo "❌ Blacklist 컨테이너 실행 실패"
-          docker-compose logs blacklist
+        if docker pull ${{ env.REGISTRY }}/${{ env.BASE_NAME }}:$NEW_VERSION; then
+          echo "✅ 이미지 푸시 성공 확인"
+        else
+          echo "❌ 이미지 푸시 실패"
           exit 1
         fi
-        
-        # 2. 내부 헬스체크
-        for i in {1..10}; do
-          echo "🔍 헬스체크 시도 $i/10..."
-          if curl -f http://localhost:32542/health >/dev/null 2>&1; then
-            echo "✅ 내부 헬스체크 통과"
-            break
-          elif [ $i -eq 10 ]; then
-            echo "❌ 내부 헬스체크 실패"
-            docker-compose logs blacklist --tail 20
-            exit 1
-          fi
-          sleep 10
-        done
-        
-        # 3. 서비스 상태 확인
-        echo "📊 서비스 상태:"
-        docker-compose ps
-        
-        # 4. API 테스트
-        echo "🧪 API 기능 테스트..."
-        API_STATUS=$(curl -s http://localhost:32542/api/blacklist/active | head -1)
-        echo "API 응답 샘플: $API_STATUS"
-        
-        # 5. 버전 확인
-        DEPLOYED_VERSION=$(curl -s http://localhost:32542/health | jq -r '.version' 2>/dev/null || echo "unknown")
-        echo "📦 배포된 버전: $DEPLOYED_VERSION"
-        
-        echo "🎉 배포 및 검증 완료!"
 
   # ========================================
   # 배포 요약 리포트
